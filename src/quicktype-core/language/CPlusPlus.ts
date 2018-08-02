@@ -1,7 +1,7 @@
 import { setUnion, arrayIntercalate, toReadonlyArray, iterableFirst, iterableFind } from "collection-utils";
 
 import { TargetLanguage } from "../TargetLanguage";
-import { Type, ClassType, ClassProperty, EnumType, UnionType } from "../Type";
+import { Type, ClassType, ClassProperty, ArrayType, EnumType, UnionType } from "../Type";
 import { nullableFromUnion, matchType, removeNullFromUnion, isNamedType, directlyReachableTypes } from "../TypeUtils";
 import { Name, Namer, funPrefixNamer, DependencyName } from "../Naming";
 import { Sourcelike, maybeAnnotated } from "../Source";
@@ -212,14 +212,45 @@ const keywords = [
 ];
 
 /**
- * This is a bit problematic. If you are using getters/setter
- * you simply do NOT want to return a unique_ptr from a getter as
- * that on its own violates the pure reason of using unique_ptrs.
- * However just to satisfy the "optional" attribute, .e.g whether a
- * given structure / member exists or not, using shared_ptr is just fine.
- * [obviously std::optional would be the best, but that's C++14]
+ * We can't use boost/std optional. They MUST have the declaration of
+ * the given structure available, meaning we can't forward declare anything.
+ * Which is bad as we have circles in Json schema, which require at least
+ * forward declarability.
+ * The next question, why isn't unique_ptr is enough here?
+ * That problem relates to getter/setter. If using getter/setters we 
+ * can't/mustn't return a unique_ptr out of the class -> as that is the
+ * sole reason why we have declared that as unique_ptr, so that only
+ * the class owns it. We COULD return unique_ptr references, which practically
+ * kills the uniqueness of the smart pointer -> hence we use shared_ptrs.
  */
 const optionalType = "std::shared_ptr";
+
+/**
+ * To be able to support circles in multiple files - 
+ * e.g. class#A using class#B using class#A (obviously not directly,
+ * but in vector or in variant) we can forward declare them;
+ */
+export enum IncludeKind {
+    ForwardDeclare,
+    Include
+}
+
+export enum ObjectType {
+    Class,
+    Enum,
+    Union
+}
+
+export type IncludeRecord = {
+    kind: IncludeKind | undefined; /** How to include that */
+    objectType: ObjectType | undefined; /** What exactly to include */
+};
+
+/**
+ * We map each and every unique type to a include kind, e.g. how
+ * to include the given type
+ */
+export type IncludeMap = Map<string, IncludeRecord>;
 
 export type TypeContext = {
     needsForwardIndirection: boolean;
@@ -228,6 +259,12 @@ export type TypeContext = {
 };
 
 export class CPlusPlusRenderer extends ConvenienceRenderer {
+    /**
+     * For forward declaration practically
+     */
+    private _enumType: string;
+
+    private _generatedFiles: Set<string>;
     private _currentFilename: string | undefined;
     private _allTypeNames: Set<string>;
     private readonly _gettersAndSettersForPropertyName = new Map<Name, [Name, Name, Name]>();
@@ -245,6 +282,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     ) {
         super(targetLanguage, renderContext);
 
+        this._enumType = "int";
         this._namespaceNames = _options.namespace.split("::");
 
         this.typeNamingStyle = _options.typeNamingStyle;
@@ -254,6 +292,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this._gettersAndSettersForPropertyName = new Map();
 
         this._allTypeNames = new Set<string>();
+        this._generatedFiles = new Set<string>();
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
@@ -309,7 +348,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         return getterAndSetterNames;
     }
 
-    protected startFile(basename: Sourcelike, includeHelper: boolean = true, includeGenerators: boolean = false): void {
+    protected startFile(basename: Sourcelike, includeHelper: boolean = true): void {
         assert(this._currentFilename === undefined, "Previous file wasn't finished");
         if (basename !== undefined) {
             this._currentFilename = this.sourcelikeToString(basename);
@@ -364,10 +403,6 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
             if (includeHelper && !this._options.typeSourceStyle) {
                 include("\"helper.hpp\"");
-            }
-
-            if (includeGenerators && !this._options.typeSourceStyle) {
-                include("\"Generators.hpp\"");
             }
         }
         this.ensureBlankLine();
@@ -548,14 +583,18 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 const [getterName, mutableGetterName, setterName] = defined(this._gettersAndSettersForPropertyName.get(name));
                 const rendered = this.cppType(property.type, { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false }, true);
 
-                /** fix for optional type -> e.g. unique_ptrs can't be copied */
+                /** 
+                 * fix for optional type -> e.g. unique_ptrs can't be copied 
+                 * One might as why the "this->xxx = value". Simple if we have
+                 * a member called 'value' value = value will screw up the compiler
+                 */
                 if (property.type instanceof UnionType && property.type.findMember("null") !== undefined) {
                     this.emitLine(rendered, " ", getterName, "() const { return ", name, "; }");
-                    this.emitLine("void ", setterName, "(", rendered, " value) { ", name, " = std::move(value); }");   
+                    this.emitLine("void ", setterName, "(", rendered, " value) { this->", name, " = value; }");   
                 } else {
                     this.emitLine("const ", rendered, " & ", getterName, "() const { return ", name, "; }");
                     this.emitLine(rendered, " & ", mutableGetterName, "() { return ", name, "; }");
-                    this.emitLine("void ", setterName, "(const ", rendered, "& value) { ", name, " = value; }");   
+                    this.emitLine("void ", setterName, "(const ", rendered, "& value) { this->", name, " = value; }");   
                 }
             }
         });
@@ -595,6 +634,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
     protected emitClassFunctions(c: ClassType, className: Name): void {
         const ourQualifier = this.ourQualifier(true);
+
         this.emitBlock(
             ["inline void from_json(const json& _j, ", ourQualifier, className, "& _x)"],
             false,
@@ -700,7 +740,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             }
         });
         this.emitDescription(this.descriptionForType(e));
-        this.emitLine("enum class ", enumName, " { ", caseNames, " };");
+        this.emitLine("enum class ", enumName, " : ", this._enumType, " { ", caseNames, " };");
     }
 
     protected emitUnionTypedefs(u: UnionType, unionName: Name): void {
@@ -724,6 +764,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             { needsForwardIndirection: false, needsOptionalIndirection: false, inJsonNamespace: true },
             false
         );
+
         this.emitBlock(["inline void from_json(const json& _j, ", variantType, "& _x)"], false, () => {
             let onFirst = true;
             for (const [kind, func] of functionForKind) {
@@ -776,6 +817,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
     protected emitEnumFunctions(e: EnumType, enumName: Name): void {
         const ourQualifier = this.ourQualifier(true);
+
         this.emitBlock(["inline void from_json(const json& _j, ", ourQualifier, enumName, "& _x)"], false, () => {
             let onFirst = true;
             this.forEachEnumCase(e, "none", (name, jsonName) => {
@@ -853,7 +895,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.ensureBlankLine();
 
             this.emitBlock([`static ${optionalType}<T> from_json(const json& j)`], false, () => {
-                this.emitLine(`return j.is_null() ? ${optionalType}<T>() : ${optionalType}<T>(new T(j.get<T>()));`);
+                this.emitLine(`if (j.is_null()) return std::unique_ptr<T>(); else return std::unique_ptr<T>(new T(j.get<T>()));`);
             });
         });
     }
@@ -922,16 +964,10 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     protected emitHelper(): void {
         this.startFile("helper.hpp", false);
 
+        this.emitLine(`#include <sstream>`);
         this.emitNamespaces(this._namespaceNames, () => {
             this.emitLine("using nlohmann::json;");
-
-            this.forEachTopLevel(
-                "leading",
-                (t: Type, name: Name) => this.emitTopLevelTypedef(t, name),
-                t => this.namedTypeToNameForTopLevel(t) === undefined
-            );
             this.ensureBlankLine();
-
             this.emitHelperFunctions();
         });
 
@@ -959,8 +995,37 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         );
     }
 
+    protected emitGenerators(): void {
+
+        this.emitNamespaces(this._namespaceNames, () => {
+            this.forEachTopLevel(
+                "leading",
+                (t: Type, name: Name) => this.emitTopLevelTypedef(t, name),
+                t => this.namedTypeToNameForTopLevel(t) === undefined
+            );
+            this.ensureBlankLine();
+        });
+
+        if (!this._options.justTypes && this.haveNamedTypes) {
+            this.emitNamespaces(["nlohmann"], () => {
+                this.forEachObject("leading-and-interposing", (c: ClassType, className: Name) =>
+                    this.emitClassFunctions(c, className)
+                );
+
+                this.forEachEnum("leading-and-interposing", (e: EnumType, enumName: Name) =>
+                    this.emitEnumFunctions(e, enumName)
+                );
+
+                if (this.haveUnions) {
+                    this.emitAllUnionFunctions();
+                }
+            });
+        }
+    }
+
     protected emitSingleSourceStructure(proposedFilename: string): void {
         this.startFile(proposedFilename);
+        this._generatedFiles.add(proposedFilename);
 
         if (this._options.justTypes) {
             this.emitTypes();
@@ -971,21 +1036,109 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         this.emitOptionalHelpers();
                     }
                 });
-            };
+            }
             this.emitNamespaces(this._namespaceNames, () => this.emitTypes());
         }
+
+        this.ensureBlankLine();
+        this.emitGenerators();
+        this.ensureBlankLine();
 
         this.finishFile();
     }
 
-    protected updateIncludes(includes: Set<string>, propertyType: Type): void {
-        const propertyTypes = directlyReachableTypes<string>(propertyType, t => {
-            if (isNamedType(t) &&
-                (t instanceof ClassType ||
-                 t instanceof EnumType ||
-                 t instanceof UnionType)) {
-                    return new Set([ this.sourcelikeToString(this.cppType(t, { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false }, true)) ]);
+    protected updatePropertyTypes(recurseIntoUnion:boolean, level:number, includes: IncludeMap, propertyTypes: Map<string, IncludeRecord>, proposedIncludeKind:IncludeKind|undefined, typeName:string, t:Type, defName:string): void {
+        let propRecord: IncludeRecord = { kind: undefined, objectType: undefined };
+
+        if (t instanceof ClassType) {
+            /** 
+             * Ok. We can NOT forward declare direct class members, e.g. a class type is included
+             * at level#0. HOWEVER if it is not a direct class member (e.g. std::shared_ptr<Class>),
+             * - level > 0 - then we can SURELY forward declare it.
+             */
+            propRecord.objectType = ObjectType.Class;
+            propRecord.kind = proposedIncludeKind !== undefined ? proposedIncludeKind : level === 0 ? IncludeKind.Include : IncludeKind.ForwardDeclare;
+        } else if (t instanceof EnumType) {
+            propRecord.objectType = ObjectType.Enum;
+            propRecord.kind = proposedIncludeKind !== undefined ? proposedIncludeKind : IncludeKind.ForwardDeclare;
+        } else if (t instanceof UnionType) {
+            /** Recurse into the union */
+            const [maybeNull, nonNulls] = removeNullFromUnion(t, true);
+            if (recurseIntoUnion) {
+                if (nonNulls !== undefined) {
+                    for (const tt of nonNulls) {
+                        /**
+                         * We can forward declare ANYTHING in a union, however
+                         * variants we need to include directly (they are typedefs)
+                         */
+                        this.updateIncludes(maybeNull === undefined, level + 1, includes, tt, defName);
+                    }
                 }
+
+                return;
+            }
+
+            /** 
+             * Even if forward declaration is possible, 
+             * but we don't want to check every possible union
+             * member types, simple include the definition.
+             */
+            propRecord.objectType = ObjectType.Union;
+            propRecord.kind = IncludeKind.Include;
+        }
+
+        if (!propertyTypes.has(typeName)) {
+            propertyTypes.set( typeName, propRecord);
+        } else {
+            /** 
+             * We don't care what we have already as a includekind
+             * for the type, we only update this if we want to
+             * set a stronger kind
+             */
+            if (propRecord.kind === IncludeKind.Include) {
+                propertyTypes.set( typeName, propRecord);
+            }
+        }
+    }
+
+    /** 
+     * if forwardDeclare is set to true we force it, level shows how 
+     * deep we are in in the definition
+     */
+    protected updateIncludes(forwardDeclare: boolean | undefined, level:number, includes: IncludeMap, propertyType: Type, defName:string): void {
+        /** God we don't really have custom sets */
+        let propertyTypes: Map<string, IncludeRecord> = new Map();
+
+        /** 
+         * Ok if the propertyType is an union type we can SURELY
+         * forward ANY directly reachable types
+         */
+        let proposedIncludeKind:IncludeKind | undefined = undefined;
+        if (forwardDeclare !== undefined) {
+            proposedIncludeKind = forwardDeclare ? IncludeKind.ForwardDeclare : undefined;
+        } else {
+            proposedIncludeKind = propertyType instanceof UnionType || propertyType instanceof ArrayType ? IncludeKind.ForwardDeclare : undefined;
+        }
+
+        /** Recurse into ArrayType */
+        if (propertyType instanceof ArrayType) {
+            propertyType = propertyType.items;
+            const propertyTypeName = this.sourcelikeToString(this.cppType(propertyType, { needsForwardIndirection: false, needsOptionalIndirection: false, inJsonNamespace: false }, true));
+            /** We surely need to add the array to the include (if the array items are proper types) */
+            this.updatePropertyTypes(false, level+1, includes, propertyTypes, proposedIncludeKind, propertyTypeName, propertyType, defName);
+        }
+
+        directlyReachableTypes<string>(propertyType, t => {
+            const typeName = this.sourcelikeToString(this.cppType(t, { needsForwardIndirection: false, needsOptionalIndirection: false, inJsonNamespace: false }, true));
+
+            if (isNamedType(t)) {
+                this.updatePropertyTypes(true, level, includes, propertyTypes, proposedIncludeKind, typeName, t, defName);
+                return new Set([ typeName ]);
+            } else if (t instanceof ArrayType) {
+                /** We can forward declare anything in an array - if there is any */
+                this.updateIncludes(true, level, includes, t.items, defName);
+                return new Set([ typeName ]);
+            }
 
             return null;
         });
@@ -994,76 +1147,98 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
          * Need to check which elements are included in _allTypeNames and
          * list them as includes
          */
-        propertyTypes.forEach(pt => {
+        propertyTypes.forEach((rec: IncludeRecord, name: string) => {
             this._allTypeNames.forEach(tt => {
                 /** Please note that pt can be "std::unique_ptr<std::vector<Evolution>>" */
-                if (pt.indexOf(tt) !== -1) {
-                    includes.add(tt);
+                if (name.indexOf(tt) !== -1) {
+                    includes.set(tt, rec);
                 }
             });
         });
     }
 
-    protected emitIncludes(c: ClassType | UnionType): void {
+    protected emitIncludes(c: ClassType | UnionType | EnumType, defName: string): void {
         /** 
          * Need to generate "includes", in terms 'c' has members, which
          * are defined by others
          */
-        let includes: Set<string> = new Set<string>();
+        let includes: IncludeMap = new Map();
 
         if (c instanceof UnionType) {
-            const [, nonNulls] = removeNullFromUnion(c, true);
+            const [maybeNull, nonNulls] = removeNullFromUnion(c, true);
             if (nonNulls !== undefined) {
                 for (const t of nonNulls) {
-                    this.updateIncludes(includes, t);
+                    /** 
+                     * We can forward declare ANYTHING in a union, however
+                     * variants we need to include directly (they are typedefs)
+                     */
+                    this.updateIncludes(maybeNull === undefined, 0, includes, t, defName);
                 }
             }
         } else if (c instanceof ClassType) {
             this.forEachClassProperty(c, "none", (_name, _jsonName, property) => {
-                this.updateIncludes(includes, property.type);
+                this.updateIncludes(undefined, 0, includes, property.type, defName);
             });
         }
 
         if (includes.size !== 0) {
-            includes.forEach(i => {
-                const include = (name: string): void => {
-                    this.emitLine(`#include ${name}`);
-                };
-                include("\""+i+".hpp\"");
+
+            let numForwards: number = 0;
+            let numIncludes: number = 0;
+            includes.forEach((rec: IncludeRecord, name: string) => {
+                /** Don't bother including the one we are defining */
+                if (name === defName) {
+                    return;
+                }
+
+                if (rec.kind !== IncludeKind.ForwardDeclare) {
+                    this.emitLine(`#include "${name}.hpp"`);
+                    numIncludes++;
+                } else {
+                    numForwards++;
+                }
             });
+
+            if (numIncludes > 0) {
+                this.ensureBlankLine();
+            }
+
+            if (numForwards > 0) {
+                this.emitNamespaces(this._namespaceNames, () => {
+                    includes.forEach((rec: IncludeRecord, name: string) => {
+                        /** Don't bother including the one we are defining */
+                        if (name === defName) {
+                            return;
+                        }
+
+                        if (rec.kind !== IncludeKind.ForwardDeclare) {
+                            return;
+                        }
+
+                        if (rec.objectType === ObjectType.Class || rec.objectType === ObjectType.Union) {
+                            if (this._options.codeFormat) {
+                                this.emitLine(`class ${name};`);
+                            } else {
+                                this.emitLine(`struct ${name};`);
+                            }
+                        } else if (rec.objectType === ObjectType.Enum) {
+                            this.emitLine(`enum class ${name} : ${this._enumType};`);
+                        }
+                    });
+                });
+            }
 
             this.ensureBlankLine();
         }
     }
 
     protected emitDefinition(d: ClassType | EnumType | UnionType, defName: Name): void {
-        /** 
-         * YES, do NOT include Generators.hpp, as that would end up in
-         * circular reference
-         */
-        this.startFile(this.sourcelikeToString(defName)+".hpp", true);
+        const name = this.sourcelikeToString(defName)+".hpp";
+        this.startFile(name, true);
+        this._generatedFiles.add(name);
 
-        if (d instanceof ClassType || d instanceof UnionType) {
-            this.emitIncludes(d);
-        }
+        this.emitIncludes(d, this.sourcelikeToString(defName));
 
-        /** 
-         * Important fix for multi-source.
-         * as different classes might use the same generic types, e.g.
-         * vector<int64_t>, it means that in multi-source world those
-         * functions will be generated multiple times.
-         * If we have one namespace (e.g. this._namespaceNames), it
-         * would cause a definition collision.
-         * To avoid that we would have - theoretically - 2 options:
-         * a.) generate every from_json/to_json converter into one single
-         * file
-         * b.) generate them in to separate namespaces per type.
-         *
-         * The latter wouldn't work, as if class#A has member class#B,
-         * it would mean that from_json/to_json conversion of class#B 
-         * would have to be in class#A's namespace, which would complicate
-         * things A LOT.
-         */
         this.emitNamespaces(this._namespaceNames, () => {
             this.ensureBlankLine();
             this.emitDescription(this.descriptionForType(d));
@@ -1082,62 +1257,56 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.finishFile();
     }
 
-    protected emitGenerators(proposedFilename: string | undefined): void {
-        this.startFile("Generators.hpp", true);
-
-        if (proposedFilename !== undefined) {
-            this.emitLine(`#include "${proposedFilename}"`);
-            this.ensureBlankLine();
-        } else {
-            this.forEachNamedType(
-                "leading-and-interposing",
-                (c: ClassType, _n: Name) => this.emitIncludes(c),
-                (_e, _n) => {},
-                (u, _n) => this.emitIncludes(u)
-            );
-        }
-
-        if (!this._options.justTypes && this.haveNamedTypes) {
-            this.emitNamespaces(["nlohmann"], () => {
-                this.forEachObject("leading-and-interposing", (c: ClassType, className: Name) =>
-                    this.emitClassFunctions(c, className)
-                );
-
-                this.forEachEnum("leading-and-interposing", (e: EnumType, enumName: Name) =>
-                    this.emitEnumFunctions(e, enumName)
-                );
-
-                if (this.haveUnions) {
-                    this.emitAllUnionFunctions();
-                }
-            });
-        }
-
-        this.finishFile();
-    }
-
     protected emitMultiSourceStructure(proposedFilename: string): void {
-        this.emitHelper();
+        if (!this._options.justTypes && this.haveNamedTypes) {
+            this.emitHelper();
+
+            this.startFile("Generators.hpp", true);
+
+            this._allTypeNames.forEach(t => {
+                this.emitLine(`#include "${t}.hpp"`);
+            });
+
+            this.ensureBlankLine();
+            this.emitGenerators();
+
+            this.finishFile();
+        }
 
         this.forEachNamedType(
             "leading-and-interposing",
-            (c: ClassType, n: Name) => this.emitDefinition(c, n),
-            (e, n) => this.emitDefinition(e, n),
-            (u, n) => this.emitDefinition(u, n)
+            (c: ClassType, n: Name) => {
+                this.emitDefinition(c, n);  
+            },
+            (e, n) => {
+                this.emitDefinition(e, n);
+            },
+            (u, n) => {
+                this.emitDefinition(u, n);
+            }
         );
 
         /**
          * Quite a hack, this is ONLY to satisfy the test subsystem, which
          * explicitly looks for a Toplevel.hpp
          */
-        if (this._allTypeNames.size === 0) {
+        if (!this._generatedFiles.has(proposedFilename)) {
             this.startFile(proposedFilename);
+            this._generatedFiles.forEach(f => {
+                const include = (name: string): void => {
+                    this.emitLine(`#include "${name}"`);
+                };
+                include (f);
+            });
             this.finishFile();
         }
     }
 
     protected emitSourceStructure(proposedFilename: string): void {
+        this._generatedFiles.clear();
+
         /** Gather all the unique/custom types used by the schema */
+        this._allTypeNames.clear();
         this.forEachDeclaration("none", decl => {
             const definedTypes = directlyReachableTypes<string>(decl.type, t => {
                 if (isNamedType(t) &&
@@ -1154,10 +1323,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         });
 
         if (this._options.typeSourceStyle) {
-            this.emitGenerators(proposedFilename);
             this.emitSingleSourceStructure(proposedFilename);
         } else {
-            this.emitGenerators(undefined);
             this.emitMultiSourceStructure(proposedFilename);
         }
     }
