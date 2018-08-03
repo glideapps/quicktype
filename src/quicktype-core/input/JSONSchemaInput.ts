@@ -22,7 +22,12 @@ import {
     iterableFirst
 } from "collection-utils";
 
-import { PrimitiveTypeKind, TransformedStringTypeKind, transformedStringTypeTargetTypeKindsMap } from "../Type";
+import {
+    PrimitiveTypeKind,
+    TransformedStringTypeKind,
+    transformedStringTypeTargetTypeKindsMap,
+    isNumberTypeKind
+} from "../Type";
 import { panic, assertNever, StringMap, assert, defined, StringInput, parseJSON, toString } from "../support/Support";
 import { TypeBuilder } from "../TypeBuilder";
 import { TypeNames } from "../TypeNames";
@@ -473,6 +478,7 @@ export type JSONSchemaAttributes = {
     forType?: TypeAttributes;
     forUnion?: TypeAttributes;
     forObject?: TypeAttributes;
+    forNumber?: TypeAttributes;
     forCases?: TypeAttributes[];
 };
 export type JSONSchemaAttributeProducer = (
@@ -874,6 +880,12 @@ async function addTypesInSchema(
         if (needUnion) {
             const unionTypes: TypeRef[] = [];
 
+            let numberAttributes = emptyTypeAttributes;
+            forEachProducedAttribute(undefined, ({ forNumber }) => {
+                if (forNumber === undefined) return;
+                numberAttributes = combineTypeAttributes("union", numberAttributes, forNumber);
+            });
+
             for (const [name, kind] of [
                 ["null", "null"],
                 ["number", "double"],
@@ -882,7 +894,8 @@ async function addTypesInSchema(
             ] as [JSONSchemaType, PrimitiveTypeKind][]) {
                 if (!includedTypes.has(name)) continue;
 
-                unionTypes.push(typeBuilder.getPrimitiveType(kind));
+                const attributes = isNumberTypeKind(kind) ? numberAttributes : undefined;
+                unionTypes.push(typeBuilder.getPrimitiveType(kind, attributes));
             }
 
             if (needStringEnum) {

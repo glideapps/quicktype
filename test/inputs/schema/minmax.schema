@@ -1,0 +1,61 @@
+{
+  "type": "object",
+  "properties": {
+    "free": { "type": "number" },
+    "min": {
+      "type": "number",
+      "minimum": 3
+    },
+    "max": {
+      "type": "number",
+      "maximum": 5
+    },
+    "minmax": {
+      "type": "number",
+      "minimum": 3,
+      "maximum": 5
+    },
+    "union": {
+      "oneOf": [
+        {
+          "$ref": "#/properties/minmax"
+        },
+        {
+          "type": "number",
+          "minimum": 4,
+          "maximum": 6
+        }
+      ]
+    },
+    "minMaxUnion": {
+      "oneOf": [
+        {
+          "$ref": "#/properties/min"
+        },
+        {
+          "$ref": "#/properties/max"
+        }
+      ]
+    },
+    "intersection": {
+      "allOf": [
+        {
+          "$ref": "#/properties/union/oneOf/0"
+        },
+        {
+          "$ref": "#/properties/union/oneOf/1"
+        }
+      ]
+    },
+    "minMaxIntersection": {
+      "allOf": [
+        {
+          "$ref": "#/properties/min"
+        },
+        {
+          "$ref": "#/properties/max"
+        }
+      ]
+    }
+  }
+}

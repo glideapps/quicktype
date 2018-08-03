@@ -105,5 +105,5 @@ export function minMaxAttributeProducer(
 ): JSONSchemaAttributes | undefined {
     const maybeMinMax = producer(schema, types, "minimum", "maximum");
     if (maybeMinMax === undefined) return undefined;
-    return { forType: minMaxTypeAttributeKind.makeAttributes(maybeMinMax) };
+    return { forNumber: minMaxTypeAttributeKind.makeAttributes(maybeMinMax) };
 }
