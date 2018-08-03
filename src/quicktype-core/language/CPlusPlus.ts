@@ -1023,14 +1023,20 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected emitGenerators(): void {
-        this.emitNamespaces(this._namespaceNames, () => {
-            this.forEachTopLevel(
-                "leading",
-                (t: Type, name: Name) => this.emitTopLevelTypedef(t, name),
-                t => this.namedTypeToNameForTopLevel(t) === undefined
-            );
-        });
-        this.ensureBlankLine();
+        let didEmit: boolean = false;
+        const gathered = this.gatherSource(() =>
+            this.emitNamespaces(this._namespaceNames, () => {
+                didEmit = this.forEachTopLevel(
+                    "none",
+                    (t: Type, name: Name) => this.emitTopLevelTypedef(t, name),
+                    t => this.namedTypeToNameForTopLevel(t) === undefined
+                );
+            })
+        );
+        if (didEmit) {
+            this.emitGatheredSource(gathered);
+            this.ensureBlankLine();
+        }
 
         if (!this._options.justTypes && this.haveNamedTypes) {
             this.emitNamespaces(["nlohmann"], () => {
@@ -1317,7 +1323,6 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitIncludes(d, this.sourcelikeToString(defName));
 
         this.emitNamespaces(this._namespaceNames, () => {
-            this.ensureBlankLine();
             this.emitDescription(this.descriptionForType(d));
             this.ensureBlankLine();
             this.emitLine("using nlohmann::json;");
