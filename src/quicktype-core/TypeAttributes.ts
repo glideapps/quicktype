@@ -1,5 +1,5 @@
 import stringHash = require("string-hash");
-import { mapFilterMap, mapFilter, mapTranspose, mapMap } from "collection-utils";
+import { mapFilterMap, mapFilter, mapTranspose } from "collection-utils";
 
 import { panic, assert } from "./support/Support";
 import { Type, TypeKind } from "./Type";
@@ -12,11 +12,11 @@ export class TypeAttributeKind<T> {
         return kind !== "any";
     }
 
-    combine(_attrs: T[]): T {
+    combine(_attrs: T[]): T | undefined {
         return panic(`Cannot combine type attribute ${this.name}`);
     }
 
-    intersect(attrs: T[]): T {
+    intersect(attrs: T[]): T | undefined {
         return this.combine(attrs);
     }
 
@@ -130,7 +130,7 @@ export function combineTypeAttributes(
         }
     }
 
-    return mapMap(attributesByKind, combine);
+    return mapFilterMap(attributesByKind, combine);
 }
 
 export function makeTypeAttributesInferred(attr: TypeAttributes): TypeAttributes {
