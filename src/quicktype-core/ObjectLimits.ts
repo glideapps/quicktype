@@ -19,7 +19,7 @@ class NumericRangeTypeAttributeKind extends TypeAttributeKind<NumericRange> {
         const result = emptyNumericRange;
         for (const m of arr) {
             if (m.minimum !== undefined) {
-                if (result.minimum == undefined) {
+                if (result.minimum === undefined) {
                     result.minimum = m.minimum;
                 } else if (m.minimum < result.minimum) {
                     result.minimum = m.minimum;
@@ -27,7 +27,7 @@ class NumericRangeTypeAttributeKind extends TypeAttributeKind<NumericRange> {
             }
 
             if (m.maximum !== undefined) {
-                if (result.maximum == undefined) {
+                if (result.maximum === undefined) {
                     result.maximum = m.maximum;
                 } else if (m.maximum < result.maximum) {
                     result.maximum = m.maximum;
@@ -67,17 +67,14 @@ class RegExpPatternTypeAttributeKind extends TypeAttributeKind<string> {
 export const objectRegExpPatternTypeAttributeKind: TypeAttributeKind<string> = new RegExpPatternTypeAttributeKind();
 
 export function objectMinMaxValue(t: Type): NumericRange | undefined {
-console.log ("minmaxval");
     return objectMinMaxValueTypeAttributeKind.tryGetInAttributes(t.getAttributes());
 }
 
 export function objectMinMaxLength(t: Type): NumericRange | undefined {
-console.log ("minmaxlen");
     return objectMinMaxLengthTypeAttributeKind.tryGetInAttributes(t.getAttributes());
 }
 
 export function objectRegExpPattern(t: Type): string | undefined {
-console.log ("regexp");
     return objectRegExpPatternTypeAttributeKind.tryGetInAttributes(t.getAttributes());
 }
 
@@ -89,37 +86,29 @@ export function objectValuesAttributeProducer(
     if (typeof schema !== "object") return undefined;
     if (!types.has("object")) return undefined;
 
-console.log ("bbb");
-
     let attrs:TypeAttributes = emptyTypeAttributes;
-
-console.log ("aaa");
 
     const maybeMinValue = schema.minimum !== undefined && typeof schema.minimum === "number" ? schema.minimum : undefined;
     const maybeMaxValue = schema.maximum !== undefined && typeof schema.maximum === "number" ? schema.maximum : undefined;
-    const minMaxVal : NumericRange = { minimum : maybeMinValue, maximum : maybeMaxValue };
+    const minMaxVal: NumericRange = { minimum : maybeMinValue, maximum : maybeMaxValue };
     if (minMaxVal.minimum !== undefined || minMaxVal.maximum !== undefined) {
-console.log ("minMaxVal: ", minMaxVal);
         const attr = objectMinMaxValueTypeAttributeKind.makeAttributes(minMaxVal);
         attrs = new Map([...attr, ...attrs]);
     }
 
     const maybeMinLength = schema.minLength !== undefined && typeof schema.minLength === "number" ? schema.minLength : undefined;
     const maybeMaxLength = schema.maxLength !== undefined && typeof schema.maxLength === "number" ? schema.maxLength : undefined;
-    const minMaxLen : NumericRange = { minimum : maybeMinLength, maximum : maybeMaxLength };
+    const minMaxLen: NumericRange = { minimum : maybeMinLength, maximum : maybeMaxLength };
     if (minMaxLen.minimum !== undefined || minMaxLen.maximum !== undefined) {
-console.log ("minMaxLen: ", minMaxLen);
         const attr = objectMinMaxLengthTypeAttributeKind.makeAttributes(minMaxLen);
         attrs = new Map([...attr, ...attrs]);
     }
 
     const pattern = schema.pattern !== undefined && typeof schema.pattern === "string" ? schema.pattern : undefined;
     if ( pattern !== undefined) {
-console.log ("pattern: ", pattern);
         const attr = objectRegExpPatternTypeAttributeKind.makeAttributes(pattern);
         attrs = new Map([...attr, ...attrs]);
     }
 
-console.log ("attrs: ", attrs);
     return attrs.size > 0 ? { forType: attrs } : undefined;
 }
