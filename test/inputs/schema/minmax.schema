@@ -57,5 +57,6 @@
         }
       ]
     }
-  }
+  },
+  "required": ["free", "min", "max", "minmax", "union", "minMaxUnion", "intersection", "minMaxIntersection"]
 }
