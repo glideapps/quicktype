@@ -53,7 +53,7 @@ export const cPlusPlusOptions = {
     ),
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     namespace: new StringOption("namespace", "Name of the generated namespace(s)", "NAME", "quicktype"),
-    enumType: new StringOption("enum-type", "Type of enum class", "NAME", "int"),
+    enumType: new StringOption("enum-type", "Type of enum class", "NAME", "int", "secondary"),
     typeNamingStyle: new EnumOption<NamingStyle>("type-style", "Naming style for types", [
         pascalValue,
         underscoreValue,
@@ -88,14 +88,14 @@ export class CPlusPlusTargetLanguage extends TargetLanguage {
     protected getOptions(): Option<any>[] {
         return [
             cPlusPlusOptions.justTypes,
+            cPlusPlusOptions.namespace,
+            cPlusPlusOptions.codeFormat,
             cPlusPlusOptions.typeSourceStyle,
             cPlusPlusOptions.includeLocation,
-            cPlusPlusOptions.codeFormat,
-            cPlusPlusOptions.namespace,
-            cPlusPlusOptions.enumType,
             cPlusPlusOptions.typeNamingStyle,
             cPlusPlusOptions.memberNamingStyle,
-            cPlusPlusOptions.enumeratorNamingStyle
+            cPlusPlusOptions.enumeratorNamingStyle,
+            cPlusPlusOptions.enumType
         ];
     }
 
