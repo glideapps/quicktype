@@ -43,6 +43,7 @@ import { Input } from "./Inputs";
 import { descriptionAttributeProducer } from "../Description";
 import { accessorNamesAttributeProducer } from "../AccessorNames";
 import { enumValuesAttributeProducer } from "../EnumValues";
+import { objectValuesAttributeProducer } from "../ObjectLimits";
 
 export enum PathElementKind {
     Root,
@@ -1054,7 +1055,12 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
         additionalAttributeProducers: JSONSchemaAttributeProducer[] = [],
         private readonly _additionalSchemaAddresses: ReadonlyArray<string> = []
     ) {
-        this._attributeProducers = [descriptionAttributeProducer, accessorNamesAttributeProducer, enumValuesAttributeProducer].concat(
+        this._attributeProducers = [
+            descriptionAttributeProducer, 
+            accessorNamesAttributeProducer, 
+            enumValuesAttributeProducer,
+            objectValuesAttributeProducer
+        ].concat(
             additionalAttributeProducers
         );
     }
