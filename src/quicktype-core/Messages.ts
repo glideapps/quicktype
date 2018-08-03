@@ -11,6 +11,7 @@ export type ErrorProperties =
       }
     | { kind: "MiscReadError"; properties: { fileOrURL: string; message: string } }
     | { kind: "MiscUnicodeHighSurrogateWithoutLowSurrogate"; properties: {} }
+    | { kind: "MiscInvalidMinMaxConstraint"; properties: { min: number; max: number } }
 
     // JSON Schema input
     | { kind: "SchemaArrayIsInvalidSchema"; properties: { ref: Ref } }
@@ -83,6 +84,7 @@ const errorMessages: ErrorMessages = {
     MiscJSONParseError: "Syntax error in ${description} JSON ${address}: ${message}",
     MiscReadError: "Cannot read from file or URL ${fileOrURL}: ${message}",
     MiscUnicodeHighSurrogateWithoutLowSurrogate: "Malformed unicode: High surrogate not followed by low surrogate",
+    MiscInvalidMinMaxConstraint: "Invalid min-max constraint: ${min}-${max}",
 
     // JSON Schema input
     SchemaArrayIsInvalidSchema: "An array is not a valid JSON Schema at ${ref}",
