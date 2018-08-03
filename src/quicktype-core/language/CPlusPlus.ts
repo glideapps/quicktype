@@ -642,7 +642,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             }
         });
 
-        return res.size == 0 ? undefined : res;
+        return res.size === 0 ? undefined : res;
     }
 
     protected emitClass(c: ClassType, className: Name): void {
@@ -658,7 +658,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     let numEmits:number = 0;
                     constraints.forEach((initializer: string, _propName: string) => {
                         numEmits++;
-                        if (numEmits == constraints.size) {
+                        if (numEmits === constraints.size) {
                             this.emitLine("    ", initializer);
                         } else {
                             this.emitLine("    ", initializer, ",");

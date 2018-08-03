@@ -33,7 +33,7 @@ export const objectPatternTypeAttributeKind: TypeAttributeKind<ObjectValueMap> =
 function objectNumValue(objectValues: ObjectValueMap | undefined, typeName: string): number | undefined {
     if (objectValues === undefined) return undefined;
     const value = objectValues.get(typeName);
-    if (value == undefined) return undefined;
+    if (value === undefined) return undefined;
     return +value;
 }
 
