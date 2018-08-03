@@ -1,65 +1,84 @@
-import { mapMergeInto, mapFilterMap, mapFromObject } from "collection-utils";
-import { ClassType } from "./Type";
+import { Type } from "./Type";
 import { emptyTypeAttributes, TypeAttributes, TypeAttributeKind } from "./TypeAttributes";
 import { JSONSchema } from "./input/JSONSchemaStore";
 import { Ref, JSONSchemaType, JSONSchemaAttributes } from "./input/JSONSchemaInput";
 
-export type ObjectValueMap = Map<string, string>;
+export type NumericRange = {
+    minimum: number | undefined;
+    maximum: number | undefined;
+};
 
-class ObjectValuesTypeAttributeKind extends TypeAttributeKind<ObjectValueMap> {
+export const emptyNumericRange: NumericRange = { minimum : undefined, maximum : undefined };
+
+class NumericRangeTypeAttributeKind extends TypeAttributeKind<NumericRange> {
     constructor(kind:string) {
         super(kind);
     }
 
-    combine(arr: ObjectValueMap[]): ObjectValueMap {
-        const result = new Map<string, string>();
+    combine(arr: NumericRange[]): NumericRange {
+        const result = emptyNumericRange;
         for (const m of arr) {
-            mapMergeInto(result, m);
+            if (m.minimum !== undefined) {
+                if (result.minimum == undefined) {
+                    result.minimum = m.minimum;
+                } else if (m.minimum < result.minimum) {
+                    result.minimum = m.minimum;
+                }
+            }
+
+            if (m.maximum !== undefined) {
+                if (result.maximum == undefined) {
+                    result.maximum = m.maximum;
+                } else if (m.maximum < result.maximum) {
+                    result.maximum = m.maximum;
+                }
+            }
         }
         return result;
     }
 
-    makeInferred(_: ObjectValueMap) {
+    makeInferred(_: NumericRange) {
         return undefined;
     }
 }
 
-export const objectMinValueTypeAttributeKind: TypeAttributeKind<ObjectValueMap> = new ObjectValuesTypeAttributeKind("objectMinValue");
-export const objectMaxValueTypeAttributeKind: TypeAttributeKind<ObjectValueMap> = new ObjectValuesTypeAttributeKind("objectMaxValue");
-export const objectMinLengthTypeAttributeKind: TypeAttributeKind<ObjectValueMap> = new ObjectValuesTypeAttributeKind("objectMinLength");
-export const objectMaxLengthTypeAttributeKind: TypeAttributeKind<ObjectValueMap> = new ObjectValuesTypeAttributeKind("objectMaxLength");
-export const objectPatternTypeAttributeKind: TypeAttributeKind<ObjectValueMap> = new ObjectValuesTypeAttributeKind("objectPattern");
+export const objectMinMaxValueTypeAttributeKind: TypeAttributeKind<NumericRange> = new NumericRangeTypeAttributeKind("objectMinMaxValue");
+export const objectMinMaxLengthTypeAttributeKind: TypeAttributeKind<NumericRange> = new NumericRangeTypeAttributeKind("objectMinMaxLength");
 
-function objectNumValue(objectValues: ObjectValueMap | undefined, typeName: string): number | undefined {
-    if (objectValues === undefined) return undefined;
-    const value = objectValues.get(typeName);
-    if (value === undefined) return undefined;
-    return +value;
+class RegExpPatternTypeAttributeKind extends TypeAttributeKind<string> {
+    constructor() {
+        super("regExpPattern");
+    }
+
+    combine(attrs: string[]): string {
+        /** FIXME!!! How to combine strings? */
+        let res:string = "";
+        for (const m of attrs) {
+            if (m !== undefined) { res = m; }
+        }
+        return res;
+    }
+
+    makeInferred(_: string): undefined {
+        return undefined;
+    }
 }
 
-function objectStringValue(objectValues: ObjectValueMap | undefined, typeName: string): string | undefined {
-    if (objectValues === undefined) return undefined;
-    return objectValues.get(typeName);
+export const objectRegExpPatternTypeAttributeKind: TypeAttributeKind<string> = new RegExpPatternTypeAttributeKind();
+
+export function objectMinMaxValue(t: Type): NumericRange | undefined {
+console.log ("minmaxval");
+    return objectMinMaxValueTypeAttributeKind.tryGetInAttributes(t.getAttributes());
 }
 
-export function objectMinimumValue(typeName: string, t: ClassType): number | undefined {
-    return objectNumValue(objectMinValueTypeAttributeKind.tryGetInAttributes(t.getAttributes()), typeName);
+export function objectMinMaxLength(t: Type): NumericRange | undefined {
+console.log ("minmaxlen");
+    return objectMinMaxLengthTypeAttributeKind.tryGetInAttributes(t.getAttributes());
 }
 
-export function objectMaximumValue(typeName: string, t: ClassType): number | undefined {
-    return objectNumValue(objectMaxValueTypeAttributeKind.tryGetInAttributes(t.getAttributes()), typeName);
-}
-
-export function objectMinimumLength(typeName: string, t: ClassType): number | undefined {
-    return objectNumValue(objectMinLengthTypeAttributeKind.tryGetInAttributes(t.getAttributes()), typeName);
-}
-
-export function objectMaximumLength(typeName: string, t: ClassType): number | undefined {
-    return objectNumValue(objectMaxLengthTypeAttributeKind.tryGetInAttributes(t.getAttributes()), typeName);
-}
-
-export function objectPattern(typeName: string, t: ClassType): string | undefined {
-    return objectStringValue(objectPatternTypeAttributeKind.tryGetInAttributes(t.getAttributes()), typeName);
+export function objectRegExpPattern(t: Type): string | undefined {
+console.log ("regexp");
+    return objectRegExpPatternTypeAttributeKind.tryGetInAttributes(t.getAttributes());
 }
 
 export function objectValuesAttributeProducer(
@@ -68,90 +87,39 @@ export function objectValuesAttributeProducer(
     types: Set<JSONSchemaType>
 ): JSONSchemaAttributes | undefined {
     if (typeof schema !== "object") return undefined;
+    if (!types.has("object")) return undefined;
+
+console.log ("bbb");
 
     let attrs:TypeAttributes = emptyTypeAttributes;
 
-    if (types.has("object") && typeof schema.properties === "object") {
-        const propertyMins = mapFilterMap(mapFromObject<any>(schema.properties), propSchema => {
-            if (typeof propSchema === "object") {
-                const maybeMinValue = propSchema.minimum;
-                if (maybeMinValue !== undefined) {
-                    return String(maybeMinValue);
-                }
-            }
+console.log ("aaa");
 
-            return undefined;
-        });
-
-        if (propertyMins.size > 0) {
-            const minAttr = objectMinValueTypeAttributeKind.makeAttributes(propertyMins);
-            attrs = new Map([...minAttr, ...attrs]);
-        }
-
-        const propertyMaxs = mapFilterMap(mapFromObject<any>(schema.properties), propSchema => {
-            if (typeof propSchema === "object") {
-                const maybeMaxValue = propSchema.maximum;
-                if (maybeMaxValue !== undefined) {
-                    return String(maybeMaxValue);
-                }
-            }
-
-            return undefined;
-        });
-
-        if (propertyMaxs.size > 0) {
-            const maxAttr = objectMaxValueTypeAttributeKind.makeAttributes(propertyMaxs);
-            attrs = new Map([...maxAttr, ...attrs]);
-        }
-
-        const propertyMinLens = mapFilterMap(mapFromObject<any>(schema.properties), propSchema => {
-            if (typeof propSchema === "object") {
-                const maybeMinLengthValue = propSchema.minLength;
-                if (maybeMinLengthValue !== undefined) {
-                    return String(maybeMinLengthValue);
-                }
-            }
-
-            return undefined;
-        });
-
-        if (propertyMinLens.size > 0) {
-            const minLenAttr = objectMinLengthTypeAttributeKind.makeAttributes(propertyMinLens);
-            attrs = new Map([...minLenAttr, ...attrs]);
-        }
-
-        const propertyMaxLens = mapFilterMap(mapFromObject<any>(schema.properties), propSchema => {
-            if (typeof propSchema === "object") {
-                const maybeMaxLengthValue = propSchema.maxLength;
-                if (maybeMaxLengthValue !== undefined) {
-                    return String(maybeMaxLengthValue);
-                }
-            }
-
-            return undefined;
-        });
-
-        if (propertyMaxLens.size > 0) {
-            const maxLenAttr = objectMaxLengthTypeAttributeKind.makeAttributes(propertyMaxLens);
-            attrs = new Map([...maxLenAttr, ...attrs]);
-        }
-
-        const propertyPatterns = mapFilterMap(mapFromObject<any>(schema.properties), propSchema => {
-            if (typeof propSchema === "object") {
-                const maybePattern = propSchema.pattern;
-                if (maybePattern !== undefined) {
-                    return maybePattern;
-                }
-            }
-
-            return undefined;
-        });
-
-        if (propertyPatterns.size > 0) {
-            const patts = objectPatternTypeAttributeKind.makeAttributes(propertyPatterns);
-            attrs = new Map([...patts, ...attrs]);
-        }
+    const maybeMinValue = schema.minimum !== undefined && typeof schema.minimum === "number" ? schema.minimum : undefined;
+    const maybeMaxValue = schema.maximum !== undefined && typeof schema.maximum === "number" ? schema.maximum : undefined;
+    const minMaxVal : NumericRange = { minimum : maybeMinValue, maximum : maybeMaxValue };
+    if (minMaxVal.minimum !== undefined || minMaxVal.maximum !== undefined) {
+console.log ("minMaxVal: ", minMaxVal);
+        const attr = objectMinMaxValueTypeAttributeKind.makeAttributes(minMaxVal);
+        attrs = new Map([...attr, ...attrs]);
     }
 
-    return attrs.size > 0 ? { forObject: attrs } : undefined;
+    const maybeMinLength = schema.minLength !== undefined && typeof schema.minLength === "number" ? schema.minLength : undefined;
+    const maybeMaxLength = schema.maxLength !== undefined && typeof schema.maxLength === "number" ? schema.maxLength : undefined;
+    const minMaxLen : NumericRange = { minimum : maybeMinLength, maximum : maybeMaxLength };
+    if (minMaxLen.minimum !== undefined || minMaxLen.maximum !== undefined) {
+console.log ("minMaxLen: ", minMaxLen);
+        const attr = objectMinMaxLengthTypeAttributeKind.makeAttributes(minMaxLen);
+        attrs = new Map([...attr, ...attrs]);
+    }
+
+    const pattern = schema.pattern !== undefined && typeof schema.pattern === "string" ? schema.pattern : undefined;
+    if ( pattern !== undefined) {
+console.log ("pattern: ", pattern);
+        const attr = objectRegExpPatternTypeAttributeKind.makeAttributes(pattern);
+        attrs = new Map([...attr, ...attrs]);
+    }
+
+console.log ("attrs: ", attrs);
+    return attrs.size > 0 ? { forType: attrs } : undefined;
 }

@@ -23,11 +23,9 @@ import { RenderContext } from "../Renderer";
 import { getAccessorName } from "../AccessorNames";
 import { enumCaseValues } from "../EnumValues";
 import {
-    objectMinimumValue, 
-    objectMaximumValue, 
-    objectMinimumLength, 
-    objectMaximumLength,
-    objectPattern,
+    objectMinMaxValue, 
+    objectMinMaxLength, 
+    objectRegExpPattern,
 } from "../ObjectLimits";
 
 const pascalValue: [string, NamingStyle] = ["pascal-case", "pascal"];
@@ -647,27 +645,23 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
     protected generateClassConstraints(c: ClassType): Map<string, string> | undefined {
         let res: Map<string,string> = new Map<string, string>();
-        this.forEachClassProperty(c, "none", (_name, jsonName, _property) => {
+        this.forEachClassProperty(c, "none", (_name, jsonName, property) => {
             let constrArg:string="(";
-            const minValue = objectMinimumValue(jsonName, c);
-            constrArg += minValue === undefined ? "boost::none" : minValue;
+            const minMaxValue = objectMinMaxValue(property.type);
+            constrArg += minMaxValue !== undefined && minMaxValue.minimum !== undefined ? minMaxValue.minimum : "boost::none";
             constrArg += ", ";
-            const maxValue = objectMaximumValue(jsonName, c);
-            constrArg += maxValue === undefined ? "boost::none" : maxValue;
+            constrArg += minMaxValue !== undefined && minMaxValue.maximum !== undefined ? minMaxValue.maximum : "boost::none";
             constrArg += ", ";
-            const minLength = objectMinimumLength(jsonName, c);
-            constrArg += minLength === undefined ? "boost::none" : minLength;
+            const minMaxLength = objectMinMaxLength(property.type);
+            constrArg += minMaxLength !== undefined && minMaxLength.minimum !== undefined ? minMaxLength.minimum : "boost::none";
             constrArg += ", ";
-            const maxLength = objectMaximumLength(jsonName, c);
-            constrArg += maxLength === undefined ? "boost::none" : maxLength;
+            constrArg += minMaxLength !== undefined && minMaxLength.maximum !== undefined ? minMaxLength.maximum : "boost::none";
             constrArg += ", ";
-            const pattern = objectPattern(jsonName, c);
+            const pattern = objectRegExpPattern(property.type);
             constrArg += pattern === undefined ? "boost::none" : "std::string(\""+pattern+"\")";            constrArg += ")";
 
-            if (minValue !== undefined ||
-                maxValue !== undefined ||
-                minLength !== undefined ||
-                maxLength !== undefined ||
+            if (minMaxValue !== undefined ||
+                minMaxLength !== undefined ||
                 pattern !== undefined) {
                 res.set(jsonName, jsonName+"Constraint"+constrArg);
             }
@@ -1146,13 +1140,17 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
     }
 
-    protected emitHelper(): void {
-        this.startFile("helper.hpp", false);
-
+    protected emitExtraIncludes(): void {
         if (this._options.codeFormat) {
             this.emitLine(`#include <boost/optional.hpp>`);
             this.emitLine(`#include <stdexcept>`);
         }
+    }
+
+    protected emitHelper(): void {
+        this.startFile("helper.hpp", false);
+
+        this.emitExtraIncludes();
 
         this.emitLine(`#include <sstream>`);
         this.ensureBlankLine();
@@ -1223,6 +1221,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     protected emitSingleSourceStructure(proposedFilename: string): void {
         this.startFile(proposedFilename);
         this._generatedFiles.add(proposedFilename);
+
+        this.emitExtraIncludes();
 
         if (this._options.justTypes) {
             this.emitTypes();
