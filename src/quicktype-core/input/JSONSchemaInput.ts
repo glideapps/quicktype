@@ -22,7 +22,12 @@ import {
     iterableFirst
 } from "collection-utils";
 
-import { PrimitiveTypeKind, TransformedStringTypeKind, transformedStringTypeTargetTypeKindsMap } from "../Type";
+import {
+    PrimitiveTypeKind,
+    TransformedStringTypeKind,
+    transformedStringTypeTargetTypeKindsMap,
+    isNumberTypeKind
+} from "../Type";
 import { panic, assertNever, StringMap, assert, defined, StringInput, parseJSON, toString } from "../support/Support";
 import { TypeBuilder } from "../TypeBuilder";
 import { TypeNames } from "../TypeNames";
@@ -43,6 +48,7 @@ import { Input } from "./Inputs";
 import { descriptionAttributeProducer } from "../Description";
 import { accessorNamesAttributeProducer } from "../AccessorNames";
 import { enumValuesAttributeProducer } from "../EnumValues";
+import { minMaxAttributeProducer } from "../Constraints";
 
 export enum PathElementKind {
     Root,
@@ -472,6 +478,8 @@ export type JSONSchemaAttributes = {
     forType?: TypeAttributes;
     forUnion?: TypeAttributes;
     forObject?: TypeAttributes;
+    forNumber?: TypeAttributes;
+    forString?: TypeAttributes;
     forCases?: TypeAttributes[];
 };
 export type JSONSchemaAttributeProducer = (
@@ -700,17 +708,31 @@ async function addTypesInSchema(
             }
         }
 
+        function combineProducedAttributes(
+            f: (attributes: JSONSchemaAttributes) => TypeAttributes | undefined
+        ): TypeAttributes {
+            let result = emptyTypeAttributes;
+            forEachProducedAttribute(undefined, attr => {
+                const maybeAttributes = f(attr);
+                if (maybeAttributes === undefined) return;
+                result = combineTypeAttributes("union", result, maybeAttributes);
+            });
+            return result;
+        }
+
         function makeAttributes(attributes: TypeAttributes): TypeAttributes {
             if (schema.oneOf === undefined) {
-                forEachProducedAttribute(undefined, ({ forType, forUnion, forCases }) => {
-                    assert(
-                        forUnion === undefined && forCases === undefined,
-                        "We can't have attributes for unions and cases if we don't have a union"
-                    );
-                    if (forType !== undefined) {
-                        attributes = combineTypeAttributes("union", attributes, forType);
-                    }
-                });
+                attributes = combineTypeAttributes(
+                    "union",
+                    attributes,
+                    combineProducedAttributes(({ forType, forUnion, forCases }) => {
+                        assert(
+                            forUnion === undefined && forCases === undefined,
+                            "We can't have attributes for unions and cases if we don't have a union"
+                        );
+                        return forType;
+                    })
+                );
             }
             return modifyTypeNames(attributes, maybeTypeNames => {
                 const typeNames = defined(maybeTypeNames);
@@ -733,12 +755,12 @@ async function addTypesInSchema(
         typeAttributes = makeAttributes(typeAttributes);
         const inferredAttributes = makeTypeAttributesInferred(typeAttributes);
 
-        function makeStringType(): TypeRef {
+        function makeStringType(attributes: TypeAttributes): TypeRef {
             const kind = typeKindForJSONSchemaFormat(schema.format);
             if (kind === undefined) {
-                return typeBuilder.getStringType(inferredAttributes, StringTypes.unrestricted);
+                return typeBuilder.getStringType(attributes, StringTypes.unrestricted);
             } else {
-                return typeBuilder.getPrimitiveType(kind, inferredAttributes);
+                return typeBuilder.getPrimitiveType(kind, attributes);
             }
         }
 
@@ -798,12 +820,11 @@ async function addTypesInSchema(
                 additionalProperties = schema.patternProperties[".*"];
             }
 
-            let objectAttributes = inferredAttributes;
-
-            forEachProducedAttribute(undefined, ({ forObject }) => {
-                if (forObject === undefined) return;
-                objectAttributes = combineTypeAttributes("union", objectAttributes, forObject);
-            });
+            const objectAttributes = combineTypeAttributes(
+                "union",
+                inferredAttributes,
+                combineProducedAttributes(({ forObject }) => forObject)
+            );
 
             return await makeObject(loc, objectAttributes, properties, required, additionalProperties);
         }
@@ -873,6 +894,8 @@ async function addTypesInSchema(
         if (needUnion) {
             const unionTypes: TypeRef[] = [];
 
+            const numberAttributes = combineProducedAttributes(({ forNumber }) => forNumber);
+
             for (const [name, kind] of [
                 ["null", "null"],
                 ["number", "double"],
@@ -881,14 +904,21 @@ async function addTypesInSchema(
             ] as [JSONSchemaType, PrimitiveTypeKind][]) {
                 if (!includedTypes.has(name)) continue;
 
-                unionTypes.push(typeBuilder.getPrimitiveType(kind));
+                const attributes = isNumberTypeKind(kind) ? numberAttributes : undefined;
+                unionTypes.push(typeBuilder.getPrimitiveType(kind, attributes));
             }
+
+            const stringAttributes = combineTypeAttributes(
+                "union",
+                inferredAttributes,
+                combineProducedAttributes(({ forString }) => forString)
+            );
 
             if (needStringEnum) {
                 const cases = (enumArray as any[]).filter(x => typeof x === "string") as string[];
-                unionTypes.push(typeBuilder.getStringType(inferredAttributes, StringTypes.fromCases(cases)));
+                unionTypes.push(typeBuilder.getStringType(stringAttributes, StringTypes.fromCases(cases)));
             } else if (includedTypes.has("string")) {
-                unionTypes.push(makeStringType());
+                unionTypes.push(makeStringType(stringAttributes));
             }
 
             if (includeArray) {
@@ -1054,9 +1084,12 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
         additionalAttributeProducers: JSONSchemaAttributeProducer[] = [],
         private readonly _additionalSchemaAddresses: ReadonlyArray<string> = []
     ) {
-        this._attributeProducers = [descriptionAttributeProducer, accessorNamesAttributeProducer, enumValuesAttributeProducer].concat(
-            additionalAttributeProducers
-        );
+        this._attributeProducers = [
+            descriptionAttributeProducer,
+            accessorNamesAttributeProducer,
+            enumValuesAttributeProducer,
+            minMaxAttributeProducer
+        ].concat(additionalAttributeProducers);
     }
 
     get needIR(): boolean {

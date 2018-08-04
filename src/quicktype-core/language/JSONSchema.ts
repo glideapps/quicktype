@@ -17,6 +17,7 @@ import { StringTypeMapping, getNoStringTypeMapping } from "../TypeBuilder";
 import { descriptionTypeAttributeKind } from "../Description";
 import { Option } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
+import { minMaxTypeAttributeKind } from "../Constraints";
 
 export class JSONSchemaTargetLanguage extends TargetLanguage {
     constructor() {
@@ -113,6 +114,18 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
         addDescription(schema, description);
     }
 
+    private addConstraints(t: Type, schema: Schema): void {
+        const minmax = this.typeGraph.attributeStore.tryGet(minMaxTypeAttributeKind, t);
+        if (minmax === undefined) return;
+        const [min, max] = minmax;
+        if (min !== undefined) {
+            schema.minimum = min;
+        }
+        if (max !== undefined) {
+            schema.maximum = max;
+        }
+    }
+
     private schemaForType = (t: Type): Schema => {
         const schema = matchTypeExhaustive<{ [name: string]: any }>(
             t,
@@ -147,6 +160,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
         );
         if (schema.$ref === undefined) {
             this.addDescription(t, schema);
+            this.addConstraints(t, schema);
         }
         return schema;
     };
