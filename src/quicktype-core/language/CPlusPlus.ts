@@ -23,10 +23,10 @@ import { RenderContext } from "../Renderer";
 import { getAccessorName } from "../AccessorNames";
 import { enumCaseValues } from "../EnumValues";
 import {
-    objectMinMaxValue, 
-    objectMinMaxLength, 
-    objectRegExpPattern,
-} from "../ObjectLimits";
+    minMaxValue, 
+    minMaxLength, 
+    pattern,
+} from "../Constraints";
 
 const pascalValue: [string, NamingStyle] = ["pascal-case", "pascal"];
 const underscoreValue: [string, NamingStyle] = ["underscore-case", "underscore"];
@@ -649,22 +649,23 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         let res: Map<string,string> = new Map<string, string>();
         this.forEachClassProperty(c, "none", (_name, jsonName, property) => {
             let constrArg:string="(";
-            const minMaxValue = objectMinMaxValue(property.type);
-            constrArg += minMaxValue !== undefined && minMaxValue.minimum !== undefined ? minMaxValue.minimum : "boost::none";
+            const minmaxval = minMaxValue(property.type);
+            constrArg += minmaxval !== undefined && minmaxval[0] !== undefined ? minmaxval[0] : "boost::none";
             constrArg += ", ";
-            constrArg += minMaxValue !== undefined && minMaxValue.maximum !== undefined ? minMaxValue.maximum : "boost::none";
+            constrArg += minmaxval !== undefined && minmaxval[1] !== undefined ? minmaxval[1] : "boost::none";
             constrArg += ", ";
-            const minMaxLength = objectMinMaxLength(property.type);
-            constrArg += minMaxLength !== undefined && minMaxLength.minimum !== undefined ? minMaxLength.minimum : "boost::none";
+            const minmaxlen = minMaxLength(property.type);
+            constrArg += minmaxlen !== undefined && minmaxlen[0] !== undefined ? minmaxlen[0] : "boost::none";
             constrArg += ", ";
-            constrArg += minMaxLength !== undefined && minMaxLength.maximum !== undefined ? minMaxLength.maximum : "boost::none";
+            constrArg += minmaxlen !== undefined && minmaxlen[1] !== undefined ? minmaxlen[1] : "boost::none";
             constrArg += ", ";
-            const pattern = objectRegExpPattern(property.type);
-            constrArg += pattern === undefined ? "boost::none" : "std::string(\""+pattern+"\")";            constrArg += ")";
+            const patt = pattern(property.type);
+            constrArg += patt === undefined ? "boost::none" : "std::string(\""+patt+"\")";
+            constrArg += ")";
 
-            if (minMaxValue !== undefined ||
-                minMaxLength !== undefined ||
-                pattern !== undefined) {
+            if (minmaxval !== undefined ||
+                minmaxlen !== undefined ||
+                patt !== undefined) {
                 res.set(jsonName, jsonName+"Constraint"+constrArg);
             }
         });
