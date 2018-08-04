@@ -149,8 +149,9 @@ export class PatternTypeAttributeKind extends TypeAttributeKind<string> {
         return patt;
     }
 
-    intersect(_arr: string[]): string {
-        return messageError("MiscMustntIntersectStringAttribute", {});
+    intersect(_arr: string[]): string | undefined {
+        /** FIXME!!! what is the intersection of regexps? */
+        return undefined;
     }
 
     makeInferred(_: string): undefined {
