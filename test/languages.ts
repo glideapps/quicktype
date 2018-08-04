@@ -1,6 +1,8 @@
 import { RendererOptions } from "../dist/quicktype-core/Run";
 import * as process from "process";
 
+export type LanguageFeature = "integer-string" | "bool-string";
+
 export interface Language {
   name: string;
   base: string;
@@ -10,7 +12,7 @@ export interface Language {
   diffViaSchema: boolean;
   skipDiffViaSchema: string[];
   allowMissingNull: boolean;
-  handlesStringifiedIntegers?: boolean;
+  features: LanguageFeature[];
   output: string;
   topLevel: string;
   skipJSON: string[];
@@ -32,7 +34,7 @@ export const CSharpLanguage: Language = {
   diffViaSchema: true,
   skipDiffViaSchema: ["34702.json"],
   allowMissingNull: false,
-  handlesStringifiedIntegers: true,
+  features: ["integer-string", "bool-string"],
   output: "QuickType.cs",
   topLevel: "TopLevel",
   skipJSON: [
@@ -67,6 +69,7 @@ export const JavaLanguage: Language = {
   diffViaSchema: false,
   skipDiffViaSchema: [],
   allowMissingNull: false,
+  features: [],
   output: "src/main/java/io/quicktype/TopLevel.java",
   topLevel: "TopLevel",
   skipJSON: ["identifiers.json", "simple-identifiers.json", "nst-test-suite.json"],
@@ -97,7 +100,7 @@ export const PythonLanguage: Language = {
     "f6a65.json"
   ],
   allowMissingNull: false,
-  handlesStringifiedIntegers: true,
+  features: ["integer-string", "bool-string"],
   output: "quicktype.py",
   topLevel: "TopLevel",
   skipJSON: [
@@ -140,6 +143,7 @@ export const RustLanguage: Language = {
     "f6a65.json"
   ],
   allowMissingNull: false,
+  features: [],
   output: "module_under_test.rs",
   topLevel: "TopLevel",
   skipJSON: [],
@@ -217,6 +221,7 @@ export const RubyLanguage: Language = {
     "e8b04.json"
   ],
   allowMissingNull: true,
+  features: [],
   output: "TopLevel.rb",
   topLevel: "TopLevel",
   skipJSON: [],
@@ -249,6 +254,7 @@ export const GoLanguage: Language = {
     "e8b04.json"
   ],
   allowMissingNull: false,
+  features: [],
   output: "quicktype.go",
   topLevel: "TopLevel",
   skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json", "nst-test-suite.json"],
@@ -290,6 +296,7 @@ export const CPlusPlusLanguage: Language = {
     "fcca3.json"
   ],
   allowMissingNull: false,
+  features: [],
   output: "TopLevel.hpp",
   topLevel: "TopLevel",
   skipJSON: [
@@ -349,6 +356,7 @@ export const ElmLanguage: Language = {
     "f6a65.json"
   ],
   allowMissingNull: false,
+  features: [],
   output: "QuickType.elm",
   topLevel: "QuickType",
   skipJSON: [
@@ -405,6 +413,7 @@ export const SwiftLanguage: Language = {
     "f82d9.json"
   ],
   allowMissingNull: true,
+  features: [],
   output: "quicktype.swift",
   topLevel: "TopLevel",
   skipJSON: [
@@ -446,6 +455,7 @@ export const ObjectiveCLanguage: Language = {
   diffViaSchema: false,
   skipDiffViaSchema: [],
   allowMissingNull: true,
+  features: [],
   output: "QTTopLevel.m",
   topLevel: "QTTopLevel",
   skipJSON: [
@@ -494,6 +504,7 @@ export const TypeScriptLanguage: Language = {
     "e8b04.json"
   ],
   allowMissingNull: false,
+  features: [],
   output: "TopLevel.ts",
   topLevel: "TopLevel",
   skipJSON: [],
@@ -514,6 +525,7 @@ export const JavaScriptLanguage: Language = {
   diffViaSchema: false,
   skipDiffViaSchema: [],
   allowMissingNull: false,
+  features: [],
   output: "TopLevel.js",
   topLevel: "TopLevel",
   skipJSON: [],
@@ -533,6 +545,7 @@ export const FlowLanguage: Language = {
   diffViaSchema: false,
   skipDiffViaSchema: [],
   allowMissingNull: false,
+  features: [],
   output: "TopLevel.js",
   topLevel: "TopLevel",
   skipJSON: [],
@@ -561,6 +574,7 @@ export const KotlinLanguage: Language = {
     "76ae1.json"
   ],
   allowMissingNull: true,
+  features: [],
   output: "TopLevel.kt",
   topLevel: "TopLevel",
   skipJSON: [
