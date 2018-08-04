@@ -120,7 +120,7 @@ export function minMaxLengthAttributeProducer(
 ): JSONSchemaAttributes | undefined {
     const maybeMinMaxLength = producer(schema, types, "minLength", "maxLength");
     if (maybeMinMaxLength === undefined) return undefined;
-    return { forNumber: minMaxLengthTypeAttributeKind.makeAttributes(maybeMinMaxLength) };
+    return { forString: minMaxLengthTypeAttributeKind.makeAttributes(maybeMinMaxLength) };
 }
 
 export function minMaxValue(t: Type): MinMaxConstraint | undefined {
