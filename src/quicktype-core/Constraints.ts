@@ -131,13 +131,22 @@ export function minMaxLength(t: Type): MinMaxConstraint | undefined {
     return minMaxLengthTypeAttributeKind.tryGetInAttributes(t.getAttributes());
 }
 
-export class StringTypeAttributeKind extends TypeAttributeKind<string> {
+export class PatternTypeAttributeKind extends TypeAttributeKind<string> {
     get inIdentity(): boolean {
         return true;
     }
 
-    combine(_arr: string[]): string {
-        return messageError("MiscMustntCombineStringAttribute", {});
+    combine(arr: string[]): string {
+        assert(arr.length > 0);
+
+        let patt:string="";
+        for (let i = 1; i < arr.length; i++) {
+            patt += "("+arr[i]+")";
+            if (i !== arr.length-1) {
+                patt += "|";
+            }
+        }
+        return patt;
     }
 
     intersect(_arr: string[]): string {
@@ -149,7 +158,7 @@ export class StringTypeAttributeKind extends TypeAttributeKind<string> {
     }
 }
 
-export const patternTypeAttributeKind: TypeAttributeKind<string> = new StringTypeAttributeKind(
+export const patternTypeAttributeKind: TypeAttributeKind<string> = new PatternTypeAttributeKind(
     "pattern"
 );
 

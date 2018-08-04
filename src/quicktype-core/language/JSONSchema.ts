@@ -18,6 +18,8 @@ import { descriptionTypeAttributeKind } from "../Description";
 import { Option } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
 import { minMaxTypeAttributeKind } from "../Constraints";
+import { minMaxLengthTypeAttributeKind } from "../Constraints";
+import { patternTypeAttributeKind } from "../Constraints";
 
 export class JSONSchemaTargetLanguage extends TargetLanguage {
     constructor() {
@@ -116,13 +118,30 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
 
     private addConstraints(t: Type, schema: Schema): void {
         const minmax = this.typeGraph.attributeStore.tryGet(minMaxTypeAttributeKind, t);
-        if (minmax === undefined) return;
-        const [min, max] = minmax;
-        if (min !== undefined) {
-            schema.minimum = min;
+        if (minmax !== undefined) {
+            const [min, max] = minmax;
+            if (min !== undefined) {
+                schema.minimum = min;
+            }
+            if (max !== undefined) {
+                schema.maximum = max;
+            }
         }
-        if (max !== undefined) {
-            schema.maximum = max;
+
+        const minmaxlen = this.typeGraph.attributeStore.tryGet(minMaxLengthTypeAttributeKind, t);
+        if (minmaxlen !== undefined) {
+            const [minl, maxl] = minmaxlen;
+            if (minl !== undefined) {
+                schema.minLength = minl;
+            }
+            if (maxl !== undefined) {
+                schema.maxLength = maxl;
+            }
+        }
+
+        const patt = this.typeGraph.attributeStore.tryGet(patternTypeAttributeKind, t);
+        if (patt !== undefined) {
+            schema.pattern = patt;
         }
     }
 
