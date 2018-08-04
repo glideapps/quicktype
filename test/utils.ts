@@ -22,7 +22,7 @@ export function debug<T>(x: T): T {
   return x;
 }
 
-export function failWith(message: string, obj: any): never {
+export function failWith(message: string, obj: { [key: string]: any }): never {
   obj.cwd = process.cwd();
   console.error(chalk.red(message));
   console.error(chalk.red(JSON.stringify(obj, null, "  ")));
@@ -37,21 +37,31 @@ function callAndReportFailure<T>(message: string, f: () => T): T | never {
   }
 }
 
-export function exec(
-  s: string,
-  opts: { silent: boolean } = { silent: !DEBUG },
-  cb?: any
-): { stdout: string; code: number } {
+export function callAndExpectFailure<T>(message: string, f: () => T): void {
+  let result: T;
+  try {
+    result = f();
+  } catch {
+    return;
+  }
+  return failWith(message, { result });
+}
+
+export function exec(s: string, printFailure: boolean = true): { stdout: string; code: number } {
   debug(s);
-  const result = shell.exec(s, opts, cb) as any;
+  const result = shell.exec(s, { silent: !DEBUG }) as any;
 
   if (result.code !== 0) {
-    console.error(result.stdout);
-    console.error(result.stderr);
-    failWith("Command failed", {
+    const failureObj = {
       command: s,
       code: result.code
-    });
+    };
+    if (!printFailure) {
+      throw failureObj;
+    }
+    console.error(result.stdout);
+    console.error(result.stderr);
+    failWith("Command failed", failureObj);
   }
 
   return result;
