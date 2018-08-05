@@ -143,7 +143,7 @@ export const RustLanguage: Language = {
     "f6a65.json"
   ],
   allowMissingNull: false,
-  features: ["enum", "strict-optional"],
+  features: ["enum"],
   output: "module_under_test.rs",
   topLevel: "TopLevel",
   skipJSON: [],
@@ -608,7 +608,10 @@ export const KotlinLanguage: Language = {
     "32431.json",
     "bug427.json"
   ],
-  skipSchema: [],
+  skipSchema: [
+    // Klaxon does not support top-level primitives
+    "any.schema"
+  ],
   skipMiscJSON: false,
   rendererOptions: {},
   quickTestRendererOptions: [],
