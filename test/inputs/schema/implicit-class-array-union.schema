@@ -1,5 +1,11 @@
 {
-  "properties": { "foo": { "type": "integer" } },
-  "required": ["foo"],
-  "items": { "type": "integer" }
+  "type": "object",
+  "properties": {
+    "foo": {
+      "properties": { "bar": { "type": "integer" } },
+      "required": ["bar"],
+      "items": { "type": "integer" }
+    }
+  },
+  "required": ["foo"]
 }
