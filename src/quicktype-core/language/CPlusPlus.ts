@@ -65,7 +65,6 @@ export const cPlusPlusOptions = {
         [["with-struct", false], ["with-getter-setter", true]],
         "with-struct"
     ),
-    generateStringConverter: new BooleanOption("generate-string-converter", "If set a helper function is generated which can dump the structure", false),
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     namespace: new StringOption("namespace", "Name of the generated namespace(s)", "NAME", "quicktype"),
     enumType: new StringOption("enum-type", "Type of enum class", "NAME", "int", "secondary"),
@@ -111,7 +110,6 @@ export class CPlusPlusTargetLanguage extends TargetLanguage {
             cPlusPlusOptions.memberNamingStyle,
             cPlusPlusOptions.enumeratorNamingStyle,
             cPlusPlusOptions.enumType,
-            cPlusPlusOptions.generateStringConverter,
         ];
     }
 
@@ -722,38 +720,6 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         return res.size === 0 ? undefined : res;
     }
 
-    protected emitStringGenerator(c: ClassType): void {
-        this.forEachClassProperty(c, "none", (name, _jsonName, property) => {
-            const [getterName, , ] = defined(this._gettersAndSettersForPropertyName.get(name));
-            if (property.type.kind === "array") {
-                if (this._options.codeFormat) {
-                    this.emitLine("os << \"", name, " : \" << stringify(ms.", getterName, "()) << std::endl;");
-                } else {
-                    this.emitLine("os << \"", name, " : \" << stringify(ms.", name, ") << std::endl;");
-                }
-            } else if (property.type.kind === "map") {
-                if (this._options.codeFormat) {
-                    this.emitLine("os << \"", name, " : \" << stringify_map(ms.", getterName, "()) << std::endl;");
-                } else {
-                    this.emitLine("os << \"", name, " : \" << stringify_map(ms.", name, ") << std::endl;");
-                }
-            } else if (property.type.kind === "enum") {
-                if (this._options.codeFormat) {
-                    this.emitLine("os << \"", name, " : \" << as_integer(ms.", getterName, "()) << std::endl;");
-                } else {
-                    this.emitLine("os << \"", name, " : \" << as_integer(ms.", name, ") << std::endl;");
-                }
-            } else {
-                if (this._options.codeFormat) {
-                    this.emitLine("os << \"", name, " : \" << ms.", getterName, "() << std::endl;");
-                } else {
-                    this.emitLine("os << \"", name, " : \" << ms.", name, " << std::endl;");
-                }
-            }
-        });
-        this.emitLine("return os;");
-    }
-
     protected emitClass(c: ClassType, className: Name): void {
         this.emitDescription(this.descriptionForType(c));
         this.emitBlock([this._options.codeFormat ? "class " : "struct ", className], true, () => {
@@ -778,24 +744,10 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
                 this.emitLine("virtual ~", className, "() = default;");
                 this.ensureBlankLine();
-
-                if (this._options.generateStringConverter) {
-                    this.emitBlock(["friend std::ostream& operator<<(std::ostream& os, ", className, " const& ms)"], false, () => {
-                        this.emitStringGenerator(c);
-                    });
-                }
             }
 
             this.emitClassMembers(c, constraints);
         });
-
-        if (!this._options.codeFormat && this._options.generateStringConverter) {
-            this.ensureBlankLine();
-
-            this.emitBlock(["std::ostream& operator << (std::ostream &os, ", className, " const& ms)"], false, () => {
-                this.emitStringGenerator(c);
-            });
-        }
     }
 
     protected emitClassFunctions(c: ClassType, className: Name): void {
