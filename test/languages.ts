@@ -1,7 +1,7 @@
 import { RendererOptions } from "../dist/quicktype-core/Run";
 import * as process from "process";
 
-export type LanguageFeature = "integer-string" | "bool-string";
+export type LanguageFeature = "integer-string" | "bool-string" | "uuid";
 
 export interface Language {
   name: string;
@@ -34,7 +34,7 @@ export const CSharpLanguage: Language = {
   diffViaSchema: true,
   skipDiffViaSchema: ["34702.json"],
   allowMissingNull: false,
-  features: ["integer-string", "bool-string"],
+  features: ["integer-string", "bool-string", "uuid"],
   output: "QuickType.cs",
   topLevel: "TopLevel",
   skipJSON: [
@@ -100,7 +100,7 @@ export const PythonLanguage: Language = {
     "f6a65.json"
   ],
   allowMissingNull: false,
-  features: ["integer-string", "bool-string"],
+  features: ["integer-string", "bool-string", "uuid"],
   output: "quicktype.py",
   topLevel: "TopLevel",
   skipJSON: [
