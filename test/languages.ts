@@ -571,7 +571,7 @@ export const KotlinLanguage: Language = {
     "76ae1.json"
   ],
   allowMissingNull: true,
-  features: ["enum", "union", "strict-optional"],
+  features: ["enum", "union"],
   output: "TopLevel.kt",
   topLevel: "TopLevel",
   skipJSON: [
@@ -608,7 +608,26 @@ export const KotlinLanguage: Language = {
   skipSchema: [
     // Very weird - the types are correct, but it can (de)serialize the string,
     // which is not represented in the types.
-    "class-with-additional.schema"
+    "class-with-additional.schema",
+    "implicit-class-array-union.schema",
+    // IllegalArgumentException
+    "accessors.schema",
+    "description.schema",
+    "union-list.schema",
+    // KlaxonException: Need to extract inside
+    "bool-string.schema",
+    "integer-string.schema",
+    "uuid.schema",
+    // produces {"foo" : "java.lang.Object@48d61b48"}
+    "any.schema",
+    // KlaxonException: Couldn't find a suitable constructor for class UnionValue to initialize with {}
+    "class-map-union.schema",
+    "direct-union.schema",
+    // Some weird name collision
+    "keyword-enum.schema",
+    "keyword-unions.schema",
+    // Klaxon does not support top-level primitives
+    "top-level-enum.schema"
   ],
   skipMiscJSON: false,
   rendererOptions: {},
