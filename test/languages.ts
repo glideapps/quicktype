@@ -4,7 +4,9 @@ import * as process from "process";
 export type LanguageFeature =
   | "enum"
   | "union"
+  | "no-defaults"
   | "strict-optional"
+  | "date-time"
   | "integer-string"
   | "bool-string"
   | "uuid";
@@ -40,7 +42,16 @@ export const CSharpLanguage: Language = {
   diffViaSchema: true,
   skipDiffViaSchema: ["34702.json"],
   allowMissingNull: false,
-  features: ["enum", "union", "strict-optional", "integer-string", "bool-string", "uuid"],
+  features: [
+    "enum",
+    "union",
+    "no-defaults",
+    "strict-optional",
+    "date-time",
+    "integer-string",
+    "bool-string",
+    "uuid"
+  ],
   output: "QuickType.cs",
   topLevel: "TopLevel",
   skipJSON: [
@@ -106,7 +117,7 @@ export const PythonLanguage: Language = {
     "f6a65.json"
   ],
   allowMissingNull: false,
-  features: ["enum", "union", "integer-string", "bool-string", "uuid"],
+  features: ["enum", "union", "no-defaults", "date-time", "integer-string", "bool-string", "uuid"],
   output: "quicktype.py",
   topLevel: "TopLevel",
   skipJSON: [
@@ -149,7 +160,7 @@ export const RustLanguage: Language = {
     "f6a65.json"
   ],
   allowMissingNull: false,
-  features: ["enum", "union"],
+  features: ["enum", "union", "no-defaults"],
   output: "module_under_test.rs",
   topLevel: "TopLevel",
   skipJSON: [],
@@ -227,7 +238,7 @@ export const RubyLanguage: Language = {
     "e8b04.json"
   ],
   allowMissingNull: true,
-  features: ["enum", "union"],
+  features: ["enum", "union", "no-defaults"],
   output: "TopLevel.rb",
   topLevel: "TopLevel",
   skipJSON: [],
@@ -297,7 +308,7 @@ export const CPlusPlusLanguage: Language = {
     "fcca3.json"
   ],
   allowMissingNull: false,
-  features: ["enum", "union"],
+  features: ["enum", "union", "no-defaults"],
   output: "TopLevel.hpp",
   topLevel: "TopLevel",
   skipJSON: [
@@ -357,7 +368,7 @@ export const ElmLanguage: Language = {
     "f6a65.json"
   ],
   allowMissingNull: false,
-  features: ["enum", "union"],
+  features: ["enum", "union", "no-defaults"],
   output: "QuickType.elm",
   topLevel: "QuickType",
   skipJSON: [
@@ -414,7 +425,7 @@ export const SwiftLanguage: Language = {
     "f82d9.json"
   ],
   allowMissingNull: true,
-  features: ["enum", "union"],
+  features: ["enum", "union", "no-defaults"],
   output: "quicktype.swift",
   topLevel: "TopLevel",
   skipJSON: [
@@ -428,7 +439,9 @@ export const SwiftLanguage: Language = {
   skipMiscJSON: false,
   skipSchema: [
     // The code we generate for top-level enums is incompatible with the driver
-    "top-level-enum.schema"
+    "top-level-enum.schema",
+    // This works on macOS, but on Linux one of the failure test cases doesn't fail
+    "implicit-class-array-union.schema"
   ],
   rendererOptions: {},
   quickTestRendererOptions: [
@@ -452,7 +465,7 @@ export const ObjectiveCLanguage: Language = {
   diffViaSchema: false,
   skipDiffViaSchema: [],
   allowMissingNull: true,
-  features: ["enum"],
+  features: ["enum", "no-defaults"],
   output: "QTTopLevel.m",
   topLevel: "QTTopLevel",
   skipJSON: [
@@ -501,7 +514,7 @@ export const TypeScriptLanguage: Language = {
     "e8b04.json"
   ],
   allowMissingNull: false,
-  features: ["enum", "union", "strict-optional"],
+  features: ["enum", "union", "no-defaults", "strict-optional"],
   output: "TopLevel.ts",
   topLevel: "TopLevel",
   skipJSON: ["enum"],
@@ -522,7 +535,7 @@ export const JavaScriptLanguage: Language = {
   diffViaSchema: false,
   skipDiffViaSchema: [],
   allowMissingNull: false,
-  features: ["enum", "union", "strict-optional"],
+  features: ["enum", "union", "no-defaults", "strict-optional"],
   output: "TopLevel.js",
   topLevel: "TopLevel",
   skipJSON: ["enum"],
@@ -542,7 +555,7 @@ export const FlowLanguage: Language = {
   diffViaSchema: false,
   skipDiffViaSchema: [],
   allowMissingNull: false,
-  features: ["enum", "union", "strict-optional"],
+  features: ["enum", "union", "no-defaults", "strict-optional"],
   output: "TopLevel.js",
   topLevel: "TopLevel",
   skipJSON: [],
@@ -571,7 +584,7 @@ export const KotlinLanguage: Language = {
     "76ae1.json"
   ],
   allowMissingNull: true,
-  features: ["enum", "union"],
+  features: ["enum", "union", "no-defaults"],
   output: "TopLevel.kt",
   topLevel: "TopLevel",
   skipJSON: [
@@ -610,6 +623,7 @@ export const KotlinLanguage: Language = {
     // which is not represented in the types.
     "class-with-additional.schema",
     "implicit-class-array-union.schema",
+    "go-schema-pattern-properties.schema",
     // IllegalArgumentException
     "accessors.schema",
     "description.schema",
