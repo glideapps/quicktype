@@ -259,10 +259,7 @@ export const GoLanguage: Language = {
   topLevel: "TopLevel",
   skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json", "nst-test-suite.json"],
   skipMiscJSON: false,
-  skipSchema: [
-    // interface{} as top-level doesn't work
-    "any.schema"
-  ],
+  skipSchema: [],
   rendererOptions: {},
   quickTestRendererOptions: [],
   sourceFiles: ["src/language/Golang.ts"]
@@ -426,8 +423,6 @@ export const SwiftLanguage: Language = {
   ],
   skipMiscJSON: false,
   skipSchema: [
-    // The top-level is anything, which Swift's JSON types don't support
-    "any.schema",
     // The top-level is a union, which Swift's JSON types don't support
     "implicit-class-array-union.schema",
     // The code we generate for top-level enums is incompatible with the driver
@@ -608,10 +603,7 @@ export const KotlinLanguage: Language = {
     "32431.json",
     "bug427.json"
   ],
-  skipSchema: [
-    // Klaxon does not support top-level primitives
-    "any.schema"
-  ],
+  skipSchema: [],
   skipMiscJSON: false,
   rendererOptions: {},
   quickTestRendererOptions: [],
