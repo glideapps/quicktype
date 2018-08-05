@@ -12,7 +12,6 @@ export type ErrorProperties =
     | { kind: "MiscReadError"; properties: { fileOrURL: string; message: string } }
     | { kind: "MiscUnicodeHighSurrogateWithoutLowSurrogate"; properties: {} }
     | { kind: "MiscInvalidMinMaxConstraint"; properties: { min: number; max: number } }
-    | { kind: "MiscMustntIntersectStringAttribute"; properties: {} }
 
     // JSON Schema input
     | { kind: "SchemaArrayIsInvalidSchema"; properties: { ref: Ref } }
@@ -86,7 +85,6 @@ const errorMessages: ErrorMessages = {
     MiscReadError: "Cannot read from file or URL ${fileOrURL}: ${message}",
     MiscUnicodeHighSurrogateWithoutLowSurrogate: "Malformed unicode: High surrogate not followed by low surrogate",
     MiscInvalidMinMaxConstraint: "Invalid min-max constraint: ${min}-${max}",
-    MiscMustntIntersectStringAttribute: "Must not intersect string attributes of types",
 
     // JSON Schema input
     SchemaArrayIsInvalidSchema: "An array is not a valid JSON Schema at ${ref}",

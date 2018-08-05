@@ -19,6 +19,10 @@ function checkMinMaxConstraint(minmax: MinMaxConstraint): MinMaxConstraint {
 }
 
 export class MinMaxConstraintTypeAttributeKind extends TypeAttributeKind<MinMaxConstraint> {
+    constructor(name:string) {
+        super(name);
+    }
+
     get inIdentity(): boolean {
         return true;
     }
@@ -123,30 +127,26 @@ export function minMaxLengthAttributeProducer(
     return { forString: minMaxLengthTypeAttributeKind.makeAttributes(maybeMinMaxLength) };
 }
 
-export function minMaxValue(t: Type): MinMaxConstraint | undefined {
+export function minMaxValueForType(t: Type): MinMaxConstraint | undefined {
     return minMaxTypeAttributeKind.tryGetInAttributes(t.getAttributes());
 }
 
-export function minMaxLength(t: Type): MinMaxConstraint | undefined {
+export function minMaxLengthForType(t: Type): MinMaxConstraint | undefined {
     return minMaxLengthTypeAttributeKind.tryGetInAttributes(t.getAttributes());
 }
 
 export class PatternTypeAttributeKind extends TypeAttributeKind<string> {
+    constructor() {
+        super("pattern");
+    }
+
     get inIdentity(): boolean {
         return true;
     }
 
     combine(arr: string[]): string {
         assert(arr.length > 0);
-
-        let patt:string="";
-        for (let i = 1; i < arr.length; i++) {
-            patt += "("+arr[i]+")";
-            if (i !== arr.length-1) {
-                patt += "|";
-            }
-        }
-        return patt;
+        return arr.map(p => `(${p})`).join("|");
     }
 
     intersect(_arr: string[]): string | undefined {
@@ -159,9 +159,7 @@ export class PatternTypeAttributeKind extends TypeAttributeKind<string> {
     }
 }
 
-export const patternTypeAttributeKind: TypeAttributeKind<string> = new PatternTypeAttributeKind(
-    "pattern"
-);
+export const patternTypeAttributeKind: TypeAttributeKind<string> = new PatternTypeAttributeKind();
 
 export function patternAttributeProducer(
     schema: JSONSchema,
@@ -171,16 +169,11 @@ export function patternAttributeProducer(
     if (!(typeof schema === "object")) return undefined;
     if (!types.has("string")) return undefined;
 
-    let patt: string | undefined = undefined;
-
-    if (typeof schema["pattern"] === "string") {
-        patt = schema["pattern"];
-    }
-
-    if (patt === undefined) return undefined;
+    const patt = schema.pattern;
+    if (typeof patt !== "string") return undefined;
     return { forString: patternTypeAttributeKind.makeAttributes(patt) };
 }
 
-export function pattern(t: Type): string | undefined {
+export function patternForType(t: Type): string | undefined {
     return patternTypeAttributeKind.tryGetInAttributes(t.getAttributes());
 }
