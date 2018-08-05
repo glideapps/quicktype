@@ -1,7 +1,13 @@
 import { RendererOptions } from "../dist/quicktype-core/Run";
 import * as process from "process";
 
-export type LanguageFeature = "enum" | "strict-optional" | "integer-string" | "bool-string" | "uuid";
+export type LanguageFeature =
+  | "enum"
+  | "union"
+  | "strict-optional"
+  | "integer-string"
+  | "bool-string"
+  | "uuid";
 
 export interface Language {
   name: string;
@@ -34,7 +40,7 @@ export const CSharpLanguage: Language = {
   diffViaSchema: true,
   skipDiffViaSchema: ["34702.json"],
   allowMissingNull: false,
-  features: ["enum", "strict-optional", "integer-string", "bool-string", "uuid"],
+  features: ["enum", "union", "strict-optional", "integer-string", "bool-string", "uuid"],
   output: "QuickType.cs",
   topLevel: "TopLevel",
   skipJSON: [
@@ -69,7 +75,7 @@ export const JavaLanguage: Language = {
   diffViaSchema: false,
   skipDiffViaSchema: [],
   allowMissingNull: false,
-  features: ["enum"],
+  features: ["enum", "union"],
   output: "src/main/java/io/quicktype/TopLevel.java",
   topLevel: "TopLevel",
   skipJSON: ["identifiers.json", "simple-identifiers.json", "nst-test-suite.json"],
@@ -100,7 +106,7 @@ export const PythonLanguage: Language = {
     "f6a65.json"
   ],
   allowMissingNull: false,
-  features: ["enum", "integer-string", "bool-string", "uuid"],
+  features: ["enum", "union", "integer-string", "bool-string", "uuid"],
   output: "quicktype.py",
   topLevel: "TopLevel",
   skipJSON: [
@@ -143,7 +149,7 @@ export const RustLanguage: Language = {
     "f6a65.json"
   ],
   allowMissingNull: false,
-  features: ["enum"],
+  features: ["enum", "union"],
   output: "module_under_test.rs",
   topLevel: "TopLevel",
   skipJSON: [],
@@ -221,7 +227,7 @@ export const RubyLanguage: Language = {
     "e8b04.json"
   ],
   allowMissingNull: true,
-  features: ["enum"],
+  features: ["enum", "union"],
   output: "TopLevel.rb",
   topLevel: "TopLevel",
   skipJSON: [],
@@ -252,7 +258,7 @@ export const GoLanguage: Language = {
     "e8b04.json"
   ],
   allowMissingNull: false,
-  features: [],
+  features: ["union"],
   output: "quicktype.go",
   topLevel: "TopLevel",
   skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json", "nst-test-suite.json"],
@@ -291,7 +297,7 @@ export const CPlusPlusLanguage: Language = {
     "fcca3.json"
   ],
   allowMissingNull: false,
-  features: ["enum"],
+  features: ["enum", "union"],
   output: "TopLevel.hpp",
   topLevel: "TopLevel",
   skipJSON: [
@@ -351,7 +357,7 @@ export const ElmLanguage: Language = {
     "f6a65.json"
   ],
   allowMissingNull: false,
-  features: ["enum"],
+  features: ["enum", "union"],
   output: "QuickType.elm",
   topLevel: "QuickType",
   skipJSON: [
@@ -408,7 +414,7 @@ export const SwiftLanguage: Language = {
     "f82d9.json"
   ],
   allowMissingNull: true,
-  features: ["enum"],
+  features: ["enum", "union"],
   output: "quicktype.swift",
   topLevel: "TopLevel",
   skipJSON: [
@@ -495,7 +501,7 @@ export const TypeScriptLanguage: Language = {
     "e8b04.json"
   ],
   allowMissingNull: false,
-  features: ["strict-optional"],
+  features: ["enum", "union", "strict-optional"],
   output: "TopLevel.ts",
   topLevel: "TopLevel",
   skipJSON: ["enum"],
@@ -516,7 +522,7 @@ export const JavaScriptLanguage: Language = {
   diffViaSchema: false,
   skipDiffViaSchema: [],
   allowMissingNull: false,
-  features: ["strict-optional"],
+  features: ["enum", "union", "strict-optional"],
   output: "TopLevel.js",
   topLevel: "TopLevel",
   skipJSON: ["enum"],
@@ -536,7 +542,7 @@ export const FlowLanguage: Language = {
   diffViaSchema: false,
   skipDiffViaSchema: [],
   allowMissingNull: false,
-  features: ["enum", "strict-optional"],
+  features: ["enum", "union", "strict-optional"],
   output: "TopLevel.js",
   topLevel: "TopLevel",
   skipJSON: [],
@@ -565,7 +571,7 @@ export const KotlinLanguage: Language = {
     "76ae1.json"
   ],
   allowMissingNull: true,
-  features: ["enum", "strict-optional"],
+  features: ["enum", "union", "strict-optional"],
   output: "TopLevel.kt",
   topLevel: "TopLevel",
   skipJSON: [
@@ -599,7 +605,11 @@ export const KotlinLanguage: Language = {
     "32431.json",
     "bug427.json"
   ],
-  skipSchema: [],
+  skipSchema: [
+    // Very weird - the types are correct, but it can (de)serialize the string,
+    // which is not represented in the types.
+    "class-with-additional.schema"
+  ],
   skipMiscJSON: false,
   rendererOptions: {},
   quickTestRendererOptions: [],

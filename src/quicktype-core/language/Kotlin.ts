@@ -110,6 +110,7 @@ const keywords = [
     "String",
     "Array",
     "List",
+    "Map",
     "JsonObject",
     "JsonValue",
     "Converter",

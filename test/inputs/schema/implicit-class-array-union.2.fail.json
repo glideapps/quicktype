@@ -1,1 +1,1 @@
-{ "foo": { "bar": true } }
+{ "foo": { "bar": "quux" } }
