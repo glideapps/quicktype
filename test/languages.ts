@@ -351,7 +351,7 @@ export const ElmLanguage: Language = {
     "f6a65.json"
   ],
   allowMissingNull: false,
-  features: ["enum", "strict-optional"],
+  features: ["enum"],
   output: "QuickType.elm",
   topLevel: "QuickType",
   skipJSON: [
