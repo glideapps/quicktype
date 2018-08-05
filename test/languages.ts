@@ -1,7 +1,7 @@
 import { RendererOptions } from "../dist/quicktype-core/Run";
 import * as process from "process";
 
-export type LanguageFeature = "integer-string" | "bool-string" | "uuid";
+export type LanguageFeature = "strict-optional" | "integer-string" | "bool-string" | "uuid";
 
 export interface Language {
   name: string;
@@ -34,7 +34,7 @@ export const CSharpLanguage: Language = {
   diffViaSchema: true,
   skipDiffViaSchema: ["34702.json"],
   allowMissingNull: false,
-  features: ["integer-string", "bool-string", "uuid"],
+  features: ["strict-optional", "integer-string", "bool-string", "uuid"],
   output: "QuickType.cs",
   topLevel: "TopLevel",
   skipJSON: [
@@ -100,7 +100,7 @@ export const PythonLanguage: Language = {
     "f6a65.json"
   ],
   allowMissingNull: false,
-  features: ["integer-string", "bool-string", "uuid"],
+  features: ["strict-optional", "integer-string", "bool-string", "uuid"],
   output: "quicktype.py",
   topLevel: "TopLevel",
   skipJSON: [
@@ -143,7 +143,7 @@ export const RustLanguage: Language = {
     "f6a65.json"
   ],
   allowMissingNull: false,
-  features: [],
+  features: ["strict-optional"],
   output: "module_under_test.rs",
   topLevel: "TopLevel",
   skipJSON: [],
@@ -356,7 +356,7 @@ export const ElmLanguage: Language = {
     "f6a65.json"
   ],
   allowMissingNull: false,
-  features: [],
+  features: ["strict-optional"],
   output: "QuickType.elm",
   topLevel: "QuickType",
   skipJSON: [
@@ -504,7 +504,7 @@ export const TypeScriptLanguage: Language = {
     "e8b04.json"
   ],
   allowMissingNull: false,
-  features: [],
+  features: ["strict-optional"],
   output: "TopLevel.ts",
   topLevel: "TopLevel",
   skipJSON: [],
@@ -525,7 +525,7 @@ export const JavaScriptLanguage: Language = {
   diffViaSchema: false,
   skipDiffViaSchema: [],
   allowMissingNull: false,
-  features: [],
+  features: ["strict-optional"],
   output: "TopLevel.js",
   topLevel: "TopLevel",
   skipJSON: [],
@@ -545,7 +545,7 @@ export const FlowLanguage: Language = {
   diffViaSchema: false,
   skipDiffViaSchema: [],
   allowMissingNull: false,
-  features: [],
+  features: ["strict-optional"],
   output: "TopLevel.js",
   topLevel: "TopLevel",
   skipJSON: [],
@@ -574,7 +574,7 @@ export const KotlinLanguage: Language = {
     "76ae1.json"
   ],
   allowMissingNull: true,
-  features: [],
+  features: ["strict-optional"],
   output: "TopLevel.kt",
   topLevel: "TopLevel",
   skipJSON: [
