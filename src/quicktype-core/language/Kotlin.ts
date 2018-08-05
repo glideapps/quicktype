@@ -44,7 +44,7 @@ export const kotlinOptions = {
 
 export class KotlinTargetLanguage extends TargetLanguage {
     constructor() {
-        super("Kotlin", ["kotlin"], "kt");
+        super("Kotlin (beta)", ["kotlin"], "kt");
     }
 
     protected getOptions(): Option<any>[] {
@@ -111,6 +111,8 @@ const keywords = [
     "Array",
     "List",
     "Map",
+    "Enum",
+    "Class",
     "JsonObject",
     "JsonValue",
     "Converter",
