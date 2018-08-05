@@ -1,7 +1,7 @@
 import { RendererOptions } from "../dist/quicktype-core/Run";
 import * as process from "process";
 
-export type LanguageFeature = "strict-optional" | "integer-string" | "bool-string" | "uuid";
+export type LanguageFeature = "enum" | "strict-optional" | "integer-string" | "bool-string" | "uuid";
 
 export interface Language {
   name: string;
@@ -34,7 +34,7 @@ export const CSharpLanguage: Language = {
   diffViaSchema: true,
   skipDiffViaSchema: ["34702.json"],
   allowMissingNull: false,
-  features: ["strict-optional", "integer-string", "bool-string", "uuid"],
+  features: ["enum", "strict-optional", "integer-string", "bool-string", "uuid"],
   output: "QuickType.cs",
   topLevel: "TopLevel",
   skipJSON: [
@@ -69,7 +69,7 @@ export const JavaLanguage: Language = {
   diffViaSchema: false,
   skipDiffViaSchema: [],
   allowMissingNull: false,
-  features: [],
+  features: ["enum"],
   output: "src/main/java/io/quicktype/TopLevel.java",
   topLevel: "TopLevel",
   skipJSON: ["identifiers.json", "simple-identifiers.json", "nst-test-suite.json"],
@@ -100,7 +100,7 @@ export const PythonLanguage: Language = {
     "f6a65.json"
   ],
   allowMissingNull: false,
-  features: ["strict-optional", "integer-string", "bool-string", "uuid"],
+  features: ["enum", "integer-string", "bool-string", "uuid"],
   output: "quicktype.py",
   topLevel: "TopLevel",
   skipJSON: [
@@ -143,7 +143,7 @@ export const RustLanguage: Language = {
     "f6a65.json"
   ],
   allowMissingNull: false,
-  features: ["strict-optional"],
+  features: ["enum", "strict-optional"],
   output: "module_under_test.rs",
   topLevel: "TopLevel",
   skipJSON: [],
@@ -221,7 +221,7 @@ export const RubyLanguage: Language = {
     "e8b04.json"
   ],
   allowMissingNull: true,
-  features: [],
+  features: ["enum"],
   output: "TopLevel.rb",
   topLevel: "TopLevel",
   skipJSON: [],
@@ -296,7 +296,7 @@ export const CPlusPlusLanguage: Language = {
     "fcca3.json"
   ],
   allowMissingNull: false,
-  features: [],
+  features: ["enum"],
   output: "TopLevel.hpp",
   topLevel: "TopLevel",
   skipJSON: [
@@ -356,7 +356,7 @@ export const ElmLanguage: Language = {
     "f6a65.json"
   ],
   allowMissingNull: false,
-  features: ["strict-optional"],
+  features: ["enum", "strict-optional"],
   output: "QuickType.elm",
   topLevel: "QuickType",
   skipJSON: [
@@ -413,7 +413,7 @@ export const SwiftLanguage: Language = {
     "f82d9.json"
   ],
   allowMissingNull: true,
-  features: [],
+  features: ["enum"],
   output: "quicktype.swift",
   topLevel: "TopLevel",
   skipJSON: [
@@ -455,7 +455,7 @@ export const ObjectiveCLanguage: Language = {
   diffViaSchema: false,
   skipDiffViaSchema: [],
   allowMissingNull: true,
-  features: [],
+  features: ["enum"],
   output: "QTTopLevel.m",
   topLevel: "QTTopLevel",
   skipJSON: [
@@ -507,7 +507,7 @@ export const TypeScriptLanguage: Language = {
   features: ["strict-optional"],
   output: "TopLevel.ts",
   topLevel: "TopLevel",
-  skipJSON: [],
+  skipJSON: ["enum"],
   skipMiscJSON: false,
   skipSchema: ["keyword-unions.schema"], // can't handle "constructor" property
   rendererOptions: { "explicit-unions": "yes" },
@@ -528,7 +528,7 @@ export const JavaScriptLanguage: Language = {
   features: ["strict-optional"],
   output: "TopLevel.js",
   topLevel: "TopLevel",
-  skipJSON: [],
+  skipJSON: ["enum"],
   skipMiscJSON: false,
   skipSchema: ["keyword-unions.schema"], // can't handle "constructor" property
   rendererOptions: {},
@@ -545,7 +545,7 @@ export const FlowLanguage: Language = {
   diffViaSchema: false,
   skipDiffViaSchema: [],
   allowMissingNull: false,
-  features: ["strict-optional"],
+  features: ["enum", "strict-optional"],
   output: "TopLevel.js",
   topLevel: "TopLevel",
   skipJSON: [],
@@ -574,7 +574,7 @@ export const KotlinLanguage: Language = {
     "76ae1.json"
   ],
   allowMissingNull: true,
-  features: ["strict-optional"],
+  features: ["enum", "strict-optional"],
   output: "TopLevel.kt",
   topLevel: "TopLevel",
   skipJSON: [
