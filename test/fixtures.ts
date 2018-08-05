@@ -19,7 +19,8 @@ import {
   samplesFromSources,
   testsInDir,
   ComparisonArgs,
-  mkdirs
+  mkdirs,
+  callAndExpectFailure
 } from "./utils";
 import * as languages from "./languages";
 import { RendererOptions } from "../dist/quicktype-core/Run";
@@ -60,9 +61,9 @@ function additionalTestFiles(base: string, extension: string): string[] {
     fn = `${base}.${i.toString()}.${extension}`;
     if (fs.existsSync(fn)) {
       additionalFiles.push(fn);
-      const outFn = `${base}.${i.toString()}.out.${extension}`;
-      if (fs.existsSync(outFn)) {
-        additionalFiles.push(outFn);
+      const failFn = `${base}.${i.toString()}.fail.${extension}`;
+      if (fs.existsSync(failFn)) {
+        additionalFiles.push(failFn);
       }
     } else {
       break;
@@ -537,7 +538,7 @@ class JSONSchemaFixture extends LanguageFixture {
 
   additionalFiles(sample: Sample): string[] {
     const baseName = pathWithoutExtension(sample.path, ".schema");
-    return additionalTestFiles(baseName, "json").filter(fn => !fn.endsWith(".out.json"));
+    return additionalTestFiles(baseName, "json");
   }
 
   async test(
@@ -551,11 +552,18 @@ class JSONSchemaFixture extends LanguageFixture {
     if (this.language.runCommand === undefined) return 0;
 
     for (const filename of additionalFiles) {
-      let expected = filename.replace(".json", ".out.json");
-      if (!fs.existsSync(expected) || !this.language.handlesStringifiedIntegers) {
-        expected = filename;
+      if (filename.endsWith(".fail.json")) {
+        callAndExpectFailure(
+          `Expected failure on input ${filename}`,
+          () => exec(defined(this.language.runCommand)(filename), false).stdout
+        );
+      } else {
+        let expected = filename.replace(".json", ".out.json");
+        if (!fs.existsSync(expected) || !this.language.handlesStringifiedIntegers) {
+          expected = filename;
+        }
+        compareJsonFileToJson(comparisonArgs(this.language, filename, expected));
       }
-      compareJsonFileToJson(comparisonArgs(this.language, filename, expected));
     }
     return additionalFiles.length;
   }
