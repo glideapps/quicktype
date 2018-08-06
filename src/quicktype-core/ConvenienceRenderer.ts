@@ -172,11 +172,11 @@ export abstract class ConvenienceRenderer extends Renderer {
         return nullableFromUnion(u) === null;
     }
 
-    protected get globalNamespace(): Namespace {
+    private get globalNamespace(): Namespace {
         return defined(this._globalNamespace);
     }
 
-    protected get nameStoreView(): TypeAttributeStoreView<Name> {
+    private get nameStoreView(): TypeAttributeStoreView<Name> {
         return defined(this._nameStoreView);
     }
 
@@ -189,11 +189,6 @@ export abstract class ConvenienceRenderer extends Renderer {
         const descriptions = this.typeGraph.attributeStore.tryGet(propertyDescriptionsTypeAttributeKind, o);
         if (descriptions === undefined) return undefined;
         return splitDescription(descriptions.get(name));
-    }
-
-    /** To be able to add custom names to global namespace */
-    protected expandGlobalNamespace(): boolean {
-        return true;
     }
 
     protected setUpNaming(): ReadonlySet<Namespace> {
@@ -239,8 +234,6 @@ export abstract class ConvenienceRenderer extends Renderer {
         for (const t of this.typeGraph.allTypesUnordered()) {
             this.addNameForTransformation(t);
         }
-
-        this.expandGlobalNamespace();
 
         return setUnion(
             [this._globalForbiddenNamespace, this._globalNamespace],
