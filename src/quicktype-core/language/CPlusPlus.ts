@@ -63,7 +63,7 @@ export const cPlusPlusOptions = {
         "code-format",
         "Generate classes with getters/setters, instead of structs",
         [["with-struct", false], ["with-getter-setter", true]],
-        "with-struct"
+        "with-getter-setter"
     ),
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     namespace: new StringOption("namespace", "Name of the generated namespace(s)", "NAME", "quicktype"),
