@@ -1,0 +1,10 @@
+{
+  "union": {
+    "foo": {
+      "quux": "foo"
+    },
+    "bar": {
+      "quux": "bar"
+    }
+  }
+}
