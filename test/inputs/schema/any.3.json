@@ -1,1 +1,1 @@
-{ "foo": "abc" }
+{ "foo": { "bar": "abc" } }

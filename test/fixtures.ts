@@ -42,7 +42,7 @@ const MAX_TEST_RUNTIME_MS = 30 * 60 * 1000;
 const testsWithStringifiedIntegers = ["nst-test-suite.json", "kitchen-sink.json"];
 
 function allowStringifiedIntegers(language: languages.Language, test: string): boolean {
-  if (language.handlesStringifiedIntegers !== true) return false;
+  if (language.features.indexOf("integer-string") < 0) return false;
   return testsWithStringifiedIntegers.indexOf(path.basename(test)) >= 0;
 }
 
@@ -50,26 +50,31 @@ function pathWithoutExtension(fullPath: string, extension: string): string {
   return path.join(path.dirname(fullPath), path.basename(fullPath, extension));
 }
 
-function additionalTestFiles(base: string, extension: string): string[] {
+function additionalTestFiles(base: string, extension: string, features: string[] = []): string[] {
   const additionalFiles: string[] = [];
+  function tryAdd(filename: string): boolean {
+    if (!fs.existsSync(filename)) return false;
+    additionalFiles.push(filename);
+    return true;
+  }
+
   let fn = `${base}.${extension}`;
-  if (fs.existsSync(fn)) {
-    additionalFiles.push(fn);
-  }
+  tryAdd(fn);
   let i = 1;
-  for (;;) {
+  let found: boolean;
+  do {
+    found = false;
+
     fn = `${base}.${i.toString()}.${extension}`;
-    if (fs.existsSync(fn)) {
-      additionalFiles.push(fn);
-      const failFn = `${base}.${i.toString()}.fail.${extension}`;
-      if (fs.existsSync(failFn)) {
-        additionalFiles.push(failFn);
-      }
-    } else {
-      break;
+    found = tryAdd(fn) || found;
+
+    for (const feature of features) {
+      found = tryAdd(`${base}.${i.toString()}.fail.${feature}.${extension}`) || found;
     }
+    found = tryAdd(`${base}.${i.toString()}.fail.${extension}`) || found;
+
     i++;
-  }
+  } while (found);
   return additionalFiles;
 }
 
@@ -338,7 +343,7 @@ class JSONToXToYFixture extends JSONFixture {
       diffViaSchema: false,
       skipDiffViaSchema: [],
       allowMissingNull: language.allowMissingNull,
-      handlesStringifiedIntegers: language.handlesStringifiedIntegers,
+      features: language.features,
       output: languageXOutputFilename,
       topLevel: "TopLevel",
       skipJSON,
@@ -538,7 +543,7 @@ class JSONSchemaFixture extends LanguageFixture {
 
   additionalFiles(sample: Sample): string[] {
     const baseName = pathWithoutExtension(sample.path, ".schema");
-    return additionalTestFiles(baseName, "json");
+    return additionalTestFiles(baseName, "json", this.language.features);
   }
 
   async test(
@@ -551,16 +556,22 @@ class JSONSchemaFixture extends LanguageFixture {
     }
     if (this.language.runCommand === undefined) return 0;
 
+    const failExtensions = this.language.features.map(f => `.fail.${f}.json`).concat([".fail.json"]);
+
     for (const filename of additionalFiles) {
-      if (filename.endsWith(".fail.json")) {
+      if (failExtensions.some(ext => filename.endsWith(ext))) {
         callAndExpectFailure(
           `Expected failure on input ${filename}`,
           () => exec(defined(this.language.runCommand)(filename), false).stdout
         );
       } else {
-        let expected = filename.replace(".json", ".out.json");
-        if (!fs.existsSync(expected) || !this.language.handlesStringifiedIntegers) {
-          expected = filename;
+        let expected = filename;
+        for (const feature of this.language.features) {
+          const featureFilename = filename.replace(".json", `.out.${feature}.json`);
+          if (fs.existsSync(featureFilename)) {
+            expected = featureFilename;
+            break;
+          }
         }
         compareJsonFileToJson(comparisonArgs(this.language, filename, expected));
       }
@@ -663,6 +674,7 @@ export const allFixtures: Fixture[] = [
   new JSONSchemaFixture(languages.TypeScriptLanguage),
   new JSONSchemaFixture(languages.FlowLanguage),
   new JSONSchemaFixture(languages.JavaScriptLanguage),
+  new JSONSchemaFixture(languages.KotlinLanguage),
   // FIXME: Why are we missing so many language with GraphQL?
   new GraphQLFixture(languages.CSharpLanguage),
   new GraphQLFixture(languages.JavaLanguage),
