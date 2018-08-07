@@ -1,4 +1,5 @@
 import * as fs from "fs";
+import * as path from "path";
 
 import * as _ from "lodash";
 import * as shell from "shelljs";
@@ -21,7 +22,7 @@ export function debug<T>(x: T): T {
   return x;
 }
 
-export function failWith(message: string, obj: any): never {
+export function failWith(message: string, obj: { [key: string]: any }): never {
   obj.cwd = process.cwd();
   console.error(chalk.red(message));
   console.error(chalk.red(JSON.stringify(obj, null, "  ")));
@@ -36,21 +37,31 @@ function callAndReportFailure<T>(message: string, f: () => T): T | never {
   }
 }
 
-export function exec(
-  s: string,
-  opts: { silent: boolean } = { silent: !DEBUG },
-  cb?: any
-): { stdout: string; code: number } {
+export function callAndExpectFailure<T>(message: string, f: () => T): void {
+  let result: T;
+  try {
+    result = f();
+  } catch {
+    return;
+  }
+  return failWith(message, { result });
+}
+
+export function exec(s: string, printFailure: boolean = true): { stdout: string; code: number } {
   debug(s);
-  const result = shell.exec(s, opts, cb) as any;
+  const result = shell.exec(s, { silent: !DEBUG }) as any;
 
   if (result.code !== 0) {
-    console.error(result.stdout);
-    console.error(result.stderr);
-    failWith("Command failed", {
+    const failureObj = {
       command: s,
       code: result.code
-    });
+    };
+    if (!printFailure) {
+      throw failureObj;
+    }
+    console.error(result.stdout);
+    console.error(result.stderr);
+    failWith("Command failed", failureObj);
   }
 
   return result;
@@ -75,6 +86,31 @@ async function time<T>(work: () => Promise<T>): Promise<[T, number]> {
   let result = await work();
   let end = +new Date();
   return [result, end - start];
+}
+
+// FIXME: This is from build-utils.js.  Don't duplicate code.
+export function mkdirs(dir: string): void {
+  const components = dir.split(path.sep);
+  if (components.length === 0) {
+    throw new Error("mkdirs must be called with at least one path component");
+  }
+  let soFar: string;
+  if (components[0].length === 0) {
+    soFar = "/";
+    components.shift();
+  } else {
+    soFar = ".";
+  }
+  for (const c of components) {
+    soFar = path.join(soFar, c);
+    try {
+      fs.mkdirSync(soFar);
+    } catch (e) {
+      const stat = fs.statSync(soFar);
+      if (stat.isDirectory()) continue;
+      throw e;
+    }
+  }
 }
 
 export async function quicktype(opts: Partial<CLIOptions>) {
@@ -108,7 +144,14 @@ export async function quicktypeForLanguage(
       debug: graphqlSchema === undefined ? "provenance" : undefined
     });
   } catch (e) {
-    failWith("quicktype threw an exception", { error: e });
+    failWith("quicktype threw an exception", {
+      error: e,
+      languageName: language.name,
+      sourceFile,
+      sourceLanguage,
+      graphqlSchema,
+      additionalRendererOptions
+    });
   }
 }
 
@@ -157,12 +200,15 @@ export function samplesFromSources(
   }
 }
 
-type ComparisonArgs = {
+export type ComparisonRelaxations = {
+  allowMissingNull?: boolean;
+  allowStringifiedIntegers?: boolean;
+};
+
+export type ComparisonArgs = ComparisonRelaxations & {
   expectedFile: string;
   given: { file: string } | { command: string };
   strict: boolean;
-  allowMissingNull?: boolean;
-  allowStringifiedIntegers?: boolean;
 };
 
 export function compareJsonFileToJson(args: ComparisonArgs) {
@@ -180,14 +226,12 @@ export function compareJsonFileToJson(args: ComparisonArgs) {
     JSON.parse(fs.readFileSync(expectedFile, "utf8"))
   );
 
-  const allowMissingNull = !!args.allowMissingNull;
-  const allowStringifiedIntegers = !!args.allowStringifiedIntegers;
   let jsonAreEqual = strict
     ? callAndReportFailure("Failed to strictly compare objects", () =>
         strictDeepEquals(givenJSON, expectedJSON)
       )
     : callAndReportFailure("Failed to compare objects.", () =>
-        deepEquals(expectedJSON, givenJSON, allowMissingNull, ASSUME_STRINGS_EQUAL, allowStringifiedIntegers)
+        deepEquals(expectedJSON, givenJSON, ASSUME_STRINGS_EQUAL, args)
       );
 
   if (!jsonAreEqual) {

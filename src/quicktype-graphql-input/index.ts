@@ -30,7 +30,8 @@ import {
     emptyTypeAttributes,
     StringTypes,
     Input,
-    derefTypeRef
+    derefTypeRef,
+    RunContext
 } from "../quicktype-core";
 
 import { TypeKind, GraphQLSchema } from "./GraphQLSchema";
@@ -499,7 +500,7 @@ export class GraphQLInput implements Input<GraphQLSourceData> {
         return undefined;
     }
 
-    async addTypes(typeBuilder: TypeBuilder): Promise<void> {
+    async addTypes(_ctx: RunContext, typeBuilder: TypeBuilder): Promise<void> {
         for (const [name, { schema, query }] of this._topLevels) {
             const newTopLevels = makeGraphQLQueryTypes(name, typeBuilder, schema, query);
             for (const [actualName, t] of newTopLevels) {

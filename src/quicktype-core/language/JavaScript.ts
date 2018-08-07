@@ -9,21 +9,31 @@ import {
     combineWords,
     firstUpperWordStyle,
     allUpperWordStyle,
-    camelCase
+    camelCase,
+    allLowerWordStyle
 } from "../support/Strings";
 import { panic } from "../support/Support";
 
 import { Sourcelike, modifySource } from "../Source";
-import { Namer, Name } from "../Naming";
+import { Namer, Name, funPrefixNamer } from "../Naming";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
 import { BooleanOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
-
-const unicode = require("unicode-properties");
+import { isES3IdentifierPart, isES3IdentifierStart } from "./JavaScriptUnicodeMaps";
 
 export const javaScriptOptions = {
     runtimeTypecheck: new BooleanOption("runtime-typecheck", "Verify JSON.parse results at runtime", true)
+};
+
+export type JavaScriptTypeAnnotations = {
+    any: string;
+    anyArray: string;
+    anyMap: string;
+    string: string;
+    stringArray: string;
+    boolean: string;
+    never: string;
 };
 
 export class JavaScriptTargetLanguage extends TargetLanguage {
@@ -55,47 +65,23 @@ export class JavaScriptTargetLanguage extends TargetLanguage {
     }
 }
 
-function isStartCharacter(utf16Unit: number): boolean {
-    return unicode.isAlphabetic(utf16Unit) || utf16Unit === 0x5f; // underscore
-}
+export const legalizeName = utf16LegalizeCharacters(isES3IdentifierPart);
 
-function isPartCharacter(utf16Unit: number): boolean {
-    const category: string = unicode.getCategory(utf16Unit);
-    return ["Nd", "Pc", "Mn", "Mc"].indexOf(category) >= 0 || isStartCharacter(utf16Unit);
-}
-
-const legalizeName = utf16LegalizeCharacters(isPartCharacter);
-
-function typeNameStyle(original: string): string {
+export function nameStyle(original: string, upper: boolean): string {
     const words = splitIntoWords(original);
     return combineWords(
         words,
         legalizeName,
+        upper ? firstUpperWordStyle : allLowerWordStyle,
         firstUpperWordStyle,
-        firstUpperWordStyle,
-        allUpperWordStyle,
+        upper ? allUpperWordStyle : allLowerWordStyle,
         allUpperWordStyle,
         "",
-        isStartCharacter
+        isES3IdentifierStart
     );
 }
 
-function propertyNameStyle(original: string): string {
-    const escaped = utf16StringEscape(original);
-    const quoted = `"${escaped}"`;
-
-    if (original.length === 0) {
-        return quoted;
-    } else if (!isStartCharacter(original.codePointAt(0) as number)) {
-        return quoted;
-    } else if (escaped !== original) {
-        return quoted;
-    } else if (legalizeName(original) !== original) {
-        return quoted;
-    } else {
-        return original;
-    }
-}
+const identityNamingFunction = funPrefixNamer("properties", s => s);
 
 export class JavaScriptRenderer extends ConvenienceRenderer {
     constructor(
@@ -107,11 +93,11 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
     }
 
     protected makeNamedTypeNamer(): Namer {
-        return new Namer("types", typeNameStyle, []);
+        return funPrefixNamer("types", s => nameStyle(s, true));
     }
 
     protected namerForObjectProperty(): Namer {
-        return new Namer("properties", propertyNameStyle, []);
+        return identityNamingFunction;
     }
 
     protected makeUnionMemberNamer(): null {
@@ -119,7 +105,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return new Namer("enum-cases", typeNameStyle, []);
+        return funPrefixNamer("enum-cases", s => nameStyle(s, true));
     }
 
     protected namedTypeToNameForTopLevel(type: Type): Type | undefined {
@@ -186,11 +172,21 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
                 const additionalProperties = t.getAdditionalProperties();
                 const additional =
                     additionalProperties !== undefined ? this.typeMapTypeFor(additionalProperties) : "false";
-                this.emitBlock(['"', name, '": o('], [", ", additional, "),"], () => {
-                    this.forEachClassProperty(t, "none", (propName, _propJsonName, property) => {
-                        this.emitLine(propName, ": ", this.typeMapTypeForProperty(property), ",");
+                this.emitLine('"', name, '": o([');
+                this.indent(() => {
+                    this.forEachClassProperty(t, "none", (propName, jsonName, property) => {
+                        this.emitLine(
+                            '{ json: "',
+                            utf16StringEscape(jsonName),
+                            '", js: "',
+                            modifySource(utf16StringEscape, propName),
+                            '", typ: ',
+                            this.typeMapTypeForProperty(property),
+                            " },"
+                        );
                     });
                 });
+                this.emitLine("], ", additional, "),");
             });
             this.forEachEnum("none", (e, name) => {
                 this.emitLine('"', name, '": [');
@@ -225,34 +221,28 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
         return undefined;
     }
 
-    protected get castFunctionLine(): string {
-        return "function cast(obj, typ)";
+    protected get castFunctionLines(): [string, string] {
+        return ["function cast(val, typ)", "function uncast(val, typ)"];
     }
 
-    protected get typeAnnotations(): {
-        any: string;
-        anyArray: string;
-        anyMap: string;
-        string: string;
-        stringArray: string;
-        boolean: string;
-    } {
-        return { any: "", anyArray: "", anyMap: "", string: "", stringArray: "", boolean: "" };
+    protected get typeAnnotations(): JavaScriptTypeAnnotations {
+        return { any: "", anyArray: "", anyMap: "", string: "", stringArray: "", boolean: "", never: "" };
     }
 
-    private emitConvertModuleBody(): void {
+    protected emitConvertModuleBody(): void {
         this.forEachTopLevel("interposing", (t, name) => {
+            const typeMap = this.typeMapTypeFor(t);
             this.emitBlock([this.deserializerFunctionLine(t, name), " "], "", () => {
                 if (!this._jsOptions.runtimeTypecheck) {
                     this.emitLine("return JSON.parse(json);");
                 } else {
-                    this.emitLine("return cast(JSON.parse(json), ", this.typeMapTypeFor(t), ");");
+                    this.emitLine("return cast(JSON.parse(json), ", typeMap, ");");
                 }
             });
             this.ensureBlankLine();
 
             this.emitBlock([this.serializerFunctionLine(t, name), " "], "", () => {
-                this.emitLine("return JSON.stringify(value, null, 2);");
+                this.emitLine("return JSON.stringify(uncast(value, ", typeMap, "), null, 2);");
             });
         });
         if (this._jsOptions.runtimeTypecheck) {
@@ -262,64 +252,103 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
                 anyMap: anyMapAnnotation,
                 string: stringAnnotation,
                 stringArray: stringArrayAnnotation,
-                boolean: booleanAnnotation
+                never: neverAnnotation
             } = this.typeAnnotations;
             this.ensureBlankLine();
-            this.emitMultiline(`${this.castFunctionLine} {
-    if (!isValid(typ, obj)) {
-        throw Error(\`Invalid value\`);
-    }
-    return obj;
+            this.emitMultiline(`function invalidValue(typ${anyAnnotation}, val${anyAnnotation})${neverAnnotation} {
+    throw Error(\`Invalid value \${JSON.stringify(val)} for type \${JSON.stringify(typ)}\`);
 }
 
-function isValid(typ${anyAnnotation}, val${anyAnnotation})${booleanAnnotation} {
-    if (typ === "any") { return true; }
-    if (typ === null) { return val === null; }
-    if (typ === false) { return false; }
+function jsonToJSProps(typ${anyAnnotation})${anyAnnotation} {
+    if (typ.jsonToJS === undefined) {
+        var map${anyAnnotation} = {};
+        typ.props.forEach((p${anyAnnotation}) => map[p.json] = { key: p.js, typ: p.typ });
+        typ.jsonToJS = map;
+    }
+    return typ.jsonToJS;
+}
+
+function jsToJSONProps(typ${anyAnnotation})${anyAnnotation} {
+    if (typ.jsToJSON === undefined) {
+        var map${anyAnnotation} = {};
+        typ.props.forEach((p${anyAnnotation}) => map[p.js] = { key: p.json, typ: p.typ });
+        typ.jsToJSON = map;
+    }
+    return typ.jsToJSON;
+}
+
+function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnotation})${anyAnnotation} {
+    function transformPrimitive(typ${stringAnnotation}, val${anyAnnotation})${anyAnnotation} {
+        if (typeof typ === typeof val) return val;
+        return invalidValue(typ, val);
+    }
+
+    function transformUnion(typs${anyArrayAnnotation}, val${anyAnnotation})${anyAnnotation} {
+        // val must validate against one typ in typs
+        var l = typs.length;
+        for (var i = 0; i < l; i++) {
+            var typ = typs[i];
+            try {
+                return transform(val, typ, getProps);
+            } catch (_) {}
+        }
+        return invalidValue(typs, val);
+    }
+
+    function transformEnum(cases${stringArrayAnnotation}, val${anyAnnotation})${anyAnnotation} {
+        if (cases.indexOf(val) !== -1) return val;
+        return invalidValue(cases, val);
+    }
+
+    function transformArray(typ${anyAnnotation}, val${anyAnnotation})${anyAnnotation} {
+        // val must be an array with no invalid elements
+        if (!Array.isArray(val)) return invalidValue("array", val);
+        return val.map(el => transform(el, typ, getProps));
+    }
+
+    function transformObject(props${anyMapAnnotation}, additional${anyAnnotation}, val${anyAnnotation})${anyAnnotation} {
+        if (val === null || typeof val !== "object" || Array.isArray(val)) {
+            return invalidValue("object", val);
+        }
+        var result${anyAnnotation} = {};
+        Object.getOwnPropertyNames(props).forEach(key => {
+            const prop = props[key];
+            const v = Object.prototype.hasOwnProperty.call(val, key) ? val[key] : undefined;
+            result[prop.key] = transform(v, prop.typ, getProps);
+        });
+        Object.getOwnPropertyNames(val).forEach(key => {
+            if (!Object.prototype.hasOwnProperty.call(props, key)) {
+                result[key] = transform(val[key], additional, getProps);
+            }
+        });
+        return result;
+    }
+
+    if (typ === "any") return val;
+    if (typ === null) {
+        if (val === null) return val;
+        return invalidValue(typ, val);
+    }
+    if (typ === false) return invalidValue(typ, val);
     while (typeof typ === "object" && typ.ref !== undefined) {
         typ = typeMap[typ.ref];
     }
-    if (Array.isArray(typ)) { return isValidEnum(typ, val); }
+    if (Array.isArray(typ)) return transformEnum(typ, val);
     if (typeof typ === "object") {
-        return typ.hasOwnProperty("unionMembers") ? isValidUnion(typ.unionMembers, val)
-            : typ.hasOwnProperty("arrayItems")    ? isValidArray(typ.arrayItems, val)
-            : typ.hasOwnProperty("props")         ? isValidObject(typ.props, typ.additional, val)
-            : false;
+        return typ.hasOwnProperty("unionMembers") ? transformUnion(typ.unionMembers, val)
+            : typ.hasOwnProperty("arrayItems")    ? transformArray(typ.arrayItems, val)
+            : typ.hasOwnProperty("props")         ? transformObject(getProps(typ), typ.additional, val)
+            : invalidValue(typ, val);
     }
-    return isValidPrimitive(typ, val);
+    return transformPrimitive(typ, val);
 }
 
-function isValidPrimitive(typ${stringAnnotation}, val${anyAnnotation}) {
-    return typeof typ === typeof val;
+${this.castFunctionLines[0]} {
+    return transform(val, typ, jsonToJSProps);
 }
 
-function isValidUnion(typs${anyArrayAnnotation}, val${anyAnnotation})${booleanAnnotation} {
-    // val must validate against one typ in typs
-    return typs.some((typ) => isValid(typ, val));
-}
-
-function isValidEnum(cases${stringArrayAnnotation}, val${anyAnnotation})${booleanAnnotation} {
-    return cases.indexOf(val) !== -1;
-}
-
-function isValidArray(typ${anyAnnotation}, val${anyAnnotation})${booleanAnnotation} {
-    // val must be an array with no invalid elements
-    return Array.isArray(val) && val.every((element) => {
-        return isValid(typ, element);
-    });
-}
-
-function isValidObject(props${anyMapAnnotation}, additional${anyAnnotation}, val${anyAnnotation})${booleanAnnotation} {
-    if (val === null || typeof val !== "object" || Array.isArray(val)) {
-        return false;
-    }
-    return Object.getOwnPropertyNames(val).every((key) => {
-        const prop = val[key];
-        if (Object.prototype.hasOwnProperty.call(props, key)) {
-            return isValid(props[key], prop);
-        }
-        return isValid(additional, prop);
-    });
+${this.castFunctionLines[1]} {
+    return transform(val, typ, jsToJSONProps);
 }
 
 function a(typ${anyAnnotation}) {
@@ -330,12 +359,12 @@ function u(...typs${anyArrayAnnotation}) {
     return { unionMembers: typs };
 }
 
-function o(props${anyMapAnnotation}, additional${anyAnnotation}) {
+function o(props${anyArrayAnnotation}, additional${anyAnnotation}) {
     return { props, additional };
 }
 
 function m(additional${anyAnnotation}) {
-    return { props: {}, additional };
+    return { props: [], additional };
 }
 
 function r(name${stringAnnotation}) {

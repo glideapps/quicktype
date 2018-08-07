@@ -17,8 +17,18 @@
     "bar": {
       "type": "boolean",
       "description": "A pretty boolean"
+    },
+    "object-or-string": {
+      "type": ["object", "string"],
+      "properties": {
+        "prop": {
+          "type": "number",
+          "description": "This must not get lost"
+        }
+      },
+      "required": ["prop"]
     }
   },
-  "required": ["union", "enum"],
+  "required": ["union", "enum", "object-or-string"],
   "additionalProperties": false
 }

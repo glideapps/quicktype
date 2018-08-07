@@ -426,43 +426,38 @@ export class DecodingChoiceTransformer extends Transformer {
         super("decoding-choice", graph, sourceTypeRef);
     }
 
+    get transformers(): ReadonlyArray<Transformer> {
+        const transformers: Transformer[] = [];
+        function add(xfer: Transformer | undefined) {
+            if (xfer === undefined) return;
+            transformers.push(xfer);
+        }
+
+        add(this.nullTransformer);
+        add(this.integerTransformer);
+        add(this.doubleTransformer);
+        add(this.boolTransformer);
+        add(this.stringTransformer);
+        add(this.arrayTransformer);
+        add(this.objectTransformer);
+
+        return transformers;
+    }
+
     getChildren(): Set<Type> {
         let children = super.getChildren();
-        if (this.nullTransformer !== undefined) {
-            setUnionInto(children, this.nullTransformer.getChildren());
-        }
-        if (this.integerTransformer !== undefined) {
-            setUnionInto(children, this.integerTransformer.getChildren());
-        }
-        if (this.doubleTransformer !== undefined) {
-            setUnionInto(children, this.doubleTransformer.getChildren());
-        }
-        if (this.boolTransformer !== undefined) {
-            setUnionInto(children, this.boolTransformer.getChildren());
-        }
-        if (this.stringTransformer !== undefined) {
-            setUnionInto(children, this.stringTransformer.getChildren());
-        }
-        if (this.arrayTransformer !== undefined) {
-            setUnionInto(children, this.arrayTransformer.getChildren());
-        }
-        if (this.objectTransformer !== undefined) {
-            setUnionInto(children, this.objectTransformer.getChildren());
+        for (const xfer of this.transformers) {
+            setUnionInto(children, xfer.getChildren());
         }
         return children;
     }
 
     getNumberOfNodes(): number {
-        return (
-            super.getNumberOfNodes() +
-            getNumberOfNodes(this.nullTransformer) +
-            getNumberOfNodes(this.integerTransformer) +
-            getNumberOfNodes(this.doubleTransformer) +
-            getNumberOfNodes(this.boolTransformer) +
-            getNumberOfNodes(this.stringTransformer) +
-            getNumberOfNodes(this.arrayTransformer) +
-            getNumberOfNodes(this.objectTransformer)
-        );
+        let n = super.getNumberOfNodes();
+        for (const xfer of this.transformers) {
+            n += getNumberOfNodes(xfer);
+        }
+        return n;
     }
 
     get canFail(): boolean {
@@ -476,17 +471,40 @@ export class DecodingChoiceTransformer extends Transformer {
         );
 
         let transformers = new Map<TypeKind, Transformer[]>();
+        let memberMatchTransformers = new Map<Type, Transformer[]>();
 
-        function addCase(transformer: Transformer | undefined) {
-            if (transformer === undefined) return;
-            const reversed = transformer.reverse(targetTypeRef, undefined);
-            const kind = reversed.sourceType.kind;
-            let arr = transformers.get(kind);
-            if (arr === undefined) {
-                arr = [];
-                transformers.set(kind, arr);
+        function addCase(reversed: Transformer) {
+            if (reversed instanceof UnionMemberMatchTransformer) {
+                const memberType = reversed.memberType;
+                let arr = memberMatchTransformers.get(memberType);
+                if (arr === undefined) {
+                    arr = [];
+                    memberMatchTransformers.set(memberType, arr);
+                }
+                arr.push(reversed);
+            } else {
+                const kind = reversed.sourceType.kind;
+                let arr = transformers.get(kind);
+                if (arr === undefined) {
+                    arr = [];
+                    transformers.set(kind, arr);
+                }
+                arr.push(reversed);
             }
-            arr.push(reversed);
+        }
+
+        function reverseAndAdd(transformer: Transformer) {
+            const reversed = transformer.reverse(targetTypeRef, undefined);
+            let cases: ReadonlyArray<Transformer> = [];
+            // Flatten nested ChoiceTransformers
+            if (reversed instanceof ChoiceTransformer) {
+                cases = reversed.transformers;
+            } else {
+                cases = [reversed];
+            }
+            for (const xfer of cases) {
+                addCase(xfer);
+            }
         }
 
         // FIXME: Actually, keep all the failing transformers and put them first, then
@@ -499,7 +517,18 @@ export class DecodingChoiceTransformer extends Transformer {
         function filter(xfers: Transformer[]): Transformer[] {
             assert(xfers.length > 0, "Must have at least one transformer");
 
-            const nonfailing = xfers.filter(xfer => !xfer.canFail);
+            const nonfailing = xfers.filter(xfer => {
+                // For member match transformers we're deciding between
+                // multiple that match against the same member, so the fact
+                // that the match can fail is not important, since if it fails
+                // it will fail for all candidates.  The question is whether
+                // its continuation can fail.
+                if (xfer instanceof UnionMemberMatchTransformer) {
+                    return !xfer.transformer.canFail;
+                } else {
+                    return !xfer.canFail;
+                }
+            });
             if (nonfailing.length === 0) return xfers;
 
             const smallest = arraySortByInto(
@@ -509,15 +538,10 @@ export class DecodingChoiceTransformer extends Transformer {
             return [smallest];
         }
 
-        addCase(this.nullTransformer);
-        addCase(this.integerTransformer);
-        addCase(this.doubleTransformer);
-        addCase(this.boolTransformer);
-        addCase(this.stringTransformer);
-        addCase(this.arrayTransformer);
-        addCase(this.objectTransformer);
+        this.transformers.forEach(reverseAndAdd);
 
-        const resultingTransformers = ([] as Transformer[]).concat(...Array.from(transformers.values()).map(filter));
+        const allTransformers = Array.from(transformers.values()).concat(Array.from(memberMatchTransformers.values()));
+        const resultingTransformers = ([] as Transformer[]).concat(...allTransformers.map(filter));
 
         // No choice needed if there's only one
         if (resultingTransformers.length === 1) {
@@ -572,13 +596,9 @@ export class DecodingChoiceTransformer extends Transformer {
     }
 
     protected debugPrintContinuations(indent: number): void {
-        if (this.nullTransformer !== undefined) this.nullTransformer.debugPrint(indent);
-        if (this.integerTransformer !== undefined) this.integerTransformer.debugPrint(indent);
-        if (this.doubleTransformer !== undefined) this.doubleTransformer.debugPrint(indent);
-        if (this.boolTransformer !== undefined) this.boolTransformer.debugPrint(indent);
-        if (this.stringTransformer !== undefined) this.stringTransformer.debugPrint(indent);
-        if (this.arrayTransformer !== undefined) this.arrayTransformer.debugPrint(indent);
-        if (this.objectTransformer !== undefined) this.objectTransformer.debugPrint(indent);
+        for (const xfer of this.transformers) {
+            xfer.debugPrint(indent);
+        }
     }
 }
 
@@ -900,6 +920,10 @@ export class Transformation {
 class TransformationTypeAttributeKind extends TypeAttributeKind<Transformation> {
     constructor() {
         super("transformation");
+    }
+
+    appliesToTypeKind(_kind: TypeKind): boolean {
+        return true;
     }
 
     get inIdentity(): boolean {

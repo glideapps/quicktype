@@ -4,11 +4,12 @@ import {
     setUnion,
     iterableFirst,
     setUnionManyInto,
-    mapMergeWithInto
+    mapMergeWithInto,
+    setSubtract
 } from "collection-utils";
 
-import { TypeAttributeKind, combineTypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
-import { JSONSchemaType, Ref, JSONSchemaAttributes } from "./input/JSONSchemaInput";
+import { TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
+import { JSONSchemaType, Ref, JSONSchemaAttributes, PathElementKind, PathElement } from "./input/JSONSchemaInput";
 import { JSONSchema } from "./input/JSONSchemaStore";
 
 class DescriptionTypeAttributeKind extends TypeAttributeKind<ReadonlySet<string>> {
@@ -56,15 +57,24 @@ class PropertyDescriptionsTypeAttributeKind extends TypeAttributeKind<Map<string
     makeInferred(_: Map<string, ReadonlySet<string>>): undefined {
         return undefined;
     }
+
+    stringify(propertyDescriptions: Map<string, ReadonlySet<string>>): string | undefined {
+        if (propertyDescriptions.size === 0) return undefined;
+        return `prop descs: ${propertyDescriptions.size}`;
+    }
 }
 
 export const propertyDescriptionsTypeAttributeKind: TypeAttributeKind<
     Map<string, ReadonlySet<string>>
 > = new PropertyDescriptionsTypeAttributeKind();
 
+function isPropertiesKey(el: PathElement): boolean {
+    return el.kind === PathElementKind.KeyOrIndex && el.key === "properties";
+}
+
 export function descriptionAttributeProducer(
     schema: JSONSchema,
-    _canonicalRef: Ref,
+    ref: Ref,
     types: Set<JSONSchemaType>
 ): JSONSchemaAttributes | undefined {
     if (!(typeof schema === "object")) return undefined;
@@ -72,9 +82,18 @@ export function descriptionAttributeProducer(
     let description = emptyTypeAttributes;
     let propertyDescription = emptyTypeAttributes;
 
-    const maybeDescription = schema.description;
-    if (typeof maybeDescription === "string") {
-        description = descriptionTypeAttributeKind.makeAttributes(new Set([maybeDescription]));
+    const pathLength = ref.path.length;
+    if (
+        types.has("object") ||
+        setSubtract(types, ["null"]).size > 1 ||
+        schema.enum !== undefined ||
+        pathLength < 2 ||
+        !isPropertiesKey(ref.path[pathLength - 2])
+    ) {
+        const maybeDescription = schema.description;
+        if (typeof maybeDescription === "string") {
+            description = descriptionTypeAttributeKind.makeAttributes(new Set([maybeDescription]));
+        }
     }
 
     if (types.has("object") && typeof schema.properties === "object") {
@@ -92,5 +111,5 @@ export function descriptionAttributeProducer(
         }
     }
 
-    return { forType: combineTypeAttributes("union", description, propertyDescription) };
+    return { forType: description, forObject: propertyDescription };
 }

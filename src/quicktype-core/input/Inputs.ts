@@ -1,42 +1,14 @@
-import * as URI from "urijs";
 import { iterableFirst, iterableFind, iterableSome, setFilterMap, withDefault } from "collection-utils";
 
-import {
-    Ref,
-    checkJSONSchema,
-    refsInSchemaForURI,
-    addTypesInSchema,
-    JSONSchemaAttributeProducer
-} from "./JSONSchemaInput";
 import { Value, CompressedJSON } from "./CompressedJSON";
-import { JSONSchemaStore, JSONSchema } from "./JSONSchemaStore";
-import { parseJSON, panic, assert, defined, errorMessage, toString, toReadable, StringInput } from "../support/Support";
+import { panic, errorMessage, toReadable, StringInput } from "../support/Support";
 import { messageError } from "../Messages";
 import { TypeBuilder } from "../TypeBuilder";
 import { makeNamesTypeAttributes } from "../TypeNames";
-import { descriptionTypeAttributeKind, descriptionAttributeProducer } from "../Description";
+import { descriptionTypeAttributeKind } from "../Description";
 import { TypeInference } from "./Inference";
 import { TargetLanguage } from "../TargetLanguage";
-import { accessorNamesAttributeProducer } from "../AccessorNames";
-
-class InputJSONSchemaStore extends JSONSchemaStore {
-    constructor(private readonly _inputs: Map<string, StringInput>, private readonly _delegate?: JSONSchemaStore) {
-        super();
-    }
-
-    async fetch(address: string): Promise<JSONSchema | undefined> {
-        const maybeInput = this._inputs.get(address);
-        if (maybeInput !== undefined) {
-            return checkJSONSchema(parseJSON(await toString(maybeInput), "JSON Schema", address), () =>
-                Ref.root(address)
-            );
-        }
-        if (this._delegate === undefined) {
-            return panic(`Schema URI ${address} requested, but no store given`);
-        }
-        return await this._delegate.fetch(address);
-    }
-}
+import { RunContext } from "../Run";
 
 export interface Input<T> {
     readonly kind: string;
@@ -50,11 +22,10 @@ export interface Input<T> {
     singleStringSchemaSource(): string | undefined;
 
     addTypes(
+        ctx: RunContext,
         typeBuilder: TypeBuilder,
         inferMaps: boolean,
         inferEnums: boolean,
-        inferDates: boolean,
-        inferIntegerStrings: boolean,
         fixedTopLevels: boolean
     ): Promise<void>;
 }
@@ -123,11 +94,10 @@ export class JSONInput implements Input<JSONSourceData> {
     }
 
     async addTypes(
+        _ctx: RunContext,
         typeBuilder: TypeBuilder,
         inferMaps: boolean,
         inferEnums: boolean,
-        _inferDates: boolean,
-        _inferIntegerStrings: boolean,
         fixedTopLevels: boolean
     ): Promise<void> {
         const inference = new TypeInference(this._compressedJSON, typeBuilder, inferMaps, inferEnums);
@@ -149,139 +119,6 @@ export function jsonInputForTargetLanguage(
 ): JSONInput {
     const compressedJSON = new CompressedJSON();
     return new JSONInput(compressedJSON);
-}
-
-export interface JSONSchemaSourceData {
-    name: string;
-    uris?: string[];
-    schema?: StringInput;
-    isConverted?: boolean;
-}
-
-export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
-    readonly kind: string = "schema";
-    readonly needSchemaProcessing: boolean = true;
-
-    private _schemaStore: JSONSchemaStore | undefined = undefined;
-    private readonly _attributeProducers: JSONSchemaAttributeProducer[];
-
-    private readonly _schemaInputs: Map<string, StringInput> = new Map();
-    private _schemaSources: [uri.URI, JSONSchemaSourceData][] = [];
-
-    private readonly _topLevels: Map<string, Ref> = new Map();
-
-    private _needIR: boolean = false;
-
-    constructor(
-        givenSchemaStore: JSONSchemaStore | undefined,
-        additionalAttributeProducers: JSONSchemaAttributeProducer[] = []
-    ) {
-        this._schemaStore = givenSchemaStore;
-        this._attributeProducers = [descriptionAttributeProducer, accessorNamesAttributeProducer].concat(
-            additionalAttributeProducers
-        );
-    }
-
-    get needIR(): boolean {
-        return this._needIR;
-    }
-
-    addTopLevel(name: string, ref: Ref): void {
-        this._topLevels.set(name, ref);
-    }
-
-    async addTypes(typeBuilder: TypeBuilder): Promise<void> {
-        await addTypesInSchema(typeBuilder, defined(this._schemaStore), this._topLevels, this._attributeProducers);
-    }
-
-    async addSource(schemaSource: JSONSchemaSourceData): Promise<void> {
-        const { uris, schema, isConverted } = schemaSource;
-
-        if (isConverted !== true) {
-            this._needIR = true;
-        }
-
-        let normalizedURIs: uri.URI[];
-        const uriPath = `-${this._schemaInputs.size + 1}`;
-        if (uris === undefined) {
-            normalizedURIs = [new URI(uriPath)];
-        } else {
-            normalizedURIs = uris.map(uri => {
-                const normalizedURI = new URI(uri).normalize();
-                if (
-                    normalizedURI
-                        .clone()
-                        .hash("")
-                        .toString() === ""
-                ) {
-                    normalizedURI.path(uriPath);
-                }
-                return normalizedURI;
-            });
-        }
-
-        if (schema === undefined) {
-            assert(uris !== undefined, "URIs must be given if schema source is not specified");
-        } else {
-            for (const normalizedURI of normalizedURIs) {
-                this._schemaInputs.set(
-                    normalizedURI
-                        .clone()
-                        .hash("")
-                        .toString(),
-                    schema
-                );
-            }
-        }
-
-        for (const normalizedURI of normalizedURIs) {
-            this._schemaSources.push([normalizedURI, schemaSource]);
-        }
-    }
-
-    async finishAddingInputs(): Promise<void> {
-        if (this._schemaSources.length === 0) return;
-
-        let maybeSchemaStore = this._schemaStore;
-        if (this._schemaInputs.size === 0) {
-            if (maybeSchemaStore === undefined) {
-                return panic("Must have a schema store to process JSON Schema");
-            }
-        } else {
-            maybeSchemaStore = this._schemaStore = new InputJSONSchemaStore(this._schemaInputs, maybeSchemaStore);
-        }
-        const schemaStore = maybeSchemaStore;
-
-        for (const [normalizedURI, source] of this._schemaSources) {
-            const givenName = source.name;
-
-            const refs = await refsInSchemaForURI(schemaStore, normalizedURI, givenName);
-            if (Array.isArray(refs)) {
-                let name: string;
-                if (this._schemaSources.length === 1) {
-                    name = givenName;
-                } else {
-                    name = refs[0];
-                }
-                this.addTopLevel(name, refs[1]);
-            } else {
-                for (const [refName, ref] of refs) {
-                    this.addTopLevel(refName, ref);
-                }
-            }
-        }
-    }
-
-    singleStringSchemaSource(): string | undefined {
-        if (!this._schemaSources.every(([_, { schema }]) => typeof schema === "string")) {
-            return undefined;
-        }
-        const set = new Set(this._schemaSources.map(([_, { schema }]) => schema as string));
-        if (set.size === 1) {
-            return defined(iterableFirst(set));
-        }
-        return undefined;
-    }
 }
 
 export class InputData {
@@ -308,15 +145,14 @@ export class InputData {
     }
 
     async addTypes(
+        ctx: RunContext,
         typeBuilder: TypeBuilder,
         inferMaps: boolean,
         inferEnums: boolean,
-        inferDates: boolean,
-        inferIntegerStrings: boolean,
         fixedTopLevels: boolean
     ): Promise<void> {
         for (const input of this._inputs) {
-            await input.addTypes(typeBuilder, inferMaps, inferEnums, inferDates, inferIntegerStrings, fixedTopLevels);
+            await input.addTypes(ctx, typeBuilder, inferMaps, inferEnums, fixedTopLevels);
         }
     }
 

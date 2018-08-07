@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "b/test3.json",
+  "definitions": {
+    "foo": {
+      "$id": "#/foo",
+      "type": "object",
+      "properties": {
+        "foo": { "type": "integer" }
+      },
+      "required": ["foo"]
+    }
+  }
+}

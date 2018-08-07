@@ -12,7 +12,7 @@ import {
 import { Type, ClassType, EnumType, UnionType, TypeKind, ClassProperty, MapType, ObjectType } from "./Type";
 import { separateNamedTypes, nullableFromUnion, matchTypeExhaustive, isNamedType } from "./TypeUtils";
 import { Namespace, Name, Namer, FixedName, SimpleName, DependencyName, keywordNamespace } from "./Naming";
-import { Renderer, BlankLineLocations, RenderContext, ForEachPosition } from "./Renderer";
+import { Renderer, BlankLineConfig, RenderContext, ForEachPosition } from "./Renderer";
 import { defined, panic, nonNull, assert } from "./support/Support";
 import { trimEnd } from "./support/Strings";
 import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source";
@@ -27,7 +27,7 @@ import { TargetLanguage } from "./TargetLanguage";
 
 const wordWrap: (s: string) => string = require("wordwrap")(90);
 
-const topLevelNameOrder = 1;
+export const topLevelNameOrder = 1;
 
 const givenNameOrder = 10;
 export const inferredNameOrder = 30;
@@ -94,10 +94,27 @@ export abstract class ConvenienceRenderer extends Renderer {
         return this.typeGraph.topLevels;
     }
 
+    /**
+     * Return an array of strings which are not allowed as names in the global
+     * namespace.  Since names of generated types are in the global namespace,
+     * this will include anything built into the language or default libraries
+     * that can conflict with that, such as reserved keywords or common type
+     * names.
+     */
     protected forbiddenNamesForGlobalNamespace(): string[] {
         return [];
     }
 
+    /**
+     * Returns which names are forbidden for the property names of an object
+     * type.  `names` can contain strings as well as `Name`s.  In some
+     * languages, the class name can't be used as the name for a property, for
+     * example, in which case `_className` would have to be return in `names`.
+     * If `includeGlobalForbidden` is set, then all names that are forbidden
+     * in the global namespace will also be forbidden for the properties.
+     * Note: That doesn't mean that the names in the global namespace will be
+     * forbidden, too!
+     */
     protected forbiddenForObjectProperties(_o: ObjectType, _className: Name): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: false };
     }
@@ -168,8 +185,8 @@ export abstract class ConvenienceRenderer extends Renderer {
         return splitDescription(description);
     }
 
-    protected descriptionForClassProperty(c: ClassType, name: string): string[] | undefined {
-        const descriptions = this.typeGraph.attributeStore.tryGet(propertyDescriptionsTypeAttributeKind, c);
+    protected descriptionForClassProperty(o: ObjectType, name: string): string[] | undefined {
+        const descriptions = this.typeGraph.attributeStore.tryGet(propertyDescriptionsTypeAttributeKind, o);
         if (descriptions === undefined) return undefined;
         return splitDescription(descriptions.get(name));
     }
@@ -596,23 +613,25 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected forEachTopLevel(
-        blankLocations: BlankLineLocations,
+        blankLocations: BlankLineConfig,
         f: (t: Type, name: Name, position: ForEachPosition) => void,
         predicate?: (t: Type) => boolean
-    ): void {
+    ): boolean {
         let topLevels: ReadonlyMap<string, Type>;
         if (predicate !== undefined) {
             topLevels = mapFilter(this.topLevels, predicate);
         } else {
             topLevels = this.topLevels;
         }
+        if (topLevels.size === 0) return false;
         this.forEachWithBlankLines(topLevels, blankLocations, (t, name, pos) =>
             f(t, this.nameStoreView.getForTopLevel(name), pos)
         );
+        return true;
     }
 
     protected forEachDeclaration(
-        blankLocations: BlankLineLocations,
+        blankLocations: BlankLineConfig,
         f: (decl: Declaration, position: ForEachPosition) => void
     ) {
         this.forEachWithBlankLines(
@@ -628,7 +647,7 @@ export abstract class ConvenienceRenderer extends Renderer {
 
     protected forEachClassProperty(
         o: ObjectType,
-        blankLocations: BlankLineLocations,
+        blankLocations: BlankLineConfig,
         f: (name: Name, jsonName: string, p: ClassProperty, position: ForEachPosition) => void
     ): void {
         const propertyNames = defined(this._propertyNamesStoreView).get(o);
@@ -662,7 +681,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     protected forEachUnionMember(
         u: UnionType,
         members: ReadonlySet<Type> | null,
-        blankLocations: BlankLineLocations,
+        blankLocations: BlankLineConfig,
         sortOrder: ((n: Name, t: Type) => string) | null,
         f: (name: Name, t: Type, position: ForEachPosition) => void
     ): void {
@@ -677,7 +696,7 @@ export abstract class ConvenienceRenderer extends Renderer {
 
     protected forEachEnumCase(
         e: EnumType,
-        blankLocations: BlankLineLocations,
+        blankLocations: BlankLineConfig,
         f: (name: Name, jsonName: string, position: ForEachPosition) => void
     ): void {
         const caseNames = defined(this._caseNamesStoreView).get(e);
@@ -686,14 +705,14 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected forEachTransformation(
-        blankLocations: BlankLineLocations,
+        blankLocations: BlankLineConfig,
         f: (n: Name, t: Type, position: ForEachPosition) => void
     ): void {
         this.forEachWithBlankLines(defined(this._namesForTransformations), blankLocations, f);
     }
 
     protected forEachSpecificNamedType<T extends Type>(
-        blankLocations: BlankLineLocations,
+        blankLocations: BlankLineConfig,
         types: Iterable<[any, T]>,
         f: (t: T, name: Name, position: ForEachPosition) => void
     ): void {
@@ -701,7 +720,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected forEachObject(
-        blankLocations: BlankLineLocations,
+        blankLocations: BlankLineConfig,
         f:
             | ((c: ClassType, className: Name, position: ForEachPosition) => void)
             | ((o: ObjectType, objectName: Name, position: ForEachPosition) => void)
@@ -711,21 +730,21 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected forEachEnum(
-        blankLocations: BlankLineLocations,
+        blankLocations: BlankLineConfig,
         f: (u: EnumType, enumName: Name, position: ForEachPosition) => void
     ): void {
         this.forEachSpecificNamedType(blankLocations, this.enums.entries(), f);
     }
 
     protected forEachUnion(
-        blankLocations: BlankLineLocations,
+        blankLocations: BlankLineConfig,
         f: (u: UnionType, unionName: Name, position: ForEachPosition) => void
     ): void {
         this.forEachSpecificNamedType(blankLocations, this.namedUnions.entries(), f);
     }
 
     protected forEachUniqueUnion<T>(
-        blankLocations: BlankLineLocations,
+        blankLocations: BlankLineConfig,
         uniqueValue: (u: UnionType) => T,
         f: (firstUnion: UnionType, value: T, position: ForEachPosition) => void
     ): void {
@@ -740,7 +759,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected forEachNamedType(
-        blankLocations: BlankLineLocations,
+        blankLocations: BlankLineConfig,
         objectFunc:
             | ((c: ClassType, className: Name, position: ForEachPosition) => void)
             | ((o: ObjectType, objectName: Name, position: ForEachPosition) => void),

@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as _ from "lodash";
 import { Readable } from "stream";
-import { hasOwnProperty, definedMap, withDefault } from "collection-utils";
+import { hasOwnProperty, definedMap, withDefault, mapFromObject, mapMap } from "collection-utils";
 
 import {
     Options,
@@ -28,7 +28,11 @@ import {
     trainMarkovChain,
     messageError,
     messageAssert,
-    sourcesFromPostmanCollection
+    sourcesFromPostmanCollection,
+    inferenceFlags,
+    inferenceFlagNames,
+    splitIntoWords,
+    capitalize
 } from "../quicktype-core";
 import { schemaForTypeScriptSources } from "../quicktype-typescript-input";
 import { GraphQLInput } from "../quicktype-graphql-input";
@@ -52,6 +56,7 @@ export interface CLIOptions {
     src: string[];
     srcUrls?: string;
     srcLang: string;
+    additionalSchema: string[];
     graphqlSchema?: string;
     graphqlIntrospect?: string;
     httpHeader?: string[];
@@ -59,13 +64,8 @@ export interface CLIOptions {
     out?: string;
     buildMarkovChain?: string;
 
-    noMaps: boolean;
-    noEnums: boolean;
-    noDateTimes: boolean;
-    noIntegerStrings: boolean;
     alphabetizeProperties: boolean;
     allPropertiesOptional: boolean;
-    noCombineClasses: boolean;
     noRender: boolean;
 
     rendererOptions: RendererOptions;
@@ -75,6 +75,9 @@ export interface CLIOptions {
     version: boolean;
     debug?: string;
     telemetry?: string;
+
+    // We use this to access the inference flags
+    [option: string]: any;
 }
 
 const defaultDefaultTargetLanguageName: string = "go";
@@ -259,16 +262,11 @@ function inferCLIOptions(opts: Partial<CLIOptions>, targetLanguage: TargetLangua
     }
 
     /* tslint:disable:strict-boolean-expressions */
-    return {
+    const options: CLIOptions = {
         src: opts.src || [],
         srcLang: srcLang,
         lang: language.displayName,
         topLevel: opts.topLevel || inferTopLevel(opts),
-        noMaps: !!opts.noMaps,
-        noEnums: !!opts.noEnums,
-        noDateTimes: !!opts.noDateTimes,
-        noIntegerStrings: !!opts.noIntegerStrings,
-        noCombineClasses: !!opts.noCombineClasses,
         noRender: !!opts.noRender,
         alphabetizeProperties: !!opts.alphabetizeProperties,
         allPropertiesOptional: !!opts.allPropertiesOptional,
@@ -278,6 +276,7 @@ function inferCLIOptions(opts: Partial<CLIOptions>, targetLanguage: TargetLangua
         version: opts.version || false,
         out: opts.out,
         buildMarkovChain: opts.buildMarkovChain,
+        additionalSchema: opts.additionalSchema || [],
         graphqlSchema: opts.graphqlSchema,
         graphqlIntrospect: opts.graphqlIntrospect,
         httpMethod: opts.httpMethod,
@@ -286,11 +285,30 @@ function inferCLIOptions(opts: Partial<CLIOptions>, targetLanguage: TargetLangua
         telemetry: opts.telemetry
     };
     /* tslint:enable */
+    for (const flagName of inferenceFlagNames) {
+        const cliName = negatedInferenceFlagName(flagName);
+        options[cliName] = !!opts[cliName];
+    }
+    return options;
 }
 
 function makeLangTypeLabel(targetLanguages: TargetLanguage[]): string {
     assert(targetLanguages.length > 0, "Must have at least one target language");
     return targetLanguages.map(r => _.minBy(r.names, s => s.length)).join("|");
+}
+
+function negatedInferenceFlagName(name: string): string {
+    const prefix = "infer";
+    if (name.startsWith(prefix)) {
+        name = name.substr(prefix.length);
+    }
+    return "no" + capitalize(name);
+}
+
+function dashedFromCamelCase(name: string): string {
+    return splitIntoWords(name)
+        .map(w => w.word.toLowerCase())
+        .join("-");
 }
 
 function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinition[] {
@@ -344,12 +362,18 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
             type: String,
             typeLabel: "FILE",
             description: "Tracery grammar describing URLs to crawl."
-        },
-        {
-            name: "no-combine-classes",
-            type: Boolean,
-            description: "Don't combine similar classes."
-        },
+        }
+    ];
+    const inference: OptionDefinition[] = Array.from(
+        mapMap(mapFromObject(inferenceFlags), (flag, name) => {
+            return {
+                name: dashedFromCamelCase(negatedInferenceFlagName(name)),
+                type: Boolean,
+                description: flag.negationDescription + "."
+            };
+        }).values()
+    );
+    const afterInference: OptionDefinition[] = [
         {
             name: "graphql-schema",
             type: String,
@@ -376,26 +400,12 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
             description: "HTTP header for the GraphQL introspection query."
         },
         {
-            name: "no-maps",
-            type: Boolean,
-            description: "Don't infer maps, always use classes."
-        },
-        {
-            name: "no-enums",
-            type: Boolean,
-            description: "Don't infer enums, always use strings."
-        },
-        // We're getting to the point where we should have just one CLI option for
-        // disabling transformed string types, but right now we have one per type.
-        {
-            name: "no-date-times",
-            type: Boolean,
-            description: "Don't infer dates or times."
-        },
-        {
-            name: "no-integer-strings",
-            type: Boolean,
-            description: "Don't convert stringified integers to integers"
+            name: "additional-schema",
+            alias: "S",
+            type: String,
+            multiple: true,
+            typeLabel: "FILE",
+            description: "Register the $id's of additional JSON Schema files."
         },
         {
             name: "no-render",
@@ -428,7 +438,7 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
             type: String,
             typeLabel: "OPTIONS or all",
             description:
-                "Comma separated debug options: print-graph, print-reconstitution, print-gather-names, print-transformations, print-times, provenance"
+                "Comma separated debug options: print-graph, print-reconstitution, print-gather-names, print-transformations, print-schema-resolving, print-times, provenance"
         },
         {
             name: "telemetry",
@@ -449,31 +459,50 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
             description: "Display the version of quicktype"
         }
     ];
-    return beforeLang.concat(lang, afterLang);
+    return beforeLang.concat(lang, afterLang, inference, afterInference);
+}
+
+interface ColumnDefinition {
+    name: string;
+    width?: number;
+    padding?: { left: string; right: string };
+}
+
+interface TableOptions {
+    columns: ColumnDefinition[];
 }
 
 interface UsageSection {
     header?: string;
     content?: string | string[];
     optionList?: OptionDefinition[];
+    tableOptions?: TableOptions;
     hide?: string[];
 }
 
-function makeSectionsBeforeRenderers(targetLanguages: TargetLanguage[]): UsageSection[] {
-    let langsString: string;
-    if (targetLanguages.length < 2) {
-        langsString = "";
-    } else {
-        const langs = makeLangTypeLabel(targetLanguages);
-        langsString = ` [[bold]{--lang} ${langs}]`;
-    }
+const tableOptionsForOptions: TableOptions = {
+    columns: [
+        {
+            name: "option",
+            width: 50
+        },
+        {
+            name: "description"
+        }
+    ]
+};
 
+function makeSectionsBeforeRenderers(targetLanguages: TargetLanguage[]): UsageSection[] {
     const langDisplayNames = targetLanguages.map(r => r.displayName).join(", ");
 
     return [
         {
             header: "Synopsis",
-            content: `$ quicktype${langsString} FILE|URL ...`
+            content: [
+                `$ quicktype [${chalk.bold("--lang")} LANG] [${chalk.bold("--out")} FILE] FILE|URL ...`,
+                "",
+                `  LANG ... ${makeLangTypeLabel(targetLanguages)}`
+            ]
         },
         {
             header: "Description",
@@ -482,7 +511,8 @@ function makeSectionsBeforeRenderers(targetLanguages: TargetLanguage[]): UsageSe
         {
             header: "Options",
             optionList: makeOptionDefinitions(targetLanguages),
-            hide: ["no-render", "build-markov-chain"]
+            hide: ["no-render", "build-markov-chain"],
+            tableOptions: tableOptionsForOptions
         }
     ];
 }
@@ -510,7 +540,7 @@ const sectionsAfterRenderers: UsageSection[] = [
         ]
     },
     {
-        content: "Learn more at [bold]{quicktype.io}"
+        content: `Learn more at ${chalk.bold("quicktype.io")}`
     }
 ];
 
@@ -576,7 +606,8 @@ function usage(targetLanguages: TargetLanguage[]) {
 
         rendererSections.push({
             header: `Options for ${language.displayName}`,
-            optionList: definitions
+            optionList: definitions,
+            tableOptions: tableOptionsForOptions
         });
     }
 
@@ -644,7 +675,11 @@ function makeTypeScriptSource(fileNames: string[]): SchemaTypeSource {
     return Object.assign({ kind: "schema" }, schemaForTypeScriptSources(sources)) as SchemaTypeSource;
 }
 
-async function makeInputData(sources: TypeSource[], targetLanguage: TargetLanguage): Promise<InputData> {
+async function makeInputData(
+    sources: TypeSource[],
+    targetLanguage: TargetLanguage,
+    additionalSchemaAddresses: ReadonlyArray<string>
+): Promise<InputData> {
     const inputData = new InputData();
 
     for (const source of sources) {
@@ -656,7 +691,11 @@ async function makeInputData(sources: TypeSource[], targetLanguage: TargetLangua
                 await inputData.addSource("json", source, () => jsonInputForTargetLanguage(targetLanguage));
                 break;
             case "schema":
-                await inputData.addSource("schema", source, () => new JSONSchemaInput(new FetchingJSONSchemaStore()));
+                await inputData.addSource(
+                    "schema",
+                    source,
+                    () => new JSONSchemaInput(new FetchingJSONSchemaStore(), [], additionalSchemaAddresses)
+                );
                 break;
             default:
                 return assertNever(source);
@@ -765,6 +804,7 @@ export async function makeQuicktypeOptions(
     let debugPrintReconstitution = debugAll;
     let debugPrintGatherNames = debugAll;
     let debugPrintTransformations = debugAll;
+    let debugPrintSchemaResolving = debugAll;
     let debugPrintTimes = debugAll;
     if (components !== undefined) {
         for (let component of components) {
@@ -779,6 +819,8 @@ export async function makeQuicktypeOptions(
                 debugPrintTransformations = true;
             } else if (component === "print-times") {
                 debugPrintTimes = true;
+            } else if (component === "print-schema-resolving") {
+                debugPrintSchemaResolving = true;
             } else if (component === "provenance") {
                 checkProvenance = true;
             } else if (component !== "all") {
@@ -797,18 +839,13 @@ export async function makeQuicktypeOptions(
         return messageError("DriverUnknownOutputLanguage", { lang: options.lang });
     }
 
-    const inputData = await makeInputData(sources, lang);
+    const inputData = await makeInputData(sources, lang, options.additionalSchema);
 
-    return {
+    const quicktypeOptions: Partial<Options> = {
         lang,
         inputData,
-        inferMaps: !options.noMaps,
-        inferEnums: !options.noEnums,
-        inferDates: !options.noDateTimes,
-        inferIntegerStrings: !options.noIntegerStrings,
         alphabetizeProperties: options.alphabetizeProperties,
         allPropertiesOptional: options.allPropertiesOptional,
-        combineClasses: !options.noCombineClasses,
         fixedTopLevels,
         noRender: options.noRender,
         rendererOptions: options.rendererOptions,
@@ -819,8 +856,19 @@ export async function makeQuicktypeOptions(
         debugPrintReconstitution,
         debugPrintGatherNames,
         debugPrintTransformations,
+        debugPrintSchemaResolving,
         debugPrintTimes
     };
+    for (const flagName of inferenceFlagNames) {
+        const cliName = negatedInferenceFlagName(flagName);
+        const v = options[cliName];
+        if (typeof v === "boolean") {
+            quicktypeOptions[flagName] = !v;
+        } else {
+            quicktypeOptions[flagName] = true;
+        }
+    }
+    return quicktypeOptions;
 }
 
 export function writeOutput(
@@ -836,6 +884,9 @@ export function writeOutput(
         } else {
             if (!onFirst) {
                 process.stdout.write("\n");
+            }
+            if (resultsByFilename.size > 1) {
+                process.stdout.write(`// ${filename}\n\n`);
             }
             process.stdout.write(output);
         }

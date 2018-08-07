@@ -51,7 +51,9 @@ export const transformedStringTypeTargetTypeKinds = {
     date: { jsonSchema: "date", primitive: undefined },
     time: { jsonSchema: "time", primitive: undefined },
     "date-time": { jsonSchema: "date-time", primitive: undefined },
-    "integer-string": { jsonSchema: "integer", primitive: "integer" } as TransformedStringTypeTargets
+    uuid: { jsonSchema: "uuid", primitive: undefined },
+    "integer-string": { jsonSchema: "integer", primitive: "integer" } as TransformedStringTypeTargets,
+    "bool-string": { jsonSchema: "boolean", primitive: "bool" } as TransformedStringTypeTargets
 };
 
 export const transformedStringTypeTargetTypeKindsMap = mapFromObject(transformedStringTypeTargetTypeKinds as {

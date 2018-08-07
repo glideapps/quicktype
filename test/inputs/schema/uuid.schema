@@ -1,0 +1,43 @@
+{
+  "type": "object",
+  "properties": {
+    "one": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "optional": {
+      "$ref": "#/properties/one"
+    },
+    "nullable": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/properties/one"
+        }
+      ]
+    },
+    "arrOne": {
+      "type": "array",
+      "items": {
+        "$ref": "#/properties/one"
+      }
+    },
+    "arrNullable": {
+      "type": "array",
+      "items": {
+        "$ref": "#/properties/nullable"
+      }
+    },
+    "unionWithEnum": {
+      "oneOf": [
+        {
+          "$ref": "#/properties/one"
+        },
+        { "enum": ["foo"] }
+      ]
+    }
+  },
+  "required": ["one", "nullable", "unionWithEnum"]
+}

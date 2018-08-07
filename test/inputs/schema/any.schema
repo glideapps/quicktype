@@ -1,1 +1,7 @@
-{}
+{
+  "type": "object",
+  "properties": {
+    "foo": {}
+  },
+  "required": ["foo"]
+}

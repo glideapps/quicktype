@@ -11,6 +11,7 @@ export type ErrorProperties =
       }
     | { kind: "MiscReadError"; properties: { fileOrURL: string; message: string } }
     | { kind: "MiscUnicodeHighSurrogateWithoutLowSurrogate"; properties: {} }
+    | { kind: "MiscInvalidMinMaxConstraint"; properties: { min: number; max: number } }
 
     // JSON Schema input
     | { kind: "SchemaArrayIsInvalidSchema"; properties: { ref: Ref } }
@@ -32,14 +33,14 @@ export type ErrorProperties =
           kind: "SchemaSetOperationCasesIsNotArray";
           properties: { operation: string; cases: any; ref: Ref };
       }
-    | { kind: "SchemaCannotFetch"; properties: { address: string } }
     | { kind: "SchemaMoreThanOneUnionMemberName"; properties: { names: string[] } }
     | { kind: "SchemaCannotGetTypesFromBoolean"; properties: { ref: string } }
     | { kind: "SchemaCannotIndexArrayWithNonNumber"; properties: { actual: string; ref: Ref } }
     | { kind: "SchemaIndexNotInArray"; properties: { index: number; ref: Ref } }
     | { kind: "SchemaKeyNotInObject"; properties: { key: string; ref: Ref } }
-    | { kind: "SchemaFetchError"; properties: { address: string; ref: Ref; error: any } }
-    | { kind: "SchemaFetchErrorTopLevel"; properties: { address: string; error: any } }
+    | { kind: "SchemaFetchError"; properties: { address: string; base: Ref } }
+    | { kind: "SchemaFetchErrorTopLevel"; properties: { address: string } }
+    | { kind: "SchemaFetchErrorAdditional"; properties: { address: string } }
 
     // GraphQL input
     | { kind: "GraphQLNoQueriesDefined"; properties: {} }
@@ -83,6 +84,7 @@ const errorMessages: ErrorMessages = {
     MiscJSONParseError: "Syntax error in ${description} JSON ${address}: ${message}",
     MiscReadError: "Cannot read from file or URL ${fileOrURL}: ${message}",
     MiscUnicodeHighSurrogateWithoutLowSurrogate: "Malformed unicode: High surrogate not followed by low surrogate",
+    MiscInvalidMinMaxConstraint: "Invalid min-max constraint: ${min}-${max}",
 
     // JSON Schema input
     SchemaArrayIsInvalidSchema: "An array is not a valid JSON Schema at ${ref}",
@@ -104,7 +106,6 @@ const errorMessages: ErrorMessages = {
     SchemaWrongAccessorEntryArrayLength:
         "Accessor entry array must have the same number of entries as the ${operation} at ${ref}",
     SchemaSetOperationCasesIsNotArray: "${operation} cases must be an array, but is ${cases}, at ${ref}",
-    SchemaCannotFetch: "Cannot fetch schema at address ${address}",
     SchemaMoreThanOneUnionMemberName: "More than one name given for union member: ${names}",
     SchemaCannotGetTypesFromBoolean:
         "Schema value to get top-level types from must be an object, but is boolean, at ${ref}",
@@ -112,8 +113,9 @@ const errorMessages: ErrorMessages = {
         "Trying to index array in schema with key that is not a number, but is ${actual} at ${ref}",
     SchemaIndexNotInArray: "Index ${index} out of range of schema array at ${ref}",
     SchemaKeyNotInObject: "Key ${key} not in schema object at ${ref}",
-    SchemaFetchError: "Could not fetch schema ${address}, referred to from ${ref}: ${error}",
-    SchemaFetchErrorTopLevel: "Could not fetch top-level schema ${address}: ${error}",
+    SchemaFetchError: "Could not fetch schema ${address}, referred to from ${base}",
+    SchemaFetchErrorTopLevel: "Could not fetch top-level schema ${address}",
+    SchemaFetchErrorAdditional: "Could not fetch additional schema ${address}",
 
     // GraphQL input
     GraphQLNoQueriesDefined: "GraphQL file doesn't have any queries defined.",

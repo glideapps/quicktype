@@ -177,6 +177,12 @@ function isIntegerString(s: string): boolean {
     return i >= MIN_INTEGER_STRING && i <= MAX_INTEGER_STRING;
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+function isUUID(s: string): boolean {
+    return s.match(UUID) !== null;
+}
+
 /**
  * JSON inference calls this function to figure out whether a given string is to be
  * transformed into a higher level type.  Must return undefined if not, otherwise the
@@ -185,7 +191,7 @@ function isIntegerString(s: string): boolean {
  * @param s The string for which to determine the transformed string type kind.
  */
 export function inferTransformedStringTypeKindForString(s: string): TransformedStringTypeKind | undefined {
-    if (s.length === 0 || "0123456789-".indexOf(s[0]) < 0) return undefined;
+    if (s.length === 0 || "0123456789-abcdeft".indexOf(s[0]) < 0) return undefined;
 
     if (isDate(s)) {
         return "date";
@@ -195,6 +201,10 @@ export function inferTransformedStringTypeKindForString(s: string): TransformedS
         return "date-time";
     } else if (isIntegerString(s)) {
         return "integer-string";
+    } else if (s === "false" || s === "true") {
+        return "bool-string";
+    } else if (isUUID(s)) {
+        return "uuid";
     }
     return undefined;
 }

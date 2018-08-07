@@ -1,5 +1,6 @@
 import * as moment from "moment";
 import { Moment } from "moment";
+import { ComparisonRelaxations } from "../utils";
 
 function pathToString(path: string[]): string {
   return "." + path.join(".");
@@ -34,9 +35,8 @@ function momentsEqual(x: Moment, y: Moment, isTime: boolean): boolean {
 export default function deepEquals(
   x: any,
   y: any,
-  allowMissingNull: boolean,
   assumeStringsEqual: boolean,
-  allowStringifiedIntegers: boolean,
+  relax: ComparisonRelaxations,
   path: string[] = []
 ): boolean {
   // remember that NaN === NaN returns false
@@ -72,8 +72,8 @@ export default function deepEquals(
     );
     return false;
   }
-  if (allowStringifiedIntegers && typeof x === "string" && typeof y === "number") {
-    if (x.toString() === y.toString()) return true;
+  if (!!relax.allowStringifiedIntegers && typeof x === "string" && typeof y === "number") {
+    if (x === y.toString()) return true;
     console.error(`String and number not equal at path ${pathToString(path)}.`);
     return false;
   }
@@ -113,7 +113,7 @@ export default function deepEquals(
     }
     for (let i = 0; i < x.length; i++) {
       path.push(i.toString());
-      if (!deepEquals(x[i], y[i], allowMissingNull, assumeStringsEqual, allowStringifiedIntegers, path)) {
+      if (!deepEquals(x[i], y[i], assumeStringsEqual, relax, path)) {
         return false;
       }
       path.pop();
@@ -139,7 +139,7 @@ export default function deepEquals(
 
   for (const p of xKeys) {
     if (yKeys.indexOf(p) < 0) {
-      if (allowMissingNull && x[p] === null) {
+      if (!!relax.allowMissingNull && x[p] === null) {
         continue;
       }
       console.error(`Expected property ${p} not found at path ${pathToString(path)}.`);
@@ -147,7 +147,7 @@ export default function deepEquals(
     }
 
     path.push(p);
-    if (!deepEquals(x[p], y[p], allowMissingNull, assumeStringsEqual, allowStringifiedIntegers, path)) {
+    if (!deepEquals(x[p], y[p], assumeStringsEqual, relax, path)) {
       return false;
     }
     path.pop();

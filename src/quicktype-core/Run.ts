@@ -18,6 +18,7 @@ import { messageError } from "./Messages";
 import { InputData } from "./input/Inputs";
 import { flattenStrings } from "./rewrites/FlattenStrings";
 import { makeTransformations } from "./MakeTransformations";
+import { TransformedStringTypeKind } from "./Type";
 
 export function getTargetLanguage(nameOrInstance: string | TargetLanguage): TargetLanguage {
     if (typeof nameOrInstance === "object") {
@@ -32,11 +33,56 @@ export function getTargetLanguage(nameOrInstance: string | TargetLanguage): Targ
 
 export type RendererOptions = { [name: string]: string };
 
+export interface InferenceFlag {
+    description: string;
+    negationDescription: string;
+    stringType?: TransformedStringTypeKind;
+}
+
+export const inferenceFlagsObject = {
+    /** Combine similar classes.  This doesn't apply to classes from a schema, only from inference. */
+    combineClasses: { description: "Merge similar classes", negationDescription: "Don't combine similar classes" },
+    /** Whether to infer map types from JSON data */
+    inferMaps: { description: "Detect maps", negationDescription: "Don't infer maps, always use classes" },
+    /** Whether to infer enum types from JSON data */
+    inferEnums: { description: "Detect enums", negationDescription: "Don't infer enums, always use strings" },
+    /** Whether to assume that JSON strings that look like dates are dates */
+    inferDateTimes: {
+        description: "Detect dates & times",
+        negationDescription: "Don't infer dates or times",
+        stringType: "date-time" as TransformedStringTypeKind
+    },
+    /** Whether to convert UUID strings to UUID objects */
+    inferUuids: {
+        description: "Detect UUIDs",
+        negationDescription: "Don't convert UUIDs to UUID objects",
+        stringType: "uuid" as TransformedStringTypeKind
+    },
+    /** Whether to convert stringified integers to integers */
+    inferIntegerStrings: {
+        description: "Detect integers in strings",
+        negationDescription: "Don't convert stringified integers to integers",
+        stringType: "integer-string" as TransformedStringTypeKind
+    },
+    /** Whether to convert stringified booleans to boolean values */
+    inferBooleanStrings: {
+        description: "Detect booleans in strings",
+        negationDescription: "Don't convert stringified booleans to booleans",
+        stringType: "bool-string" as TransformedStringTypeKind
+    }
+};
+export const inferenceFlagNames = Object.getOwnPropertyNames(
+    inferenceFlagsObject
+) as (keyof typeof inferenceFlagsObject)[];
+export const inferenceFlags: { [F in keyof typeof inferenceFlagsObject]: InferenceFlag } = inferenceFlagsObject;
+
+export type InferenceFlags = { [F in keyof typeof inferenceFlagsObject]: boolean };
+
 /**
  * The options type for the main quicktype entry points,
  * `quicktypeMultiFile` and `quicktype`.
  */
-export interface Options {
+export type NonInferenceOptions = {
     /**
      * The target language for which to produce code.  This can be either an instance of `TargetLanguage`,
      * or a string specifying one of the names for quicktype's built-in target languages.  For example,
@@ -45,20 +91,10 @@ export interface Options {
     lang: string | TargetLanguage;
     /** The input data from which to produce types */
     inputData: InputData;
-    /** Whether to infer map types from JSON data */
-    inferMaps: boolean;
-    /** Whether to infer enum types from JSON data */
-    inferEnums: boolean;
-    /** Whether to assume that JSON strings that look like dates are dates */
-    inferDates: boolean;
-    /** Whether to convert stringified integers to integers */
-    inferIntegerStrings: boolean;
     /** Put class properties in alphabetical order, instead of in the order found in the JSON */
     alphabetizeProperties: boolean;
     /** Make all class property optional */
     allPropertiesOptional: boolean;
-    /** Combine similar classes.  This doesn't apply to classes from a schema, only from inference. */
-    combineClasses: boolean;
     /**
      * Make top-levels classes from JSON fixed.  That means even if two top-level classes are exactly
      * the same, quicktype will still generate two separate types for them.
@@ -94,18 +130,17 @@ export interface Options {
     debugPrintTransformations: boolean;
     /** Print the time it took for each pass to run */
     debugPrintTimes: boolean;
-}
+    /** Print schema resolving steps */
+    debugPrintSchemaResolving: boolean;
+};
 
-const defaultOptions: Options = {
+export type Options = NonInferenceOptions & InferenceFlags;
+
+const defaultOptions: NonInferenceOptions = {
     lang: "ts",
     inputData: new InputData(),
-    inferMaps: true,
-    inferEnums: true,
-    inferDates: true,
-    inferIntegerStrings: true,
     alphabetizeProperties: false,
     allPropertiesOptional: false,
-    combineClasses: true,
     fixedTopLevels: false,
     noRender: false,
     leadingComments: undefined,
@@ -117,13 +152,15 @@ const defaultOptions: Options = {
     debugPrintReconstitution: false,
     debugPrintGatherNames: false,
     debugPrintTransformations: false,
-    debugPrintTimes: false
+    debugPrintTimes: false,
+    debugPrintSchemaResolving: false
 };
 
 export interface RunContext {
     stringTypeMapping: StringTypeMapping;
     debugPrintReconstitution: boolean;
     debugPrintTransformations: boolean;
+    debugPrintSchemaResolving: boolean;
 
     timeSync<T>(name: string, f: () => Promise<T>): Promise<T>;
     time<T>(name: string, f: () => T): T;
@@ -133,9 +170,14 @@ class Run implements RunContext {
     private readonly _options: Options;
 
     constructor(options: Partial<Options>) {
+        const inferenceOptions: { [flag: string]: boolean } = {};
+        for (const flag of inferenceFlagNames) {
+            inferenceOptions[flag] = true;
+        }
+
         // We must not overwrite defaults with undefined values, which
         // we sometimes get.
-        this._options = Object.assign({}, defaultOptions);
+        this._options = Object.assign({}, defaultOptions, inferenceOptions as InferenceFlags);
         for (const k of Object.getOwnPropertyNames(options)) {
             const v = (options as any)[k];
             if (v !== undefined) {
@@ -146,7 +188,14 @@ class Run implements RunContext {
 
     get stringTypeMapping(): StringTypeMapping {
         const targetLanguage = getTargetLanguage(this._options.lang);
-        return targetLanguage.stringTypeMapping;
+        const mapping = new Map(targetLanguage.stringTypeMapping);
+        for (const flag of inferenceFlagNames) {
+            const stringType = inferenceFlags[flag].stringType;
+            if (!this._options[flag] && stringType !== undefined) {
+                mapping.set(stringType, "string");
+            }
+        }
+        return mapping;
     }
 
     get debugPrintReconstitution(): boolean {
@@ -155,6 +204,10 @@ class Run implements RunContext {
 
     get debugPrintTransformations(): boolean {
         return this._options.debugPrintTransformations;
+    }
+
+    get debugPrintSchemaResolving(): boolean {
+        return this._options.debugPrintSchemaResolving;
     }
 
     async timeSync<T>(name: string, f: () => Promise<T>): Promise<T> {
@@ -194,11 +247,10 @@ class Run implements RunContext {
             "read input",
             async () =>
                 await allInputs.addTypes(
+                    this,
                     typeBuilder,
                     this._options.inferMaps,
                     this._options.inferEnums,
-                    this._options.inferDates,
-                    this._options.inferIntegerStrings,
                     this._options.fixedTopLevels
                 )
         );

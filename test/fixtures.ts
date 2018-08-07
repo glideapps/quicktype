@@ -17,7 +17,10 @@ import {
   quicktypeForLanguage,
   Sample,
   samplesFromSources,
-  testsInDir
+  testsInDir,
+  ComparisonArgs,
+  mkdirs,
+  callAndExpectFailure
 } from "./utils";
 import * as languages from "./languages";
 import { RendererOptions } from "../dist/quicktype-core/Run";
@@ -32,40 +35,78 @@ const ONLY_OUTPUT = process.env.ONLY_OUTPUT !== undefined;
 
 const MAX_TEST_RUNTIME_MS = 30 * 60 * 1000;
 
-// These are tests where we have stringified integers that might be serialized
-// back as integers, which happens in heterogenous arrays such as ["123", 456].
+/**
+ * These are tests where we have stringified integers that might be serialized
+ * back as integers, which happens in heterogenous arrays such as ["123", 456].
+ */
 const testsWithStringifiedIntegers = ["nst-test-suite.json", "kitchen-sink.json"];
 
 function allowStringifiedIntegers(language: languages.Language, test: string): boolean {
-  if (!language.handlesStringifiedIntegers) return false;
-  return testsWithStringifiedIntegers.indexOf(test) >= 0;
+  if (language.features.indexOf("integer-string") < 0) return false;
+  return testsWithStringifiedIntegers.indexOf(path.basename(test)) >= 0;
 }
 
 function pathWithoutExtension(fullPath: string, extension: string): string {
   return path.join(path.dirname(fullPath), path.basename(fullPath, extension));
 }
 
-function additionalTestFiles(base: string, extension: string): string[] {
+function additionalTestFiles(base: string, extension: string, features: string[] = []): string[] {
   const additionalFiles: string[] = [];
+  function tryAdd(filename: string): boolean {
+    if (!fs.existsSync(filename)) return false;
+    additionalFiles.push(filename);
+    return true;
+  }
+
   let fn = `${base}.${extension}`;
-  if (fs.existsSync(fn)) {
-    additionalFiles.push(fn);
-  }
+  tryAdd(fn);
   let i = 1;
-  for (;;) {
+  let found: boolean;
+  do {
+    found = false;
+
     fn = `${base}.${i.toString()}.${extension}`;
-    if (fs.existsSync(fn)) {
-      additionalFiles.push(fn);
-      const outFn = `${base}.${i.toString()}.out.${extension}`;
-      if (fs.existsSync(outFn)) {
-        additionalFiles.push(outFn);
-      }
-    } else {
-      break;
+    found = tryAdd(fn) || found;
+
+    for (const feature of features) {
+      found = tryAdd(`${base}.${i.toString()}.fail.${feature}.${extension}`) || found;
     }
+    found = tryAdd(`${base}.${i.toString()}.fail.${extension}`) || found;
+
     i++;
-  }
+  } while (found);
   return additionalFiles;
+}
+
+function comparisonArgs(
+  language: languages.Language,
+  inputFilename: string,
+  expectedFilename: string
+): ComparisonArgs {
+  return {
+    expectedFile: expectedFilename,
+    given: { command: defined(language.runCommand)(inputFilename) },
+    strict: false,
+    allowMissingNull: language.allowMissingNull,
+    allowStringifiedIntegers: allowStringifiedIntegers(language, expectedFilename)
+  };
+}
+
+const timeMap = new Map<string, number>();
+
+function timeStart(message: string): void {
+  timeMap.set(message, Date.now());
+}
+
+function timeEnd(message: string, suffix: string): void {
+  const start = timeMap.get(message);
+  const fullMessage = message + suffix;
+  if (start === undefined) {
+    console.log(fullMessage + ": " + chalk.red("UNKNOWN TIMING"));
+    return;
+  }
+  const diff = Date.now() - start;
+  console.log(fullMessage + `: ${diff} ms`);
 }
 
 export abstract class Fixture {
@@ -91,19 +132,25 @@ export abstract class Fixture {
 
   runMessageStart(sample: Sample, index: number, total: number, cwd: string, shouldSkip: boolean): string {
     const rendererOptions = _.map(sample.additionalRendererOptions, (v, k) => `${k}: ${v}`).join(", ");
-    const message = [
+    const messageParts = [
       `*`,
       chalk.dim(`[${index + 1}/${total}]`),
       chalk.magenta(this.name) + chalk.dim(`(${rendererOptions})`),
-      path.join(cwd, chalk.cyan(path.basename(sample.path))),
-      shouldSkip ? chalk.red("SKIP") : ""
-    ].join(" ");
-    console.time(message);
+      path.join(cwd, chalk.cyan(path.basename(sample.path)))
+    ];
+    if (shouldSkip) {
+      messageParts.push(chalk.red("SKIP"));
+    }
+    const message = messageParts.join(" ");
+    timeStart(message);
     return message;
   }
 
-  runMessageEnd(message: string) {
-    console.timeEnd(message);
+  runMessageEnd(message: string, numFiles: number) {
+    const numFilesString = ` (${numFiles} files)`;
+    const suffix =
+      numFiles <= 0 ? chalk.red(numFilesString) : numFiles > 1 ? chalk.green(numFilesString) : "";
+    timeEnd(message, suffix);
   }
 }
 
@@ -131,7 +178,7 @@ abstract class LanguageFixture extends Fixture {
     filename: string,
     additionalRendererOptions: RendererOptions,
     additionalFiles: string[]
-  ): Promise<void>;
+  ): Promise<number>;
 
   additionalFiles(_sample: Sample): string[] {
     return [];
@@ -139,9 +186,9 @@ abstract class LanguageFixture extends Fixture {
 
   async runWithSample(sample: Sample, index: number, total: number) {
     const cwd = this.getRunDirectory();
-    let sampleFile = path.basename(sample.path);
-    let shouldSkip = this.shouldSkipTest(sample);
-    const additionalFiles = this.additionalFiles(sample);
+    const sampleFile = path.resolve(sample.path);
+    const shouldSkip = this.shouldSkipTest(sample);
+    const additionalFiles = this.additionalFiles(sample).map(p => path.resolve(p));
 
     const message = this.runMessageStart(sample, index, total, cwd, shouldSkip);
 
@@ -150,8 +197,8 @@ abstract class LanguageFixture extends Fixture {
     }
 
     shell.cp("-R", this.language.base, cwd);
-    shell.cp.apply(null, _.concat(sample.path, additionalFiles, cwd));
 
+    let numFiles = -1;
     await inDir(cwd, async () => {
       await this.runQuicktype(sampleFile, sample.additionalRendererOptions);
 
@@ -160,7 +207,7 @@ abstract class LanguageFixture extends Fixture {
       }
 
       try {
-        await timeout(
+        numFiles = await timeout(
           this.test(sampleFile, sample.additionalRendererOptions, additionalFiles),
           MAX_TEST_RUNTIME_MS
         );
@@ -178,17 +225,13 @@ abstract class LanguageFixture extends Fixture {
         path.dirname(sample.path),
         path.basename(sample.path, path.extname(sample.path))
       );
-      try {
-        shell.mkdir("-p", outputDir);
-      } catch (e) {
-        console.error(`Error creating directory "${outputDir}" - probably another thread created it`);
-      }
+      mkdirs(outputDir);
       shell.cp(path.join(cwd, this.language.output), outputDir);
     }
 
     shell.rm("-rf", cwd);
 
-    this.runMessageEnd(message);
+    this.runMessageEnd(message, numFiles);
   }
 }
 
@@ -210,19 +253,13 @@ class JSONFixture extends LanguageFixture {
     filename: string,
     additionalRendererOptions: RendererOptions,
     _additionalFiles: string[]
-  ): Promise<void> {
+  ): Promise<number> {
     if (this.language.compileCommand) {
       await execAsync(this.language.compileCommand);
     }
-    if (this.language.runCommand === undefined) return;
+    if (this.language.runCommand === undefined) return 0;
 
-    compareJsonFileToJson({
-      expectedFile: filename,
-      given: { command: this.language.runCommand(filename) },
-      strict: false,
-      allowMissingNull: this.language.allowMissingNull,
-      allowStringifiedIntegers: allowStringifiedIntegers(this.language, filename)
-    });
+    compareJsonFileToJson(comparisonArgs(this.language, filename, filename));
 
     if (
       this.language.diffViaSchema &&
@@ -244,6 +281,8 @@ class JSONFixture extends LanguageFixture {
       // Compare fixture.output to fixture.output.expected
       exec(`diff -Naur ${this.language.output}.expected ${this.language.output} > /dev/null 2>&1`);
     }
+
+    return 1;
   }
 
   shouldSkipTest(sample: Sample): boolean {
@@ -304,7 +343,7 @@ class JSONToXToYFixture extends JSONFixture {
       diffViaSchema: false,
       skipDiffViaSchema: [],
       allowMissingNull: language.allowMissingNull,
-      handlesStringifiedIntegers: language.handlesStringifiedIntegers,
+      features: language.features,
       output: languageXOutputFilename,
       topLevel: "TopLevel",
       skipJSON,
@@ -322,7 +361,11 @@ class JSONToXToYFixture extends JSONFixture {
     return this.name === name || name === this._fixturePrefix;
   }
 
-  async test(filename: string, additionalRendererOptions: RendererOptions, _additionalFiles: string[]) {
+  async test(
+    filename: string,
+    additionalRendererOptions: RendererOptions,
+    _additionalFiles: string[]
+  ): Promise<number> {
     // Generate code for Y from X
     await quicktypeForLanguage(
       this.runLanguage,
@@ -333,13 +376,9 @@ class JSONToXToYFixture extends JSONFixture {
     );
 
     // Parse the sample with the code generated from its schema, and compare to the sample
-    compareJsonFileToJson({
-      expectedFile: filename,
-      given: { command: defined(this.runLanguage.runCommand)(filename) },
-      strict: false,
-      allowMissingNull: this.runLanguage.allowMissingNull,
-      allowStringifiedIntegers: allowStringifiedIntegers(this.runLanguage, filename)
-    });
+    compareJsonFileToJson(comparisonArgs(this.runLanguage, filename, filename));
+
+    return 1;
   }
 
   shouldSkipTest(sample: Sample): boolean {
@@ -366,11 +405,11 @@ class JSONSchemaJSONFixture extends JSONToXToYFixture {
     filename: string,
     additionalRendererOptions: RendererOptions,
     additionalFiles: string[]
-  ): Promise<void> {
+  ): Promise<number> {
     let input = JSON.parse(fs.readFileSync(filename, "utf8"));
     let schema = JSON.parse(fs.readFileSync(this.language.output, "utf8"));
 
-    let ajv = new Ajv({ format: "full", unknownFormats: ["integer"] });
+    let ajv = new Ajv({ format: "full", unknownFormats: ["integer", "boolean"] });
     // Make Ajv's date-time compatible with what we recognize.  All non-standard
     // JSON formats that we use for transformed type kinds must be registered here
     // with a validation function.
@@ -401,6 +440,8 @@ class JSONSchemaJSONFixture extends JSONToXToYFixture {
       given: { file: schemaSchema },
       strict: true
     });
+
+    return 1;
   }
 }
 
@@ -502,35 +543,40 @@ class JSONSchemaFixture extends LanguageFixture {
 
   additionalFiles(sample: Sample): string[] {
     const baseName = pathWithoutExtension(sample.path, ".schema");
-    return additionalTestFiles(baseName, "json").concat(additionalTestFiles(baseName, "ref"));
+    return additionalTestFiles(baseName, "json", this.language.features);
   }
 
   async test(
     _sample: string,
     _additionalRendererOptions: RendererOptions,
     additionalFiles: string[]
-  ): Promise<void> {
+  ): Promise<number> {
     if (this.language.compileCommand) {
       await execAsync(this.language.compileCommand);
     }
-    if (this.language.runCommand === undefined) return;
+    if (this.language.runCommand === undefined) return 0;
+
+    const failExtensions = this.language.features.map(f => `.fail.${f}.json`).concat([".fail.json"]);
 
     for (const filename of additionalFiles) {
-      if (!filename.endsWith(".json") || filename.endsWith(".out.json")) continue;
-
-      const jsonBase = path.basename(filename);
-      let expected = jsonBase.replace(".json", ".out.json");
-      if (!fs.existsSync(expected) || !this.language.handlesStringifiedIntegers) {
-        expected = jsonBase;
+      if (failExtensions.some(ext => filename.endsWith(ext))) {
+        callAndExpectFailure(
+          `Expected failure on input ${filename}`,
+          () => exec(defined(this.language.runCommand)(filename), false).stdout
+        );
+      } else {
+        let expected = filename;
+        for (const feature of this.language.features) {
+          const featureFilename = filename.replace(".json", `.out.${feature}.json`);
+          if (fs.existsSync(featureFilename)) {
+            expected = featureFilename;
+            break;
+          }
+        }
+        compareJsonFileToJson(comparisonArgs(this.language, filename, expected));
       }
-      compareJsonFileToJson({
-        expectedFile: expected,
-        given: { command: this.language.runCommand(jsonBase) },
-        strict: false,
-        allowMissingNull: this.language.allowMissingNull,
-        allowStringifiedIntegers: allowStringifiedIntegers(this.language, expected)
-      });
     }
+    return additionalFiles.length;
   }
 }
 
@@ -579,32 +625,23 @@ class GraphQLFixture extends LanguageFixture {
 
   additionalFiles(sample: Sample): string[] {
     const baseName = pathWithoutExtension(sample.path, ".graphql");
-    return additionalTestFiles(baseName, "json").concat(graphQLSchemaFilename(baseName));
+    return additionalTestFiles(baseName, "json");
   }
 
   async test(
     _filename: string,
     _additionalRendererOptions: RendererOptions,
     additionalFiles: string[]
-  ): Promise<void> {
+  ): Promise<number> {
     if (this.language.compileCommand) {
       await execAsync(this.language.compileCommand);
     }
-    if (this.language.runCommand === undefined) return;
+    if (this.language.runCommand === undefined) return 0;
 
     for (const fn of additionalFiles) {
-      if (!fn.endsWith(".json")) {
-        continue;
-      }
-      const jsonBase = path.basename(fn);
-      compareJsonFileToJson({
-        expectedFile: jsonBase,
-        given: { command: this.language.runCommand(jsonBase) },
-        strict: false,
-        allowMissingNull: this.language.allowMissingNull,
-        allowStringifiedIntegers: allowStringifiedIntegers(this.language, jsonBase)
-      });
+      compareJsonFileToJson(comparisonArgs(this.language, fn, fn));
     }
+    return additionalFiles.length;
   }
 }
 
@@ -639,6 +676,7 @@ export const allFixtures: Fixture[] = [
   new JSONSchemaFixture(languages.TypeScriptLanguage),
   new JSONSchemaFixture(languages.FlowLanguage),
   new JSONSchemaFixture(languages.JavaScriptLanguage),
+  new JSONSchemaFixture(languages.KotlinLanguage),
   // FIXME: Why are we missing so many language with GraphQL?
   new GraphQLFixture(languages.CSharpLanguage),
   new GraphQLFixture(languages.JavaLanguage),

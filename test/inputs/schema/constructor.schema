@@ -1,0 +1,12 @@
+{
+    "type": "object",
+    "properties": {
+        "constructor": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "constructor" }
+            ],
+            "title": "union_constructor"
+        }
+    }
+}

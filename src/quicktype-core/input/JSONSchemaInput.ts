@@ -15,15 +15,20 @@ import {
     arrayMapSync,
     arrayLast,
     arrayGetFromEnd,
-    arrayPop,
     hashCodeOf,
     hasOwnProperty,
     definedMap,
-    addHashCode
+    addHashCode,
+    iterableFirst
 } from "collection-utils";
 
-import { PrimitiveTypeKind, TransformedStringTypeKind, transformedStringTypeTargetTypeKindsMap } from "../Type";
-import { panic, assertNever, StringMap, assert, defined } from "../support/Support";
+import {
+    PrimitiveTypeKind,
+    TransformedStringTypeKind,
+    transformedStringTypeTargetTypeKindsMap,
+    isNumberTypeKind
+} from "../Type";
+import { panic, assertNever, StringMap, assert, defined, StringInput, parseJSON, toString } from "../support/Support";
 import { TypeBuilder } from "../TypeBuilder";
 import { TypeNames } from "../TypeNames";
 import { makeNamesTypeAttributes, modifyTypeNames, singularizeTypeNames } from "../TypeNames";
@@ -38,6 +43,12 @@ import { messageAssert, messageError } from "../Messages";
 import { StringTypes } from "../StringTypes";
 
 import { TypeRef } from "../TypeGraph";
+import { RunContext } from "../Run";
+import { Input } from "./Inputs";
+import { descriptionAttributeProducer } from "../Description";
+import { accessorNamesAttributeProducer } from "../AccessorNames";
+import { enumValuesAttributeProducer } from "../EnumValues";
+import { minMaxAttributeProducer } from "../Constraints";
 
 export enum PathElementKind {
     Root,
@@ -77,7 +88,7 @@ function withRef<T extends object>(refOrLoc: Ref | (() => Ref) | Location, props
     return Object.assign({ ref }, props === undefined ? {} : props);
 }
 
-export function checkJSONSchemaObject(x: any, refOrLoc: Ref | (() => Ref)): StringMap {
+function checkJSONSchemaObject(x: any, refOrLoc: Ref | (() => Ref)): StringMap {
     if (Array.isArray(x)) {
         return messageError("SchemaArrayIsInvalidSchema", withRef(refOrLoc));
     }
@@ -90,7 +101,7 @@ export function checkJSONSchemaObject(x: any, refOrLoc: Ref | (() => Ref)): Stri
     return x;
 }
 
-export function checkJSONSchema(x: any, refOrLoc: Ref | (() => Ref)): JSONSchema {
+function checkJSONSchema(x: any, refOrLoc: Ref | (() => Ref)): JSONSchema {
     if (typeof x === "boolean") return x;
     return checkJSONSchemaObject(x, refOrLoc);
 }
@@ -98,8 +109,8 @@ export function checkJSONSchema(x: any, refOrLoc: Ref | (() => Ref)): JSONSchema
 const numberRegexp = new RegExp("^[0-9]+$");
 
 export class Ref {
-    static root(address: string): Ref {
-        const uri = new URI(address);
+    static root(address: string | undefined): Ref {
+        const uri = definedMap(address, a => new URI(a));
         return new Ref(uri, []);
     }
 
@@ -327,28 +338,31 @@ class Location {
     public readonly canonicalRef: Ref;
     public readonly virtualRef: Ref;
 
-    constructor(canonicalRef: Ref, virtualRef?: Ref) {
+    constructor(canonicalRef: Ref, virtualRef?: Ref, readonly haveID: boolean = false) {
         this.canonicalRef = canonicalRef;
         this.virtualRef = virtualRef !== undefined ? virtualRef : canonicalRef;
     }
 
     updateWithID(id: any) {
         if (typeof id !== "string") return this;
-        // FIXME: This is incorrect.  If the parsed ref doesn't have an address, the
-        // current virtual one's must be used.  The canonizer must do this, too.
-        return new Location(this.canonicalRef, Ref.parse(id).resolveAgainst(this.virtualRef));
+        const parsed = Ref.parse(id);
+        const virtual = this.haveID ? parsed.resolveAgainst(this.virtualRef) : parsed;
+        if (!this.haveID) {
+            messageAssert(virtual.hasAddress, "SchemaIDMustHaveAddress", withRef(this, { id }));
+        }
+        return new Location(this.canonicalRef, virtual, true);
     }
 
     push(...keys: string[]): Location {
-        return new Location(this.canonicalRef.push(...keys), this.virtualRef.push(...keys));
+        return new Location(this.canonicalRef.push(...keys), this.virtualRef.push(...keys), this.haveID);
     }
 
     pushObject(): Location {
-        return new Location(this.canonicalRef.pushObject(), this.virtualRef.pushObject());
+        return new Location(this.canonicalRef.pushObject(), this.virtualRef.pushObject(), this.haveID);
     }
 
     pushType(index: number): Location {
-        return new Location(this.canonicalRef.pushType(index), this.virtualRef.pushType(index));
+        return new Location(this.canonicalRef.pushType(index), this.virtualRef.pushType(index), this.haveID);
     }
 
     toString(): string {
@@ -357,14 +371,10 @@ class Location {
 }
 
 class Canonizer {
-    private readonly _map = new EqualityMap<Ref, Ref>();
+    private readonly _map = new EqualityMap<Ref, Location>();
     private readonly _schemaAddressesAdded = new Set<string>();
 
-    private addID(mapped: string, loc: Location): void {
-        const ref = Ref.parse(mapped).resolveAgainst(loc.virtualRef);
-        messageAssert(ref.hasAddress, "SchemaIDMustHaveAddress", withRef(loc, { id: mapped }));
-        this._map.set(ref, loc.canonicalRef);
-    }
+    constructor(private readonly _ctx: RunContext) {}
 
     private addIDs(schema: any, loc: Location) {
         if (schema === null) return;
@@ -377,43 +387,40 @@ class Canonizer {
         if (typeof schema !== "object") {
             return;
         }
+        const locWithoutID = loc;
         const maybeID = schema["$id"];
         if (typeof maybeID === "string") {
-            this.addID(maybeID, loc);
             loc = loc.updateWithID(maybeID);
+        }
+        if (loc.haveID) {
+            if (this._ctx.debugPrintSchemaResolving) {
+                console.log(`adding mapping ${loc.toString()}`);
+            }
+            this._map.set(loc.virtualRef, locWithoutID);
         }
         for (const property of Object.getOwnPropertyNames(schema)) {
             this.addIDs(schema[property], loc.push(property));
         }
     }
 
-    addSchema(schema: any, address: string) {
-        if (this._schemaAddressesAdded.has(address)) return;
+    addSchema(schema: any, address: string): boolean {
+        if (this._schemaAddressesAdded.has(address)) return false;
 
-        this.addIDs(schema, new Location(Ref.root(address)));
+        this.addIDs(schema, new Location(Ref.root(address), Ref.root(undefined)));
         this._schemaAddressesAdded.add(address);
+        return true;
     }
 
-    // Returns: Canonical ref, full virtual ref
-    canonize(virtualBase: Ref | undefined, ref: Ref): [Ref, Ref] {
-        const fullVirtual = ref.resolveAgainst(virtualBase);
-        let virtual = fullVirtual;
-        const relative: PathElement[] = [];
-        for (;;) {
-            const maybeCanonical = this._map.get(virtual);
-            if (maybeCanonical !== undefined) {
-                return [new Ref(maybeCanonical.addressURI, maybeCanonical.path.concat(relative)), fullVirtual];
-            }
-            const last = arrayLast(virtual.path);
-            if (last === undefined) {
-                // We've exhausted our options - it's not a mapped ref.
-                return [fullVirtual, fullVirtual];
-            }
-            if (last.kind !== PathElementKind.Root) {
-                relative.unshift(last);
-            }
-            virtual = new Ref(virtual.addressURI, arrayPop(virtual.path));
+    // Returns: Canonical ref
+    canonize(base: Location, ref: Ref): Location {
+        const virtual = ref.resolveAgainst(base.virtualRef);
+        const loc = this._map.get(virtual);
+        if (loc !== undefined) {
+            return loc;
         }
+        const canonicalRef =
+            virtual.addressURI === undefined ? new Ref(base.canonicalRef.addressURI, virtual.path) : virtual;
+        return new Location(canonicalRef, new Ref(undefined, virtual.path));
     }
 }
 
@@ -454,18 +461,6 @@ function checkRequiredArray(arr: any, loc: Location): string[] {
     return arr;
 }
 
-async function getFromStore(store: JSONSchemaStore, address: string, ref: Ref | undefined): Promise<JSONSchema> {
-    try {
-        return await store.get(address);
-    } catch (error) {
-        if (ref === undefined) {
-            return messageError("SchemaFetchErrorTopLevel", { address, error });
-        } else {
-            return messageError("SchemaFetchError", { address, ref, error });
-        }
-    }
-}
-
 export const schemaTypeDict = {
     null: true,
     boolean: true,
@@ -479,7 +474,14 @@ export type JSONSchemaType = keyof typeof schemaTypeDict;
 
 const schemaTypes = Object.getOwnPropertyNames(schemaTypeDict) as JSONSchemaType[];
 
-export type JSONSchemaAttributes = { forType?: TypeAttributes; forUnion?: TypeAttributes; forCases?: TypeAttributes[] };
+export type JSONSchemaAttributes = {
+    forType?: TypeAttributes;
+    forUnion?: TypeAttributes;
+    forObject?: TypeAttributes;
+    forNumber?: TypeAttributes;
+    forString?: TypeAttributes;
+    forCases?: TypeAttributes[];
+};
 export type JSONSchemaAttributeProducer = (
     schema: JSONSchema,
     canonicalRef: Ref,
@@ -496,22 +498,106 @@ function typeKindForJSONSchemaFormat(format: string): TransformedStringTypeKind 
     return target[0] as TransformedStringTypeKind;
 }
 
-export async function addTypesInSchema(
+function schemaFetchError(base: Location | undefined, address: string): never {
+    if (base === undefined) {
+        return messageError("SchemaFetchErrorTopLevel", { address });
+    } else {
+        return messageError("SchemaFetchError", { address, base: base.canonicalRef });
+    }
+}
+
+class Resolver {
+    constructor(
+        private readonly _ctx: RunContext,
+        private readonly _store: JSONSchemaStore,
+        private readonly _canonizer: Canonizer
+    ) {}
+
+    private async tryResolveVirtualRef(
+        fetchBase: Location,
+        lookupBase: Location,
+        virtualRef: Ref
+    ): Promise<[JSONSchema | undefined, Location]> {
+        let didAdd = false;
+        // If we are resolving into a schema file that we haven't seen yet then
+        // we don't know its $id mapping yet, which means we don't know where we
+        // will end up.  What we do if we encounter a new schema is add all its
+        // IDs first, and then try to canonize again.
+        for (;;) {
+            const loc = this._canonizer.canonize(fetchBase, virtualRef);
+            const canonical = loc.canonicalRef;
+            assert(canonical.hasAddress, "Canonical ref can't be resolved without an address");
+            const address = canonical.address;
+
+            let schema =
+                canonical.addressURI === undefined
+                    ? undefined
+                    : await this._store.get(address, this._ctx.debugPrintSchemaResolving);
+            if (schema === undefined) {
+                return [undefined, loc];
+            }
+
+            if (this._canonizer.addSchema(schema, address)) {
+                assert(!didAdd, "We can't add a schema twice");
+                didAdd = true;
+            } else {
+                let lookupLoc = this._canonizer.canonize(lookupBase, virtualRef);
+                if (fetchBase !== undefined) {
+                    lookupLoc = new Location(
+                        new Ref(loc.canonicalRef.addressURI, lookupLoc.canonicalRef.path),
+                        lookupLoc.virtualRef,
+                        lookupLoc.haveID
+                    );
+                }
+                return [lookupLoc.canonicalRef.lookupRef(schema), lookupLoc];
+            }
+        }
+    }
+
+    async resolveVirtualRef(base: Location, virtualRef: Ref): Promise<[JSONSchema, Location]> {
+        if (this._ctx.debugPrintSchemaResolving) {
+            console.log(`resolving ${virtualRef.toString()} relative to ${base.toString()}`);
+        }
+
+        // Try with the virtual base first.  If that doesn't work, use the
+        // canonical ref's address with the virtual base's path.
+        let result = await this.tryResolveVirtualRef(base, base, virtualRef);
+        let schema = result[0];
+        if (schema !== undefined) {
+            if (this._ctx.debugPrintSchemaResolving) {
+                console.log(`resolved to ${result[1].toString()}`);
+            }
+            return [schema, result[1]];
+        }
+
+        const altBase = new Location(
+            base.canonicalRef,
+            new Ref(base.canonicalRef.addressURI, base.virtualRef.path),
+            base.haveID
+        );
+        result = await this.tryResolveVirtualRef(altBase, base, virtualRef);
+        schema = result[0];
+        if (schema !== undefined) {
+            if (this._ctx.debugPrintSchemaResolving) {
+                console.log(`resolved to ${result[1].toString()}`);
+            }
+            return [schema, result[1]];
+        }
+
+        return schemaFetchError(base, virtualRef.address);
+    }
+
+    async resolveTopLevelRef(ref: Ref): Promise<[JSONSchema, Location]> {
+        return await this.resolveVirtualRef(new Location(new Ref(ref.addressURI, [])), new Ref(undefined, ref.path));
+    }
+}
+
+async function addTypesInSchema(
+    resolver: Resolver,
     typeBuilder: TypeBuilder,
-    store: JSONSchemaStore,
     references: ReadonlyMap<string, Ref>,
     attributeProducers: JSONSchemaAttributeProducer[]
 ): Promise<void> {
-    const canonizer = new Canonizer();
-
-    async function resolveVirtualRef(base: Location | undefined, virtualRef: Ref): Promise<[JSONSchema, Location]> {
-        const [canonical, fullVirtual] = canonizer.canonize(definedMap(base, b => b.virtualRef), virtualRef);
-        assert(canonical.hasAddress, "Canonical ref can't be resolved without an address");
-        const schema = await getFromStore(store, canonical.address, definedMap(base, l => l.canonicalRef));
-        canonizer.addSchema(schema, canonical.address);
-        return [canonical.lookupRef(schema), new Location(canonical, fullVirtual)];
-    }
-
     let typeForCanonicalRef = new EqualityMap<Ref, TypeRef>();
 
     function setTypeForLocation(loc: Location, t: TypeRef): void {
@@ -597,29 +683,56 @@ export async function addTypesInSchema(
         }
 
         const includedTypes = setFilter(schemaTypes, isTypeIncluded);
+        let producedAttributesForNoCases: JSONSchemaAttributes[] | undefined = undefined;
 
         function forEachProducedAttribute(
             cases: JSONSchema[] | undefined,
             f: (attributes: JSONSchemaAttributes) => void
         ): void {
-            for (const producer of attributeProducers) {
-                const newAttributes = producer(schema, loc.canonicalRef, includedTypes, cases);
-                if (newAttributes === undefined) continue;
-                f(newAttributes);
+            let attributes: JSONSchemaAttributes[];
+            if (cases === undefined && producedAttributesForNoCases !== undefined) {
+                attributes = producedAttributesForNoCases;
+            } else {
+                attributes = [];
+                for (const producer of attributeProducers) {
+                    const newAttributes = producer(schema, loc.canonicalRef, includedTypes, cases);
+                    if (newAttributes === undefined) continue;
+                    attributes.push(newAttributes);
+                }
+                if (cases === undefined) {
+                    producedAttributesForNoCases = attributes;
+                }
             }
+            for (const a of attributes) {
+                f(a);
+            }
+        }
+
+        function combineProducedAttributes(
+            f: (attributes: JSONSchemaAttributes) => TypeAttributes | undefined
+        ): TypeAttributes {
+            let result = emptyTypeAttributes;
+            forEachProducedAttribute(undefined, attr => {
+                const maybeAttributes = f(attr);
+                if (maybeAttributes === undefined) return;
+                result = combineTypeAttributes("union", result, maybeAttributes);
+            });
+            return result;
         }
 
         function makeAttributes(attributes: TypeAttributes): TypeAttributes {
             if (schema.oneOf === undefined) {
-                forEachProducedAttribute(undefined, ({ forType, forUnion, forCases }) => {
-                    assert(
-                        forUnion === undefined && forCases === undefined,
-                        "We can't have attributes for unions and cases if we don't have a union"
-                    );
-                    if (forType !== undefined) {
-                        attributes = combineTypeAttributes("union", attributes, forType);
-                    }
-                });
+                attributes = combineTypeAttributes(
+                    "union",
+                    attributes,
+                    combineProducedAttributes(({ forType, forUnion, forCases }) => {
+                        assert(
+                            forUnion === undefined && forCases === undefined,
+                            "We can't have attributes for unions and cases if we don't have a union"
+                        );
+                        return forType;
+                    })
+                );
             }
             return modifyTypeNames(attributes, maybeTypeNames => {
                 const typeNames = defined(maybeTypeNames);
@@ -642,12 +755,12 @@ export async function addTypesInSchema(
         typeAttributes = makeAttributes(typeAttributes);
         const inferredAttributes = makeTypeAttributesInferred(typeAttributes);
 
-        function makeStringType(): TypeRef {
+        function makeStringType(attributes: TypeAttributes): TypeRef {
             const kind = typeKindForJSONSchemaFormat(schema.format);
             if (kind === undefined) {
-                return typeBuilder.getStringType(inferredAttributes, StringTypes.unrestricted);
+                return typeBuilder.getStringType(attributes, StringTypes.unrestricted);
             } else {
-                return typeBuilder.getPrimitiveType(kind, inferredAttributes);
+                return typeBuilder.getPrimitiveType(kind, attributes);
             }
         }
 
@@ -676,10 +789,10 @@ export async function addTypesInSchema(
 
         async function makeObjectType(): Promise<TypeRef> {
             let required: string[];
-            if (schema.required === undefined) {
+            if (schema.required === undefined || typeof schema.required === "boolean") {
                 required = [];
             } else {
-                required = checkRequiredArray(schema.required, loc);
+                required = Array.from(checkRequiredArray(schema.required, loc));
             }
 
             let properties: StringMap;
@@ -689,9 +802,31 @@ export async function addTypesInSchema(
                 properties = checkJSONSchemaObject(schema.properties, loc.canonicalRef);
             }
 
-            const additionalProperties = schema.additionalProperties;
+            // In Schema Draft 3, `required` is `true` on a property that's required.
+            for (const p of Object.getOwnPropertyNames(properties)) {
+                if (properties[p].required === true && required.indexOf(p) < 0) {
+                    required.push(p);
+                }
+            }
 
-            return await makeObject(loc, inferredAttributes, properties, required, additionalProperties);
+            let additionalProperties = schema.additionalProperties;
+            // This is an incorrect hack to fix an issue with a Go->Schema generator:
+            // https://github.com/quicktype/quicktype/issues/976
+            if (
+                additionalProperties === undefined &&
+                typeof schema.patternProperties === "object" &&
+                hasOwnProperty(schema.patternProperties, ".*")
+            ) {
+                additionalProperties = schema.patternProperties[".*"];
+            }
+
+            const objectAttributes = combineTypeAttributes(
+                "union",
+                inferredAttributes,
+                combineProducedAttributes(({ forObject }) => forObject)
+            );
+
+            return await makeObject(loc, objectAttributes, properties, required, additionalProperties);
         }
 
         async function makeTypesFromCases(cases: any, kind: string): Promise<TypeRef[]> {
@@ -759,6 +894,8 @@ export async function addTypesInSchema(
         if (needUnion) {
             const unionTypes: TypeRef[] = [];
 
+            const numberAttributes = combineProducedAttributes(({ forNumber }) => forNumber);
+
             for (const [name, kind] of [
                 ["null", "null"],
                 ["number", "double"],
@@ -767,14 +904,21 @@ export async function addTypesInSchema(
             ] as [JSONSchemaType, PrimitiveTypeKind][]) {
                 if (!includedTypes.has(name)) continue;
 
-                unionTypes.push(typeBuilder.getPrimitiveType(kind));
+                const attributes = isNumberTypeKind(kind) ? numberAttributes : undefined;
+                unionTypes.push(typeBuilder.getPrimitiveType(kind, attributes));
             }
+
+            const stringAttributes = combineTypeAttributes(
+                "union",
+                inferredAttributes,
+                combineProducedAttributes(({ forString }) => forString)
+            );
 
             if (needStringEnum) {
                 const cases = (enumArray as any[]).filter(x => typeof x === "string") as string[];
-                unionTypes.push(typeBuilder.getStringType(inferredAttributes, StringTypes.fromCases(cases)));
+                unionTypes.push(typeBuilder.getStringType(stringAttributes, StringTypes.fromCases(cases)));
             } else if (includedTypes.has("string")) {
-                unionTypes.push(makeStringType());
+                unionTypes.push(makeStringType(stringAttributes));
             }
 
             if (includeArray) {
@@ -792,7 +936,7 @@ export async function addTypesInSchema(
                 return messageError("SchemaRefMustBeString", withRef(loc, { actual: typeof schema.$ref }));
             }
             const virtualRef = Ref.parse(schema.$ref);
-            const [target, newLoc] = await resolveVirtualRef(loc, virtualRef);
+            const [target, newLoc] = await resolver.resolveVirtualRef(loc, virtualRef);
             const attributes = modifyTypeNames(typeAttributes, tn => {
                 if (!defined(tn).areInferred) return tn;
                 return TypeNames.make(new Set([newLoc.canonicalRef.name]), new Set(), true);
@@ -836,7 +980,7 @@ export async function addTypesInSchema(
     }
 
     for (const [topLevelName, topLevelRef] of references) {
-        const [target, loc] = await resolveVirtualRef(undefined, topLevelRef);
+        const [target, loc] = await resolver.resolveTopLevelRef(topLevelRef);
         const t = await toType(target, loc, makeNamesTypeAttributes(topLevelName, false));
         typeBuilder.addTopLevel(topLevelName, t);
     }
@@ -862,8 +1006,8 @@ function nameFromURI(uri: uri.URI): string | undefined {
     return messageError("DriverCannotInferNameForSchema", { uri: uri.toString() });
 }
 
-export async function refsInSchemaForURI(
-    store: JSONSchemaStore,
+async function refsInSchemaForURI(
+    resolver: Resolver,
     uri: uri.URI,
     defaultName: string
 ): Promise<ReadonlyMap<string, Ref> | [string, Ref]> {
@@ -877,8 +1021,7 @@ export async function refsInSchemaForURI(
         propertiesAreTypes = false;
     }
 
-    const rootSchema = await getFromStore(store, ref.address, undefined);
-    const schema = ref.lookupRef(rootSchema);
+    const schema = (await resolver.resolveTopLevelRef(ref))[0];
 
     if (propertiesAreTypes) {
         if (typeof schema !== "object") {
@@ -894,5 +1037,172 @@ export async function refsInSchemaForURI(
             name = maybeName !== undefined ? maybeName : defaultName;
         }
         return [name, ref];
+    }
+}
+
+class InputJSONSchemaStore extends JSONSchemaStore {
+    constructor(private readonly _inputs: Map<string, StringInput>, private readonly _delegate?: JSONSchemaStore) {
+        super();
+    }
+
+    async fetch(address: string): Promise<JSONSchema | undefined> {
+        const maybeInput = this._inputs.get(address);
+        if (maybeInput !== undefined) {
+            return checkJSONSchema(parseJSON(await toString(maybeInput), "JSON Schema", address), () =>
+                Ref.root(address)
+            );
+        }
+        if (this._delegate === undefined) {
+            return panic(`Schema URI ${address} requested, but no store given`);
+        }
+        return await this._delegate.fetch(address);
+    }
+}
+
+export interface JSONSchemaSourceData {
+    name: string;
+    uris?: string[];
+    schema?: StringInput;
+    isConverted?: boolean;
+}
+
+export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
+    readonly kind: string = "schema";
+    readonly needSchemaProcessing: boolean = true;
+
+    private readonly _attributeProducers: JSONSchemaAttributeProducer[];
+
+    private readonly _schemaInputs: Map<string, StringInput> = new Map();
+    private _schemaSources: [uri.URI, JSONSchemaSourceData][] = [];
+
+    private readonly _topLevels: Map<string, Ref> = new Map();
+
+    private _needIR: boolean = false;
+
+    constructor(
+        private _schemaStore: JSONSchemaStore | undefined,
+        additionalAttributeProducers: JSONSchemaAttributeProducer[] = [],
+        private readonly _additionalSchemaAddresses: ReadonlyArray<string> = []
+    ) {
+        this._attributeProducers = [
+            descriptionAttributeProducer,
+            accessorNamesAttributeProducer,
+            enumValuesAttributeProducer,
+            minMaxAttributeProducer
+        ].concat(additionalAttributeProducers);
+    }
+
+    get needIR(): boolean {
+        return this._needIR;
+    }
+
+    addTopLevel(name: string, ref: Ref): void {
+        this._topLevels.set(name, ref);
+    }
+
+    async addTypes(ctx: RunContext, typeBuilder: TypeBuilder): Promise<void> {
+        if (this._schemaSources.length === 0) return;
+
+        let maybeSchemaStore = this._schemaStore;
+        if (this._schemaInputs.size === 0) {
+            if (maybeSchemaStore === undefined) {
+                return panic("Must have a schema store to process JSON Schema");
+            }
+        } else {
+            maybeSchemaStore = this._schemaStore = new InputJSONSchemaStore(this._schemaInputs, maybeSchemaStore);
+        }
+        const schemaStore = maybeSchemaStore;
+        const canonizer = new Canonizer(ctx);
+
+        for (const address of this._additionalSchemaAddresses) {
+            const schema = await schemaStore.get(address, ctx.debugPrintSchemaResolving);
+            if (schema === undefined) {
+                return messageError("SchemaFetchErrorAdditional", { address });
+            }
+            canonizer.addSchema(schema, address);
+        }
+
+        const resolver = new Resolver(ctx, defined(this._schemaStore), canonizer);
+
+        for (const [normalizedURI, source] of this._schemaSources) {
+            const givenName = source.name;
+
+            const refs = await refsInSchemaForURI(resolver, normalizedURI, givenName);
+            if (Array.isArray(refs)) {
+                let name: string;
+                if (this._schemaSources.length === 1) {
+                    name = givenName;
+                } else {
+                    name = refs[0];
+                }
+                this.addTopLevel(name, refs[1]);
+            } else {
+                for (const [refName, ref] of refs) {
+                    this.addTopLevel(refName, ref);
+                }
+            }
+        }
+
+        await addTypesInSchema(resolver, typeBuilder, this._topLevels, this._attributeProducers);
+    }
+
+    async addSource(schemaSource: JSONSchemaSourceData): Promise<void> {
+        const { uris, schema, isConverted } = schemaSource;
+
+        if (isConverted !== true) {
+            this._needIR = true;
+        }
+
+        let normalizedURIs: uri.URI[];
+        const uriPath = `-${this._schemaInputs.size + 1}`;
+        if (uris === undefined) {
+            normalizedURIs = [new URI(uriPath)];
+        } else {
+            normalizedURIs = uris.map(uri => {
+                const normalizedURI = new URI(uri).normalize();
+                if (
+                    normalizedURI
+                        .clone()
+                        .hash("")
+                        .toString() === ""
+                ) {
+                    normalizedURI.path(uriPath);
+                }
+                return normalizedURI;
+            });
+        }
+
+        if (schema === undefined) {
+            assert(uris !== undefined, "URIs must be given if schema source is not specified");
+        } else {
+            for (const normalizedURI of normalizedURIs) {
+                this._schemaInputs.set(
+                    normalizedURI
+                        .clone()
+                        .hash("")
+                        .toString(),
+                    schema
+                );
+            }
+        }
+
+        for (const normalizedURI of normalizedURIs) {
+            this._schemaSources.push([normalizedURI, schemaSource]);
+        }
+    }
+
+    async finishAddingInputs(): Promise<void> {
+        return;
+    }
+
+    singleStringSchemaSource(): string | undefined {
+        if (!this._schemaSources.every(([_, { schema }]) => typeof schema === "string")) {
+            return undefined;
+        }
+        const set = new Set(this._schemaSources.map(([_, { schema }]) => schema as string));
+        if (set.size === 1) {
+            return defined(iterableFirst(set));
+        }
+        return undefined;
     }
 }

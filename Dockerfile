@@ -1,4 +1,8 @@
-FROM ubuntu:xenial-20180412
+# To push this repo, log in as "schani" on DockerHub, and
+#   docker tag IMAGE-ID schani/quicktype
+#   docker push schani/quicktype
+
+FROM ubuntu:xenial-20180525
 
 ENV workdir /app
 
@@ -52,7 +56,7 @@ RUN add-apt-repository ppa:jonathonf/python-3.6
 RUN apt-get update
 RUN apt-get install python3.6 --assume-yes
 RUN curl https://bootstrap.pypa.io/get-pip.py | python3.6
-RUN pip3.6 install mypy
+RUN pip3.6 install mypy python-dateutil
 
 # Dart
 RUN apt-get install apt-transport-https

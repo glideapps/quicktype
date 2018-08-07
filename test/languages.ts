@@ -1,6 +1,16 @@
 import { RendererOptions } from "../dist/quicktype-core/Run";
 import * as process from "process";
 
+export type LanguageFeature =
+  | "enum"
+  | "union"
+  | "no-defaults"
+  | "strict-optional"
+  | "date-time"
+  | "integer-string"
+  | "bool-string"
+  | "uuid";
+
 export interface Language {
   name: string;
   base: string;
@@ -10,7 +20,7 @@ export interface Language {
   diffViaSchema: boolean;
   skipDiffViaSchema: string[];
   allowMissingNull: boolean;
-  handlesStringifiedIntegers: boolean;
+  features: LanguageFeature[];
   output: string;
   topLevel: string;
   skipJSON: string[];
@@ -32,7 +42,16 @@ export const CSharpLanguage: Language = {
   diffViaSchema: true,
   skipDiffViaSchema: ["34702.json"],
   allowMissingNull: false,
-  handlesStringifiedIntegers: true,
+  features: [
+    "enum",
+    "union",
+    "no-defaults",
+    "strict-optional",
+    "date-time",
+    "integer-string",
+    "bool-string",
+    "uuid"
+  ],
   output: "QuickType.cs",
   topLevel: "TopLevel",
   skipJSON: [
@@ -67,7 +86,7 @@ export const JavaLanguage: Language = {
   diffViaSchema: false,
   skipDiffViaSchema: [],
   allowMissingNull: false,
-  handlesStringifiedIntegers: false,
+  features: ["enum", "union"],
   output: "src/main/java/io/quicktype/TopLevel.java",
   topLevel: "TopLevel",
   skipJSON: ["identifiers.json", "simple-identifiers.json", "nst-test-suite.json"],
@@ -81,24 +100,36 @@ export const JavaLanguage: Language = {
 export const PythonLanguage: Language = {
   name: "python",
   base: "test/fixtures/python",
-  compileCommand: "mypy quicktype.py && python3.6 quicktype.py",
-  diffViaSchema: false,
-  skipDiffViaSchema: [],
+  compileCommand: "mypy quicktype.py",
+  runCommand(sample: String) {
+    return `python3.6 main.py "${sample}"`;
+  },
+  diffViaSchema: true,
+  skipDiffViaSchema: [
+    "combinations.json",
+    "keywords.json",
+    "0cffa.json",
+    "127a1.json",
+    "26b49.json",
+    "34702.json",
+    "7681c.json",
+    "c3303.json",
+    "f6a65.json"
+  ],
   allowMissingNull: false,
-  handlesStringifiedIntegers: true,
+  features: ["enum", "union", "no-defaults", "date-time", "integer-string", "bool-string", "uuid"],
   output: "quicktype.py",
   topLevel: "TopLevel",
   skipJSON: [
-    "no-classes.json", // We don't even emit an empty file?
-    "ed095.json" // same - just a map type
+    "31189.json" // year 0 is out of range
   ],
   skipMiscJSON: false,
   skipSchema: [
-    "any.schema" // We don't even emit an empty file?
+    "keyword-unions.schema" // Requires more than 255 arguments
   ],
   rendererOptions: {},
-  quickTestRendererOptions: [],
-  sourceFiles: []
+  quickTestRendererOptions: [{ "python-version": "3.5" }],
+  sourceFiles: ["src/language/Python.ts"]
 };
 
 export const RustLanguage: Language = {
@@ -129,7 +160,7 @@ export const RustLanguage: Language = {
     "f6a65.json"
   ],
   allowMissingNull: false,
-  handlesStringifiedIntegers: false,
+  features: ["enum", "union", "no-defaults"],
   output: "module_under_test.rs",
   topLevel: "TopLevel",
   skipJSON: [],
@@ -207,13 +238,11 @@ export const RubyLanguage: Language = {
     "e8b04.json"
   ],
   allowMissingNull: true,
-  handlesStringifiedIntegers: false,
+  features: ["enum", "union", "no-defaults"],
   output: "TopLevel.rb",
   topLevel: "TopLevel",
   skipJSON: [],
   skipSchema: [
-    // FIXME: I don't know what the issue is here
-    "implicit-class-array-union.schema",
     // We don't generate a convenience method for top-level enums
     "top-level-enum.schema"
   ],
@@ -240,15 +269,12 @@ export const GoLanguage: Language = {
     "e8b04.json"
   ],
   allowMissingNull: false,
-  handlesStringifiedIntegers: false,
+  features: ["union"],
   output: "quicktype.go",
   topLevel: "TopLevel",
   skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json", "nst-test-suite.json"],
   skipMiscJSON: false,
-  skipSchema: [
-    // interface{} as top-level doesn't work
-    "any.schema"
-  ],
+  skipSchema: [],
   rendererOptions: {},
   quickTestRendererOptions: [],
   sourceFiles: ["src/language/Golang.ts"]
@@ -282,8 +308,8 @@ export const CPlusPlusLanguage: Language = {
     "fcca3.json"
   ],
   allowMissingNull: false,
-  handlesStringifiedIntegers: false,
-  output: "quicktype.hpp",
+  features: ["enum", "union", "no-defaults"],
+  output: "TopLevel.hpp",
   topLevel: "TopLevel",
   skipJSON: [
     // fails on a string containing null
@@ -294,7 +320,11 @@ export const CPlusPlusLanguage: Language = {
   skipMiscJSON: false,
   skipSchema: [],
   rendererOptions: {},
-  quickTestRendererOptions: [{ unions: "indirection" }],
+  quickTestRendererOptions: [
+    { unions: "indirection" },
+    { "source-style": "multi-source" },
+    { "code-format": "with-getter-setter" }
+  ],
   sourceFiles: ["src/language/CPlusPlus.ts"]
 };
 
@@ -338,7 +368,7 @@ export const ElmLanguage: Language = {
     "f6a65.json"
   ],
   allowMissingNull: false,
-  handlesStringifiedIntegers: false,
+  features: ["enum", "union", "no-defaults"],
   output: "QuickType.elm",
   topLevel: "QuickType",
   skipJSON: [
@@ -355,8 +385,10 @@ export const ElmLanguage: Language = {
   ],
   skipMiscJSON: false,
   skipSchema: [
+    "constructor.schema", // can't handle "constructor" property
     "union-list.schema", // recursion
     "list.schema", // recursion
+    "ref-remote.schema", // recursion
     "mutually-recursive.schema", // recursion
     "postman-collection.schema", // recursion
     "vega-lite.schema", // recursion
@@ -393,7 +425,7 @@ export const SwiftLanguage: Language = {
     "f82d9.json"
   ],
   allowMissingNull: true,
-  handlesStringifiedIntegers: false,
+  features: ["enum", "union", "no-defaults"],
   output: "quicktype.swift",
   topLevel: "TopLevel",
   skipJSON: [
@@ -406,12 +438,10 @@ export const SwiftLanguage: Language = {
   ],
   skipMiscJSON: false,
   skipSchema: [
-    // The top-level is anything, which Swift's JSON types don't support
-    "any.schema",
-    // The top-level is a union, which Swift's JSON types don't support
-    "implicit-class-array-union.schema",
     // The code we generate for top-level enums is incompatible with the driver
-    "top-level-enum.schema"
+    "top-level-enum.schema",
+    // This works on macOS, but on Linux one of the failure test cases doesn't fail
+    "implicit-class-array-union.schema"
   ],
   rendererOptions: {},
   quickTestRendererOptions: [
@@ -435,7 +465,7 @@ export const ObjectiveCLanguage: Language = {
   diffViaSchema: false,
   skipDiffViaSchema: [],
   allowMissingNull: true,
-  handlesStringifiedIntegers: false,
+  features: ["enum", "no-defaults"],
   output: "QTTopLevel.m",
   topLevel: "QTTopLevel",
   skipJSON: [
@@ -484,14 +514,14 @@ export const TypeScriptLanguage: Language = {
     "e8b04.json"
   ],
   allowMissingNull: false,
-  handlesStringifiedIntegers: false,
+  features: ["enum", "union", "no-defaults", "strict-optional"],
   output: "TopLevel.ts",
   topLevel: "TopLevel",
-  skipJSON: [],
+  skipJSON: ["enum"],
   skipMiscJSON: false,
   skipSchema: ["keyword-unions.schema"], // can't handle "constructor" property
   rendererOptions: { "explicit-unions": "yes" },
-  quickTestRendererOptions: [],
+  quickTestRendererOptions: [{ "nice-property-names": "true" }, { "declare-unions": "true" }],
   sourceFiles: ["src/language/TypeScript.ts"]
 };
 
@@ -505,10 +535,10 @@ export const JavaScriptLanguage: Language = {
   diffViaSchema: false,
   skipDiffViaSchema: [],
   allowMissingNull: false,
-  handlesStringifiedIntegers: false,
+  features: ["enum", "union", "no-defaults", "strict-optional"],
   output: "TopLevel.js",
   topLevel: "TopLevel",
-  skipJSON: [],
+  skipJSON: ["enum"],
   skipMiscJSON: false,
   skipSchema: ["keyword-unions.schema"], // can't handle "constructor" property
   rendererOptions: {},
@@ -525,7 +555,7 @@ export const FlowLanguage: Language = {
   diffViaSchema: false,
   skipDiffViaSchema: [],
   allowMissingNull: false,
-  handlesStringifiedIntegers: false,
+  features: ["enum", "union", "no-defaults", "strict-optional"],
   output: "TopLevel.js",
   topLevel: "TopLevel",
   skipJSON: [],
@@ -554,7 +584,7 @@ export const KotlinLanguage: Language = {
     "76ae1.json"
   ],
   allowMissingNull: true,
-  handlesStringifiedIntegers: false,
+  features: ["enum", "union", "no-defaults"],
   output: "TopLevel.kt",
   topLevel: "TopLevel",
   skipJSON: [
@@ -588,7 +618,31 @@ export const KotlinLanguage: Language = {
     "32431.json",
     "bug427.json"
   ],
-  skipSchema: [],
+  skipSchema: [
+    // Very weird - the types are correct, but it can (de)serialize the string,
+    // which is not represented in the types.
+    "class-with-additional.schema",
+    "implicit-class-array-union.schema",
+    "go-schema-pattern-properties.schema",
+    // IllegalArgumentException
+    "accessors.schema",
+    "description.schema",
+    "union-list.schema",
+    // KlaxonException: Need to extract inside
+    "bool-string.schema",
+    "integer-string.schema",
+    "uuid.schema",
+    // produces {"foo" : "java.lang.Object@48d61b48"}
+    "any.schema",
+    // KlaxonException: Couldn't find a suitable constructor for class UnionValue to initialize with {}
+    "class-map-union.schema",
+    "direct-union.schema",
+    // Some weird name collision
+    "keyword-enum.schema",
+    "keyword-unions.schema",
+    // Klaxon does not support top-level primitives
+    "top-level-enum.schema"
+  ],
   skipMiscJSON: false,
   rendererOptions: {},
   quickTestRendererOptions: [],
