@@ -10,7 +10,9 @@ export type LanguageFeature =
   | "integer-string"
   | "bool-string"
   | "uuid"
-  | "minmax";
+  | "minmax"
+  | "minmaxlength"
+  | "pattern";
 
 export interface Language {
   name: string;
@@ -309,7 +311,7 @@ export const CPlusPlusLanguage: Language = {
     "fcca3.json"
   ],
   allowMissingNull: false,
-  features: ["minmax", "enum", "union", "no-defaults"],
+  features: ["minmax", "minmaxlength", "pattern", "enum", "union", "no-defaults"],
   output: "TopLevel.hpp",
   topLevel: "TopLevel",
   skipJSON: [
