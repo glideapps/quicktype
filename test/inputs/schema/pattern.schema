@@ -1,0 +1,25 @@
+{
+  "type": "object",
+  "properties": {
+    "pattern1": {
+      "type": "string",
+      "pattern": "a[.]*"
+    },
+    "pattern2": {
+      "type": "string",
+      "pattern": "b[.]*"
+    },
+    "union": {
+      "oneOf": [
+        {
+          "$ref": "#/properties/pattern2"
+        },
+        {
+          "type": "string",
+          "pattern": "c[.]*"
+        }
+      ]
+    }
+  },
+  "required": ["pattern1", "pattern2", "union"]
+}
