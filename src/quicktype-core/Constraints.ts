@@ -19,10 +19,6 @@ function checkMinMaxConstraint(minmax: MinMaxConstraint): MinMaxConstraint {
 }
 
 export class MinMaxConstraintTypeAttributeKind extends TypeAttributeKind<MinMaxConstraint> {
-    constructor(name:string) {
-        super(name);
-    }
-
     get inIdentity(): boolean {
         return true;
     }
@@ -86,12 +82,10 @@ export const minMaxLengthTypeAttributeKind: TypeAttributeKind<MinMaxConstraint> 
 
 function producer(
     schema: JSONSchema,
-    types: Set<JSONSchemaType>,
     minProperty: string,
     maxProperty: string
 ): MinMaxConstraint | undefined {
     if (!(typeof schema === "object")) return undefined;
-    if (!types.has("number") && !types.has("integer") && !types.has("string")) return undefined;
 
     let min: number | undefined = undefined;
     let max: number | undefined = undefined;
@@ -112,7 +106,9 @@ export function minMaxAttributeProducer(
     _ref: Ref,
     types: Set<JSONSchemaType>
 ): JSONSchemaAttributes | undefined {
-    const maybeMinMax = producer(schema, types, "minimum", "maximum");
+    if (!types.has("number") && !types.has("integer")) return undefined;
+
+    const maybeMinMax = producer(schema, "minimum", "maximum");
     if (maybeMinMax === undefined) return undefined;
     return { forNumber: minMaxTypeAttributeKind.makeAttributes(maybeMinMax) };
 }
@@ -122,7 +118,9 @@ export function minMaxLengthAttributeProducer(
     _ref: Ref,
     types: Set<JSONSchemaType>
 ): JSONSchemaAttributes | undefined {
-    const maybeMinMaxLength = producer(schema, types, "minLength", "maxLength");
+    if (!types.has("string")) return undefined;
+
+    const maybeMinMaxLength = producer(schema, "minLength", "maxLength");
     if (maybeMinMaxLength === undefined) return undefined;
     return { forString: minMaxLengthTypeAttributeKind.makeAttributes(maybeMinMaxLength) };
 }
@@ -136,10 +134,6 @@ export function minMaxLengthForType(t: Type): MinMaxConstraint | undefined {
 }
 
 export class PatternTypeAttributeKind extends TypeAttributeKind<string> {
-    constructor() {
-        super("pattern");
-    }
-
     get inIdentity(): boolean {
         return true;
     }
@@ -159,7 +153,9 @@ export class PatternTypeAttributeKind extends TypeAttributeKind<string> {
     }
 }
 
-export const patternTypeAttributeKind: TypeAttributeKind<string> = new PatternTypeAttributeKind();
+export const patternTypeAttributeKind: TypeAttributeKind<string> = new PatternTypeAttributeKind(
+    "pattern"
+);
 
 export function patternAttributeProducer(
     schema: JSONSchema,

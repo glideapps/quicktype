@@ -286,10 +286,11 @@ export type IncludeRecord = {
 };
 
 export type TypeRecord = {
-    name: Name | undefined;
-    type: Type | undefined;
-    level: number | undefined;
-    variant: boolean | undefined;
+    name: Name;
+    type: Type;
+    level: number;
+    variant: boolean;
+    forceInclude: boolean;
 };
 
 /**
@@ -318,7 +319,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     private _memberNameStyle: NameStyle;
     private _namedTypeNameStyle: NameStyle;
     private _generatedGlobalNames: Map<GlobalNames, string>;
-    private _forbiddenGlobalNames: ReadonlyArray<string>;
+    private _forbiddenGlobalNames: Array<string>;
     private readonly _memberNamingFunction: Namer;
 
     protected readonly typeNamingStyle: NamingStyle;
@@ -355,11 +356,13 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         if (name === undefined) {
             return panic (`Unable to find ${type}`);
         }
-        return this.sourcelikeToString(name);
+        return name;
     }
 
     protected addGlobalName(name:string, type:GlobalNames): void {
-        this._generatedGlobalNames.set(type, this._namedTypeNameStyle(name));
+        const genName = this._namedTypeNameStyle(name);
+        this._generatedGlobalNames.set(type, genName);
+        this._forbiddenGlobalNames.push(genName);
     }
 
     protected addMemberName(name:string, type:GlobalNames): void {
@@ -391,8 +394,6 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.addMemberName("Pattern", GlobalNames.MemberPattern);
         this.addMemberName("GetPattern", GlobalNames.GetterPattern);
         this.addMemberName("SetPattern", GlobalNames.SetterPattern);
-
-        this._forbiddenGlobalNames = Array.from(this._generatedGlobalNames.values());
     }
     
     protected forbiddenNamesForGlobalNamespace(): string[] {
@@ -495,18 +496,18 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.ensureBlankLine();
 
         const include = (name: string): void => {
-            this.emitLine(`#include ${name}`);
+            this.emitLine("#include ", name);
         };
         if (this.haveNamedUnions) include("<boost/variant.hpp>");
         if (!this._options.justTypes) {
             if (!this._options.includeLocation) {
                 include("<nlohmann/json.hpp>");
             } else {
-                include('"json.hpp"');
+                include("\"json.hpp\"");
             }
 
             if (includeHelper && !this._options.typeSourceStyle) {
-                include('"helper.hpp"');
+                include("\"helper.hpp\"");
             }
         }
         this.ensureBlankLine();
@@ -670,15 +671,15 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
      * similar to cppType, it practically gathers all the generated types within
      * 't'. It also records, whether a given sub-type is part of a variant or not.
      */
-    protected generatedTypes(isClassMember:boolean, isVariant:boolean, l: number, t: Type, result:Array<TypeRecord>): void {
+    protected generatedTypes(forceInclude:boolean, isClassMember:boolean, isVariant:boolean, l: number, t: Type, result:TypeRecord[]): void {
         if (t instanceof ArrayType) {
-            this.generatedTypes(isClassMember, isVariant, l+1, t.items, result);
+            this.generatedTypes(forceInclude, isClassMember, isVariant, l+1, t.items, result);
         } else if (t instanceof ClassType) {
-            result.push({name: this.nameForNamedType(t), type:t, level:l, variant:isVariant});
+            result.push({name: this.nameForNamedType(t), type:t, level:l, variant:isVariant, forceInclude: forceInclude});
         } else if (t instanceof MapType) {
-            this.generatedTypes(isClassMember, isVariant, l+1, t.values, result);
+            this.generatedTypes(forceInclude, isClassMember, isVariant, l+1, t.values, result);
         } else if (t instanceof EnumType) {
-            result.push({name: this.nameForNamedType(t), type:t, level:l, variant:isVariant});
+            result.push({name: this.nameForNamedType(t), type:t, level:l, variant:isVariant, forceInclude: false});
         } else if (t instanceof UnionType) {
             /** 
              * If we have a union as a class member and we see it as a "named union",
@@ -687,14 +688,23 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
              * typedefinition and include all subtypes.
              */
             if (this.unionNeedsName(t) && isClassMember) {
-                result.push({name: this.nameForNamedType(t), type:t, level:l, variant:true});
-            } else {
-                const [hasNull, nonNulls] = removeNullFromUnion(t);
-                isVariant = hasNull !== null;
-                /** we need to collect all the subtypes of the union */
-                for (const tt of nonNulls) {
-                    this.generatedTypes(isClassMember, isVariant, l+1, tt, result);
-                }
+                /**
+                 * This is NOT ENOUGH.
+                 * We have a variant member in a class, e.g. defined with a boost::variant
+                 * So that the compiler can compile the size of it MUST KNOW THE SIZES
+                 * OF ALL MEMBERS OF THE VARIANT.
+                 * So it means that you must include ALL SUBTYPES (practically classes only) AS WELL
+                 */
+                forceInclude = true;
+                result.push({name: this.nameForNamedType(t), type:t, level:l, variant:true, forceInclude: forceInclude});
+                /** intentional "fall-through", add all subtypes as well - but forced include */
+            }
+
+            const [hasNull, nonNulls] = removeNullFromUnion(t);
+            isVariant = hasNull !== null;
+            /** we need to collect all the subtypes of the union */
+            for (const tt of nonNulls) {
+                this.generatedTypes(forceInclude, isClassMember, isVariant, l+1, tt, result);
             }
         }
     }
@@ -715,6 +725,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     ";"
                 );
                 if (constraints !== undefined && constraints.has(jsonName)) {
+                    /** FIXME!!! NameStyle will/can collide with other Names */
                     const cnst = this.lookupGlobalName(GlobalNames.ClassMemberConstraints);
                     this.emitLine(cnst," ", this._memberNameStyle(jsonName+ "Constraint"), ";");
                 }
@@ -756,7 +767,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 if (property.type instanceof UnionType && property.type.findMember("null") !== undefined) {
                     this.emitLine(rendered, " ", getterName, "() const { return ", name, "; }");
                     if (constraints !== undefined && constraints.has(jsonName)) {
-                        this.emitLine("void ", setterName, "(", rendered, ` value) { if (value) ${checkConst}("`, name, "\", ", this._memberNameStyle(jsonName + "Constraint"), ", *value); this->", name, " = value; }");   
+                        this.emitLine("void ", setterName, "(", rendered, " value) { if (value) ", checkConst, "(\"", name, "\", ", this._memberNameStyle(jsonName + "Constraint"), ", *value); this->", name, " = value; }");   
                     } else {
                         this.emitLine("void ", setterName, "(", rendered, " value) { this->", name, " = value; }");   
                     }
@@ -764,7 +775,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     this.emitLine("const ", rendered, " & ", getterName, "() const { return ", name, "; }");
                     this.emitLine(rendered, " & ", mutableGetterName, "() { return ", name, "; }");
                     if (constraints !== undefined && constraints.has(jsonName)) {
-                        this.emitLine("void ", setterName, "(const ", rendered, `& value) { ${checkConst}("`, name, "\", ", this._memberNameStyle(jsonName + "Constraint"), ", value); this->", name, " = value; }");   
+                        this.emitLine("void ", setterName, "(const ", rendered, "& value) { ", checkConst, "(\"", name, "\", ", this._memberNameStyle(jsonName + "Constraint"), ", value); this->", name, " = value; }");   
                     } else {
                         this.emitLine("void ", setterName, "(const ", rendered, "& value) { this->", name, " = value; }");   
                     }
@@ -1091,14 +1102,14 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected emitOptionalHelpers(): void {
-        this.emitBlock([`template <typename T>\nstruct adl_serializer<${optionalType}<T>>`], true, () => {
-            this.emitBlock([`static void to_json(json& j, const ${optionalType}<T>& opt)`], false, () => {
-                this.emitLine(`if (!opt) j = nullptr; else j = *opt;`);
+        this.emitBlock(["template <typename T>\nstruct adl_serializer<", optionalType, "<T>>"], true, () => {
+            this.emitBlock(["static void to_json(json& j, const ", optionalType, "<T>& opt)"], false, () => {
+                this.emitLine("if (!opt) j = nullptr; else j = *opt;");
             });
 
             this.ensureBlankLine();
 
-            this.emitBlock([`static ${optionalType}<T> from_json(const json& j)`], false, () => {
+            this.emitBlock(["static ", optionalType, "<T> from_json(const json& j)"], false, () => {
                 this.emitLine(
                     `if (j.is_null()) return std::unique_ptr<T>(); else return std::unique_ptr<T>(new T(j.get<T>()));`
                 );
@@ -1150,114 +1161,96 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             const setterPattern = this.lookupGlobalName(GlobalNames.SetterPattern);
             const classConstraint = this.lookupGlobalName(GlobalNames.ClassMemberConstraints);
 
-            this.emitBlock([`class ${classConstraint}`], true, () => {
-                this.emitLine(`private:`);
-                this.emitLine(`boost::optional<int> ${memberMinValue};`);
-                this.emitLine(`boost::optional<int> ${memberMaxValue};`);
-                this.emitLine(`boost::optional<int> ${memberMinLength};`);
-                this.emitLine(`boost::optional<int> ${memberMaxLength};`);
-                this.emitLine(`boost::optional<std::string> ${memberPattern};`);
+            this.emitBlock(["class ", classConstraint], true, () => {
+                this.emitLine("private:");
+                this.emitLine("boost::optional<int> ", memberMinValue, ";");
+                this.emitLine("boost::optional<int> ", memberMaxValue, ";");
+                this.emitLine("boost::optional<int> ", memberMinLength, ";");
+                this.emitLine("boost::optional<int> ", memberMaxLength, ";");
+                this.emitLine("boost::optional<std::string> ", memberPattern, ";");
                 this.ensureBlankLine();
-                this.emitLine(`public:`);
-                this.emitLine(`${classConstraint}(`);
-                this.emitLine(`    boost::optional<int> ${memberMinValue},`);
-                this.emitLine(`    boost::optional<int> ${memberMaxValue},`);
-                this.emitLine(`    boost::optional<int> ${memberMinLength},`);
-                this.emitLine(`    boost::optional<int> ${memberMaxLength},`);
-                this.emitLine(`    boost::optional<std::string> ${memberPattern}`);
-                this.emitLine(`) : ${memberMinValue}(${memberMinValue}), ${memberMaxValue}(${memberMaxValue}), ${memberMinLength}(${memberMinLength}), ${memberMaxLength}(${memberMaxLength}), ${memberPattern}(${memberPattern}) {}`);
-                this.emitLine(`${classConstraint}() = default;`);
-                this.emitLine(`virtual ~${classConstraint}() = default;`);
+                this.emitLine("public:");
+                this.emitLine(classConstraint, "(");
+                this.emitLine("    boost::optional<int> ", memberMinValue, ",");
+                this.emitLine("    boost::optional<int> ", memberMaxValue, ",");
+                this.emitLine("    boost::optional<int> ", memberMinLength, ",");
+                this.emitLine("    boost::optional<int> ", memberMaxLength, ",");
+                this.emitLine("    boost::optional<std::string> ", memberPattern);
+                this.emitLine(") : ", memberMinValue, "(", memberMinValue, "), ", memberMaxValue, "(", memberMaxValue, "), ", memberMinLength, "(", memberMinLength, "), ", memberMaxLength, "(", memberMaxLength, "), ", memberPattern, "(", memberPattern, ") {}");
+                this.emitLine(classConstraint, "() = default;");
+                this.emitLine("virtual ~", classConstraint, "() = default;");
                 this.ensureBlankLine();
-                this.emitLine(`void ${setterMinValue}(int ${memberMinValue}) { this->${memberMinValue} = ${memberMinValue}; }`);
-                this.emitLine(`auto ${getterMinValue}() const { return ${memberMinValue}; }`);
+                this.emitLine("void ", setterMinValue, "(int ", memberMinValue, ") { this->", memberMinValue, " = ", memberMinValue, "; }");
+                this.emitLine("auto ", getterMinValue, "() const { return ", memberMinValue, "; }");
                 this.ensureBlankLine();
-                this.emitLine(`void ${setterMaxValue}(int ${memberMaxValue}) { this->${memberMaxValue} = ${memberMaxValue}; }`);
-                this.emitLine(`auto ${getterMaxValue}() const { return ${memberMaxValue}; }`);
+                this.emitLine("void ", setterMaxValue, "(int ", memberMaxValue, ") { this->", memberMaxValue, " = ", memberMaxValue, "; }");
+                this.emitLine("auto ", getterMaxValue, "() const { return ", memberMaxValue, "; }");
                 this.ensureBlankLine();
-                this.emitLine(`void ${setterMinLength}(int ${memberMinLength}) { this->${memberMinLength} = ${memberMinLength}; }`);
-                this.emitLine(`auto ${getterMinLength}() const { return ${memberMinLength}; }`);
+                this.emitLine("void ", setterMinLength, "(int ", memberMinLength, ") { this->", memberMinLength, " = ", memberMinLength, "; }");
+                this.emitLine("auto ", getterMinLength, "() const { return ", memberMinLength, "; }");
                 this.ensureBlankLine();
-                this.emitLine(`void ${setterMaxLength}(int ${memberMaxLength}) { this->${memberMaxLength} = ${memberMaxLength}; }`);
-                this.emitLine(`auto ${getterMaxLength}() const { return ${memberMaxLength}; }`);
+                this.emitLine("void ", setterMaxLength, "(int ", memberMaxLength, ") { this->", memberMaxLength, " = ", memberMaxLength, "; }");
+                this.emitLine("auto ", getterMaxLength, "() const { return ", memberMaxLength, "; }");
                 this.ensureBlankLine();
-                this.emitLine(`void ${setterPattern}(const std::string & ${memberPattern}) { this->${memberPattern} = ${memberPattern}; }`);
-                this.emitLine(`auto ${getterPattern}() const { return ${memberPattern}; }`);
+                this.emitLine("void ", setterPattern, "(const std::string & ", memberPattern, ") { this->", memberPattern, " = ", memberPattern, "; }");
+                this.emitLine("auto ", getterPattern, "() const { return ", memberPattern, "; }");
             });
             this.ensureBlankLine();
 
             const classConstEx = this.lookupGlobalName(GlobalNames.ClassMemberConstraintException);
-            this.emitBlock([`class ${classConstEx} : public std::runtime_error`], true, () => {
-                this.emitLine(`public:`);
-                this.emitLine(`${classConstEx}(const std::string& msg) : std::runtime_error(msg) {}`);
+            this.emitBlock(["class ", classConstEx, " : public std::runtime_error"], true, () => {
+                this.emitLine("public:");
+                this.emitLine(classConstEx, "(const std::string& msg) : std::runtime_error(msg) {}");
             });
             this.ensureBlankLine();
 
-            const tooLowEx = this.lookupGlobalName(GlobalNames.ValueTooLowException);
-            this.emitBlock([`class ${tooLowEx} : public ${classConstEx}`], true, () => {
-                this.emitLine(`public:`);
-                this.emitLine(`${tooLowEx}(const std::string& msg) : ${classConstEx}(msg) {}`);
-            });
-            this.ensureBlankLine();
+            const exceptions : GlobalNames[] = [
+                GlobalNames.ValueTooLowException, 
+                GlobalNames.ValueTooHighException, 
+                GlobalNames.ValueTooShortException, 
+                GlobalNames.ValueTooLongException, 
+                GlobalNames.InvalidPatternException
+            ];
 
-            const tooHighEx = this.lookupGlobalName(GlobalNames.ValueTooHighException);
-            this.emitBlock([`class ${tooHighEx} : public ${classConstEx}`], true, () => {
-                this.emitLine(`public:`);
-                this.emitLine(`${tooHighEx}(const std::string& msg) : ${classConstEx}(msg) {}`);
-            });
-            this.ensureBlankLine();
-
-            const tooShortEx = this.lookupGlobalName(GlobalNames.ValueTooShortException);
-            this.emitBlock([`class ${tooShortEx} : public ${classConstEx}`], true, () => {
-                this.emitLine(`public:`);
-                this.emitLine(`${tooShortEx}(const std::string& msg) : ${classConstEx}(msg) {}`);
-            });
-            this.ensureBlankLine();
-
-            const tooLongEx = this.lookupGlobalName(GlobalNames.ValueTooLongException);
-            this.emitBlock([`class ${tooLongEx} : public ${classConstEx}`], true, () => {
-                this.emitLine(`public:`);
-                this.emitLine(`${tooLongEx}(const std::string& msg) : ${classConstEx}(msg) {}`);
-            });
-            this.ensureBlankLine();
-
-            const invPattEx = this.lookupGlobalName(GlobalNames.InvalidPatternException);
-            this.emitBlock([`class ${invPattEx} : public ${classConstEx}`], true, () => {
-                this.emitLine(`public:`);
-                this.emitLine(`${invPattEx}(const std::string& msg) : ${classConstEx}(msg) {}`);
-            });
-            this.ensureBlankLine();
+            for (const ex of exceptions) {
+                const name = this.lookupGlobalName(ex);
+                this.emitBlock(["class ", name, " : public ", classConstEx], true, () => {
+                    this.emitLine("public:");
+                    this.emitLine(name, "(const std::string& msg) : ", classConstEx, "(msg) {}");
+                });
+                this.ensureBlankLine();
+            }
 
             const checkConst = this.lookupGlobalName(GlobalNames.CheckConstraint);
-            this.emitBlock([`void ${checkConst}(const std::string & name, const ${classConstraint} & c, int64_t value)`], false, () => {
-                this.emitBlock([`if (c.${getterMinValue}() != boost::none && value < *c.${getterMinValue}())`], false, () => {
-                    this.emitLine(`throw ${tooLowEx} ("Value too low for "+name+" (" + std::to_string(value)+ "<"+std::to_string(*c.${getterMinValue}())+")");`);
+            this.emitBlock(["void ", checkConst, "(const std::string & name, const ", classConstraint, " & c, int64_t value)"], false, () => {
+                this.emitBlock(["if (c.", getterMinValue, "() != boost::none && value < *c.", getterMinValue, "())"], false, () => {
+                    this.emitLine("throw ", this.lookupGlobalName(GlobalNames.ValueTooLowException), " (\"Value too low for \"+ name + \" (\" + std::to_string(value)+ \"<\"+std::to_string(*c.", getterMinValue, "())+\")\");");
                 });
                 this.ensureBlankLine();
 
-                this.emitBlock([`if (c.${getterMaxValue}() != boost::none && value > *c.${getterMaxValue}())`], false, () => {
-                    this.emitLine(`throw ${tooHighEx} ("Value too high for "+name+" (" + std::to_string(value)+ ">"+std::to_string(*c.${getterMaxValue}())+")");`);
+                this.emitBlock(["if (c.", getterMaxValue, "() != boost::none && value > *c.", getterMaxValue, "())"], false, () => {
+                    this.emitLine("throw ", this.lookupGlobalName(GlobalNames.ValueTooHighException), " (\"Value too high for \"+name+\" (\" + std::to_string(value)+ \">\"+std::to_string(*c.", getterMaxValue, "())+\")\");");
                 });
                 this.ensureBlankLine();
             });
             this.ensureBlankLine();
 
-            this.emitBlock([`void ${checkConst}(const std::string & name, const ${classConstraint} & c, const std::string & value)`], false, () => {
-                this.emitBlock([`if (c.${getterMinLength}() != boost::none && value.length() < *c.${getterMinLength}())`], false, () => {
-                    this.emitLine(`throw ${tooShortEx} ("Value too short for "+name+" (" + std::to_string(value.length())+ "<"+std::to_string(*c.${getterMinLength}())+")");`);
+            this.emitBlock(["void ", checkConst, "(const std::string & name, const ", classConstraint, " & c, const std::string & value)"], false, () => {
+                this.emitBlock(["if (c.", getterMinLength, "() != boost::none && value.length() < *c.", getterMinLength, "())"], false, () => {
+                    this.emitLine("throw ", this.lookupGlobalName(GlobalNames.ValueTooShortException), " (\"Value too short for \"+name+\" (\" + std::to_string(value.length())+ \"<\"+std::to_string(*c.", getterMinLength, "())+\")\");");
                 });
                 this.ensureBlankLine();
 
-                this.emitBlock([`if (c.${getterMaxLength}() != boost::none && value.length() > *c.${getterMaxLength}())`], false, () => {
-                    this.emitLine(`throw ${tooLongEx} ("Value too long for "+name+" (" + std::to_string(value.length())+ ">"+std::to_string(*c.${getterMaxLength}())+")");`);
+                this.emitBlock(["if (c.", getterMaxLength, "() != boost::none && value.length() > *c.", getterMaxLength, "())"], false, () => {
+                    this.emitLine("throw ", this.lookupGlobalName(GlobalNames.ValueTooLongException), " (\"Value too long for \"+name+\" (\" + std::to_string(value.length())+ \">\"+std::to_string(*c.", getterMaxLength, "())+\")\");");
                 });
                 this.ensureBlankLine();
 
-                this.emitBlock([`if (c.${getterPattern}() != boost::none)`], false, () => {
-                    this.emitLine(`std::smatch result;`);
-                    this.emitLine(`std::regex_search(value, result, std::regex( *c.${getterPattern}() ));`);
-                    this.emitBlock([`if (result.empty())`], false, () => {
-                        this.emitLine(`throw ${invPattEx} ("Value doesn't match pattern for "+name+" (" + value+ "!="+*c.${getterPattern}()+")");`);
+                this.emitBlock(["if (c.", getterPattern, "() != boost::none)"], false, () => {
+                    this.emitLine("std::smatch result;");
+                    this.emitLine("std::regex_search(value, result, std::regex( *c.", getterPattern, "() ));");
+                    this.emitBlock(["if (result.empty())"], false, () => {
+                        this.emitLine("throw ", this.lookupGlobalName(GlobalNames.InvalidPatternException), " (\"Value doesn't match pattern for \"+name+\" (\" + value+ \"!=\"+*c.", getterPattern, "()+\")\");");
                     });
                 });
                 this.ensureBlankLine();
@@ -1276,13 +1269,13 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
         if (this.haveUnions) {
             this.emitBlock(
-                [`template <typename T>\ninline ${optionalType}<T> get_optional(const json &j, const char *property)`],
+                ["template <typename T>\ninline ", optionalType, "<T> get_optional(const json &j, const char *property)"],
                 false,
                 () => {
                     this.emitBlock(["if (j.find(property) != j.end())"], false, () => {
-                        this.emitLine(`return j.at(property).get<${optionalType}<T>>();`);
+                        this.emitLine("return j.at(property).get<", optionalType, "<T>>();");
                     });
-                    this.emitLine(`return ${optionalType}<T>();`);
+                    this.emitLine("return ", optionalType, "<T>();");
                 }
             );
 
@@ -1395,10 +1388,6 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.finishFile();
     }
 
-    /**
-     * if forwardDeclare is set to true we force it, level shows how
-     * deep we are in in the definition
-     */
     protected updateIncludes(
         isClassMember: boolean,
         includes: IncludeMap,
@@ -1406,17 +1395,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         _defName: string
     ): void {
         let propTypes:Array<TypeRecord> = new Array();
-        this.generatedTypes(isClassMember, false, 0, propertyType, propTypes);
+        this.generatedTypes(false, isClassMember, false, 0, propertyType, propTypes);
 
-        propTypes.forEach(t => {
-            if (t === undefined) {
-                return;
-            }
-
-            if (t.type === undefined) {
-                return panic("Internal error. No type");
-            }
-
+        for (const t of propTypes) {
             if (t.name === undefined) {
                 const name = this.cppType(
                     t.type,
@@ -1438,6 +1419,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                  */
                 propRecord.typeKind = "class";
                 propRecord.kind = t.level === 0 ? IncludeKind.Include : IncludeKind.ForwardDeclare;
+                if (t.forceInclude) {
+                    propRecord.kind = IncludeKind.Include;
+                }
             } else if (t.type instanceof EnumType) {
                 propRecord.typeKind = "enum";
                 propRecord.kind = IncludeKind.ForwardDeclare;
@@ -1449,7 +1433,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     /** Houston this is a variant, include it */
                     propRecord.kind = IncludeKind.Include;
                 } else {
-                    propRecord.kind = IncludeKind.ForwardDeclare;
+                    if (t.forceInclude) {
+                        propRecord.kind = IncludeKind.Include;
+                    } else {
+                        propRecord.kind = IncludeKind.ForwardDeclare;
+                    }
                 }
             }
 
@@ -1465,7 +1453,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             } else {
                 includes.set(typeName, propRecord);
             }
-        });
+        }
     }
 
     protected emitIncludes(c: ClassType | UnionType | EnumType, defName: string): void {
@@ -1493,7 +1481,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 }
 
                 if (rec.kind !== IncludeKind.ForwardDeclare) {
-                    this.emitLine(`#include "${name}.hpp"`);
+                    this.emitLine("#include \"", name, ".hpp\"");
                     numIncludes++;
                 } else {
                     numForwards++;
@@ -1518,12 +1506,12 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
                         if (rec.typeKind === "class" || rec.typeKind === "union") {
                             if (this._options.codeFormat) {
-                                this.emitLine(`class ${name};`);
+                                this.emitLine("class ", name, ";");
                             } else {
-                                this.emitLine(`struct ${name};`);
+                                this.emitLine("struct ", name, ";");
                             }
                         } else if (rec.typeKind === "enum") {
-                            this.emitLine(`enum class ${name} : ${this._enumType};`);
+                            this.emitLine("enum class ", name, " : ", this._enumType, ";");
                         } else {
                             panic(`Invalid type "${rec.typeKind}" to forward declare`);
                         }
@@ -1566,7 +1554,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.startFile("Generators.hpp", true);
 
             this._allTypeNames.forEach(t => {
-                this.emitLine(`#include "${t}.hpp"`);
+                this.emitLine("#include \"", t, ".hpp\"");
             });
 
             this.ensureBlankLine();
@@ -1601,7 +1589,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
             this._generatedFiles.forEach(f => {
                 const include = (name: string): void => {
-                    this.emitLine(`#include "${name}"`);
+                    this.emitLine("#include \"", name, "\"");
                 };
                 include(f);
             });
