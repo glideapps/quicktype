@@ -1204,7 +1204,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             });
             this.ensureBlankLine();
 
-            const exceptions : GlobalNames[] = [
+            const exceptions: GlobalNames[] = [
                 GlobalNames.ValueTooLowException, 
                 GlobalNames.ValueTooHighException, 
                 GlobalNames.ValueTooShortException, 
