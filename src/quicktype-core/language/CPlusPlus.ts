@@ -21,7 +21,7 @@ import {
     NamingStyle,
     makeNameStyle
 } from "../support/Strings";
-import { defined, assertNever, panic } from "../support/Support";
+import { defined, assertNever, panic, numberEnumValues } from "../support/Support";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { StringOption, EnumOption, BooleanOption, Option, getOptionValues, OptionValues } from "../RendererOptions";
 import { assert } from "../support/Support";
@@ -266,22 +266,25 @@ export enum GlobalNames {
     ValueTooShortException,
     ValueTooLongException,
     InvalidPatternException,
-    CheckConstraint,
-    MemberMinValue,
-    GetterMinValue,
-    SetterMinValue,
-    MemberMaxValue,
-    GetterMaxValue,
-    SetterMaxValue,
-    MemberMinLength,
-    GetterMinLength,
-    SetterMinLength,
-    MemberMaxLength,
-    GetterMaxLength,
-    SetterMaxLength,
-    MemberPattern,
-    GetterPattern,
-    SetterPattern
+    CheckConstraint
+}
+
+export enum MemberNames {
+    MinValue,
+    GetMinValue,
+    SetMinValue,
+    MaxValue,
+    GetMaxValue,
+    SetMaxValue,
+    MinLength,
+    GetMinLength,
+    SetMinLength,
+    MaxLength,
+    GetMaxLength,
+    SetMaxLength,
+    Pattern,
+    GetPattern,
+    SetPattern
 }
 
 export type IncludeRecord = {
@@ -323,6 +326,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     private _memberNameStyle: NameStyle;
     private _namedTypeNameStyle: NameStyle;
     private _generatedGlobalNames: Map<GlobalNames, string>;
+    private _generatedMemberNames: Map<MemberNames, string>;
     private _forbiddenGlobalNames: string[];
     private readonly _memberNamingFunction: Namer;
 
@@ -349,55 +353,38 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
         this._allTypeNames = new Set<string>();
         this._generatedFiles = new Set<string>();
-        this._generatedGlobalNames = new Map<GlobalNames, string>();
+        this._generatedGlobalNames = new Map();
+        this._generatedMemberNames = new Map();
         this._forbiddenGlobalNames = [];
 
         this.setupGlobalNames();
     }
 
     protected lookupGlobalName(type: GlobalNames): string {
-        const name = this._generatedGlobalNames.get(type);
-        if (name === undefined) {
-            return panic(`Unable to find ${type}`);
-        }
-        return name;
+        return defined(this._generatedGlobalNames.get(type));
     }
 
-    protected addGlobalName(name: string, type: GlobalNames): void {
-        const genName = this._namedTypeNameStyle(name);
+    protected lookupMemberName(type: MemberNames): string {
+        return defined(this._generatedMemberNames.get(type));
+    }
+
+    protected addGlobalName(type: GlobalNames): void {
+        const genName = this._namedTypeNameStyle(GlobalNames[type]);
         this._generatedGlobalNames.set(type, genName);
         this._forbiddenGlobalNames.push(genName);
     }
 
-    protected addMemberName(name: string, type: GlobalNames): void {
-        this._generatedGlobalNames.set(type, this._memberNameStyle(name));
+    protected addMemberName(type: MemberNames): void {
+        this._generatedMemberNames.set(type, this._memberNameStyle(MemberNames[type]));
     }
 
     protected setupGlobalNames(): void {
-        this.addGlobalName("ClassMemberConstraints", GlobalNames.ClassMemberConstraints);
-        this.addGlobalName("ClassMemberConstraintException", GlobalNames.ClassMemberConstraintException);
-        this.addGlobalName("ValueTooLowException", GlobalNames.ValueTooLowException);
-        this.addGlobalName("ValueTooHighException", GlobalNames.ValueTooHighException);
-        this.addGlobalName("ValueTooShortException", GlobalNames.ValueTooShortException);
-        this.addGlobalName("ValueTooLongException", GlobalNames.ValueTooLongException);
-        this.addGlobalName("InvalidPatternException", GlobalNames.InvalidPatternException);
-        this.addGlobalName("CheckConstraint", GlobalNames.CheckConstraint);
-
-        this.addMemberName("MinValue", GlobalNames.MemberMinValue);
-        this.addMemberName("GetMinValue", GlobalNames.GetterMinValue);
-        this.addMemberName("SetMinValue", GlobalNames.SetterMinValue);
-        this.addMemberName("MaxValue", GlobalNames.MemberMaxValue);
-        this.addMemberName("GetMaxValue", GlobalNames.GetterMaxValue);
-        this.addMemberName("SetMaxValue", GlobalNames.SetterMaxValue);
-        this.addMemberName("MinLength", GlobalNames.MemberMinLength);
-        this.addMemberName("GetMinLength", GlobalNames.GetterMinLength);
-        this.addMemberName("SetMinLength", GlobalNames.SetterMinLength);
-        this.addMemberName("MaxLength", GlobalNames.MemberMaxLength);
-        this.addMemberName("GetMaxLength", GlobalNames.GetterMaxLength);
-        this.addMemberName("SetMaxLength", GlobalNames.SetterMaxLength);
-        this.addMemberName("Pattern", GlobalNames.MemberPattern);
-        this.addMemberName("GetPattern", GlobalNames.GetterPattern);
-        this.addMemberName("SetPattern", GlobalNames.SetterPattern);
+        for (const v of numberEnumValues(GlobalNames)) {
+            this.addGlobalName(v);
+        }
+        for (const v of numberEnumValues(MemberNames)) {
+            this.addMemberName(v);
+        }
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
@@ -1206,21 +1193,21 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected emitConstraintClasses(): void {
-        const memberMinValue = this.lookupGlobalName(GlobalNames.MemberMinValue);
-        const getterMinValue = this.lookupGlobalName(GlobalNames.GetterMinValue);
-        const setterMinValue = this.lookupGlobalName(GlobalNames.SetterMinValue);
-        const memberMaxValue = this.lookupGlobalName(GlobalNames.MemberMaxValue);
-        const getterMaxValue = this.lookupGlobalName(GlobalNames.GetterMaxValue);
-        const setterMaxValue = this.lookupGlobalName(GlobalNames.SetterMaxValue);
-        const memberMinLength = this.lookupGlobalName(GlobalNames.MemberMinLength);
-        const getterMinLength = this.lookupGlobalName(GlobalNames.GetterMinLength);
-        const setterMinLength = this.lookupGlobalName(GlobalNames.SetterMinLength);
-        const memberMaxLength = this.lookupGlobalName(GlobalNames.MemberMaxLength);
-        const getterMaxLength = this.lookupGlobalName(GlobalNames.GetterMaxLength);
-        const setterMaxLength = this.lookupGlobalName(GlobalNames.SetterMaxLength);
-        const memberPattern = this.lookupGlobalName(GlobalNames.MemberPattern);
-        const getterPattern = this.lookupGlobalName(GlobalNames.GetterPattern);
-        const setterPattern = this.lookupGlobalName(GlobalNames.SetterPattern);
+        const memberMinValue = this.lookupMemberName(MemberNames.MinValue);
+        const getterMinValue = this.lookupMemberName(MemberNames.GetMinValue);
+        const setterMinValue = this.lookupMemberName(MemberNames.SetMinValue);
+        const memberMaxValue = this.lookupMemberName(MemberNames.MaxValue);
+        const getterMaxValue = this.lookupMemberName(MemberNames.GetMaxValue);
+        const setterMaxValue = this.lookupMemberName(MemberNames.SetMaxValue);
+        const memberMinLength = this.lookupMemberName(MemberNames.MinLength);
+        const getterMinLength = this.lookupMemberName(MemberNames.GetMinLength);
+        const setterMinLength = this.lookupMemberName(MemberNames.SetMinLength);
+        const memberMaxLength = this.lookupMemberName(MemberNames.MaxLength);
+        const getterMaxLength = this.lookupMemberName(MemberNames.GetMaxLength);
+        const setterMaxLength = this.lookupMemberName(MemberNames.SetMaxLength);
+        const memberPattern = this.lookupMemberName(MemberNames.Pattern);
+        const getterPattern = this.lookupMemberName(MemberNames.GetPattern);
+        const setterPattern = this.lookupMemberName(MemberNames.SetPattern);
         const classConstraint = this.lookupGlobalName(GlobalNames.ClassMemberConstraints);
 
         this.emitBlock(["class ", classConstraint], true, () => {
