@@ -208,6 +208,14 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
         if (this._tsFlowOptions.justTypes) return;
         super.emitConvertModule();
     }
+
+    protected emitModuleExports(): void {
+        if (this._tsFlowOptions.justTypes) {
+            return;
+        } else {
+            super.emitModuleExports();
+        }
+    }
 }
 
 export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
