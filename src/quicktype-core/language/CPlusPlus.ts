@@ -1200,6 +1200,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
     }
 
+    protected emitGetterSetter(t: string, getterName: string, setterName: string, memberName: string): void {
+        this.emitLine("void ", setterName, "(", t, " ", memberName, ") { this->", memberName, " = ", memberName, "; }");
+        this.emitLine("auto ", getterName, "() const { return ", memberName, "; }");
+    }
+
     protected emitConstraintClasses(): void {
         const memberMinValue = this.lookupGlobalName(GlobalNames.MemberMinValue);
         const getterMinValue = this.lookupGlobalName(GlobalNames.GetterMinValue);
@@ -1261,70 +1266,15 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.emitLine(classConstraint, "() = default;");
             this.emitLine("virtual ~", classConstraint, "() = default;");
             this.ensureBlankLine();
-            this.emitLine(
-                "void ",
-                setterMinValue,
-                "(int ",
-                memberMinValue,
-                ") { this->",
-                memberMinValue,
-                " = ",
-                memberMinValue,
-                "; }"
-            );
-            this.emitLine("auto ", getterMinValue, "() const { return ", memberMinValue, "; }");
+            this.emitGetterSetter("int", getterMinValue, setterMinValue, memberMinValue);
             this.ensureBlankLine();
-            this.emitLine(
-                "void ",
-                setterMaxValue,
-                "(int ",
-                memberMaxValue,
-                ") { this->",
-                memberMaxValue,
-                " = ",
-                memberMaxValue,
-                "; }"
-            );
-            this.emitLine("auto ", getterMaxValue, "() const { return ", memberMaxValue, "; }");
+            this.emitGetterSetter("int", getterMaxValue, setterMaxValue, memberMaxValue);
             this.ensureBlankLine();
-            this.emitLine(
-                "void ",
-                setterMinLength,
-                "(int ",
-                memberMinLength,
-                ") { this->",
-                memberMinLength,
-                " = ",
-                memberMinLength,
-                "; }"
-            );
-            this.emitLine("auto ", getterMinLength, "() const { return ", memberMinLength, "; }");
+            this.emitGetterSetter("int", getterMinLength, setterMinLength, memberMinLength);
             this.ensureBlankLine();
-            this.emitLine(
-                "void ",
-                setterMaxLength,
-                "(int ",
-                memberMaxLength,
-                ") { this->",
-                memberMaxLength,
-                " = ",
-                memberMaxLength,
-                "; }"
-            );
-            this.emitLine("auto ", getterMaxLength, "() const { return ", memberMaxLength, "; }");
+            this.emitGetterSetter("int", getterMaxLength, setterMaxLength, memberMaxLength);
             this.ensureBlankLine();
-            this.emitLine(
-                "void ",
-                setterPattern,
-                "(const std::string & ",
-                memberPattern,
-                ") { this->",
-                memberPattern,
-                " = ",
-                memberPattern,
-                "; }"
-            );
-            this.emitLine("auto ", getterPattern, "() const { return ", memberPattern, "; }");
+            this.emitGetterSetter("const std::string &", getterPattern, setterPattern, memberPattern);
         });
         this.ensureBlankLine();
 
