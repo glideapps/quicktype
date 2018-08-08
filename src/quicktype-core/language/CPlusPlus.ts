@@ -662,62 +662,66 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
      * similar to cppType, it practically gathers all the generated types within
      * 't'. It also records, whether a given sub-type is part of a variant or not.
      */
-    protected generatedTypes(
-        forceInclude: boolean,
-        isClassMember: boolean,
-        isVariant: boolean,
-        l: number,
-        t: Type,
-        result: TypeRecord[]
-    ): void {
-        if (t instanceof ArrayType) {
-            this.generatedTypes(forceInclude, isClassMember, isVariant, l + 1, t.items, result);
-        } else if (t instanceof ClassType) {
-            result.push({
-                name: this.nameForNamedType(t),
-                type: t,
-                level: l,
-                variant: isVariant,
-                forceInclude: forceInclude
-            });
-        } else if (t instanceof MapType) {
-            this.generatedTypes(forceInclude, isClassMember, isVariant, l + 1, t.values, result);
-        } else if (t instanceof EnumType) {
-            result.push({ name: this.nameForNamedType(t), type: t, level: l, variant: isVariant, forceInclude: false });
-        } else if (t instanceof UnionType) {
-            /**
-             * If we have a union as a class member and we see it as a "named union",
-             * we can safely include it as-is.
-             * HOWEVER if we define a union on its own, we must recurse into the
-             * typedefinition and include all subtypes.
-             */
-            if (this.unionNeedsName(t) && isClassMember) {
-                /**
-                 * This is NOT ENOUGH.
-                 * We have a variant member in a class, e.g. defined with a boost::variant.
-                 * The compiler can only compile the class if IT KNOWS THE SIZES
-                 * OF ALL MEMBERS OF THE VARIANT.
-                 * So it means that you must include ALL SUBTYPES (practically classes only)
-                 * AS WELL
-                 */
-                forceInclude = true;
+    protected generatedTypes(isClassMember: boolean, theType: Type): TypeRecord[] {
+        const result: TypeRecord[] = [];
+        const recur = (forceInclude: boolean, isVariant: boolean, l: number, t: Type) => {
+            if (t instanceof ArrayType) {
+                recur(forceInclude, isVariant, l + 1, t.items);
+            } else if (t instanceof ClassType) {
                 result.push({
                     name: this.nameForNamedType(t),
                     type: t,
                     level: l,
-                    variant: true,
+                    variant: isVariant,
                     forceInclude: forceInclude
                 });
-                /** intentional "fall-through", add all subtypes as well - but forced include */
-            }
+            } else if (t instanceof MapType) {
+                recur(forceInclude, isVariant, l + 1, t.values);
+            } else if (t instanceof EnumType) {
+                result.push({
+                    name: this.nameForNamedType(t),
+                    type: t,
+                    level: l,
+                    variant: isVariant,
+                    forceInclude: false
+                });
+            } else if (t instanceof UnionType) {
+                /**
+                 * If we have a union as a class member and we see it as a "named union",
+                 * we can safely include it as-is.
+                 * HOWEVER if we define a union on its own, we must recurse into the
+                 * typedefinition and include all subtypes.
+                 */
+                if (this.unionNeedsName(t) && isClassMember) {
+                    /**
+                     * This is NOT ENOUGH.
+                     * We have a variant member in a class, e.g. defined with a boost::variant.
+                     * The compiler can only compile the class if IT KNOWS THE SIZES
+                     * OF ALL MEMBERS OF THE VARIANT.
+                     * So it means that you must include ALL SUBTYPES (practically classes only)
+                     * AS WELL
+                     */
+                    forceInclude = true;
+                    result.push({
+                        name: this.nameForNamedType(t),
+                        type: t,
+                        level: l,
+                        variant: true,
+                        forceInclude: forceInclude
+                    });
+                    /** intentional "fall-through", add all subtypes as well - but forced include */
+                }
 
-            const [hasNull, nonNulls] = removeNullFromUnion(t);
-            isVariant = hasNull !== null;
-            /** we need to collect all the subtypes of the union */
-            for (const tt of nonNulls) {
-                this.generatedTypes(forceInclude, isClassMember, isVariant, l + 1, tt, result);
+                const [hasNull, nonNulls] = removeNullFromUnion(t);
+                isVariant = hasNull !== null;
+                /** we need to collect all the subtypes of the union */
+                for (const tt of nonNulls) {
+                    recur(forceInclude, isVariant, l + 1, tt);
+                }
             }
-        }
+        };
+        recur(false, false, 0, theType);
+        return result;
     }
 
     protected emitClassMembers(c: ClassType, constraints: Map<string, string> | undefined): void {
@@ -1526,8 +1530,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected updateIncludes(isClassMember: boolean, includes: IncludeMap, propertyType: Type, _defName: string): void {
-        let propTypes: Array<TypeRecord> = new Array();
-        this.generatedTypes(false, isClassMember, false, 0, propertyType, propTypes);
+        const propTypes = this.generatedTypes(isClassMember, propertyType);
 
         for (const t of propTypes) {
             const typeName = this.sourcelikeToString(t.name);
