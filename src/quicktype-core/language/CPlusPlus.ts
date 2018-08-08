@@ -724,6 +724,10 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         return result;
     }
 
+    protected constraintMember(jsonName: string): string {
+        return this._memberNameStyle(jsonName + "Constraint");
+    }
+
     protected emitClassMembers(c: ClassType, constraints: Map<string, string> | undefined): void {
         if (this._options.codeFormat) {
             this.emitLine("private:");
@@ -742,7 +746,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 if (constraints !== undefined && constraints.has(jsonName)) {
                     /** FIXME!!! NameStyle will/can collide with other Names */
                     const cnst = this.lookupGlobalName(GlobalNames.ClassMemberConstraints);
-                    this.emitLine(cnst, " ", this._memberNameStyle(jsonName + "Constraint"), ";");
+                    this.emitLine(cnst, " ", this.constraintMember(jsonName), ";");
                 }
             });
 
@@ -792,7 +796,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             '("',
                             name,
                             '", ',
-                            this._memberNameStyle(jsonName + "Constraint"),
+                            this.constraintMember(jsonName),
                             ", *value); this->",
                             name,
                             " = value; }"
@@ -814,7 +818,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             '("',
                             name,
                             '", ',
-                            this._memberNameStyle(jsonName + "Constraint"),
+                            this.constraintMember(jsonName),
                             ", value); this->",
                             name,
                             " = value; }"
@@ -854,7 +858,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             constrArg += pattern === undefined ? "boost::none" : 'std::string("' + pattern + '")';
             constrArg += ")";
 
-            res.set(jsonName, this._memberNameStyle(jsonName + "Constraint") + constrArg);
+            res.set(jsonName, this.constraintMember(jsonName) + constrArg);
         });
 
         return res.size === 0 ? undefined : res;
