@@ -524,7 +524,11 @@ export const TypeScriptLanguage: Language = {
   skipMiscJSON: false,
   skipSchema: ["keyword-unions.schema"], // can't handle "constructor" property
   rendererOptions: { "explicit-unions": "yes" },
-  quickTestRendererOptions: [{ "nice-property-names": "true" }, { "declare-unions": "true" }],
+  quickTestRendererOptions: [
+    { "runtime-typecheck": "false" },
+    { "nice-property-names": "true" },
+    { "declare-unions": "true" }
+  ],
   sourceFiles: ["src/language/TypeScript.ts"]
 };
 
@@ -545,7 +549,7 @@ export const JavaScriptLanguage: Language = {
   skipMiscJSON: false,
   skipSchema: ["keyword-unions.schema"], // can't handle "constructor" property
   rendererOptions: {},
-  quickTestRendererOptions: [],
+  quickTestRendererOptions: [{ "runtime-typecheck": "false" }],
   sourceFiles: ["src/language/JavaScript.ts"]
 };
 
@@ -567,7 +571,11 @@ export const FlowLanguage: Language = {
     "keyword-unions.schema" // can't handle "constructor" property
   ],
   rendererOptions: { "explicit-unions": "yes" },
-  quickTestRendererOptions: [],
+  quickTestRendererOptions: [
+    { "runtime-typecheck": "false" },
+    { "nice-property-names": "true" },
+    { "declare-unions": "true" }
+  ],
   sourceFiles: ["src/language/Flow.ts"]
 };
 

@@ -242,7 +242,11 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
             this.ensureBlankLine();
 
             this.emitBlock([this.serializerFunctionLine(t, name), " "], "", () => {
-                this.emitLine("return JSON.stringify(uncast(value, ", typeMap, "), null, 2);");
+                if (!this._jsOptions.runtimeTypecheck) {
+                    this.emitLine("return JSON.stringify(value);");
+                } else {
+                    this.emitLine("return JSON.stringify(uncast(value, ", typeMap, "), null, 2);");
+                }
             });
         });
         if (this._jsOptions.runtimeTypecheck) {
