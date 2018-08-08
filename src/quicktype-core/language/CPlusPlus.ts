@@ -319,7 +319,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     private _memberNameStyle: NameStyle;
     private _namedTypeNameStyle: NameStyle;
     private _generatedGlobalNames: Map<GlobalNames, string>;
-    private _forbiddenGlobalNames: Array<string>;
+    private _forbiddenGlobalNames: string[];
     private readonly _memberNamingFunction: Namer;
 
     protected readonly typeNamingStyle: NamingStyle;
@@ -346,7 +346,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this._allTypeNames = new Set<string>();
         this._generatedFiles = new Set<string>();
         this._generatedGlobalNames = new Map<GlobalNames, string>();
-        this._forbiddenGlobalNames = new Array<string>();
+        this._forbiddenGlobalNames = [];
 
         this.setupGlobalNames();
     }
@@ -690,10 +690,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             if (this.unionNeedsName(t) && isClassMember) {
                 /**
                  * This is NOT ENOUGH.
-                 * We have a variant member in a class, e.g. defined with a boost::variant
-                 * So that the compiler can compile the size of it MUST KNOW THE SIZES
+                 * We have a variant member in a class, e.g. defined with a boost::variant.
+                 * The compiler can only compile the class if IT KNOWS THE SIZES
                  * OF ALL MEMBERS OF THE VARIANT.
-                 * So it means that you must include ALL SUBTYPES (practically classes only) AS WELL
+                 * So it means that you must include ALL SUBTYPES (practically classes only) 
+                 * AS WELL
                  */
                 forceInclude = true;
                 result.push({name: this.nameForNamedType(t), type:t, level:l, variant:true, forceInclude: forceInclude});
@@ -826,11 +827,13 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     let numEmits:number = 0;
                     constraints.forEach((initializer: string, _propName: string) => {
                         numEmits++;
-                        if (numEmits === constraints.size) {
-                            this.emitLine("    ", initializer);
-                        } else {
-                            this.emitLine("    ", initializer, ",");
-                        }
+                        this.indent(() => {
+                            if (numEmits === constraints.size) {
+                                this.emitLine(initializer);
+                            } else {
+                                this.emitLine(initializer, ",");
+                            }
+                        });
                     });
                     this.emitLine("{}");
                 }
@@ -1102,7 +1105,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected emitOptionalHelpers(): void {
-        this.emitBlock(["template <typename T>\nstruct adl_serializer<", optionalType, "<T>>"], true, () => {
+        this.emitLine("template <typename T>");
+        this.emitBlock(["struct adl_serializer<", optionalType, "<T>>"], true, () => {
             this.emitBlock(["static void to_json(json& j, const ", optionalType, "<T>& opt)"], false, () => {
                 this.emitLine("if (!opt) j = nullptr; else j = *opt;");
             });
@@ -1171,11 +1175,13 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.ensureBlankLine();
                 this.emitLine("public:");
                 this.emitLine(classConstraint, "(");
-                this.emitLine("    boost::optional<int> ", memberMinValue, ",");
-                this.emitLine("    boost::optional<int> ", memberMaxValue, ",");
-                this.emitLine("    boost::optional<int> ", memberMinLength, ",");
-                this.emitLine("    boost::optional<int> ", memberMaxLength, ",");
-                this.emitLine("    boost::optional<std::string> ", memberPattern);
+                this.indent(() => {
+                    this.emitLine("boost::optional<int> ", memberMinValue, ",");
+                    this.emitLine("boost::optional<int> ", memberMaxValue, ",");
+                    this.emitLine("boost::optional<int> ", memberMinLength, ",");
+                    this.emitLine("boost::optional<int> ", memberMaxLength, ",");
+                    this.emitLine("boost::optional<std::string> ", memberPattern);
+                });
                 this.emitLine(") : ", memberMinValue, "(", memberMinValue, "), ", memberMaxValue, "(", memberMaxValue, "), ", memberMinLength, "(", memberMinLength, "), ", memberMaxLength, "(", memberMaxLength, "), ", memberPattern, "(", memberPattern, ") {}");
                 this.emitLine(classConstraint, "() = default;");
                 this.emitLine("virtual ~", classConstraint, "() = default;");
@@ -1268,8 +1274,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.ensureBlankLine();
 
         if (this.haveUnions) {
+            this.emitLine("template <typename T>");
             this.emitBlock(
-                ["template <typename T>\ninline ", optionalType, "<T> get_optional(const json &j, const char *property)"],
+                ["inline ", optionalType, "<T> get_optional(const json &j, const char *property)"],
                 false,
                 () => {
                     this.emitBlock(["if (j.find(property) != j.end())"], false, () => {
@@ -1398,15 +1405,6 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.generatedTypes(false, isClassMember, false, 0, propertyType, propTypes);
 
         for (const t of propTypes) {
-            if (t.name === undefined) {
-                const name = this.cppType(
-                    t.type,
-                    { needsForwardIndirection: false, needsOptionalIndirection: false, inJsonNamespace: false },
-                    true
-                );
-                return panic(`Internal error. No name for type "${name}"`);
-            }
-
             const typeName = this.sourcelikeToString(t.name);
 
             let propRecord: IncludeRecord = { kind: undefined, typeKind: undefined };

@@ -134,6 +134,10 @@ export function minMaxLengthForType(t: Type): MinMaxConstraint | undefined {
 }
 
 export class PatternTypeAttributeKind extends TypeAttributeKind<string> {
+    constructor() {
+        super("pattern");
+    }
+
     get inIdentity(): boolean {
         return true;
     }
@@ -153,9 +157,7 @@ export class PatternTypeAttributeKind extends TypeAttributeKind<string> {
     }
 }
 
-export const patternTypeAttributeKind: TypeAttributeKind<string> = new PatternTypeAttributeKind(
-    "pattern"
-);
+export const patternTypeAttributeKind: TypeAttributeKind<string> = new PatternTypeAttributeKind();
 
 export function patternAttributeProducer(
     schema: JSONSchema,
