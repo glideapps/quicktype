@@ -234,6 +234,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         for (const t of this.typeGraph.allTypesUnordered()) {
             this.addNameForTransformation(t);
         }
+
         return setUnion(
             [this._globalForbiddenNamespace, this._globalNamespace],
             this._otherForbiddenNamespaces.values()

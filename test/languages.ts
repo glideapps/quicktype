@@ -9,7 +9,10 @@ export type LanguageFeature =
   | "date-time"
   | "integer-string"
   | "bool-string"
-  | "uuid";
+  | "uuid"
+  | "minmax"
+  | "minmaxlength"
+  | "pattern";
 
 export interface Language {
   name: string;
@@ -308,7 +311,7 @@ export const CPlusPlusLanguage: Language = {
     "fcca3.json"
   ],
   allowMissingNull: false,
-  features: ["enum", "union", "no-defaults"],
+  features: ["minmax", "minmaxlength", "pattern", "enum", "union", "no-defaults"],
   output: "TopLevel.hpp",
   topLevel: "TopLevel",
   skipJSON: [
@@ -323,7 +326,7 @@ export const CPlusPlusLanguage: Language = {
   quickTestRendererOptions: [
     { unions: "indirection" },
     { "source-style": "multi-source" },
-    { "code-format": "with-getter-setter" }
+    { "code-format": "with-struct" }
   ],
   sourceFiles: ["src/language/CPlusPlus.ts"]
 };

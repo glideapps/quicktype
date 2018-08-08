@@ -133,3 +133,14 @@ export function toReadable(source: StringInput): Readable {
 export async function toString(source: StringInput): Promise<string> {
     return typeof source === "string" ? source : await getStream(source);
 }
+
+export function numberEnumValues(e: { [key: string]: any }): number[] {
+    const result: number[] = [];
+    for (const k of Object.keys(e)) {
+        const v = e[k];
+        if (typeof v === "number") {
+            result.push(v);
+        }
+    }
+    return result;
+}
