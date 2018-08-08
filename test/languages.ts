@@ -659,7 +659,7 @@ export const DartLanguage: Language = {
   skipDiffViaSchema: [
   ],
   allowMissingNull: true,
-  handlesStringifiedIntegers: false,
+  features: [],
   output: "TopLevel.dart",
   topLevel: "TopLevel",
   skipJSON: [
