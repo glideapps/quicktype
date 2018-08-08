@@ -1,5 +1,4 @@
-import stringHash = require("string-hash");
-import { mapFilterMap, mapFilter, mapTranspose } from "collection-utils";
+import { mapFilterMap, mapFilter, mapTranspose, hashString } from "collection-utils";
 
 import { panic, assert } from "./support/Support";
 import { Type, TypeKind } from "./Type";
@@ -90,7 +89,7 @@ export class TypeAttributeKind<T> {
     }
 
     hashCode(): number {
-        return stringHash(this.name);
+        return hashString(this.name);
     }
 }
 
