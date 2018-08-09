@@ -6,9 +6,10 @@
 
 `quicktype` generates strongly-typed models and serializers from JSON, JSON Schema, and [GraphQL queries](https://blog.quicktype.io/graphql-with-quicktype/), making it a breeze to work with JSON type-safely in any programming language.
 
-* [Try `quicktype` in your browser](https://app.quicktype.io).
-* View [awesome JSON APIs](https://github.com/typeguard/awesome-typed-datasets) that have been strongly typed with `quicktype`.
-* Read ['A first look at quicktype'](http://blog.quicktype.io/first-look/) for more introduction.
+-   [Try `quicktype` in your browser](https://app.quicktype.io).
+-   View [awesome JSON APIs](https://github.com/typeguard/awesome-typed-datasets) that have been strongly typed with `quicktype`.
+-   Read ['A first look at quicktype'](http://blog.quicktype.io/first-look/) for more introduction.
+-   If you have any questions, check out the [FAQ](FAQ.md) first.
 
 ### Supported Inputs
 
@@ -48,10 +49,10 @@ npm install -g quicktype
 
 Other options:
 
-* [Homebrew](http://formulae.brew.sh/formula/quicktype) _(infrequently updated)_
-* [Xcode extension](https://itunes.apple.com/us/app/paste-json-as-code-quicktype/id1330801220?mt=12)\*
-* [VSCode extension](https://marketplace.visualstudio.com/items/quicktype.quicktype)\*
-* [Visual Studio extension](https://marketplace.visualstudio.com/items?itemName=typeguard.quicktype-vs)\*
+-   [Homebrew](http://formulae.brew.sh/formula/quicktype) _(infrequently updated)_
+-   [Xcode extension](https://itunes.apple.com/us/app/paste-json-as-code-quicktype/id1330801220?mt=12)\*
+-   [VSCode extension](https://marketplace.visualstudio.com/items/quicktype.quicktype)\*
+-   [Visual Studio extension](https://marketplace.visualstudio.com/items?itemName=typeguard.quicktype-vs)\*
 
 <small>\* limited functionality</small>
 
@@ -115,9 +116,9 @@ You can achieve a similar result by writing or generating a [TypeScript](http://
 
 ```typescript
 interface Person {
-  name: string;
-  nickname?: string; // an optional property
-  luckyNumber: number;
+    name: string;
+    nickname?: string; // an optional property
+    luckyNumber: number;
 }
 ```
 
@@ -173,15 +174,15 @@ files, URLs, or add other options.
 
 `quicktype` has many complex test dependencies:
 
-* `dotnetcore` SDK
-* Java, Maven
-* `elm` tools
-* `g++` C++ compiler
-* `golang` stack
-* `swift` compiler
-* `clang` and Objective-C Foundation (must be tested separately on macOS)
-* `rust` tools
-* [Bundler](https://bundler.io) for Ruby
+-   `dotnetcore` SDK
+-   Java, Maven
+-   `elm` tools
+-   `g++` C++ compiler
+-   `golang` stack
+-   `swift` compiler
+-   `clang` and Objective-C Foundation (must be tested separately on macOS)
+-   `rust` tools
+-   [Bundler](https://bundler.io) for Ruby
 
 We've assembled all of these tools in a Docker container that you build and test within:
 

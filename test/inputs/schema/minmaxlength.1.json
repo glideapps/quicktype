@@ -1,0 +1,9 @@
+{
+  "minlength": "aaaa",
+  "maxlength": "bbb",
+  "minmaxlength": "cccc",
+  "union": "dddddd",
+  "minMaxUnion": "eeeee",
+  "intersection": "ffff",
+  "minMaxIntersection": "gggg"
+}

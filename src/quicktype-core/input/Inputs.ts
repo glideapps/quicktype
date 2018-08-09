@@ -113,6 +113,7 @@ export class JSONInput implements Input<JSONSourceData> {
     }
 }
 
+// FIXME: Remove this in the next major API.
 export function jsonInputForTargetLanguage(
     _targetLanguage: string | TargetLanguage,
     _languages?: TargetLanguage[]

@@ -49,6 +49,8 @@ import { descriptionAttributeProducer } from "../Description";
 import { accessorNamesAttributeProducer } from "../AccessorNames";
 import { enumValuesAttributeProducer } from "../EnumValues";
 import { minMaxAttributeProducer } from "../Constraints";
+import { minMaxLengthAttributeProducer } from "../Constraints";
+import { patternAttributeProducer } from "../Constraints";
 
 export enum PathElementKind {
     Root,
@@ -1088,7 +1090,9 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
             descriptionAttributeProducer,
             accessorNamesAttributeProducer,
             enumValuesAttributeProducer,
-            minMaxAttributeProducer
+            minMaxAttributeProducer,
+            minMaxLengthAttributeProducer,
+            patternAttributeProducer,
         ].concat(additionalAttributeProducers);
     }
 
