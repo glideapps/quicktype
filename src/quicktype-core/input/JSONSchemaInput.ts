@@ -1,6 +1,5 @@
 import * as pluralize from "pluralize";
 import * as URI from "urijs";
-import stringHash = require("string-hash");
 import {
     setFilter,
     EqualityMap,
@@ -19,7 +18,8 @@ import {
     hasOwnProperty,
     definedMap,
     addHashCode,
-    iterableFirst
+    iterableFirst,
+    hashString
 } from "collection-utils";
 
 import {
@@ -326,7 +326,7 @@ export class Ref {
                     acc = addHashCode(acc, pe.index);
                     break;
                 case PathElementKind.KeyOrIndex:
-                    acc = addHashCode(acc, stringHash(pe.key));
+                    acc = addHashCode(acc, hashString(pe.key));
                     break;
                 default:
                     break;
@@ -1092,7 +1092,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
             enumValuesAttributeProducer,
             minMaxAttributeProducer,
             minMaxLengthAttributeProducer,
-            patternAttributeProducer,
+            patternAttributeProducer
         ].concat(additionalAttributeProducers);
     }
 

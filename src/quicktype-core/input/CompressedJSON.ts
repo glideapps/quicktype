@@ -1,7 +1,6 @@
 import * as stream from "stream";
 
-import stringHash = require("string-hash");
-import { addHashCode, hashCodeInit } from "collection-utils";
+import { addHashCode, hashCodeInit, hashString } from "collection-utils";
 
 import { defined, panic, assert } from "../support/Support";
 import { inferTransformedStringTypeKindForString } from "../StringTypes";
@@ -275,11 +274,11 @@ export class CompressedJSON {
     hashCode = (): number => {
         let hashAccumulator = hashCodeInit;
         for (const s of this._strings) {
-            hashAccumulator = addHashCode(hashAccumulator, stringHash(s));
+            hashAccumulator = addHashCode(hashAccumulator, hashString(s));
         }
 
         for (const s of Object.getOwnPropertyNames(this._stringIndexes).sort()) {
-            hashAccumulator = addHashCode(hashAccumulator, stringHash(s));
+            hashAccumulator = addHashCode(hashAccumulator, hashString(s));
             hashAccumulator = addHashCode(hashAccumulator, this._stringIndexes[s]);
         }
 

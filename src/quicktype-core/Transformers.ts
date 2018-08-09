@@ -1,4 +1,3 @@
-import stringHash = require("string-hash");
 import {
     setUnionInto,
     areEqual,
@@ -6,7 +5,8 @@ import {
     definedMap,
     addHashCode,
     definedMapWithDefault,
-    arraySortByInto
+    arraySortByInto,
+    hashString
 } from "collection-utils";
 
 import { UnionType, Type, EnumType, PrimitiveType, TypeKind } from "./Type";
@@ -705,7 +705,7 @@ export class StringMatchTransformer extends MatchTransformer {
 
     hashCode(): number {
         const h = super.hashCode();
-        return addHashCode(h, stringHash(this.stringCase));
+        return addHashCode(h, hashString(this.stringCase));
     }
 
     protected debugDescription(): string {
