@@ -1,6 +1,6 @@
 import { Type, EnumType, UnionType, ClassType, ClassProperty } from "../Type";
 import { matchType, nullableFromUnion, directlyReachableSingleNamedType } from "../TypeUtils";
-import { Sourcelike, maybeAnnotated } from "../Source";
+import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import {
     utf16LegalizeCharacters,
     escapeNonPrintableMapper,
@@ -14,7 +14,8 @@ import {
     allUpperWordStyle,
     firstUpperWordStyle,
     allLowerWordStyle,
-    isPrintable
+    isPrintable,
+    decapitalize
 } from "../support/Strings";
 import { Name, Namer, funPrefixNamer, DependencyName } from "../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
@@ -246,6 +247,18 @@ export class DartRenderer extends ConvenienceRenderer {
     }
 
     protected emitFileHeader(): void {
+        if (this.leadingComments !== undefined) {
+            this.emitCommentLines(this.leadingComments);
+        } else {
+            this.emitLine("// To parse this JSON data, do");
+            this.emitLine("//");
+            this.forEachTopLevel("none", (_t, name) => {
+                const { decoder } = defined(this._topLevelDependents.get(name));
+                this.emitLine("//     final ", modifySource(decapitalize, name), " = ", decoder, "(jsonString);");
+            });
+        }
+
+        this.ensureBlankLine();
         this.emitLine("import 'dart:convert';");
     }
 
