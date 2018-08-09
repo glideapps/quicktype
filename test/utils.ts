@@ -47,9 +47,16 @@ export function callAndExpectFailure<T>(message: string, f: () => T): void {
   return failWith(message, { result });
 }
 
-export function exec(s: string, printFailure: boolean = true): { stdout: string; code: number } {
+export function exec(
+  s: string,
+  env: NodeJS.ProcessEnv | undefined,
+  printFailure: boolean = true
+): { stdout: string; code: number } {
   debug(s);
-  const result = shell.exec(s, { silent: !DEBUG }) as any;
+  if (env === undefined) {
+    env = process.env;
+  }
+  const result = shell.exec(s, { silent: !DEBUG, env }) as any;
 
   if (result.code !== 0) {
     const failureObj = {
@@ -205,9 +212,15 @@ export type ComparisonRelaxations = {
   allowStringifiedIntegers?: boolean;
 };
 
+export type FileOrCommand = { file: string } | { command: string; env: NodeJS.ProcessEnv };
+
+function fileOrCommandIsFile(foc: FileOrCommand): foc is { file: string } {
+  return (foc as any).file !== undefined;
+}
+
 export type ComparisonArgs = ComparisonRelaxations & {
   expectedFile: string;
-  given: { file: string } | { command: string };
+  given: FileOrCommand;
   strict: boolean;
 };
 
@@ -215,11 +228,14 @@ export function compareJsonFileToJson(args: ComparisonArgs) {
   debug(args);
 
   const { expectedFile, strict } = args;
-  const given: any = args.given;
+  const { given } = args;
 
-  const jsonString = given.file
+  const jsonString = fileOrCommandIsFile(given)
     ? callAndReportFailure("Could not read JSON output file", () => fs.readFileSync(given.file, "utf8"))
-    : callAndReportFailure("Could not run command for JSON output", () => exec(given.command).stdout);
+    : callAndReportFailure(
+        "Could not run command for JSON output",
+        () => exec(given.command, given.env).stdout
+      );
 
   const givenJSON = callAndReportFailure("Could not parse output JSON", () => JSON.parse(jsonString));
   const expectedJSON = callAndReportFailure("Could not read or parse expected JSON file", () =>

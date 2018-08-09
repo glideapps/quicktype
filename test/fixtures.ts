@@ -78,14 +78,26 @@ function additionalTestFiles(base: string, extension: string, features: string[]
   return additionalFiles;
 }
 
+function runEnvForLanguage(additionalRendererOptions: RendererOptions): NodeJS.ProcessEnv {
+  const newEnv = Object.assign({}, process.env);
+  for (const o of Object.getOwnPropertyNames(additionalRendererOptions)) {
+    newEnv["QUICKTYPE_" + o.toUpperCase().replace("-", "_")] = additionalRendererOptions[o];
+  }
+  return newEnv;
+}
+
 function comparisonArgs(
   language: languages.Language,
   inputFilename: string,
-  expectedFilename: string
+  expectedFilename: string,
+  additionalRendererOptions: RendererOptions
 ): ComparisonArgs {
   return {
     expectedFile: expectedFilename,
-    given: { command: defined(language.runCommand)(inputFilename) },
+    given: {
+      command: defined(language.runCommand)(inputFilename),
+      env: runEnvForLanguage(additionalRendererOptions)
+    },
     strict: false,
     allowMissingNull: language.allowMissingNull,
     allowStringifiedIntegers: allowStringifiedIntegers(language, expectedFilename)
@@ -259,7 +271,7 @@ class JSONFixture extends LanguageFixture {
     }
     if (this.language.runCommand === undefined) return 0;
 
-    compareJsonFileToJson(comparisonArgs(this.language, filename, filename));
+    compareJsonFileToJson(comparisonArgs(this.language, filename, filename, additionalRendererOptions));
 
     if (
       this.language.diffViaSchema &&
@@ -279,7 +291,7 @@ class JSONFixture extends LanguageFixture {
       await quicktypeForLanguage(this.language, "schema.json", "schema", true, additionalRendererOptions);
 
       // Compare fixture.output to fixture.output.expected
-      exec(`diff -Naur ${this.language.output}.expected ${this.language.output} > /dev/null 2>&1`);
+      exec(`diff -Naur ${this.language.output}.expected ${this.language.output} > /dev/null 2>&1`, undefined);
     }
 
     return 1;
@@ -376,7 +388,7 @@ class JSONToXToYFixture extends JSONFixture {
     );
 
     // Parse the sample with the code generated from its schema, and compare to the sample
-    compareJsonFileToJson(comparisonArgs(this.runLanguage, filename, filename));
+    compareJsonFileToJson(comparisonArgs(this.runLanguage, filename, filename, additionalRendererOptions));
 
     return 1;
   }
@@ -548,7 +560,7 @@ class JSONSchemaFixture extends LanguageFixture {
 
   async test(
     _sample: string,
-    _additionalRendererOptions: RendererOptions,
+    additionalRendererOptions: RendererOptions,
     additionalFiles: string[]
   ): Promise<number> {
     if (this.language.compileCommand) {
@@ -562,7 +574,12 @@ class JSONSchemaFixture extends LanguageFixture {
       if (failExtensions.some(ext => filename.endsWith(ext))) {
         callAndExpectFailure(
           `Expected failure on input ${filename}`,
-          () => exec(defined(this.language.runCommand)(filename), false).stdout
+          () =>
+            exec(
+              defined(this.language.runCommand)(filename),
+              runEnvForLanguage(additionalRendererOptions),
+              false
+            ).stdout
         );
       } else {
         let expected = filename;
@@ -573,7 +590,7 @@ class JSONSchemaFixture extends LanguageFixture {
             break;
           }
         }
-        compareJsonFileToJson(comparisonArgs(this.language, filename, expected));
+        compareJsonFileToJson(comparisonArgs(this.language, filename, expected, additionalRendererOptions));
       }
     }
     return additionalFiles.length;
@@ -630,7 +647,7 @@ class GraphQLFixture extends LanguageFixture {
 
   async test(
     _filename: string,
-    _additionalRendererOptions: RendererOptions,
+    additionalRendererOptions: RendererOptions,
     additionalFiles: string[]
   ): Promise<number> {
     if (this.language.compileCommand) {
@@ -639,7 +656,7 @@ class GraphQLFixture extends LanguageFixture {
     if (this.language.runCommand === undefined) return 0;
 
     for (const fn of additionalFiles) {
-      compareJsonFileToJson(comparisonArgs(this.language, fn, fn));
+      compareJsonFileToJson(comparisonArgs(this.language, fn, fn, additionalRendererOptions));
     }
     return additionalFiles.length;
   }
