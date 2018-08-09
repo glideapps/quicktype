@@ -208,25 +208,31 @@ export abstract class Renderer {
         this._emitContext.changeIndent(offset);
     }
 
+    iterableForEach<T>(iterable: Iterable<T>, emitter: (v: T, position: ForEachPosition) => void): void {
+        const items = Array.from(iterable);
+        let onFirst = true;
+        for (const [i, v] of iterableEnumerate(items)) {
+            const position =
+                items.length === 1 ? "only" : onFirst ? "first" : i === items.length - 1 ? "last" : "middle";
+            emitter(v, position);
+            onFirst = false;
+        }
+    }
+
     forEach<K, V>(
         iterable: Iterable<[K, V]>,
         interposedBlankLines: number,
         leadingBlankLines: number,
         emitter: (v: V, k: K, position: ForEachPosition) => void
     ): void {
-        const items = Array.from(iterable);
-        let onFirst = true;
-        for (const [i, [k, v]] of iterableEnumerate(items)) {
-            if (onFirst) {
+        this.iterableForEach(iterable, ([k, v], position) => {
+            if (position === "only" || position === "first") {
                 this.ensureBlankLine(leadingBlankLines);
             } else {
                 this.ensureBlankLine(interposedBlankLines);
             }
-            const position =
-                items.length === 1 ? "only" : onFirst ? "first" : i === items.length - 1 ? "last" : "middle";
             emitter(v, k, position);
-            onFirst = false;
-        }
+        });
     }
 
     forEachWithBlankLines<K, V>(
