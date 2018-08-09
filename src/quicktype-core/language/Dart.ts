@@ -23,6 +23,7 @@ import { Option } from "../RendererOptions";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { defined, assert } from "../support/Support";
 import { RenderContext } from "../Renderer";
+import { arrayIntercalate } from "../../../node_modules/collection-utils";
 
 export class DartTargetLanguage extends TargetLanguage {
     constructor() {
@@ -150,6 +151,8 @@ function dartNameStyle(startWithUpper: boolean, upperUnderscore: boolean, origin
 export class DartRenderer extends ConvenienceRenderer {
     private _currentFilename: string | undefined;
     private readonly _gettersAndSettersForPropertyName = new Map<Name, [Name, Name]>();
+    private _needEnumValues = false;
+    private _enumValues = new Map<EnumType, Name>();
 
     constructor(targetLanguage: TargetLanguage, renderContext: RenderContext) {
         super(targetLanguage, renderContext);
@@ -214,6 +217,13 @@ export class DartRenderer extends ConvenienceRenderer {
         return getterAndSetterNames;
     }
 
+    protected makeNamedTypeDependencyNames(t: Type, name: Name): DependencyName[] {
+        if (!(t instanceof EnumType)) return [];
+        const enumValue = new DependencyName(propertyNamingFunction, name.order, lookup => `${lookup(name)}_values`);
+        this._enumValues.set(t, enumValue);
+        return [enumValue];
+    }
+
     protected startFile(basename: Sourcelike): void {
         assert(this._currentFilename === undefined, "Previous file wasn't finished");
         // FIXME: The filenames should actually be Sourcelikes, too
@@ -263,35 +273,29 @@ export class DartRenderer extends ConvenienceRenderer {
         );
     }
 
+    protected mapList(itemType: Sourcelike, list: Sourcelike, mapper: Sourcelike): Sourcelike {
+        return ["new List<", itemType, ">.from(", list, ".map((x) => ", mapper, "))"];
+    }
+
+    protected mapMap(valueType: Sourcelike, map: Sourcelike, valueMapper: Sourcelike): Sourcelike {
+        return ["new Map.from(", map, ").map((k, v) => new MapEntry<String, ", valueType, ">(k, ", valueMapper, "))"];
+    }
+
     protected fromDynamicExpression(t: Type, ...dynamic: Sourcelike[]): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => dynamic,
-            _nullType => dynamic,
+            _nullType => dynamic, // FIXME: check null
             _boolType => dynamic,
             _integerType => dynamic,
             _doubleType => [dynamic, ".toDouble()"],
             _stringType => dynamic,
-            arrayType => [
-                "new List<",
-                this.dartType(arrayType.items),
-                ">.from(",
-                dynamic,
-                ".map((x) => ",
-                this.fromDynamicExpression(arrayType.items, "x"),
-                "))"
-            ],
+            arrayType =>
+                this.mapList(this.dartType(arrayType.items), dynamic, this.fromDynamicExpression(arrayType.items, "x")),
             classType => [this.nameForNamedType(classType), ".fromJson(", dynamic, ")"],
-            mapType => [
-                "new Map.from(",
-                dynamic,
-                ").map((k, v) => new MapEntry<String, ",
-                this.dartType(mapType.values),
-                ">(k, ",
-                this.fromDynamicExpression(mapType.values, "v"),
-                "))"
-            ],
-            _enumType => dynamic,
+            mapType =>
+                this.mapMap(this.dartType(mapType.values), dynamic, this.fromDynamicExpression(mapType.values, "v")),
+            enumType => [defined(this._enumValues.get(enumType)), ".map[", dynamic, "]"],
             unionType => {
                 const maybeNullable = nullableFromUnion(unionType);
                 if (maybeNullable === null) {
@@ -311,11 +315,17 @@ export class DartRenderer extends ConvenienceRenderer {
             _integerType => dynamic,
             _doubleType => dynamic,
             _stringType => dynamic,
-            _arrayType => dynamic,
+            arrayType => this.mapList("dynamic", dynamic, this.toDynamicExpression(arrayType.items, "x")),
             _classType => [dynamic, ".toJson()"],
-            _mapType => dynamic,
-            _enumType => dynamic,
-            _unionType => dynamic
+            mapType => this.mapMap("dynamic", dynamic, this.toDynamicExpression(mapType.values, "v")),
+            enumType => [defined(this._enumValues.get(enumType)), ".reverse[", dynamic, "]"],
+            unionType => {
+                const maybeNullable = nullableFromUnion(unionType);
+                if (maybeNullable === null) {
+                    return dynamic;
+                }
+                return [dynamic, " == null ? null : ", this.toDynamicExpression(maybeNullable, dynamic)];
+            }
         );
     };
 
@@ -371,14 +381,40 @@ export class DartRenderer extends ConvenienceRenderer {
     }
 
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
-        const caseNames: Sourcelike[] = [];
-        this.forEachEnumCase(e, "none", name => {
-            if (caseNames.length > 0) caseNames.push(", ");
-            caseNames.push(name);
-        });
+        const caseNames: Sourcelike[] = Array.from(e.cases).map(c => this.nameForEnumCase(e, c));
         this.emitDescription(this.descriptionForType(e));
-        this.emitLine("enum ", enumName, " { ", caseNames, " }");
+        this.emitLine("enum ", enumName, " { ", arrayIntercalate(", ", caseNames), " }");
+        this.ensureBlankLine();
+
+        this.emitLine("final ", defined(this._enumValues.get(e)), " = new EnumValues({");
+        this.indent(() => {
+            this.forEachEnumCase(e, "none", (name, jsonName, pos) => {
+                const comma = pos === "first" || pos === "middle" ? "," : [];
+                this.emitLine('"', stringEscape(jsonName), '": ', enumName, ".", name, comma);
+            });
+        });
+        this.emitLine("});");
+
+        this._needEnumValues = true;
     }
+
+    protected emitEnumValues(): void {
+        this.ensureBlankLine();
+        this.emitMultiline(`class EnumValues<T> {
+    Map<String, T> map;
+    Map<T, String> reverseMap;
+
+    EnumValues(this.map);
+
+    Map<T, String> get reverse {
+        if (reverseMap == null) {
+            reverseMap = map.map((k, v) => new MapEntry(v, k));
+        }
+        return reverseMap;
+    }
+}`);
+    }
+
     protected emitSourceStructure(): void {
         this.emitFileHeader("TopLevel");
         this.forEachNamedType(
@@ -389,6 +425,10 @@ export class DartRenderer extends ConvenienceRenderer {
                 // We don't support this yet.
             }
         );
+
+        if (this._needEnumValues) {
+            this.emitEnumValues();
+        }
 
         this.finishFile();
     }
