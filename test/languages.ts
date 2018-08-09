@@ -105,7 +105,7 @@ export const PythonLanguage: Language = {
   base: "test/fixtures/python",
   compileCommand: "mypy quicktype.py",
   runCommand(sample: String) {
-    return `python3.6 main.py "${sample}"`;
+    return `./run.sh main.py "${sample}"`;
   },
   diffViaSchema: true,
   skipDiffViaSchema: [
@@ -131,7 +131,7 @@ export const PythonLanguage: Language = {
     "keyword-unions.schema" // Requires more than 255 arguments
   ],
   rendererOptions: {},
-  quickTestRendererOptions: [{ "python-version": "3.5" }],
+  quickTestRendererOptions: [{ "python-version": "3.5" }, { "python-version": "2.7" }],
   sourceFiles: ["src/language/Python.ts"]
 };
 
