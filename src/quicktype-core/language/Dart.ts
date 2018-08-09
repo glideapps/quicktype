@@ -253,7 +253,13 @@ export class DartRenderer extends ConvenienceRenderer {
             classType => this.nameForNamedType(classType),
             mapType => ["Map<String, ", this.dartType(mapType.values, withIssues), ">"],
             enumType => this.nameForNamedType(enumType),
-            _unionType => "dynamic"
+            unionType => {
+                const maybeNullable = nullableFromUnion(unionType);
+                if (maybeNullable === null) {
+                    return "dynamic";
+                }
+                return this.dartType(maybeNullable, withIssues);
+            }
         );
     }
 
@@ -286,7 +292,13 @@ export class DartRenderer extends ConvenienceRenderer {
                 "))"
             ],
             _enumType => dynamic,
-            _unionType => dynamic
+            unionType => {
+                const maybeNullable = nullableFromUnion(unionType);
+                if (maybeNullable === null) {
+                    return dynamic;
+                }
+                return [dynamic, " == null ? null : ", this.fromDynamicExpression(maybeNullable, dynamic)];
+            }
         );
     }
 
