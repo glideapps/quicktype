@@ -672,22 +672,7 @@ export const DartLanguage: Language = {
   features: [],
   output: "TopLevel.dart",
   topLevel: "TopLevel",
-  skipJSON: [
-    // top-level dictionary
-    "bug855-short.json",
-    "ed095.json",
-    // top-level array
-    "bug863.json",
-    "00c36.json",
-    "2df80.json",
-    "7f568.json",
-    "7fbfb.json",
-    "c8c7e.json",
-    "cda6c.json",
-    "e53b5.json",
-    // top-level primitive
-    "no-classes.json"
-  ],
+  skipJSON: [],
   skipSchema: [],
   skipMiscJSON: false,
   rendererOptions: {},

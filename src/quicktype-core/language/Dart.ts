@@ -21,7 +21,7 @@ import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer"
 import { TargetLanguage } from "../TargetLanguage";
 import { Option } from "../RendererOptions";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { defined, assert } from "../support/Support";
+import { defined } from "../support/Support";
 import { RenderContext } from "../Renderer";
 import { arrayIntercalate } from "../../../node_modules/collection-utils";
 
@@ -107,7 +107,10 @@ const keywords = [
     "bool",
     "Map",
     "List",
-    "String"
+    "String",
+    "File",
+    "fromJson",
+    "toJson"
 ];
 
 const typeNamingFunction = funPrefixNamer("types", n => dartNameStyle(true, false, n));
@@ -136,23 +139,34 @@ const legalizeName = utf16LegalizeCharacters(isPartCharacter);
 // https://stackoverflow.com/questions/8277355/naming-convention-for-upper-case-abbreviations
 function dartNameStyle(startWithUpper: boolean, upperUnderscore: boolean, original: string): string {
     const words = splitIntoWords(original);
+    const firstWordStyle = upperUnderscore
+        ? allUpperWordStyle
+        : startWithUpper
+            ? firstUpperWordStyle
+            : allLowerWordStyle;
+    const restWordStyle = upperUnderscore ? allUpperWordStyle : firstUpperWordStyle;
     return combineWords(
         words,
         legalizeName,
-        upperUnderscore ? allUpperWordStyle : startWithUpper ? firstUpperWordStyle : allLowerWordStyle,
-        upperUnderscore ? allUpperWordStyle : firstUpperWordStyle,
-        upperUnderscore || startWithUpper ? allUpperWordStyle : allLowerWordStyle,
-        allUpperWordStyle,
-        "",
+        firstWordStyle,
+        restWordStyle,
+        firstWordStyle,
+        restWordStyle,
+        upperUnderscore ? "_" : "",
         isStartCharacter
     );
 }
 
+type TopLevelDependents = {
+    encoder: Name;
+    decoder: Name;
+};
+
 export class DartRenderer extends ConvenienceRenderer {
-    private _currentFilename: string | undefined;
     private readonly _gettersAndSettersForPropertyName = new Map<Name, [Name, Name]>();
     private _needEnumValues = false;
-    private _enumValues = new Map<EnumType, Name>();
+    private readonly _topLevelDependents = new Map<Name, TopLevelDependents>();
+    private readonly _enumValues = new Map<EnumType, Name>();
 
     constructor(targetLanguage: TargetLanguage, renderContext: RenderContext) {
         super(targetLanguage, renderContext);
@@ -193,6 +207,13 @@ export class DartRenderer extends ConvenienceRenderer {
         return directlyReachableSingleNamedType(type);
     }
 
+    protected makeTopLevelDependencyNames(_t: Type, name: Name): DependencyName[] {
+        const encoder = new DependencyName(propertyNamingFunction, name.order, lookup => `${lookup(name)}_to_json`);
+        const decoder = new DependencyName(propertyNamingFunction, name.order, lookup => `${lookup(name)}_from_json`);
+        this._topLevelDependents.set(name, { encoder, decoder });
+        return [encoder, decoder];
+    }
+
     protected makeNamesForPropertyGetterAndSetter(
         _c: ClassType,
         _className: Name,
@@ -224,20 +245,8 @@ export class DartRenderer extends ConvenienceRenderer {
         return [enumValue];
     }
 
-    protected startFile(basename: Sourcelike): void {
-        assert(this._currentFilename === undefined, "Previous file wasn't finished");
-        // FIXME: The filenames should actually be Sourcelikes, too
-        this._currentFilename = `${this.sourcelikeToString(basename)}.dart`;
-    }
-
-    protected finishFile(): void {
-        super.finishFile(defined(this._currentFilename));
-        this._currentFilename = undefined;
-    }
-
-    protected emitFileHeader(fileName: Sourcelike): void {
-        this.startFile(fileName);
-        this.ensureBlankLine();
+    protected emitFileHeader(): void {
+        this.emitLine("import 'dart:convert';");
     }
 
     protected emitDescriptionBlock(lines: string[]): void {
@@ -416,7 +425,21 @@ export class DartRenderer extends ConvenienceRenderer {
     }
 
     protected emitSourceStructure(): void {
-        this.emitFileHeader("TopLevel");
+        this.emitFileHeader();
+
+        this.forEachTopLevel("leading-and-interposing", (t, name) => {
+            const { encoder, decoder } = defined(this._topLevelDependents.get(name));
+            this.emitBlock([this.dartType(t), " ", decoder, "(String str)"], () => {
+                this.emitLine("final jsonData = json.decode(str);");
+                this.emitLine("return ", this.fromDynamicExpression(t, "jsonData"), ";");
+            });
+            this.ensureBlankLine();
+            this.emitBlock(["String ", encoder, "(", this.dartType(t), " data)"], () => {
+                this.emitLine("final dyn = ", this.toDynamicExpression(t, "data"), ";");
+                this.emitLine("return json.encode(dyn);");
+            });
+        });
+
         this.forEachNamedType(
             "leading-and-interposing",
             (c: ClassType, n: Name) => this.emitClassDefinition(c, n),
@@ -429,7 +452,5 @@ export class DartRenderer extends ConvenienceRenderer {
         if (this._needEnumValues) {
             this.emitEnumValues();
         }
-
-        this.finishFile();
     }
 }
