@@ -15,12 +15,10 @@
         "src/cli/tsconfig.json",
         "src/cli/index.ts",
         "--lang",
-        "ts",
+        "dart",
         "--src-lang",
-        "graphql",
-        "--graphql-schema",
-        "test/inputs/graphql/github.gqlschema",
-        "test/inputs/graphql/github1.graphql"
+        "json",
+        "./test/inputs/json/priority/blns-object.json"
       ],
       "cwd": "${workspaceRoot}",
       "protocol": "inspector"

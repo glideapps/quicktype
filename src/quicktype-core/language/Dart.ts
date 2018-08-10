@@ -24,7 +24,7 @@ import { Option, BooleanOption, getOptionValues, OptionValues } from "../Rendere
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { defined } from "../support/Support";
 import { RenderContext } from "../Renderer";
-import { arrayIntercalate } from "../../../node_modules/collection-utils";
+import { arrayIntercalate } from "collection-utils";
 import { pythonOptions } from "./Python";
 
 export const dartOptions = {
