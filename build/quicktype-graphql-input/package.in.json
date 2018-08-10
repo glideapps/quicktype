@@ -13,7 +13,7 @@
     },
     "dependencies": {
         "quicktype-core": "the build script replaces this",
-        "collection-utils": "0.0.12",
+        "collection-utils": "0.0.14",
         "graphql": "^0.11.7"
     },
     "devDependencies": {
