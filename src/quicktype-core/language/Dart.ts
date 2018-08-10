@@ -20,11 +20,16 @@ import {
 import { Name, Namer, funPrefixNamer, DependencyName } from "../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
-import { Option } from "../RendererOptions";
+import { Option, BooleanOption, getOptionValues, OptionValues } from "../RendererOptions";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { defined } from "../support/Support";
 import { RenderContext } from "../Renderer";
 import { arrayIntercalate } from "../../../node_modules/collection-utils";
+import { pythonOptions } from "./Python";
+
+export const dartOptions = {
+    justTypes: new BooleanOption("just-types", "Types only", false)
+};
 
 export class DartTargetLanguage extends TargetLanguage {
     constructor() {
@@ -32,15 +37,16 @@ export class DartTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [];
+        return [pythonOptions.justTypes];
     }
 
     get supportsUnionsWithBothNumberTypes(): boolean {
         return true;
     }
 
-    protected makeRenderer(renderContext: RenderContext): DartRenderer {
-        return new DartRenderer(this, renderContext);
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): DartRenderer {
+        const options = getOptionValues(dartOptions, untypedOptionValues);
+        return new DartRenderer(this, renderContext, options);
     }
 }
 
@@ -169,7 +175,11 @@ export class DartRenderer extends ConvenienceRenderer {
     private readonly _topLevelDependents = new Map<Name, TopLevelDependents>();
     private readonly _enumValues = new Map<EnumType, Name>();
 
-    constructor(targetLanguage: TargetLanguage, renderContext: RenderContext) {
+    constructor(
+        targetLanguage: TargetLanguage,
+        renderContext: RenderContext,
+        private readonly _options: OptionValues<typeof dartOptions>
+    ) {
         super(targetLanguage, renderContext);
     }
 
@@ -249,14 +259,16 @@ export class DartRenderer extends ConvenienceRenderer {
     protected emitFileHeader(): void {
         if (this.leadingComments !== undefined) {
             this.emitCommentLines(this.leadingComments);
-        } else {
-            this.emitLine("// To parse this JSON data, do");
-            this.emitLine("//");
-            this.forEachTopLevel("none", (_t, name) => {
-                const { decoder } = defined(this._topLevelDependents.get(name));
-                this.emitLine("//     final ", modifySource(decapitalize, name), " = ", decoder, "(jsonString);");
-            });
         }
+
+        if (this._options.justTypes) return;
+
+        this.emitLine("// To parse this JSON data, do");
+        this.emitLine("//");
+        this.forEachTopLevel("none", (_t, name) => {
+            const { decoder } = defined(this._topLevelDependents.get(name));
+            this.emitLine("//     final ", modifySource(decapitalize, name), " = ", decoder, "(jsonString);");
+        });
 
         this.ensureBlankLine();
         this.emitLine("import 'dart:convert';");
@@ -371,6 +383,8 @@ export class DartRenderer extends ConvenienceRenderer {
                 this.emitLine("});");
             }
 
+            if (this._options.justTypes) return;
+
             this.ensureBlankLine();
             this.emitLine("factory ", className, ".fromJson(Map<String, dynamic> json) => new ", className, "(");
             this.indent(() => {
@@ -406,8 +420,10 @@ export class DartRenderer extends ConvenienceRenderer {
         const caseNames: Sourcelike[] = Array.from(e.cases).map(c => this.nameForEnumCase(e, c));
         this.emitDescription(this.descriptionForType(e));
         this.emitLine("enum ", enumName, " { ", arrayIntercalate(", ", caseNames), " }");
-        this.ensureBlankLine();
 
+        if (this._options.justTypes) return;
+
+        this.ensureBlankLine();
         this.emitLine("final ", defined(this._enumValues.get(e)), " = new EnumValues({");
         this.indent(() => {
             this.forEachEnumCase(e, "none", (name, jsonName, pos) => {
@@ -440,18 +456,20 @@ export class DartRenderer extends ConvenienceRenderer {
     protected emitSourceStructure(): void {
         this.emitFileHeader();
 
-        this.forEachTopLevel("leading-and-interposing", (t, name) => {
-            const { encoder, decoder } = defined(this._topLevelDependents.get(name));
-            this.emitBlock([this.dartType(t), " ", decoder, "(String str)"], () => {
-                this.emitLine("final jsonData = json.decode(str);");
-                this.emitLine("return ", this.fromDynamicExpression(t, "jsonData"), ";");
+        if (!this._options.justTypes) {
+            this.forEachTopLevel("leading-and-interposing", (t, name) => {
+                const { encoder, decoder } = defined(this._topLevelDependents.get(name));
+                this.emitBlock([this.dartType(t), " ", decoder, "(String str)"], () => {
+                    this.emitLine("final jsonData = json.decode(str);");
+                    this.emitLine("return ", this.fromDynamicExpression(t, "jsonData"), ";");
+                });
+                this.ensureBlankLine();
+                this.emitBlock(["String ", encoder, "(", this.dartType(t), " data)"], () => {
+                    this.emitLine("final dyn = ", this.toDynamicExpression(t, "data"), ";");
+                    this.emitLine("return json.encode(dyn);");
+                });
             });
-            this.ensureBlankLine();
-            this.emitBlock(["String ", encoder, "(", this.dartType(t), " data)"], () => {
-                this.emitLine("final dyn = ", this.toDynamicExpression(t, "data"), ";");
-                this.emitLine("return json.encode(dyn);");
-            });
-        });
+        }
 
         this.forEachNamedType(
             "leading-and-interposing",
