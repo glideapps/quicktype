@@ -467,6 +467,10 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         return getterAndSetterNames;
     }
 
+    protected emitInclude(global: boolean, name: Sourcelike): void {
+        this.emitLine("#include ", global ? "<" : '"', name, global ? ">" : '"');
+    }
+
     protected startFile(basename: Sourcelike, includeHelper: boolean = true): void {
         assert(this._currentFilename === undefined, "Previous file wasn't finished");
         if (basename !== undefined) {
@@ -509,19 +513,18 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitLine("#pragma once");
         this.ensureBlankLine();
 
-        const include = (name: string): void => {
-            this.emitLine("#include ", name);
-        };
-        if (this.haveNamedUnions) include("<boost/variant.hpp>");
+        if (this.haveNamedUnions) {
+            this.emitInclude(true, "boost/variant.hpp");
+        }
         if (!this._options.justTypes) {
             if (!this._options.includeLocation) {
-                include("<nlohmann/json.hpp>");
+                this.emitInclude(true, "nlohmann/json.hpp");
             } else {
-                include('"json.hpp"');
+                this.emitInclude(false, "json.hpp");
             }
 
             if (includeHelper && !this._options.typeSourceStyle) {
-                include('"helper.hpp"');
+                this.emitInclude(false, "helper.hpp");
             }
         }
         this.ensureBlankLine();
@@ -1424,9 +1427,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
     protected emitExtraIncludes(): void {
         if (this._options.codeFormat) {
-            this.emitLine(`#include <boost/optional.hpp>`);
-            this.emitLine(`#include <stdexcept>`);
-            this.emitLine(`#include <regex>`);
+            this.emitInclude(true, `boost/optional.hpp`);
+            this.emitInclude(true, `stdexcept`);
+            this.emitInclude(true, `regex`);
         }
     }
 
@@ -1435,7 +1438,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
         this.emitExtraIncludes();
 
-        this.emitLine(`#include <sstream>`);
+        this.emitInclude(true, `sstream`);
         this.ensureBlankLine();
         this.emitNamespaces(this._namespaceNames, () => {
             this.emitLine("using nlohmann::json;");
@@ -1605,7 +1608,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 }
 
                 if (rec.kind !== IncludeKind.ForwardDeclare) {
-                    this.emitLine('#include "', name, '.hpp"');
+                    this.emitInclude(false, [name, ".hpp"]);
                     numIncludes++;
                 } else {
                     numForwards++;
@@ -1678,7 +1681,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.startFile("Generators.hpp", true);
 
             this._allTypeNames.forEach(t => {
-                this.emitLine('#include "', t, '.hpp"');
+                this.emitInclude(false, [t, ".hpp"]);
             });
 
             this.ensureBlankLine();
@@ -1712,10 +1715,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.startFile(proposedFilename);
 
             this._generatedFiles.forEach(f => {
-                const include = (name: string): void => {
-                    this.emitLine('#include "', name, '"');
-                };
-                include(f);
+                this.emitInclude(false, f);
             });
 
             this.emitNamespaces(this._namespaceNames, () => {
