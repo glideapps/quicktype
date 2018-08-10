@@ -58,6 +58,13 @@ RUN apt-get install python3.6 --assume-yes
 RUN curl https://bootstrap.pypa.io/get-pip.py | python3.6
 RUN pip3.6 install mypy python-dateutil
 
+# Dart
+RUN apt-get install apt-transport-https
+RUN sh -c 'curl https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -'
+RUN sh -c 'curl https://storage.googleapis.com/download.dartlang.org/linux/debian/dart_stable.list > /etc/apt/sources.list.d/dart_stable.list'
+RUN apt-get update
+RUN apt-get install dart
+
 ENV PATH="${workdir}/node_modules/.bin:${PATH}"
 
 COPY . .
