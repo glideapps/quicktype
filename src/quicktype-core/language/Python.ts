@@ -108,7 +108,7 @@ export const pythonOptions = {
         "python-version",
         "Python version",
         [
-            ["2.7", { version: 2, typeHints: false, dataClasses: false }],
+            ["2.7", { version: 2, typeHints: true, dataClasses: false }],
             ["3.5", { version: 3, typeHints: false, dataClasses: false }],
             ["3.6", { version: 3, typeHints: true, dataClasses: false }],
             ["3.7", { version: 3, typeHints: true, dataClasses: true }]
@@ -232,6 +232,23 @@ function snakeNameStyle(version: PythonVersion, original: string, uppercase: boo
     );
 }
 
+function threeToTwo(input: Sourcelike): Sourcelike {
+    const [loose, ] = (input as any[]).reduce(([p, f], e) => {
+        if (e.length > 1 && e[1] instanceof Array && e[1][0] !== ":" || typeof e === "string" && e[0] === ":")
+            e = e[0];
+        if (e instanceof Array && (e[0].indexOf("->") > -1 || e[0] === ": ") || typeof e === "string" && e.indexOf("->") > -1)
+            return [p, [...f, e]];
+
+        return [[...p, e], f];
+    }, [[], []]);
+
+    // TODO: Use `types` (second argument of `const` above to generate docstring)
+
+    return loose instanceof Array ?
+        loose.map(s => s instanceof Array ? s.map(sr => sr instanceof Array ? sr[0] : sr) : s)
+        : loose;
+}
+
 export class PythonRenderer extends ConvenienceRenderer {
     private readonly imports: Map<string, Set<string>> = new Map();
     private readonly declaredTypes: Set<Type> = new Set();
@@ -290,7 +307,7 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected emitBlock(line: Sourcelike, f: () => void): void {
-        this.emitLine(line);
+        this.emitLine(this.pyOptions.features.version === 2? threeToTwo(line) : line);
         this.indent(f);
     }
 
@@ -419,7 +436,15 @@ export class PythonRenderer extends ConvenienceRenderer {
                 } else {
                     this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
                         this.emitDescription(this.descriptionForClassProperty(t, jsonName));
-                        this.emitLine(name, this.typeHint(": ", this.pythonType(cp.type)));
+
+                        switch (this.pyOptions.features.version) {
+                            case 2:
+                                this.emitLine(name, this.typeHint(" = None  # type: ", this.pythonType(cp.type)));
+                                break;
+                            case 3:
+                            default:
+                                this.emitLine(name, this.typeHint(": ", this.pythonType(cp.type)));
+                        }
                     });
                 }
                 this.ensureBlankLine();
@@ -1158,12 +1183,12 @@ export class JSONPythonRenderer extends PythonRenderer {
         this.ensureBlankLine();
 
         this.emitBlock(["def to_dict(self)", this.typeHint(" -> dict"), ":"], () => {
-            this.emitLine("result", this.typeHint(": dict"), " = {}");
+            this.emitLine("return {");
             this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
                 const property = { value: ["self.", name] };
-                this.emitLine("result[", this.string(jsonName), "] = ", makeValue(this.serializer(property, cp.type)));
+                this.indent(() => this.emitLine( this.string(jsonName), ": ", makeValue(this.serializer(property, cp.type)), ","));
             });
-            this.emitLine("return result");
+            this.emitLine("}");
         });
     }
 
