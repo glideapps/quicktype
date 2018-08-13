@@ -102,7 +102,7 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
         }
     }
 
-    private sourceFor(t: Type): MultiWord {
+    protected sourceFor(t: Type): MultiWord {
         if (["class", "object", "enum"].indexOf(t.kind) >= 0) {
             return singleWord(this.nameForNamedType(t));
         }
