@@ -459,6 +459,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
                         ["new ", unionName, " { ", fieldName, " = ", fieldName, " }"]
                     );
                 });
+                if (u.findMember("null") === undefined) return;
                 this.emitExpressionMember("public bool IsNull", arrayIntercalate(" && ", nullTests), true);
             }
         );
