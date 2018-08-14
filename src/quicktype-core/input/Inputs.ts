@@ -1,7 +1,7 @@
 import { iterableFirst, iterableFind, iterableSome, setFilterMap, withDefault } from "collection-utils";
 
 import { Value, CompressedJSON } from "./CompressedJSON";
-import { panic, errorMessage, toReadable, StringInput } from "../support/Support";
+import { panic, errorMessage, toReadable, StringInput, defined } from "../support/Support";
 import { messageError } from "../Messages";
 import { TypeBuilder } from "../TypeBuilder";
 import { makeNamesTypeAttributes } from "../TypeNames";
@@ -9,6 +9,7 @@ import { descriptionTypeAttributeKind } from "../Description";
 import { TypeInference } from "./Inference";
 import { TargetLanguage } from "../TargetLanguage";
 import { RunContext } from "../Run";
+import { languageNamed } from "../language/All";
 
 export interface Input<T> {
     readonly kind: string;
@@ -113,12 +114,14 @@ export class JSONInput implements Input<JSONSourceData> {
     }
 }
 
-// FIXME: Remove this in the next major API.
 export function jsonInputForTargetLanguage(
-    _targetLanguage: string | TargetLanguage,
-    _languages?: TargetLanguage[]
+    targetLanguage: string | TargetLanguage,
+    languages?: TargetLanguage[]
 ): JSONInput {
-    const compressedJSON = new CompressedJSON();
+    if (typeof targetLanguage === "string") {
+        targetLanguage = defined(languageNamed(targetLanguage, languages));
+    }
+    const compressedJSON = new CompressedJSON(targetLanguage.dateTimeRecognizer);
     return new JSONInput(compressedJSON);
 }
 

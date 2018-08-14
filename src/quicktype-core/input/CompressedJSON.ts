@@ -5,6 +5,7 @@ import { addHashCode, hashCodeInit, hashString } from "collection-utils";
 import { defined, panic, assert } from "../support/Support";
 import { inferTransformedStringTypeKindForString } from "../StringTypes";
 import { TransformedStringTypeKind, isPrimitiveStringTypeKind } from "../Type";
+import { DateTimeRecognizer } from "../DateTime";
 
 const Combo = require("stream-json/Combo");
 
@@ -72,13 +73,13 @@ export class CompressedJSON {
     private _objects: Value[][] = [];
     private _arrays: Value[][] = [];
 
-    [key: string]: any;
+    constructor(private readonly _dateTimeRecognizer: DateTimeRecognizer) {}
 
     async readFromStream(readStream: stream.Readable): Promise<Value> {
         const combo = new Combo({ packKeys: true, packStrings: true });
         combo.on("data", (item: { name: string; value: string | undefined }) => {
             if (typeof methodMap[item.name] === "string") {
-                this[methodMap[item.name]](item.value);
+                (this as any)[methodMap[item.name]](item.value);
             }
         });
         const promise = new Promise<Value>((resolve, reject) => {
@@ -223,9 +224,9 @@ export class CompressedJSON {
         defined(this._ctx).currentKey = s;
     };
 
-    protected handleStringValue = (s: string): void => {
+    protected handleStringValue(s: string): void {
         let value: Value | undefined = undefined;
-        const format = inferTransformedStringTypeKindForString(s);
+        const format = inferTransformedStringTypeKindForString(s, this._dateTimeRecognizer);
         if (format !== undefined) {
             value = makeValue(Tag.TransformedString, this.internString(format));
         } else if (s.length <= 64) {
@@ -234,7 +235,7 @@ export class CompressedJSON {
             value = makeValue(Tag.UninternedString, 0);
         }
         this.commitValue(value);
-    };
+    }
 
     protected handleStartNumber = (): void => {
         this.pushContext();
