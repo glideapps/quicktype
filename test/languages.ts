@@ -415,20 +415,38 @@ export const SwiftLanguage: Language = {
     "bug427.json",
     "github-events.json",
     "keywords.json",
+    "0a358.json", // date-time issues
     "0a91a.json",
+    "0cffa.json", // date-time issues
+    "127a1.json", // date-time issues
+    "26b49.json", // date-time issues
+    "32d5c.json", // date-time issues
     "337ed.json",
     "34702.json",
+    "437e7.json", // date-time issues
+    "54d32.json", // date-time issues
+    "5eae5.json", // date-time issues
+    "7681c.json", // date-time issues
+    "77392.json", // date-time issues
     "7f568.json",
     "734ad.json",
     "76ae1.json",
+    "80aff.json", // date-time issues
+    "9ac3b.json", // date-time issues
+    "a0496.json", // date-time issues
+    "b4865.json", // date-time issues
+    "c3303.json", // date-time issues
     "c8c7e.json",
+    "d23d5.json", // date-time issues
+    "e0ac7.json", // date-time issues
     "e53b5.json",
     "e8b04.json",
+    "f6a65.json", // date-time issues
     "fcca3.json",
     "f82d9.json"
   ],
   allowMissingNull: true,
-  features: ["enum", "union", "no-defaults"],
+  features: ["enum", "union", "no-defaults", "date-time"],
   output: "quicktype.swift",
   topLevel: "TopLevel",
   skipJSON: [
@@ -446,8 +464,9 @@ export const SwiftLanguage: Language = {
     // This works on macOS, but on Linux one of the failure test cases doesn't fail
     "implicit-class-array-union.schema"
   ],
-  rendererOptions: {},
+  rendererOptions: { "support-linux": "true" },
   quickTestRendererOptions: [
+    { "support-linux": "false" },
     { "struct-or-class": "class" },
     { density: "dense" },
     { density: "normal" },
