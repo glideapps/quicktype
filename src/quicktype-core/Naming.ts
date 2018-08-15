@@ -406,7 +406,7 @@ export function assignNames(rootNamespaces: Iterable<Namespace>): ReadonlyMap<Na
                 const byProposed = setGroupBy(namedsForNamingFunction, n =>
                     n.namingFunction.nameStyle(n.firstProposedName(ctx.names))
                 );
-                for (const [_, nameds] of byProposed) {
+                for (const [, nameds] of byProposed) {
                     // 3. Use each set's naming function to name its members.
 
                     const names = namer.assignNames(ctx.names, forbiddenNames, nameds);

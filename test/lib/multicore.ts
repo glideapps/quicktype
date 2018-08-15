@@ -33,7 +33,7 @@ export async function inParallel<Item, Result, Acc>(args: ParallelArgs<Item, Res
     let { setup, workers, map } = args;
     await setup();
 
-    cluster.on("message", (worker, { _result, _item }) => {
+    cluster.on("message", worker => {
       if (items.length) {
         worker.send(items.shift());
       } else {

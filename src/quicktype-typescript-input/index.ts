@@ -60,13 +60,7 @@ class CompilerHost implements ts.CompilerHost {
         return libFileName;
     }
 
-    writeFile(
-        fileName: string,
-        _data: string,
-        _writeByteOrderMark: boolean,
-        _onError: ((message: string) => void) | undefined,
-        _sourceFiles: ReadonlyArray<ts.SourceFile>
-    ): void {
+    writeFile(fileName: string): void {
         return panic(`writeFile should not be called by the TypeScript compiler.  Filename ${fileName}`);
     }
 

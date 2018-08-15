@@ -69,7 +69,7 @@ function shouldBeMap(properties: ReadonlyMap<string, ClassProperty>): ReadonlySe
     const allCases = new Set<Type>();
     let canBeMap = true;
     // Check that all the property types are the same, modulo nullability.
-    for (const [_, p] of properties) {
+    for (const [, p] of properties) {
         // The set of types first property can be, minus null.
         const nn = removeNullFromType(p.type)[1];
         if (nn.size > 0) {
