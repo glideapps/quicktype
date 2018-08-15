@@ -245,7 +245,7 @@ export class TypeGraph {
             }
         }
 
-        for (const [_, t] of this.topLevels) {
+        for (const [, t] of this.topLevels) {
             addFromType(t);
         }
         return new Set(types);

@@ -269,7 +269,7 @@ export function gatherNames(graph: TypeGraph, destructive: boolean, debugPrint: 
 
         if (t instanceof ObjectType) {
             const properties = t.getSortedProperties();
-            for (const [_, property] of properties) {
+            for (const [, property] of properties) {
                 processType(t, property.type, undefined);
             }
 
@@ -299,7 +299,7 @@ export function gatherNames(graph: TypeGraph, destructive: boolean, debugPrint: 
         }
     }
 
-    for (const [_, t] of graph.topLevels) {
+    for (const [, t] of graph.topLevels) {
         processType(undefined, t, undefined);
     }
 

@@ -28,7 +28,7 @@
         "@types/node": "^8.10.10",
         "@types/pako": "^1.0.0",
         "@types/pluralize": "0.0.28",
-        "typescript": "~2.8.3",
+        "typescript": "~3.0.1",
         "tslint": "^5.9.1"
     },
     "files": ["dist/**"]
