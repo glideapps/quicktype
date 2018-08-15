@@ -90,8 +90,7 @@ function alwaysApplyTransformation(xf: Transformation): boolean {
 }
 
 /**
- * The C# type for a given transformed string type.  The function can
- * assume that it will only be called for type kinds that
+ * The C# type for a given transformed string type.
  */
 function csTypeForTransformedStringType(t: PrimitiveType): Sourcelike {
     if (t.kind === "date-time") {

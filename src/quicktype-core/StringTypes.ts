@@ -14,7 +14,7 @@ import { TypeAttributeKind } from "./TypeAttributes";
 import { defined, assert } from "./support/Support";
 import { StringTypeMapping, stringTypeMappingGet } from "./TypeBuilder";
 import { TransformedStringTypeKind } from "./Type";
-import { isDate, isTime, isDateTime } from "./DateTime";
+import { DateTimeRecognizer } from "./DateTime";
 
 export class StringTypes {
     static readonly unrestricted: StringTypes = new StringTypes(undefined, new Set());
@@ -190,14 +190,17 @@ function isUUID(s: string): boolean {
  *
  * @param s The string for which to determine the transformed string type kind.
  */
-export function inferTransformedStringTypeKindForString(s: string): TransformedStringTypeKind | undefined {
+export function inferTransformedStringTypeKindForString(
+    s: string,
+    recognizer: DateTimeRecognizer
+): TransformedStringTypeKind | undefined {
     if (s.length === 0 || "0123456789-abcdeft".indexOf(s[0]) < 0) return undefined;
 
-    if (isDate(s)) {
+    if (recognizer.isDate(s)) {
         return "date";
-    } else if (isTime(s)) {
+    } else if (recognizer.isTime(s)) {
         return "time";
-    } else if (isDateTime(s)) {
+    } else if (recognizer.isDateTime(s)) {
         return "date-time";
     } else if (isIntegerString(s)) {
         return "integer-string";

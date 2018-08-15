@@ -8,6 +8,7 @@ import { StringTypeMapping } from "./TypeBuilder";
 import { defined } from "./support/Support";
 import { ConvenienceRenderer } from "./ConvenienceRenderer";
 import { Type } from "./Type";
+import { DateTimeRecognizer, DefaultDateTimeRecognizer } from "./DateTime";
 
 export abstract class TargetLanguage {
     constructor(readonly displayName: string, readonly names: string[], readonly extension: string) {}
@@ -76,5 +77,9 @@ export abstract class TargetLanguage {
 
     needsTransformerForType(_t: Type): boolean {
         return false;
+    }
+
+    get dateTimeRecognizer(): DateTimeRecognizer {
+        return new DefaultDateTimeRecognizer();
     }
 }

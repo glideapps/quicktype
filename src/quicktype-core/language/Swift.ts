@@ -1,7 +1,18 @@
 import { arrayIntercalate } from "collection-utils";
 
 import { TargetLanguage } from "../TargetLanguage";
-import { Type, ClassType, EnumType, UnionType, ArrayType, MapType, TypeKind, ClassProperty } from "../Type";
+import {
+    Type,
+    ClassType,
+    EnumType,
+    UnionType,
+    ArrayType,
+    MapType,
+    TypeKind,
+    ClassProperty,
+    TransformedStringTypeKind,
+    PrimitiveStringTypeKind
+} from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 import { Name, Namer, funPrefixNamer } from "../Naming";
 import { BooleanOption, EnumOption, Option, StringOption, OptionValues, getOptionValues } from "../RendererOptions";
@@ -26,6 +37,9 @@ import {
     addPrefixIfNecessary
 } from "../support/Strings";
 import { RenderContext } from "../Renderer";
+import { StringTypeMapping } from "../TypeBuilder";
+import { panic } from "../support/Support";
+import { DefaultDateTimeRecognizer, DateTimeRecognizer } from "../DateTime";
 
 const MAX_SAMELINE_PROPERTIES = 4;
 
@@ -37,6 +51,7 @@ export const swiftOptions = {
     namedTypePrefix: new StringOption("type-prefix", "Prefix for type names", "PREFIX", "", "secondary"),
     useClasses: new EnumOption("struct-or-class", "Structs or classes", [["struct", false], ["class", true]]),
     dense: new EnumOption("density", "Code density", [["dense", true], ["normal", false]], "dense", "secondary"),
+    linux: new BooleanOption("support-linux", "Support Linux", false, "secondary"),
     accessLevel: new EnumOption(
         "access-level",
         "Access level",
@@ -45,6 +60,25 @@ export const swiftOptions = {
         "secondary"
     )
 };
+
+// These are all recognized by Swift as ISO8601 date-times:
+//
+// 2018-08-14T02:45:50+00:00
+// 2018-08-14T02:45:50+00
+// 2018-08-14T02:45:50+1
+// 2018-08-14T02:45:50+1111
+// 2018-08-14T02:45:50+1111:1:33
+// 2018-08-14T02:45:50-00
+// 2018-08-14T02:45:50z
+// 2018-00008-1T002:45:3Z
+
+const swiftDateTimeRegex = /^\d+-\d+-\d+T\d+:\d+:\d+([zZ]|[+-]\d+(:\d+)?)$/;
+
+class SwiftDateTimeRecognizer extends DefaultDateTimeRecognizer {
+    isDateTime(str: string): boolean {
+        return str.match(swiftDateTimeRegex) !== null;
+    }
+}
 
 export class SwiftTargetLanguage extends TargetLanguage {
     constructor() {
@@ -60,8 +94,15 @@ export class SwiftTargetLanguage extends TargetLanguage {
             swiftOptions.accessLevel,
             swiftOptions.urlSession,
             swiftOptions.alamofire,
+            swiftOptions.linux,
             swiftOptions.namedTypePrefix
         ];
+    }
+
+    get stringTypeMapping(): StringTypeMapping {
+        const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
+        mapping.set("date-time", "date-time");
+        return mapping;
     }
 
     get supportsOptionalClassProperties(): boolean {
@@ -74,6 +115,10 @@ export class SwiftTargetLanguage extends TargetLanguage {
 
     protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): SwiftRenderer {
         return new SwiftRenderer(this, renderContext, getOptionValues(swiftOptions, untypedOptionValues));
+    }
+
+    get dateTimeRecognizer(): DateTimeRecognizer {
+        return new SwiftDateTimeRecognizer();
     }
 }
 
@@ -162,6 +207,7 @@ const keywords = [
     "Double",
     "Bool",
     "Data",
+    "Date",
     "CommandLine",
     "FileHandle",
     "JSONSerialization",
@@ -320,6 +366,13 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) return [this.swiftType(nullable, withIssues), optional];
                 return this.nameForNamedType(unionType);
+            },
+            transformedStringType => {
+                if (transformedStringType.kind === "date-time") {
+                    return "Date";
+                } else {
+                    return panic(`Transformed string type ${transformedStringType.kind} not supported`);
+                }
             }
         );
     }
@@ -348,7 +401,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                         "//   let ",
                         modifySource(camelCase, name),
                         " = ",
-                        "try? JSONDecoder().decode(",
+                        "try? newJSONDecoder().decode(",
                         name,
                         ".self, from: jsonData)"
                     );
@@ -541,6 +594,54 @@ export class SwiftRenderer extends ConvenienceRenderer {
         });
     };
 
+    private emitNewEncoderDecoder(): void {
+        this.emitBlock("func newJSONDecoder() -> JSONDecoder", () => {
+            this.emitLine("let decoder = JSONDecoder()");
+            if (!this._options.linux) {
+                this.emitBlock("if #available(iOS 10.0, OSX 10.12, tvOS 10.0, watchOS 3.0, *)", () => {
+                    this.emitLine("decoder.dateDecodingStrategy = .iso8601");
+                });
+            } else {
+                this.emitMultiline(`decoder.dateDecodingStrategy = .custom({ (decoder) -> Date in
+    let container = try decoder.singleValueContainer()
+    let dateStr = try container.decode(String.self)
+
+    let formatter = DateFormatter()
+    formatter.calendar = Calendar(identifier: .iso8601)
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    formatter.timeZone = TimeZone(secondsFromGMT: 0)
+    formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSXXXXX"
+    if let date = formatter.date(from: dateStr) {
+        return date
+    }
+    formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssXXXXX"
+    if let date = formatter.date(from: dateStr) {
+        return date
+    }
+    throw DecodingError.typeMismatch(Date.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Could not decode date"))
+})`);
+            }
+            this.emitLine("return decoder");
+        });
+        this.ensureBlankLine();
+        this.emitBlock("func newJSONEncoder() -> JSONEncoder", () => {
+            this.emitLine("let encoder = JSONEncoder()");
+            if (!this._options.linux) {
+                this.emitBlock("if #available(iOS 10.0, OSX 10.12, tvOS 10.0, watchOS 3.0, *)", () => {
+                    this.emitLine("encoder.dateEncodingStrategy = .iso8601");
+                });
+            } else {
+                this.emitMultiline(`let formatter = DateFormatter()
+formatter.calendar = Calendar(identifier: .iso8601)
+formatter.locale = Locale(identifier: "en_US_POSIX")
+formatter.timeZone = TimeZone(secondsFromGMT: 0)
+formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssXXXXX"
+encoder.dateEncodingStrategy = .formatted(formatter)`);
+            }
+            this.emitLine("return encoder");
+        });
+    }
+
     private emitConvenienceInitializersExtension = (c: ClassType, className: Name): void => {
         const isClass = this._options.useClasses || this.isCycleBreakerType(c);
         const convenience = isClass ? "convenience " : "";
@@ -548,7 +649,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
         this.emitBlockWithAccess(["extension ", className], () => {
             if (isClass) {
                 this.emitBlockWithAccess("convenience init(data: Data) throws", () => {
-                    this.emitLine("let me = try JSONDecoder().decode(", this.swiftType(c), ".self, from: data)");
+                    this.emitLine("let me = try newJSONDecoder().decode(", this.swiftType(c), ".self, from: data)");
                     let args: Sourcelike[] = [];
                     this.forEachClassProperty(c, "none", name => {
                         if (args.length > 0) args.push(", ");
@@ -558,7 +659,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 });
             } else {
                 this.emitBlockWithAccess("init(data: Data) throws", () => {
-                    this.emitLine("self = try JSONDecoder().decode(", this.swiftType(c), ".self, from: data)");
+                    this.emitLine("self = try newJSONDecoder().decode(", this.swiftType(c), ".self, from: data)");
                 });
             }
             this.ensureBlankLine();
@@ -582,7 +683,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
             // Convenience serializers
             this.ensureBlankLine();
             this.emitBlockWithAccess(`func jsonData() throws -> Data`, () => {
-                this.emitLine("return try JSONEncoder().encode(self)");
+                this.emitLine("return try newJSONEncoder().encode(self)");
             });
             this.ensureBlankLine();
             this.emitBlockWithAccess(`func jsonString(encoding: String.Encoding = .utf8) throws -> String?`, () => {
@@ -686,7 +787,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
 
         this.emitBlockWithAccess(["extension ", extensionSource], () => {
             this.emitBlock(["init(data: Data) throws"], () => {
-                this.emitLine("self = try JSONDecoder().decode(", name, ".self, from: data)");
+                this.emitLine("self = try newJSONDecoder().decode(", name, ".self, from: data)");
             });
             this.ensureBlankLine();
             this.emitBlockWithAccess("init(_ json: String, using encoding: String.Encoding = .utf8) throws", () => {
@@ -701,7 +802,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
             });
             this.ensureBlankLine();
             this.emitBlockWithAccess("func jsonData() throws -> Data", () => {
-                this.emitLine("return try JSONEncoder().encode(self)");
+                this.emitLine("return try newJSONEncoder().encode(self)");
             });
             this.ensureBlankLine();
             this.emitBlockWithAccess("func jsonString(encoding: String.Encoding = .utf8) throws -> String?", () => {
@@ -1033,6 +1134,15 @@ ${this.accessLevel}class JSONAny: Codable {
             this.emitSupportFunctions4();
         }
 
+        if (
+            (!this._options.justTypes && this._options.convenienceInitializers) ||
+            this._options.urlSession ||
+            this._options.alamofire
+        ) {
+            this.ensureBlankLine();
+            this.emitNewEncoderDecoder();
+        }
+
         if (this._options.urlSession) {
             this.ensureBlankLine();
             this.emitMark("URLSession response handlers", true);
@@ -1058,7 +1168,7 @@ ${this.accessLevel}class JSONAny: Codable {
             completionHandler(nil, response, error)
             return
         }
-        completionHandler(try? JSONDecoder().decode(T.self, from: data), response, nil)
+        completionHandler(try? newJSONDecoder().decode(T.self, from: data), response, nil)
     }
 }`);
             this.ensureBlankLine();
@@ -1091,7 +1201,7 @@ ${this.accessLevel}class JSONAny: Codable {
             return .failure(AFError.responseSerializationFailed(reason: .inputDataNil))
         }
         
-        return Result { try JSONDecoder().decode(T.self, from: data) }
+        return Result { try newJSONDecoder().decode(T.self, from: data) }
     }
 }
 

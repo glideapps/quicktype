@@ -25,7 +25,7 @@ import {
 import * as languages from "./languages";
 import { RendererOptions } from "../dist/quicktype-core/Run";
 import { mustNotHappen, defined } from "../dist/quicktype-core/support/Support";
-import { isDateTime } from "../dist/quicktype-core/DateTime";
+import { DefaultDateTimeRecognizer } from "../dist/quicktype-core/DateTime";
 
 const chalk = require("chalk");
 const timeout = require("promise-timeout").timeout;
@@ -399,6 +399,8 @@ class JSONToXToYFixture extends JSONFixture {
   }
 }
 
+const dateTimeRecognizer = new DefaultDateTimeRecognizer();
+
 // This tests generating Schema from JSON, and then generating
 // target code from that Schema.  The target code is then run on
 // the original JSON.  Also generating a Schema from the Schema
@@ -426,7 +428,7 @@ class JSONSchemaJSONFixture extends JSONToXToYFixture {
     // JSON formats that we use for transformed type kinds must be registered here
     // with a validation function.
     // FIXME: Unify this with what's in StringTypes.ts.
-    ajv.addFormat("date-time", isDateTime);
+    ajv.addFormat("date-time", (s: string) => dateTimeRecognizer.isDateTime(s));
     let valid = ajv.validate(schema, input);
     if (!valid) {
       failWith("Generated schema does not validate input JSON.", {
