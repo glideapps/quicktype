@@ -14,7 +14,6 @@ const headerRegExp = /^([^:]+):\s*(.*)$/;
 export async function introspectServer(url: string, method: string, headerStrings: string[]): Promise<string> {
     const headers: { [name: string]: string } = {};
 
-    console.log(`given headers: ${JSON.stringify(headerStrings)}`);
     for (const name of Object.getOwnPropertyNames(defaultHeaders)) {
         headers[name] = defaultHeaders[name];
     }
@@ -26,7 +25,6 @@ export async function introspectServer(url: string, method: string, headerString
         headers[matches[1]] = matches[2];
     }
 
-    console.log(`headers are ${JSON.stringify(headers)}`);
     let result;
     try {
         const response = await fetch(url, {

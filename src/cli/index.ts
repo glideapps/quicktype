@@ -751,6 +751,10 @@ export async function makeQuicktypeOptions(
                     return undefined;
                 }
                 if (numSources === 0) {
+                    if (schemaString !== undefined) {
+                        console.log(schemaString);
+                        return undefined;
+                    }
                     return messageError("DriverNoGraphQLQueryGiven", {});
                 }
             }
