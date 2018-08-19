@@ -35,7 +35,8 @@
     "unicode-properties": "github:quicktype/unicode-properties#dist",
     "universal-analytics": "^0.4.16",
     "urijs": "^1.19.1",
-    "uuid": "^3.2.1"
+    "uuid": "^3.2.1",
+    "wordwrap": "^1.0.0"
   },
   "devDependencies": {
     "@types/urijs": "github:quicktype/types-urijs",
