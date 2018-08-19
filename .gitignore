@@ -1,6 +1,8 @@
 node_modules/
 /test/awesome-json-results/
 npm-debug.log
+yarn.lock
+shrinkwrap.yaml
 test/csharp/QuickType.cs
 test/golang/quicktype.go
 test/golang/schema.json
