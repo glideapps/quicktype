@@ -21,7 +21,8 @@
         "stream-json": "0.5.2",
         "string-to-stream": "^1.1.0",
         "unicode-properties": "github:quicktype/unicode-properties#dist",
-        "urijs": "^1.19.1"
+        "urijs": "^1.19.1",
+        "wordwrap": "^1.0.0"
     },
     "devDependencies": {
         "@types/js-base64": "^2.3.1",
