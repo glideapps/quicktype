@@ -1151,16 +1151,15 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
     }
 
     async addSource(schemaSource: JSONSchemaSourceData): Promise<void> {
-        const { uris, schema, isConverted } = schemaSource;
+        const { name, uris, schema, isConverted } = schemaSource;
 
         if (isConverted !== true) {
             this._needIR = true;
         }
 
         let normalizedURIs: uri.URI[];
-        const uriPath = `-${this._schemaInputs.size + 1}`;
         if (uris === undefined) {
-            normalizedURIs = [new URI(uriPath)];
+            normalizedURIs = [new URI(name)];
         } else {
             normalizedURIs = uris.map(uri => {
                 const normalizedURI = new URI(uri).normalize();
@@ -1170,7 +1169,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
                         .hash("")
                         .toString() === ""
                 ) {
-                    normalizedURI.path(uriPath);
+                    normalizedURI.path(name);
                 }
                 return normalizedURI;
             });
@@ -1179,17 +1178,23 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
         if (schema === undefined) {
             assert(uris !== undefined, "URIs must be given if schema source is not specified");
         } else {
-            for (const normalizedURI of normalizedURIs) {
-                this._schemaInputs.set(
-                    normalizedURI
-                        .clone()
-                        .hash("")
-                        .toString(),
-                    schema
-                );
+            for (let i = 0; i < normalizedURIs.length; i++) {
+                const normalizedURI = normalizedURIs[i];
+                const uri = normalizedURI.clone().hash("");
+                const path = uri.path();
+                let suffix = 0;
+                do {
+                    if (suffix > 0) {
+                        uri.path(`${path}-${suffix}`);
+                    }
+                    suffix++;
+                } while (this._schemaInputs.has(uri.toString()));
+                this._schemaInputs.set(uri.toString(), schema);
+                normalizedURIs[i] = uri.hash(normalizedURI.hash());
             }
         }
 
+        // FIXME: Why do we need both _schemaSources and _schemaInputs?
         for (const normalizedURI of normalizedURIs) {
             this._schemaSources.push([normalizedURI, schemaSource]);
         }
