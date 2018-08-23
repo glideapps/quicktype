@@ -110,6 +110,25 @@ function checkJSONSchema(x: any, refOrLoc: Ref | (() => Ref)): JSONSchema {
 
 const numberRegexp = new RegExp("^[0-9]+$");
 
+function normalizeURI(uri: string | uri.URI): uri.URI {
+    // FIXME: This is overly complicated and a bit shady.  The problem is
+    // that `normalize` will URL-escape, with the result that if we want to
+    // open the URL as a file, escaped character will thwart us.  I think the
+    // JSONSchemaStore should take a URI, not a string, and if it reads from
+    // a file it can decode by itself.
+    if (typeof uri === "string") {
+        uri = new URI(uri);
+    }
+    return new URI(
+        URI.decode(
+            uri
+                .clone()
+                .normalize()
+                .toString()
+        )
+    );
+}
+
 export class Ref {
     static root(address: string | undefined): Ref {
         const uri = definedMap(address, a => new URI(a));
@@ -156,7 +175,7 @@ export class Ref {
     constructor(addressURI: uri.URI | undefined, readonly path: ReadonlyArray<PathElement>) {
         if (addressURI !== undefined) {
             assert(addressURI.fragment() === "", `Ref URI with fragment is not allowed: ${addressURI.toString()}`);
-            this.addressURI = addressURI.clone().normalize();
+            this.addressURI = normalizeURI(addressURI);
         } else {
             this.addressURI = undefined;
         }
@@ -1151,26 +1170,25 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
     }
 
     async addSource(schemaSource: JSONSchemaSourceData): Promise<void> {
-        const { uris, schema, isConverted } = schemaSource;
+        const { name, uris, schema, isConverted } = schemaSource;
 
         if (isConverted !== true) {
             this._needIR = true;
         }
 
         let normalizedURIs: uri.URI[];
-        const uriPath = `-${this._schemaInputs.size + 1}`;
         if (uris === undefined) {
-            normalizedURIs = [new URI(uriPath)];
+            normalizedURIs = [new URI(name)];
         } else {
             normalizedURIs = uris.map(uri => {
-                const normalizedURI = new URI(uri).normalize();
+                const normalizedURI = normalizeURI(uri);
                 if (
                     normalizedURI
                         .clone()
                         .hash("")
                         .toString() === ""
                 ) {
-                    normalizedURI.path(uriPath);
+                    normalizedURI.path(name);
                 }
                 return normalizedURI;
             });
@@ -1179,17 +1197,23 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
         if (schema === undefined) {
             assert(uris !== undefined, "URIs must be given if schema source is not specified");
         } else {
-            for (const normalizedURI of normalizedURIs) {
-                this._schemaInputs.set(
-                    normalizedURI
-                        .clone()
-                        .hash("")
-                        .toString(),
-                    schema
-                );
+            for (let i = 0; i < normalizedURIs.length; i++) {
+                const normalizedURI = normalizedURIs[i];
+                const uri = normalizedURI.clone().hash("");
+                const path = uri.path();
+                let suffix = 0;
+                do {
+                    if (suffix > 0) {
+                        uri.path(`${path}-${suffix}`);
+                    }
+                    suffix++;
+                } while (this._schemaInputs.has(uri.toString()));
+                this._schemaInputs.set(uri.toString(), schema);
+                normalizedURIs[i] = uri.hash(normalizedURI.hash());
             }
         }
 
+        // FIXME: Why do we need both _schemaSources and _schemaInputs?
         for (const normalizedURI of normalizedURIs) {
             this._schemaSources.push([normalizedURI, schemaSource]);
         }
