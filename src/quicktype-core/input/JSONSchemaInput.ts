@@ -1,4 +1,3 @@
-import * as pluralize from "pluralize";
 import * as URI from "urijs";
 import {
     setFilter,
@@ -643,7 +642,7 @@ async function addTypesInSchema(
             const t = await toType(
                 checkJSONSchema(propSchema, propLoc.canonicalRef),
                 propLoc,
-                makeNamesTypeAttributes(pluralize.singular(propName), true)
+                makeNamesTypeAttributes(propName, true)
             );
             const isOptional = !required.has(propName);
             return typeBuilder.makeClassProperty(t, isOptional);
