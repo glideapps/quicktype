@@ -110,6 +110,25 @@ function checkJSONSchema(x: any, refOrLoc: Ref | (() => Ref)): JSONSchema {
 
 const numberRegexp = new RegExp("^[0-9]+$");
 
+function normalizeURI(uri: string | uri.URI): uri.URI {
+    // FIXME: This is overly complicated and a bit shady.  The problem is
+    // that `normalize` will URL-escape, with the result that if we want to
+    // open the URL as a file, escaped character will thwart us.  I think the
+    // JSONSchemaStore should take a URI, not a string, and if it reads from
+    // a file it can decode by itself.
+    if (typeof uri === "string") {
+        uri = new URI(uri);
+    }
+    return new URI(
+        URI.decode(
+            uri
+                .clone()
+                .normalize()
+                .toString()
+        )
+    );
+}
+
 export class Ref {
     static root(address: string | undefined): Ref {
         const uri = definedMap(address, a => new URI(a));
@@ -156,7 +175,7 @@ export class Ref {
     constructor(addressURI: uri.URI | undefined, readonly path: ReadonlyArray<PathElement>) {
         if (addressURI !== undefined) {
             assert(addressURI.fragment() === "", `Ref URI with fragment is not allowed: ${addressURI.toString()}`);
-            this.addressURI = addressURI.clone().normalize();
+            this.addressURI = normalizeURI(addressURI);
         } else {
             this.addressURI = undefined;
         }
@@ -1162,7 +1181,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
             normalizedURIs = [new URI(name)];
         } else {
             normalizedURIs = uris.map(uri => {
-                const normalizedURI = new URI(uri).normalize();
+                const normalizedURI = normalizeURI(uri);
                 if (
                     normalizedURI
                         .clone()
