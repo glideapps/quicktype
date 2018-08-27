@@ -59,7 +59,7 @@ export const swiftOptions = {
         "internal",
         "secondary"
     ),
-    equatable: new BooleanOption("equatable", "Make types Equatable", false, "secondary"),
+    equatable: new BooleanOption("equatable", "Make types Equatable", true, "secondary"),
     hashable: new BooleanOption("hashable", "Make types Hashable", false, "secondary")
 };
 
