@@ -475,7 +475,11 @@ export const SwiftLanguage: Language = {
     { density: "normal" },
     { "url-session": "true" },
     { "access-level": "internal" },
-    { "access-level": "public" }
+    { "access-level": "public" },
+    { "equatable": "true" },
+    { "equatable": "false" },
+    { "hashable": "true" },
+    { "hashable": "false" }
   ],
   sourceFiles: ["src/language/Swift.ts"]
 };
