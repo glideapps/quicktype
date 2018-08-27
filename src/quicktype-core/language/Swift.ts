@@ -58,7 +58,9 @@ export const swiftOptions = {
         [["internal", "internal"], ["public", "public"]],
         "internal",
         "secondary"
-    )
+    ),
+    equatable: new BooleanOption("equatable", "Types conform to the Equatable protocol.", false),
+    hashable: new BooleanOption("hashable", "Types conform to the Hashable protocol.", false)
 };
 
 // These are all recognized by Swift as ISO8601 date-times:
@@ -95,7 +97,9 @@ export class SwiftTargetLanguage extends TargetLanguage {
             swiftOptions.urlSession,
             swiftOptions.alamofire,
             swiftOptions.linux,
-            swiftOptions.namedTypePrefix
+            swiftOptions.namedTypePrefix,
+            swiftOptions.equatable,
+            swiftOptions.hashable
         ];
     }
 
@@ -458,6 +462,15 @@ export class SwiftRenderer extends ConvenienceRenderer {
         if (!this._options.justTypes) {
             protocols.push("Codable");
         }
+
+        if (this._options.equatable) {
+            protocols.push("Equatable");
+        }
+
+        if (this._options.hashable) {
+            protocols.push("Hashable");
+        }
+
         return protocols.length > 0 ? ": " + protocols.join(", ") : "";
     };
 
@@ -695,14 +708,30 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
     private renderEnumDefinition = (e: EnumType, enumName: Name): void => {
         this.emitDescription(this.descriptionForType(e));
 
+        let protocols: string[] = [];
+        if (!this._options.justTypes) {
+            protocols.push("String"); // Not a protocol
+            protocols.push("Codable");
+        }
+
+        if (this._options.equatable) {
+            protocols.push("Equatable");
+        }
+
+        if (this._options.hashable) {
+            protocols.push("Hashable");
+        }
+
+        let protocolString = protocols.length > 0 ? ": " + protocols.join(", ") : "";
+
         if (this._options.justTypes) {
-            this.emitBlockWithAccess(["enum ", enumName], () => {
+            this.emitBlockWithAccess(["enum ", enumName, protocolString], () => {
                 this.forEachEnumCase(e, "none", name => {
                     this.emitLine("case ", name);
                 });
             });
         } else {
-            this.emitBlockWithAccess(["enum ", enumName, ": String, Codable"], () => {
+            this.emitBlockWithAccess(["enum ", enumName, protocolString], () => {
                 this.forEachEnumCase(e, "none", (name, jsonName) => {
                     this.emitLine("case ", name, ' = "', stringEscape(jsonName), '"');
                 });
