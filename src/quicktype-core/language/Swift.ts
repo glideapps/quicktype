@@ -458,7 +458,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
     };
 
     private getProtocolString = (): Sourcelike => {
-        let protocols: string[] = [];
+        const protocols: string[] = [];
         if (!this._options.justTypes) {
             protocols.push("Codable");
         }
@@ -708,7 +708,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
     private renderEnumDefinition = (e: EnumType, enumName: Name): void => {
         this.emitDescription(this.descriptionForType(e));
 
-        let protocols: string[] = [];
+        const protocols: string[] = [];
         if (!this._options.justTypes) {
             protocols.push("String"); // Not a protocol
             protocols.push("Codable");
@@ -722,7 +722,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             protocols.push("Hashable");
         }
 
-        let protocolString = protocols.length > 0 ? ": " + protocols.join(", ") : "";
+        const protocolString = protocols.length > 0 ? ": " + protocols.join(", ") : "";
 
         if (this._options.justTypes) {
             this.emitBlockWithAccess(["enum ", enumName, protocolString], () => {
