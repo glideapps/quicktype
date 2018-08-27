@@ -59,8 +59,8 @@ export const swiftOptions = {
         "internal",
         "secondary"
     ),
-    equatable: new BooleanOption("equatable", "Types conform to the Equatable protocol.", false),
-    hashable: new BooleanOption("hashable", "Types conform to the Hashable protocol.", false)
+    equatable: new BooleanOption("equatable", "Make types Equatable", false, "secondary"),
+    hashable: new BooleanOption("hashable", "Make types Hashable", false, "secondary")
 };
 
 // These are all recognized by Swift as ISO8601 date-times:
