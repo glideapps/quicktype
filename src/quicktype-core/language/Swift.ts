@@ -463,12 +463,11 @@ export class SwiftRenderer extends ConvenienceRenderer {
             protocols.push("Codable");
         }
 
-        if (this._options.equatable) {
-            protocols.push("Equatable");
-        }
-
+        // Hashable implies Equatable, so only one is necessary.
         if (this._options.hashable) {
             protocols.push("Hashable");
+        } else if (this._options.equatable) {
+            protocols.push("Equatable");
         }
 
         return protocols.length > 0 ? ": " + protocols.join(", ") : "";
@@ -714,12 +713,11 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             protocols.push("Codable");
         }
 
-        if (this._options.equatable) {
-            protocols.push("Equatable");
-        }
-
+        // Hashable implies Equatable, so only one is necessary.
         if (this._options.hashable) {
             protocols.push("Hashable");
+        } else if (this._options.equatable) {
+            protocols.push("Equatable");
         }
 
         const protocolString = protocols.length > 0 ? ": " + protocols.join(", ") : "";
