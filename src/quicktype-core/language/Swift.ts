@@ -854,7 +854,16 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         if (this._needAny || this._needNull) {
             this.emitMark("Encode/decode helpers");
             this.ensureBlankLine();
-            this.emitMultiline(`${this.accessLevel}class JSONNull: Codable {
+            this.emitMultiline(`${this.accessLevel}class JSONNull: Codable, Hashable {
+    
+    static func == (lhs: JSONNull, rhs: JSONNull) -> Bool {
+        return true
+    }
+                
+    var hashValue: Int {
+        return 0
+    }
+
     public init() {}
     
     public required init(from decoder: Decoder) throws {
