@@ -59,8 +59,11 @@ export const swiftOptions = {
         "internal",
         "secondary"
     ),
-    equatable: new BooleanOption("equatable", "Make types Equatable", true, "secondary"),
-    hashable: new BooleanOption("hashable", "Make types Hashable", false, "secondary")
+    protocol: new EnumOption("protocol", "Make types implement protocol", [
+        ["none", { equatable: false, hashable: false }],
+        ["equatable", { equatable: true, hashable: false }],
+        ["hashable", { equatable: false, hashable: true }]
+    ])
 };
 
 // These are all recognized by Swift as ISO8601 date-times:
@@ -98,8 +101,7 @@ export class SwiftTargetLanguage extends TargetLanguage {
             swiftOptions.alamofire,
             swiftOptions.linux,
             swiftOptions.namedTypePrefix,
-            swiftOptions.equatable,
-            swiftOptions.hashable
+            swiftOptions.protocol,
         ];
     }
 
@@ -463,10 +465,11 @@ export class SwiftRenderer extends ConvenienceRenderer {
             protocols.push("Codable");
         }
 
-        // Hashable implies Equatable, so only one is necessary.
-        if (this._options.hashable) {
+        if (this._options.protocol.hashable) {
             protocols.push("Hashable");
-        } else if (this._options.equatable) {
+        }
+
+        if (this._options.protocol.equatable) {
             protocols.push("Equatable");
         }
 
@@ -713,10 +716,11 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             protocols.push("Codable");
         }
 
-        // Hashable implies Equatable, so only one is necessary.
-        if (this._options.hashable) {
+        if (this._options.protocol.hashable) {
             protocols.push("Hashable");
-        } else if (this._options.equatable) {
+        }
+
+        if (this._options.protocol.equatable) {
             protocols.push("Equatable");
         }
 

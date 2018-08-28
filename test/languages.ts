@@ -476,10 +476,9 @@ export const SwiftLanguage: Language = {
     { "url-session": "true" },
     { "access-level": "internal" },
     { "access-level": "public" },
-    { "equatable": "true" },
-    { "equatable": "false" },
-    { "hashable": "true" },
-    { "hashable": "false" }
+    { "protocol": "none" },
+    { "protocol": "equatable" },
+    { "protocol": "hashable" }
   ],
   sourceFiles: ["src/language/Swift.ts"]
 };
