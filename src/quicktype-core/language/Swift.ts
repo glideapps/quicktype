@@ -447,6 +447,13 @@ export class SwiftRenderer extends ConvenienceRenderer {
                     this.emitLine("//   }");
                 });
             }
+
+            if (this._options.protocol.hashable || this._options.protocol.equatable) {
+                this.emitLine("//");
+                this.emitLine("// Hashable or Equatable:");
+                this.emitLine("// The compiler will not be able to synthesize conformance to Hashable or Equatable");
+                this.emitLine("// for types that require the use of JSONAny.");
+            }
         }
         this.ensureBlankLine();
         this.emitLine("import Foundation");
