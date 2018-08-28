@@ -63,7 +63,7 @@ export const swiftOptions = {
         ["none", { equatable: false, hashable: false }],
         ["equatable", { equatable: true, hashable: false }],
         ["hashable", { equatable: false, hashable: true }]
-    ])
+    ], "none", "secondary")
 };
 
 // These are all recognized by Swift as ISO8601 date-times:
