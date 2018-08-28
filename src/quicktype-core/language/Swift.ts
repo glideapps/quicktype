@@ -860,11 +860,11 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             this.ensureBlankLine();
             this.emitMultiline(`${this.accessLevel}class JSONNull: Codable, Hashable {
     
-    static func == (lhs: JSONNull, rhs: JSONNull) -> Bool {
+    public static func == (lhs: JSONNull, rhs: JSONNull) -> Bool {
         return true
     }
                 
-    var hashValue: Int {
+    public var hashValue: Int {
         return 0
     }
 
