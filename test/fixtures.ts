@@ -316,15 +316,32 @@ class JSONFixture extends LanguageFixture {
     let { priority, others } = samplesFromSources(sources, prioritySamples, miscSamples, "json");
 
     const combinationsInput = _.find(prioritySamples, p => p.endsWith("/priority/combinations.json"));
-    if (!combinationsInput) {
+    if (combinationsInput === undefined) {
       return failWith("priority/combinations.json sample not found", prioritySamples);
     }
     if (sources.length === 0 && !ONLY_OUTPUT) {
-      const quickTestSamples = _.map(this.language.quickTestRendererOptions, ro => ({
-        path: combinationsInput,
-        additionalRendererOptions: ro,
-        saveOutput: false
-      }));
+      const quickTestSamples = _.map(this.language.quickTestRendererOptions, qt => {
+        if (Array.isArray(qt)) {
+          const [filename, ro] = qt;
+          const input = _.find(([] as string[]).concat(prioritySamples, miscSamples), p =>
+            p.endsWith(`/${filename}`)
+          );
+          if (input === undefined) {
+            return failWith(`quick-test sample ${filename} not found`, qt);
+          }
+          return {
+            path: input,
+            additionalRendererOptions: ro,
+            saveOutput: false
+          };
+        } else {
+          return {
+            path: combinationsInput,
+            additionalRendererOptions: qt,
+            saveOutput: false
+          };
+        }
+      });
       priority = quickTestSamples.concat(priority);
     }
 
