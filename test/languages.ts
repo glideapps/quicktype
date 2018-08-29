@@ -30,7 +30,7 @@ export interface Language {
   skipMiscJSON: boolean;
   skipSchema: string[];
   rendererOptions: RendererOptions;
-  quickTestRendererOptions: RendererOptions[];
+  quickTestRendererOptions: (RendererOptions | [string, RendererOptions])[];
   sourceFiles?: string[];
 }
 
