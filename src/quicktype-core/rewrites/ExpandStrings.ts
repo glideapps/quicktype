@@ -1,4 +1,12 @@
-import { iterableFirst, mapFilter, iterableSome, iterableReduce } from "collection-utils";
+import {
+    iterableFirst,
+    mapFilter,
+    iterableSome,
+    iterableReduce,
+    setUnion,
+    setIntersect,
+    setIsSuperset
+} from "collection-utils";
 
 import { PrimitiveType } from "../Type";
 import { stringTypesForType } from "../TypeUtils";
@@ -11,21 +19,104 @@ import { RunContext } from "../Run";
 
 const MIN_LENGTH_FOR_ENUM = 10;
 
-function shouldBeEnum(enumCases: ReadonlyMap<string, number>): boolean {
-    const keys = Array.from(enumCases.keys());
-    assert(keys.length > 0, "How did we end up with zero enum cases?");
-
-    if (keys.length === 1 && keys[0] === "") return false;
-
-    const someCaseIsNotNumber = iterableSome(keys, key => /^(\-|\+)?[0-9]+(\.[0-9]+)?$/.test(key) === false);
-    const numValues = iterableReduce(enumCases.values(), 0, (a, b) => a + b);
-    return numValues >= MIN_LENGTH_FOR_ENUM && enumCases.size < Math.sqrt(numValues) && someCaseIsNotNumber;
-}
+const MIN_LENGTH_FOR_OVERLAP = 5;
+const REQUIRED_OVERLAP = 3 / 4;
 
 export type EnumInference = "none" | "all" | "infer";
 
+type EnumInfo = {
+    cases: ReadonlySet<string>;
+    numValues: number;
+};
+
+function isOwnEnum({ numValues, cases }: EnumInfo): boolean {
+    return numValues >= MIN_LENGTH_FOR_ENUM && cases.size < Math.sqrt(numValues);
+}
+
+function enumCasesOverlap(cases1: ReadonlySet<string>, cases2: ReadonlySet<string>): boolean {
+    const smaller = Math.min(cases1.size, cases2.size);
+    const overlap = setIntersect(cases1, cases2).size;
+    return overlap >= smaller * REQUIRED_OVERLAP;
+}
+
 export function expandStrings(ctx: RunContext, graph: TypeGraph, inference: EnumInference): TypeGraph {
     const stringTypeMapping = ctx.stringTypeMapping;
+    const allStrings = Array.from(graph.allTypesUnordered()).filter(
+        t => t.kind === "string" && stringTypesForType(t as PrimitiveType).isRestricted
+    ) as PrimitiveType[];
+
+    function makeEnumInfo(t: PrimitiveType): EnumInfo | undefined {
+        const stringTypes = stringTypesForType(t);
+        const mappedStringTypes = stringTypes.applyStringTypeMapping(stringTypeMapping);
+        if (!mappedStringTypes.isRestricted) return undefined;
+
+        const cases = defined(mappedStringTypes.cases);
+        if (cases.size === 0) return undefined;
+
+        const numValues = iterableReduce(cases.values(), 0, (a, b) => a + b);
+
+        if (inference !== "all") {
+            const keys = Array.from(cases.keys());
+            if (keys.length === 1 && keys[0] === "") return undefined;
+
+            const someCaseIsNotNumber = iterableSome(keys, key => /^(\-|\+)?[0-9]+(\.[0-9]+)?$/.test(key) === false);
+            if (!someCaseIsNotNumber) return undefined;
+        }
+
+        return { cases: new Set(cases.keys()), numValues };
+    }
+
+    const enumInfos = new Map<PrimitiveType, EnumInfo>();
+    const enumSets: ReadonlySet<string>[] = [];
+
+    if (inference !== "none") {
+        for (const t of allStrings) {
+            const enumInfo = makeEnumInfo(t);
+            if (enumInfo === undefined) continue;
+            enumInfos.set(t, enumInfo);
+        }
+
+        function findOverlap(cases: ReadonlySet<string>): number {
+            return enumSets.findIndex(s => enumCasesOverlap(s, cases));
+        }
+
+        // First, make case sets for all the enums that stand on their own.  If
+        // we find some overlap (searching eagerly), make unions.
+        for (const t of Array.from(enumInfos.keys())) {
+            const enumInfo = defined(enumInfos.get(t));
+            const cases = enumInfo.cases;
+
+            if (inference === "all") {
+                enumSets.push(cases);
+            } else {
+                if (!isOwnEnum(enumInfo)) continue;
+
+                const index = findOverlap(cases);
+                if (index >= 0) {
+                    enumSets[index] = setUnion(enumSets[index], cases);
+                } else {
+                    enumSets.push(cases);
+                }
+            }
+
+            // Remove the ones we're done with.
+            enumInfos.delete(t);
+        }
+        if (inference === "all") {
+            assert(enumInfos.size === 0);
+        }
+
+        // Now see if we can unify the rest with some a set we found in the
+        // previous step.
+        for (const [, enumInfo] of enumInfos.entries()) {
+            if (enumInfo.numValues < MIN_LENGTH_FOR_OVERLAP) continue;
+
+            const index = findOverlap(enumInfo.cases);
+            if (index >= 0) {
+                enumSets[index] = setUnion(enumSets[index], enumInfo.cases);
+            }
+        }
+    }
 
     function replaceString(
         group: ReadonlySet<PrimitiveType>,
@@ -45,8 +136,9 @@ export function expandStrings(ctx: RunContext, graph: TypeGraph, inference: Enum
         const types: TypeRef[] = [];
         const cases = defined(mappedStringTypes.cases);
         if (cases.size > 0) {
-            if (inference === "all" || (inference === "infer" && shouldBeEnum(cases))) {
-                types.push(builder.getEnumType(emptyTypeAttributes, new Set(cases.keys())));
+            const fullCases = enumSets.find(s => setIsSuperset(s, new Set(cases.keys())));
+            if (inference !== "none" && fullCases !== undefined) {
+                types.push(builder.getEnumType(emptyTypeAttributes, fullCases));
             } else {
                 return builder.getStringType(attributes, StringTypes.unrestricted, forwardingRef);
             }
@@ -56,14 +148,11 @@ export function expandStrings(ctx: RunContext, graph: TypeGraph, inference: Enum
         return builder.getUnionType(attributes, new Set(types), forwardingRef);
     }
 
-    const allStrings = Array.from(graph.allTypesUnordered())
-        .filter(t => t.kind === "string" && stringTypesForType(t as PrimitiveType).isRestricted)
-        .map(t => [t]) as PrimitiveType[][];
     return graph.rewrite(
         "expand strings",
         stringTypeMapping,
         false,
-        allStrings,
+        allStrings.map(t => [t]),
         ctx.debugPrintReconstitution,
         replaceString
     );

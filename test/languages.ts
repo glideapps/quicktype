@@ -117,6 +117,7 @@ export const PythonLanguage: Language = {
     "34702.json",
     "7681c.json",
     "c3303.json",
+    "e8b04.json",
     "f6a65.json"
   ],
   allowMissingNull: false,
@@ -160,6 +161,7 @@ export const RustLanguage: Language = {
     "76ae1.json",
     "af2d1.json",
     "c3303.json",
+    "e8b04.json",
     "f6a65.json"
   ],
   allowMissingNull: false,
@@ -266,6 +268,7 @@ export const GoLanguage: Language = {
     "bug427.json",
     "nbl-stats.json",
     "0e0c2.json",
+    "2df80.json",
     "337ed.json",
     "34702.json",
     "7eb30.json",
