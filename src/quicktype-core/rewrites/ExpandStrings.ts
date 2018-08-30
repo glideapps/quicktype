@@ -39,6 +39,10 @@ function enumCasesOverlap(cases1: ReadonlySet<string>, cases2: ReadonlySet<strin
     return overlap >= smaller * REQUIRED_OVERLAP;
 }
 
+function isAlwaysEmptyString(cases: string[]): boolean {
+    return cases.length === 1 && cases[0] === "";
+}
+
 export function expandStrings(ctx: RunContext, graph: TypeGraph, inference: EnumInference): TypeGraph {
     const stringTypeMapping = ctx.stringTypeMapping;
     const allStrings = Array.from(graph.allTypesUnordered()).filter(
@@ -57,7 +61,7 @@ export function expandStrings(ctx: RunContext, graph: TypeGraph, inference: Enum
 
         if (inference !== "all") {
             const keys = Array.from(cases.keys());
-            if (keys.length === 1 && keys[0] === "") return undefined;
+            if (isAlwaysEmptyString(keys)) return undefined;
 
             const someCaseIsNotNumber = iterableSome(keys, key => /^(\-|\+)?[0-9]+(\.[0-9]+)?$/.test(key) === false);
             if (!someCaseIsNotNumber) return undefined;
@@ -136,8 +140,9 @@ export function expandStrings(ctx: RunContext, graph: TypeGraph, inference: Enum
         const types: TypeRef[] = [];
         const cases = defined(mappedStringTypes.cases);
         if (cases.size > 0) {
-            const fullCases = enumSets.find(s => setIsSuperset(s, new Set(cases.keys())));
-            if (inference !== "none" && fullCases !== undefined) {
+            const keys = new Set(cases.keys());
+            const fullCases = enumSets.find(s => setIsSuperset(s, keys));
+            if (inference !== "none" && !isAlwaysEmptyString(Array.from(keys)) && fullCases !== undefined) {
                 types.push(builder.getEnumType(emptyTypeAttributes, fullCases));
             } else {
                 return builder.getStringType(attributes, StringTypes.unrestricted, forwardingRef);
