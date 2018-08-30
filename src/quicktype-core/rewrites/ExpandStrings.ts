@@ -33,9 +33,13 @@ function isOwnEnum({ numValues, cases }: EnumInfo): boolean {
     return numValues >= MIN_LENGTH_FOR_ENUM && cases.size < Math.sqrt(numValues);
 }
 
-function enumCasesOverlap(cases1: ReadonlySet<string>, cases2: ReadonlySet<string>): boolean {
-    const smaller = Math.min(cases1.size, cases2.size);
-    const overlap = setIntersect(cases1, cases2).size;
+function enumCasesOverlap(
+    newCases: ReadonlySet<string>,
+    existingCases: ReadonlySet<string>,
+    newAreSubordinate: boolean
+): boolean {
+    const smaller = newAreSubordinate ? newCases.size : Math.min(newCases.size, existingCases.size);
+    const overlap = setIntersect(newCases, existingCases).size;
     return overlap >= smaller * REQUIRED_OVERLAP;
 }
 
@@ -80,8 +84,8 @@ export function expandStrings(ctx: RunContext, graph: TypeGraph, inference: Enum
             enumInfos.set(t, enumInfo);
         }
 
-        function findOverlap(cases: ReadonlySet<string>): number {
-            return enumSets.findIndex(s => enumCasesOverlap(s, cases));
+        function findOverlap(newCases: ReadonlySet<string>, newAreSubordinate: boolean): number {
+            return enumSets.findIndex(s => enumCasesOverlap(newCases, s, newAreSubordinate));
         }
 
         // First, make case sets for all the enums that stand on their own.  If
@@ -95,10 +99,16 @@ export function expandStrings(ctx: RunContext, graph: TypeGraph, inference: Enum
             } else {
                 if (!isOwnEnum(enumInfo)) continue;
 
-                const index = findOverlap(cases);
+                const index = findOverlap(cases, false);
                 if (index >= 0) {
+                    // console.log(
+                    //     `unifying ${JSON.stringify(Array.from(cases))} with ${JSON.stringify(
+                    //         Array.from(enumSets[index])
+                    //     )}`
+                    // );
                     enumSets[index] = setUnion(enumSets[index], cases);
                 } else {
+                    // console.log(`adding new ${JSON.stringify(Array.from(cases))}`);
                     enumSets.push(cases);
                 }
             }
@@ -115,8 +125,13 @@ export function expandStrings(ctx: RunContext, graph: TypeGraph, inference: Enum
         for (const [, enumInfo] of enumInfos.entries()) {
             if (enumInfo.numValues < MIN_LENGTH_FOR_OVERLAP) continue;
 
-            const index = findOverlap(enumInfo.cases);
+            const index = findOverlap(enumInfo.cases, true);
             if (index >= 0) {
+                // console.log(
+                //     `late unifying ${JSON.stringify(Array.from(enumInfo.cases))} with ${JSON.stringify(
+                //         Array.from(enumSets[index])
+                //     )}`
+                // );
                 enumSets[index] = setUnion(enumSets[index], enumInfo.cases);
             }
         }
