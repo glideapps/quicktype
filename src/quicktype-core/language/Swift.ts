@@ -58,7 +58,12 @@ export const swiftOptions = {
         [["internal", "internal"], ["public", "public"]],
         "internal",
         "secondary"
-    )
+    ),
+    protocol: new EnumOption("protocol", "Make types implement protocol", [
+        ["none", { equatable: false, hashable: false }],
+        ["equatable", { equatable: true, hashable: false }],
+        ["hashable", { equatable: false, hashable: true }]
+    ], "none", "secondary")
 };
 
 // These are all recognized by Swift as ISO8601 date-times:
@@ -95,7 +100,8 @@ export class SwiftTargetLanguage extends TargetLanguage {
             swiftOptions.urlSession,
             swiftOptions.alamofire,
             swiftOptions.linux,
-            swiftOptions.namedTypePrefix
+            swiftOptions.namedTypePrefix,
+            swiftOptions.protocol,
         ];
     }
 
@@ -441,6 +447,14 @@ export class SwiftRenderer extends ConvenienceRenderer {
                     this.emitLine("//   }");
                 });
             }
+
+            if (this._options.protocol.hashable || this._options.protocol.equatable) {
+                this.emitLine("//");
+                this.emitLine("// Hashable or Equatable:");
+                this.emitLine("// The compiler will not be able to synthesize the implementation of Hashable or Equatable");
+                this.emitLine("// for types that require the use of JSONAny, nor will the implementation of Hashable be");
+                this.emitLine("// synthesized for types that have collections (such as arrays or dictionaries).");
+            }
         }
         this.ensureBlankLine();
         this.emitLine("import Foundation");
@@ -454,10 +468,19 @@ export class SwiftRenderer extends ConvenienceRenderer {
     };
 
     private getProtocolString = (): Sourcelike => {
-        let protocols: string[] = [];
+        const protocols: string[] = [];
         if (!this._options.justTypes) {
             protocols.push("Codable");
         }
+
+        if (this._options.protocol.hashable) {
+            protocols.push("Hashable");
+        }
+
+        if (this._options.protocol.equatable) {
+            protocols.push("Equatable");
+        }
+
         return protocols.length > 0 ? ": " + protocols.join(", ") : "";
     };
 
@@ -695,14 +718,30 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
     private renderEnumDefinition = (e: EnumType, enumName: Name): void => {
         this.emitDescription(this.descriptionForType(e));
 
+        const protocols: string[] = [];
+        if (!this._options.justTypes) {
+            protocols.push("String"); // Not a protocol
+            protocols.push("Codable");
+        }
+
+        if (this._options.protocol.hashable) {
+            protocols.push("Hashable");
+        }
+
+        if (this._options.protocol.equatable) {
+            protocols.push("Equatable");
+        }
+
+        const protocolString = protocols.length > 0 ? ": " + protocols.join(", ") : "";
+
         if (this._options.justTypes) {
-            this.emitBlockWithAccess(["enum ", enumName], () => {
+            this.emitBlockWithAccess(["enum ", enumName, protocolString], () => {
                 this.forEachEnumCase(e, "none", name => {
                     this.emitLine("case ", name);
                 });
             });
         } else {
-            this.emitBlockWithAccess(["enum ", enumName, ": String, Codable"], () => {
+            this.emitBlockWithAccess(["enum ", enumName, protocolString], () => {
                 this.forEachEnumCase(e, "none", (name, jsonName) => {
                     this.emitLine("case ", name, ' = "', stringEscape(jsonName), '"');
                 });
@@ -827,7 +866,16 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         if (this._needAny || this._needNull) {
             this.emitMark("Encode/decode helpers");
             this.ensureBlankLine();
-            this.emitMultiline(`${this.accessLevel}class JSONNull: Codable {
+            this.emitMultiline(`${this.accessLevel}class JSONNull: Codable, Hashable {
+    
+    public static func == (lhs: JSONNull, rhs: JSONNull) -> Bool {
+        return true
+    }
+                
+    public var hashValue: Int {
+        return 0
+    }
+
     public init() {}
     
     public required init(from decoder: Decoder) throws {

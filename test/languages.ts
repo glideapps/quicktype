@@ -475,7 +475,9 @@ export const SwiftLanguage: Language = {
     { density: "normal" },
     { "url-session": "true" },
     { "access-level": "internal" },
-    { "access-level": "public" }
+    { "access-level": "public" },
+    { "protocol": "equatable" },
+    ["simple-object.json", { "protocol": "hashable" }]
   ],
   sourceFiles: ["src/language/Swift.ts"]
 };
