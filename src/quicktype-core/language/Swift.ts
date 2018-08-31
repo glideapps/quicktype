@@ -451,8 +451,9 @@ export class SwiftRenderer extends ConvenienceRenderer {
             if (this._options.protocol.hashable || this._options.protocol.equatable) {
                 this.emitLine("//");
                 this.emitLine("// Hashable or Equatable:");
-                this.emitLine("// The compiler will not be able to synthesize conformance to Hashable or Equatable");
-                this.emitLine("// for types that require the use of JSONAny.");
+                this.emitLine("// The compiler will not be able to synthesize the implementation of Hashable or Equatable");
+                this.emitLine("// for types that require the use of JSONAny, nor will the implementation of Hashable be");
+                this.emitLine("// synthesized for types that have collections (such as arrays or dictionaries).");
             }
         }
         this.ensureBlankLine();
