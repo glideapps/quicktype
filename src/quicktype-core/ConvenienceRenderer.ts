@@ -624,11 +624,9 @@ export abstract class ConvenienceRenderer extends Renderer {
         } else {
             topLevels = this.topLevels;
         }
-        if (topLevels.size === 0) return false;
-        this.forEachWithBlankLines(topLevels, blankLocations, (t, name, pos) =>
+        return this.forEachWithBlankLines(topLevels, blankLocations, (t, name, pos) =>
             f(t, this.nameStoreView.getForTopLevel(name), pos)
         );
-        return true;
     }
 
     protected forEachDeclaration(

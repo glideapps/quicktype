@@ -224,7 +224,8 @@ export abstract class Renderer {
         interposedBlankLines: number,
         leadingBlankLines: number,
         emitter: (v: V, k: K, position: ForEachPosition) => void
-    ): void {
+    ): boolean {
+        let didEmit = false;
         this.iterableForEach(iterable, ([k, v], position) => {
             if (position === "only" || position === "first") {
                 this.ensureBlankLine(leadingBlankLines);
@@ -232,18 +233,20 @@ export abstract class Renderer {
                 this.ensureBlankLine(interposedBlankLines);
             }
             emitter(v, k, position);
+            didEmit = true;
         });
+        return didEmit;
     }
 
     forEachWithBlankLines<K, V>(
         iterable: Iterable<[K, V]>,
         blankLineConfig: BlankLineConfig,
         emitter: (v: V, k: K, position: ForEachPosition) => void
-    ): void {
+    ): boolean {
         const { position, count } = getBlankLineConfig(blankLineConfig);
         const interposing = ["interposing", "leading-and-interposing"].indexOf(position) >= 0;
         const leading = ["leading", "leading-and-interposing"].indexOf(position) >= 0;
-        this.forEach(iterable, interposing ? count : 0, leading ? count : 0, emitter);
+        return this.forEach(iterable, interposing ? count : 0, leading ? count : 0, emitter);
     }
 
     indent(fn: () => void): void {
