@@ -476,9 +476,8 @@ export const SwiftLanguage: Language = {
     { "url-session": "true" },
     { "access-level": "internal" },
     { "access-level": "public" },
-    { "protocol": "none" },
     { "protocol": "equatable" },
-    { "protocol": "hashable" }
+    ["simple-object.json", { "protocol": "hashable" }]
   ],
   sourceFiles: ["src/language/Swift.ts"]
 };
