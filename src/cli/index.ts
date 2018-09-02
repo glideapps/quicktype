@@ -77,7 +77,7 @@ export interface CLIOptions {
     telemetry?: string;
 
     // We use this to access the inference flags
-    [option: string]: any;
+    [option: string]: unknown;
 }
 
 const defaultDefaultTargetLanguageName: string = "go";
@@ -186,7 +186,7 @@ async function samplesFromDirectory(dataDir: string): Promise<TypeSource[]> {
             return messageError("DriverCannotMixJSONWithOtherSamples", { dir: dir });
         }
 
-        const oneUnlessEmpty = (xs: any[]) => Math.sign(xs.length);
+        const oneUnlessEmpty = (xs: unknown[]) => Math.sign(xs.length);
         if (oneUnlessEmpty(schemaSources) + oneUnlessEmpty(graphQLSources) > 1) {
             return messageError("DriverCannotMixNonJSONInputs", { dir: dir });
         }
@@ -571,7 +571,7 @@ export function parseCLIOptions(argv: string[], targetLanguage?: TargetLanguage)
 // according to each option definition's `renderer` field.  If `partial` is false this
 // will throw if it encounters an unknown option.
 function parseOptions(definitions: OptionDefinition[], argv: string[], partial: boolean): Partial<CLIOptions> {
-    let opts: { [key: string]: any };
+    let opts: { [key: string]: string };
     try {
         opts = commandLineArgs(definitions, { argv, partial });
     } catch (e) {
@@ -579,7 +579,7 @@ function parseOptions(definitions: OptionDefinition[], argv: string[], partial: 
         return messageError("DriverCLIOptionParsingFailed", { message: e.message });
     }
 
-    const options: { rendererOptions: RendererOptions; [key: string]: any } = { rendererOptions: {} };
+    const options: { rendererOptions: RendererOptions; [key: string]: unknown } = { rendererOptions: {} };
     for (const o of definitions) {
         if (!hasOwnProperty(opts, o.name)) continue;
         const v = opts[o.name];
