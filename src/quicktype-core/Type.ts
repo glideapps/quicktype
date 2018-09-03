@@ -27,6 +27,7 @@ import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { TypeAttributes } from "./TypeAttributes";
 import { messageAssert } from "./Messages";
 import { TypeRef, attributesForTypeRef, derefTypeRef, TypeGraph, typeRefIndex } from "./TypeGraph";
+import { uriInferenceAttributesProducer } from "./URIAttributes";
 
 /**
  * `jsonSchema` is the `format` to be used to represent this string type in
@@ -39,6 +40,7 @@ import { TypeRef, attributesForTypeRef, derefTypeRef, TypeGraph, typeRefIndex } 
 export type TransformedStringTypeTargets = {
     jsonSchema: string;
     primitive: PrimitiveNonStringTypeKind | undefined;
+    attributesProducer?: (s: string) => TypeAttributes;
 };
 
 /**
@@ -47,12 +49,12 @@ export type TransformedStringTypeTargets = {
  * primitive types.  Date-time types, for example, stand on their own, but
  * stringified integers map to integers.
  */
-export const transformedStringTypeTargetTypeKinds = {
+const transformedStringTypeTargetTypeKinds = {
     date: { jsonSchema: "date", primitive: undefined },
     time: { jsonSchema: "time", primitive: undefined },
     "date-time": { jsonSchema: "date-time", primitive: undefined },
     uuid: { jsonSchema: "uuid", primitive: undefined },
-    uri: { jsonSchema: "uri", primitive: undefined },
+    uri: { jsonSchema: "uri", primitive: undefined, attributesProducer: uriInferenceAttributesProducer },
     "integer-string": { jsonSchema: "integer", primitive: "integer" } as TransformedStringTypeTargets,
     "bool-string": { jsonSchema: "boolean", primitive: "bool" } as TransformedStringTypeTargets
 };

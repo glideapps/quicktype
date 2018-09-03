@@ -25,6 +25,10 @@ export function isStringMap<T>(x: any, checkValue?: (v: any) => v is T): boolean
     return true;
 }
 
+export function checkString(x: any): x is string {
+    return typeof x === "string";
+}
+
 export function checkStringMap(x: any): StringMap;
 export function checkStringMap<T>(x: any, checkValue: (v: any) => v is T): { [name: string]: T };
 export function checkStringMap<T>(x: any, checkValue?: (v: any) => v is T): StringMap {

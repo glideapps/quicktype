@@ -1,4 +1,4 @@
-import { Type } from "./Type";
+import { Type, TypeKind } from "./Type";
 import { TypeAttributeKind } from "./TypeAttributes";
 import { assert } from "./support/Support";
 import { messageError } from "./Messages";
@@ -19,7 +19,12 @@ function checkMinMaxConstraint(minmax: MinMaxConstraint): MinMaxConstraint {
 }
 
 export class MinMaxConstraintTypeAttributeKind extends TypeAttributeKind<MinMaxConstraint> {
-    constructor(name: string, private _minSchemaProperty: string, private _maxSchemaProperty: string) {
+    constructor(
+        name: string,
+        private _typeKinds: Set<TypeKind>,
+        private _minSchemaProperty: string,
+        private _maxSchemaProperty: string
+    ) {
         super(name);
     }
 
@@ -71,7 +76,9 @@ export class MinMaxConstraintTypeAttributeKind extends TypeAttributeKind<MinMaxC
         return undefined;
     }
 
-    addToSchema(schema: { [name: string]: unknown }, attr: MinMaxConstraint): void {
+    addToSchema(schema: { [name: string]: unknown }, t: Type, attr: MinMaxConstraint): void {
+        if (this._typeKinds.has(t.kind)) return;
+
         const [min, max] = attr;
         if (min !== undefined) {
             schema[this._minSchemaProperty] = min;
@@ -88,12 +95,14 @@ export class MinMaxConstraintTypeAttributeKind extends TypeAttributeKind<MinMaxC
 
 export const minMaxTypeAttributeKind: TypeAttributeKind<MinMaxConstraint> = new MinMaxConstraintTypeAttributeKind(
     "minMax",
+    new Set<TypeKind>(["integer", "double"]),
     "minimum",
     "maximum"
 );
 
 export const minMaxLengthTypeAttributeKind: TypeAttributeKind<MinMaxConstraint> = new MinMaxConstraintTypeAttributeKind(
     "minMaxLength",
+    new Set<TypeKind>(["string"]),
     "minLength",
     "maxLength"
 );
@@ -170,7 +179,8 @@ export class PatternTypeAttributeKind extends TypeAttributeKind<string> {
         return undefined;
     }
 
-    addToSchema(schema: { [name: string]: unknown }, attr: string): void {
+    addToSchema(schema: { [name: string]: unknown }, t: Type, attr: string): void {
+        if (t.kind !== "string") return;
         schema.pattern = attr;
     }
 }

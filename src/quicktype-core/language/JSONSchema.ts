@@ -106,7 +106,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
     private addAttributesToSchema(t: Type, schema: Schema): void {
         const attributes = this.typeGraph.attributeStore.attributesForType(t);
         for (const [kind, attr] of attributes) {
-            kind.addToSchema(schema, attr);
+            kind.addToSchema(schema, t, attr);
         }
     }
 

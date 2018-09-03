@@ -4,7 +4,7 @@ import { addHashCode, hashCodeInit, hashString } from "collection-utils";
 
 import { defined, panic, assert } from "../support/Support";
 import { inferTransformedStringTypeKindForString } from "../StringTypes";
-import { TransformedStringTypeKind, isPrimitiveStringTypeKind } from "../Type";
+import { TransformedStringTypeKind, isPrimitiveStringTypeKind, transformedStringTypeTargetTypeKindsMap } from "../Type";
 import { DateTimeRecognizer } from "../DateTime";
 
 const Combo = require("stream-json/Combo");
@@ -19,6 +19,7 @@ export enum Tag {
     UninternedString,
     Object,
     Array,
+    StringFormat,
     TransformedString
 }
 
@@ -73,7 +74,7 @@ export class CompressedJSON {
     private _objects: Value[][] = [];
     private _arrays: Value[][] = [];
 
-    constructor(private readonly _dateTimeRecognizer: DateTimeRecognizer) {}
+    constructor(readonly dateTimeRecognizer: DateTimeRecognizer) {}
 
     async readFromStream(readStream: stream.Readable): Promise<Value> {
         const combo = new Combo({ packKeys: true, packStrings: true });
@@ -96,9 +97,11 @@ export class CompressedJSON {
         return promise;
     }
 
-    getStringForValue = (v: Value): string => {
-        return this._strings[getIndex(v, Tag.InternedString)];
-    };
+    getStringForValue(v: Value): string {
+        const tag = valueTag(v);
+        assert(tag === Tag.InternedString || tag === Tag.TransformedString);
+        return this._strings[getIndex(v, tag)];
+    }
 
     getObjectForValue = (v: Value): Value[] => {
         return this._objects[getIndex(v, Tag.Object)];
@@ -108,8 +111,8 @@ export class CompressedJSON {
         return this._arrays[getIndex(v, Tag.Array)];
     };
 
-    getTransformedStringTypeKind(v: Value): TransformedStringTypeKind {
-        const kind = this._strings[getIndex(v, Tag.TransformedString)];
+    getStringFormatTypeKind(v: Value): TransformedStringTypeKind {
+        const kind = this._strings[getIndex(v, Tag.StringFormat)];
         if (!isPrimitiveStringTypeKind(kind) || kind === "string") {
             return panic("Not a transformed string type kind");
         }
@@ -226,9 +229,13 @@ export class CompressedJSON {
 
     protected handleStringValue(s: string): void {
         let value: Value | undefined = undefined;
-        const format = inferTransformedStringTypeKindForString(s, this._dateTimeRecognizer);
+        const format = inferTransformedStringTypeKindForString(s, this.dateTimeRecognizer);
         if (format !== undefined) {
-            value = makeValue(Tag.TransformedString, this.internString(format));
+            if (defined(transformedStringTypeTargetTypeKindsMap.get(format)).attributesProducer !== undefined) {
+                value = makeValue(Tag.TransformedString, this.internString(s));
+            } else {
+                value = makeValue(Tag.StringFormat, this.internString(format));
+            }
         } else if (s.length <= 64) {
             value = this.makeString(s);
         } else {
