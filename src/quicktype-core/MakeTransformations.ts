@@ -1,4 +1,4 @@
-import { setFilter, iterableFirst, mapMapEntries, withDefault, iterableSome } from "collection-utils";
+import { setFilter, iterableFirst, mapMapEntries, withDefault, iterableSome, arraySortByInto } from "collection-utils";
 
 import { TypeGraph, TypeRef, typeRefIndex } from "./TypeGraph";
 import { TargetLanguage } from "./TargetLanguage";
@@ -146,22 +146,18 @@ function replaceUnion(
         }
     }
 
-    const stringTypes = union.stringTypeMembers;
+    const stringTypes = arraySortByInto(Array.from(union.stringTypeMembers), t => t.kind);
     let transformerForString: Transformer | undefined;
-    if (stringTypes.size === 0) {
+    if (stringTypes.length === 0) {
         transformerForString = undefined;
-    } else if (stringTypes.size === 1) {
-        const t = defined(iterableFirst(stringTypes));
+    } else if (stringTypes.length === 1) {
+        const t = stringTypes[0];
         transformerForString = new DecodingTransformer(graph, getStringType(), transformerForStringType(t));
     } else {
         transformerForString = new DecodingTransformer(
             graph,
             getStringType(),
-            new ChoiceTransformer(
-                graph,
-                getStringType(),
-                Array.from(stringTypes).map(t => defined(transformerForStringType(t)))
-            )
+            new ChoiceTransformer(graph, getStringType(), stringTypes.map(t => defined(transformerForStringType(t))))
         );
     }
 
