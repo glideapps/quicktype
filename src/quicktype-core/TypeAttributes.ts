@@ -27,7 +27,7 @@ export class TypeAttributeKind<T> {
         return attrs;
     }
 
-    addToSchema(_schema: { [name: string]: unknown }, _attrs: T): void {
+    addToSchema(_schema: { [name: string]: unknown }, _t: Type, _attrs: T): void {
         return;
     }
 

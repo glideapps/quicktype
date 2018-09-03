@@ -11,6 +11,7 @@ import {
 import { TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
 import { JSONSchemaType, Ref, JSONSchemaAttributes, PathElementKind, PathElement } from "./input/JSONSchemaInput";
 import { JSONSchema } from "./input/JSONSchemaStore";
+import { Type } from "./Type";
 
 export function addDescriptionToSchema(
     schema: { [name: string]: unknown },
@@ -33,7 +34,7 @@ class DescriptionTypeAttributeKind extends TypeAttributeKind<ReadonlySet<string>
         return undefined;
     }
 
-    addToSchema(schema: { [name: string]: unknown }, attrs: ReadonlySet<string>): void {
+    addToSchema(schema: { [name: string]: unknown }, _t: Type, attrs: ReadonlySet<string>): void {
         addDescriptionToSchema(schema, attrs);
     }
 

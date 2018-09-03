@@ -1,10 +1,10 @@
 import { Value, Tag, valueTag, CompressedJSON } from "./CompressedJSON";
-import { assertNever } from "../support/Support";
+import { assertNever, defined, panic } from "../support/Support";
 import { TypeBuilder } from "../TypeBuilder";
 import { UnionBuilder, UnionAccumulator } from "../UnionBuilder";
-import { ClassProperty } from "../Type";
+import { ClassProperty, transformedStringTypeTargetTypeKindsMap } from "../Type";
 import { TypeAttributes, emptyTypeAttributes } from "../TypeAttributes";
-import { StringTypes } from "../StringTypes";
+import { StringTypes, inferTransformedStringTypeKindForString } from "../StringTypes";
 import { TypeRef } from "../TypeGraph";
 
 // This should be the recursive type
@@ -114,14 +114,28 @@ export class TypeInference {
                 case Tag.Array:
                     accumulator.addArray(this._cjson.getArrayForValue(value), emptyTypeAttributes);
                     break;
-                case Tag.TransformedString:
-                    const kind = this._cjson.getTransformedStringTypeKind(value);
+                case Tag.StringFormat: {
+                    const kind = this._cjson.getStringFormatTypeKind(value);
                     accumulator.addStringType(
                         "string",
                         emptyTypeAttributes,
                         new StringTypes(new Map(), new Set([kind]))
                     );
                     break;
+                }
+                case Tag.TransformedString: {
+                    const s = this._cjson.getStringForValue(value);
+                    const kind = inferTransformedStringTypeKindForString(s, this._cjson.dateTimeRecognizer);
+                    if (kind === undefined) {
+                        return panic("TransformedString does not have a kind");
+                    }
+                    const producer = defined(transformedStringTypeTargetTypeKindsMap.get(kind)).attributesProducer;
+                    if (producer === undefined) {
+                        return panic("TransformedString does not have attribute producer");
+                    }
+                    accumulator.addStringType("string", producer(s), new StringTypes(new Map(), new Set([kind])));
+                    break;
+                }
                 default:
                     return assertNever(t);
             }
