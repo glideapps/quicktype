@@ -14,12 +14,9 @@ import {
 } from "../support/Strings";
 import { defined, panic } from "../support/Support";
 import { StringTypeMapping, getNoStringTypeMapping } from "../TypeBuilder";
-import { descriptionTypeAttributeKind } from "../Description";
+import { addDescriptionToSchema } from "../Description";
 import { Option } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
-import { minMaxTypeAttributeKind } from "../Constraints";
-import { minMaxLengthTypeAttributeKind } from "../Constraints";
-import { patternTypeAttributeKind } from "../Constraints";
 
 export class JSONSchemaTargetLanguage extends TargetLanguage {
     constructor() {
@@ -70,11 +67,6 @@ function jsonNameStyle(original: string): string {
 
 type Schema = { [name: string]: any };
 
-function addDescription(schema: Schema, description: Iterable<string> | undefined): void {
-    if (description === undefined) return;
-    schema.description = Array.from(description).join("\n");
-}
-
 export class JSONSchemaRenderer extends ConvenienceRenderer {
     protected makeNamedTypeNamer(): Namer {
         return namingFunction;
@@ -111,37 +103,10 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
         return { $ref: `#/definitions/${this.nameForType(t)}` };
     }
 
-    private addDescription(t: Type, schema: Schema): void {
-        const description = this.typeGraph.attributeStore.tryGet(descriptionTypeAttributeKind, t);
-        addDescription(schema, description);
-    }
-
-    private addConstraints(t: Type, schema: Schema): void {
-        const minmax = this.typeGraph.attributeStore.tryGet(minMaxTypeAttributeKind, t);
-        if (minmax !== undefined) {
-            const [min, max] = minmax;
-            if (min !== undefined) {
-                schema.minimum = min;
-            }
-            if (max !== undefined) {
-                schema.maximum = max;
-            }
-        }
-
-        const minmaxlen = this.typeGraph.attributeStore.tryGet(minMaxLengthTypeAttributeKind, t);
-        if (minmaxlen !== undefined) {
-            const [minl, maxl] = minmaxlen;
-            if (minl !== undefined) {
-                schema.minLength = minl;
-            }
-            if (maxl !== undefined) {
-                schema.maxLength = maxl;
-            }
-        }
-
-        const patt = this.typeGraph.attributeStore.tryGet(patternTypeAttributeKind, t);
-        if (patt !== undefined) {
-            schema.pattern = patt;
+    private addAttributesToSchema(t: Type, schema: Schema): void {
+        const attributes = this.typeGraph.attributeStore.attributesForType(t);
+        for (const [kind, attr] of attributes) {
+            kind.addToSchema(schema, attr);
         }
     }
 
@@ -178,8 +143,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
             }
         );
         if (schema.$ref === undefined) {
-            this.addDescription(t, schema);
-            this.addConstraints(t, schema);
+            this.addAttributesToSchema(t, schema);
         }
         return schema;
     };
@@ -196,7 +160,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
             for (const [name, p] of o.getProperties()) {
                 const prop = this.schemaForType(p.type);
                 if (prop.description === undefined) {
-                    addDescription(prop, this.descriptionForClassProperty(o, name));
+                    addDescriptionToSchema(prop, this.descriptionForClassProperty(o, name));
                 }
                 props[name] = prop;
                 if (!p.isOptional) {
@@ -215,7 +179,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
             required,
             title
         };
-        this.addDescription(o, schema);
+        this.addAttributesToSchema(o, schema);
         return schema;
     }
 
@@ -224,13 +188,13 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
         if (title !== undefined) {
             oneOf.title = title;
         }
-        this.addDescription(u, oneOf);
+        this.addAttributesToSchema(u, oneOf);
         return oneOf;
     }
 
     private definitionForEnum(e: EnumType, title: string): Schema {
         const schema = { type: "string", enum: Array.from(e.cases), title };
-        this.addDescription(e, schema);
+        this.addAttributesToSchema(e, schema);
         return schema;
     }
 

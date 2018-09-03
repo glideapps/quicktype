@@ -27,6 +27,10 @@ export class TypeAttributeKind<T> {
         return attrs;
     }
 
+    addToSchema(_schema: { [name: string]: unknown }, _attrs: T): void {
+        return;
+    }
+
     children(_: T): ReadonlySet<Type> {
         return new Set();
     }

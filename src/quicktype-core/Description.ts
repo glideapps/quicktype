@@ -12,6 +12,14 @@ import { TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
 import { JSONSchemaType, Ref, JSONSchemaAttributes, PathElementKind, PathElement } from "./input/JSONSchemaInput";
 import { JSONSchema } from "./input/JSONSchemaStore";
 
+export function addDescriptionToSchema(
+    schema: { [name: string]: unknown },
+    description: Iterable<string> | undefined
+): void {
+    if (description === undefined) return;
+    schema.description = Array.from(description).join("\n");
+}
+
 class DescriptionTypeAttributeKind extends TypeAttributeKind<ReadonlySet<string>> {
     constructor() {
         super("description");
@@ -23,6 +31,10 @@ class DescriptionTypeAttributeKind extends TypeAttributeKind<ReadonlySet<string>
 
     makeInferred(_: ReadonlySet<string>): undefined {
         return undefined;
+    }
+
+    addToSchema(schema: { [name: string]: unknown }, attrs: ReadonlySet<string>): void {
+        addDescriptionToSchema(schema, attrs);
     }
 
     stringify(descriptions: ReadonlySet<string>): string | undefined {

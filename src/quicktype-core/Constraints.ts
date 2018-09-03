@@ -19,6 +19,10 @@ function checkMinMaxConstraint(minmax: MinMaxConstraint): MinMaxConstraint {
 }
 
 export class MinMaxConstraintTypeAttributeKind extends TypeAttributeKind<MinMaxConstraint> {
+    constructor(name: string, private _minSchemaProperty: string, private _maxSchemaProperty: string) {
+        super(name);
+    }
+
     get inIdentity(): boolean {
         return true;
     }
@@ -67,24 +71,34 @@ export class MinMaxConstraintTypeAttributeKind extends TypeAttributeKind<MinMaxC
         return undefined;
     }
 
+    addToSchema(schema: { [name: string]: unknown }, attr: MinMaxConstraint): void {
+        const [min, max] = attr;
+        if (min !== undefined) {
+            schema[this._minSchemaProperty] = min;
+        }
+        if (max !== undefined) {
+            schema[this._maxSchemaProperty] = max;
+        }
+    }
+
     stringify([min, max]: MinMaxConstraint): string {
         return `${min}-${max}`;
     }
 }
 
 export const minMaxTypeAttributeKind: TypeAttributeKind<MinMaxConstraint> = new MinMaxConstraintTypeAttributeKind(
-    "minMax"
+    "minMax",
+    "minimum",
+    "maximum"
 );
 
 export const minMaxLengthTypeAttributeKind: TypeAttributeKind<MinMaxConstraint> = new MinMaxConstraintTypeAttributeKind(
-    "minMaxLength"
+    "minMaxLength",
+    "minLength",
+    "maxLength"
 );
 
-function producer(
-    schema: JSONSchema,
-    minProperty: string,
-    maxProperty: string
-): MinMaxConstraint | undefined {
+function producer(schema: JSONSchema, minProperty: string, maxProperty: string): MinMaxConstraint | undefined {
     if (!(typeof schema === "object")) return undefined;
 
     let min: number | undefined = undefined;
@@ -154,6 +168,10 @@ export class PatternTypeAttributeKind extends TypeAttributeKind<string> {
 
     makeInferred(_: string): undefined {
         return undefined;
+    }
+
+    addToSchema(schema: { [name: string]: unknown }, attr: string): void {
+        schema.pattern = attr;
     }
 }
 
