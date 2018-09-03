@@ -183,6 +183,15 @@ function isUUID(s: string): boolean {
     return s.match(UUID) !== null;
 }
 
+// FIXME: This is obviously not a complete URI regex.  The exclusion of
+// `{}` is a hack to make `github-events.json` work, which contains URLs
+// with those characters which ajv refuses to accept as `uri`.
+const URI = /^(https?|ftp):\/\/[^{}]+$/;
+
+function isURI(s: string): boolean {
+    return s.match(URI) !== null;
+}
+
 /**
  * JSON inference calls this function to figure out whether a given string is to be
  * transformed into a higher level type.  Must return undefined if not, otherwise the
@@ -194,7 +203,7 @@ export function inferTransformedStringTypeKindForString(
     s: string,
     recognizer: DateTimeRecognizer
 ): TransformedStringTypeKind | undefined {
-    if (s.length === 0 || "0123456789-abcdeft".indexOf(s[0]) < 0) return undefined;
+    if (s.length === 0 || "0123456789-abcdefth".indexOf(s[0]) < 0) return undefined;
 
     if (recognizer.isDate(s)) {
         return "date";
@@ -208,6 +217,8 @@ export function inferTransformedStringTypeKindForString(
         return "bool-string";
     } else if (isUUID(s)) {
         return "uuid";
+    } else if (isURI(s)) {
+        return "uri";
     }
     return undefined;
 }
