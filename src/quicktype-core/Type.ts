@@ -52,6 +52,7 @@ export const transformedStringTypeTargetTypeKinds = {
     time: { jsonSchema: "time", primitive: undefined },
     "date-time": { jsonSchema: "date-time", primitive: undefined },
     uuid: { jsonSchema: "uuid", primitive: undefined },
+    uri: { jsonSchema: "uri", primitive: undefined },
     "integer-string": { jsonSchema: "integer", primitive: "integer" } as TransformedStringTypeTargets,
     "bool-string": { jsonSchema: "boolean", primitive: "bool" } as TransformedStringTypeTargets
 };
