@@ -93,13 +93,16 @@ function alwaysApplyTransformation(xf: Transformation): boolean {
  * The C# type for a given transformed string type.
  */
 function csTypeForTransformedStringType(t: PrimitiveType): Sourcelike {
-    if (t.kind === "date-time") {
-        return "DateTimeOffset";
+    switch (t.kind) {
+        case "date-time":
+            return "DateTimeOffset";
+        case "uuid":
+            return "Guid";
+        case "uri":
+            return "Uri";
+        default:
+            return panic(`Transformed string type ${t.kind} not supported`);
     }
-    if (t.kind === "uuid") {
-        return "Guid";
-    }
-    return panic(`Transformed string type ${t.kind} not supported`);
 }
 
 export const cSharpOptions = {
@@ -142,6 +145,7 @@ export class CSharpTargetLanguage extends TargetLanguage {
         mapping.set("time", "date-time");
         mapping.set("date-time", "date-time");
         mapping.set("uuid", "uuid");
+        mapping.set("uri", "uri");
         mapping.set("integer-string", "integer-string");
         mapping.set("bool-string", "bool-string");
         return mapping;
@@ -220,7 +224,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
-        return ["QuickType", "Type", "System", "Console", "Exception", "DateTimeOffset", "Guid"];
+        return ["QuickType", "Type", "System", "Console", "Exception", "DateTimeOffset", "Guid", "Uri"];
     }
 
     protected forbiddenForObjectProperties(_: ClassType, classNamed: Name): ForbiddenWordsInfo {
@@ -1157,6 +1161,14 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                     this.emitLine("if (Guid.TryParse(", variable, ", out guid))");
                     this.emitBlock(() => this.emitConsume("guid", xfer.consumer, targetType, emitFinish));
                     break;
+                case "uri":
+                    this.emitLine("try");
+                    this.emitBlock(() => {
+                        this.emitLine("var uri = new Uri(", variable, ");");
+                        this.emitConsume("uri", xfer.consumer, targetType, emitFinish);
+                    });
+                    this.emitLine("catch (UriFormatException) {}");
+                    break;
                 case "integer":
                     this.emitLine("long l;");
                     this.emitLine("if (Int64.TryParse(", variable, ", out l))");
@@ -1187,6 +1199,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                         emitFinish
                     );
                 case "integer":
+                case "uri":
                     return this.emitConsume([variable, ".ToString()"], xfer.consumer, targetType, emitFinish);
                 case "bool":
                     this.emitLine("var boolString = ", variable, ' ? "true" : "false";');
