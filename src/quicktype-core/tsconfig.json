@@ -6,9 +6,9 @@
         "allowJs": false,
         "declaration": true,
         "strict": true,
-        "alwaysStrict": true,
         "outDir": "dist",
         "noUnusedLocals": true,
-        "noUnusedParameters": true
+        "noUnusedParameters": true,
+        "noFallthroughCasesInSwitch": true
     }
 }

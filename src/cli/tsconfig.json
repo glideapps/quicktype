@@ -7,10 +7,10 @@
         "declaration": true,
         "typeRoots": ["../../node_modules/@types"],
         "strict": true,
-        "alwaysStrict": true,
-        "outDir": "../../dist",
         "noUnusedLocals": true,
         "noUnusedParameters": true,
+        "noFallthroughCasesInSwitch": true,
+        "outDir": "../../dist",
         "baseUrl": ".",
         "paths": {
             "quicktype-core": ["../quicktype-core"]
