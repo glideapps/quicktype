@@ -43,7 +43,7 @@ export const CSharpLanguage: Language = {
     return `dotnet run "${sample}"`;
   },
   diffViaSchema: true,
-  skipDiffViaSchema: ["34702.json"],
+  skipDiffViaSchema: ["34702.json", "437e7.json"],
   allowMissingNull: false,
   features: [
     "enum",
@@ -423,6 +423,7 @@ export const SwiftLanguage: Language = {
     "0cffa.json", // date-time issues
     "127a1.json", // date-time issues
     "26b49.json", // date-time issues
+    "26c9c.json", // uri/string confusion
     "32d5c.json", // date-time issues
     "337ed.json",
     "34702.json",
@@ -476,8 +477,8 @@ export const SwiftLanguage: Language = {
     { "url-session": "true" },
     { "access-level": "internal" },
     { "access-level": "public" },
-    { "protocol": "equatable" },
-    ["simple-object.json", { "protocol": "hashable" }]
+    { protocol: "equatable" },
+    ["simple-object.json", { protocol: "hashable" }]
   ],
   sourceFiles: ["src/language/Swift.ts"]
 };

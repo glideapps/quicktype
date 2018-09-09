@@ -427,6 +427,7 @@ class JSONSchemaJSONFixture extends JSONToXToYFixture {
     const skipJSON = [
       "blns-object.json", // AJV refuses to even "compile" the schema we generate
       "31189.json", // same here
+      "437e7.json", // uri/string confusion
       "ed095.json" // same here on Travis
     ];
     super("schema-json", "schema", "schema.json", {}, skipJSON, language);

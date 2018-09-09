@@ -12,23 +12,22 @@ import { Type } from "./Type";
 const protocolsSchemaProperty = "qt-uri-protocols";
 const extensionsSchemaProperty = "qt-uri-extensions";
 
-type URIAttributes = {
-    protocols: ReadonlySet<string>;
-    extensions: ReadonlySet<string>;
-};
+// protocols, extensions
+type URIAttributes = [ReadonlySet<string>, ReadonlySet<string>];
 
 class URITypeAttributeKind extends TypeAttributeKind<URIAttributes> {
     constructor() {
         super("uriAttributes");
     }
 
+    get inIdentity(): boolean {
+        return true;
+    }
+
     combine(attrs: URIAttributes[]): URIAttributes {
-        const schemaSets = attrs.map(a => a.protocols);
-        const extensionSets = attrs.map(a => a.extensions);
-        return {
-            protocols: setUnionManyInto(new Set(), schemaSets),
-            extensions: setUnionManyInto(new Set(), extensionSets)
-        };
+        const protocolSets = attrs.map(a => a[0]);
+        const extensionSets = attrs.map(a => a[1]);
+        return [setUnionManyInto(new Set(), protocolSets), setUnionManyInto(new Set(), extensionSets)];
     }
 
     makeInferred(_: URIAttributes): undefined {
@@ -36,13 +35,14 @@ class URITypeAttributeKind extends TypeAttributeKind<URIAttributes> {
     }
 
     addToSchema(schema: { [name: string]: unknown }, t: Type, attrs: URIAttributes): void {
-        if (t.kind !== "string") return;
+        if (t.kind !== "string" && t.kind !== "uri") return;
 
-        if (attrs.protocols.size > 0) {
-            schema[protocolsSchemaProperty] = Array.from(attrs.protocols).sort();
+        const [protocols, extensions] = attrs;
+        if (protocols.size > 0) {
+            schema[protocolsSchemaProperty] = Array.from(protocols).sort();
         }
-        if (attrs.extensions.size > 0) {
-            schema[extensionsSchemaProperty] = Array.from(attrs.extensions).sort();
+        if (extensions.size > 0) {
+            schema[extensionsSchemaProperty] = Array.from(extensions).sort();
         }
     }
 }
@@ -54,10 +54,7 @@ export function uriInferenceAttributesProducer(s: string): TypeAttributes {
         const uri = URI.parse(s);
         const extension = path.extname(uri.path).toLowerCase();
         const extensions = extension === "" ? [] : [extension];
-        return uriTypeAttributeKind.makeAttributes({
-            protocols: new Set([uri.protocol.toLowerCase()]),
-            extensions: new Set(extensions)
-        });
+        return uriTypeAttributeKind.makeAttributes([new Set([uri.protocol.toLowerCase()]), new Set(extensions)]);
     } catch {
         return emptyTypeAttributes;
     }
@@ -89,5 +86,5 @@ export function uriSchemaAttributesProducer(
 
     if (protocols.size === 0 && extensions.size === 0) return undefined;
 
-    return { forString: uriTypeAttributeKind.makeAttributes({ protocols, extensions }) };
+    return { forString: uriTypeAttributeKind.makeAttributes([protocols, extensions]) };
 }
