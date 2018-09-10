@@ -14,7 +14,7 @@ export async function readableFromFileOrURL(fileOrURL: string): Promise<Readable
             const response = await fetch(fileOrURL);
             return response.body;
         } else if (fs.existsSync(fileOrURL)) {
-            return fs.createReadStream(fileOrURL);
+            return fs.createReadStream(fileOrURL, "utf8");
         }
     } catch (e) {
         const message = typeof e.message === "string" ? e.message : "Unknown error";
