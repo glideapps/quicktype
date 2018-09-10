@@ -110,6 +110,10 @@ export function inflateBase64(encoded: string): string {
 
 export function parseJSON(text: string, description: string, address: string = "<unknown>"): any {
     try {
+        // https://gist.github.com/pbakondy/f5045eff725193dad9c7
+        if (text.charCodeAt(0) === 0xfeff) {
+            text = text.slice(1);
+        }
         return JSON.parse(text);
     } catch (e) {
         let message: string;
