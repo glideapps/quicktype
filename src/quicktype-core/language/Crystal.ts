@@ -385,17 +385,18 @@ export class CrystalRenderer extends ConvenienceRenderer {
             return;
         }
 
-        const topLevelName = defined(iterableFirst(this.topLevels.keys()));
+        const topLevel = defined(mapFirst(this.topLevels));
+        const name = this.sourcelikeToString(this.nameForNamedType(topLevel));
         this.emitMultiline(
             `# Example code that deserializes and serializes the model.
-# class ${topLevelName}
+# class ${name}
 #   include JSON::Serializable
 #
 #   @[JSON::Field(key: "answer")]
 #   property answer : Int32
 # end
 #
-# ${topLevelName}.from_json(%({"answer": 42}))
+# ${name}.from_json(%({"answer": 42}))
 `
         );
     }
