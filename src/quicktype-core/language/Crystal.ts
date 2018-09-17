@@ -1,4 +1,4 @@
-import { iterableFirst } from "collection-utils";
+import { mapFirst } from "collection-utils";
 
 import { TargetLanguage } from "../TargetLanguage";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
