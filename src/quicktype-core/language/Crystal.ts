@@ -1,5 +1,3 @@
-import { mapFirst } from "collection-utils";
-
 import { TargetLanguage } from "../TargetLanguage";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import {
@@ -22,7 +20,6 @@ import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils"
 import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { Option } from "../RendererOptions";
-import { defined } from "../support/Support";
 import { RenderContext } from "../Renderer";
 
 export class CrystalTargetLanguage extends TargetLanguage {
@@ -387,18 +384,30 @@ export class CrystalRenderer extends ConvenienceRenderer {
             return;
         }
 
-        const topLevel = defined(mapFirst(this.topLevels));
-        const name = this.sourcelikeToString(this.nameForNamedType(topLevel));
         this.emitMultiline(
-            `# Example code that deserializes and serializes the model.
-# class ${name}
+            `# Example code that deserializes and serializes the model:
+#
+# require "json"
+#
+# class Location
 #   include JSON::Serializable
 #
-#   @[JSON::Field(key: "answer")]
-#   property answer : Int32
+#   @[JSON::Field(key: "lat")]
+#   property latitude : Float64
+#
+#   @[JSON::Field(key: "lng")]
+#   property longitude : Float64
 # end
 #
-# ${name}.from_json(%({"answer": 42}))
+# class House
+#   include JSON::Serializable
+#   property address : String
+#   property location : Location?
+# end
+#
+# house = House.from_json(%({"address": "Crystal Road 1234", "location": {"lat": 12.3, "lng": 34.5}}))
+# house.address  # => "Crystal Road 1234"
+# house.location # => #<Location:0x10cd93d80 @latitude=12.3, @longitude=34.5>
 `
         );
     }
