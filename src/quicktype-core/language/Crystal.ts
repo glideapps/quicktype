@@ -1,4 +1,4 @@
-import { mapFirst } from "collection-utils";
+import { iterableFirst } from "collection-utils";
 
 import { TargetLanguage } from "../TargetLanguage";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
@@ -385,7 +385,7 @@ export class CrystalRenderer extends ConvenienceRenderer {
             return;
         }
 
-        const topLevelName = defined(mapFirst(this.topLevels));
+        const topLevelName = defined(iterableFirst(this.topLevels.keys()));
         this.emitMultiline(
             `# Example code that deserializes and serializes the model.
 # class ${topLevelName}
