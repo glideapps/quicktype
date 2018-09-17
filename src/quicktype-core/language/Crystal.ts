@@ -327,6 +327,7 @@ export class CrystalRenderer extends ConvenienceRenderer {
 
         const structBody = () =>
             this.forEachClassProperty(c, "none", (name, jsonName, prop) => {
+                this.ensureBlankLine();
                 this.emitDescription(this.descriptionForClassProperty(c, jsonName));
                 this.emitRenameAttribute(name, jsonName);
                 this.emitLine("property ", name, " : ", this.crystalType(prop.type, true));
@@ -362,17 +363,18 @@ export class CrystalRenderer extends ConvenienceRenderer {
 
         const [, nonNulls] = removeNullFromUnion(u);
 
-        let count = nonNulls.size;
-
         let types: Sourcelike[][] = [];
-        this.emitLine(["alias ", unionName, " = "]);
-        this.forEachUnionMember(u, nonNulls, "none", null, (_fieldName, t) => {
-            const last = --count === 0;
-            const blanksOrPipe = last ? "" : " |";
+        this.forEachUnionMember(u, nonNulls, "none", null, (_name, t) => {
             const crystalType = this.breakCycle(t, true);
-            this.emitLine([crystalType, blanksOrPipe]);
-            types.push(crystalType);
+            types.push([crystalType]);
         });
+
+        this.emitLine([
+            "alias ",
+            unionName,
+            " = ",
+            types.map(r => r.map(sl => this.sourcelikeToString(sl))).join(" | ")
+        ]);
     }
 
     protected emitTopLevelAlias(t: Type, name: Name): void {
