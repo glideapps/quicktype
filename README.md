@@ -174,6 +174,7 @@ files, URLs, or add other options.
 
 `quicktype` has many complex test dependencies:
 
+-   `crystal` compiler
 -   `dotnetcore` SDK
 -   Java, Maven
 -   `elm` tools

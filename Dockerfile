@@ -22,7 +22,7 @@ ENV PATH="${workdir}/swift-4.1.3-RELEASE-ubuntu16.04/usr/bin:${PATH}"
 RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
 
 # Add .NET core package sources
-RUN curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg  
+RUN curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
 RUN mv microsoft.gpg /etc/apt/trusted.gpg.d/microsoft.gpg
 RUN sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-ubuntu-xenial-prod xenial main" > /etc/apt/sources.list.d/dotnetdev.list'
 
@@ -64,6 +64,12 @@ RUN sh -c 'curl https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key 
 RUN sh -c 'curl https://storage.googleapis.com/download.dartlang.org/linux/debian/dart_stable.list > /etc/apt/sources.list.d/dart_stable.list'
 RUN apt-get update
 RUN apt-get install dart
+
+# Crystal
+RUN curl -sL "https://keybase.io/crystal/pgp_keys.asc" | apt-key add -
+RUN echo "deb https://dist.crystal-lang.org/apt crystal main" | tee /etc/apt/sources.list.d/crystal.list
+RUN apt-get update
+RUN apt-get install crystal --assume-yes
 
 ENV PATH="${workdir}/node_modules/.bin:${PATH}"
 

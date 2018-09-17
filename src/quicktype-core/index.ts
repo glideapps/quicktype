@@ -71,3 +71,4 @@ export { ElmTargetLanguage, ElmRenderer } from "./language/Elm";
 export { JSONSchemaTargetLanguage, JSONSchemaRenderer } from "./language/JSONSchema";
 export { RustTargetLanguage, RustRenderer } from "./language/Rust";
 export { RubyTargetLanguage, RubyRenderer } from "./language/ruby";
+export { CrystalTargetLanguage, CrystalRenderer } from "./language/Crystal";
