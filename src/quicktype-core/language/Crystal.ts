@@ -282,7 +282,7 @@ export class CrystalRenderer extends ConvenienceRenderer {
     private crystalType = (t: Type, withIssues: boolean = false): Sourcelike => {
         return matchType<Sourcelike>(
             t,
-            _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "JSON::Any"),
+            _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "JSON::Any?"),
             _nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "Nil"),
             _boolType => "Bool",
             _integerType => "Int32",

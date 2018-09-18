@@ -208,9 +208,9 @@ export const CrystalLanguage: Language = {
     "e8b04.json"
   ],
   skipSchema: [
-    "enum-with-null.schema",
+    // Crystal does not handle enum mapping
     "enum.schema",
-    "optional-any.schema",
+    // Crystal does not support top-level primitives
     "top-level-enum.schema",
     "keyword-unions.schema"
   ],
