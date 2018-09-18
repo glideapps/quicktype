@@ -179,21 +179,19 @@ const keywords = [
     "yield"
 ];
 
-const isAsciiLetterOrUnderscoreOrDigit = (codePoint: number): boolean => {
+function isAsciiLetterOrUnderscoreOrDigit(codePoint: number): boolean {
     if (!isAscii(codePoint)) {
         return false;
     }
-
     return isLetterOrUnderscoreOrDigit(codePoint);
-};
+}
 
-const isAsciiLetterOrUnderscore = (codePoint: number): boolean => {
+function isAsciiLetterOrUnderscore(codePoint: number): boolean {
     if (!isAscii(codePoint)) {
         return false;
     }
-
     return isLetterOrUnderscore(codePoint);
-};
+}
 
 const legalizeName = legalizeCharacters(isAsciiLetterOrUnderscoreOrDigit);
 
@@ -219,13 +217,13 @@ function crystalStyle(original: string, isSnakeCase: boolean): string {
 const snakeNamingFunction = funPrefixNamer("default", (original: string) => crystalStyle(original, true));
 const camelNamingFunction = funPrefixNamer("camel", (original: string) => crystalStyle(original, false));
 
-const standardUnicodeCrystalEscape = (codePoint: number): string => {
+function standardUnicodeCrystalEscape(codePoint: number): string {
     if (codePoint <= 0xffff) {
         return "\\u{" + intToHex(codePoint, 4) + "}";
     } else {
         return "\\u{" + intToHex(codePoint, 6) + "}";
     }
-};
+}
 
 const crystalStringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, standardUnicodeCrystalEscape));
 
@@ -270,16 +268,16 @@ export class CrystalRenderer extends ConvenienceRenderer {
         return "# ";
     }
 
-    private nullableCrystalType = (t: Type, withIssues: boolean): Sourcelike => {
+    private nullableCrystalType(t: Type, withIssues: boolean): Sourcelike {
         return [this.crystalType(t, withIssues), "?"];
-    };
+    }
 
     protected isImplicitCycleBreaker(t: Type): boolean {
         const kind = t.kind;
         return kind === "array" || kind === "map";
     }
 
-    private crystalType = (t: Type, withIssues: boolean = false): Sourcelike => {
+    private crystalType(t: Type, withIssues: boolean = false): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "JSON::Any?"),
@@ -304,12 +302,11 @@ export class CrystalRenderer extends ConvenienceRenderer {
                 return hasNull !== null ? ([name, "?"] as Sourcelike) : name;
             }
         );
-    };
+    }
 
-    private breakCycle = (t: Type, withIssues: boolean): Sourcelike => {
-        const crystalType = this.crystalType(t, withIssues);
-        return crystalType;
-    };
+    private breakCycle(t: Type, withIssues: boolean): Sourcelike {
+        return this.crystalType(t, withIssues);
+    }
 
     private emitRenameAttribute(propName: Name, jsonName: string): void {
         const escapedName = crystalStringEscape(jsonName);
