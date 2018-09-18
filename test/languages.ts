@@ -207,7 +207,13 @@ export const CrystalLanguage: Language = {
     "68c30.json",
     "e8b04.json"
   ],
-  skipSchema: [],
+  skipSchema: [
+    "enum-with-null.schema",
+    "enum.schema",
+    "optional-any.schema",
+    "top-level-enum.schema",
+    "keyword-unions.schema"
+  ],
   skipMiscJSON: false,
   rendererOptions: {},
   quickTestRendererOptions: [],
