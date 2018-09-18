@@ -28,7 +28,7 @@ export class CrystalTargetLanguage extends TargetLanguage {
     }
 
     constructor() {
-        super("crystal", ["crystal", "cr", "crystallang"], "cr");
+        super("Crystal", ["crystal", "cr", "crystallang"], "cr");
     }
 
     protected get defaultIndentation(): string {
