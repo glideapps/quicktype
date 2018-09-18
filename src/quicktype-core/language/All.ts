@@ -14,6 +14,7 @@ import { KotlinTargetLanguage } from "./Kotlin";
 import { ElmTargetLanguage } from "./Elm";
 import { JSONSchemaTargetLanguage } from "./JSONSchema";
 import { RustTargetLanguage } from "./Rust";
+import { CrystalTargetLanguage } from "./Crystal";
 import { RubyTargetLanguage } from "./ruby";
 import { DartTargetLanguage } from "./Dart";
 import { PythonTargetLanguage } from "./Python";
@@ -22,6 +23,7 @@ export const all: TargetLanguage[] = [
     new NewtonsoftCSharpTargetLanguage(),
     new GoTargetLanguage(),
     new RustTargetLanguage(),
+    new CrystalTargetLanguage(),
     new CPlusPlusTargetLanguage(),
     new ObjectiveCTargetLanguage(),
     new JavaTargetLanguage(),

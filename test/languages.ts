@@ -181,6 +181,45 @@ export const RustLanguage: Language = {
   sourceFiles: ["src/language/Rust.ts"]
 };
 
+export const CrystalLanguage: Language = {
+  name: "crystal",
+  base: "test/fixtures/crystal",
+  compileCommand: "crystal build -o quicktype main.cr",
+  runCommand(sample: string) {
+    return `./quicktype "${sample}"`;
+  },
+  diffViaSchema: false,
+  skipDiffViaSchema: [],
+  allowMissingNull: true,
+  features: ["enum", "union", "no-defaults"],
+  output: "TopLevel.cr",
+  topLevel: "TopLevel",
+  skipJSON: [
+    "blns-object.json",
+    "identifiers.json",
+    "simple-identifiers.json",
+    "bug427.json",
+    "nst-test-suite.json",
+    "34702.json",
+    "34702.json",
+    "4961a.json",
+    "32431.json",
+    "68c30.json",
+    "e8b04.json"
+  ],
+  skipSchema: [
+    // Crystal does not handle enum mapping
+    "enum.schema",
+    // Crystal does not support top-level primitives
+    "top-level-enum.schema",
+    "keyword-unions.schema"
+  ],
+  skipMiscJSON: false,
+  rendererOptions: {},
+  quickTestRendererOptions: [],
+  sourceFiles: ["src/language/Crystal.ts"]
+};
+
 export const RubyLanguage: Language = {
   name: "ruby",
   base: "test/fixtures/ruby",
