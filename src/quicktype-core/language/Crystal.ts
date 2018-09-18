@@ -306,12 +306,12 @@ export class CrystalRenderer extends ConvenienceRenderer {
         );
     };
 
-    private breakCycle = (t: Type, withIssues: boolean): any => {
+    private breakCycle = (t: Type, withIssues: boolean): Sourcelike => {
         const crystalType = this.crystalType(t, withIssues);
         return crystalType;
     };
 
-    private emitRenameAttribute(propName: Name, jsonName: string) {
+    private emitRenameAttribute(propName: Name, jsonName: string): void {
         const escapedName = crystalStringEscape(jsonName);
         const namesDiffer = this.sourcelikeToString(propName) !== escapedName;
         if (namesDiffer) {
@@ -334,7 +334,7 @@ export class CrystalRenderer extends ConvenienceRenderer {
     }
 
     protected emitBlock(line: Sourcelike, f: () => void): void {
-        this.emitLine(line, "");
+        this.emitLine(line);
         this.indent(() => {
             this.emitLine("include JSON::Serializable");
         });
