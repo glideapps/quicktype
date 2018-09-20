@@ -1007,22 +1007,35 @@ async function addTypesInSchema(
     }
 }
 
+function removeExtension(fn: string): string {
+    const lower = fn.toLowerCase();
+    const extensions = [".json", ".schema"];
+    for (const ext of extensions) {
+        if (lower.endsWith(ext)) {
+            const base = fn.substr(0, fn.length - ext.length);
+            if (base.length > 0) {
+                return base;
+            }
+        }
+    }
+    return fn;
+}
+
 function nameFromURI(uri: uri.URI): string | undefined {
-    // FIXME: Try `title` first.
     const fragment = uri.fragment();
     if (fragment !== "") {
         const components = fragment.split("/");
         const len = components.length;
         if (components[len - 1] !== "") {
-            return components[len - 1];
+            return removeExtension(components[len - 1]);
         }
         if (len > 1 && components[len - 2] !== "") {
-            return components[len - 2];
+            return removeExtension(components[len - 2]);
         }
     }
     const filename = uri.filename();
     if (filename !== "") {
-        return filename;
+        return removeExtension(filename);
     }
     return messageError("DriverCannotInferNameForSchema", { uri: uri.toString() });
 }
