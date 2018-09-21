@@ -13,7 +13,7 @@
     },
     "dependencies": {
         "quicktype-core": "the build script replaces this",
-        "typescript": "~3.0.1",
+        "typescript": "~3.0.3",
         "typescript-json-schema": "quicktype/typescript-json-schema#8ce897297cd101605a8f331e439e3281585ce12e"
     },
     "devDependencies": {

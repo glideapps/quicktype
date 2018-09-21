@@ -582,7 +582,7 @@ function parseOptions(definitions: OptionDefinition[], argv: string[], partial: 
     const options: { rendererOptions: RendererOptions; [key: string]: any } = { rendererOptions: {} };
     for (const o of definitions) {
         if (!hasOwnProperty(opts, o.name)) continue;
-        const v = opts[o.name];
+        const v = opts[o.name] as string;
         if (o.renderer !== undefined) options.rendererOptions[o.name] = v;
         else {
             const k = _.lowerFirst(
