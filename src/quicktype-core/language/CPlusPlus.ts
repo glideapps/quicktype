@@ -28,9 +28,9 @@ import { StringOption, EnumOption, BooleanOption, Option, getOptionValues, Optio
 import { assert } from "../support/Support";
 import { Declaration } from "../DeclarationIR";
 import { RenderContext } from "../Renderer";
-import { getAccessorName } from "../AccessorNames";
-import { enumCaseValues } from "../EnumValues";
-import { minMaxValueForType, minMaxLengthForType, patternForType, MinMaxConstraint } from "../Constraints";
+import { getAccessorName } from "../attributes/AccessorNames";
+import { enumCaseValues } from "../attributes/EnumValues";
+import { minMaxValueForType, minMaxLengthForType, patternForType, MinMaxConstraint } from "../attributes/Constraints";
 
 const pascalValue: [string, NamingStyle] = ["pascal-case", "pascal"];
 const underscoreValue: [string, NamingStyle] = ["underscore-case", "underscore"];

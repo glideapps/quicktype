@@ -13,6 +13,12 @@ export type ErrorProperties =
     | { kind: "MiscUnicodeHighSurrogateWithoutLowSurrogate"; properties: {} }
     | { kind: "MiscInvalidMinMaxConstraint"; properties: { min: number; max: number } }
 
+    // Inference
+    | { kind: "InferenceJSONReferenceNotRooted"; properties: { reference: string } }
+    | { kind: "InferenceJSONReferenceToUnion"; properties: { reference: string } }
+    | { kind: "InferenceJSONReferenceWrongProperty"; properties: { reference: string } }
+    | { kind: "InferenceJSONReferenceInvalidArrayIndex"; properties: { reference: string } }
+
     // JSON Schema input
     | { kind: "SchemaArrayIsInvalidSchema"; properties: { ref: Ref } }
     | { kind: "SchemaNullIsInvalidSchema"; properties: { ref: Ref } }
@@ -85,6 +91,12 @@ const errorMessages: ErrorMessages = {
     MiscReadError: "Cannot read from file or URL ${fileOrURL}: ${message}",
     MiscUnicodeHighSurrogateWithoutLowSurrogate: "Malformed unicode: High surrogate not followed by low surrogate",
     MiscInvalidMinMaxConstraint: "Invalid min-max constraint: ${min}-${max}",
+
+    // Inference
+    InferenceJSONReferenceNotRooted: "JSON reference doesn't start with '#/': ${reference}",
+    InferenceJSONReferenceToUnion: "JSON reference points to a union type: ${reference}",
+    InferenceJSONReferenceWrongProperty: "JSON reference points to a non-existant property: ${reference}",
+    InferenceJSONReferenceInvalidArrayIndex: "JSON reference uses invalid array index: ${reference}",
 
     // JSON Schema input
     SchemaArrayIsInvalidSchema: "An array is not a valid JSON Schema at ${ref}",

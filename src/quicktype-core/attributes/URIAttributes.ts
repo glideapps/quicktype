@@ -3,11 +3,11 @@ import * as path from "path";
 
 import { TypeAttributeKind, TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 import { setUnionManyInto } from "collection-utils";
-import { JSONSchemaType, JSONSchemaAttributes, Ref } from "./input/JSONSchemaInput";
-import { JSONSchema } from "./input/JSONSchemaStore";
-import { checkArray } from "./support/Support";
+import { JSONSchemaType, JSONSchemaAttributes, Ref } from "../input/JSONSchemaInput";
+import { JSONSchema } from "../input/JSONSchemaStore";
+import { checkArray } from "../support/Support";
 import { isString } from "util";
-import { Type } from "./Type";
+import { Type } from "../Type";
 
 const protocolsSchemaProperty = "qt-uri-protocols";
 const extensionsSchemaProperty = "qt-uri-extensions";

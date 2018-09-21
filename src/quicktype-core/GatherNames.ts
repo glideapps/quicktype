@@ -4,7 +4,7 @@ import { setUnion, setMap, setSortBy } from "collection-utils";
 import { TypeGraph } from "./TypeGraph";
 import { Type, ObjectType } from "./Type";
 import { matchCompoundType, nullableFromUnion } from "./TypeUtils";
-import { TypeNames, namesTypeAttributeKind, TooManyTypeNames, tooManyNamesThreshold } from "./TypeNames";
+import { TypeNames, namesTypeAttributeKind, TooManyTypeNames, tooManyNamesThreshold } from "./attributes/TypeNames";
 import { defined, panic, assert } from "./support/Support";
 import { transformationForType } from "./Transformers";
 

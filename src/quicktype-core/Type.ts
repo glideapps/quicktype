@@ -23,11 +23,11 @@ import {
 
 import { defined, panic, assert } from "./support/Support";
 import { TypeReconstituter, BaseGraphRewriteBuilder } from "./GraphRewriting";
-import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
-import { TypeAttributes } from "./TypeAttributes";
+import { TypeNames, namesTypeAttributeKind } from "./attributes/TypeNames";
+import { TypeAttributes } from "./attributes/TypeAttributes";
 import { messageAssert } from "./Messages";
 import { TypeRef, attributesForTypeRef, derefTypeRef, TypeGraph, typeRefIndex } from "./TypeGraph";
-import { uriInferenceAttributesProducer } from "./URIAttributes";
+import { uriInferenceAttributesProducer } from "./attributes/URIAttributes";
 
 /**
  * `jsonSchema` is the `format` to be used to represent this string type in

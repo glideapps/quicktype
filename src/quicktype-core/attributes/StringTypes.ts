@@ -11,10 +11,10 @@ import {
 } from "collection-utils";
 
 import { TypeAttributeKind } from "./TypeAttributes";
-import { defined, assert } from "./support/Support";
-import { StringTypeMapping, stringTypeMappingGet } from "./TypeBuilder";
-import { TransformedStringTypeKind } from "./Type";
-import { DateTimeRecognizer } from "./DateTime";
+import { defined, assert } from "../support/Support";
+import { StringTypeMapping, stringTypeMappingGet } from "../TypeBuilder";
+import { TransformedStringTypeKind } from "../Type";
+import { DateTimeRecognizer } from "../DateTime";
 
 export class StringTypes {
     static readonly unrestricted: StringTypes = new StringTypes(undefined, new Set());

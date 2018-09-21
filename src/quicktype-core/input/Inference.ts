@@ -1,11 +1,20 @@
 import { Value, Tag, valueTag, CompressedJSON } from "./CompressedJSON";
-import { assertNever, defined, panic } from "../support/Support";
+import { assertNever, defined, panic, assert } from "../support/Support";
 import { TypeBuilder } from "../TypeBuilder";
 import { UnionBuilder, UnionAccumulator } from "../UnionBuilder";
-import { ClassProperty, transformedStringTypeTargetTypeKindsMap } from "../Type";
-import { TypeAttributes, emptyTypeAttributes } from "../TypeAttributes";
-import { StringTypes, inferTransformedStringTypeKindForString } from "../StringTypes";
-import { TypeRef } from "../TypeGraph";
+import {
+    ClassProperty,
+    transformedStringTypeTargetTypeKindsMap,
+    UnionType,
+    ClassType,
+    MapType,
+    ArrayType
+} from "../Type";
+import { TypeAttributes, emptyTypeAttributes } from "../attributes/TypeAttributes";
+import { StringTypes, inferTransformedStringTypeKindForString } from "../attributes/StringTypes";
+import { TypeRef, derefTypeRef } from "../TypeGraph";
+import { messageError } from "../Messages";
+import { nullableFromUnion } from "../TypeUtils";
 
 // This should be the recursive type
 //   Value[] | NestedValueArray[]
@@ -69,6 +78,8 @@ function canBeEnumCase(_s: string): boolean {
 export type Accumulator = UnionAccumulator<NestedValueArray, NestedValueArray>;
 
 export class TypeInference {
+    private _refIntersections: [TypeRef, string[]][] | undefined;
+
     constructor(
         private readonly _cjson: CompressedJSON,
         private readonly _typeBuilder: TypeBuilder,
@@ -152,6 +163,60 @@ export class TypeInference {
         return this.makeTypeFromAccumulator(accumulator, typeAttributes, fixed, forwardingRef);
     }
 
+    private resolveRef(ref: string, topLevel: TypeRef): TypeRef {
+        if (!ref.startsWith("#/")) {
+            return messageError("InferenceJSONReferenceNotRooted", { reference: ref });
+        }
+        const parts = ref.split("/").slice(1);
+        const graph = this._typeBuilder.typeGraph;
+        let tref = topLevel;
+        for (const part of parts) {
+            let t = derefTypeRef(tref, graph);
+            if (t instanceof UnionType) {
+                const nullable = nullableFromUnion(t);
+                if (nullable === null) {
+                    // FIXME: handle unions
+                    return messageError("InferenceJSONReferenceToUnion", { reference: ref });
+                }
+                t = nullable;
+            }
+            if (t instanceof ClassType) {
+                const cp = t.getProperties().get(part);
+                if (cp === undefined) {
+                    return messageError("InferenceJSONReferenceWrongProperty", { reference: ref });
+                }
+                tref = cp.typeRef;
+            } else if (t instanceof MapType) {
+                tref = t.values.typeRef;
+            } else if (t instanceof ArrayType) {
+                if (part.match("^[0-9]+$") === null) {
+                    return messageError("InferenceJSONReferenceInvalidArrayIndex", { reference: ref });
+                }
+                tref = t.items.typeRef;
+            } else {
+                return messageError("InferenceJSONReferenceWrongProperty", { reference: ref });
+            }
+        }
+        return tref;
+    }
+
+    inferTopLevelType(typeAttributes: TypeAttributes, valueArray: NestedValueArray, fixed: boolean): TypeRef {
+        assert(this._refIntersections === undefined, "Didn't reset ref intersections - nested invocations?");
+        if (this._cjson.handleRefs) {
+            this._refIntersections = [];
+        }
+        const topLevel = this.inferType(typeAttributes, valueArray, fixed);
+        if (this._cjson.handleRefs) {
+            for (const [tref, refs] of defined(this._refIntersections)) {
+                const resolved = refs.map(r => this.resolveRef(r, topLevel));
+                this._typeBuilder.setSetOperationMembers(tref, new Set(resolved));
+            }
+
+            this._refIntersections = undefined;
+        }
+        return topLevel;
+    }
+
     accumulatorForArray(valueArray: NestedValueArray): Accumulator {
         const accumulator = new UnionAccumulator<NestedValueArray, NestedValueArray>(true);
         this.addValuesToAccumulator(valueArray, accumulator);
@@ -188,6 +253,17 @@ export class TypeInference {
                 propertyValues[key].push(value);
             }
         });
+
+        if (this._cjson.handleRefs && propertyNames.length === 1 && propertyNames[0] === "$ref") {
+            const values = propertyValues["$ref"];
+            if (values.every(v => valueTag(v) === Tag.InternedString)) {
+                const allRefs = values.map(v => this._cjson.getStringForValue(v));
+                // FIXME: Add is-ref attribute
+                const tref = this._typeBuilder.getUniqueIntersectionType(typeAttributes, undefined);
+                defined(this._refIntersections).push([tref, allRefs]);
+                return tref;
+            }
+        }
 
         if (this._inferMaps && propertyNames.length > 500) {
             const accumulator = new UnionAccumulator<NestedValueArray, NestedValueArray>(true);

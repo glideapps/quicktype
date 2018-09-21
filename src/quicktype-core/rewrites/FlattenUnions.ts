@@ -8,7 +8,7 @@ import { StringTypeMapping } from "../TypeBuilder";
 import { GraphRewriteBuilder } from "../GraphRewriting";
 import { unifyTypes, UnifyUnionBuilder } from "../UnifyClasses";
 import { messageAssert } from "../Messages";
-import { emptyTypeAttributes } from "../TypeAttributes";
+import { emptyTypeAttributes } from "../attributes/TypeAttributes";
 
 export function flattenUnions(
     graph: TypeGraph,

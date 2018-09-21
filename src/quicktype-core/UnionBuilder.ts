@@ -8,10 +8,10 @@ import {
     emptyTypeAttributes,
     makeTypeAttributesInferred,
     increaseTypeAttributesDistance
-} from "./TypeAttributes";
+} from "./attributes/TypeAttributes";
 import { defined, assert, panic, assertNever } from "./support/Support";
 import { TypeBuilder } from "./TypeBuilder";
-import { StringTypes, stringTypesTypeAttributeKind } from "./StringTypes";
+import { StringTypes, stringTypesTypeAttributeKind } from "./attributes/StringTypes";
 import { TypeRef } from "./TypeGraph";
 
 // FIXME: This interface is badly designed.  All the properties

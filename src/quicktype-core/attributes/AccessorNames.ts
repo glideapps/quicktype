@@ -8,11 +8,11 @@ import {
 } from "collection-utils";
 
 import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
-import { defined, isStringMap, checkStringMap, checkArray } from "./support/Support";
-import { EnumType, UnionType, Type, ObjectType } from "./Type";
-import { messageAssert } from "./Messages";
-import { JSONSchema } from "./input/JSONSchemaStore";
-import { Ref, JSONSchemaType, JSONSchemaAttributes } from "./input/JSONSchemaInput";
+import { defined, isStringMap, checkStringMap, checkArray } from "../support/Support";
+import { EnumType, UnionType, Type, ObjectType } from "../Type";
+import { messageAssert } from "../Messages";
+import { JSONSchema } from "../input/JSONSchemaStore";
+import { Ref, JSONSchemaType, JSONSchemaAttributes } from "../input/JSONSchemaInput";
 
 export type AccessorEntry = string | Map<string, string>;
 

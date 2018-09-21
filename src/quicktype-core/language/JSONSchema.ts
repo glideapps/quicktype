@@ -14,7 +14,7 @@ import {
 } from "../support/Strings";
 import { defined, panic } from "../support/Support";
 import { StringTypeMapping, getNoStringTypeMapping } from "../TypeBuilder";
-import { addDescriptionToSchema } from "../Description";
+import { addDescriptionToSchema } from "../attributes/Description";
 import { Option } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
 

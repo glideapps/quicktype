@@ -13,8 +13,8 @@ import { stringTypesForType } from "../TypeUtils";
 import { TypeGraph, TypeRef } from "../TypeGraph";
 import { GraphRewriteBuilder } from "../GraphRewriting";
 import { assert, defined } from "../support/Support";
-import { emptyTypeAttributes } from "../TypeAttributes";
-import { StringTypes } from "../StringTypes";
+import { emptyTypeAttributes } from "../attributes/TypeAttributes";
+import { StringTypes } from "../attributes/StringTypes";
 import { RunContext } from "../Run";
 
 const MIN_LENGTH_FOR_ENUM = 10;

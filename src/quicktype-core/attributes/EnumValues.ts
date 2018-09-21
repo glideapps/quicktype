@@ -3,10 +3,10 @@ import {
 } from "collection-utils";
 
 import { lookupKey, AccessorNames, makeAccessorNames } from "./AccessorNames";
-import { EnumType } from "./Type";
+import { EnumType } from "../Type";
 import { TypeAttributeKind } from "./TypeAttributes";
-import { JSONSchema } from "./input/JSONSchemaStore";
-import { Ref, JSONSchemaType, JSONSchemaAttributes } from "./input/JSONSchemaInput";
+import { JSONSchema } from "../input/JSONSchemaStore";
+import { Ref, JSONSchemaType, JSONSchemaAttributes } from "../input/JSONSchemaInput";
 
 class EnumValuesTypeAttributeKind extends TypeAttributeKind<AccessorNames> {
     constructor() {

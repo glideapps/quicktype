@@ -8,7 +8,7 @@ import { combineClasses } from "./rewrites/CombineClasses";
 import { inferMaps } from "./rewrites/InferMaps";
 import { TypeBuilder, StringTypeMapping } from "./TypeBuilder";
 import { TypeGraph, noneToAny, optionalToNullable, removeIndirectionIntersections } from "./TypeGraph";
-import { initTypeNames } from "./TypeNames";
+import { initTypeNames } from "./attributes/TypeNames";
 import { gatherNames } from "./GatherNames";
 import { expandStrings } from "./rewrites/ExpandStrings";
 import { flattenUnions } from "./rewrites/FlattenUnions";
@@ -69,6 +69,11 @@ export const inferenceFlagsObject = {
         description: "Detect booleans in strings",
         negationDescription: "Don't convert stringified booleans to booleans",
         stringType: "bool-string" as TransformedStringTypeKind
+    },
+    /** Whether to treat $ref as references within JSON */
+    ignoreJsonRefs: {
+        description: "Don't handle $ref specially in JSON",
+        negationDescription: "Treat $ref as a reference in JSON"
     }
 };
 export const inferenceFlagNames = Object.getOwnPropertyNames(
@@ -263,7 +268,7 @@ class Run implements RunContext {
 
         const debugPrintReconstitution = this.debugPrintReconstitution;
 
-        if (typeBuilder.didAddForwardingIntersection) {
+        if (typeBuilder.didAddForwardingIntersection || !this._options.ignoreJsonRefs) {
             this.time(
                 "remove indirection intersections",
                 () => (graph = removeIndirectionIntersections(graph, stringTypeMapping, debugPrintReconstitution))
@@ -271,7 +276,7 @@ class Run implements RunContext {
         }
 
         let unionsDone = false;
-        if (allInputs.needSchemaProcessing) {
+        if (allInputs.needSchemaProcessing || !this._options.ignoreJsonRefs) {
             let intersectionsDone = false;
             do {
                 const graphBeforeRewrites = graph;

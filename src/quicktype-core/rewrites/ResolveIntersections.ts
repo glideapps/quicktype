@@ -35,7 +35,7 @@ import {
     TypeAttributes,
     emptyTypeAttributes,
     makeTypeAttributesInferred
-} from "../TypeAttributes";
+} from "../attributes/TypeAttributes";
 
 function canResolve(t: IntersectionType): boolean {
     const members = setOperationMembersRecursively(t, undefined)[0];

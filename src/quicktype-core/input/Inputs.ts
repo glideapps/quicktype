@@ -4,8 +4,8 @@ import { Value, CompressedJSON } from "./CompressedJSON";
 import { panic, errorMessage, toReadable, StringInput, defined } from "../support/Support";
 import { messageError } from "../Messages";
 import { TypeBuilder } from "../TypeBuilder";
-import { makeNamesTypeAttributes } from "../TypeNames";
-import { descriptionTypeAttributeKind } from "../Description";
+import { makeNamesTypeAttributes } from "../attributes/TypeNames";
+import { descriptionTypeAttributeKind } from "../attributes/Description";
 import { TypeInference } from "./Inference";
 import { TargetLanguage } from "../TargetLanguage";
 import { RunContext } from "../Run";
@@ -104,7 +104,7 @@ export class JSONInput implements Input<JSONSourceData> {
         const inference = new TypeInference(this._compressedJSON, typeBuilder, inferMaps, inferEnums);
 
         for (const [name, { samples, description }] of this._topLevels) {
-            const tref = inference.inferType(makeNamesTypeAttributes(name, false), samples, fixedTopLevels);
+            const tref = inference.inferTopLevelType(makeNamesTypeAttributes(name, false), samples, fixedTopLevels);
             typeBuilder.addTopLevel(name, tref);
             if (description !== undefined) {
                 const attributes = descriptionTypeAttributeKind.makeAttributes(new Set([description]));
@@ -116,12 +116,13 @@ export class JSONInput implements Input<JSONSourceData> {
 
 export function jsonInputForTargetLanguage(
     targetLanguage: string | TargetLanguage,
-    languages?: TargetLanguage[]
+    languages?: TargetLanguage[],
+    handleJSONRefs: boolean = false
 ): JSONInput {
     if (typeof targetLanguage === "string") {
         targetLanguage = defined(languageNamed(targetLanguage, languages));
     }
-    const compressedJSON = new CompressedJSON(targetLanguage.dateTimeRecognizer);
+    const compressedJSON = new CompressedJSON(targetLanguage.dateTimeRecognizer, handleJSONRefs);
     return new JSONInput(compressedJSON);
 }
 

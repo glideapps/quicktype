@@ -39,9 +39,9 @@ import {
     TypeKind
 } from "./Type";
 import { TypeGraph, TypeRef, makeTypeRef, derefTypeRef, typeRefIndex, assertTypeRefGraph } from "./TypeGraph";
-import { TypeAttributes, combineTypeAttributes, TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
+import { TypeAttributes, combineTypeAttributes, TypeAttributeKind, emptyTypeAttributes } from "./attributes/TypeAttributes";
 import { defined, assert, panic } from "./support/Support";
-import { stringTypesTypeAttributeKind, StringTypes } from "./StringTypes";
+import { stringTypesTypeAttributeKind, StringTypes } from "./attributes/StringTypes";
 
 // FIXME: Don't infer provenance.  All original types should be present in
 // non-inferred form in the final graph.

@@ -9,9 +9,9 @@ import {
 } from "collection-utils";
 
 import { TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
-import { JSONSchemaType, Ref, JSONSchemaAttributes, PathElementKind, PathElement } from "./input/JSONSchemaInput";
-import { JSONSchema } from "./input/JSONSchemaStore";
-import { Type } from "./Type";
+import { JSONSchemaType, Ref, JSONSchemaAttributes, PathElementKind, PathElement } from "../input/JSONSchemaInput";
+import { JSONSchema } from "../input/JSONSchemaStore";
+import { Type } from "../Type";
 
 export function addDescriptionToSchema(
     schema: { [name: string]: unknown },
