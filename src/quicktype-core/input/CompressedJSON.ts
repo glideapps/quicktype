@@ -74,7 +74,7 @@ export class CompressedJSON {
     private _objects: Value[][] = [];
     private _arrays: Value[][] = [];
 
-    constructor(readonly dateTimeRecognizer: DateTimeRecognizer) {}
+    constructor(readonly dateTimeRecognizer: DateTimeRecognizer, readonly handleRefs: boolean) {}
 
     async readFromStream(readStream: stream.Readable): Promise<Value> {
         const combo = new Combo({ packKeys: true, packStrings: true });
@@ -146,6 +146,10 @@ export class CompressedJSON {
         this._arrays.push(arr);
         return makeValue(Tag.Array, index);
     };
+
+    private get isExpectingRef(): boolean {
+        return this._ctx !== undefined && this._ctx.currentKey === "$ref";
+    }
 
     private commitValue = (value: Value): void => {
         assert(typeof value === "number", `CompressedJSON value is not a number: ${value}`);
@@ -224,22 +228,27 @@ export class CompressedJSON {
     };
 
     protected handleKeyValue = (s: string): void => {
-        defined(this._ctx).currentKey = s;
+        const ctx = defined(this._ctx);
+        ctx.currentKey = s;
     };
 
     protected handleStringValue(s: string): void {
         let value: Value | undefined = undefined;
-        const format = inferTransformedStringTypeKindForString(s, this.dateTimeRecognizer);
-        if (format !== undefined) {
-            if (defined(transformedStringTypeTargetTypeKindsMap.get(format)).attributesProducer !== undefined) {
-                value = makeValue(Tag.TransformedString, this.internString(s));
-            } else {
-                value = makeValue(Tag.StringFormat, this.internString(format));
-            }
-        } else if (s.length <= 64) {
+        if (this.handleRefs && this.isExpectingRef) {
             value = this.makeString(s);
         } else {
-            value = makeValue(Tag.UninternedString, 0);
+            const format = inferTransformedStringTypeKindForString(s, this.dateTimeRecognizer);
+            if (format !== undefined) {
+                if (defined(transformedStringTypeTargetTypeKindsMap.get(format)).attributesProducer !== undefined) {
+                    value = makeValue(Tag.TransformedString, this.internString(s));
+                } else {
+                    value = makeValue(Tag.StringFormat, this.internString(format));
+                }
+            } else if (s.length <= 64) {
+                value = this.makeString(s);
+            } else {
+                value = makeValue(Tag.UninternedString, 0);
+            }
         }
         this.commitValue(value);
     }

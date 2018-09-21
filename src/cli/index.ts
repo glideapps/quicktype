@@ -678,7 +678,8 @@ function makeTypeScriptSource(fileNames: string[]): SchemaTypeSource {
 async function makeInputData(
     sources: TypeSource[],
     targetLanguage: TargetLanguage,
-    additionalSchemaAddresses: ReadonlyArray<string>
+    additionalSchemaAddresses: ReadonlyArray<string>,
+    handleJSONRefs: boolean
 ): Promise<InputData> {
     const inputData = new InputData();
 
@@ -688,7 +689,9 @@ async function makeInputData(
                 await inputData.addSource("graphql", source, () => new GraphQLInput());
                 break;
             case "json":
-                await inputData.addSource("json", source, () => jsonInputForTargetLanguage(targetLanguage));
+                await inputData.addSource("json", source, () =>
+                    jsonInputForTargetLanguage(targetLanguage, undefined, handleJSONRefs)
+                );
                 break;
             case "schema":
                 await inputData.addSource(
@@ -843,11 +846,8 @@ export async function makeQuicktypeOptions(
         return messageError("DriverUnknownOutputLanguage", { lang: options.lang });
     }
 
-    const inputData = await makeInputData(sources, lang, options.additionalSchema);
-
     const quicktypeOptions: Partial<Options> = {
         lang,
-        inputData,
         alphabetizeProperties: options.alphabetizeProperties,
         allPropertiesOptional: options.allPropertiesOptional,
         fixedTopLevels,
@@ -872,6 +872,14 @@ export async function makeQuicktypeOptions(
             quicktypeOptions[flagName] = true;
         }
     }
+
+    quicktypeOptions.inputData = await makeInputData(
+        sources,
+        lang,
+        options.additionalSchema,
+        quicktypeOptions.ignoreJsonRefs !== true
+    );
+
     return quicktypeOptions;
 }
 
