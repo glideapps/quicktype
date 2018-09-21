@@ -13,11 +13,11 @@ export { Input, InputData, JSONInput, JSONSourceData, jsonInputForTargetLanguage
 export { JSONSchemaInput, JSONSchemaSourceData } from "./input/JSONSchemaInput";
 export { Ref, JSONSchemaType, JSONSchemaAttributes } from "./input/JSONSchemaInput";
 export { RenderContext } from "./Renderer";
-export { OptionDefinition, getOptionValues } from "./RendererOptions";
+export { Option, OptionDefinition, getOptionValues } from "./RendererOptions";
 export { TargetLanguage } from "./TargetLanguage";
 export { all as defaultTargetLanguages, languageNamed } from "./language/All";
 export { Sourcelike, SerializedRenderResult, Annotation, modifySource } from "./Source";
-export { Name } from "./Naming";
+export { Name, funPrefixNamer, Namer } from "./Naming";
 export { IssueAnnotationData } from "./Annotation";
 export { Readable } from "stream";
 export {
@@ -32,19 +32,41 @@ export {
     StringInput,
     toString
 } from "./support/Support";
-export { splitIntoWords, capitalize } from "./support/Strings";
+export {
+    splitIntoWords,
+    capitalize,
+    combineWords,
+    firstUpperWordStyle,
+    allUpperWordStyle,
+    legalizeCharacters,
+    isLetterOrDigit
+} from "./support/Strings";
 export { getStream } from "./get-stream/index";
 export { train as trainMarkovChain } from "./MarkovChain";
 export { QuickTypeError, messageError, messageAssert } from "./Messages";
-export { Type, PrimitiveType, ArrayType, ClassType, ClassProperty, MapType, UnionType, TypeKind } from "./Type";
+export {
+    Type,
+    PrimitiveType,
+    ArrayType,
+    ClassType,
+    ClassProperty,
+    MapType,
+    UnionType,
+    TypeKind,
+    ObjectType,
+    TransformedStringTypeKind,
+    PrimitiveStringTypeKind
+} from "./Type";
 export { JSONSchemaStore, JSONSchema } from "./input/JSONSchemaStore";
 export { sourcesFromPostmanCollection } from "./input/PostmanCollection";
-export { TypeBuilder } from "./TypeBuilder";
+export { TypeBuilder, StringTypeMapping } from "./TypeBuilder";
 export { TypeRef, derefTypeRef } from "./TypeGraph";
 export { TypeAttributeKind, TypeAttributes, emptyTypeAttributes } from "./attributes/TypeAttributes";
 export { TypeNames, makeNamesTypeAttributes, namesTypeAttributeKind } from "./attributes/TypeNames";
 export { StringTypes } from "./attributes/StringTypes";
-export { removeNullFromUnion } from "./TypeUtils";
+export { removeNullFromUnion, matchType, nullableFromUnion } from "./TypeUtils";
+export { ConvenienceRenderer } from "./ConvenienceRenderer";
+export { uriTypeAttributeKind } from "./attributes/URIAttributes";
 
 export { CPlusPlusTargetLanguage, CPlusPlusRenderer } from "./language/CPlusPlus";
 export {
