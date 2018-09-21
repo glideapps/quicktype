@@ -19,9 +19,9 @@ import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source"
 
 import { declarationsForGraph, DeclarationIR, cycleBreakerTypesForGraph, Declaration } from "./DeclarationIR";
 import { TypeAttributeStoreView } from "./TypeGraph";
-import { TypeAttributeKind } from "./TypeAttributes";
-import { descriptionTypeAttributeKind, propertyDescriptionsTypeAttributeKind } from "./Description";
-import { enumCaseNames, objectPropertyNames, unionMemberName, getAccessorName } from "./AccessorNames";
+import { TypeAttributeKind } from "./attributes/TypeAttributes";
+import { descriptionTypeAttributeKind, propertyDescriptionsTypeAttributeKind } from "./attributes/Description";
+import { enumCaseNames, objectPropertyNames, unionMemberName, getAccessorName } from "./attributes/AccessorNames";
 import { transformationForType, followTargetType, Transformation } from "./Transformers";
 import { TargetLanguage } from "./TargetLanguage";
 

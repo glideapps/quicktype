@@ -3,7 +3,7 @@ import * as stream from "stream";
 import { addHashCode, hashCodeInit, hashString } from "collection-utils";
 
 import { defined, panic, assert } from "../support/Support";
-import { inferTransformedStringTypeKindForString } from "../StringTypes";
+import { inferTransformedStringTypeKindForString } from "../attributes/StringTypes";
 import { TransformedStringTypeKind, isPrimitiveStringTypeKind, transformedStringTypeTargetTypeKindsMap } from "../Type";
 import { DateTimeRecognizer } from "../DateTime";
 

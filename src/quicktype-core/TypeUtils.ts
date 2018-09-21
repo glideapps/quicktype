@@ -1,7 +1,7 @@
 import { setFilter, setSortBy, iterableFirst, setUnion, EqualityMap } from "collection-utils";
 
 import { defined, panic, assert, assertNever } from "./support/Support";
-import { TypeAttributes, combineTypeAttributes, emptyTypeAttributes, CombinationKind } from "./TypeAttributes";
+import { TypeAttributes, combineTypeAttributes, emptyTypeAttributes, CombinationKind } from "./attributes/TypeAttributes";
 import {
     Type,
     PrimitiveType,
@@ -15,7 +15,7 @@ import {
     UnionType,
     isPrimitiveStringTypeKind
 } from "./Type";
-import { stringTypesTypeAttributeKind, StringTypes } from "./StringTypes";
+import { stringTypesTypeAttributeKind, StringTypes } from "./attributes/StringTypes";
 
 export function assertIsObject(t: Type): ObjectType {
     if (t instanceof ObjectType) {

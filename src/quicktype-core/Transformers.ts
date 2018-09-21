@@ -10,7 +10,7 @@ import {
 } from "collection-utils";
 
 import { UnionType, Type, EnumType, PrimitiveType, TypeKind } from "./Type";
-import { TypeAttributeKind } from "./TypeAttributes";
+import { TypeAttributeKind } from "./attributes/TypeAttributes";
 import { panic, assert, indentationString } from "./support/Support";
 import { BaseGraphRewriteBuilder } from "./GraphRewriting";
 import { TypeRef, derefTypeRef, TypeGraph } from "./TypeGraph";

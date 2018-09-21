@@ -5,9 +5,9 @@ import { separateNamedTypes, SeparatedNamedTypes, isNamedType, combineTypeAttrib
 import { defined, assert, panic, mustNotHappen } from "./support/Support";
 import { TypeBuilder, StringTypeMapping, getNoStringTypeMapping, provenanceTypeAttributeKind } from "./TypeBuilder";
 import { GraphRewriteBuilder, GraphRemapBuilder, BaseGraphRewriteBuilder } from "./GraphRewriting";
-import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
+import { TypeNames, namesTypeAttributeKind } from "./attributes/TypeNames";
 import { Graph } from "./Graph";
-import { TypeAttributeKind, TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
+import { TypeAttributeKind, TypeAttributes, emptyTypeAttributes } from "./attributes/TypeAttributes";
 import { messageError } from "./Messages";
 
 export type TypeRef = number;

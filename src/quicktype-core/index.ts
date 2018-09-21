@@ -41,9 +41,9 @@ export { JSONSchemaStore, JSONSchema } from "./input/JSONSchemaStore";
 export { sourcesFromPostmanCollection } from "./input/PostmanCollection";
 export { TypeBuilder } from "./TypeBuilder";
 export { TypeRef, derefTypeRef } from "./TypeGraph";
-export { TypeAttributeKind, TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
-export { TypeNames, makeNamesTypeAttributes, namesTypeAttributeKind } from "./TypeNames";
-export { StringTypes } from "./StringTypes";
+export { TypeAttributeKind, TypeAttributes, emptyTypeAttributes } from "./attributes/TypeAttributes";
+export { TypeNames, makeNamesTypeAttributes, namesTypeAttributeKind } from "./attributes/TypeNames";
+export { StringTypes } from "./attributes/StringTypes";
 export { removeNullFromUnion } from "./TypeUtils";
 
 export { CPlusPlusTargetLanguage, CPlusPlusRenderer } from "./language/CPlusPlus";

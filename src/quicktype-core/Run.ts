@@ -8,7 +8,7 @@ import { combineClasses } from "./rewrites/CombineClasses";
 import { inferMaps } from "./rewrites/InferMaps";
 import { TypeBuilder, StringTypeMapping } from "./TypeBuilder";
 import { TypeGraph, noneToAny, optionalToNullable, removeIndirectionIntersections } from "./TypeGraph";
-import { initTypeNames } from "./TypeNames";
+import { initTypeNames } from "./attributes/TypeNames";
 import { gatherNames } from "./GatherNames";
 import { expandStrings } from "./rewrites/ExpandStrings";
 import { flattenUnions } from "./rewrites/FlattenUnions";

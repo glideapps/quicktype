@@ -6,7 +6,7 @@ import { TypeBuilder } from "./TypeBuilder";
 import { TypeLookerUp, GraphRewriteBuilder, BaseGraphRewriteBuilder } from "./GraphRewriting";
 import { UnionBuilder, TypeRefUnionAccumulator } from "./UnionBuilder";
 import { panic, assert, defined } from "./support/Support";
-import { TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
+import { TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./attributes/TypeAttributes";
 import { TypeRef, derefTypeRef } from "./TypeGraph";
 
 function getCliqueProperties(

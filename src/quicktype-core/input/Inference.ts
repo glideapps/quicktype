@@ -10,8 +10,8 @@ import {
     MapType,
     ArrayType
 } from "../Type";
-import { TypeAttributes, emptyTypeAttributes } from "../TypeAttributes";
-import { StringTypes, inferTransformedStringTypeKindForString } from "../StringTypes";
+import { TypeAttributes, emptyTypeAttributes } from "../attributes/TypeAttributes";
+import { StringTypes, inferTransformedStringTypeKindForString } from "../attributes/StringTypes";
 import { TypeRef, derefTypeRef } from "../TypeGraph";
 import { messageError } from "../Messages";
 import { nullableFromUnion } from "../TypeUtils";

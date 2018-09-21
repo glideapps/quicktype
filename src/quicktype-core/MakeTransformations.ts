@@ -28,8 +28,8 @@ import {
     ParseStringTransformer,
     ArrayDecodingTransformer
 } from "./Transformers";
-import { TypeAttributes, emptyTypeAttributes, combineTypeAttributes } from "./TypeAttributes";
-import { StringTypes } from "./StringTypes";
+import { TypeAttributes, emptyTypeAttributes, combineTypeAttributes } from "./attributes/TypeAttributes";
+import { StringTypes } from "./attributes/StringTypes";
 import { RunContext } from "./Run";
 
 function transformationAttributes(

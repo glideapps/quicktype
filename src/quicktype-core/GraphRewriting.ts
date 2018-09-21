@@ -11,7 +11,7 @@ import {
     typeRefIndex,
     isTypeRef
 } from "./TypeGraph";
-import { TypeAttributes, emptyTypeAttributes, combineTypeAttributes } from "./TypeAttributes";
+import { TypeAttributes, emptyTypeAttributes, combineTypeAttributes } from "./attributes/TypeAttributes";
 import { assert, panic, indentationString } from "./support/Support";
 import { TypeBuilder, StringTypeMapping } from "./TypeBuilder";
 

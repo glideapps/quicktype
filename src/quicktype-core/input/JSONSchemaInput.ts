@@ -29,28 +29,28 @@ import {
 } from "../Type";
 import { panic, assertNever, StringMap, assert, defined, StringInput, parseJSON, toString } from "../support/Support";
 import { TypeBuilder } from "../TypeBuilder";
-import { TypeNames } from "../TypeNames";
-import { makeNamesTypeAttributes, modifyTypeNames, singularizeTypeNames } from "../TypeNames";
+import { TypeNames } from "../attributes/TypeNames";
+import { makeNamesTypeAttributes, modifyTypeNames, singularizeTypeNames } from "../attributes/TypeNames";
 import {
     TypeAttributes,
     makeTypeAttributesInferred,
     emptyTypeAttributes,
     combineTypeAttributes
-} from "../TypeAttributes";
+} from "../attributes/TypeAttributes";
 import { JSONSchema, JSONSchemaStore } from "./JSONSchemaStore";
 import { messageAssert, messageError } from "../Messages";
-import { StringTypes } from "../StringTypes";
+import { StringTypes } from "../attributes/StringTypes";
 
 import { TypeRef } from "../TypeGraph";
 import { RunContext } from "../Run";
 import { Input } from "./Inputs";
-import { descriptionAttributeProducer } from "../Description";
-import { accessorNamesAttributeProducer } from "../AccessorNames";
-import { enumValuesAttributeProducer } from "../EnumValues";
-import { minMaxAttributeProducer } from "../Constraints";
-import { minMaxLengthAttributeProducer } from "../Constraints";
-import { patternAttributeProducer } from "../Constraints";
-import { uriSchemaAttributesProducer } from "../URIAttributes";
+import { descriptionAttributeProducer } from "../attributes/Description";
+import { accessorNamesAttributeProducer } from "../attributes/AccessorNames";
+import { enumValuesAttributeProducer } from "../attributes/EnumValues";
+import { minMaxAttributeProducer } from "../attributes/Constraints";
+import { minMaxLengthAttributeProducer } from "../attributes/Constraints";
+import { patternAttributeProducer } from "../attributes/Constraints";
+import { uriSchemaAttributesProducer } from "../attributes/URIAttributes";
 
 export enum PathElementKind {
     Root,
