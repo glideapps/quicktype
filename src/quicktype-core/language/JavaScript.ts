@@ -123,7 +123,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
         return super.makeNameForProperty(c, className, p, jsonName, undefined);
     }
 
-    protected emitDescriptionBlock(lines: string[]): void {
+    protected emitDescriptionBlock(lines: Sourcelike[]): void {
         this.emitCommentLines(lines, " * ", "/**", " */");
     }
 

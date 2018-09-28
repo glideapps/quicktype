@@ -206,7 +206,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
         return upperNamingFunction;
     }
 
-    protected emitDescriptionBlock(lines: string[]): void {
+    protected emitDescriptionBlock(lines: Sourcelike[]): void {
         this.emitCommentLines(lines, " * ", "/**", " */");
     }
 

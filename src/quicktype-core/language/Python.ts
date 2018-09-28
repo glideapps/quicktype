@@ -272,7 +272,7 @@ export class PythonRenderer extends ConvenienceRenderer {
         return "# ";
     }
 
-    protected emitDescriptionBlock(lines: string[]): void {
+    protected emitDescriptionBlock(lines: Sourcelike[]): void {
         if (lines.length === 1) {
             this.emitLine('"""', lines[0], '"""');
         } else {

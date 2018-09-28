@@ -274,7 +274,7 @@ export class DartRenderer extends ConvenienceRenderer {
         this.emitLine("import 'dart:convert';");
     }
 
-    protected emitDescriptionBlock(lines: string[]): void {
+    protected emitDescriptionBlock(lines: Sourcelike[]): void {
         this.emitCommentLines(lines, " * ", "/**", " */");
     }
 

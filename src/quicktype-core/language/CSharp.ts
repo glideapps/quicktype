@@ -374,7 +374,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
         return ["public ", csType, " ", name, " { get; set; }"];
     }
 
-    protected emitDescriptionBlock(lines: string[]): void {
+    protected emitDescriptionBlock(lines: Sourcelike[]): void {
         const start = "/// <summary>";
         if (this._csOptions.dense) {
             this.emitLine(start, lines.join("; "), "</summary>");
