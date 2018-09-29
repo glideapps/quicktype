@@ -313,7 +313,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
         return kind === "array" || kind === "map";
     }
 
-    protected emitDescriptionBlock(lines: string[]): void {
+    protected emitDescriptionBlock(lines: Sourcelike[]): void {
         this.emitCommentLines(lines, "/// ");
     }
 

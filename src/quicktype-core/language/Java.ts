@@ -295,7 +295,7 @@ export class JavaRenderer extends ConvenienceRenderer {
         this.ensureBlankLine();
     }
 
-    protected emitDescriptionBlock(lines: string[]): void {
+    protected emitDescriptionBlock(lines: Sourcelike[]): void {
         this.emitCommentLines(lines, " * ", "/**", " */");
     }
 

@@ -793,7 +793,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected emitCommentLines(
-        lines: string[],
+        lines: Sourcelike[],
         lineStart?: string,
         beforeLine?: string,
         afterLine?: string,
@@ -811,10 +811,10 @@ export abstract class ConvenienceRenderer extends Renderer {
         let first = true;
         for (const line of lines) {
             let start = first ? firstLineStart : lineStart;
-            if (line === "") {
+            if (this.sourcelikeToString(line) === "") {
                 start = trimEnd(start);
             }
-            this.emitLine(start, trimEnd(line));
+            this.emitLine(start, line);
             first = false;
         }
         if (afterLine !== undefined) {
@@ -822,13 +822,13 @@ export abstract class ConvenienceRenderer extends Renderer {
         }
     }
 
-    protected emitDescription(description: string[] | undefined): void {
+    protected emitDescription(description: Sourcelike[] | undefined): void {
         if (description === undefined) return;
         // FIXME: word-wrap
         this.emitDescriptionBlock(description);
     }
 
-    protected emitDescriptionBlock(lines: string[]): void {
+    protected emitDescriptionBlock(lines: Sourcelike[]): void {
         this.emitCommentLines(lines);
     }
 

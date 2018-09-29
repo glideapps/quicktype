@@ -293,7 +293,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         return type;
     }
 
-    protected emitDescriptionBlock(lines: string[]): void {
+    protected emitDescriptionBlock(lines: Sourcelike[]): void {
         this.emitCommentLines(lines, "/// ");
     }
 

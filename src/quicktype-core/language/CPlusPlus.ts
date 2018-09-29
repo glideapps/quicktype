@@ -544,7 +544,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         return kind === "class";
     }
 
-    protected emitDescriptionBlock(lines: string[]): void {
+    protected emitDescriptionBlock(lines: Sourcelike[]): void {
         this.emitCommentLines(lines, " * ", "/**", " */");
     }
 
