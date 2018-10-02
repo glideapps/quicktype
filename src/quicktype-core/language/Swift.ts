@@ -59,11 +59,17 @@ export const swiftOptions = {
         "internal",
         "secondary"
     ),
-    protocol: new EnumOption("protocol", "Make types implement protocol", [
-        ["none", { equatable: false, hashable: false }],
-        ["equatable", { equatable: true, hashable: false }],
-        ["hashable", { equatable: false, hashable: true }]
-    ], "none", "secondary")
+    protocol: new EnumOption(
+        "protocol",
+        "Make types implement protocol",
+        [
+            ["none", { equatable: false, hashable: false }],
+            ["equatable", { equatable: true, hashable: false }],
+            ["hashable", { equatable: false, hashable: true }]
+        ],
+        "none",
+        "secondary"
+    )
 };
 
 // These are all recognized by Swift as ISO8601 date-times:
@@ -101,7 +107,7 @@ export class SwiftTargetLanguage extends TargetLanguage {
             swiftOptions.alamofire,
             swiftOptions.linux,
             swiftOptions.namedTypePrefix,
-            swiftOptions.protocol,
+            swiftOptions.protocol
         ];
     }
 
@@ -214,6 +220,7 @@ const keywords = [
     "Bool",
     "Data",
     "Date",
+    "URL",
     "CommandLine",
     "FileHandle",
     "JSONSerialization",
@@ -451,8 +458,12 @@ export class SwiftRenderer extends ConvenienceRenderer {
             if (this._options.protocol.hashable || this._options.protocol.equatable) {
                 this.emitLine("//");
                 this.emitLine("// Hashable or Equatable:");
-                this.emitLine("// The compiler will not be able to synthesize the implementation of Hashable or Equatable");
-                this.emitLine("// for types that require the use of JSONAny, nor will the implementation of Hashable be");
+                this.emitLine(
+                    "// The compiler will not be able to synthesize the implementation of Hashable or Equatable"
+                );
+                this.emitLine(
+                    "// for types that require the use of JSONAny, nor will the implementation of Hashable be"
+                );
                 this.emitLine("// synthesized for types that have collections (such as arrays or dictionaries).");
             }
         }
