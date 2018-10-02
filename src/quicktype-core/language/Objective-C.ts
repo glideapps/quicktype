@@ -804,7 +804,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         this.emitLine("@end");
     };
 
-    private emitMark = (label: string) => {
+    protected emitMark = (label: string) => {
         this.ensureBlankLine();
         this.emitLine(`#pragma mark - ${label}`);
         this.ensureBlankLine();
