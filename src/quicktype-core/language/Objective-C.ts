@@ -25,7 +25,7 @@ import { RenderContext } from "../Renderer";
 
 const unicode = require("unicode-properties");
 
-type MemoryAttribute = "assign" | "strong" | "copy";
+export type MemoryAttribute = "assign" | "strong" | "copy";
 export type OutputFeatures = { interface: boolean; implementation: boolean };
 
 const DEBUG = false;
@@ -210,7 +210,7 @@ function isPartCharacter(utf16Unit: number): boolean {
 
 const legalizeName = utf16LegalizeCharacters(isPartCharacter);
 
-function isAnyOrNull(t: Type): boolean {
+export function isAnyOrNull(t: Type): boolean {
     return t.kind === "any" || t.kind === "null";
 }
 
@@ -297,20 +297,20 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         this.emitCommentLines(lines, "/// ");
     }
 
-    private emitBlock = (line: Sourcelike, f: () => void): void => {
+    protected emitBlock = (line: Sourcelike, f: () => void): void => {
         this.emitLine(line, " {");
         this.indent(f);
         this.emitLine("}");
     };
 
-    private emitMethod(declaration: Sourcelike, f: () => void) {
+    protected emitMethod(declaration: Sourcelike, f: () => void) {
         this.emitLine(declaration);
         this.emitLine("{");
         this.indent(f);
         this.emitLine("}");
     }
 
-    private emitExtraComments = (...comments: Sourcelike[]) => {
+    protected emitExtraComments = (...comments: Sourcelike[]) => {
         if (!this._options.extraComments) return;
         for (const comment of comments) {
             this.emitLine("// ", comment);
@@ -328,7 +328,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         this._currentFilename = undefined;
     }
 
-    private memoryAttribute(t: Type, isNullable: boolean): MemoryAttribute {
+    protected memoryAttribute(t: Type, isNullable: boolean): MemoryAttribute {
         return matchType<MemoryAttribute>(
             t,
             _anyType => "copy",
@@ -348,7 +348,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         );
     }
 
-    private objcType = (t: Type, nullableOrBoxed: boolean = false): [Sourcelike, string] => {
+    protected objcType = (t: Type, nullableOrBoxed: boolean = false): [Sourcelike, string] => {
         return matchType<[Sourcelike, string]>(
             t,
             _anyType => ["id", ""],
@@ -398,7 +398,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         );
     };
 
-    private fromDynamicExpression = (t: Type, ...dynamic: Sourcelike[]): Sourcelike => {
+    protected fromDynamicExpression = (t: Type, ...dynamic: Sourcelike[]): Sourcelike => {
         return matchType<Sourcelike>(
             t,
             _anyType => dynamic,
@@ -418,7 +418,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         );
     };
 
-    private toDynamicExpression = (t: Type, typed: Sourcelike): Sourcelike => {
+    protected toDynamicExpression = (t: Type, typed: Sourcelike): Sourcelike => {
         return matchType<Sourcelike>(
             t,
             _anyType => ["NSNullify(", typed, ")"],
@@ -488,7 +488,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         return this.implicitlyConvertsFromJSON(t) && "bool" !== t.kind;
     }
 
-    private emitPropertyAssignment = (propertyName: Name, jsonName: string, propertyType: Type) => {
+    protected emitPropertyAssignment = (propertyName: Name, jsonName: string, propertyType: Type) => {
         const name = ["_", propertyName];
         matchType(
             propertyType,
@@ -524,14 +524,14 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         );
     };
 
-    private emitPrivateClassInterface = (_: ClassType, name: Name): void => {
+    protected emitPrivateClassInterface = (_: ClassType, name: Name): void => {
         this.emitLine("@interface ", name, " (JSONConversion)");
         this.emitLine("+ (instancetype)fromJSONDictionary:(NSDictionary *)dict;");
         this.emitLine("- (NSDictionary *)JSONDictionary;");
         this.emitLine("@end");
     };
 
-    private pointerAwareTypeName(t: Type | [Sourcelike, string]): Sourcelike {
+    protected pointerAwareTypeName(t: Type | [Sourcelike, string]): Sourcelike {
         const name = t instanceof Type ? this.objcType(t) : t;
         const isPointer = name[1] !== "";
         return isPointer ? name : [name, " "];
@@ -670,19 +670,28 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         this.emitLine("@end");
     };
 
+    protected hasIrregularProperties(t: ClassType) {
+        let irregular = false;
+        this.forEachClassProperty(t, "none", (name, jsonName) => {
+            irregular = irregular || stringEscape(jsonName) !== this.sourcelikeToString(name);
+        });
+        return irregular;
+    }
+
+    protected hasUnsafeProperties(t: ClassType) {
+        let unsafe = false;
+        this.forEachClassProperty(t, "none", (_, __, property) => {
+            unsafe = unsafe || !this.implicitlyConvertsToJSON(property.type);
+        });
+        return unsafe;
+    }
+
     // TODO Implement NSCopying
     private emitClassImplementation = (t: ClassType, className: Name): void => {
         const isTopLevel = mapContains(this.topLevels, t);
 
-        const [hasIrregularProperties, hasUnsafeProperties] = (() => {
-            let irregular = false;
-            let unsafe = false;
-            this.forEachClassProperty(t, "none", (name, jsonName, property) => {
-                unsafe = unsafe || !this.implicitlyConvertsToJSON(property.type);
-                irregular = irregular || stringEscape(jsonName) !== this.sourcelikeToString(name);
-            });
-            return [irregular, unsafe];
-        })();
+        const hasIrregularProperties = this.hasIrregularProperties(t);
+        const hasUnsafeProperties = this.hasUnsafeProperties(t);
 
         this.emitLine("@implementation ", className);
         if (!this._options.justTypes) {
@@ -810,7 +819,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         this.ensureBlankLine();
     };
 
-    private variableNameForTopLevel(name: Name): Sourcelike {
+    protected variableNameForTopLevel(name: Name): Sourcelike {
         const camelCaseName = modifySource(serialized => {
             // 1. remove class prefix
             serialized = serialized.substr(this._classPrefix.length);
