@@ -108,6 +108,10 @@ export function combineTypeAttributesOfTypes(combinationKind: CombinationKind, t
     return combineTypeAttributes(combinationKind, Array.from(types).map(t => t.getAttributes()));
 }
 
+export function isAnyOrNull(t: Type): boolean {
+    return t.kind === "any" || t.kind === "null";
+}
+
 // FIXME: We shouldn't have to sort here.  This is just because we're not getting
 // back the right order from JSON Schema, due to the changes the intersection types
 // introduced.

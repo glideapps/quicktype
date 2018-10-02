@@ -2,7 +2,7 @@ import { iterableSome, iterableFirst, mapContains, mapFirst, mapSome } from "col
 
 import { TargetLanguage } from "../TargetLanguage";
 import { Type, ClassType, EnumType, ArrayType, MapType, UnionType, ClassProperty } from "../Type";
-import { matchType, nullableFromUnion } from "../TypeUtils";
+import { matchType, nullableFromUnion, isAnyOrNull } from "../TypeUtils";
 import { Name, Namer, funPrefixNamer } from "../Naming";
 import { Sourcelike, modifySource } from "../Source";
 import {
@@ -209,10 +209,6 @@ function isPartCharacter(utf16Unit: number): boolean {
 }
 
 const legalizeName = utf16LegalizeCharacters(isPartCharacter);
-
-export function isAnyOrNull(t: Type): boolean {
-    return t.kind === "any" || t.kind === "null";
-}
 
 const staticEnumValuesIdentifier = "values";
 const forbiddenForEnumCases = ["new", staticEnumValuesIdentifier];
