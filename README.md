@@ -94,7 +94,7 @@ The recommended way to use `quicktype` is to generate a JSON schema from sample 
 
 ```bash
 # First, infer a JSON schema from a sample.
-quicktype pokedex.json -o schema.json
+quicktype pokedex.json -l schema -o schema.json
 
 # Review the schema, make changes,
 # and commit it to your project repo.
