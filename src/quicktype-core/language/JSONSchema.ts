@@ -96,7 +96,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
         if (types.size === 1) {
             return this.schemaForType(first);
         }
-        return { anyOf: Array.from(types).map(this.schemaForType) };
+        return { anyOf: Array.from(types).map((t: Type) => this.schemaForType(t)) };
     }
 
     private makeRef(t: Type): Schema {

@@ -625,26 +625,26 @@ import Dict exposing (Dict, map, toList)`);
 
         this.forEachTopLevel(
             "leading-and-interposing",
-            this.emitTopLevelDefinition,
+            (t: Type, topLevelName: Name) => this.emitTopLevelDefinition(t, topLevelName),
             t => this.namedTypeToNameForTopLevel(t) === undefined
         );
         this.forEachNamedType(
             "leading-and-interposing",
-            this.emitClassDefinition,
-            this.emitEnumDefinition,
-            this.emitUnionDefinition
+            (c: ClassType, className: Name) => this.emitClassDefinition(c, className),
+            (e: EnumType, enumName: Name) => this.emitEnumDefinition(e, enumName),
+            (u: UnionType, unionName: Name) => this.emitUnionDefinition(u, unionName)
         );
 
         if (this._options.justTypes) return;
 
         this.ensureBlankLine();
         this.emitLine("-- decoders and encoders");
-        this.forEachTopLevel("leading-and-interposing", this.emitTopLevelFunctions);
+        this.forEachTopLevel("leading-and-interposing", (t: Type, topLevelName: Name) => this.emitTopLevelFunctions(t, topLevelName));
         this.forEachNamedType(
             "leading-and-interposing",
-            this.emitClassFunctions,
-            this.emitEnumFunctions,
-            this.emitUnionFunctions
+            (c: ClassType, className: Name) => this.emitClassFunctions(c, className),
+            (e: EnumType, enumName: Name) => this.emitEnumFunctions(e, enumName),
+            (u: UnionType, unionName: Name) => this.emitUnionFunctions(u, unionName)
         );
         this.ensureBlankLine();
 

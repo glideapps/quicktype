@@ -1160,15 +1160,15 @@ ${this.accessLevel}class JSONAny: Codable {
 
         this.forEachTopLevel(
             "leading",
-            this.renderTopLevelAlias,
+            (t: Type, name: Name) => this.renderTopLevelAlias(t, name),
             t => this.namedTypeToNameForTopLevel(t) === undefined
         );
 
         this.forEachNamedType(
             "leading-and-interposing",
-            this.renderClassDefinition,
-            this.renderEnumDefinition,
-            this.renderUnionDefinition
+            (c: ClassType, className: Name) => this.renderClassDefinition(c, className),
+            (e: EnumType, enumName: Name) => this.renderEnumDefinition(e, enumName),
+            (u: UnionType, unionName: Name) => this.renderUnionDefinition(u, unionName)
         );
 
         if (!this._options.justTypes) {
@@ -1178,14 +1178,14 @@ ${this.accessLevel}class JSONAny: Codable {
                 this.emitMark("Convenience initializers and mutators");
                 this.forEachNamedType(
                     "leading-and-interposing",
-                    this.emitConvenienceInitializersExtension,
+                    (c: ClassType, className: Name) => this.emitConvenienceInitializersExtension(c, className),
                     () => undefined,
                     () => undefined
                 );
                 this.ensureBlankLine();
                 this.forEachTopLevel(
                     "leading-and-interposing",
-                    this.emitTopLevelMapAndArrayConvenienceInitializerExtensions
+                    (t: Type, name: Name) => this.emitTopLevelMapAndArrayConvenienceInitializerExtensions(t, name)
                 );
             }
 

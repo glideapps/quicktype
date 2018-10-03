@@ -344,12 +344,12 @@ export class GoRenderer extends ConvenienceRenderer {
         }
         this.forEachTopLevel(
             "leading-and-interposing",
-            this.emitTopLevel,
+            (t, name) => this.emitTopLevel(t, name),
             t => !this._options.justTypes || this.namedTypeToNameForTopLevel(t) === undefined
         );
-        this.forEachObject("leading-and-interposing", this.emitClass);
-        this.forEachEnum("leading-and-interposing", this.emitEnum);
-        this.forEachUnion("leading-and-interposing", this.emitUnion);
+        this.forEachObject("leading-and-interposing", (c: ClassType, className: Name) => this.emitClass(c, className));
+        this.forEachEnum("leading-and-interposing", (u: EnumType, enumName: Name) => this.emitEnum(u, enumName));
+        this.forEachUnion("leading-and-interposing", (u: UnionType, unionName: Name) => this.emitUnion(u, unionName));
 
         if (this._options.justTypes) return;
 
