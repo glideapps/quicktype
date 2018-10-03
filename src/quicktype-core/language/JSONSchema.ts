@@ -84,11 +84,11 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
         return null;
     }
 
-    private nameForType = (t: Type): string => {
+    private nameForType(t: Type): string {
         return defined(this.names.get(this.nameForNamedType(t)));
-    };
+    }
 
-    private makeOneOf = (types: ReadonlySet<Type>): Schema => {
+    private makeOneOf(types: ReadonlySet<Type>): Schema {
         const first = iterableFirst(types);
         if (first === undefined) {
             return panic("Must have at least one type for oneOf");
@@ -97,7 +97,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
             return this.schemaForType(first);
         }
         return { anyOf: Array.from(types).map(this.schemaForType) };
-    };
+    }
 
     private makeRef(t: Type): Schema {
         return { $ref: `#/definitions/${this.nameForType(t)}` };
@@ -110,7 +110,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
         }
     }
 
-    private schemaForType = (t: Type): Schema => {
+    private schemaForType(t: Type): Schema {
         const schema = matchTypeExhaustive<{ [name: string]: any }>(
             t,
             _noneType => {
@@ -146,7 +146,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
             this.addAttributesToSchema(t, schema);
         }
         return schema;
-    };
+    }
 
     private definitionForObject(o: ObjectType, title: string | undefined): Schema {
         let properties: Schema | undefined;

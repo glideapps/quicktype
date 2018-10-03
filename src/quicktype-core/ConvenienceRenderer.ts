@@ -241,18 +241,18 @@ export abstract class ConvenienceRenderer extends Renderer {
         );
     }
 
-    private addDependenciesForNamedType = (type: Type, named: Name): void => {
+    private addDependenciesForNamedType(type: Type, named: Name): void {
         const dependencyNames = this.makeNamedTypeDependencyNames(type, named);
         for (const dn of dependencyNames) {
             this.globalNamespace.add(dn);
         }
-    };
+    }
 
     protected makeNameForTopLevel(_t: Type, givenName: string, _maybeNamedType: Type | undefined): Name {
         return new SimpleName([givenName], defined(this._namedTypeNamer), topLevelNameOrder);
     }
 
-    private addNameForTopLevel = (type: Type, givenName: string): Name => {
+    private addNameForTopLevel(type: Type, givenName: string): Name {
         const maybeNamedType = this.namedTypeToNameForTopLevel(type);
         const name = this.makeNameForTopLevel(type, givenName, maybeNamedType);
         this.globalNamespace.add(name);
@@ -267,7 +267,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         }
 
         return name;
-    };
+    }
 
     private makeNameForType(t: Type, namer: Namer, givenOrder: number, inferredOrder: number): Name {
         const names = t.getNames();
@@ -279,7 +279,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         return this.makeNameForType(t, defined(this._namedTypeNamer), givenNameOrder, inferredNameOrder);
     }
 
-    private addNameForNamedType = (type: Type): Name => {
+    private addNameForNamedType(type: Type): Name {
         const existing = this.nameStoreView.tryGet(type);
         if (existing !== undefined) return existing;
 
@@ -289,7 +289,7 @@ export abstract class ConvenienceRenderer extends Renderer {
 
         this.nameStoreView.set(type, name);
         return name;
-    };
+    }
 
     protected get typesWithNamedTransformations(): ReadonlyMap<Type, Name> {
         return defined(this._namesForTransformations);
@@ -385,7 +385,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         return [];
     }
 
-    private addPropertyNames = (o: ObjectType, className: Name): void => {
+    private addPropertyNames(o: ObjectType, className: Name): void {
         const { forbiddenNames, forbiddenNamespaces } = this.processForbiddenWordsInfo(
             this.forbiddenForObjectProperties(o, className),
             "forbidden-for-properties"
@@ -413,7 +413,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             return name;
         });
         defined(this._propertyNamesStoreView).set(o, names);
-    };
+    }
 
     protected makeNameForUnionMember(u: UnionType, unionName: Name, t: Type): Name {
         const [assignedName, isFixed] = unionMemberName(u, t, this.targetLanguage.name);
@@ -426,7 +426,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         });
     }
 
-    private addUnionMemberNames = (u: UnionType, unionName: Name): void => {
+    private addUnionMemberNames(u: UnionType, unionName: Name): void {
         const memberNamer = this._unionMemberNamer;
         if (memberNamer === null) return;
 
@@ -447,7 +447,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             names.set(t, ns.add(name));
         }
         defined(this._memberNamesStoreView).set(u, names);
-    };
+    }
 
     protected makeNameForEnumCase(
         e: EnumType,
@@ -464,7 +464,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     // FIXME: this is very similar to addPropertyNameds and addUnionMemberNames
-    private addEnumCaseNames = (e: EnumType, enumName: Name): void => {
+    private addEnumCaseNames(e: EnumType, enumName: Name): void {
         if (this._enumCaseNamer === null) return;
 
         const { forbiddenNames, forbiddenNamespaces } = this.processForbiddenWordsInfo(
@@ -491,7 +491,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             names.set(caseName, ns.add(name));
         }
         defined(this._caseNamesStoreView).set(e, names);
-    };
+    }
 
     private childrenOfType(t: Type): ReadonlySet<Type> {
         const names = this.names;
@@ -541,9 +541,9 @@ export abstract class ConvenienceRenderer extends Renderer {
         return this.enums.size > 0;
     }
 
-    protected proposedUnionMemberNameForTypeKind = (_kind: TypeKind): string | null => {
+    protected proposedUnionMemberNameForTypeKind(_kind: TypeKind): string | null {
         return null;
-    };
+    }
 
     protected proposeUnionMemberName(
         _u: UnionType,
@@ -586,9 +586,9 @@ export abstract class ConvenienceRenderer extends Renderer {
         return typeNameForUnionMember(fieldType);
     }
 
-    protected nameForNamedType = (t: Type): Name => {
+    protected nameForNamedType(t: Type): Name {
         return this.nameStoreView.get(t);
-    };
+    }
 
     protected isForwardDeclaredType(t: Type): boolean {
         return defined(this._declarationIR).forwardedTypes.has(t);
@@ -640,9 +640,9 @@ export abstract class ConvenienceRenderer extends Renderer {
         );
     }
 
-    setAlphabetizeProperties = (value: boolean): void => {
+    setAlphabetizeProperties(value: boolean): void {
         this._alphabetizeProperties = value;
-    };
+    }
 
     protected forEachClassProperty(
         o: ObjectType,
@@ -664,13 +664,13 @@ export abstract class ConvenienceRenderer extends Renderer {
         }
     }
 
-    protected nameForUnionMember = (u: UnionType, t: Type): Name => {
+    protected nameForUnionMember(u: UnionType, t: Type): Name {
         return defined(
             defined(this._memberNamesStoreView)
                 .get(u)
                 .get(t)
         );
-    };
+    }
 
     protected nameForEnumCase(e: EnumType, caseName: string): Name {
         const caseNames = defined(this._caseNamesStoreView).get(e);
@@ -784,9 +784,9 @@ export abstract class ConvenienceRenderer extends Renderer {
     // You should never have to use this to produce parts of your generated
     // code.  If you need to modify a Name, for example to change its casing,
     // use `modifySource`.
-    protected sourcelikeToString = (src: Sourcelike): string => {
+    protected sourcelikeToString(src: Sourcelike): string {
         return serializeRenderResult(sourcelikeToSource(src), this.names, "").lines.join("\n");
-    };
+    }
 
     protected get commentLineStart(): string {
         return "// ";
@@ -898,7 +898,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             processed.add(process(t));
         }
 
-        for (;;) {
+        for (; ;) {
             const maybeType = queue.pop();
             if (maybeType === undefined) {
                 break;

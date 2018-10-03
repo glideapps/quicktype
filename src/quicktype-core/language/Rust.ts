@@ -225,16 +225,16 @@ export class RustRenderer extends ConvenienceRenderer {
         return "/// ";
     }
 
-    private nullableRustType = (t: Type, withIssues: boolean): Sourcelike => {
+    private nullableRustType(t: Type, withIssues: boolean): Sourcelike {
         return ["Option<", this.breakCycle(t, withIssues), ">"];
-    };
+    }
 
     protected isImplicitCycleBreaker(t: Type): boolean {
         const kind = t.kind;
         return kind === "array" || kind === "map";
     }
 
-    private rustType = (t: Type, withIssues: boolean = false): Sourcelike => {
+    private rustType(t: Type, withIssues: boolean = false): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "Option<serde_json::Value>"),
@@ -263,14 +263,14 @@ export class RustRenderer extends ConvenienceRenderer {
                 return hasNull !== null ? (["Option<", name, ">"] as Sourcelike) : name;
             }
         );
-    };
+    }
 
-    private breakCycle = (t: Type, withIssues: boolean): any => {
+    private breakCycle(t: Type, withIssues: boolean): any {
         const rustType = this.rustType(t, withIssues);
         const isCycleBreaker = this.isCycleBreakerType(t);
 
         return isCycleBreaker ? ["Box<", rustType, ">"] : rustType;
-    };
+    }
 
     private emitRenameAttribute(propName: Name, jsonName: string) {
         const escapedName = rustStringEscape(jsonName);

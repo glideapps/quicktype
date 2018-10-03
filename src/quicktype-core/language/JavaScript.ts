@@ -127,7 +127,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
         this.emitCommentLines(lines, " * ", "/**", " */");
     }
 
-    typeMapTypeFor = (t: Type): Sourcelike => {
+    typeMapTypeFor(t: Type): Sourcelike {
         if (["class", "object", "enum"].indexOf(t.kind) >= 0) {
             return ['r("', this.nameForNamedType(t), '")'];
         }
@@ -148,7 +148,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
                 return ["u(", ...arrayIntercalate(", ", children), ")"];
             }
         );
-    };
+    }
 
     typeMapTypeForProperty(p: ClassProperty): Sourcelike {
         const typeMap = this.typeMapTypeFor(p.type);
@@ -164,7 +164,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
         this.emitLine("}", end);
     }
 
-    emitTypeMap = () => {
+    emitTypeMap() {
         const { any: anyAnnotation } = this.typeAnnotations;
 
         this.emitBlock(`const typeMap${anyAnnotation} = `, ";", () => {
@@ -198,7 +198,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
                 this.emitLine("],");
             });
         });
-    };
+    }
 
     protected deserializerFunctionName(name: Name): Sourcelike {
         return ["to", name];

@@ -293,11 +293,11 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         this.emitCommentLines(lines, "/// ");
     }
 
-    protected emitBlock = (line: Sourcelike, f: () => void): void => {
+    protected emitBlock(line: Sourcelike, f: () => void): void {
         this.emitLine(line, " {");
         this.indent(f);
         this.emitLine("}");
-    };
+    }
 
     protected emitMethod(declaration: Sourcelike, f: () => void) {
         this.emitLine(declaration);
@@ -306,12 +306,12 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         this.emitLine("}");
     }
 
-    protected emitExtraComments = (...comments: Sourcelike[]) => {
+    protected emitExtraComments(...comments: Sourcelike[]) {
         if (!this._options.extraComments) return;
         for (const comment of comments) {
             this.emitLine("// ", comment);
         }
-    };
+    }
 
     protected startFile(basename: Sourcelike, extension: string): void {
         assert(this._currentFilename === undefined, "Previous file wasn't finished");
@@ -344,7 +344,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         );
     }
 
-    protected objcType = (t: Type, nullableOrBoxed: boolean = false): [Sourcelike, string] => {
+    protected objcType(t: Type, nullableOrBoxed: boolean = false): [Sourcelike, string] {
         return matchType<[Sourcelike, string]>(
             t,
             _anyType => ["id", ""],
@@ -371,9 +371,9 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 return nullable !== null ? this.objcType(nullable, true) : ["id", ""];
             }
         );
-    };
+    }
 
-    private jsonType = (t: Type): [Sourcelike, string] => {
+    private jsonType(t: Type): [Sourcelike, string] {
         return matchType<[Sourcelike, string]>(
             t,
             _anyType => ["id", ""],
@@ -392,9 +392,9 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 return nullable !== null ? this.jsonType(nullable) : ["id", ""];
             }
         );
-    };
+    }
 
-    protected fromDynamicExpression = (t: Type, ...dynamic: Sourcelike[]): Sourcelike => {
+    protected fromDynamicExpression(t: Type, ...dynamic: Sourcelike[]): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => dynamic,
@@ -412,9 +412,9 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 return nullable !== null ? this.fromDynamicExpression(nullable, dynamic) : dynamic;
             }
         );
-    };
+    }
 
-    protected toDynamicExpression = (t: Type, typed: Sourcelike): Sourcelike => {
+    protected toDynamicExpression(t: Type, typed: Sourcelike): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => ["NSNullify(", typed, ")"],
@@ -454,7 +454,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 }
             }
         );
-    };
+    }
 
     protected implicitlyConvertsFromJSON(t: Type): boolean {
         if (t instanceof ClassType) {
@@ -484,7 +484,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         return this.implicitlyConvertsFromJSON(t) && "bool" !== t.kind;
     }
 
-    protected emitPropertyAssignment = (propertyName: Name, jsonName: string, propertyType: Type) => {
+    protected emitPropertyAssignment(propertyName: Name, jsonName: string, propertyType: Type) {
         const name = ["_", propertyName];
         matchType(
             propertyType,
@@ -518,14 +518,14 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 }
             }
         );
-    };
+    }
 
-    protected emitPrivateClassInterface = (_: ClassType, name: Name): void => {
+    protected emitPrivateClassInterface(_: ClassType, name: Name): void {
         this.emitLine("@interface ", name, " (JSONConversion)");
         this.emitLine("+ (instancetype)fromJSONDictionary:(NSDictionary *)dict;");
         this.emitLine("- (NSDictionary *)JSONDictionary;");
         this.emitLine("@end");
-    };
+    }
 
     protected pointerAwareTypeName(t: Type | [Sourcelike, string]): Sourcelike {
         const name = t instanceof Type ? this.objcType(t) : t;
@@ -630,7 +630,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         });
     }
 
-    private emitClassInterface = (t: ClassType, className: Name): void => {
+    private emitClassInterface(t: ClassType, className: Name): void {
         const isTopLevel = mapContains(this.topLevels, t);
 
         this.emitDescription(this.descriptionForType(t));
@@ -664,7 +664,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             this.emitLine("- (NSData *_Nullable)toData:(NSError *_Nullable *)error;");
         }
         this.emitLine("@end");
-    };
+    }
 
     protected hasIrregularProperties(t: ClassType) {
         let irregular = false;
@@ -683,7 +683,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
     }
 
     // TODO Implement NSCopying
-    private emitClassImplementation = (t: ClassType, className: Name): void => {
+    private emitClassImplementation(t: ClassType, className: Name): void {
         const isTopLevel = mapContains(this.topLevels, t);
 
         const hasIrregularProperties = this.hasIrregularProperties(t);
@@ -807,13 +807,13 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         }
 
         this.emitLine("@end");
-    };
+    }
 
-    protected emitMark = (label: string) => {
+    protected emitMark(label: string) {
         this.ensureBlankLine();
         this.emitLine(`#pragma mark - ${label}`);
         this.ensureBlankLine();
-    };
+    }
 
     protected variableNameForTopLevel(name: Name): Sourcelike {
         const camelCaseName = modifySource(serialized => {
@@ -1049,7 +1049,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         return iterableSome(this.typeGraph.allTypesUnordered(), needsMap);
     }
 
-    protected emitMapFunction = () => {
+    protected emitMapFunction() {
         if (this.needsMap) {
             this.emitMultiline(`static id map(id collection, id (^f)(id value)) {
     id result = nil;
@@ -1063,5 +1063,5 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
     return result;
 }`);
         }
-    };
+    }
 }
