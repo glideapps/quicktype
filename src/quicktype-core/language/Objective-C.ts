@@ -456,7 +456,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         );
     };
 
-    private implicitlyConvertsFromJSON(t: Type): boolean {
+    protected implicitlyConvertsFromJSON(t: Type): boolean {
         if (t instanceof ClassType) {
             return false;
         } else if (t instanceof EnumType) {
@@ -480,7 +480,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         }
     }
 
-    private implicitlyConvertsToJSON(t: Type): boolean {
+    protected implicitlyConvertsToJSON(t: Type): boolean {
         return this.implicitlyConvertsFromJSON(t) && "bool" !== t.kind;
     }
 
@@ -1049,7 +1049,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         return iterableSome(this.typeGraph.allTypesUnordered(), needsMap);
     }
 
-    private emitMapFunction = () => {
+    protected emitMapFunction = () => {
         if (this.needsMap) {
             this.emitMultiline(`static id map(id collection, id (^f)(id value)) {
     id result = nil;
