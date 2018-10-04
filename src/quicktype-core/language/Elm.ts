@@ -269,10 +269,10 @@ export class ElmRenderer extends ConvenienceRenderer {
         }
     }
 
-    private decoderNameForNamedType = (t: Type): Name => {
+    private decoderNameForNamedType(t: Type): Name {
         const name = this.nameForNamedType(t);
         return defined(this._namedTypeDependents.get(name)).decoder;
-    };
+    }
 
     private decoderNameForType(t: Type, noOptional: boolean = false): MultiWord {
         return matchType<MultiWord>(
@@ -312,10 +312,10 @@ export class ElmRenderer extends ConvenienceRenderer {
         }
     }
 
-    private encoderNameForNamedType = (t: Type): Name => {
+    private encoderNameForNamedType(t: Type): Name {
         const name = this.nameForNamedType(t);
         return defined(this._namedTypeDependents.get(name)).encoder;
-    };
+    }
 
     private encoderNameForType(t: Type, noOptional: boolean = false): MultiWord {
         return matchType<MultiWord>(
@@ -355,11 +355,11 @@ export class ElmRenderer extends ConvenienceRenderer {
         }
     }
 
-    private emitTopLevelDefinition = (t: Type, topLevelName: Name): void => {
+    private emitTopLevelDefinition(t: Type, topLevelName: Name): void {
         this.emitLine("type alias ", topLevelName, " = ", this.elmType(t).source);
-    };
+    }
 
-    private emitClassDefinition = (c: ClassType, className: Name): void => {
+    private emitClassDefinition(c: ClassType, className: Name): void {
         let description = this.descriptionForType(c);
         this.forEachClassProperty(c, "none", (name, jsonName) => {
             const propertyDescription = this.descriptionForClassProperty(c, jsonName);
@@ -387,9 +387,9 @@ export class ElmRenderer extends ConvenienceRenderer {
             }
             this.emitLine("}");
         });
-    };
+    }
 
-    private emitEnumDefinition = (e: EnumType, enumName: Name): void => {
+    private emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
         this.emitLine("type ", enumName);
         this.indent(() => {
@@ -400,9 +400,9 @@ export class ElmRenderer extends ConvenienceRenderer {
                 onFirst = false;
             });
         });
-    };
+    }
 
-    private emitUnionDefinition = (u: UnionType, unionName: Name): void => {
+    private emitUnionDefinition(u: UnionType, unionName: Name): void {
         this.emitDescription(this.descriptionForType(u));
         this.emitLine("type ", unionName);
         this.indent(() => {
@@ -417,9 +417,9 @@ export class ElmRenderer extends ConvenienceRenderer {
                 onFirst = false;
             });
         });
-    };
+    }
 
-    private emitTopLevelFunctions = (t: Type, topLevelName: Name): void => {
+    private emitTopLevelFunctions(t: Type, topLevelName: Name): void {
         const { encoder, decoder } = defined(this._topLevelDependents.get(topLevelName));
         if (this.namedTypeToNameForTopLevel(t) === undefined) {
             this.emitLine(defined(decoder), " : Jdec.Decoder ", topLevelName);
@@ -428,9 +428,9 @@ export class ElmRenderer extends ConvenienceRenderer {
         }
         this.emitLine(encoder, " : ", topLevelName, " -> String");
         this.emitLine(encoder, " r = Jenc.encode 0 (", this.encoderNameForType(t).source, " r)");
-    };
+    }
 
-    private emitClassFunctions = (c: ClassType, className: Name): void => {
+    private emitClassFunctions(c: ClassType, className: Name): void {
         const decoderName = this.decoderNameForNamedType(c);
         this.emitLine(decoderName, " : Jdec.Decoder ", className);
         this.emitLine(decoderName, " =");
@@ -465,9 +465,9 @@ export class ElmRenderer extends ConvenienceRenderer {
                 this.emitLine("]");
             });
         });
-    };
+    }
 
-    private emitEnumFunctions = (e: EnumType, enumName: Name): void => {
+    private emitEnumFunctions(e: EnumType, enumName: Name): void {
         const decoderName = this.decoderNameForNamedType(e);
         this.emitLine(decoderName, " : Jdec.Decoder ", enumName);
         this.emitLine(decoderName, " =");
@@ -497,9 +497,9 @@ export class ElmRenderer extends ConvenienceRenderer {
                 this.emitLine(name, ' -> Jenc.string "', stringEscape(jsonName), '"');
             });
         });
-    };
+    }
 
-    private emitUnionFunctions = (u: UnionType, unionName: Name): void => {
+    private emitUnionFunctions(u: UnionType, unionName: Name): void {
         // We need arrays first, then strings, and integers before doubles.
         function sortOrder(_: Name, t: Type): string {
             if (t.kind === "array") {
@@ -547,7 +547,7 @@ export class ElmRenderer extends ConvenienceRenderer {
                 }
             });
         });
-    };
+    }
 
     protected emitSourceStructure(): void {
         const exports: Sourcelike[] = [];
@@ -625,26 +625,26 @@ import Dict exposing (Dict, map, toList)`);
 
         this.forEachTopLevel(
             "leading-and-interposing",
-            this.emitTopLevelDefinition,
+            (t: Type, topLevelName: Name) => this.emitTopLevelDefinition(t, topLevelName),
             t => this.namedTypeToNameForTopLevel(t) === undefined
         );
         this.forEachNamedType(
             "leading-and-interposing",
-            this.emitClassDefinition,
-            this.emitEnumDefinition,
-            this.emitUnionDefinition
+            (c: ClassType, className: Name) => this.emitClassDefinition(c, className),
+            (e: EnumType, enumName: Name) => this.emitEnumDefinition(e, enumName),
+            (u: UnionType, unionName: Name) => this.emitUnionDefinition(u, unionName)
         );
 
         if (this._options.justTypes) return;
 
         this.ensureBlankLine();
         this.emitLine("-- decoders and encoders");
-        this.forEachTopLevel("leading-and-interposing", this.emitTopLevelFunctions);
+        this.forEachTopLevel("leading-and-interposing", (t: Type, topLevelName: Name) => this.emitTopLevelFunctions(t, topLevelName));
         this.forEachNamedType(
             "leading-and-interposing",
-            this.emitClassFunctions,
-            this.emitEnumFunctions,
-            this.emitUnionFunctions
+            (c: ClassType, className: Name) => this.emitClassFunctions(c, className),
+            (e: EnumType, enumName: Name) => this.emitEnumFunctions(e, enumName),
+            (u: UnionType, unionName: Name) => this.emitUnionFunctions(u, unionName)
         );
         this.ensureBlankLine();
 

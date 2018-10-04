@@ -129,28 +129,28 @@ export class GoRenderer extends ConvenienceRenderer {
         return [unmarshalName];
     }
 
-    private emitBlock = (line: Sourcelike, f: () => void): void => {
+    private emitBlock(line: Sourcelike, f: () => void): void {
         this.emitLine(line, " {");
         this.indent(f);
         this.emitLine("}");
-    };
+    }
 
-    private emitFunc = (decl: Sourcelike, f: () => void): void => {
+    private emitFunc(decl: Sourcelike, f: () => void): void {
         this.emitBlock(["func ", decl], f);
-    };
+    }
 
-    private emitStruct = (name: Name, table: Sourcelike[][]): void => {
+    private emitStruct(name: Name, table: Sourcelike[][]): void {
         this.emitBlock(["type ", name, " struct"], () => this.emitTable(table));
-    };
+    }
 
-    private nullableGoType = (t: Type, withIssues: boolean): Sourcelike => {
+    private nullableGoType(t: Type, withIssues: boolean): Sourcelike {
         const goType = this.goType(t, withIssues);
         if (isValueType(t)) {
             return ["*", goType];
         } else {
             return goType;
         }
-    };
+    }
 
     private propertyGoType(cp: ClassProperty): Sourcelike {
         const t = cp.type;
@@ -163,7 +163,7 @@ export class GoRenderer extends ConvenienceRenderer {
         return this.goType(t, true);
     }
 
-    private goType = (t: Type, withIssues: boolean = false): Sourcelike => {
+    private goType(t: Type, withIssues: boolean = false): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "interface{}"),
@@ -191,9 +191,9 @@ export class GoRenderer extends ConvenienceRenderer {
                 return this.nameForNamedType(unionType);
             }
         );
-    };
+    }
 
-    private emitTopLevel = (t: Type, name: Name): void => {
+    private emitTopLevel(t: Type, name: Name): void {
         const unmarshalName = defined(this._topLevelUnmarshalNames.get(name));
         if (this.namedTypeToNameForTopLevel(t) === undefined) {
             this.emitLine("type ", name, " ", this.goType(t));
@@ -211,9 +211,9 @@ export class GoRenderer extends ConvenienceRenderer {
         this.emitFunc(["(r *", name, ") Marshal() ([]byte, error)"], () => {
             this.emitLine("return json.Marshal(r)");
         });
-    };
+    }
 
-    private emitClass = (c: ClassType, className: Name): void => {
+    private emitClass(c: ClassType, className: Name): void {
         let columns: Sourcelike[][] = [];
         this.forEachClassProperty(c, "none", (name, jsonName, p) => {
             const goType = this.propertyGoType(p);
@@ -223,9 +223,9 @@ export class GoRenderer extends ConvenienceRenderer {
         });
         this.emitDescription(this.descriptionForType(c));
         this.emitStruct(className, columns);
-    };
+    }
 
-    private emitEnum = (e: EnumType, enumName: Name): void => {
+    private emitEnum(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
         this.emitLine("type ", enumName, " string");
         this.emitLine("const (");
@@ -235,9 +235,9 @@ export class GoRenderer extends ConvenienceRenderer {
             })
         );
         this.emitLine(")");
-    };
+    }
 
-    private emitUnion = (u: UnionType, unionName: Name): void => {
+    private emitUnion(u: UnionType, unionName: Name): void {
         const [hasNull, nonNulls] = removeNullFromUnion(u);
         const isNullableArg = hasNull !== null ? "true" : "false";
 
@@ -318,7 +318,7 @@ export class GoRenderer extends ConvenienceRenderer {
             const args = makeArgs(fn => ["x.", fn], (_, fn) => ["x.", fn, " != nil, x.", fn]);
             this.emitLine("return marshalUnion(", args, ")");
         });
-    };
+    }
 
     protected emitSourceStructure(): void {
         if (this.leadingComments !== undefined) {
@@ -344,12 +344,12 @@ export class GoRenderer extends ConvenienceRenderer {
         }
         this.forEachTopLevel(
             "leading-and-interposing",
-            this.emitTopLevel,
+            (t, name) => this.emitTopLevel(t, name),
             t => !this._options.justTypes || this.namedTypeToNameForTopLevel(t) === undefined
         );
-        this.forEachObject("leading-and-interposing", this.emitClass);
-        this.forEachEnum("leading-and-interposing", this.emitEnum);
-        this.forEachUnion("leading-and-interposing", this.emitUnion);
+        this.forEachObject("leading-and-interposing", (c: ClassType, className: Name) => this.emitClass(c, className));
+        this.forEachEnum("leading-and-interposing", (u: EnumType, enumName: Name) => this.emitEnum(u, enumName));
+        this.forEachUnion("leading-and-interposing", (u: UnionType, unionName: Name) => this.emitUnion(u, unionName));
 
         if (this._options.justTypes) return;
 

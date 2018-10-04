@@ -340,7 +340,7 @@ export class DartRenderer extends ConvenienceRenderer {
         );
     }
 
-    protected toDynamicExpression = (t: Type, ...dynamic: Sourcelike[]): Sourcelike => {
+    protected toDynamicExpression(t: Type, ...dynamic: Sourcelike[]): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => dynamic,
@@ -361,7 +361,7 @@ export class DartRenderer extends ConvenienceRenderer {
                 return [dynamic, " == null ? null : ", this.toDynamicExpression(maybeNullable, dynamic)];
             }
         );
-    };
+    }
 
     protected emitClassDefinition(c: ClassType, className: Name): void {
         this.emitDescription(this.descriptionForType(c));

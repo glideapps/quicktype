@@ -324,20 +324,20 @@ export class SwiftRenderer extends ConvenienceRenderer {
         this.emitCommentLines(lines, "/// ");
     }
 
-    private emitBlock = (line: Sourcelike, f: () => void): void => {
+    private emitBlock(line: Sourcelike, f: () => void): void {
         this.emitLine(line, " {");
         this.indent(f);
         this.emitLine("}");
-    };
+    }
 
     private emitBlockWithAccess(line: Sourcelike, f: () => void): void {
         this.emitBlock([this.accessLevel, line], f);
     }
 
-    private justTypesCase = (justTypes: Sourcelike, notJustTypes: Sourcelike): Sourcelike => {
+    private justTypesCase(justTypes: Sourcelike, notJustTypes: Sourcelike): Sourcelike {
         if (this._options.justTypes) return justTypes;
         else return notJustTypes;
-    };
+    }
 
     protected swiftPropertyType(p: ClassProperty): Sourcelike {
         if (p.isOptional) {
@@ -390,7 +390,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
         );
     }
 
-    protected proposedUnionMemberNameForTypeKind = (kind: TypeKind): string | null => {
+    protected proposedUnionMemberNameForTypeKind(kind: TypeKind): string | null {
         if (kind === "enum") {
             return "enumeration";
         }
@@ -398,9 +398,9 @@ export class SwiftRenderer extends ConvenienceRenderer {
             return "one_of";
         }
         return null;
-    };
+    }
 
-    private renderHeader = (): void => {
+    private renderHeader(): void {
         if (this.leadingComments !== undefined) {
             this.emitCommentLines(this.leadingComments);
         } else if (!this._options.justTypes) {
@@ -472,13 +472,13 @@ export class SwiftRenderer extends ConvenienceRenderer {
         if (!this._options.justTypes && this._options.alamofire) {
             this.emitLine("import Alamofire");
         }
-    };
+    }
 
-    private renderTopLevelAlias = (t: Type, name: Name): void => {
+    private renderTopLevelAlias(t: Type, name: Name): void {
         this.emitLine("typealias ", name, " = ", this.swiftType(t, true));
-    };
+    }
 
-    private getProtocolString = (): Sourcelike => {
+    private getProtocolString(): Sourcelike {
         const protocols: string[] = [];
         if (!this._options.justTypes) {
             protocols.push("Codable");
@@ -493,7 +493,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
         }
 
         return protocols.length > 0 ? ": " + protocols.join(", ") : "";
-    };
+    }
 
     private getEnumPropertyGroups(c: ClassType) {
         type PropertyGroup = { name: Name; label?: string }[];
@@ -530,7 +530,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
             : this._options.accessLevel + " ";
     }
 
-    private renderClassDefinition = (c: ClassType, className: Name): void => {
+    private renderClassDefinition(c: ClassType, className: Name): void {
         this.emitDescription(this.descriptionForType(c));
 
         const isClass = this._options.useClasses || this.isCycleBreakerType(c);
@@ -626,7 +626,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 });
             }
         });
-    };
+    }
 
     private emitNewEncoderDecoder(): void {
         this.emitBlock("func newJSONDecoder() -> JSONDecoder", () => {
@@ -676,7 +676,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         });
     }
 
-    private emitConvenienceInitializersExtension = (c: ClassType, className: Name): void => {
+    private emitConvenienceInitializersExtension(c: ClassType, className: Name): void {
         const isClass = this._options.useClasses || this.isCycleBreakerType(c);
         const convenience = isClass ? "convenience " : "";
 
@@ -724,9 +724,9 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
                 this.emitLine("return String(data: try self.jsonData(), encoding: encoding)");
             });
         });
-    };
+    }
 
-    private renderEnumDefinition = (e: EnumType, enumName: Name): void => {
+    private renderEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
 
         const protocols: string[] = [];
@@ -758,9 +758,9 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
                 });
             });
         }
-    };
+    }
 
-    private renderUnionDefinition = (u: UnionType, unionName: Name): void => {
+    private renderUnionDefinition(u: UnionType, unionName: Name): void {
         function sortBy(t: Type): string {
             const kind = t.kind;
             if (kind === "class") return kind;
@@ -822,9 +822,9 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
                 });
             }
         });
-    };
+    }
 
-    private emitTopLevelMapAndArrayConvenienceInitializerExtensions = (t: Type, name: Name): void => {
+    private emitTopLevelMapAndArrayConvenienceInitializerExtensions(t: Type, name: Name): void {
         let extensionSource: Sourcelike;
 
         if (t instanceof ArrayType) {
@@ -859,9 +859,9 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
                 this.emitLine("return String(data: try self.jsonData(), encoding: encoding)");
             });
         });
-    };
+    }
 
-    private emitDecodingError = (name: Name): void => {
+    private emitDecodingError(name: Name): void {
         this.emitLine(
             "throw DecodingError.typeMismatch(",
             name,
@@ -869,7 +869,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             name,
             '"))'
         );
-    };
+    }
 
     private emitSupportFunctions4 = (): void => {
         // This assumes that this method is called after declarations
@@ -1160,15 +1160,15 @@ ${this.accessLevel}class JSONAny: Codable {
 
         this.forEachTopLevel(
             "leading",
-            this.renderTopLevelAlias,
+            (t: Type, name: Name) => this.renderTopLevelAlias(t, name),
             t => this.namedTypeToNameForTopLevel(t) === undefined
         );
 
         this.forEachNamedType(
             "leading-and-interposing",
-            this.renderClassDefinition,
-            this.renderEnumDefinition,
-            this.renderUnionDefinition
+            (c: ClassType, className: Name) => this.renderClassDefinition(c, className),
+            (e: EnumType, enumName: Name) => this.renderEnumDefinition(e, enumName),
+            (u: UnionType, unionName: Name) => this.renderUnionDefinition(u, unionName)
         );
 
         if (!this._options.justTypes) {
@@ -1178,14 +1178,14 @@ ${this.accessLevel}class JSONAny: Codable {
                 this.emitMark("Convenience initializers and mutators");
                 this.forEachNamedType(
                     "leading-and-interposing",
-                    this.emitConvenienceInitializersExtension,
+                    (c: ClassType, className: Name) => this.emitConvenienceInitializersExtension(c, className),
                     () => undefined,
                     () => undefined
                 );
                 this.ensureBlankLine();
                 this.forEachTopLevel(
                     "leading-and-interposing",
-                    this.emitTopLevelMapAndArrayConvenienceInitializerExtensions
+                    (t: Type, name: Name) => this.emitTopLevelMapAndArrayConvenienceInitializerExtensions(t, name)
                 );
             }
 
