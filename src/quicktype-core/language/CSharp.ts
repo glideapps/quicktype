@@ -811,7 +811,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             // FIXME: Make FromJson a Named
             this.emitExpressionMember(
                 ["public static ", csType, " FromJson(string json)"],
-                ["JsonConvert.DeserializeObject<", csType, ">(json, ", this._options.namespace, ".Converter.Settings)"]
+                ["JsonConvert.DeserializeObject<", csType, ">(json, Converter.Settings)"]
             );
         });
     }
@@ -849,7 +849,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                     seenTypes.add(t);
                     this.emitExpressionMember(
                         ["public static string ToJson(this ", this.topLevelResultType(t), " self)"],
-                        ["JsonConvert.SerializeObject(self, ", this._options.namespace, ".Converter.Settings)"]
+                        ["JsonConvert.SerializeObject(self, Converter.Settings)"]
                     );
                 }
             });
