@@ -19,7 +19,6 @@ export { all as defaultTargetLanguages, languageNamed } from "./language/All";
 export { Sourcelike, SerializedRenderResult, Annotation, modifySource } from "./Source";
 export { Name, funPrefixNamer, Namer } from "./Naming";
 export { IssueAnnotationData } from "./Annotation";
-export { Readable } from "stream";
 export {
     panic,
     assert,
