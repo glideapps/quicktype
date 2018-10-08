@@ -1,5 +1,4 @@
 import * as URI from "urijs";
-import * as path from "path";
 
 import { TypeAttributeKind, TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 import { setUnionManyInto } from "collection-utils";
@@ -49,11 +48,19 @@ class URITypeAttributeKind extends TypeAttributeKind<URIAttributes> {
 
 export const uriTypeAttributeKind: TypeAttributeKind<URIAttributes> = new URITypeAttributeKind();
 
+const extensionRegex = /^.+(\.[^./\\]+)$/;
+
+function pathExtension(path: string): string | undefined {
+    const matches = path.match(extensionRegex);
+    if (matches === null) return undefined;
+    return matches[1];
+}
+
 export function uriInferenceAttributesProducer(s: string): TypeAttributes {
     try {
         const uri = URI.parse(s);
-        const extension = path.extname(uri.path).toLowerCase();
-        const extensions = extension === "" ? [] : [extension];
+        const extension = pathExtension(uri.path);
+        const extensions = extension === undefined ? [] : [extension.toLowerCase()];
         return uriTypeAttributeKind.makeAttributes([new Set([uri.protocol.toLowerCase()]), new Set(extensions)]);
     } catch {
         return emptyTypeAttributes;
