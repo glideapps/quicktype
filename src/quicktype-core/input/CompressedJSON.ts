@@ -7,7 +7,7 @@ import { inferTransformedStringTypeKindForString } from "../attributes/StringTyp
 import { TransformedStringTypeKind, isPrimitiveStringTypeKind, transformedStringTypeTargetTypeKindsMap } from "../Type";
 import { DateTimeRecognizer } from "../DateTime";
 
-const Combo = require("stream-json/Combo");
+const { Parser } = require("stream-json");
 
 export enum Tag {
     Null,
@@ -77,7 +77,7 @@ export class CompressedJSON {
     constructor(readonly dateTimeRecognizer: DateTimeRecognizer, readonly handleRefs: boolean) {}
 
     async readFromStream(readStream: stream.Readable): Promise<Value> {
-        const combo = new Combo({ packKeys: true, packStrings: true });
+        const combo = new Parser({ packKeys: true, packStrings: true });
         combo.on("data", (item: { name: string; value: string | undefined }) => {
             if (typeof methodMap[item.name] === "string") {
                 (this as any)[methodMap[item.name]](item.value);
