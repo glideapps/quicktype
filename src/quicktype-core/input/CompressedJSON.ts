@@ -76,27 +76,6 @@ export class CompressedJSON {
 
     constructor(readonly dateTimeRecognizer: DateTimeRecognizer, readonly handleRefs: boolean) {}
 
-    async readFromStream(readStream: stream.Readable): Promise<Value> {
-        const combo = new Parser({ packKeys: true, packStrings: true });
-        combo.on("data", (item: { name: string; value: string | undefined }) => {
-            if (typeof methodMap[item.name] === "string") {
-                (this as any)[methodMap[item.name]](item.value);
-            }
-        });
-        const promise = new Promise<Value>((resolve, reject) => {
-            combo.on("end", () => {
-                resolve(this.finish());
-            });
-            combo.on("error", (err: any) => {
-                reject(err);
-            });
-        });
-        readStream.setEncoding("utf8");
-        readStream.pipe(combo);
-        readStream.resume();
-        return promise;
-    }
-
     getStringForValue(v: Value): string {
         const tag = valueTag(v);
         assert(tag === Tag.InternedString || tag === Tag.TransformedString);
@@ -119,7 +98,11 @@ export class CompressedJSON {
         return kind;
     }
 
-    private internString(s: string): number {
+    protected get context(): Context {
+        return defined(this._ctx);
+    }
+
+    protected internString(s: string): number {
         if (Object.prototype.hasOwnProperty.call(this._stringIndexes, s)) {
             return this._stringIndexes[s];
         }
@@ -129,29 +112,29 @@ export class CompressedJSON {
         return index;
     }
 
-    private makeString(s: string): Value {
+    protected makeString(s: string): Value {
         const value = makeValue(Tag.InternedString, this.internString(s));
         assert(typeof value === "number", `Interned string value is not a number: ${value}`);
         return value;
     }
 
-    private internObject = (obj: Value[]): Value => {
+    protected internObject(obj: Value[]): Value {
         const index = this._objects.length;
         this._objects.push(obj);
         return makeValue(Tag.Object, index);
-    };
+    }
 
-    private internArray = (arr: Value[]): Value => {
+    protected internArray = (arr: Value[]): Value => {
         const index = this._arrays.length;
         this._arrays.push(arr);
         return makeValue(Tag.Array, index);
     };
 
-    private get isExpectingRef(): boolean {
+    protected get isExpectingRef(): boolean {
         return this._ctx !== undefined && this._ctx.currentKey === "$ref";
     }
 
-    private commitValue = (value: Value): void => {
+    protected commitValue(value: Value): void {
         assert(typeof value === "number", `CompressedJSON value is not a number: ${value}`);
         if (this._ctx === undefined) {
             assert(
@@ -170,9 +153,9 @@ export class CompressedJSON {
         } else {
             return panic("Committing value but nowhere to commit to");
         }
-    };
+    }
 
-    private finish = (): Value => {
+    protected finish(): Value {
         const value = this._rootValue;
         if (value === undefined) {
             return panic("Finished without root document");
@@ -180,9 +163,9 @@ export class CompressedJSON {
         assert(this._ctx === undefined && this._contextStack.length === 0, "Finished with contexts present");
         this._rootValue = undefined;
         return value;
-    };
+    }
 
-    private pushContext = (): void => {
+    protected pushContext(): void {
         if (this._ctx !== undefined) {
             this._contextStack.push(this._ctx);
         }
@@ -192,20 +175,81 @@ export class CompressedJSON {
             currentKey: undefined,
             currentNumberIsDouble: false
         };
-    };
+    }
 
-    private popContext = (): void => {
-        assert(this._ctx !== undefined, "Popping context when there isn't one");
-        this._ctx = this._contextStack.pop();
-    };
-
-    protected handleStartObject = (): void => {
+    protected pushObjectContext(): void {
         this.pushContext();
         defined(this._ctx).currentObject = [];
+    }
+
+    protected pushArrayContext(): void {
+        this.pushContext();
+        defined(this._ctx).currentArray = [];
+    }
+
+    protected popContext(): void {
+        assert(this._ctx !== undefined, "Popping context when there isn't one");
+        this._ctx = this._contextStack.pop();
+    }
+
+    equals(other: any): boolean {
+        return this === other;
+    }
+
+    hashCode(): number {
+        let hashAccumulator = hashCodeInit;
+        for (const s of this._strings) {
+            hashAccumulator = addHashCode(hashAccumulator, hashString(s));
+        }
+
+        for (const s of Object.getOwnPropertyNames(this._stringIndexes).sort()) {
+            hashAccumulator = addHashCode(hashAccumulator, hashString(s));
+            hashAccumulator = addHashCode(hashAccumulator, this._stringIndexes[s]);
+        }
+
+        for (const o of this._objects) {
+            for (const v of o) {
+                hashAccumulator = addHashCode(hashAccumulator, v);
+            }
+        }
+        for (const o of this._arrays) {
+            for (const v of o) {
+                hashAccumulator = addHashCode(hashAccumulator, v);
+            }
+        }
+
+        return hashAccumulator;
+    }
+}
+
+export class CompressedJSONFromStream extends CompressedJSON {
+    async readFromStream(readStream: stream.Readable): Promise<Value> {
+        const combo = new Parser({ packKeys: true, packStrings: true });
+        combo.on("data", (item: { name: string; value: string | undefined }) => {
+            if (typeof methodMap[item.name] === "string") {
+                (this as any)[methodMap[item.name]](item.value);
+            }
+        });
+        const promise = new Promise<Value>((resolve, reject) => {
+            combo.on("end", () => {
+                resolve(this.finish());
+            });
+            combo.on("error", (err: any) => {
+                reject(err);
+            });
+        });
+        readStream.setEncoding("utf8");
+        readStream.pipe(combo);
+        readStream.resume();
+        return promise;
+    }
+
+    protected handleStartObject = (): void => {
+        this.pushObjectContext();
     };
 
     protected handleEndObject = (): void => {
-        const obj = defined(this._ctx).currentObject;
+        const obj = this.context.currentObject;
         if (obj === undefined) {
             return panic("Object ended but not started");
         }
@@ -214,12 +258,11 @@ export class CompressedJSON {
     };
 
     protected handleStartArray = (): void => {
-        this.pushContext();
-        defined(this._ctx).currentArray = [];
+        this.pushArrayContext();
     };
 
     protected handleEndArray = (): void => {
-        const arr = defined(this._ctx).currentArray;
+        const arr = this.context.currentArray;
         if (arr === undefined) {
             return panic("Array ended but not started");
         }
@@ -228,7 +271,7 @@ export class CompressedJSON {
     };
 
     protected handleKeyValue = (s: string): void => {
-        const ctx = defined(this._ctx);
+        const ctx = this.context;
         ctx.currentKey = s;
     };
 
@@ -255,18 +298,18 @@ export class CompressedJSON {
 
     protected handleStartNumber = (): void => {
         this.pushContext();
-        defined(this._ctx).currentNumberIsDouble = false;
+        this.context.currentNumberIsDouble = false;
     };
 
     protected handleNumberChunk = (s: string): void => {
-        const ctx = defined(this._ctx);
+        const ctx = this.context;
         if (!ctx.currentNumberIsDouble && /[\.e]/i.test(s)) {
             ctx.currentNumberIsDouble = true;
         }
     };
 
     protected handleEndNumber = (): void => {
-        const isDouble = defined(this._ctx).currentNumberIsDouble;
+        const isDouble = this.context.currentNumberIsDouble;
         const numberTag = isDouble ? Tag.Double : Tag.Integer;
         this.popContext();
         this.commitValue(makeValue(numberTag, 0));
@@ -282,34 +325,5 @@ export class CompressedJSON {
 
     protected handleFalseValue = (): void => {
         this.commitValue(makeValue(Tag.False, 0));
-    };
-
-    equals = (other: any): boolean => {
-        return this === other;
-    };
-
-    hashCode = (): number => {
-        let hashAccumulator = hashCodeInit;
-        for (const s of this._strings) {
-            hashAccumulator = addHashCode(hashAccumulator, hashString(s));
-        }
-
-        for (const s of Object.getOwnPropertyNames(this._stringIndexes).sort()) {
-            hashAccumulator = addHashCode(hashAccumulator, hashString(s));
-            hashAccumulator = addHashCode(hashAccumulator, this._stringIndexes[s]);
-        }
-
-        for (const o of this._objects) {
-            for (const v of o) {
-                hashAccumulator = addHashCode(hashAccumulator, v);
-            }
-        }
-        for (const o of this._arrays) {
-            for (const v of o) {
-                hashAccumulator = addHashCode(hashAccumulator, v);
-            }
-        }
-
-        return hashAccumulator;
     };
 }

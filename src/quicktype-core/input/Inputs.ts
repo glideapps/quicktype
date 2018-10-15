@@ -1,6 +1,6 @@
 import { iterableFirst, iterableFind, iterableSome, setFilterMap, withDefault } from "collection-utils";
 
-import { Value, CompressedJSON } from "./CompressedJSON";
+import { Value, CompressedJSONFromStream } from "./CompressedJSON";
 import { panic, errorMessage, toReadable, StringInput, defined } from "../support/Support";
 import { messageError } from "../Messages";
 import { TypeBuilder } from "../TypeBuilder";
@@ -47,7 +47,7 @@ export class JSONInput implements Input<JSONSourceData> {
     private readonly _topLevels: Map<string, JSONTopLevel> = new Map();
 
     /* tslint:disable:no-unused-variable */
-    constructor(private readonly _compressedJSON: CompressedJSON) {}
+    constructor(private readonly _compressedJSON: CompressedJSONFromStream) {}
 
     private addSample(topLevelName: string, sample: Value): void {
         let topLevel = this._topLevels.get(topLevelName);
@@ -122,7 +122,7 @@ export function jsonInputForTargetLanguage(
     if (typeof targetLanguage === "string") {
         targetLanguage = defined(languageNamed(targetLanguage, languages));
     }
-    const compressedJSON = new CompressedJSON(targetLanguage.dateTimeRecognizer, handleJSONRefs);
+    const compressedJSON = new CompressedJSONFromStream(targetLanguage.dateTimeRecognizer, handleJSONRefs);
     return new JSONInput(compressedJSON);
 }
 
