@@ -4,8 +4,7 @@ import { TypeAttributeKind, TypeAttributes, emptyTypeAttributes } from "./TypeAt
 import { setUnionManyInto } from "collection-utils";
 import { JSONSchemaType, JSONSchemaAttributes, Ref } from "../input/JSONSchemaInput";
 import { JSONSchema } from "../input/JSONSchemaStore";
-import { checkArray } from "../support/Support";
-import { isString } from "util";
+import { checkArray, checkString } from "../support/Support";
 import { Type } from "../Type";
 
 const protocolsSchemaProperty = "qt-uri-protocols";
@@ -78,7 +77,7 @@ export function uriSchemaAttributesProducer(
     let protocols: ReadonlySet<string>;
     const maybeProtocols = schema[protocolsSchemaProperty];
     if (maybeProtocols !== undefined) {
-        protocols = new Set(checkArray(maybeProtocols, isString));
+        protocols = new Set(checkArray(maybeProtocols, checkString));
     } else {
         protocols = new Set();
     }
@@ -86,7 +85,7 @@ export function uriSchemaAttributesProducer(
     let extensions: ReadonlySet<string>;
     const maybeExtensions = schema[extensionsSchemaProperty];
     if (maybeExtensions !== undefined) {
-        extensions = new Set(checkArray(maybeExtensions, isString));
+        extensions = new Set(checkArray(maybeExtensions, checkString));
     } else {
         extensions = new Set();
     }
