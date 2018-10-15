@@ -1,7 +1,9 @@
+import * as stream from "stream";
+
 import { JSONSourceData, JSONSchemaSourceData } from "quicktype-core";
 import { GraphQLSourceData } from "../quicktype-graphql-input";
 
-export interface JSONTypeSource extends JSONSourceData {
+export interface JSONTypeSource extends JSONSourceData<stream.Readable> {
     kind: "json";
 }
 

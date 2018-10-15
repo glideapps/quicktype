@@ -1,7 +1,9 @@
+import * as stream from "stream";
+
 import { iterableFirst, iterableFind, iterableSome, setFilterMap, withDefault } from "collection-utils";
 
-import { Value, CompressedJSONFromStream } from "./CompressedJSON";
-import { panic, errorMessage, toReadable, StringInput, defined } from "../support/Support";
+import { Value, CompressedJSONFromStream, CompressedJSON } from "./CompressedJSON";
+import { panic, errorMessage, defined } from "../support/Support";
 import { messageError } from "../Messages";
 import { TypeBuilder } from "../TypeBuilder";
 import { makeNamesTypeAttributes } from "../attributes/TypeNames";
@@ -33,13 +35,13 @@ export interface Input<T> {
 
 type JSONTopLevel = { samples: Value[]; description: string | undefined };
 
-export interface JSONSourceData {
+export interface JSONSourceData<T> {
     name: string;
-    samples: StringInput[];
+    samples: T[];
     description?: string;
 }
 
-export class JSONInput implements Input<JSONSourceData> {
+export class JSONInput<T> implements Input<JSONSourceData<T>> {
     readonly kind: string = "json";
     readonly needIR: boolean = true;
     readonly needSchemaProcessing: boolean = false;
@@ -47,7 +49,7 @@ export class JSONInput implements Input<JSONSourceData> {
     private readonly _topLevels: Map<string, JSONTopLevel> = new Map();
 
     /* tslint:disable:no-unused-variable */
-    constructor(private readonly _compressedJSON: CompressedJSONFromStream) {}
+    constructor(private readonly _compressedJSON: CompressedJSON<T>) {}
 
     private addSample(topLevelName: string, sample: Value): void {
         let topLevel = this._topLevels.get(topLevelName);
@@ -66,12 +68,12 @@ export class JSONInput implements Input<JSONSourceData> {
         topLevel.description = description;
     }
 
-    async addSource(source: JSONSourceData): Promise<void> {
+    async addSource(source: JSONSourceData<T>): Promise<void> {
         const { name, samples, description } = source;
         for (const sample of samples) {
             let value: Value;
             try {
-                value = await this._compressedJSON.readFromStream(toReadable(sample));
+                value = await this._compressedJSON.parse(sample);
             } catch (e) {
                 return messageError("MiscJSONParseError", {
                     description: withDefault(description, "input"),
@@ -118,7 +120,7 @@ export function jsonInputForTargetLanguage(
     targetLanguage: string | TargetLanguage,
     languages?: TargetLanguage[],
     handleJSONRefs: boolean = false
-): JSONInput {
+): JSONInput<stream.Readable> {
     if (typeof targetLanguage === "string") {
         targetLanguage = defined(languageNamed(targetLanguage, languages));
     }

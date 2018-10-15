@@ -15,7 +15,6 @@ import {
     InputData,
     JSONSchemaInput,
     jsonInputForTargetLanguage,
-    StringInput,
     OptionDefinition,
     defaultTargetLanguages,
     IssueAnnotationData,
@@ -32,7 +31,8 @@ import {
     inferenceFlags,
     inferenceFlagNames,
     splitIntoWords,
-    capitalize
+    capitalize,
+    JSONSourceData
 } from "../quicktype-core";
 import { schemaForTypeScriptSources } from "../quicktype-typescript-input";
 import { GraphQLInput } from "../quicktype-graphql-input";
@@ -42,6 +42,7 @@ import { introspectServer } from "./GraphQLIntrospection";
 import { JSONTypeSource, TypeSource, GraphQLTypeSource, SchemaTypeSource } from "./TypeSource";
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
 import * as telemetry from "./telemetry";
+import { toReadable } from "../quicktype-core/support/Support";
 
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");
@@ -162,7 +163,7 @@ async function samplesFromDirectory(dataDir: string): Promise<TypeSource[]> {
     let sources = await readFilesOrURLsInDirectory(dataDir);
 
     for (const dir of directories) {
-        let jsonSamples: StringInput[] = [];
+        let jsonSamples: Readable[] = [];
         const schemaSources: SchemaTypeSource[] = [];
         const graphQLSources: GraphQLTypeSource[] = [];
 
@@ -708,6 +709,10 @@ async function makeInputData(
     return inputData;
 }
 
+function stringSourceDataToStreamSourceData(src: JSONSourceData<string>): JSONSourceData<Readable> {
+    return { name: src.name, description: src.description, samples: src.samples.map(toReadable) };
+}
+
 export async function makeQuicktypeOptions(
     options: CLIOptions,
     targetLanguages?: TargetLanguage[]
@@ -790,7 +795,10 @@ export async function makeQuicktypeOptions(
                     collectionFile
                 );
                 for (const src of postmanSources) {
-                    sources.push(Object.assign({ kind: "json" }, src) as JSONTypeSource);
+                    sources.push(Object.assign(
+                        { kind: "json" },
+                        stringSourceDataToStreamSourceData(src)
+                    ) as JSONTypeSource);
                 }
                 if (postmanSources.length > 1) {
                     fixedTopLevels = true;

@@ -63,7 +63,7 @@ const methodMap: { [name: string]: string } = {
     falseValue: "handleFalseValue"
 };
 
-export class CompressedJSON {
+export abstract class CompressedJSON<T> {
     private _rootValue: Value | undefined;
 
     private _ctx: Context | undefined;
@@ -75,6 +75,8 @@ export class CompressedJSON {
     private _arrays: Value[][] = [];
 
     constructor(readonly dateTimeRecognizer: DateTimeRecognizer, readonly handleRefs: boolean) {}
+
+    abstract async parse(input: T): Promise<Value>;
 
     getStringForValue(v: Value): string {
         const tag = valueTag(v);
@@ -222,8 +224,8 @@ export class CompressedJSON {
     }
 }
 
-export class CompressedJSONFromStream extends CompressedJSON {
-    async readFromStream(readStream: stream.Readable): Promise<Value> {
+export class CompressedJSONFromStream extends CompressedJSON<stream.Readable> {
+    async parse(readStream: stream.Readable): Promise<Value> {
         const combo = new Parser({ packKeys: true, packStrings: true });
         combo.on("data", (item: { name: string; value: string | undefined }) => {
             if (typeof methodMap[item.name] === "string") {
