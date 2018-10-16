@@ -42,8 +42,9 @@ import { introspectServer } from "./GraphQLIntrospection";
 import { JSONTypeSource, TypeSource, GraphQLTypeSource, SchemaTypeSource } from "./TypeSource";
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
 import * as telemetry from "./telemetry";
-import { toReadable } from "../quicktype-core/support/Support";
 import { CompressedJSONFromStream } from "./CompressedJSONFromStream";
+
+const stringToStream = require("string-to-stream");
 
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");
@@ -723,7 +724,7 @@ async function makeInputData(
 }
 
 function stringSourceDataToStreamSourceData(src: JSONSourceData<string>): JSONSourceData<Readable> {
-    return { name: src.name, description: src.description, samples: src.samples.map(toReadable) };
+    return { name: src.name, description: src.description, samples: src.samples.map(stringToStream) };
 }
 
 export async function makeQuicktypeOptions(

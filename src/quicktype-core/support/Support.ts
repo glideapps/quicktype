@@ -4,8 +4,6 @@ import { Base64 } from "js-base64";
 import * as pako from "pako";
 import { messageError } from "../Messages";
 
-const stringToStream = require("string-to-stream");
-
 export type StringMap = { [name: string]: any };
 
 export function isStringMap(x: any): x is StringMap;
@@ -133,10 +131,6 @@ export function indentationString(level: number): string {
 }
 
 export type StringInput = string | Readable;
-
-export function toReadable(source: StringInput): Readable {
-    return typeof source === "string" ? stringToStream(source) : source;
-}
 
 export async function toString(source: StringInput): Promise<string> {
     return typeof source === "string" ? source : await getStream(source);
