@@ -3,7 +3,9 @@ export {
     RendererOptions,
     getTargetLanguage,
     quicktypeMultiFile,
+    quicktypeMultiFileSync,
     quicktype,
+    combineRenderResults,
     inferenceFlags,
     inferenceFlagNames,
     RunContext

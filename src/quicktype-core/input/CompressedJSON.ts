@@ -57,7 +57,11 @@ export abstract class CompressedJSON<T> {
 
     constructor(readonly dateTimeRecognizer: DateTimeRecognizer, readonly handleRefs: boolean) {}
 
-    abstract async parse(input: T): Promise<Value>;
+    abstract parse(input: T): Promise<Value>;
+
+    parseSync(_input: T): Value {
+        return panic("parseSync not implemented in CompressedJSON");
+    }
 
     getStringForValue(v: Value): string {
         const tag = valueTag(v);
@@ -264,6 +268,10 @@ export abstract class CompressedJSON<T> {
 
 export class CompressedJSONFromString extends CompressedJSON<string> {
     async parse(input: string): Promise<Value> {
+        return this.parseSync(input);
+    }
+
+    parseSync(input: string): Value {
         const json = JSON.parse(input);
         this.process(json);
         return this.finish();

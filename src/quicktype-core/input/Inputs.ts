@@ -1,4 +1,4 @@
-import { iterableFirst, iterableFind, iterableSome, setFilterMap, withDefault } from "collection-utils";
+import { iterableFirst, iterableFind, iterableSome, setFilterMap, withDefault, arrayMapSync } from "collection-utils";
 
 import { Value, CompressedJSON, CompressedJSONFromString } from "./CompressedJSON";
 import { panic, errorMessage, defined } from "../support/Support";
@@ -17,8 +17,7 @@ export interface Input<T> {
     readonly needSchemaProcessing: boolean;
 
     addSource(source: T): Promise<void>;
-
-    finishAddingInputs(): Promise<void>;
+    addSourceSync(source: T): void;
 
     singleStringSchemaSource(): string | undefined;
 
@@ -29,6 +28,13 @@ export interface Input<T> {
         inferEnums: boolean,
         fixedTopLevels: boolean
     ): Promise<void>;
+    addTypesSync(
+        ctx: RunContext,
+        typeBuilder: TypeBuilder,
+        inferMaps: boolean,
+        inferEnums: boolean,
+        fixedTopLevels: boolean
+    ): void;
 }
 
 type JSONTopLevel = { samples: Value[]; description: string | undefined };
@@ -37,6 +43,14 @@ export interface JSONSourceData<T> {
     name: string;
     samples: T[];
     description?: string;
+}
+
+function messageParseError(name: string, description: string | undefined, e: unknown): never {
+    return messageError("MiscJSONParseError", {
+        description: withDefault(description, "input"),
+        address: name,
+        message: errorMessage(e)
+    });
 }
 
 export class JSONInput<T> implements Input<JSONSourceData<T>> {
@@ -66,19 +80,8 @@ export class JSONInput<T> implements Input<JSONSourceData<T>> {
         topLevel.description = description;
     }
 
-    async addSource(source: JSONSourceData<T>): Promise<void> {
-        const { name, samples, description } = source;
-        for (const sample of samples) {
-            let value: Value;
-            try {
-                value = await this._compressedJSON.parse(sample);
-            } catch (e) {
-                return messageError("MiscJSONParseError", {
-                    description: withDefault(description, "input"),
-                    address: name,
-                    message: errorMessage(e)
-                });
-            }
+    private addSamples(name: string, values: Value[], description: string | undefined): void {
+        for (const value of values) {
             this.addSample(name, value);
             if (description !== undefined) {
                 this.setDescription(name, description);
@@ -86,8 +89,24 @@ export class JSONInput<T> implements Input<JSONSourceData<T>> {
         }
     }
 
-    async finishAddingInputs(): Promise<void> {
-        return;
+    async addSource(source: JSONSourceData<T>): Promise<void> {
+        const { name, samples, description } = source;
+        try {
+            const values = await arrayMapSync(samples, async s => await this._compressedJSON.parse(s));
+            this.addSamples(name, values, description);
+        } catch (e) {
+            return messageParseError(name, description, e);
+        }
+    }
+
+    addSourceSync(source: JSONSourceData<T>): void {
+        const { name, samples, description } = source;
+        try {
+            const values = samples.map(s => this._compressedJSON.parseSync(s));
+            this.addSamples(name, values, description);
+        } catch (e) {
+            return messageParseError(name, description, e);
+        }
     }
 
     singleStringSchemaSource(): undefined {
@@ -95,12 +114,22 @@ export class JSONInput<T> implements Input<JSONSourceData<T>> {
     }
 
     async addTypes(
-        _ctx: RunContext,
+        ctx: RunContext,
         typeBuilder: TypeBuilder,
         inferMaps: boolean,
         inferEnums: boolean,
         fixedTopLevels: boolean
     ): Promise<void> {
+        return this.addTypesSync(ctx, typeBuilder, inferMaps, inferEnums, fixedTopLevels);
+    }
+
+    addTypesSync(
+        _ctx: RunContext,
+        typeBuilder: TypeBuilder,
+        inferMaps: boolean,
+        inferEnums: boolean,
+        fixedTopLevels: boolean
+    ): void {
         const inference = new TypeInference(this._compressedJSON, typeBuilder, inferMaps, inferEnums);
 
         for (const [name, { samples, description }] of this._topLevels) {
@@ -134,19 +163,23 @@ export class InputData {
         this._inputs = this._inputs.add(input);
     }
 
-    async addSource<T>(kind: string, source: T, makeInput: () => Input<T>): Promise<void> {
+    private getOrAddInput<T>(kind: string, makeInput: () => Input<T>): Input<T> {
         let input: Input<T> | undefined = iterableFind(this._inputs, i => i.kind === kind);
         if (input === undefined) {
             input = makeInput();
             this.addInput(input);
         }
+        return input;
+    }
+
+    async addSource<T>(kind: string, source: T, makeInput: () => Input<T>): Promise<void> {
+        const input = this.getOrAddInput(kind, makeInput);
         await input.addSource(source);
     }
 
-    async finishAddingInputs(): Promise<void> {
-        for (const input of this._inputs) {
-            await input.finishAddingInputs();
-        }
+    addSourceSync<T>(kind: string, source: T, makeInput: () => Input<T>): void {
+        const input = this.getOrAddInput(kind, makeInput);
+        input.addSourceSync(source);
     }
 
     async addTypes(
@@ -158,6 +191,18 @@ export class InputData {
     ): Promise<void> {
         for (const input of this._inputs) {
             await input.addTypes(ctx, typeBuilder, inferMaps, inferEnums, fixedTopLevels);
+        }
+    }
+
+    addTypesSync(
+        ctx: RunContext,
+        typeBuilder: TypeBuilder,
+        inferMaps: boolean,
+        inferEnums: boolean,
+        fixedTopLevels: boolean
+    ): void {
+        for (const input of this._inputs) {
+            input.addTypesSync(ctx, typeBuilder, inferMaps, inferEnums, fixedTopLevels);
         }
     }
 

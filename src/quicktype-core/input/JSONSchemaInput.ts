@@ -1181,7 +1181,15 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
         await addTypesInSchema(resolver, typeBuilder, this._topLevels, this._attributeProducers);
     }
 
+    addTypesSync(): void {
+        return panic("addTypesSync not supported in JSONSchemaInput");
+    }
+
     async addSource(schemaSource: JSONSchemaSourceData): Promise<void> {
+        return this.addSourceSync(schemaSource);
+    }
+
+    addSourceSync(schemaSource: JSONSchemaSourceData): void {
         const { name, uris, schema, isConverted } = schemaSource;
 
         if (isConverted !== true) {
@@ -1229,10 +1237,6 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
         for (const normalizedURI of normalizedURIs) {
             this._schemaSources.push([normalizedURI, schemaSource]);
         }
-    }
-
-    async finishAddingInputs(): Promise<void> {
-        return;
     }
 
     singleStringSchemaSource(): string | undefined {

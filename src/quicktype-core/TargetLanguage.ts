@@ -10,6 +10,8 @@ import { ConvenienceRenderer } from "./ConvenienceRenderer";
 import { Type } from "./Type";
 import { DateTimeRecognizer, DefaultDateTimeRecognizer } from "./DateTime";
 
+export type MultiFileRenderResult = ReadonlyMap<string, SerializedRenderResult>;
+
 export abstract class TargetLanguage {
     constructor(readonly displayName: string, readonly names: string[], readonly extension: string) {}
 
@@ -42,7 +44,7 @@ export abstract class TargetLanguage {
         leadingComments: string[] | undefined,
         rendererOptions: { [name: string]: any },
         indentation?: string
-    ): ReadonlyMap<string, SerializedRenderResult> {
+    ): MultiFileRenderResult {
         if (indentation === undefined) {
             indentation = this.defaultIndentation;
         }

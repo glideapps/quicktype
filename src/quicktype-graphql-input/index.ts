@@ -484,21 +484,25 @@ export class GraphQLInput implements Input<GraphQLSourceData> {
     private readonly _topLevels: Map<string, GraphQLTopLevel> = new Map();
 
     async addSource(source: GraphQLSourceData): Promise<void> {
+        this.addSourceSync(source);
+    }
+
+    addSourceSync(source: GraphQLSourceData): void {
         this._topLevels.set(source.name, {
             schema: source.schema,
             query: source.query
         });
     }
 
-    async finishAddingInputs(): Promise<void> {
-        return;
-    }
-
     singleStringSchemaSource(): undefined {
         return undefined;
     }
 
-    async addTypes(_ctx: RunContext, typeBuilder: TypeBuilder): Promise<void> {
+    async addTypes(ctx: RunContext, typeBuilder: TypeBuilder): Promise<void> {
+        return this.addTypesSync(ctx, typeBuilder);
+    }
+
+    addTypesSync(_ctx: RunContext, typeBuilder: TypeBuilder): void {
         for (const [name, { schema, query }] of this._topLevels) {
             const newTopLevels = makeGraphQLQueryTypes(name, typeBuilder, schema, query);
             for (const [actualName, t] of newTopLevels) {
