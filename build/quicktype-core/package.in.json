@@ -10,7 +10,7 @@
         "clean": "rm -rf dist node_modules *~",
         "prepare": "npm run build",
         "build": "tsc",
-        "tslint": "tslint --project . --exclude 'get-stream/**'"
+        "tslint": "tslint --project ."
     },
     "dependencies": {
         "@types/urijs": "github:quicktype/types-urijs",

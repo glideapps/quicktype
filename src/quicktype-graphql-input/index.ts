@@ -18,8 +18,6 @@ import {
     removeNullFromUnion,
     assertNever,
     panic,
-    toString,
-    StringInput,
     TypeBuilder,
     TypeRef,
     TypeNames,
@@ -474,7 +472,7 @@ function makeGraphQLQueryTypes(
     return types;
 }
 
-export type GraphQLSourceData = { name: string; schema: any; query: StringInput };
+export type GraphQLSourceData = { name: string; schema: any; query: string };
 
 type GraphQLTopLevel = { schema: any; query: string };
 
@@ -488,7 +486,7 @@ export class GraphQLInput implements Input<GraphQLSourceData> {
     async addSource(source: GraphQLSourceData): Promise<void> {
         this._topLevels.set(source.name, {
             schema: source.schema,
-            query: await toString(source.query)
+            query: source.query
         });
     }
 

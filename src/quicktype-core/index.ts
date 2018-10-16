@@ -27,9 +27,7 @@ export {
     parseJSON,
     checkStringMap,
     checkArray,
-    inflateBase64,
-    StringInput,
-    toString
+    inflateBase64
 } from "./support/Support";
 export {
     splitIntoWords,
@@ -40,7 +38,6 @@ export {
     legalizeCharacters,
     isLetterOrDigit
 } from "./support/Strings";
-export { getStream } from "./get-stream/index";
 export { train as trainMarkovChain } from "./MarkovChain";
 export { QuickTypeError, messageError, messageAssert } from "./Messages";
 export {

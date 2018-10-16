@@ -1,5 +1,3 @@
-import { Readable } from "stream";
-import { getStream } from "../get-stream";
 import { Base64 } from "js-base64";
 import * as pako from "pako";
 import { messageError } from "../Messages";
@@ -128,12 +126,6 @@ export function parseJSON(text: string, description: string, address: string = "
 
 export function indentationString(level: number): string {
     return "  ".repeat(level);
-}
-
-export type StringInput = string | Readable;
-
-export async function toString(source: StringInput): Promise<string> {
-    return typeof source === "string" ? source : await getStream(source);
 }
 
 export function numberEnumValues(e: { [key: string]: any }): number[] {

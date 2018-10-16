@@ -4,6 +4,8 @@ import * as _ from "lodash";
 import { Readable } from "stream";
 import { hasOwnProperty, definedMap, withDefault, mapFromObject, mapMap } from "collection-utils";
 
+import { getStream } from "./get-stream";
+
 import {
     Options,
     RendererOptions,
@@ -22,7 +24,6 @@ import {
     defined,
     assertNever,
     parseJSON,
-    getStream,
     trainMarkovChain,
     messageError,
     messageAssert,
@@ -140,7 +141,7 @@ async function samplesFromDirectory(dataDir: string): Promise<TypeSource[]> {
                     kind: "graphql",
                     name,
                     schema: undefined,
-                    query: await readableFromFileOrURL(fileOrUrl)
+                    query: await getStream(await readableFromFileOrURL(fileOrUrl))
                 });
             }
         }
@@ -788,7 +789,7 @@ export async function makeQuicktypeOptions(
                     schemaString = fs.readFileSync(schemaFileName, "utf8");
                 }
                 const schema = parseJSON(schemaString, "GraphQL schema", schemaFileName);
-                const query = await readableFromFileOrURL(queryFile);
+                const query = await getStream(await readableFromFileOrURL(queryFile));
                 const name = numSources === 1 ? options.topLevel : typeNameFromFilename(queryFile);
                 gqlSources.push({ kind: "graphql", name, schema, query });
             }

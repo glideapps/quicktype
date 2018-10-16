@@ -27,7 +27,7 @@ import {
     transformedStringTypeTargetTypeKindsMap,
     isNumberTypeKind
 } from "../Type";
-import { panic, assertNever, StringMap, assert, defined, StringInput, parseJSON, toString } from "../support/Support";
+import { panic, assertNever, StringMap, assert, defined, parseJSON } from "../support/Support";
 import { TypeBuilder } from "../TypeBuilder";
 import { TypeNames } from "../attributes/TypeNames";
 import { makeNamesTypeAttributes, modifyTypeNames, singularizeTypeNames } from "../attributes/TypeNames";
@@ -1075,16 +1075,14 @@ async function refsInSchemaForURI(
 }
 
 class InputJSONSchemaStore extends JSONSchemaStore {
-    constructor(private readonly _inputs: Map<string, StringInput>, private readonly _delegate?: JSONSchemaStore) {
+    constructor(private readonly _inputs: Map<string, string>, private readonly _delegate?: JSONSchemaStore) {
         super();
     }
 
     async fetch(address: string): Promise<JSONSchema | undefined> {
         const maybeInput = this._inputs.get(address);
         if (maybeInput !== undefined) {
-            return checkJSONSchema(parseJSON(await toString(maybeInput), "JSON Schema", address), () =>
-                Ref.root(address)
-            );
+            return checkJSONSchema(parseJSON(maybeInput, "JSON Schema", address), () => Ref.root(address));
         }
         if (this._delegate === undefined) {
             return panic(`Schema URI ${address} requested, but no store given`);
@@ -1096,7 +1094,7 @@ class InputJSONSchemaStore extends JSONSchemaStore {
 export interface JSONSchemaSourceData {
     name: string;
     uris?: string[];
-    schema?: StringInput;
+    schema?: string;
     isConverted?: boolean;
 }
 
@@ -1106,7 +1104,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
 
     private readonly _attributeProducers: JSONSchemaAttributeProducer[];
 
-    private readonly _schemaInputs: Map<string, StringInput> = new Map();
+    private readonly _schemaInputs: Map<string, string> = new Map();
     private _schemaSources: [uri.URI, JSONSchemaSourceData][] = [];
 
     private readonly _topLevels: Map<string, Ref> = new Map();
