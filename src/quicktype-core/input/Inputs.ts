@@ -1,8 +1,6 @@
-import * as stream from "stream";
-
 import { iterableFirst, iterableFind, iterableSome, setFilterMap, withDefault } from "collection-utils";
 
-import { Value, CompressedJSONFromStream, CompressedJSON } from "./CompressedJSON";
+import { Value, CompressedJSON, CompressedJSONFromString } from "./CompressedJSON";
 import { panic, errorMessage, defined } from "../support/Support";
 import { messageError } from "../Messages";
 import { TypeBuilder } from "../TypeBuilder";
@@ -120,11 +118,11 @@ export function jsonInputForTargetLanguage(
     targetLanguage: string | TargetLanguage,
     languages?: TargetLanguage[],
     handleJSONRefs: boolean = false
-): JSONInput<stream.Readable> {
+): JSONInput<string> {
     if (typeof targetLanguage === "string") {
         targetLanguage = defined(languageNamed(targetLanguage, languages));
     }
-    const compressedJSON = new CompressedJSONFromStream(targetLanguage.dateTimeRecognizer, handleJSONRefs);
+    const compressedJSON = new CompressedJSONFromString(targetLanguage.dateTimeRecognizer, handleJSONRefs);
     return new JSONInput(compressedJSON);
 }
 

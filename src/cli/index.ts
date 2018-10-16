@@ -14,7 +14,6 @@ import {
     languageNamed,
     InputData,
     JSONSchemaInput,
-    jsonInputForTargetLanguage,
     OptionDefinition,
     defaultTargetLanguages,
     IssueAnnotationData,
@@ -32,7 +31,8 @@ import {
     inferenceFlagNames,
     splitIntoWords,
     capitalize,
-    JSONSourceData
+    JSONSourceData,
+    JSONInput
 } from "../quicktype-core";
 import { schemaForTypeScriptSources } from "../quicktype-typescript-input";
 import { GraphQLInput } from "../quicktype-graphql-input";
@@ -43,6 +43,7 @@ import { JSONTypeSource, TypeSource, GraphQLTypeSource, SchemaTypeSource } from 
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
 import * as telemetry from "./telemetry";
 import { toReadable } from "../quicktype-core/support/Support";
+import { CompressedJSONFromStream } from "./CompressedJSONFromStream";
 
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");
@@ -674,6 +675,18 @@ function makeTypeScriptSource(fileNames: string[]): SchemaTypeSource {
     }
 
     return Object.assign({ kind: "schema" }, schemaForTypeScriptSources(sources)) as SchemaTypeSource;
+}
+
+export function jsonInputForTargetLanguage(
+    targetLanguage: string | TargetLanguage,
+    languages?: TargetLanguage[],
+    handleJSONRefs: boolean = false
+): JSONInput<Readable> {
+    if (typeof targetLanguage === "string") {
+        targetLanguage = defined(languageNamed(targetLanguage, languages));
+    }
+    const compressedJSON = new CompressedJSONFromStream(targetLanguage.dateTimeRecognizer, handleJSONRefs);
+    return new JSONInput(compressedJSON);
 }
 
 async function makeInputData(

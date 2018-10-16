@@ -1,13 +1,9 @@
-import * as stream from "stream";
-
 import { addHashCode, hashCodeInit, hashString } from "collection-utils";
 
 import { defined, panic, assert } from "../support/Support";
-import { inferTransformedStringTypeKindForString } from "../attributes/StringTypes";
 import { TransformedStringTypeKind, isPrimitiveStringTypeKind, transformedStringTypeTargetTypeKindsMap } from "../Type";
 import { DateTimeRecognizer } from "../DateTime";
-
-const { Parser } = require("stream-json");
+import { inferTransformedStringTypeKindForString } from "../attributes/StringTypes";
 
 export enum Tag {
     Null,
@@ -28,7 +24,7 @@ export type Value = number;
 const TAG_BITS = 4;
 const TAG_MASK = (1 << TAG_BITS) - 1;
 
-function makeValue(t: Tag, index: number): Value {
+export function makeValue(t: Tag, index: number): Value {
     return t | (index << TAG_BITS);
 }
 
@@ -46,21 +42,6 @@ type Context = {
     currentArray: Value[] | undefined;
     currentKey: string | undefined;
     currentNumberIsDouble: boolean;
-};
-
-const methodMap: { [name: string]: string } = {
-    startObject: "handleStartObject",
-    endObject: "handleEndObject",
-    startArray: "handleStartArray",
-    endArray: "handleEndArray",
-    startNumber: "handleStartNumber",
-    numberChunk: "handleNumberChunk",
-    endNumber: "handleEndNumber",
-    keyValue: "handleKeyValue",
-    stringValue: "handleStringValue",
-    nullValue: "handleNullValue",
-    trueValue: "handleTrueValue",
-    falseValue: "handleFalseValue"
 };
 
 export abstract class CompressedJSON<T> {
@@ -157,6 +138,40 @@ export abstract class CompressedJSON<T> {
         }
     }
 
+    protected commitNull(): void {
+        this.commitValue(makeValue(Tag.Null, 0));
+    }
+
+    protected commitBoolean(v: boolean): void {
+        this.commitValue(makeValue(v ? Tag.True : Tag.False, 0));
+    }
+
+    protected commitNumber(isDouble: boolean): void {
+        const numberTag = isDouble ? Tag.Double : Tag.Integer;
+        this.commitValue(makeValue(numberTag, 0));
+    }
+
+    protected commitString(s: string): void {
+        let value: Value | undefined = undefined;
+        if (this.handleRefs && this.isExpectingRef) {
+            value = this.makeString(s);
+        } else {
+            const format = inferTransformedStringTypeKindForString(s, this.dateTimeRecognizer);
+            if (format !== undefined) {
+                if (defined(transformedStringTypeTargetTypeKindsMap.get(format)).attributesProducer !== undefined) {
+                    value = makeValue(Tag.TransformedString, this.internString(s));
+                } else {
+                    value = makeValue(Tag.StringFormat, this.internString(format));
+                }
+            } else if (s.length <= 64) {
+                value = this.makeString(s);
+            } else {
+                value = makeValue(Tag.UninternedString, 0);
+            }
+        }
+        this.commitValue(value);
+    }
+
     protected finish(): Value {
         const value = this._rootValue;
         if (value === undefined) {
@@ -184,9 +199,32 @@ export abstract class CompressedJSON<T> {
         defined(this._ctx).currentObject = [];
     }
 
+    protected setPropertyKey(key: string): void {
+        const ctx = this.context;
+        ctx.currentKey = key;
+    }
+
+    protected finishObject(): void {
+        const obj = this.context.currentObject;
+        if (obj === undefined) {
+            return panic("Object ended but not started");
+        }
+        this.popContext();
+        this.commitValue(this.internObject(obj));
+    }
+
     protected pushArrayContext(): void {
         this.pushContext();
         defined(this._ctx).currentArray = [];
+    }
+
+    protected finishArray(): void {
+        const arr = this.context.currentArray;
+        if (arr === undefined) {
+            return panic("Array ended but not started");
+        }
+        this.popContext();
+        this.commitValue(this.internArray(arr));
     }
 
     protected popContext(): void {
@@ -224,108 +262,39 @@ export abstract class CompressedJSON<T> {
     }
 }
 
-export class CompressedJSONFromStream extends CompressedJSON<stream.Readable> {
-    async parse(readStream: stream.Readable): Promise<Value> {
-        const combo = new Parser({ packKeys: true, packStrings: true });
-        combo.on("data", (item: { name: string; value: string | undefined }) => {
-            if (typeof methodMap[item.name] === "string") {
-                (this as any)[methodMap[item.name]](item.value);
-            }
-        });
-        const promise = new Promise<Value>((resolve, reject) => {
-            combo.on("end", () => {
-                resolve(this.finish());
-            });
-            combo.on("error", (err: any) => {
-                reject(err);
-            });
-        });
-        readStream.setEncoding("utf8");
-        readStream.pipe(combo);
-        readStream.resume();
-        return promise;
+export class CompressedJSONFromString extends CompressedJSON<string> {
+    async parse(input: string): Promise<Value> {
+        const json = JSON.parse(input);
+        this.process(json);
+        return this.finish();
     }
 
-    protected handleStartObject = (): void => {
-        this.pushObjectContext();
-    };
-
-    protected handleEndObject = (): void => {
-        const obj = this.context.currentObject;
-        if (obj === undefined) {
-            return panic("Object ended but not started");
-        }
-        this.popContext();
-        this.commitValue(this.internObject(obj));
-    };
-
-    protected handleStartArray = (): void => {
-        this.pushArrayContext();
-    };
-
-    protected handleEndArray = (): void => {
-        const arr = this.context.currentArray;
-        if (arr === undefined) {
-            return panic("Array ended but not started");
-        }
-        this.popContext();
-        this.commitValue(this.internArray(arr));
-    };
-
-    protected handleKeyValue = (s: string): void => {
-        const ctx = this.context;
-        ctx.currentKey = s;
-    };
-
-    protected handleStringValue(s: string): void {
-        let value: Value | undefined = undefined;
-        if (this.handleRefs && this.isExpectingRef) {
-            value = this.makeString(s);
+    private process(json: unknown): void {
+        if (json === null) {
+            this.commitNull();
+        } else if (typeof json === "boolean") {
+            this.commitBoolean(json);
+        } else if (typeof json === "string") {
+            this.commitString(json);
+        } else if (typeof json === "number") {
+            const isDouble =
+                json !== Math.floor(json) || json < Number.MIN_SAFE_INTEGER || json > Number.MAX_SAFE_INTEGER;
+            this.commitNumber(isDouble);
+        } else if (Array.isArray(json)) {
+            this.pushArrayContext();
+            for (const v of json) {
+                this.process(v);
+            }
+            this.finishArray();
+        } else if (typeof json === "object") {
+            this.pushObjectContext();
+            for (const key of Object.getOwnPropertyNames(json)) {
+                this.setPropertyKey(key);
+                this.process((json as any)[key]);
+            }
+            this.finishObject();
         } else {
-            const format = inferTransformedStringTypeKindForString(s, this.dateTimeRecognizer);
-            if (format !== undefined) {
-                if (defined(transformedStringTypeTargetTypeKindsMap.get(format)).attributesProducer !== undefined) {
-                    value = makeValue(Tag.TransformedString, this.internString(s));
-                } else {
-                    value = makeValue(Tag.StringFormat, this.internString(format));
-                }
-            } else if (s.length <= 64) {
-                value = this.makeString(s);
-            } else {
-                value = makeValue(Tag.UninternedString, 0);
-            }
+            return panic("Invalid JSON object");
         }
-        this.commitValue(value);
     }
-
-    protected handleStartNumber = (): void => {
-        this.pushContext();
-        this.context.currentNumberIsDouble = false;
-    };
-
-    protected handleNumberChunk = (s: string): void => {
-        const ctx = this.context;
-        if (!ctx.currentNumberIsDouble && /[\.e]/i.test(s)) {
-            ctx.currentNumberIsDouble = true;
-        }
-    };
-
-    protected handleEndNumber = (): void => {
-        const isDouble = this.context.currentNumberIsDouble;
-        const numberTag = isDouble ? Tag.Double : Tag.Integer;
-        this.popContext();
-        this.commitValue(makeValue(numberTag, 0));
-    };
-
-    protected handleNullValue = (): void => {
-        this.commitValue(makeValue(Tag.Null, 0));
-    };
-
-    protected handleTrueValue = (): void => {
-        this.commitValue(makeValue(Tag.True, 0));
-    };
-
-    protected handleFalseValue = (): void => {
-        this.commitValue(makeValue(Tag.False, 0));
-    };
 }
