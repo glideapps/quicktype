@@ -1,12 +1,10 @@
 import * as URI from "urijs";
-import * as path from "path";
 
 import { TypeAttributeKind, TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 import { setUnionManyInto } from "collection-utils";
 import { JSONSchemaType, JSONSchemaAttributes, Ref } from "../input/JSONSchemaInput";
 import { JSONSchema } from "../input/JSONSchemaStore";
-import { checkArray } from "../support/Support";
-import { isString } from "util";
+import { checkArray, checkString } from "../support/Support";
 import { Type } from "../Type";
 
 const protocolsSchemaProperty = "qt-uri-protocols";
@@ -49,11 +47,19 @@ class URITypeAttributeKind extends TypeAttributeKind<URIAttributes> {
 
 export const uriTypeAttributeKind: TypeAttributeKind<URIAttributes> = new URITypeAttributeKind();
 
+const extensionRegex = /^.+(\.[^./\\]+)$/;
+
+function pathExtension(path: string): string | undefined {
+    const matches = path.match(extensionRegex);
+    if (matches === null) return undefined;
+    return matches[1];
+}
+
 export function uriInferenceAttributesProducer(s: string): TypeAttributes {
     try {
         const uri = URI.parse(s);
-        const extension = path.extname(uri.path).toLowerCase();
-        const extensions = extension === "" ? [] : [extension];
+        const extension = pathExtension(uri.path);
+        const extensions = extension === undefined ? [] : [extension.toLowerCase()];
         return uriTypeAttributeKind.makeAttributes([new Set([uri.protocol.toLowerCase()]), new Set(extensions)]);
     } catch {
         return emptyTypeAttributes;
@@ -71,7 +77,7 @@ export function uriSchemaAttributesProducer(
     let protocols: ReadonlySet<string>;
     const maybeProtocols = schema[protocolsSchemaProperty];
     if (maybeProtocols !== undefined) {
-        protocols = new Set(checkArray(maybeProtocols, isString));
+        protocols = new Set(checkArray(maybeProtocols, checkString));
     } else {
         protocols = new Set();
     }
@@ -79,7 +85,7 @@ export function uriSchemaAttributesProducer(
     let extensions: ReadonlySet<string>;
     const maybeExtensions = schema[extensionsSchemaProperty];
     if (maybeExtensions !== undefined) {
-        extensions = new Set(checkArray(maybeExtensions, isString));
+        extensions = new Set(checkArray(maybeExtensions, checkString));
     } else {
         extensions = new Set();
     }

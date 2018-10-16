@@ -4,6 +4,8 @@ import * as _ from "lodash";
 import { Readable } from "stream";
 import { hasOwnProperty, definedMap, withDefault, mapFromObject, mapMap } from "collection-utils";
 
+import { getStream } from "./get-stream";
+
 import {
     Options,
     RendererOptions,
@@ -14,8 +16,6 @@ import {
     languageNamed,
     InputData,
     JSONSchemaInput,
-    jsonInputForTargetLanguage,
-    StringInput,
     OptionDefinition,
     defaultTargetLanguages,
     IssueAnnotationData,
@@ -24,7 +24,6 @@ import {
     defined,
     assertNever,
     parseJSON,
-    getStream,
     trainMarkovChain,
     messageError,
     messageAssert,
@@ -32,7 +31,9 @@ import {
     inferenceFlags,
     inferenceFlagNames,
     splitIntoWords,
-    capitalize
+    capitalize,
+    JSONSourceData,
+    JSONInput
 } from "../quicktype-core";
 import { schemaForTypeScriptSources } from "../quicktype-typescript-input";
 import { GraphQLInput } from "../quicktype-graphql-input";
@@ -42,6 +43,9 @@ import { introspectServer } from "./GraphQLIntrospection";
 import { JSONTypeSource, TypeSource, GraphQLTypeSource, SchemaTypeSource } from "./TypeSource";
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
 import * as telemetry from "./telemetry";
+import { CompressedJSONFromStream } from "./CompressedJSONFromStream";
+
+const stringToStream = require("string-to-stream");
 
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");
@@ -137,7 +141,7 @@ async function samplesFromDirectory(dataDir: string): Promise<TypeSource[]> {
                     kind: "graphql",
                     name,
                     schema: undefined,
-                    query: await readableFromFileOrURL(fileOrUrl)
+                    query: await getStream(await readableFromFileOrURL(fileOrUrl))
                 });
             }
         }
@@ -162,7 +166,7 @@ async function samplesFromDirectory(dataDir: string): Promise<TypeSource[]> {
     let sources = await readFilesOrURLsInDirectory(dataDir);
 
     for (const dir of directories) {
-        let jsonSamples: StringInput[] = [];
+        let jsonSamples: Readable[] = [];
         const schemaSources: SchemaTypeSource[] = [];
         const graphQLSources: GraphQLTypeSource[] = [];
 
@@ -675,6 +679,18 @@ function makeTypeScriptSource(fileNames: string[]): SchemaTypeSource {
     return Object.assign({ kind: "schema" }, schemaForTypeScriptSources(sources)) as SchemaTypeSource;
 }
 
+export function jsonInputForTargetLanguage(
+    targetLanguage: string | TargetLanguage,
+    languages?: TargetLanguage[],
+    handleJSONRefs: boolean = false
+): JSONInput<Readable> {
+    if (typeof targetLanguage === "string") {
+        targetLanguage = defined(languageNamed(targetLanguage, languages));
+    }
+    const compressedJSON = new CompressedJSONFromStream(targetLanguage.dateTimeRecognizer, handleJSONRefs);
+    return new JSONInput(compressedJSON);
+}
+
 async function makeInputData(
     sources: TypeSource[],
     targetLanguage: TargetLanguage,
@@ -706,6 +722,10 @@ async function makeInputData(
     }
 
     return inputData;
+}
+
+function stringSourceDataToStreamSourceData(src: JSONSourceData<string>): JSONSourceData<Readable> {
+    return { name: src.name, description: src.description, samples: src.samples.map(stringToStream) };
 }
 
 export async function makeQuicktypeOptions(
@@ -769,7 +789,7 @@ export async function makeQuicktypeOptions(
                     schemaString = fs.readFileSync(schemaFileName, "utf8");
                 }
                 const schema = parseJSON(schemaString, "GraphQL schema", schemaFileName);
-                const query = await readableFromFileOrURL(queryFile);
+                const query = await getStream(await readableFromFileOrURL(queryFile));
                 const name = numSources === 1 ? options.topLevel : typeNameFromFilename(queryFile);
                 gqlSources.push({ kind: "graphql", name, schema, query });
             }
@@ -790,7 +810,10 @@ export async function makeQuicktypeOptions(
                     collectionFile
                 );
                 for (const src of postmanSources) {
-                    sources.push(Object.assign({ kind: "json" }, src) as JSONTypeSource);
+                    sources.push(Object.assign(
+                        { kind: "json" },
+                        stringSourceDataToStreamSourceData(src)
+                    ) as JSONTypeSource);
                 }
                 if (postmanSources.length > 1) {
                     fixedTopLevels = true;

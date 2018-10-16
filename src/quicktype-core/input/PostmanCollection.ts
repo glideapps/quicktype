@@ -13,8 +13,8 @@ function isValidJSON(s: string): boolean {
 export function sourcesFromPostmanCollection(
     collectionJSON: string,
     collectionJSONAddress?: string
-): { sources: JSONSourceData[]; description: string | undefined } {
-    const sources: JSONSourceData[] = [];
+): { sources: JSONSourceData<string>[]; description: string | undefined } {
+    const sources: JSONSourceData<string>[] = [];
     const descriptions: string[] = [];
 
     function processCollection(c: any): void {
@@ -35,7 +35,7 @@ export function sourcesFromPostmanCollection(
                 }
             }
             if (samples.length > 0) {
-                const source: JSONSourceData = { name: c.name, samples };
+                const source: JSONSourceData<string> = { name: c.name, samples };
                 const sourceDescription = [c.name];
 
                 if (typeof c.request === "object") {

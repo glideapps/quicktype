@@ -3,7 +3,9 @@ export {
     RendererOptions,
     getTargetLanguage,
     quicktypeMultiFile,
+    quicktypeMultiFileSync,
     quicktype,
+    combineRenderResults,
     inferenceFlags,
     inferenceFlagNames,
     RunContext
@@ -19,7 +21,6 @@ export { all as defaultTargetLanguages, languageNamed } from "./language/All";
 export { Sourcelike, SerializedRenderResult, Annotation, modifySource } from "./Source";
 export { Name, funPrefixNamer, Namer } from "./Naming";
 export { IssueAnnotationData } from "./Annotation";
-export { Readable } from "stream";
 export {
     panic,
     assert,
@@ -28,9 +29,7 @@ export {
     parseJSON,
     checkStringMap,
     checkArray,
-    inflateBase64,
-    StringInput,
-    toString
+    inflateBase64
 } from "./support/Support";
 export {
     splitIntoWords,
@@ -41,7 +40,6 @@ export {
     legalizeCharacters,
     isLetterOrDigit
 } from "./support/Strings";
-export { getStream } from "./get-stream/index";
 export { train as trainMarkovChain } from "./MarkovChain";
 export { QuickTypeError, messageError, messageAssert } from "./Messages";
 export {

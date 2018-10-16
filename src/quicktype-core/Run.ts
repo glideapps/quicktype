@@ -1,7 +1,7 @@
 import { mapFirst } from "collection-utils";
 
 import * as targetLanguages from "./language/All";
-import { TargetLanguage } from "./TargetLanguage";
+import { TargetLanguage, MultiFileRenderResult } from "./TargetLanguage";
 import { SerializedRenderResult, Annotation, Location, Span } from "./Source";
 import { assert } from "./support/Support";
 import { combineClasses } from "./rewrites/CombineClasses";
@@ -171,6 +171,13 @@ export interface RunContext {
     time<T>(name: string, f: () => T): T;
 }
 
+interface GraphInputs {
+    targetLanguage: TargetLanguage;
+    stringTypeMapping: StringTypeMapping;
+    conflateNumbers: boolean;
+    typeBuilder: TypeBuilder;
+}
+
 class Run implements RunContext {
     private readonly _options: Options;
 
@@ -235,7 +242,7 @@ class Run implements RunContext {
         return result;
     }
 
-    private async makeGraph(allInputs: InputData): Promise<TypeGraph> {
+    private makeGraphInputs(): GraphInputs {
         const targetLanguage = getTargetLanguage(this._options.lang);
         const stringTypeMapping = this.stringTypeMapping;
         const conflateNumbers = !targetLanguage.supportsUnionsWithBothNumberTypes;
@@ -248,17 +255,45 @@ class Run implements RunContext {
             false
         );
 
+        return { targetLanguage, stringTypeMapping, conflateNumbers, typeBuilder };
+    }
+
+    private async makeGraph(allInputs: InputData): Promise<TypeGraph> {
+        const graphInputs = this.makeGraphInputs();
+
         await this.timeSync(
             "read input",
             async () =>
                 await allInputs.addTypes(
                     this,
-                    typeBuilder,
+                    graphInputs.typeBuilder,
                     this._options.inferMaps,
                     this._options.inferEnums,
                     this._options.fixedTopLevels
                 )
         );
+
+        return this.processGraph(allInputs, graphInputs);
+    }
+
+    private makeGraphSync(allInputs: InputData): TypeGraph {
+        const graphInputs = this.makeGraphInputs();
+
+        this.time("read input", () =>
+            allInputs.addTypesSync(
+                this,
+                graphInputs.typeBuilder,
+                this._options.inferMaps,
+                this._options.inferEnums,
+                this._options.fixedTopLevels
+            )
+        );
+
+        return this.processGraph(allInputs, graphInputs);
+    }
+
+    private processGraph(allInputs: InputData, graphInputs: GraphInputs): TypeGraph {
+        const { targetLanguage, stringTypeMapping, conflateNumbers, typeBuilder } = graphInputs;
 
         let graph = typeBuilder.finish();
         if (this._options.debugPrintGraph) {
@@ -442,22 +477,19 @@ class Run implements RunContext {
         return graph;
     }
 
-    private makeSimpleTextResult(lines: string[]): ReadonlyMap<string, SerializedRenderResult> {
+    private makeSimpleTextResult(lines: string[]): MultiFileRenderResult {
         return new Map([[this._options.outputFilename, { lines, annotations: [] }]] as [
             string,
             SerializedRenderResult
         ][]);
     }
 
-    public async run(): Promise<ReadonlyMap<string, SerializedRenderResult>> {
+    private preRun(): MultiFileRenderResult | [InputData, TargetLanguage] {
         // FIXME: This makes quicktype not quite reentrant
         initTypeNames();
 
         const targetLanguage = getTargetLanguage(this._options.lang);
         const inputData = this._options.inputData;
-
-        await inputData.finishAddingInputs();
-
         const needIR = inputData.needIR || targetLanguage.names.indexOf("schema") < 0;
 
         const schemaString = needIR ? undefined : inputData.singleStringSchemaSource();
@@ -468,8 +500,36 @@ class Run implements RunContext {
             return new Map([[this._options.outputFilename, srr] as [string, SerializedRenderResult]]);
         }
 
+        return [inputData, targetLanguage];
+    }
+
+    async run(): Promise<MultiFileRenderResult> {
+        const preRunResult = this.preRun();
+        if (!Array.isArray(preRunResult)) {
+            return preRunResult;
+        }
+
+        const [inputData, targetLanguage] = preRunResult;
+
         const graph = await this.makeGraph(inputData);
 
+        return this.renderGraph(targetLanguage, graph);
+    }
+
+    runSync(): MultiFileRenderResult {
+        const preRunResult = this.preRun();
+        if (!Array.isArray(preRunResult)) {
+            return preRunResult;
+        }
+
+        const [inputData, targetLanguage] = preRunResult;
+
+        const graph = this.makeGraphSync(inputData);
+
+        return this.renderGraph(targetLanguage, graph);
+    }
+
+    private renderGraph(targetLanguage: TargetLanguage, graph: TypeGraph): MultiFileRenderResult {
         if (this._options.noRender) {
             return this.makeSimpleTextResult(["Done.", ""]);
         }
@@ -491,10 +551,12 @@ class Run implements RunContext {
  * @param options Partial options.  For options that are not defined, the
  * defaults will be used.
  */
-export async function quicktypeMultiFile(
-    options: Partial<Options>
-): Promise<ReadonlyMap<string, SerializedRenderResult>> {
+export async function quicktypeMultiFile(options: Partial<Options>): Promise<MultiFileRenderResult> {
     return await new Run(options).run();
+}
+
+export function quicktypeMultiFileSync(options: Partial<Options>): MultiFileRenderResult {
+    return new Run(options).runSync();
 }
 
 function offsetLocation(loc: Location, lineOffset: number): Location {
@@ -505,16 +567,7 @@ function offsetSpan(span: Span, lineOffset: number): Span {
     return { start: offsetLocation(span.start, lineOffset), end: offsetLocation(span.end, lineOffset) };
 }
 
-/**
- * Run quicktype like `quicktypeMultiFile`, but if there are multiple
- * output files they will all be squashed into one output, with comments at the
- * start of each file.
- *
- * @param options Partial options.  For options that are not defined, the
- * defaults will be used.
- */
-export async function quicktype(options: Partial<Options>): Promise<SerializedRenderResult> {
-    const result = await quicktypeMultiFile(options);
+export function combineRenderResults(result: MultiFileRenderResult): SerializedRenderResult {
     if (result.size <= 1) {
         const first = mapFirst(result);
         if (first === undefined) {
@@ -532,4 +585,17 @@ export async function quicktype(options: Partial<Options>): Promise<SerializedRe
         );
     }
     return { lines, annotations };
+}
+
+/**
+ * Run quicktype like `quicktypeMultiFile`, but if there are multiple
+ * output files they will all be squashed into one output, with comments at the
+ * start of each file.
+ *
+ * @param options Partial options.  For options that are not defined, the
+ * defaults will be used.
+ */
+export async function quicktype(options: Partial<Options>): Promise<SerializedRenderResult> {
+    const result = await quicktypeMultiFile(options);
+    return combineRenderResults(result);
 }

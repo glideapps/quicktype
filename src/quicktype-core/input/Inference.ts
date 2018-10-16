@@ -81,7 +81,7 @@ export class TypeInference {
     private _refIntersections: [TypeRef, string[]][] | undefined;
 
     constructor(
-        private readonly _cjson: CompressedJSON,
+        private readonly _cjson: CompressedJSON<unknown>,
         private readonly _typeBuilder: TypeBuilder,
         private readonly _inferMaps: boolean,
         private readonly _inferEnums: boolean

@@ -1,6 +1,6 @@
 {
     "name": "quicktype-core",
-    "version": "5.0.0",
+    "version": "6.0.0",
     "description": "The quicktype engine as a library",
     "license": "Apache-2.0",
     "main": "dist/index.js",
@@ -10,7 +10,7 @@
         "clean": "rm -rf dist node_modules *~",
         "prepare": "npm run build",
         "build": "tsc",
-        "tslint": "tslint --project . --exclude 'get-stream/**'"
+        "tslint": "tslint --project ."
     },
     "dependencies": {
         "@types/urijs": "github:quicktype/types-urijs",
@@ -18,8 +18,6 @@
         "js-base64": "^2.4.3",
         "pako": "^1.0.6",
         "pluralize": "^7.0.0",
-        "stream-json": "0.5.2",
-        "string-to-stream": "^1.1.0",
         "unicode-properties": "github:quicktype/unicode-properties#dist",
         "urijs": "^1.19.1",
         "wordwrap": "^1.0.0"

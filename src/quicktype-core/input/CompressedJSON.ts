@@ -1,13 +1,9 @@
-import * as stream from "stream";
-
 import { addHashCode, hashCodeInit, hashString } from "collection-utils";
 
 import { defined, panic, assert } from "../support/Support";
-import { inferTransformedStringTypeKindForString } from "../attributes/StringTypes";
 import { TransformedStringTypeKind, isPrimitiveStringTypeKind, transformedStringTypeTargetTypeKindsMap } from "../Type";
 import { DateTimeRecognizer } from "../DateTime";
-
-const Combo = require("stream-json/Combo");
+import { inferTransformedStringTypeKindForString } from "../attributes/StringTypes";
 
 export enum Tag {
     Null,
@@ -28,7 +24,7 @@ export type Value = number;
 const TAG_BITS = 4;
 const TAG_MASK = (1 << TAG_BITS) - 1;
 
-function makeValue(t: Tag, index: number): Value {
+export function makeValue(t: Tag, index: number): Value {
     return t | (index << TAG_BITS);
 }
 
@@ -48,22 +44,7 @@ type Context = {
     currentNumberIsDouble: boolean;
 };
 
-const methodMap: { [name: string]: string } = {
-    startObject: "handleStartObject",
-    endObject: "handleEndObject",
-    startArray: "handleStartArray",
-    endArray: "handleEndArray",
-    startNumber: "handleStartNumber",
-    numberChunk: "handleNumberChunk",
-    endNumber: "handleEndNumber",
-    keyValue: "handleKeyValue",
-    stringValue: "handleStringValue",
-    nullValue: "handleNullValue",
-    trueValue: "handleTrueValue",
-    falseValue: "handleFalseValue"
-};
-
-export class CompressedJSON {
+export abstract class CompressedJSON<T> {
     private _rootValue: Value | undefined;
 
     private _ctx: Context | undefined;
@@ -76,25 +57,10 @@ export class CompressedJSON {
 
     constructor(readonly dateTimeRecognizer: DateTimeRecognizer, readonly handleRefs: boolean) {}
 
-    async readFromStream(readStream: stream.Readable): Promise<Value> {
-        const combo = new Combo({ packKeys: true, packStrings: true });
-        combo.on("data", (item: { name: string; value: string | undefined }) => {
-            if (typeof methodMap[item.name] === "string") {
-                (this as any)[methodMap[item.name]](item.value);
-            }
-        });
-        const promise = new Promise<Value>((resolve, reject) => {
-            combo.on("end", () => {
-                resolve(this.finish());
-            });
-            combo.on("error", (err: any) => {
-                reject(err);
-            });
-        });
-        readStream.setEncoding("utf8");
-        readStream.pipe(combo);
-        readStream.resume();
-        return promise;
+    abstract parse(input: T): Promise<Value>;
+
+    parseSync(_input: T): Value {
+        return panic("parseSync not implemented in CompressedJSON");
     }
 
     getStringForValue(v: Value): string {
@@ -119,7 +85,11 @@ export class CompressedJSON {
         return kind;
     }
 
-    private internString(s: string): number {
+    protected get context(): Context {
+        return defined(this._ctx);
+    }
+
+    protected internString(s: string): number {
         if (Object.prototype.hasOwnProperty.call(this._stringIndexes, s)) {
             return this._stringIndexes[s];
         }
@@ -129,29 +99,29 @@ export class CompressedJSON {
         return index;
     }
 
-    private makeString(s: string): Value {
+    protected makeString(s: string): Value {
         const value = makeValue(Tag.InternedString, this.internString(s));
         assert(typeof value === "number", `Interned string value is not a number: ${value}`);
         return value;
     }
 
-    private internObject = (obj: Value[]): Value => {
+    protected internObject(obj: Value[]): Value {
         const index = this._objects.length;
         this._objects.push(obj);
         return makeValue(Tag.Object, index);
-    };
+    }
 
-    private internArray = (arr: Value[]): Value => {
+    protected internArray = (arr: Value[]): Value => {
         const index = this._arrays.length;
         this._arrays.push(arr);
         return makeValue(Tag.Array, index);
     };
 
-    private get isExpectingRef(): boolean {
+    protected get isExpectingRef(): boolean {
         return this._ctx !== undefined && this._ctx.currentKey === "$ref";
     }
 
-    private commitValue = (value: Value): void => {
+    protected commitValue(value: Value): void {
         assert(typeof value === "number", `CompressedJSON value is not a number: ${value}`);
         if (this._ctx === undefined) {
             assert(
@@ -170,69 +140,22 @@ export class CompressedJSON {
         } else {
             return panic("Committing value but nowhere to commit to");
         }
-    };
+    }
 
-    private finish = (): Value => {
-        const value = this._rootValue;
-        if (value === undefined) {
-            return panic("Finished without root document");
-        }
-        assert(this._ctx === undefined && this._contextStack.length === 0, "Finished with contexts present");
-        this._rootValue = undefined;
-        return value;
-    };
+    protected commitNull(): void {
+        this.commitValue(makeValue(Tag.Null, 0));
+    }
 
-    private pushContext = (): void => {
-        if (this._ctx !== undefined) {
-            this._contextStack.push(this._ctx);
-        }
-        this._ctx = {
-            currentObject: undefined,
-            currentArray: undefined,
-            currentKey: undefined,
-            currentNumberIsDouble: false
-        };
-    };
+    protected commitBoolean(v: boolean): void {
+        this.commitValue(makeValue(v ? Tag.True : Tag.False, 0));
+    }
 
-    private popContext = (): void => {
-        assert(this._ctx !== undefined, "Popping context when there isn't one");
-        this._ctx = this._contextStack.pop();
-    };
+    protected commitNumber(isDouble: boolean): void {
+        const numberTag = isDouble ? Tag.Double : Tag.Integer;
+        this.commitValue(makeValue(numberTag, 0));
+    }
 
-    protected handleStartObject = (): void => {
-        this.pushContext();
-        defined(this._ctx).currentObject = [];
-    };
-
-    protected handleEndObject = (): void => {
-        const obj = defined(this._ctx).currentObject;
-        if (obj === undefined) {
-            return panic("Object ended but not started");
-        }
-        this.popContext();
-        this.commitValue(this.internObject(obj));
-    };
-
-    protected handleStartArray = (): void => {
-        this.pushContext();
-        defined(this._ctx).currentArray = [];
-    };
-
-    protected handleEndArray = (): void => {
-        const arr = defined(this._ctx).currentArray;
-        if (arr === undefined) {
-            return panic("Array ended but not started");
-        }
-        this.popContext();
-        this.commitValue(this.internArray(arr));
-    };
-
-    protected handleKeyValue = (s: string): void => {
-        const ctx = defined(this._ctx);
-        ctx.currentKey = s;
-    };
-
-    protected handleStringValue(s: string): void {
+    protected commitString(s: string): void {
         let value: Value | undefined = undefined;
         if (this.handleRefs && this.isExpectingRef) {
             value = this.makeString(s);
@@ -253,42 +176,71 @@ export class CompressedJSON {
         this.commitValue(value);
     }
 
-    protected handleStartNumber = (): void => {
-        this.pushContext();
-        defined(this._ctx).currentNumberIsDouble = false;
-    };
-
-    protected handleNumberChunk = (s: string): void => {
-        const ctx = defined(this._ctx);
-        if (!ctx.currentNumberIsDouble && /[\.e]/i.test(s)) {
-            ctx.currentNumberIsDouble = true;
+    protected finish(): Value {
+        const value = this._rootValue;
+        if (value === undefined) {
+            return panic("Finished without root document");
         }
-    };
+        assert(this._ctx === undefined && this._contextStack.length === 0, "Finished with contexts present");
+        this._rootValue = undefined;
+        return value;
+    }
 
-    protected handleEndNumber = (): void => {
-        const isDouble = defined(this._ctx).currentNumberIsDouble;
-        const numberTag = isDouble ? Tag.Double : Tag.Integer;
+    protected pushContext(): void {
+        if (this._ctx !== undefined) {
+            this._contextStack.push(this._ctx);
+        }
+        this._ctx = {
+            currentObject: undefined,
+            currentArray: undefined,
+            currentKey: undefined,
+            currentNumberIsDouble: false
+        };
+    }
+
+    protected pushObjectContext(): void {
+        this.pushContext();
+        defined(this._ctx).currentObject = [];
+    }
+
+    protected setPropertyKey(key: string): void {
+        const ctx = this.context;
+        ctx.currentKey = key;
+    }
+
+    protected finishObject(): void {
+        const obj = this.context.currentObject;
+        if (obj === undefined) {
+            return panic("Object ended but not started");
+        }
         this.popContext();
-        this.commitValue(makeValue(numberTag, 0));
-    };
+        this.commitValue(this.internObject(obj));
+    }
 
-    protected handleNullValue = (): void => {
-        this.commitValue(makeValue(Tag.Null, 0));
-    };
+    protected pushArrayContext(): void {
+        this.pushContext();
+        defined(this._ctx).currentArray = [];
+    }
 
-    protected handleTrueValue = (): void => {
-        this.commitValue(makeValue(Tag.True, 0));
-    };
+    protected finishArray(): void {
+        const arr = this.context.currentArray;
+        if (arr === undefined) {
+            return panic("Array ended but not started");
+        }
+        this.popContext();
+        this.commitValue(this.internArray(arr));
+    }
 
-    protected handleFalseValue = (): void => {
-        this.commitValue(makeValue(Tag.False, 0));
-    };
+    protected popContext(): void {
+        assert(this._ctx !== undefined, "Popping context when there isn't one");
+        this._ctx = this._contextStack.pop();
+    }
 
-    equals = (other: any): boolean => {
+    equals(other: any): boolean {
         return this === other;
-    };
+    }
 
-    hashCode = (): number => {
+    hashCode(): number {
         let hashAccumulator = hashCodeInit;
         for (const s of this._strings) {
             hashAccumulator = addHashCode(hashAccumulator, hashString(s));
@@ -311,5 +263,46 @@ export class CompressedJSON {
         }
 
         return hashAccumulator;
-    };
+    }
+}
+
+export class CompressedJSONFromString extends CompressedJSON<string> {
+    async parse(input: string): Promise<Value> {
+        return this.parseSync(input);
+    }
+
+    parseSync(input: string): Value {
+        const json = JSON.parse(input);
+        this.process(json);
+        return this.finish();
+    }
+
+    private process(json: unknown): void {
+        if (json === null) {
+            this.commitNull();
+        } else if (typeof json === "boolean") {
+            this.commitBoolean(json);
+        } else if (typeof json === "string") {
+            this.commitString(json);
+        } else if (typeof json === "number") {
+            const isDouble =
+                json !== Math.floor(json) || json < Number.MIN_SAFE_INTEGER || json > Number.MAX_SAFE_INTEGER;
+            this.commitNumber(isDouble);
+        } else if (Array.isArray(json)) {
+            this.pushArrayContext();
+            for (const v of json) {
+                this.process(v);
+            }
+            this.finishArray();
+        } else if (typeof json === "object") {
+            this.pushObjectContext();
+            for (const key of Object.getOwnPropertyNames(json)) {
+                this.setPropertyKey(key);
+                this.process((json as any)[key]);
+            }
+            this.finishObject();
+        } else {
+            return panic("Invalid JSON object");
+        }
+    }
 }
