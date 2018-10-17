@@ -160,7 +160,7 @@ function expandSelectionSet(selectionSet: SelectionSetNode, inType: GQLType, opt
 interface GQLSchema {
     readonly types: { [name: string]: GQLType };
     readonly queryType: GQLType;
-    readonly mutationType: GQLType | undefined;
+    readonly mutationType?: GQLType;
 }
 
 class GQLQuery {
@@ -365,7 +365,7 @@ class GQLSchemaFromJSON implements GQLSchema {
     // @ts-ignore: The constructor can return early, but only by throwing.
     readonly queryType: GQLType;
     // @ts-ignore: The constructor can return early, but only by throwing.
-    readonly mutationType: GQLType | undefined;
+    readonly mutationType?: GQLType;
 
     constructor(json: any) {
         const schema: GraphQLSchema = json.data;
