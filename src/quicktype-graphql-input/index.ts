@@ -158,6 +158,7 @@ function expandSelectionSet(selectionSet: SelectionSetNode, inType: GQLType, opt
 interface GQLSchema {
     readonly types: { [name: string]: GQLType };
     readonly queryType: GQLType;
+    readonly mutationType?: GQLType;
 }
 
 class GQLQuery {
@@ -174,8 +175,9 @@ class GQLQuery {
         const queries: OperationDefinitionNode[] = [];
         for (const def of queryDocument.definitions) {
             if (def.kind === "OperationDefinition") {
-                if (def.operation !== "query") continue;
-                queries.push(def);
+                if (def.operation === "query" || def.operation === "mutation") {
+                    queries.push(def);
+                }
             } else if (def.kind === "FragmentDefinition") {
                 this._fragments[def.name.value] = def;
             }
@@ -326,14 +328,33 @@ class GQLQuery {
     };
 
     makeType(builder: TypeBuilder, query: OperationDefinitionNode, queryName: string): TypeRef {
-        return this.makeIRTypeFromSelectionSet(
-            builder,
-            query.selectionSet,
-            this._schema.queryType,
-            null,
-            queryName,
-            "data"
-        );
+        if(query.operation === "query") {
+            return this.makeIRTypeFromSelectionSet(
+                builder,
+                query.selectionSet,
+                this._schema.queryType,
+                null,
+                queryName,
+                "data"
+            );
+        }
+
+        if (query.operation === "mutation") {
+            if (this._schema.mutationType === undefined) {
+                return panic("This GraphQL endpoint has no mutations.");
+            }
+
+            return this.makeIRTypeFromSelectionSet(
+                builder,
+                query.selectionSet,
+                this._schema.mutationType,
+                null,
+                queryName,
+                "data"
+            );
+        }
+
+        return panic(`Unknown query operation type: "${query.operation}"`);
     }
 }
 
@@ -341,6 +362,8 @@ class GQLSchemaFromJSON implements GQLSchema {
     readonly types: { [name: string]: GQLType } = {};
     // @ts-ignore: The constructor can return early, but only by throwing.
     readonly queryType: GQLType;
+    // @ts-ignore: The constructor can return early, but only by throwing.
+    readonly mutationType?: GQLType;
 
     constructor(json: any) {
         const schema: GraphQLSchema = json.data;
@@ -366,6 +389,21 @@ class GQLSchemaFromJSON implements GQLSchema {
         }
         // console.log(`query type ${queryType.name} is ${queryType.kind}`);
         this.queryType = queryType;
+
+        if (schema.__schema.mutationType === null) {
+            return;
+        }
+
+        if (schema.__schema.mutationType.name === null) {
+            return panic("Mutation type doesn't have a name.");
+        }
+
+        const mutationType = this.types[schema.__schema.mutationType.name];
+        if (mutationType === undefined) {
+            return panic("Mutation type not found.");
+        }
+
+        this.mutationType = mutationType;
     }
 
     private addTypeFields = (target: GQLType, source: GQLType): void => {
