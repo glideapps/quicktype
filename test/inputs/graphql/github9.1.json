@@ -1,0 +1,13 @@
+{
+  "data": {
+    "addReaction": {
+      "clientMutationId": "string",
+      "reaction": {
+        "content": "THUMBS_UP"
+      },
+      "subject": {
+        "viewerCanReact": true
+      }
+    }
+  }
+}

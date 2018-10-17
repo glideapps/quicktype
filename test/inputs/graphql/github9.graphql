@@ -1,0 +1,11 @@
+mutation AddReaction($input: AddReactionInput!){
+  addReaction(input: $input){
+    clientMutationId
+    reaction {
+      content
+    }
+    subject {
+      viewerCanReact
+    }
+  }
+}
