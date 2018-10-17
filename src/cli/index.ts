@@ -42,7 +42,6 @@ import { urlsFromURLGrammar } from "./URLGrammar";
 import { introspectServer } from "./GraphQLIntrospection";
 import { JSONTypeSource, TypeSource, GraphQLTypeSource, SchemaTypeSource } from "./TypeSource";
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
-import * as telemetry from "./telemetry";
 import { CompressedJSONFromStream } from "./CompressedJSONFromStream";
 
 const stringToStream = require("string-to-stream");
@@ -859,11 +858,6 @@ export async function makeQuicktypeOptions(
         }
     }
 
-    if (telemetry.state() === "none") {
-        leadingComments = leadingComments !== undefined ? leadingComments : [];
-        leadingComments = telemetry.TELEMETRY_HEADER.split("\n").concat(leadingComments);
-    }
-
     const lang = languageNamed(options.lang, targetLanguages);
     if (lang === undefined) {
         return messageError("DriverUnknownOutputLanguage", { lang: options.lang });
@@ -942,9 +936,6 @@ export function writeOutput(
 }
 
 export async function main(args: string[] | Partial<CLIOptions>) {
-    await telemetry.init();
-    telemetry.pageview("/");
-
     let cliOptions: CLIOptions;
     if (Array.isArray(args)) {
         cliOptions = parseCLIOptions(args);
@@ -955,10 +946,8 @@ export async function main(args: string[] | Partial<CLIOptions>) {
     if (cliOptions.telemetry !== undefined) {
         switch (cliOptions.telemetry) {
             case "enable":
-                telemetry.enable();
                 break;
             case "disable":
-                telemetry.disable();
                 break;
             default:
                 console.error(chalk.red("telemetry must be 'enable' or 'disable'"));
@@ -973,8 +962,7 @@ export async function main(args: string[] | Partial<CLIOptions>) {
     const quicktypeOptions = await makeQuicktypeOptions(cliOptions);
     if (quicktypeOptions === undefined) return;
 
-    telemetry.event("default", "quicktype", cliOptions.lang);
-    const resultsByFilename = await telemetry.timeAsync("run", async () => await quicktypeMultiFile(quicktypeOptions));
+    const resultsByFilename = await quicktypeMultiFile(quicktypeOptions);
 
     writeOutput(cliOptions, resultsByFilename);
 }
