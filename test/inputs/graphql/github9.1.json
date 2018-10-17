@@ -6,6 +6,26 @@
         "content": "THUMBS_UP"
       },
       "subject": {
+        "reactionGroups": [
+            {
+                "content":"THUMBS_UP"
+            },
+            {
+                "content":"THUMBS_DOWN"
+            },
+            {
+                "content":"LAUGH"
+            },
+            {
+                "content":"HOORAY"
+            },
+            {
+                "content":"CONFUSED"
+            },
+            {
+                "content":"HEART"
+            }
+        ],
         "viewerCanReact": true
       }
     }

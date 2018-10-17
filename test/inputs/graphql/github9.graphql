@@ -6,6 +6,9 @@ mutation AddReaction($input: AddReactionInput!){
     }
     subject {
       viewerCanReact
+      reactionGroups {
+          content
+      }
     }
   }
 }
