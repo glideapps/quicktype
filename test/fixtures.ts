@@ -683,7 +683,7 @@ class GraphQLFixture extends LanguageFixture {
 }
 
 export const allFixtures: Fixture[] = [
-  new JSONFixture(languages.CrystalLanguage),
+  // new JSONFixture(languages.CrystalLanguage),
   new JSONFixture(languages.CSharpLanguage),
   new JSONFixture(languages.JavaLanguage),
   new JSONFixture(languages.GoLanguage),
@@ -701,7 +701,7 @@ export const allFixtures: Fixture[] = [
   new JSONFixture(languages.DartLanguage),
   new JSONSchemaJSONFixture(languages.CSharpLanguage),
   new JSONTypeScriptFixture(languages.CSharpLanguage),
-  new JSONSchemaFixture(languages.CrystalLanguage),
+  // new JSONSchemaFixture(languages.CrystalLanguage),
   new JSONSchemaFixture(languages.CSharpLanguage),
   new JSONSchemaFixture(languages.JavaLanguage),
   new JSONSchemaFixture(languages.GoLanguage),
