@@ -891,7 +891,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             this.emitBlock(() => {
                 this.emitLine("MetadataPropertyHandling = MetadataPropertyHandling.Ignore,");
                 this.emitLine("DateParseHandling = DateParseHandling.None,");
-                this.emitLine("Converters = ");
+                this.emitLine("Converters =");
                 this.emitLine("{");
                 this.indent(() => {
                     for (const [t, converter] of this.typesWithNamedTransformations) {
