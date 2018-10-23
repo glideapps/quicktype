@@ -146,7 +146,7 @@ const legalizeName = utf16LegalizeCharacters(isPartCharacter);
 // we have to use namers to produce the getter and setter names - we can't
 // just capitalize and concatenate.
 // https://stackoverflow.com/questions/8277355/naming-convention-for-upper-case-abbreviations
-function javaNameStyle(startWithUpper: boolean, upperUnderscore: boolean, original: string): string {
+export function javaNameStyle(startWithUpper: boolean, upperUnderscore: boolean, original: string): string {
     const words = splitIntoWords(original);
     return combineWords(
         words,
