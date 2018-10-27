@@ -163,7 +163,18 @@ export function expandStrings(ctx: RunContext, graph: TypeGraph, inference: Enum
                 return builder.getStringType(attributes, StringTypes.unrestricted, forwardingRef);
             }
         }
-        types.push(...Array.from(mappedStringTypes.transformations).map(k => builder.getPrimitiveType(k)));
+        const transformations = mappedStringTypes.transformations;
+        // FIXME: This is probably wrong, or at least overly conservative.  This is for the case
+        // where some attributes are identity ones, i.e. where we can't merge the primitive types,
+        // like it happens in the line after the `if`.  The case where this occured was with URI
+        // attributes: we had two separate string types with different URI attributes, but because
+        // both are rewritten via `getPrimitiveType` below without any attributes, they end up
+        // being the same string type.
+        if (types.length === 0 && transformations.size === 1) {
+            const kind = defined(iterableFirst(transformations));
+            return builder.getPrimitiveType(kind, attributes, forwardingRef);
+        }
+        types.push(...Array.from(transformations).map(k => builder.getPrimitiveType(k)));
         assert(types.length > 0, "We got an empty string type");
         return builder.getUnionType(attributes, new Set(types), forwardingRef);
     }
