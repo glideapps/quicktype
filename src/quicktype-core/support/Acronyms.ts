@@ -1110,7 +1110,7 @@ export const acronymOption = new EnumOption(
     "acronym-style",
     "acronym naming convention",
     [
-        ["originalWord", acronymStyleOptions.originalWord],
+        ["original", acronymStyleOptions.originalWord],
         ["pascal", acronymStyleOptions.pascal],
         ["camel", acronymStyleOptions.camel],
         ["capitalize", acronymStyleOptions.capitalize]
