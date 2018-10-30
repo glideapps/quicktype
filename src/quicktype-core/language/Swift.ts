@@ -40,7 +40,7 @@ import { RenderContext } from "../Renderer";
 import { StringTypeMapping } from "../TypeBuilder";
 import { panic } from "../support/Support";
 import { DefaultDateTimeRecognizer, DateTimeRecognizer } from "../DateTime";
-import { acronymOption, acronymStyle } from "../support/Acronyms";
+import { acronymOption, acronymStyle, acronymStyleOptions } from "../support/Acronyms";
 
 const MAX_SAMELINE_PROPERTIES = 4;
 
@@ -51,7 +51,7 @@ export const swiftOptions = {
     alamofire: new BooleanOption("alamofire", "Alamofire extensions", false),
     namedTypePrefix: new StringOption("type-prefix", "Prefix for type names", "PREFIX", "", "secondary"),
     useClasses: new EnumOption("struct-or-class", "Structs or classes", [["struct", false], ["class", true]]),
-    acronymStyle: acronymOption,
+    acronymStyle: acronymOption(acronymStyleOptions.pascal),
     dense: new EnumOption("density", "Code density", [["dense", true], ["normal", false]], "dense", "secondary"),
     linux: new BooleanOption("support-linux", "Support Linux", false, "secondary"),
     accessLevel: new EnumOption(
