@@ -34,7 +34,9 @@ import {
     allLowerWordStyle,
     allUpperWordStyle,
     camelCase,
-    addPrefixIfNecessary
+    addPrefixIfNecessary,
+    acronymStyleOptions,
+    acronymStyle
 } from "../support/Strings";
 import { RenderContext } from "../Renderer";
 import { StringTypeMapping } from "../TypeBuilder";
@@ -50,6 +52,17 @@ export const swiftOptions = {
     alamofire: new BooleanOption("alamofire", "Alamofire extensions", false),
     namedTypePrefix: new StringOption("type-prefix", "Prefix for type names", "PREFIX", "", "secondary"),
     useClasses: new EnumOption("struct-or-class", "Structs or classes", [["struct", false], ["class", true]]),
+    acronymStyle: new EnumOption(
+        "acronym-style",
+        "acronym naming convention",
+        [
+            ["originalWord", acronymStyleOptions.originalWord],
+            ["pascal", acronymStyleOptions.pascal],
+            ["camel", acronymStyleOptions.camel],
+            ["capitalize", acronymStyleOptions.capitalize]
+        ],
+        "pascal"
+    ),
     dense: new EnumOption("density", "Code density", [["dense", true], ["normal", false]], "dense", "secondary"),
     linux: new BooleanOption("support-linux", "Support Linux", false, "secondary"),
     accessLevel: new EnumOption(
@@ -107,7 +120,8 @@ export class SwiftTargetLanguage extends TargetLanguage {
             swiftOptions.alamofire,
             swiftOptions.linux,
             swiftOptions.namedTypePrefix,
-            swiftOptions.protocol
+            swiftOptions.protocol,
+            swiftOptions.acronymStyle
         ];
     }
 
@@ -245,7 +259,12 @@ function isStartCharacter(codePoint: number): boolean {
 
 const legalizeName = legalizeCharacters(isPartCharacter);
 
-function swiftNameStyle(prefix: string, isUpper: boolean, original: string): string {
+function swiftNameStyle(
+    prefix: string,
+    isUpper: boolean,
+    original: string,
+    acronymsStyle: (s: string) => string = allUpperWordStyle
+): string {
     const words = splitIntoWords(original);
     const combined = combineWords(
         words,
@@ -253,7 +272,7 @@ function swiftNameStyle(prefix: string, isUpper: boolean, original: string): str
         isUpper ? firstUpperWordStyle : allLowerWordStyle,
         firstUpperWordStyle,
         isUpper ? allUpperWordStyle : allLowerWordStyle,
-        allUpperWordStyle,
+        acronymsStyle,
         "",
         isStartCharacter
     );
@@ -265,8 +284,6 @@ function unicodeEscape(codePoint: number): string {
 }
 
 const stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
-
-const lowerNamingFunction = funPrefixNamer("lower", s => swiftNameStyle("", false, s));
 
 export class SwiftRenderer extends ConvenienceRenderer {
     private _needAny: boolean = false;
@@ -300,19 +317,21 @@ export class SwiftRenderer extends ConvenienceRenderer {
     }
 
     protected makeNamedTypeNamer(): Namer {
-        return funPrefixNamer("upper", s => swiftNameStyle(this._options.namedTypePrefix, true, s));
+        return funPrefixNamer("upper", s =>
+            swiftNameStyle(this._options.namedTypePrefix, true, s, acronymStyle(this._options.acronymStyle))
+        );
     }
 
     protected namerForObjectProperty(): Namer {
-        return lowerNamingFunction;
+        return this.lowerNamingFunction;
     }
 
     protected makeUnionMemberNamer(): Namer {
-        return lowerNamingFunction;
+        return this.lowerNamingFunction;
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return lowerNamingFunction;
+        return this.lowerNamingFunction;
     }
 
     protected isImplicitCycleBreaker(t: Type): boolean {
@@ -337,6 +356,10 @@ export class SwiftRenderer extends ConvenienceRenderer {
     private justTypesCase(justTypes: Sourcelike, notJustTypes: Sourcelike): Sourcelike {
         if (this._options.justTypes) return justTypes;
         else return notJustTypes;
+    }
+
+    private get lowerNamingFunction() {
+        return funPrefixNamer("lower", s => swiftNameStyle("", false, s, acronymStyle(this._options.acronymStyle)));
     }
 
     protected swiftPropertyType(p: ClassProperty): Sourcelike {
@@ -1183,9 +1206,8 @@ ${this.accessLevel}class JSONAny: Codable {
                     () => undefined
                 );
                 this.ensureBlankLine();
-                this.forEachTopLevel(
-                    "leading-and-interposing",
-                    (t: Type, name: Name) => this.emitTopLevelMapAndArrayConvenienceInitializerExtensions(t, name)
+                this.forEachTopLevel("leading-and-interposing", (t: Type, name: Name) =>
+                    this.emitTopLevelMapAndArrayConvenienceInitializerExtensions(t, name)
                 );
             }
 

@@ -14,18 +14,31 @@ import {
     combineWords,
     allUpperWordStyle,
     firstUpperWordStyle,
-    allLowerWordStyle
+    allLowerWordStyle,
+    acronymStyleOptions,
+    acronymStyle
 } from "../support/Strings";
 import { Name, Namer, funPrefixNamer, DependencyName } from "../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
-import { BooleanOption, StringOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
+import { BooleanOption, StringOption, Option, OptionValues, getOptionValues, EnumOption } from "../RendererOptions";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { defined, assert, assertNever } from "../support/Support";
 import { RenderContext } from "../Renderer";
 
 export const javaOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
+    acronymStyle: new EnumOption(
+        "acronym-style",
+        "acronym naming convention",
+        [
+            ["originalWord", acronymStyleOptions.originalWord],
+            ["pascal", acronymStyleOptions.pascal],
+            ["camel", acronymStyleOptions.camel],
+            ["capitalize", acronymStyleOptions.capitalize]
+        ],
+        "pascal"
+    ),
     // FIXME: Do this via a configurable named eventually.
     packageName: new StringOption("package", "Generated package name", "NAME", "io.quicktype")
 };
@@ -36,7 +49,7 @@ export class JavaTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [javaOptions.packageName, javaOptions.justTypes];
+        return [javaOptions.packageName, javaOptions.justTypes, javaOptions.acronymStyle];
     }
 
     get supportsUnionsWithBothNumberTypes(): boolean {
@@ -125,10 +138,6 @@ const keywords = [
     "true"
 ];
 
-const typeNamingFunction = funPrefixNamer("types", n => javaNameStyle(true, false, n));
-const propertyNamingFunction = funPrefixNamer("properties", n => javaNameStyle(false, false, n));
-const enumCaseNamingFunction = funPrefixNamer("enum-cases", n => javaNameStyle(true, true, n));
-
 export const stringEscape = utf16ConcatMap(escapeNonPrintableMapper(isAscii, standardUnicodeHexEscape));
 
 function isStartCharacter(codePoint: number): boolean {
@@ -146,7 +155,12 @@ const legalizeName = utf16LegalizeCharacters(isPartCharacter);
 // we have to use namers to produce the getter and setter names - we can't
 // just capitalize and concatenate.
 // https://stackoverflow.com/questions/8277355/naming-convention-for-upper-case-abbreviations
-export function javaNameStyle(startWithUpper: boolean, upperUnderscore: boolean, original: string): string {
+export function javaNameStyle(
+    startWithUpper: boolean,
+    upperUnderscore: boolean,
+    original: string,
+    acronymsStyle: (s: string) => string = allUpperWordStyle
+): string {
     const words = splitIntoWords(original);
     return combineWords(
         words,
@@ -154,7 +168,7 @@ export function javaNameStyle(startWithUpper: boolean, upperUnderscore: boolean,
         upperUnderscore ? allUpperWordStyle : startWithUpper ? firstUpperWordStyle : allLowerWordStyle,
         upperUnderscore ? allUpperWordStyle : firstUpperWordStyle,
         upperUnderscore || startWithUpper ? allUpperWordStyle : allLowerWordStyle,
-        allUpperWordStyle,
+        acronymsStyle,
         upperUnderscore ? "_" : "",
         isStartCharacter
     );
@@ -182,19 +196,19 @@ export class JavaRenderer extends ConvenienceRenderer {
     }
 
     protected makeNamedTypeNamer(): Namer {
-        return typeNamingFunction;
+        return this.getNameStyling("typeNamingFunction");
     }
 
     protected namerForObjectProperty(): Namer {
-        return propertyNamingFunction;
+        return this.getNameStyling("propertyNamingFunction");
     }
 
     protected makeUnionMemberNamer(): Namer {
-        return propertyNamingFunction;
+        return this.getNameStyling("propertyNamingFunction");
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return enumCaseNamingFunction;
+        return this.getNameStyling("enumCaseNamingFunction");
     }
 
     protected unionNeedsName(u: UnionType): boolean {
@@ -215,8 +229,16 @@ export class JavaRenderer extends ConvenienceRenderer {
         _jsonName: string,
         name: Name
     ): [Name, Name] {
-        const getterName = new DependencyName(propertyNamingFunction, name.order, lookup => `get_${lookup(name)}`);
-        const setterName = new DependencyName(propertyNamingFunction, name.order, lookup => `set_${lookup(name)}`);
+        const getterName = new DependencyName(
+            this.getNameStyling("propertyNamingFunction"),
+            name.order,
+            lookup => `get_${lookup(name)}`
+        );
+        const setterName = new DependencyName(
+            this.getNameStyling("propertyNamingFunction"),
+            name.order,
+            lookup => `set_${lookup(name)}`
+        );
         return [getterName, setterName];
     }
 
@@ -230,6 +252,21 @@ export class JavaRenderer extends ConvenienceRenderer {
         const getterAndSetterNames = this.makeNamesForPropertyGetterAndSetter(c, className, p, jsonName, name);
         this._gettersAndSettersForPropertyName.set(name, getterAndSetterNames);
         return getterAndSetterNames;
+    }
+
+    private getNameStyling(convention: string): Namer {
+        const styling: { [key: string]: Namer } = {
+            typeNamingFunction: funPrefixNamer("types", n =>
+                javaNameStyle(true, false, n, acronymStyle(this._options.acronymStyle))
+            ),
+            propertyNamingFunction: funPrefixNamer("properties", n =>
+                javaNameStyle(false, false, n, acronymStyle(this._options.acronymStyle))
+            ),
+            enumCaseNamingFunction: funPrefixNamer("enum-cases", n =>
+                javaNameStyle(true, true, n, acronymStyle(this._options.acronymStyle))
+            )
+        };
+        return styling[convention];
     }
 
     private fieldOrMethodName(methodName: string, topLevelName: Name): Sourcelike {
