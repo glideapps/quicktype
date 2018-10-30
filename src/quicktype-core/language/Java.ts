@@ -14,31 +14,20 @@ import {
     combineWords,
     allUpperWordStyle,
     firstUpperWordStyle,
-    allLowerWordStyle,
-    acronymStyleOptions,
-    acronymStyle
+    allLowerWordStyle
 } from "../support/Strings";
 import { Name, Namer, funPrefixNamer, DependencyName } from "../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
-import { BooleanOption, StringOption, Option, OptionValues, getOptionValues, EnumOption } from "../RendererOptions";
+import { BooleanOption, StringOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { defined, assert, assertNever } from "../support/Support";
 import { RenderContext } from "../Renderer";
+import { acronymOption, acronymStyle } from "../support/Acronyms";
 
 export const javaOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
-    acronymStyle: new EnumOption(
-        "acronym-style",
-        "acronym naming convention",
-        [
-            ["originalWord", acronymStyleOptions.originalWord],
-            ["pascal", acronymStyleOptions.pascal],
-            ["camel", acronymStyleOptions.camel],
-            ["capitalize", acronymStyleOptions.capitalize]
-        ],
-        "pascal"
-    ),
+    acronymStyle: acronymOption,
     // FIXME: Do this via a configurable named eventually.
     packageName: new StringOption("package", "Generated package name", "NAME", "io.quicktype")
 };

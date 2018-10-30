@@ -12,24 +12,6 @@ export type NamingStyle =
 
 const unicode = require("unicode-properties");
 
-export enum acronymStyleOptions {
-    pascal,
-    camel,
-    capitalize,
-    originalWord
-}
-
-export function acronymStyle(style: acronymStyleOptions): (s: string) => string {
-    const options: { [key: string]: (s: string) => string } = {
-        [acronymStyleOptions.pascal]: allUpperWordStyle,
-        [acronymStyleOptions.camel]: firstUpperWordStyle,
-        [acronymStyleOptions.capitalize]: capitalize,
-        [acronymStyleOptions.originalWord]: originalWord
-    };
-
-    return options[style];
-}
-
 function computeAsciiMap(
     mapper: (codePoint: number) => string
 ): { charStringMap: string[]; charNoEscapeMap: number[] } {

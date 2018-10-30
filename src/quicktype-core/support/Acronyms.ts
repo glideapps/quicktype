@@ -1,3 +1,6 @@
+import { EnumOption } from "../RendererOptions";
+import { allUpperWordStyle, firstUpperWordStyle, capitalize, originalWord } from "./Strings";
+
 export const acronyms: string[] = [
     "aaa",
     "aabb",
@@ -1095,3 +1098,33 @@ export const acronyms: string[] = [
     "zope",
     "zpl"
 ];
+
+export enum acronymStyleOptions {
+    pascal,
+    camel,
+    capitalize,
+    originalWord
+}
+
+export const acronymOption = new EnumOption(
+    "acronym-style",
+    "acronym naming convention",
+    [
+        ["originalWord", acronymStyleOptions.originalWord],
+        ["pascal", acronymStyleOptions.pascal],
+        ["camel", acronymStyleOptions.camel],
+        ["capitalize", acronymStyleOptions.capitalize]
+    ],
+    "pascal"
+);
+
+export function acronymStyle(style: acronymStyleOptions): (s: string) => string {
+    const options: { [key: string]: (s: string) => string } = {
+        [acronymStyleOptions.pascal]: allUpperWordStyle,
+        [acronymStyleOptions.camel]: firstUpperWordStyle,
+        [acronymStyleOptions.capitalize]: capitalize,
+        [acronymStyleOptions.originalWord]: originalWord
+    };
+
+    return options[style];
+}

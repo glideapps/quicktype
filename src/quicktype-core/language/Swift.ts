@@ -34,14 +34,13 @@ import {
     allLowerWordStyle,
     allUpperWordStyle,
     camelCase,
-    addPrefixIfNecessary,
-    acronymStyleOptions,
-    acronymStyle
+    addPrefixIfNecessary
 } from "../support/Strings";
 import { RenderContext } from "../Renderer";
 import { StringTypeMapping } from "../TypeBuilder";
 import { panic } from "../support/Support";
 import { DefaultDateTimeRecognizer, DateTimeRecognizer } from "../DateTime";
+import { acronymOption, acronymStyle } from "../support/Acronyms";
 
 const MAX_SAMELINE_PROPERTIES = 4;
 
@@ -52,17 +51,7 @@ export const swiftOptions = {
     alamofire: new BooleanOption("alamofire", "Alamofire extensions", false),
     namedTypePrefix: new StringOption("type-prefix", "Prefix for type names", "PREFIX", "", "secondary"),
     useClasses: new EnumOption("struct-or-class", "Structs or classes", [["struct", false], ["class", true]]),
-    acronymStyle: new EnumOption(
-        "acronym-style",
-        "acronym naming convention",
-        [
-            ["originalWord", acronymStyleOptions.originalWord],
-            ["pascal", acronymStyleOptions.pascal],
-            ["camel", acronymStyleOptions.camel],
-            ["capitalize", acronymStyleOptions.capitalize]
-        ],
-        "pascal"
-    ),
+    acronymStyle: acronymOption,
     dense: new EnumOption("density", "Code density", [["dense", true], ["normal", false]], "dense", "secondary"),
     linux: new BooleanOption("support-linux", "Support Linux", false, "secondary"),
     accessLevel: new EnumOption(
