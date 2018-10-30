@@ -1099,32 +1099,32 @@ export const acronyms: string[] = [
     "zpl"
 ];
 
-export enum acronymStyleOptions {
-    pascal,
-    camel,
-    capitalize,
-    originalWord
+export enum AcronymStyleOptions {
+    Pascal,
+    Camel,
+    Capitalize,
+    OriginalWord
 }
 
 export const acronymOption = new EnumOption(
     "acronym-style",
     "acronym naming convention",
     [
-        ["original", acronymStyleOptions.originalWord],
-        ["pascal", acronymStyleOptions.pascal],
-        ["camel", acronymStyleOptions.camel],
-        ["capitalize", acronymStyleOptions.capitalize]
+        ["original", AcronymStyleOptions.OriginalWord],
+        ["pascal", AcronymStyleOptions.Pascal],
+        ["camel", AcronymStyleOptions.Camel],
+        ["capitalize", AcronymStyleOptions.Capitalize]
     ],
     "pascal",
     "secondary"
 );
 
-export function acronymStyle(style: acronymStyleOptions): (s: string) => string {
+export function acronymStyle(style: AcronymStyleOptions): (s: string) => string {
     const options: { [key: string]: (s: string) => string } = {
-        [acronymStyleOptions.pascal]: allUpperWordStyle,
-        [acronymStyleOptions.camel]: firstUpperWordStyle,
-        [acronymStyleOptions.capitalize]: capitalize,
-        [acronymStyleOptions.originalWord]: originalWord
+        [AcronymStyleOptions.Pascal]: allUpperWordStyle,
+        [AcronymStyleOptions.Camel]: firstUpperWordStyle,
+        [AcronymStyleOptions.Capitalize]: capitalize,
+        [AcronymStyleOptions.OriginalWord]: originalWord
     };
 
     return options[style];
