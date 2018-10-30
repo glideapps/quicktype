@@ -447,6 +447,10 @@ export function allUpperWordStyle(s: string): string {
     return s.toUpperCase();
 }
 
+export function originalWord(s: string): string {
+    return s;
+}
+
 export function allLowerWordStyle(s: string): string {
     return s.toLowerCase();
 }
