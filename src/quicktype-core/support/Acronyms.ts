@@ -1115,7 +1115,8 @@ export const acronymOption = new EnumOption(
         ["camel", acronymStyleOptions.camel],
         ["capitalize", acronymStyleOptions.capitalize]
     ],
-    "pascal"
+    "pascal",
+    "secondary"
 );
 
 export function acronymStyle(style: acronymStyleOptions): (s: string) => string {
