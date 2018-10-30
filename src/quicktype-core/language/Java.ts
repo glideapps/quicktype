@@ -23,11 +23,11 @@ import { BooleanOption, StringOption, Option, OptionValues, getOptionValues } fr
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { defined, assert, assertNever } from "../support/Support";
 import { RenderContext } from "../Renderer";
-import { acronymOption, acronymStyle, acronymStyleOptions } from "../support/Acronyms";
+import { acronymOption, acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
 
 export const javaOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
-    acronymStyle: acronymOption(acronymStyleOptions.pascal),
+    acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
     // FIXME: Do this via a configurable named eventually.
     packageName: new StringOption("package", "Generated package name", "NAME", "io.quicktype")
 };

@@ -1099,36 +1099,37 @@ export const acronyms: string[] = [
     "zpl"
 ];
 
-export enum acronymStyleOptions {
-    pascal = "pascal",
-    camel = "camel",
-    capitalize = "capitalize",
-    originalWord = "originalWord",
-    lower = "lowerCase"
+export enum AcronymStyleOptions {
+    Pascal = "pascal",
+    Camel = "camel",
+    Capitalize = "capitalize",
+    Original = "original",
+    Lower = "lowerCase"
 }
 
-export const acronymOption = function(defaultOption: acronymStyleOptions) {
+export const acronymOption = function(defaultOption: AcronymStyleOptions) {
     return new EnumOption(
         "acronym-style",
         "acronym naming convention",
         [
-            [acronymStyleOptions.originalWord, acronymStyleOptions.originalWord],
-            [acronymStyleOptions.pascal, acronymStyleOptions.pascal],
-            [acronymStyleOptions.camel, acronymStyleOptions.camel],
-            [acronymStyleOptions.capitalize, acronymStyleOptions.capitalize],
-            [acronymStyleOptions.lower, acronymStyleOptions.lower]
+            [AcronymStyleOptions.Original, AcronymStyleOptions.Original],
+            [AcronymStyleOptions.Pascal, AcronymStyleOptions.Pascal],
+            [AcronymStyleOptions.Camel, AcronymStyleOptions.Camel],
+            [AcronymStyleOptions.Capitalize, AcronymStyleOptions.Capitalize],
+            [AcronymStyleOptions.Lower, AcronymStyleOptions.Lower]
         ],
-        defaultOption
+        defaultOption,
+        "secondary"
     );
 };
 
-export function acronymStyle(style: acronymStyleOptions): (s: string) => string {
+export function acronymStyle(style: AcronymStyleOptions): (s: string) => string {
     const options: { [key: string]: (s: string) => string } = {
-        [acronymStyleOptions.pascal]: allUpperWordStyle,
-        [acronymStyleOptions.camel]: firstUpperWordStyle,
-        [acronymStyleOptions.capitalize]: capitalize,
-        [acronymStyleOptions.originalWord]: originalWord,
-        [acronymStyleOptions.lower]: allLowerWordStyle
+        [AcronymStyleOptions.Pascal]: allUpperWordStyle,
+        [AcronymStyleOptions.Camel]: firstUpperWordStyle,
+        [AcronymStyleOptions.Capitalize]: capitalize,
+        [AcronymStyleOptions.Original]: originalWord,
+        [AcronymStyleOptions.Lower]: allLowerWordStyle
     };
 
     return options[style];
