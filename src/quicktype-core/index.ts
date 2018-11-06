@@ -9,6 +9,8 @@ export {
     inferenceFlags,
     inferenceFlagNames,
     defaultInferenceFlags,
+    inferenceFlagsObject,
+    InferenceFlags,
     InferenceFlagName,
     RunContext
 } from "./Run";
