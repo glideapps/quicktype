@@ -323,7 +323,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
                     meta.push(() => this.emitDescription(description));
                 }
 
-                this.renameAttribute(name, jsonName, meta);
+                this.renameAttribute(name, jsonName, !nullableOrOptional, meta);
 
                 if (meta.length > 0 && !first) {
                     this.ensureBlankLine();
@@ -350,7 +350,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
         this.emitLine(")");
     }
 
-    protected renameAttribute(_name: Name, _jsonName: string, _meta: Array<() => void>) {
+    protected renameAttribute(_name: Name, _jsonName: string, _required: boolean, _meta: Array<() => void>) {
         // to be overridden
     }
 
@@ -605,7 +605,7 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
         }
     }
 
-    protected renameAttribute(name: Name, jsonName: string, meta: Array<() => void>) {
+    protected renameAttribute(name: Name, jsonName: string, _required: boolean, meta: Array<() => void>) {
         const rename = this.klaxonRenameAttribute(name, jsonName);
         if (rename !== undefined) {
             meta.push(() => this.emitLine(rename));
@@ -830,16 +830,30 @@ import com.fasterxml.jackson.module.kotlin.*`);
         );
     }
 
-    private jacksonRenameAttribute(propName: Name, jsonName: string, ignore: boolean = false): Sourcelike | undefined {
+    private jacksonRenameAttribute(
+        propName: Name,
+        jsonName: string,
+        required: boolean,
+        ignore: boolean = false
+    ): Sourcelike | undefined {
         const escapedName = stringEscape(jsonName);
         const namesDiffer = this.sourcelikeToString(propName) !== escapedName;
         const properties: Sourcelike[] = [];
         const isPrefixBool = jsonName.startsWith("is"); // https://github.com/FasterXML/jackson-module-kotlin/issues/80
+        const propertyOpts: Sourcelike[] = [];
 
         if (namesDiffer || isPrefixBool) {
-            properties.push(['@get:JsonProperty("', escapedName, '")']);
-            properties.push(['@field:JsonProperty("', escapedName, '")']);
+            propertyOpts.push('"' + escapedName + '"');
         }
+        if (required) {
+            propertyOpts.push("required=true");
+        }
+
+        if (propertyOpts.length > 0) {
+            properties.push(["@get:JsonProperty(", arrayIntercalate(", ", propertyOpts), ")"]);
+            properties.push(["@field:JsonProperty(", arrayIntercalate(", ", propertyOpts), ")"]);
+        }
+
         if (ignore) {
             properties.push("@get:JsonIgnore");
             properties.push("@field:JsonIgnore");
@@ -868,8 +882,8 @@ import com.fasterxml.jackson.module.kotlin.*`);
         }
     }
 
-    protected renameAttribute(name: Name, jsonName: string, meta: Array<() => void>) {
-        const rename = this.jacksonRenameAttribute(name, jsonName);
+    protected renameAttribute(name: Name, jsonName: string, required: boolean, meta: Array<() => void>) {
+        const rename = this.jacksonRenameAttribute(name, jsonName, required);
         if (rename !== undefined) {
             meta.push(() => this.emitLine(rename));
         }
