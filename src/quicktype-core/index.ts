@@ -8,6 +8,8 @@ export {
     combineRenderResults,
     inferenceFlags,
     inferenceFlagNames,
+    defaultInferenceFlags,
+    InferenceFlagName,
     RunContext
 } from "./Run";
 export { CompressedJSON } from "./input/CompressedJSON";
