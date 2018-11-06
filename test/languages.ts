@@ -724,6 +724,87 @@ export const KotlinLanguage: Language = {
   sourceFiles: ["src/Language/Kotlin.ts"]
 };
 
+export const KotlinJacksonLanguage: Language = {
+  name: "kotlin",
+  base: "test/fixtures/kotlin-jackson",
+  compileCommand: "./build.sh",
+  runCommand(sample: string) {
+    return `./run.sh "${sample}"`;
+  },
+  diffViaSchema: true,
+  skipDiffViaSchema: [
+    "bug427.json",
+    "keywords.json",
+    // TODO Investigate these
+    "34702.json",
+    "76ae1.json"
+  ],
+  allowMissingNull: true,
+  features: ["enum", "union", "no-defaults"],
+  output: "TopLevel.kt",
+  topLevel: "TopLevel",
+  skipJSON: [
+    // Some odd property names prevent Klaxon from mapping to constructors
+    // https://github.com/cbeust/klaxon/issues/146
+    "blns-object.json",
+    "identifiers.json",
+    "simple-identifiers.json",
+    // Klaxon cannot parse List<List<Enum | Union>>
+    // https://github.com/cbeust/klaxon/issues/145
+    "kitchen-sink.json",
+    "26c9c.json",
+    "421d4.json",
+    "a0496.json",
+    "fcca3.json",
+    "ae9ca.json",
+    "617e8.json",
+    "5f7fe.json",
+    "f74d5.json",
+    "a3d8c.json",
+    // Klaxon has a hard time with null inside collections
+    "combinations.json",
+    "unions.json",
+    "nst-test-suite.json",
+    // Klaxon does not support top-level primitives
+    "no-classes.json",
+    // These should be enabled
+    "nbl-stats.json",
+    // TODO Investigate these
+    "af2d1.json",
+    "32431.json",
+    "bug427.json"
+  ],
+  skipSchema: [
+    // Very weird - the types are correct, but it can (de)serialize the string,
+    // which is not represented in the types.
+    "class-with-additional.schema",
+    "implicit-class-array-union.schema",
+    "go-schema-pattern-properties.schema",
+    // IllegalArgumentException
+    "accessors.schema",
+    "description.schema",
+    "union-list.schema",
+    // KlaxonException: Need to extract inside
+    "bool-string.schema",
+    "integer-string.schema",
+    "uuid.schema",
+    // produces {"foo" : "java.lang.Object@48d61b48"}
+    "any.schema",
+    // KlaxonException: Couldn't find a suitable constructor for class UnionValue to initialize with {}
+    "class-map-union.schema",
+    "direct-union.schema",
+    // Some weird name collision
+    "keyword-enum.schema",
+    "keyword-unions.schema",
+    // Klaxon does not support top-level primitives
+    "top-level-enum.schema"
+  ],
+  skipMiscJSON: false,
+  rendererOptions: {"framework": "jackson"},
+  quickTestRendererOptions: [],
+  sourceFiles: ["src/Language/Kotlin.ts"]
+};
+
 export const DartLanguage: Language = {
   name: "dart",
   base: "test/fixtures/dart",
