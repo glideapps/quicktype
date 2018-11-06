@@ -698,6 +698,7 @@ export const allFixtures: Fixture[] = [
   new JSONFixture(languages.FlowLanguage),
   new JSONFixture(languages.JavaScriptLanguage),
   new JSONFixture(languages.KotlinLanguage),
+  new JSONFixture(languages.KotlinJacksonLanguage, "kotlin-jackson"),
   new JSONFixture(languages.DartLanguage),
   new JSONSchemaJSONFixture(languages.CSharpLanguage),
   new JSONTypeScriptFixture(languages.CSharpLanguage),
@@ -715,6 +716,7 @@ export const allFixtures: Fixture[] = [
   new JSONSchemaFixture(languages.FlowLanguage),
   new JSONSchemaFixture(languages.JavaScriptLanguage),
   new JSONSchemaFixture(languages.KotlinLanguage),
+  new JSONSchemaFixture(languages.KotlinJacksonLanguage, "schema-kotlin-jackson"),
   new JSONSchemaFixture(languages.DartLanguage),
   // FIXME: Why are we missing so many language with GraphQL?
   new GraphQLFixture(languages.CSharpLanguage),
