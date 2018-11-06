@@ -21,7 +21,7 @@ import {
     splitIntoWords,
     utf32ConcatMap
 } from "../support/Strings";
-import { mustNotHappen } from "../support/Support";
+import { assertNever, mustNotHappen } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
 import {
     ArrayType,
@@ -84,8 +84,7 @@ export class KotlinTargetLanguage extends TargetLanguage {
             case Framework.Klaxon:
                 return new KotlinKlaxonRenderer(this, renderContext, options);
             default:
-                // Should be caught by RendererUnknownOptionValue for invalid values
-                throw new Error(`Framework '${untypedOptionValues.framework}' not implemented`);
+                return assertNever(options.framework);
         }
     }
 }
