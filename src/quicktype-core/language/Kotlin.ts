@@ -912,7 +912,6 @@ private fun <T> ObjectMapper.convert(k: kotlin.reflect.KClass<*>, fromJson: (Jso
 })`);
     }
 
-    // TODO
     protected emitUnionDefinitionMethods(
         u: UnionType,
         nonNulls: ReadonlySet<Type>,
