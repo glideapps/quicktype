@@ -1489,17 +1489,19 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
         if (!this._options.justTypes && this.haveNamedTypes) {
             this.emitNamespaces(["nlohmann"], () => {
-                this.forEachObject("leading-and-interposing", (c: ClassType, className: Name) =>
-                    this.emitClassFunctions(c, className)
-                );
+                this.emitNamespaces(["detail"], () => {
+                    this.forEachObject("leading-and-interposing", (c: ClassType, className: Name) =>
+                        this.emitClassFunctions(c, className)
+                    );
 
-                this.forEachEnum("leading-and-interposing", (e: EnumType, enumName: Name) =>
-                    this.emitEnumFunctions(e, enumName)
-                );
+                    this.forEachEnum("leading-and-interposing", (e: EnumType, enumName: Name) =>
+                        this.emitEnumFunctions(e, enumName)
+                    );
 
-                if (this.haveUnions) {
-                    this.emitAllUnionFunctions();
-                }
+                    if (this.haveUnions) {
+                        this.emitAllUnionFunctions();
+                    }
+                });
             });
         }
     }
@@ -1525,6 +1527,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
 
         this.ensureBlankLine();
+
         this.emitGenerators();
 
         this.finishFile();
