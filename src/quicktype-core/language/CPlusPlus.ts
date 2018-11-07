@@ -1641,7 +1641,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.emitBlock(["inline std::map<std::wstring, T> Utf16FromUtf8Map(const std::map<std::string, T> m)"], false, () => {
                 this.emitLine("auto it = m.begin();");
                 this.emitLine("auto newMap = std::map<std::wstring, T>();");
-                this.emitLine("while (it != m.end()) newMap.insert(std::pair<std::wstring, T>(Utf16FromUtf8(it->first), it->second));");
+                    this.emitLine("while (it != m.end()) { newMap.insert(std::pair<std::wstring, T>(Utf16FromUtf8(it->first), it->second)); it++; }");
                 this.emitLine("return newMap;");
             });
             this.ensureBlankLine();
@@ -1649,21 +1649,21 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.emitBlock(["inline std::map<std::string, T> Utf8FromUtf16Map(const std::map<std::wstring, T> m)"], false, () => {
                 this.emitLine("auto it = m.begin();");
                 this.emitLine("auto newMap = std::map<std::string, T>();");
-                this.emitLine("while (it != m.end()) newMap.insert(std::pair<std::string, T>(Utf8FromUtf16(it->first), it->second));");
+                    this.emitLine("while (it != m.end()) { newMap.insert(std::pair<std::string, T>(Utf8FromUtf16(it->first), it->second)); it++; }");
                 this.emitLine("return newMap;");
             });
             this.ensureBlankLine();
             this.emitBlock(["inline std::map<std::wstring, std::wstring> Utf16FromUtf8Map(const std::map<std::string, std::string> m)"], false, () => {
                 this.emitLine("auto it = m.begin();");
                 this.emitLine("auto newMap = std::map<std::wstring, std::wstring>();");
-                this.emitLine("while (it != m.end()) newMap.insert(std::pair<std::wstring, std::wstring>(Utf16FromUtf8(it->first), Utf16FromUtf8(it->second)));");
+                    this.emitLine("while (it != m.end()) { newMap.insert(std::pair<std::wstring, std::wstring>(Utf16FromUtf8(it->first), Utf16FromUtf8(it->second))); it++; }");
                 this.emitLine("return newMap;");
             });
             this.ensureBlankLine();
             this.emitBlock(["inline std::map<std::string, std::string> Utf8FromUtf16Map(const std::map<std::wstring, std::wstring> m)"], false, () => {
                 this.emitLine("auto it = m.begin();");
                 this.emitLine("auto newMap = std::map<std::string, std::string>();");
-                this.emitLine("while (it != m.end()) newMap.insert(std::pair<std::string, std::string>(Utf8FromUtf16(it->first), Utf8FromUtf16(it->second)));");
+                    this.emitLine("while (it != m.end()) { newMap.insert(std::pair<std::string, std::string>(Utf8FromUtf16(it->first), Utf8FromUtf16(it->second))); it++; }");
                 this.emitLine("return newMap;");
             });
             this.ensureBlankLine();
@@ -1681,14 +1681,14 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.emitBlock(["inline std::vector<std::wstring> Utf16FromUtf8Array(const std::vector<std::string> v)"], false, () => {
                 this.emitLine("auto it = v.begin();");
                 this.emitLine("auto newVector = std::vector<std::wstring>();");
-                this.emitLine("while (it != v.end()) newVector.push_back(Utf16FromUtf8(*it));");
+                    this.emitLine("while (it != v.end()) { newVector.push_back(Utf16FromUtf8(*it)); it++; }");
                 this.emitLine("return newVector;");
             });
             this.ensureBlankLine();
             this.emitBlock(["inline std::vector<std::string> Utf8FromUtf16Array(const std::vector<std::wstring> v)"], false, () => {
                 this.emitLine("auto it = v.begin();");
                 this.emitLine("auto newVector = std::vector<std::string>();");
-                this.emitLine("while (it != v.end()) newVector.push_back(Utf8FromUtf16(*it));");
+                    this.emitLine("while (it != v.end())  { newVector.push_back(Utf8FromUtf16(*it)); it++; }");
                 this.emitLine("return newVector;");
             });
             this.ensureBlankLine();
