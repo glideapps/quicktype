@@ -60,6 +60,12 @@ export const cPlusPlusOptions = {
         [["with-struct", false], ["with-getter-setter", true]],
         "with-getter-setter"
     ),
+    wstring: new EnumOption(
+        "wstring",
+        "Store strings using Utf-16 std::wstring, rather than Utf-8 std::string",
+        [["use-string", false], ["use-wstring", true]],
+        "use-string"
+    ),
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     namespace: new StringOption("namespace", "Name of the generated namespace(s)", "NAME", "quicktype"),
     enumType: new StringOption("enum-type", "Type of enum class", "NAME", "int", "secondary"),
@@ -99,6 +105,7 @@ export class CPlusPlusTargetLanguage extends TargetLanguage {
             cPlusPlusOptions.justTypes,
             cPlusPlusOptions.namespace,
             cPlusPlusOptions.codeFormat,
+            cPlusPlusOptions.wstring,
             cPlusPlusOptions.typeSourceStyle,
             cPlusPlusOptions.includeLocation,
             cPlusPlusOptions.typeNamingStyle,
@@ -296,19 +303,6 @@ type ConstraintMember = {
     cppConstType?: string;
 };
 
-const constraintMembers: ConstraintMember[] = [
-    { name: MemberNames.MinValue, getter: MemberNames.GetMinValue, setter: MemberNames.SetMinValue, cppType: "int" },
-    { name: MemberNames.MaxValue, getter: MemberNames.GetMaxValue, setter: MemberNames.SetMaxValue, cppType: "int" },
-    { name: MemberNames.MinLength, getter: MemberNames.GetMinLength, setter: MemberNames.SetMinLength, cppType: "size_t" },
-    { name: MemberNames.MaxLength, getter: MemberNames.GetMaxLength, setter: MemberNames.SetMaxLength, cppType: "size_t" },
-    {
-        name: MemberNames.Pattern,
-        getter: MemberNames.GetPattern,
-        setter: MemberNames.SetPattern,
-        cppType: "std::string",
-        cppConstType: "const std::string &"
-    }
-];
 
 export type IncludeRecord = {
     kind: IncludeKind | undefined /** How to include that */;
@@ -352,6 +346,24 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     private _generatedMemberNames: Map<MemberNames, string>;
     private _forbiddenGlobalNames: string[];
     private readonly _memberNamingFunction: Namer;
+    private _stringType: string;
+    private _constStringType: string;
+    private _stringLiteralPrefix: string;
+    private _toString: string;
+    private _smatch: string;
+    private _regex: string;
+    private _Utf16FromUtf8Start: string;
+    private _Utf16FromUtf8End: string;
+    private _Utf8FromUtf16Start: string;
+    private _Utf8FromUtf16End: string;
+    private _Utf16FromUtf8MapStart: string;
+    private _Utf16FromUtf8MapEnd: string;
+    private _Utf8FromUtf16MapStart: string;
+    private _Utf8FromUtf16MapEnd: string;
+    private _Utf16FromUtf8ArrayStart: string;
+    private _Utf16FromUtf8ArrayEnd: string;
+    private _Utf8FromUtf16ArrayStart: string;
+    private _Utf8FromUtf16ArrayEnd: string;
 
     protected readonly typeNamingStyle: NamingStyle;
     protected readonly enumeratorNamingStyle: NamingStyle;
@@ -380,7 +392,66 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this._generatedMemberNames = new Map();
         this._forbiddenGlobalNames = [];
 
+        if (_options.wstring)
+        {
+            this._stringType = "std::wstring";
+            this._constStringType = "const std::wstring &";
+            this._stringLiteralPrefix = "L";
+            this._toString = "std::to_wstring";
+            this._smatch = "std::wsmatch";
+            this._regex = "std::wregex";
+            this._Utf16FromUtf8Start = `Utf16FromUtf8(`;
+            this._Utf16FromUtf8End = ")";
+            this._Utf8FromUtf16Start = `Utf8FromUtf16(`;
+            this._Utf8FromUtf16End = ")";
+            this._Utf16FromUtf8MapStart = `Utf16FromUtf8Map(`;
+            this._Utf16FromUtf8MapEnd = ")";
+            this._Utf8FromUtf16MapStart = `Utf8FromUtf16Map(`;
+            this._Utf8FromUtf16MapEnd = ")";
+            this._Utf16FromUtf8ArrayStart = `Utf16FromUtf8Array(`;
+            this._Utf16FromUtf8ArrayEnd = ")";
+            this._Utf8FromUtf16ArrayStart = `Utf8FromUtf16Array(`;
+            this._Utf8FromUtf16ArrayEnd = ")";
+        }
+        else
+        {
+            this._stringType = "std::string";
+            this._constStringType = "const std::string &";
+            this._stringLiteralPrefix = "";
+            this._toString = "std::to_string";
+            this._smatch = "std::smatch";
+            this._regex = "std::regex";
+            this._Utf16FromUtf8Start = "";
+            this._Utf16FromUtf8End = "";
+            this._Utf8FromUtf16Start = "";
+            this._Utf8FromUtf16End = "";
+            this._Utf16FromUtf8MapStart = "";
+            this._Utf16FromUtf8MapEnd = "";
+            this._Utf8FromUtf16MapStart = "";
+            this._Utf8FromUtf16MapEnd = "";
+            this._Utf16FromUtf8ArrayStart = "";
+            this._Utf16FromUtf8ArrayEnd = "";
+            this._Utf8FromUtf16ArrayStart = "";
+            this._Utf8FromUtf16ArrayEnd = "";
+        }
+
         this.setupGlobalNames();
+    }
+
+    protected getConstraintMembers() : ConstraintMember[] {
+        return [
+            { name: MemberNames.MinValue, getter: MemberNames.GetMinValue, setter: MemberNames.SetMinValue, cppType: "int" },
+            { name: MemberNames.MaxValue, getter: MemberNames.GetMaxValue, setter: MemberNames.SetMaxValue, cppType: "int" },
+            { name: MemberNames.MinLength, getter: MemberNames.GetMinLength, setter: MemberNames.SetMinLength, cppType: "size_t" },
+            { name: MemberNames.MaxLength, getter: MemberNames.GetMaxLength, setter: MemberNames.SetMaxLength, cppType: "size_t" },
+            {
+                name: MemberNames.Pattern,
+                getter: MemberNames.GetPattern,
+                setter: MemberNames.SetPattern,
+                cppType: this._stringType,
+                cppConstType: this._constStringType
+            }
+        ];
     }
 
     protected lookupGlobalName(type: GlobalNames): string {
@@ -579,9 +650,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
     }
 
-    protected cppTypeInOptional(nonNulls: ReadonlySet<Type>, ctx: TypeContext, withIssues: boolean): Sourcelike {
+    protected cppTypeInOptional(nonNulls: ReadonlySet<Type>, ctx: TypeContext, withIssues: boolean, forceNarrowString: boolean): Sourcelike {
         if (nonNulls.size === 1) {
-            return this.cppType(defined(iterableFirst(nonNulls)), ctx, withIssues);
+            return this.cppType(defined(iterableFirst(nonNulls)), ctx, withIssues, forceNarrowString);
         }
         const typeList: Sourcelike = [];
         for (const t of nonNulls) {
@@ -596,7 +667,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         needsOptionalIndirection: false,
                         inJsonNamespace: ctx.inJsonNamespace
                     },
-                    withIssues
+                    withIssues,
+                    forceNarrowString
                 )
             );
         }
@@ -610,7 +682,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         const variant = this.cppTypeInOptional(
             nonNulls,
             { needsForwardIndirection: !indirection, needsOptionalIndirection: !indirection, inJsonNamespace },
-            true
+            true,
+            false
         );
         if (!indirection) {
             return variant;
@@ -631,7 +704,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         return [optionalType, "<", typeSrc, ">"];
     }
 
-    protected cppType(t: Type, ctx: TypeContext, withIssues: boolean): Sourcelike {
+    protected cppType(t: Type, ctx: TypeContext, withIssues: boolean, forceNarrowString : boolean): Sourcelike {
         const inJsonNamespace = ctx.inJsonNamespace;
         return matchType<Sourcelike>(
             t,
@@ -642,13 +715,23 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             _boolType => "bool",
             _integerType => "int64_t",
             _doubleType => "double",
-            _stringType => "std::string",
+            _stringType => {
+                if (forceNarrowString)
+                {
+                    return "std::string";
+                }
+                else
+                {
+                    return this._stringType;
+                }
+            },
             arrayType => [
                 "std::vector<",
                 this.cppType(
                     arrayType.items,
                     { needsForwardIndirection: false, needsOptionalIndirection: true, inJsonNamespace },
-                    withIssues
+                    withIssues,
+                    forceNarrowString
                 ),
                 ">"
             ],
@@ -657,15 +740,22 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     this.ourQualifier(inJsonNamespace),
                     this.nameForNamedType(classType)
                 ]),
-            mapType => [
-                "std::map<std::string, ",
-                this.cppType(
-                    mapType.values,
-                    { needsForwardIndirection: false, needsOptionalIndirection: true, inJsonNamespace },
-                    withIssues
-                ),
-                ">"
-            ],
+                mapType => {
+                var KeyType = this._stringType;
+                if (forceNarrowString) {
+                    KeyType = "std::string";
+                } 
+                return [
+                    "std::map<", KeyType, ", ", 
+                    this.cppType(
+                        mapType.values,
+                        { needsForwardIndirection: false, needsOptionalIndirection: true, inJsonNamespace },
+                        withIssues,
+                        forceNarrowString
+                    ),
+                    ">"
+                ];
+            },
             enumType => [this.ourQualifier(inJsonNamespace), this.nameForNamedType(enumType)],
             unionType => {
                 const nullable = nullableFromUnion(unionType);
@@ -676,7 +766,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     this.cppType(
                         nullable,
                         { needsForwardIndirection: false, needsOptionalIndirection: false, inJsonNamespace },
-                        withIssues
+                        withIssues,
+                        forceNarrowString
                     ),
                     ">"
                 ];
@@ -767,7 +858,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     this.cppType(
                         property.type,
                         { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false },
-                        true
+                        true,
+                        false
                     ),
                     name
                 );
@@ -789,7 +881,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     this.cppType(
                         property.type,
                         { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false },
-                        true
+                        true,
+                        false
                     ),
                     name
                 );
@@ -800,7 +893,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 const rendered = this.cppType(
                     property.type,
                     { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false },
-                    true
+                    true,
+                    false
                 );
 
                 /**
@@ -819,7 +913,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             rendered,
                             " value) { if (value) ",
                             checkConst,
-                            '("',
+                            '(',
+                            this._stringLiteralPrefix,
+                            '"',
                             name,
                             '", ',
                             this.constraintMember(jsonName),
@@ -841,7 +937,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             rendered,
                             "& value) { ",
                             checkConst,
-                            '("',
+                            '(',
+                            this._stringLiteralPrefix,
+                            '"',
                             name,
                             '", ',
                             this.constraintMember(jsonName),
@@ -882,7 +980,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             constrArg += ", ";
             constrArg += minMaxLength !== undefined && minMaxLength[1] !== undefined ? minMaxLength[1] : "boost::none";
             constrArg += ", ";
-            constrArg += pattern === undefined ? "boost::none" : 'std::string("' + pattern + '")';
+            constrArg += pattern === undefined ? "boost::none" : this._stringType + '(' + this._stringLiteralPrefix + '"' + pattern + '")';
             constrArg += ")";
 
             res.set(jsonName, this.constraintMember(jsonName) + constrArg);
@@ -923,98 +1021,155 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         });
     }
 
+    protected emitClassHeaders(className: Name): void {
+        const ourQualifier = this.ourQualifier(true) as string;
+        this.emitLine("void from_json(const json& _j, ", ourQualifier, className, "& _x);");
+        this.emitLine("void to_json(json& _j, const ", ourQualifier, className, "& _x);");
+    }
+
     protected emitClassFunctions(c: ClassType, className: Name): void {
-        const ourQualifier = this.ourQualifier(true);
+        const ourQualifier = this.ourQualifier(true) as string;
+
+        var EncodeKeyStart:string = '';
+        var EncodeKeyEnd:string = '';
+        if (this._options.wstring) {
+            EncodeKeyStart = ourQualifier.concat(this._Utf8FromUtf16Start);
+            EncodeKeyEnd = this._Utf8FromUtf16End;
+        }
 
         this.emitBlock(["inline void from_json(const json& _j, ", ourQualifier, className, "& _x)"], false, () => {
             this.forEachClassProperty(c, "none", (name, json, p) => {
                 const [, , setterName] = defined(this._gettersAndSettersForPropertyName.get(name));
                 const t = p.type;
+
+                var AssignmentStart:Sourcelike[];
+                var AssignmentEnd:Sourcelike[];
+                if (this._options.codeFormat) {
+                    AssignmentStart = [ "_x.", setterName, "( " ];
+                    AssignmentEnd = [ " )" ];
+                }
+                else
+                {
+                    AssignmentStart = [ "_x.", name, " = "];
+                    AssignmentEnd = [];
+                }
+
                 if (t instanceof UnionType) {
                     const [maybeNull, nonNulls] = removeNullFromUnion(t, true);
                     if (maybeNull !== null) {
-                        if (this._options.codeFormat) {
-                            this.emitLine(
-                                "_x.",
-                                setterName,
-                                "( ",
-                                ourQualifier,
-                                "get_optional<",
-                                this.cppTypeInOptional(
-                                    nonNulls,
-                                    {
-                                        needsForwardIndirection: false,
-                                        needsOptionalIndirection: false,
-                                        inJsonNamespace: true
-                                    },
-                                    false
-                                ),
-                                '>(_j, "',
-                                stringEscape(json),
-                                '") );'
-                            );
-                        } else {
-                            this.emitLine(
-                                "_x.",
-                                name,
-                                " = ",
-                                ourQualifier,
-                                "get_optional<",
-                                this.cppTypeInOptional(
-                                    nonNulls,
-                                    {
-                                        needsForwardIndirection: false,
-                                        needsOptionalIndirection: false,
-                                        inJsonNamespace: true
-                                    },
-                                    false
-                                ),
-                                '>(_j, "',
-                                stringEscape(json),
-                                '");'
-                            );
+                        const cppType = this.cppTypeInOptional(
+                            nonNulls,
+                            {
+                                needsForwardIndirection: false,
+                                needsOptionalIndirection: false,
+                                inJsonNamespace: true
+                            },
+                            false,
+                            true
+                        );
+                        var EncodeValueStart:string = '';
+                        var EncodeValueEnd:string = '';
+                        if (this._options.wstring && cppType == "std::string") {
+                            EncodeValueStart = ourQualifier.concat(this._Utf16FromUtf8Start);
+                            EncodeValueEnd = this._Utf16FromUtf8End;
                         }
+                        if (this._options.wstring && t instanceof MapType)
+                        {
+                            EncodeValueStart = ourQualifier.concat(this._Utf16FromUtf8MapStart);
+                            EncodeValueEnd = this._Utf16FromUtf8MapEnd;
+                        }
+                        if (this._options.wstring && t instanceof ArrayType)
+                        {
+                            EncodeValueStart = ourQualifier.concat(this._Utf16FromUtf8ArrayStart);
+                            EncodeValueEnd = this._Utf16FromUtf8ArrayEnd;
+                        }
+                        this.emitLine(
+                            AssignmentStart,
+                            EncodeValueStart,
+                            ourQualifier,
+                            "get_optional<",
+                            cppType,
+                            '>(_j, ',
+                            EncodeKeyStart,
+                            this._stringLiteralPrefix,
+                            '"',
+                            stringEscape(json),
+                            '"',
+                            EncodeKeyEnd,
+                            ')',
+                            EncodeValueEnd,
+                            AssignmentEnd,
+                            ';'
+                        );
                         return;
                     }
                 }
                 if (t.kind === "null" || t.kind === "any") {
-                    if (this._options.codeFormat) {
-                        this.emitLine(
-                            "_x.",
-                            setterName,
-                            "( ",
-                            ourQualifier,
-                            'get_untyped(_j, "',
-                            stringEscape(json),
-                            '") );'
-                        );
-                    } else {
-                        this.emitLine("_x.", name, " = ", ourQualifier, 'get_untyped(_j, "', stringEscape(json), '");');
-                    }
+                        this.emitLine(AssignmentStart, ourQualifier, 'get_untyped(_j, "', stringEscape(json), '")', AssignmentEnd,';');
                     return;
                 }
                 const cppType = this.cppType(
                     t,
                     { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
-                    false
+                    false,
+                    true
                 );
-                if (this._options.codeFormat) {
-                    this.emitLine("_x.", setterName, '( _j.at("', stringEscape(json), '").get<', cppType, ">() );");
-                } else {
-                    this.emitLine("_x.", name, ' = _j.at("', stringEscape(json), '").get<', cppType, ">();");
+                var EncodeValueStart:string = '';
+                var EncodeValueEnd:string = '';
+                if (this._options.wstring && cppType == "std::string") {
+                    EncodeValueStart = ourQualifier.concat(this._Utf16FromUtf8Start);
+                    EncodeValueEnd = this._Utf16FromUtf8End;
                 }
+                if (this._options.wstring && t instanceof MapType)
+                {
+                    EncodeValueStart = ourQualifier.concat(this._Utf16FromUtf8MapStart);
+                    EncodeValueEnd = this._Utf16FromUtf8MapEnd;
+                }
+                if (this._options.wstring && t instanceof ArrayType)
+                {
+                    EncodeValueStart = ourQualifier.concat(this._Utf16FromUtf8ArrayStart);
+                    EncodeValueEnd = this._Utf16FromUtf8ArrayEnd;
+                }
+                this.emitLine(AssignmentStart, EncodeValueStart,'_j.at(', EncodeKeyStart, this._stringLiteralPrefix, '"', stringEscape(json), '"', EncodeKeyEnd, ').get<', cppType, '>()', EncodeValueEnd, AssignmentEnd, ';');
             });
         });
         this.ensureBlankLine();
         this.emitBlock(["inline void to_json(json& _j, const ", ourQualifier, className, "& _x)"], false, () => {
             this.emitLine("_j = json::object();");
-            this.forEachClassProperty(c, "none", (name, json, _) => {
+            this.forEachClassProperty(c, "none", (name, json, p) => {
+                const t = p.type;
+                const cppType = this.cppType(
+                    t,
+                    { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+                    false,
+                    false
+                );
                 const [getterName, ,] = defined(this._gettersAndSettersForPropertyName.get(name));
+                var Getter: Sourcelike[];
                 if (this._options.codeFormat) {
-                    this.emitLine('_j["', stringEscape(json), '"] = _x.', getterName, "();");
-                } else {
-                    this.emitLine('_j["', stringEscape(json), '"] = _x.', name, ";");
+                    Getter = [ getterName , "()" ];
                 }
+                else
+                {
+                    Getter = [ name ];
+                }
+                var EncodeValueStart:string = '';
+                var EncodeValueEnd:string = '';
+                if (this._options.wstring && cppType == this._stringType) {
+                    EncodeValueStart = ourQualifier.concat(this._Utf8FromUtf16Start);
+                    EncodeValueEnd = this._Utf8FromUtf16End;
+                }
+                if (this._options.wstring && t instanceof MapType)
+                {
+                    EncodeValueStart = ourQualifier.concat(this._Utf8FromUtf16MapStart);
+                    EncodeValueEnd = this._Utf8FromUtf16MapEnd;
+                }
+                if (this._options.wstring && t instanceof ArrayType)
+                {
+                    EncodeValueStart = ourQualifier.concat(this._Utf8FromUtf16ArrayStart);
+                    EncodeValueEnd = this._Utf8FromUtf16ArrayEnd;
+                }
+                this.emitLine('_j[', EncodeKeyStart, this._stringLiteralPrefix, '"', stringEscape(json), '"', EncodeKeyEnd, '] = ', EncodeValueStart,'_x.', Getter, EncodeValueEnd, ";");
             });
         });
     }
@@ -1042,7 +1197,21 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitLine("typedef ", this.variantType(u, false), " ", unionName, ";");
     }
 
+    protected emitUnionHeaders(u: UnionType): void {
+        const nonNulls = removeNullFromUnion(u, true)[1];
+        const variantType = this.cppTypeInOptional(
+            nonNulls,
+            { needsForwardIndirection: false, needsOptionalIndirection: false, inJsonNamespace: true },
+            false,
+            false
+        );
+        this.emitLine("void from_json(const json& _j, ", variantType, "& _x);");
+        this.emitLine("void to_json(json& _j, const ", variantType, "& _x);");
+    }
+
     protected emitUnionFunctions(u: UnionType): void {
+        const ourQualifier = this.ourQualifier(true) as string;
+
         const functionForKind: [string, string][] = [
             ["bool", "is_boolean"],
             ["integer", "is_number_integer"],
@@ -1057,6 +1226,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         const variantType = this.cppTypeInOptional(
             nonNulls,
             { needsForwardIndirection: false, needsOptionalIndirection: false, inJsonNamespace: true },
+            false,
             false
         );
 
@@ -1067,14 +1237,26 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 if (typeForKind === undefined) continue;
                 this.emitLine(onFirst ? "if" : "else if", " (_j.", func, "())");
                 this.indent(() => {
+                    const cppType = this.cppType(
+                        typeForKind,
+                        { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+                        false,
+                        true
+                    );
+                    var EncodeValueStart:string = '';
+                    var EncodeValueEnd:string = '';
+                    if (this._options.wstring && cppType == "std::string") {
+                        EncodeValueStart = ourQualifier.concat(this._Utf16FromUtf8Start);
+                        EncodeValueEnd = this._Utf16FromUtf8End;
+                    }
                     this.emitLine(
-                        "_x = _j.get<",
-                        this.cppType(
-                            typeForKind,
-                            { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
-                            false
-                        ),
-                        ">();"
+                        "_x = ",
+                        EncodeValueStart,
+                        "_j.get<",
+                        cppType,
+                        ">()",
+                        EncodeValueEnd,
+                        ";"
                     );
                 });
                 onFirst = false;
@@ -1088,18 +1270,30 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 for (const t of nonNulls) {
                     this.emitLine("case ", i.toString(), ":");
                     this.indent(() => {
+                        const cppType = this.cppType(
+                            t,
+                            {
+                                needsForwardIndirection: true,
+                                needsOptionalIndirection: true,
+                                inJsonNamespace: true
+                            },
+                            false,
+                            false
+                        );
+                        var EncodeValueStart:string = '';
+                        var EncodeValueEnd:string = '';
+                        if (this._options.wstring && cppType == this._stringType) {
+                            EncodeValueStart = ourQualifier.concat(this._Utf8FromUtf16Start);
+                            EncodeValueEnd = this._Utf8FromUtf16End;
+                        }
                         this.emitLine(
-                            "_j = boost::get<",
-                            this.cppType(
-                                t,
-                                {
-                                    needsForwardIndirection: true,
-                                    needsOptionalIndirection: true,
-                                    inJsonNamespace: true
-                                },
-                                false
-                            ),
-                            ">(_x);"
+                            "_j = ",
+                            EncodeValueStart,
+                            "boost::get<",
+                            cppType,
+                            ">(_x)",
+                            EncodeValueEnd,
+                            ";"
                         );
                         this.emitLine("break;");
                     });
@@ -1108,6 +1302,12 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.emitLine('default: throw "Input JSON does not conform to schema";');
             });
         });
+    }
+
+    protected emitEnumHeaders(enumName: Name): void {
+        const ourQualifier = this.ourQualifier(true);
+        this.emitLine("void from_json(const json& _j, ", ourQualifier, enumName, "& _x);");
+        this.emitLine("void to_json(json& _j, const ", ourQualifier, enumName, "& _x);");
     }
 
     protected emitEnumFunctions(e: EnumType, enumName: Name): void {
@@ -1158,7 +1358,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.cppType(
                 t,
                 { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false },
-                true
+                true,
+                false
             ),
             " ",
             name,
@@ -1174,10 +1375,27 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     this.cppTypeInOptional(
                         removeNullFromUnion(u, true)[1],
                         { needsForwardIndirection: false, needsOptionalIndirection: false, inJsonNamespace: true },
+                        false,
                         false
                     )
                 ),
             (u: UnionType) => this.emitUnionFunctions(u)
+        );
+    }
+
+    protected emitAllUnionHeaders(): void {
+        this.forEachUniqueUnion(
+            "interposing",
+            u =>
+                this.sourcelikeToString(
+                    this.cppTypeInOptional(
+                        removeNullFromUnion(u, true)[1],
+                        { needsForwardIndirection: false, needsOptionalIndirection: false, inJsonNamespace: true },
+                        false,
+                        false
+                    )
+                ),
+            (u: UnionType) => this.emitUnionHeaders(u)
         );
     }
 
@@ -1228,6 +1446,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected emitConstraintClasses(): void {
+        const ourQualifier = this.ourQualifier(false) as string;
+
         const getterMinValue = this.lookupMemberName(MemberNames.GetMinValue);
         const getterMaxValue = this.lookupMemberName(MemberNames.GetMaxValue);
         const getterMinLength = this.lookupMemberName(MemberNames.GetMinLength);
@@ -1237,6 +1457,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
         this.emitBlock(["class ", classConstraint], true, () => {
             this.emitLine("private:");
+            var constraintMembers : ConstraintMember[] = this.getConstraintMembers();
             for (const member of constraintMembers) {
                 this.emitMember(["boost::optional<", member.cppType, ">"], this.lookupMemberName(member.name));
             }
@@ -1273,7 +1494,13 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         const classConstEx = this.lookupGlobalName(GlobalNames.ClassMemberConstraintException);
         this.emitBlock(["class ", classConstEx, " : public std::runtime_error"], true, () => {
             this.emitLine("public:");
-            this.emitLine(classConstEx, "(const std::string& msg) : std::runtime_error(msg) {}");
+            var EncodingChangeStart:string = '';
+            var EncodingChangeEnd:string = '';
+            if (this._options.wstring) {
+                EncodingChangeStart = ourQualifier.concat(this._Utf8FromUtf16Start);
+                EncodingChangeEnd = this._Utf8FromUtf16End;
+            }
+            this.emitLine(classConstEx, "(", this._constStringType, " msg) : std::runtime_error(", EncodingChangeStart, "msg", EncodingChangeEnd, ") {}");
         });
         this.ensureBlankLine();
 
@@ -1289,14 +1516,14 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             const name = this.lookupGlobalName(ex);
             this.emitBlock(["class ", name, " : public ", classConstEx], true, () => {
                 this.emitLine("public:");
-                this.emitLine(name, "(const std::string& msg) : ", classConstEx, "(msg) {}");
+                this.emitLine(name, "(", this._constStringType, " msg) : ", classConstEx, "(msg) {}");
             });
             this.ensureBlankLine();
         }
 
         const checkConst = this.lookupGlobalName(GlobalNames.CheckConstraint);
         this.emitBlock(
-            ["void ", checkConst, "(const std::string & name, const ", classConstraint, " & c, int64_t value)"],
+            ["void ", checkConst, "(", this._constStringType, " name, const ", classConstraint, " & c, int64_t value)"],
             false,
             () => {
                 this.emitBlock(
@@ -1306,9 +1533,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         this.emitLine(
                             "throw ",
                             this.lookupGlobalName(GlobalNames.ValueTooLowException),
-                            ' ("Value too low for "+ name + " (" + std::to_string(value)+ "<"+std::to_string(*c.',
+                            ' (', this._stringLiteralPrefix, '"Value too low for "+ name + ', this._stringLiteralPrefix, '" (" + ', this._toString, '(value)+ ', this._stringLiteralPrefix, '"<"+', this._toString, '(*c.',
                             getterMinValue,
-                            '())+")");'
+                            '())+', this._stringLiteralPrefix, '")");'
                         );
                     }
                 );
@@ -1321,9 +1548,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         this.emitLine(
                             "throw ",
                             this.lookupGlobalName(GlobalNames.ValueTooHighException),
-                            ' ("Value too high for "+name+" (" + std::to_string(value)+ ">"+std::to_string(*c.',
+                            ' (', this._stringLiteralPrefix, '"Value too high for "+ name + ', this._stringLiteralPrefix, '" (" + ', this._toString, '(value)+ ', this._stringLiteralPrefix, '">"+', this._toString, '(*c.',
                             getterMaxValue,
-                            '())+")");'
+                            '())+', this._stringLiteralPrefix, '")");'
                         );
                     }
                 );
@@ -1336,9 +1563,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             [
                 "void ",
                 checkConst,
-                "(const std::string & name, const ",
+                "(", this._constStringType, " name, const ",
                 classConstraint,
-                " & c, const std::string & value)"
+                " & c, ", this._constStringType, " value)"
             ],
             false,
             () => {
@@ -1349,9 +1576,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         this.emitLine(
                             "throw ",
                             this.lookupGlobalName(GlobalNames.ValueTooShortException),
-                            ' ("Value too short for "+name+" (" + std::to_string(value.length())+ "<"+std::to_string(*c.',
+                            ' (', this._stringLiteralPrefix, '"Value too short for "+ name + ', this._stringLiteralPrefix, '" (" + ', this._toString, '(value.length())+ ', this._stringLiteralPrefix, '"<"+', this._toString, '(*c.',
                             getterMinLength,
-                            '())+")");'
+                            '())+', this._stringLiteralPrefix, '")");'
                         );
                     }
                 );
@@ -1364,24 +1591,24 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         this.emitLine(
                             "throw ",
                             this.lookupGlobalName(GlobalNames.ValueTooLongException),
-                            ' ("Value too long for "+name+" (" + std::to_string(value.length())+ ">"+std::to_string(*c.',
+                            ' (', this._stringLiteralPrefix, '"Value too long for "+ name + ', this._stringLiteralPrefix, '" (" + ', this._toString, '(value.length())+ ', this._stringLiteralPrefix, '">"+', this._toString, '(*c.',
                             getterMaxLength,
-                            '())+")");'
+                            '())+', this._stringLiteralPrefix, '")");'
                         );
                     }
                 );
                 this.ensureBlankLine();
 
                 this.emitBlock(["if (c.", getterPattern, "() != boost::none)"], false, () => {
-                    this.emitLine("std::smatch result;");
-                    this.emitLine("std::regex_search(value, result, std::regex( *c.", getterPattern, "() ));");
+                    this.emitLine("", this._smatch, " result;");
+                    this.emitLine("std::regex_search(value, result, ", this._regex, "( *c.", getterPattern, "() ));");
                     this.emitBlock(["if (result.empty())"], false, () => {
                         this.emitLine(
                             "throw ",
                             this.lookupGlobalName(GlobalNames.InvalidPatternException),
-                            ' ("Value doesn\'t match pattern for "+name+" (" + value+ "!="+*c.',
+                            ' (', this._stringLiteralPrefix, '"Value doesn\'t match pattern for "+name+', this._stringLiteralPrefix, '" (" + value+ ', this._stringLiteralPrefix, '"!="+*c.',
                             getterPattern,
-                            '()+")");'
+                            '()+', this._stringLiteralPrefix, '")");'
                         );
                     });
                 });
@@ -1391,6 +1618,82 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected emitHelperFunctions(): void {
+        if (this._options.wstring) {
+            this.ensureBlankLine();
+            this.emitBlock(["inline std::wstring Utf16FromUtf8 (const std::string str)"], false, () => {
+                this.emitLine("return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes(str.data());");
+            });
+            this.ensureBlankLine();
+            this.emitBlock(["inline std::string Utf8FromUtf16 (const std::wstring wstr)"], false, () => {
+                this.emitLine("return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.to_bytes(wstr.data());");
+            });
+            this.ensureBlankLine();
+            this.emitBlock(["inline std::shared_ptr<std::wstring> Utf16FromUtf8 (const std::shared_ptr<std::string> str)"], false, () => {
+                this.emitLine("if (str == nullptr) return std::unique_ptr<std::wstring>(); else return std::unique_ptr<std::wstring>(new std::wstring(Utf16FromUtf8(*str)));");
+            });
+            this.ensureBlankLine();
+            this.emitBlock(["inline std::shared_ptr<std::string> Utf8FromUtf16 (const std::shared_ptr<std::wstring> wstr)"], false, () => {
+                this.emitLine("if (wstr == nullptr) return std::unique_ptr<std::string>(); else return std::unique_ptr<std::string>(new std::string(Utf8FromUtf16(*wstr)));");
+            });
+            this.ensureBlankLine();
+
+            this.emitLine("template <typename T>");
+            this.emitBlock(["inline std::map<std::wstring, T> Utf16FromUtf8Map(const std::map<std::string, T> m)"], false, () => {
+                this.emitLine("auto it = m.begin();");
+                this.emitLine("auto newMap = std::map<std::wstring, T>();");
+                this.emitLine("while (it != m.end()) newMap.insert(std::pair<std::wstring, T>(Utf16FromUtf8(it->first), it->second));");
+                this.emitLine("return newMap;");
+            });
+            this.ensureBlankLine();
+            this.emitLine("template <typename T>");
+            this.emitBlock(["inline std::map<std::string, T> Utf8FromUtf16Map(const std::map<std::wstring, T> m)"], false, () => {
+                this.emitLine("auto it = m.begin();");
+                this.emitLine("auto newMap = std::map<std::string, T>();");
+                this.emitLine("while (it != m.end()) newMap.insert(std::pair<std::string, T>(Utf8FromUtf16(it->first), it->second));");
+                this.emitLine("return newMap;");
+            });
+            this.ensureBlankLine();
+            this.emitBlock(["inline std::map<std::wstring, std::wstring> Utf16FromUtf8Map(const std::map<std::string, std::string> m)"], false, () => {
+                this.emitLine("auto it = m.begin();");
+                this.emitLine("auto newMap = std::map<std::wstring, std::wstring>();");
+                this.emitLine("while (it != m.end()) newMap.insert(std::pair<std::wstring, std::wstring>(Utf16FromUtf8(it->first), Utf16FromUtf8(it->second)));");
+                this.emitLine("return newMap;");
+            });
+            this.ensureBlankLine();
+            this.emitBlock(["inline std::map<std::string, std::string> Utf8FromUtf16Map(const std::map<std::wstring, std::wstring> m)"], false, () => {
+                this.emitLine("auto it = m.begin();");
+                this.emitLine("auto newMap = std::map<std::string, std::string>();");
+                this.emitLine("while (it != m.end()) newMap.insert(std::pair<std::string, std::string>(Utf8FromUtf16(it->first), Utf8FromUtf16(it->second)));");
+                this.emitLine("return newMap;");
+            });
+            this.ensureBlankLine();
+
+            this.emitLine("template <typename T>");
+            this.emitBlock(["inline std::vector<T> Utf16FromUtf8Array(const std::vector<T> v)"], false, () => {
+                this.emitLine("return v;");
+            });
+            this.ensureBlankLine();
+            this.emitLine("template <typename T>");
+            this.emitBlock(["inline std::vector<T> Utf8FromUtf16Array(const std::vector<T> v)"], false, () => {
+                this.emitLine("return v;");
+            });
+            this.ensureBlankLine();
+            this.emitBlock(["inline std::vector<std::wstring> Utf16FromUtf8Array(const std::vector<std::string> v)"], false, () => {
+                this.emitLine("auto it = v.begin();");
+                this.emitLine("auto newVector = std::vector<std::wstring>();");
+                this.emitLine("while (it != v.end()) newVector.push_back(Utf16FromUtf8(*it));");
+                this.emitLine("return newVector;");
+            });
+            this.ensureBlankLine();
+            this.emitBlock(["inline std::vector<std::string> Utf8FromUtf16Array(const std::vector<std::wstring> v)"], false, () => {
+                this.emitLine("auto it = v.begin();");
+                this.emitLine("auto newVector = std::vector<std::string>();");
+                this.emitLine("while (it != v.end()) newVector.push_back(Utf8FromUtf16(*it));");
+                this.emitLine("return newVector;");
+            });
+            this.ensureBlankLine();
+        }
+        
         if (
             this._options.codeFormat &&
             iterableSome(this.typeGraph.allTypesUnordered(), t => constraintsForType(t) !== undefined)
@@ -1422,15 +1725,36 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             );
 
             this.ensureBlankLine();
+
+            this.emitLine("template <typename T>");
+            this.emitBlock(
+                ["inline ", optionalType, "<T> get_optional(const json &j, std::string property)"],
+                false,
+                () => {
+                    this.emitLine("return get_optional<T>(j, property.data());");
+                }
+            );
+
+            this.ensureBlankLine();
+
         }
     }
 
     protected emitExtraIncludes(): void {
+        this.ensureBlankLine();
+
         if (this._options.codeFormat) {
             this.emitInclude(true, `boost/optional.hpp`);
             this.emitInclude(true, `stdexcept`);
             this.emitInclude(true, `regex`);
         }
+
+        if (this._options.wstring) {
+            this.emitInclude(true, `codecvt`);
+            this.emitInclude(true, `locale`);
+        }
+
+        this.ensureBlankLine();
     }
 
     protected emitHelper(): void {
@@ -1490,6 +1814,21 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         if (!this._options.justTypes && this.haveNamedTypes) {
             this.emitNamespaces(["nlohmann"], () => {
                 this.emitNamespaces(["detail"], () => {
+
+                    this.forEachObject("leading-and-interposing", (_:any, className: Name) =>
+                        this.emitClassHeaders(className)
+                    );
+
+                    this.forEachEnum("leading-and-interposing", (_:any, enumName: Name) =>
+                        this.emitEnumHeaders(enumName)
+                    );
+
+                    if (this.haveUnions) {
+                        this.emitAllUnionHeaders();
+                    }
+
+                    this.ensureBlankLine();
+
                     this.forEachObject("leading-and-interposing", (c: ClassType, className: Name) =>
                         this.emitClassFunctions(c, className)
                     );
@@ -1750,7 +2089,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                                     needsOptionalIndirection: false,
                                     inJsonNamespace: false
                                 },
-                                true
+                                true,
+                                false
                             )
                         )
                     ]);
