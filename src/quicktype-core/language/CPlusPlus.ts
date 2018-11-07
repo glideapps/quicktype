@@ -66,11 +66,11 @@ export const cPlusPlusOptions = {
         [["use-string", false], ["use-wstring", true]],
         "use-string"
     ),
-    conformance: new EnumOption(
-        "conformance",
-        "Moves to_json and from_json types into the nlohmann::details namespace",
-        [["not-conformance", false], ["use-conformance", true]],
-        "not-conformance"
+    msbuildPermissive: new EnumOption(
+        "msbuildPermissive",
+        "Moves to_json and from_json types into the nlohmann::details namespace, so that msbuild can build it with conformance mode disabled",
+        [["not-permissive", false], ["use-permissive", true]],
+        "not-permissive"
     ),
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     namespace: new StringOption("namespace", "Name of the generated namespace(s)", "NAME", "quicktype"),
@@ -112,7 +112,7 @@ export class CPlusPlusTargetLanguage extends TargetLanguage {
             cPlusPlusOptions.namespace,
             cPlusPlusOptions.codeFormat,
             cPlusPlusOptions.wstring,
-            cPlusPlusOptions.conformance,
+            cPlusPlusOptions.msbuildPermissive,
             cPlusPlusOptions.typeSourceStyle,
             cPlusPlusOptions.includeLocation,
             cPlusPlusOptions.typeNamingStyle,
@@ -1058,13 +1058,16 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected emitClassFunctions(c: ClassType, className: Name): void {
-        const ourQualifier = this.ourQualifier(true) as string;
+        const ourQualifier = this.ourQualifier(true);
 
-        let EncodeKeyStart: string = "";
-        let EncodeKeyEnd: string = "";
+        let cppType: Sourcelike;
+        let EncodeValueStart: Sourcelike[] = [];
+        let EncodeValueEnd: Sourcelike[] = [];
+        let EncodeKeyStart: Sourcelike[] = [];
+        let EncodeKeyEnd: Sourcelike[] = [];
         if (this._options.wstring) {
-            EncodeKeyStart = ourQualifier.concat(this._utf8FromUtf16Start);
-            EncodeKeyEnd = this._utf8FromUtf16End;
+            EncodeKeyStart = [ourQualifier, this._utf8FromUtf16Start];
+            EncodeKeyEnd = [this._utf8FromUtf16End];
         }
 
         this.emitBlock(["inline void from_json(const json& _j, ", ourQualifier, className, "& _x)"], false, () => {
@@ -1085,7 +1088,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 if (t instanceof UnionType) {
                     const [maybeNull, nonNulls] = removeNullFromUnion(t, true);
                     if (maybeNull !== null) {
-                        const cppType = this.cppTypeInOptional(
+                        cppType = this.cppTypeInOptional(
                             nonNulls,
                             {
                                 needsForwardIndirection: false,
@@ -1095,8 +1098,6 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             false,
                             true
                         );
-                        let EncodeValueStart: string = "";
-                        let EncodeValueEnd: string = "";
                         if (this._options.wstring && cppType === "std::string") {
                             EncodeValueStart = ourQualifier.concat(this._utf16FromUtf8Start);
                             EncodeValueEnd = this._utf16FromUtf8End;
@@ -1128,57 +1129,54 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             ";"
                         );
                         return;
+                    } else if (t.kind === "null" || t.kind === "any") {
+                        this.emitLine(
+                            AssignmentStart,
+                            ourQualifier,
+                            'get_untyped(_j, "',
+                            stringEscape(json),
+                            '")',
+                            AssignmentEnd,
+                            ";"
+                        );
+                        return;
                     }
-                } else if (t.kind === "null" || t.kind === "any") {
-                    this.emitLine(
-                        AssignmentStart,
-                        ourQualifier,
-                        'get_untyped(_j, "',
-                        stringEscape(json),
-                        '")',
-                        AssignmentEnd,
-                        ";"
-                    );
-                    return;
-                } else {
-                    const cppType = this.cppType(
-                        t,
-                        { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
-                        false,
-                        true
-                    );
-                    let EncodeValueStart: string = "";
-                    let EncodeValueEnd: string = "";
-                    if (this._options.wstring && cppType === "std::string") {
-                        EncodeValueStart = ourQualifier.concat(this._utf16FromUtf8Start);
-                        EncodeValueEnd = this._utf16FromUtf8End;
-                    }
-                    if (this._options.wstring && t instanceof MapType) {
-                        EncodeValueStart = ourQualifier.concat(this._utf16FromUtf8MapStart);
-                        EncodeValueEnd = this._utf16FromUtf8MapEnd;
-                    }
-                    if (this._options.wstring && t instanceof ArrayType) {
-                        EncodeValueStart = ourQualifier.concat(this._utf16FromUtf8ArrayStart);
-                        EncodeValueEnd = this._utf16FromUtf8ArrayEnd;
-                    }
-                    this.emitLine(
-                        AssignmentStart,
-                        EncodeValueStart,
-                        "_j.at(",
-                        EncodeKeyStart,
-                        this._stringLiteralPrefix,
-                        '"',
-                        stringEscape(json),
-                        '"',
-                        EncodeKeyEnd,
-                        ").get<",
-                        cppType,
-                        ">()",
-                        EncodeValueEnd,
-                        AssignmentEnd,
-                        ";"
-                    );
                 }
+                cppType = this.cppType(
+                    t,
+                    { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+                    false,
+                    true
+                );
+                if (this._options.wstring && cppType === "std::string") {
+                    EncodeValueStart = ourQualifier.concat(this._utf16FromUtf8Start);
+                    EncodeValueEnd = this._utf16FromUtf8End;
+                }
+                if (this._options.wstring && t instanceof MapType) {
+                    EncodeValueStart = ourQualifier.concat(this._utf16FromUtf8MapStart);
+                    EncodeValueEnd = this._utf16FromUtf8MapEnd;
+                }
+                if (this._options.wstring && t instanceof ArrayType) {
+                    EncodeValueStart = ourQualifier.concat(this._utf16FromUtf8ArrayStart);
+                    EncodeValueEnd = this._utf16FromUtf8ArrayEnd;
+                }
+                this.emitLine(
+                    AssignmentStart,
+                    EncodeValueStart,
+                    "_j.at(",
+                    EncodeKeyStart,
+                    this._stringLiteralPrefix,
+                    '"',
+                    stringEscape(json),
+                    '"',
+                    EncodeKeyEnd,
+                    ").get<",
+                    cppType,
+                    ">()",
+                    EncodeValueEnd,
+                    AssignmentEnd,
+                    ";"
+                );
             });
         });
         this.ensureBlankLine();
@@ -1186,7 +1184,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.emitLine("_j = json::object();");
             this.forEachClassProperty(c, "none", (name, json, p) => {
                 const t = p.type;
-                const cppType = this.cppType(
+                cppType = this.cppType(
                     t,
                     { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
                     false,
@@ -1199,8 +1197,6 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 } else {
                     Getter = [name];
                 }
-                let EncodeValueStart: string = "";
-                let EncodeValueEnd: string = "";
                 if (this._options.wstring && cppType === this._stringType) {
                     EncodeValueStart = ourQualifier.concat(this._utf8FromUtf16Start);
                     EncodeValueEnd = this._utf8FromUtf16End;
@@ -1975,7 +1971,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
         if (!this._options.justTypes && this.haveNamedTypes) {
             let namespaces = ["nlohmann"];
-            if (this._options.conformance) {
+            if (this._options.msbuildPermissive) {
                 namespaces = [ "nlohmann", "detail" ];
             }
             this.emitNamespaces(namespaces, () => {
