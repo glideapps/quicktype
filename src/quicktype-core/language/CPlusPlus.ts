@@ -66,6 +66,12 @@ export const cPlusPlusOptions = {
         [["use-string", false], ["use-wstring", true]],
         "use-string"
     ),
+    wstring: new EnumOption(
+        "conformance",
+        "Moves to_json and from_json types into the nlohmann::details namespace",
+        [["not-conformance", false], ["use-conformance", true]],
+        "not-conformance"
+    ),
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     namespace: new StringOption("namespace", "Name of the generated namespace(s)", "NAME", "quicktype"),
     enumType: new StringOption("enum-type", "Type of enum class", "NAME", "int", "secondary"),
@@ -106,6 +112,7 @@ export class CPlusPlusTargetLanguage extends TargetLanguage {
             cPlusPlusOptions.namespace,
             cPlusPlusOptions.codeFormat,
             cPlusPlusOptions.wstring,
+            cPlusPlusOptions.conformance,
             cPlusPlusOptions.typeSourceStyle,
             cPlusPlusOptions.includeLocation,
             cPlusPlusOptions.typeNamingStyle,
@@ -1967,34 +1974,36 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
 
         if (!this._options.justTypes && this.haveNamedTypes) {
-            this.emitNamespaces(["nlohmann"], () => {
-                this.emitNamespaces(["detail"], () => {
-                    this.forEachObject("leading-and-interposing", (_: any, className: Name) =>
-                        this.emitClassHeaders(className)
-                    );
+	    let namespaces: string[] = ["nlohmann"];
+            if (this._options.conformance) {
+                namspaces = [ "nlohmann", "detail" ];
+            }
+            this.emitNamespaces([namespaces], () => {
+                this.forEachObject("leading-and-interposing", (_: any, className: Name) =>
+                    this.emitClassHeaders(className)
+                );
 
-                    this.forEachEnum("leading-and-interposing", (_: any, enumName: Name) =>
-                        this.emitEnumHeaders(enumName)
-                    );
+                this.forEachEnum("leading-and-interposing", (_: any, enumName: Name) =>
+                    this.emitEnumHeaders(enumName)
+                );
 
-                    if (this.haveUnions) {
-                        this.emitAllUnionHeaders();
-                    }
+                if (this.haveUnions) {
+                    this.emitAllUnionHeaders();
+                }
 
-                    this.ensureBlankLine();
+                this.ensureBlankLine();
 
-                    this.forEachObject("leading-and-interposing", (c: ClassType, className: Name) =>
-                        this.emitClassFunctions(c, className)
-                    );
+                this.forEachObject("leading-and-interposing", (c: ClassType, className: Name) =>
+                    this.emitClassFunctions(c, className)
+                );
 
-                    this.forEachEnum("leading-and-interposing", (e: EnumType, enumName: Name) =>
-                        this.emitEnumFunctions(e, enumName)
-                    );
+                this.forEachEnum("leading-and-interposing", (e: EnumType, enumName: Name) =>
+                    this.emitEnumFunctions(e, enumName)
+                );
 
-                    if (this.haveUnions) {
-                        this.emitAllUnionFunctions();
-                    }
-                });
+                if (this.haveUnions) {
+                    this.emitAllUnionFunctions();
+                }
             });
         }
     }
