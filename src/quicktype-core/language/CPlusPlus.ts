@@ -66,7 +66,7 @@ export const cPlusPlusOptions = {
         [["use-string", false], ["use-wstring", true]],
         "use-string"
     ),
-    wstring: new EnumOption(
+    conformance: new EnumOption(
         "conformance",
         "Moves to_json and from_json types into the nlohmann::details namespace",
         [["not-conformance", false], ["use-conformance", true]],
@@ -1974,11 +1974,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
 
         if (!this._options.justTypes && this.haveNamedTypes) {
-            let namespaces: string[] = ["nlohmann"];
+            let namespaces = ["nlohmann"];
             if (this._options.conformance) {
-                namspaces = [ "nlohmann", "detail" ];
+                namespaces = [ "nlohmann", "detail" ];
             }
-            this.emitNamespaces([namespaces], () => {
+            this.emitNamespaces(namespaces, () => {
                 this.forEachObject("leading-and-interposing", (_: any, className: Name) =>
                     this.emitClassHeaders(className)
                 );
