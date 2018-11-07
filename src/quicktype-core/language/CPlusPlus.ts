@@ -1974,7 +1974,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
 
         if (!this._options.justTypes && this.haveNamedTypes) {
-	    let namespaces: string[] = ["nlohmann"];
+            let namespaces: string[] = ["nlohmann"];
             if (this._options.conformance) {
                 namspaces = [ "nlohmann", "detail" ];
             }
