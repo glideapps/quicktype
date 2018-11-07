@@ -141,10 +141,6 @@ quicktype pokedex.ts -o src/ios/models.swift
 
 First, install `typescript` globally via `npm`:
 
-```bash
-npm install -g typescript
-```
-
 Clone this repo and do:
 
 #### Linux
@@ -158,6 +154,7 @@ script/quicktype # rebuild (slow) and run (fast)
 
 ```bash
 npm install --ignore-scripts # Install dependencies
+npm install -g typescript # Install typescript globally
 tsc --project src/cli # Rebuild
 node dist\cli\index.js # Run
 ```

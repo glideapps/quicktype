@@ -1,4 +1,4 @@
-import {
+﻿import {
     setUnion,
     arrayIntercalate,
     toReadonlyArray,
@@ -303,7 +303,6 @@ type ConstraintMember = {
     cppConstType?: string;
 };
 
-
 export type IncludeRecord = {
     kind: IncludeKind | undefined /** How to include that */;
     typeKind: TypeKind | undefined /** What exactly to include */;
@@ -352,18 +351,18 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     private _toString: string;
     private _smatch: string;
     private _regex: string;
-    private _Utf16FromUtf8Start: string;
-    private _Utf16FromUtf8End: string;
-    private _Utf8FromUtf16Start: string;
-    private _Utf8FromUtf16End: string;
-    private _Utf16FromUtf8MapStart: string;
-    private _Utf16FromUtf8MapEnd: string;
-    private _Utf8FromUtf16MapStart: string;
-    private _Utf8FromUtf16MapEnd: string;
-    private _Utf16FromUtf8ArrayStart: string;
-    private _Utf16FromUtf8ArrayEnd: string;
-    private _Utf8FromUtf16ArrayStart: string;
-    private _Utf8FromUtf16ArrayEnd: string;
+    private _utf16FromUtf8Start: string;
+    private _utf16FromUtf8End: string;
+    private _utf8FromUtf16Start: string;
+    private _utf8FromUtf16End: string;
+    private _utf16FromUtf8MapStart: string;
+    private _utf16FromUtf8MapEnd: string;
+    private _utf8FromUtf16MapStart: string;
+    private _utf8FromUtf16MapEnd: string;
+    private _utf16FromUtf8ArrayStart: string;
+    private _utf16FromUtf8ArrayEnd: string;
+    private _utf8FromUtf16ArrayStart: string;
+    private _utf8FromUtf16ArrayEnd: string;
 
     protected readonly typeNamingStyle: NamingStyle;
     protected readonly enumeratorNamingStyle: NamingStyle;
@@ -392,58 +391,75 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this._generatedMemberNames = new Map();
         this._forbiddenGlobalNames = [];
 
-        if (_options.wstring)
-        {
+        if (_options.wstring) {
             this._stringType = "std::wstring";
             this._constStringType = "const std::wstring &";
             this._stringLiteralPrefix = "L";
             this._toString = "std::to_wstring";
             this._smatch = "std::wsmatch";
             this._regex = "std::wregex";
-            this._Utf16FromUtf8Start = `Utf16FromUtf8(`;
-            this._Utf16FromUtf8End = ")";
-            this._Utf8FromUtf16Start = `Utf8FromUtf16(`;
-            this._Utf8FromUtf16End = ")";
-            this._Utf16FromUtf8MapStart = `Utf16FromUtf8Map(`;
-            this._Utf16FromUtf8MapEnd = ")";
-            this._Utf8FromUtf16MapStart = `Utf8FromUtf16Map(`;
-            this._Utf8FromUtf16MapEnd = ")";
-            this._Utf16FromUtf8ArrayStart = `Utf16FromUtf8Array(`;
-            this._Utf16FromUtf8ArrayEnd = ")";
-            this._Utf8FromUtf16ArrayStart = `Utf8FromUtf16Array(`;
-            this._Utf8FromUtf16ArrayEnd = ")";
-        }
-        else
-        {
+            this._utf16FromUtf8Start = "Utf16FromUtf8(";
+            this._utf16FromUtf8End = ")";
+            this._utf8FromUtf16Start = "Utf8FromUtf16(";
+            this._utf8FromUtf16End = ")";
+            this._utf16FromUtf8MapStart = "Utf16FromUtf8Map(";
+            this._utf16FromUtf8MapEnd = ")";
+            this._utf8FromUtf16MapStart = "Utf8FromUtf16Map(";
+            this._utf8FromUtf16MapEnd = ")";
+            this._utf16FromUtf8ArrayStart = "Utf16FromUtf8Array(";
+            this._utf16FromUtf8ArrayEnd = ")";
+            this._utf8FromUtf16ArrayStart = "Utf8FromUtf16Array(";
+            this._utf8FromUtf16ArrayEnd = ")";
+        } else {
             this._stringType = "std::string";
             this._constStringType = "const std::string &";
             this._stringLiteralPrefix = "";
             this._toString = "std::to_string";
             this._smatch = "std::smatch";
             this._regex = "std::regex";
-            this._Utf16FromUtf8Start = "";
-            this._Utf16FromUtf8End = "";
-            this._Utf8FromUtf16Start = "";
-            this._Utf8FromUtf16End = "";
-            this._Utf16FromUtf8MapStart = "";
-            this._Utf16FromUtf8MapEnd = "";
-            this._Utf8FromUtf16MapStart = "";
-            this._Utf8FromUtf16MapEnd = "";
-            this._Utf16FromUtf8ArrayStart = "";
-            this._Utf16FromUtf8ArrayEnd = "";
-            this._Utf8FromUtf16ArrayStart = "";
-            this._Utf8FromUtf16ArrayEnd = "";
+            this._utf16FromUtf8Start = "";
+            this._utf16FromUtf8End = "";
+            this._utf8FromUtf16Start = "";
+            this._utf8FromUtf16End = "";
+            this._utf16FromUtf8MapStart = "";
+            this._utf16FromUtf8MapEnd = "";
+            this._utf8FromUtf16MapStart = "";
+            this._utf8FromUtf16MapEnd = "";
+            this._utf16FromUtf8ArrayStart = "";
+            this._utf16FromUtf8ArrayEnd = "";
+            this._utf8FromUtf16ArrayStart = "";
+            this._utf8FromUtf16ArrayEnd = "";
         }
 
         this.setupGlobalNames();
     }
 
-    protected getConstraintMembers() : ConstraintMember[] {
+    protected getConstraintMembers(): ConstraintMember[] {
         return [
-            { name: MemberNames.MinValue, getter: MemberNames.GetMinValue, setter: MemberNames.SetMinValue, cppType: "int" },
-            { name: MemberNames.MaxValue, getter: MemberNames.GetMaxValue, setter: MemberNames.SetMaxValue, cppType: "int" },
-            { name: MemberNames.MinLength, getter: MemberNames.GetMinLength, setter: MemberNames.SetMinLength, cppType: "size_t" },
-            { name: MemberNames.MaxLength, getter: MemberNames.GetMaxLength, setter: MemberNames.SetMaxLength, cppType: "size_t" },
+            {
+                name: MemberNames.MinValue,
+                getter: MemberNames.GetMinValue,
+                setter: MemberNames.SetMinValue,
+                cppType: "int"
+            },
+            {
+                name: MemberNames.MaxValue,
+                getter: MemberNames.GetMaxValue,
+                setter: MemberNames.SetMaxValue,
+                cppType: "int"
+            },
+            {
+                name: MemberNames.MinLength,
+                getter: MemberNames.GetMinLength,
+                setter: MemberNames.SetMinLength,
+                cppType: "size_t"
+            },
+            {
+                name: MemberNames.MaxLength,
+                getter: MemberNames.GetMaxLength,
+                setter: MemberNames.SetMaxLength,
+                cppType: "size_t"
+            },
             {
                 name: MemberNames.Pattern,
                 getter: MemberNames.GetPattern,
@@ -650,7 +666,12 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
     }
 
-    protected cppTypeInOptional(nonNulls: ReadonlySet<Type>, ctx: TypeContext, withIssues: boolean, forceNarrowString: boolean): Sourcelike {
+    protected cppTypeInOptional(
+        nonNulls: ReadonlySet<Type>,
+        ctx: TypeContext,
+        withIssues: boolean,
+        forceNarrowString: boolean
+    ): Sourcelike {
         if (nonNulls.size === 1) {
             return this.cppType(defined(iterableFirst(nonNulls)), ctx, withIssues, forceNarrowString);
         }
@@ -704,7 +725,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         return [optionalType, "<", typeSrc, ">"];
     }
 
-    protected cppType(t: Type, ctx: TypeContext, withIssues: boolean, forceNarrowString : boolean): Sourcelike {
+    protected cppType(t: Type, ctx: TypeContext, withIssues: boolean, forceNarrowString: boolean): Sourcelike {
         const inJsonNamespace = ctx.inJsonNamespace;
         return matchType<Sourcelike>(
             t,
@@ -716,12 +737,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             _integerType => "int64_t",
             _doubleType => "double",
             _stringType => {
-                if (forceNarrowString)
-                {
+                if (forceNarrowString) {
                     return "std::string";
-                }
-                else
-                {
+                } else {
                     return this._stringType;
                 }
             },
@@ -740,13 +758,15 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     this.ourQualifier(inJsonNamespace),
                     this.nameForNamedType(classType)
                 ]),
-                mapType => {
-                var KeyType = this._stringType;
+            mapType => {
+                let KeyType = this._stringType;
                 if (forceNarrowString) {
                     KeyType = "std::string";
-                } 
+                }
                 return [
-                    "std::map<", KeyType, ", ", 
+                    "std::map<",
+                    KeyType,
+                    ", ",
                     this.cppType(
                         mapType.values,
                         { needsForwardIndirection: false, needsOptionalIndirection: true, inJsonNamespace },
@@ -913,7 +933,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             rendered,
                             " value) { if (value) ",
                             checkConst,
-                            '(',
+                            "(",
                             this._stringLiteralPrefix,
                             '"',
                             name,
@@ -937,7 +957,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             rendered,
                             "& value) { ",
                             checkConst,
-                            '(',
+                            "(",
                             this._stringLiteralPrefix,
                             '"',
                             name,
@@ -980,7 +1000,10 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             constrArg += ", ";
             constrArg += minMaxLength !== undefined && minMaxLength[1] !== undefined ? minMaxLength[1] : "boost::none";
             constrArg += ", ";
-            constrArg += pattern === undefined ? "boost::none" : this._stringType + '(' + this._stringLiteralPrefix + '"' + pattern + '")';
+            constrArg +=
+                pattern === undefined
+                    ? "boost::none"
+                    : this._stringType + "(" + this._stringLiteralPrefix + '"' + pattern + '")';
             constrArg += ")";
 
             res.set(jsonName, this.constraintMember(jsonName) + constrArg);
@@ -1030,11 +1053,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     protected emitClassFunctions(c: ClassType, className: Name): void {
         const ourQualifier = this.ourQualifier(true) as string;
 
-        var EncodeKeyStart:string = '';
-        var EncodeKeyEnd:string = '';
+        let EncodeKeyStart: string = "";
+        let EncodeKeyEnd: string = "";
         if (this._options.wstring) {
-            EncodeKeyStart = ourQualifier.concat(this._Utf8FromUtf16Start);
-            EncodeKeyEnd = this._Utf8FromUtf16End;
+            EncodeKeyStart = ourQualifier.concat(this._utf8FromUtf16Start);
+            EncodeKeyEnd = this._utf8FromUtf16End;
         }
 
         this.emitBlock(["inline void from_json(const json& _j, ", ourQualifier, className, "& _x)"], false, () => {
@@ -1042,15 +1065,13 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 const [, , setterName] = defined(this._gettersAndSettersForPropertyName.get(name));
                 const t = p.type;
 
-                var AssignmentStart:Sourcelike[];
-                var AssignmentEnd:Sourcelike[];
+                let AssignmentStart: Sourcelike[];
+                let AssignmentEnd: Sourcelike[];
                 if (this._options.codeFormat) {
-                    AssignmentStart = [ "_x.", setterName, "( " ];
-                    AssignmentEnd = [ " )" ];
-                }
-                else
-                {
-                    AssignmentStart = [ "_x.", name, " = "];
+                    AssignmentStart = ["_x.", setterName, "( "];
+                    AssignmentEnd = [" )"];
+                } else {
+                    AssignmentStart = ["_x.", name, " = "];
                     AssignmentEnd = [];
                 }
 
@@ -1067,21 +1088,19 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             false,
                             true
                         );
-                        var EncodeValueStart:string = '';
-                        var EncodeValueEnd:string = '';
-                        if (this._options.wstring && cppType == "std::string") {
-                            EncodeValueStart = ourQualifier.concat(this._Utf16FromUtf8Start);
-                            EncodeValueEnd = this._Utf16FromUtf8End;
+                        let EncodeValueStart: string = "";
+                        let EncodeValueEnd: string = "";
+                        if (this._options.wstring && cppType === "std::string") {
+                            EncodeValueStart = ourQualifier.concat(this._utf16FromUtf8Start);
+                            EncodeValueEnd = this._utf16FromUtf8End;
                         }
-                        if (this._options.wstring && t instanceof MapType)
-                        {
-                            EncodeValueStart = ourQualifier.concat(this._Utf16FromUtf8MapStart);
-                            EncodeValueEnd = this._Utf16FromUtf8MapEnd;
+                        if (this._options.wstring && t instanceof MapType) {
+                            EncodeValueStart = ourQualifier.concat(this._utf16FromUtf8MapStart);
+                            EncodeValueEnd = this._utf16FromUtf8MapEnd;
                         }
-                        if (this._options.wstring && t instanceof ArrayType)
-                        {
-                            EncodeValueStart = ourQualifier.concat(this._Utf16FromUtf8ArrayStart);
-                            EncodeValueEnd = this._Utf16FromUtf8ArrayEnd;
+                        if (this._options.wstring && t instanceof ArrayType) {
+                            EncodeValueStart = ourQualifier.concat(this._utf16FromUtf8ArrayStart);
+                            EncodeValueEnd = this._utf16FromUtf8ArrayEnd;
                         }
                         this.emitLine(
                             AssignmentStart,
@@ -1089,48 +1108,70 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             ourQualifier,
                             "get_optional<",
                             cppType,
-                            '>(_j, ',
+                            ">(_j, ",
                             EncodeKeyStart,
                             this._stringLiteralPrefix,
                             '"',
                             stringEscape(json),
                             '"',
                             EncodeKeyEnd,
-                            ')',
+                            ")",
                             EncodeValueEnd,
                             AssignmentEnd,
-                            ';'
+                            ";"
                         );
                         return;
                     }
-                }
-                if (t.kind === "null" || t.kind === "any") {
-                        this.emitLine(AssignmentStart, ourQualifier, 'get_untyped(_j, "', stringEscape(json), '")', AssignmentEnd,';');
+                } else if (t.kind === "null" || t.kind === "any") {
+                    this.emitLine(
+                        AssignmentStart,
+                        ourQualifier,
+                        'get_untyped(_j, "',
+                        stringEscape(json),
+                        '")',
+                        AssignmentEnd,
+                        ";"
+                    );
                     return;
+                } else {
+                    const cppType = this.cppType(
+                        t,
+                        { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+                        false,
+                        true
+                    );
+                    let EncodeValueStart: string = "";
+                    let EncodeValueEnd: string = "";
+                    if (this._options.wstring && cppType === "std::string") {
+                        EncodeValueStart = ourQualifier.concat(this._utf16FromUtf8Start);
+                        EncodeValueEnd = this._utf16FromUtf8End;
+                    }
+                    if (this._options.wstring && t instanceof MapType) {
+                        EncodeValueStart = ourQualifier.concat(this._utf16FromUtf8MapStart);
+                        EncodeValueEnd = this._utf16FromUtf8MapEnd;
+                    }
+                    if (this._options.wstring && t instanceof ArrayType) {
+                        EncodeValueStart = ourQualifier.concat(this._utf16FromUtf8ArrayStart);
+                        EncodeValueEnd = this._utf16FromUtf8ArrayEnd;
+                    }
+                    this.emitLine(
+                        AssignmentStart,
+                        EncodeValueStart,
+                        "_j.at(",
+                        EncodeKeyStart,
+                        this._stringLiteralPrefix,
+                        '"',
+                        stringEscape(json),
+                        '"',
+                        EncodeKeyEnd,
+                        ").get<",
+                        cppType,
+                        ">()",
+                        EncodeValueEnd,
+                        AssignmentEnd,
+                        ";"
+                    );
                 }
-                const cppType = this.cppType(
-                    t,
-                    { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
-                    false,
-                    true
-                );
-                var EncodeValueStart:string = '';
-                var EncodeValueEnd:string = '';
-                if (this._options.wstring && cppType == "std::string") {
-                    EncodeValueStart = ourQualifier.concat(this._Utf16FromUtf8Start);
-                    EncodeValueEnd = this._Utf16FromUtf8End;
-                }
-                if (this._options.wstring && t instanceof MapType)
-                {
-                    EncodeValueStart = ourQualifier.concat(this._Utf16FromUtf8MapStart);
-                    EncodeValueEnd = this._Utf16FromUtf8MapEnd;
-                }
-                if (this._options.wstring && t instanceof ArrayType)
-                {
-                    EncodeValueStart = ourQualifier.concat(this._Utf16FromUtf8ArrayStart);
-                    EncodeValueEnd = this._Utf16FromUtf8ArrayEnd;
-                }
-                this.emitLine(AssignmentStart, EncodeValueStart,'_j.at(', EncodeKeyStart, this._stringLiteralPrefix, '"', stringEscape(json), '"', EncodeKeyEnd, ').get<', cppType, '>()', EncodeValueEnd, AssignmentEnd, ';');
             });
         });
         this.ensureBlankLine();
@@ -1145,31 +1186,41 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     false
                 );
                 const [getterName, ,] = defined(this._gettersAndSettersForPropertyName.get(name));
-                var Getter: Sourcelike[];
+                let Getter: Sourcelike[];
                 if (this._options.codeFormat) {
-                    Getter = [ getterName , "()" ];
+                    Getter = [getterName, "()"];
+                } else {
+                    Getter = [name];
                 }
-                else
-                {
-                    Getter = [ name ];
+                let EncodeValueStart: string = "";
+                let EncodeValueEnd: string = "";
+                if (this._options.wstring && cppType === this._stringType) {
+                    EncodeValueStart = ourQualifier.concat(this._utf8FromUtf16Start);
+                    EncodeValueEnd = this._utf8FromUtf16End;
                 }
-                var EncodeValueStart:string = '';
-                var EncodeValueEnd:string = '';
-                if (this._options.wstring && cppType == this._stringType) {
-                    EncodeValueStart = ourQualifier.concat(this._Utf8FromUtf16Start);
-                    EncodeValueEnd = this._Utf8FromUtf16End;
+                if (this._options.wstring && t instanceof MapType) {
+                    EncodeValueStart = ourQualifier.concat(this._utf8FromUtf16MapStart);
+                    EncodeValueEnd = this._utf8FromUtf16MapEnd;
                 }
-                if (this._options.wstring && t instanceof MapType)
-                {
-                    EncodeValueStart = ourQualifier.concat(this._Utf8FromUtf16MapStart);
-                    EncodeValueEnd = this._Utf8FromUtf16MapEnd;
+                if (this._options.wstring && t instanceof ArrayType) {
+                    EncodeValueStart = ourQualifier.concat(this._utf8FromUtf16ArrayStart);
+                    EncodeValueEnd = this._utf8FromUtf16ArrayEnd;
                 }
-                if (this._options.wstring && t instanceof ArrayType)
-                {
-                    EncodeValueStart = ourQualifier.concat(this._Utf8FromUtf16ArrayStart);
-                    EncodeValueEnd = this._Utf8FromUtf16ArrayEnd;
-                }
-                this.emitLine('_j[', EncodeKeyStart, this._stringLiteralPrefix, '"', stringEscape(json), '"', EncodeKeyEnd, '] = ', EncodeValueStart,'_x.', Getter, EncodeValueEnd, ";");
+                this.emitLine(
+                    "_j[",
+                    EncodeKeyStart,
+                    this._stringLiteralPrefix,
+                    '"',
+                    stringEscape(json),
+                    '"',
+                    EncodeKeyEnd,
+                    "] = ",
+                    EncodeValueStart,
+                    "_x.",
+                    Getter,
+                    EncodeValueEnd,
+                    ";"
+                );
             });
         });
     }
@@ -1243,21 +1294,13 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         false,
                         true
                     );
-                    var EncodeValueStart:string = '';
-                    var EncodeValueEnd:string = '';
-                    if (this._options.wstring && cppType == "std::string") {
-                        EncodeValueStart = ourQualifier.concat(this._Utf16FromUtf8Start);
-                        EncodeValueEnd = this._Utf16FromUtf8End;
+                    let EncodeValueStart: string = "";
+                    let EncodeValueEnd: string = "";
+                    if (this._options.wstring && cppType === "std::string") {
+                        EncodeValueStart = ourQualifier.concat(this._utf16FromUtf8Start);
+                        EncodeValueEnd = this._utf16FromUtf8End;
                     }
-                    this.emitLine(
-                        "_x = ",
-                        EncodeValueStart,
-                        "_j.get<",
-                        cppType,
-                        ">()",
-                        EncodeValueEnd,
-                        ";"
-                    );
+                    this.emitLine("_x = ", EncodeValueStart, "_j.get<", cppType, ">()", EncodeValueEnd, ";");
                 });
                 onFirst = false;
             }
@@ -1280,21 +1323,13 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             false,
                             false
                         );
-                        var EncodeValueStart:string = '';
-                        var EncodeValueEnd:string = '';
-                        if (this._options.wstring && cppType == this._stringType) {
-                            EncodeValueStart = ourQualifier.concat(this._Utf8FromUtf16Start);
-                            EncodeValueEnd = this._Utf8FromUtf16End;
+                        let EncodeValueStart: string = "";
+                        let EncodeValueEnd: string = "";
+                        if (this._options.wstring && cppType === this._stringType) {
+                            EncodeValueStart = ourQualifier.concat(this._utf8FromUtf16Start);
+                            EncodeValueEnd = this._utf8FromUtf16End;
                         }
-                        this.emitLine(
-                            "_j = ",
-                            EncodeValueStart,
-                            "boost::get<",
-                            cppType,
-                            ">(_x)",
-                            EncodeValueEnd,
-                            ";"
-                        );
+                        this.emitLine("_j = ", EncodeValueStart, "boost::get<", cppType, ">(_x)", EncodeValueEnd, ";");
                         this.emitLine("break;");
                     });
                     i++;
@@ -1457,7 +1492,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
         this.emitBlock(["class ", classConstraint], true, () => {
             this.emitLine("private:");
-            var constraintMembers : ConstraintMember[] = this.getConstraintMembers();
+            let constraintMembers: ConstraintMember[] = this.getConstraintMembers();
             for (const member of constraintMembers) {
                 this.emitMember(["boost::optional<", member.cppType, ">"], this.lookupMemberName(member.name));
             }
@@ -1494,13 +1529,22 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         const classConstEx = this.lookupGlobalName(GlobalNames.ClassMemberConstraintException);
         this.emitBlock(["class ", classConstEx, " : public std::runtime_error"], true, () => {
             this.emitLine("public:");
-            var EncodingChangeStart:string = '';
-            var EncodingChangeEnd:string = '';
+            let EncodingChangeStart: string = "";
+            let EncodingChangeEnd: string = "";
             if (this._options.wstring) {
-                EncodingChangeStart = ourQualifier.concat(this._Utf8FromUtf16Start);
-                EncodingChangeEnd = this._Utf8FromUtf16End;
+                EncodingChangeStart = ourQualifier.concat(this._utf8FromUtf16Start);
+                EncodingChangeEnd = this._utf8FromUtf16End;
             }
-            this.emitLine(classConstEx, "(", this._constStringType, " msg) : std::runtime_error(", EncodingChangeStart, "msg", EncodingChangeEnd, ") {}");
+            this.emitLine(
+                classConstEx,
+                "(",
+                this._constStringType,
+                " msg) : std::runtime_error(",
+                EncodingChangeStart,
+                "msg",
+                EncodingChangeEnd,
+                ") {}"
+            );
         });
         this.ensureBlankLine();
 
@@ -1533,9 +1577,21 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         this.emitLine(
                             "throw ",
                             this.lookupGlobalName(GlobalNames.ValueTooLowException),
-                            ' (', this._stringLiteralPrefix, '"Value too low for "+ name + ', this._stringLiteralPrefix, '" (" + ', this._toString, '(value)+ ', this._stringLiteralPrefix, '"<"+', this._toString, '(*c.',
+                            " (",
+                            this._stringLiteralPrefix,
+                            '"Value too low for "+ name + ',
+                            this._stringLiteralPrefix,
+                            '" (" + ',
+                            this._toString,
+                            "(value)+ ",
+                            this._stringLiteralPrefix,
+                            '"<"+',
+                            this._toString,
+                            "(*c.",
                             getterMinValue,
-                            '())+', this._stringLiteralPrefix, '")");'
+                            "())+",
+                            this._stringLiteralPrefix,
+                            '")");'
                         );
                     }
                 );
@@ -1548,9 +1604,21 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         this.emitLine(
                             "throw ",
                             this.lookupGlobalName(GlobalNames.ValueTooHighException),
-                            ' (', this._stringLiteralPrefix, '"Value too high for "+ name + ', this._stringLiteralPrefix, '" (" + ', this._toString, '(value)+ ', this._stringLiteralPrefix, '">"+', this._toString, '(*c.',
+                            " (",
+                            this._stringLiteralPrefix,
+                            '"Value too high for "+ name + ',
+                            this._stringLiteralPrefix,
+                            '" (" + ',
+                            this._toString,
+                            "(value)+ ",
+                            this._stringLiteralPrefix,
+                            '">"+',
+                            this._toString,
+                            "(*c.",
                             getterMaxValue,
-                            '())+', this._stringLiteralPrefix, '")");'
+                            "())+",
+                            this._stringLiteralPrefix,
+                            '")");'
                         );
                     }
                 );
@@ -1563,9 +1631,13 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             [
                 "void ",
                 checkConst,
-                "(", this._constStringType, " name, const ",
+                "(",
+                this._constStringType,
+                " name, const ",
                 classConstraint,
-                " & c, ", this._constStringType, " value)"
+                " & c, ",
+                this._constStringType,
+                " value)"
             ],
             false,
             () => {
@@ -1576,9 +1648,21 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         this.emitLine(
                             "throw ",
                             this.lookupGlobalName(GlobalNames.ValueTooShortException),
-                            ' (', this._stringLiteralPrefix, '"Value too short for "+ name + ', this._stringLiteralPrefix, '" (" + ', this._toString, '(value.length())+ ', this._stringLiteralPrefix, '"<"+', this._toString, '(*c.',
+                            " (",
+                            this._stringLiteralPrefix,
+                            '"Value too short for "+ name + ',
+                            this._stringLiteralPrefix,
+                            '" (" + ',
+                            this._toString,
+                            "(value.length())+ ",
+                            this._stringLiteralPrefix,
+                            '"<"+',
+                            this._toString,
+                            "(*c.",
                             getterMinLength,
-                            '())+', this._stringLiteralPrefix, '")");'
+                            "())+",
+                            this._stringLiteralPrefix,
+                            '")");'
                         );
                     }
                 );
@@ -1591,9 +1675,21 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         this.emitLine(
                             "throw ",
                             this.lookupGlobalName(GlobalNames.ValueTooLongException),
-                            ' (', this._stringLiteralPrefix, '"Value too long for "+ name + ', this._stringLiteralPrefix, '" (" + ', this._toString, '(value.length())+ ', this._stringLiteralPrefix, '">"+', this._toString, '(*c.',
+                            " (",
+                            this._stringLiteralPrefix,
+                            '"Value too long for "+ name + ',
+                            this._stringLiteralPrefix,
+                            '" (" + ',
+                            this._toString,
+                            "(value.length())+ ",
+                            this._stringLiteralPrefix,
+                            '">"+',
+                            this._toString,
+                            "(*c.",
                             getterMaxLength,
-                            '())+', this._stringLiteralPrefix, '")");'
+                            "())+",
+                            this._stringLiteralPrefix,
+                            '")");'
                         );
                     }
                 );
@@ -1606,9 +1702,17 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         this.emitLine(
                             "throw ",
                             this.lookupGlobalName(GlobalNames.InvalidPatternException),
-                            ' (', this._stringLiteralPrefix, '"Value doesn\'t match pattern for "+name+', this._stringLiteralPrefix, '" (" + value+ ', this._stringLiteralPrefix, '"!="+*c.',
+                            " (",
+                            this._stringLiteralPrefix,
+                            '"Value doesn\'t match pattern for "+name+',
+                            this._stringLiteralPrefix,
+                            '" (" + value+ ',
+                            this._stringLiteralPrefix,
+                            '"!="+*c.',
                             getterPattern,
-                            '()+', this._stringLiteralPrefix, '")");'
+                            "()+",
+                            this._stringLiteralPrefix,
+                            '")");'
                         );
                     });
                 });
@@ -1621,51 +1725,95 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         if (this._options.wstring) {
             this.ensureBlankLine();
             this.emitBlock(["inline std::wstring Utf16FromUtf8 (const std::string str)"], false, () => {
-                this.emitLine("return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes(str.data());");
+                this.emitLine(
+                    "return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes(str.data());"
+                );
             });
             this.ensureBlankLine();
             this.emitBlock(["inline std::string Utf8FromUtf16 (const std::wstring wstr)"], false, () => {
-                this.emitLine("return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.to_bytes(wstr.data());");
+                this.emitLine(
+                    "return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.to_bytes(wstr.data());"
+                );
             });
             this.ensureBlankLine();
-            this.emitBlock(["inline std::shared_ptr<std::wstring> Utf16FromUtf8 (const std::shared_ptr<std::string> str)"], false, () => {
-                this.emitLine("if (str == nullptr) return std::unique_ptr<std::wstring>(); else return std::unique_ptr<std::wstring>(new std::wstring(Utf16FromUtf8(*str)));");
-            });
+            this.emitBlock(
+                ["inline std::shared_ptr<std::wstring> Utf16FromUtf8 (const std::shared_ptr<std::string> str)"],
+                false,
+                () => {
+                    this.emitLine(
+                        "if (str == nullptr) return std::unique_ptr<std::wstring>(); else return std::unique_ptr<std::wstring>(new std::wstring(Utf16FromUtf8(*str)));"
+                    );
+                }
+            );
             this.ensureBlankLine();
-            this.emitBlock(["inline std::shared_ptr<std::string> Utf8FromUtf16 (const std::shared_ptr<std::wstring> wstr)"], false, () => {
-                this.emitLine("if (wstr == nullptr) return std::unique_ptr<std::string>(); else return std::unique_ptr<std::string>(new std::string(Utf8FromUtf16(*wstr)));");
-            });
+            this.emitBlock(
+                ["inline std::shared_ptr<std::string> Utf8FromUtf16 (const std::shared_ptr<std::wstring> wstr)"],
+                false,
+                () => {
+                    this.emitLine(
+                        "if (wstr == nullptr) return std::unique_ptr<std::string>(); else return std::unique_ptr<std::string>(new std::string(Utf8FromUtf16(*wstr)));"
+                    );
+                }
+            );
             this.ensureBlankLine();
 
             this.emitLine("template <typename T>");
-            this.emitBlock(["inline std::map<std::wstring, T> Utf16FromUtf8Map(const std::map<std::string, T> m)"], false, () => {
-                this.emitLine("auto it = m.begin();");
-                this.emitLine("auto newMap = std::map<std::wstring, T>();");
-                    this.emitLine("while (it != m.end()) { newMap.insert(std::pair<std::wstring, T>(Utf16FromUtf8(it->first), it->second)); it++; }");
-                this.emitLine("return newMap;");
-            });
+            this.emitBlock(
+                ["inline std::map<std::wstring, T> Utf16FromUtf8Map(const std::map<std::string, T> m)"],
+                false,
+                () => {
+                    this.emitLine("auto it = m.begin();");
+                    this.emitLine("auto newMap = std::map<std::wstring, T>();");
+                    this.emitLine(
+                        "while (it != m.end()) { newMap.insert(std::pair<std::wstring, T>(Utf16FromUtf8(it->first), it->second)); it++; }"
+                    );
+                    this.emitLine("return newMap;");
+                }
+            );
             this.ensureBlankLine();
             this.emitLine("template <typename T>");
-            this.emitBlock(["inline std::map<std::string, T> Utf8FromUtf16Map(const std::map<std::wstring, T> m)"], false, () => {
-                this.emitLine("auto it = m.begin();");
-                this.emitLine("auto newMap = std::map<std::string, T>();");
-                    this.emitLine("while (it != m.end()) { newMap.insert(std::pair<std::string, T>(Utf8FromUtf16(it->first), it->second)); it++; }");
-                this.emitLine("return newMap;");
-            });
+            this.emitBlock(
+                ["inline std::map<std::string, T> Utf8FromUtf16Map(const std::map<std::wstring, T> m)"],
+                false,
+                () => {
+                    this.emitLine("auto it = m.begin();");
+                    this.emitLine("auto newMap = std::map<std::string, T>();");
+                    this.emitLine(
+                        "while (it != m.end()) { newMap.insert(std::pair<std::string, T>(Utf8FromUtf16(it->first), it->second)); it++; }"
+                    );
+                    this.emitLine("return newMap;");
+                }
+            );
             this.ensureBlankLine();
-            this.emitBlock(["inline std::map<std::wstring, std::wstring> Utf16FromUtf8Map(const std::map<std::string, std::string> m)"], false, () => {
-                this.emitLine("auto it = m.begin();");
-                this.emitLine("auto newMap = std::map<std::wstring, std::wstring>();");
-                    this.emitLine("while (it != m.end()) { newMap.insert(std::pair<std::wstring, std::wstring>(Utf16FromUtf8(it->first), Utf16FromUtf8(it->second))); it++; }");
-                this.emitLine("return newMap;");
-            });
+            this.emitBlock(
+                [
+                    "inline std::map<std::wstring, std::wstring> Utf16FromUtf8Map(const std::map<std::string, std::string> m)"
+                ],
+                false,
+                () => {
+                    this.emitLine("auto it = m.begin();");
+                    this.emitLine("auto newMap = std::map<std::wstring, std::wstring>();");
+                    this.emitLine(
+                        "while (it != m.end()) { newMap.insert(std::pair<std::wstring, std::wstring>(Utf16FromUtf8(it->first), Utf16FromUtf8(it->second))); it++; }"
+                    );
+                    this.emitLine("return newMap;");
+                }
+            );
             this.ensureBlankLine();
-            this.emitBlock(["inline std::map<std::string, std::string> Utf8FromUtf16Map(const std::map<std::wstring, std::wstring> m)"], false, () => {
-                this.emitLine("auto it = m.begin();");
-                this.emitLine("auto newMap = std::map<std::string, std::string>();");
-                    this.emitLine("while (it != m.end()) { newMap.insert(std::pair<std::string, std::string>(Utf8FromUtf16(it->first), Utf8FromUtf16(it->second))); it++; }");
-                this.emitLine("return newMap;");
-            });
+            this.emitBlock(
+                [
+                    "inline std::map<std::string, std::string> Utf8FromUtf16Map(const std::map<std::wstring, std::wstring> m)"
+                ],
+                false,
+                () => {
+                    this.emitLine("auto it = m.begin();");
+                    this.emitLine("auto newMap = std::map<std::string, std::string>();");
+                    this.emitLine(
+                        "while (it != m.end()) { newMap.insert(std::pair<std::string, std::string>(Utf8FromUtf16(it->first), Utf8FromUtf16(it->second))); it++; }"
+                    );
+                    this.emitLine("return newMap;");
+                }
+            );
             this.ensureBlankLine();
 
             this.emitLine("template <typename T>");
@@ -1678,22 +1826,30 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.emitLine("return v;");
             });
             this.ensureBlankLine();
-            this.emitBlock(["inline std::vector<std::wstring> Utf16FromUtf8Array(const std::vector<std::string> v)"], false, () => {
-                this.emitLine("auto it = v.begin();");
-                this.emitLine("auto newVector = std::vector<std::wstring>();");
+            this.emitBlock(
+                ["inline std::vector<std::wstring> Utf16FromUtf8Array(const std::vector<std::string> v)"],
+                false,
+                () => {
+                    this.emitLine("auto it = v.begin();");
+                    this.emitLine("auto newVector = std::vector<std::wstring>();");
                     this.emitLine("while (it != v.end()) { newVector.push_back(Utf16FromUtf8(*it)); it++; }");
-                this.emitLine("return newVector;");
-            });
+                    this.emitLine("return newVector;");
+                }
+            );
             this.ensureBlankLine();
-            this.emitBlock(["inline std::vector<std::string> Utf8FromUtf16Array(const std::vector<std::wstring> v)"], false, () => {
-                this.emitLine("auto it = v.begin();");
-                this.emitLine("auto newVector = std::vector<std::string>();");
+            this.emitBlock(
+                ["inline std::vector<std::string> Utf8FromUtf16Array(const std::vector<std::wstring> v)"],
+                false,
+                () => {
+                    this.emitLine("auto it = v.begin();");
+                    this.emitLine("auto newVector = std::vector<std::string>();");
                     this.emitLine("while (it != v.end())  { newVector.push_back(Utf8FromUtf16(*it)); it++; }");
-                this.emitLine("return newVector;");
-            });
+                    this.emitLine("return newVector;");
+                }
+            );
             this.ensureBlankLine();
         }
-        
+
         if (
             this._options.codeFormat &&
             iterableSome(this.typeGraph.allTypesUnordered(), t => constraintsForType(t) !== undefined)
@@ -1736,7 +1892,6 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             );
 
             this.ensureBlankLine();
-
         }
     }
 
@@ -1814,12 +1969,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         if (!this._options.justTypes && this.haveNamedTypes) {
             this.emitNamespaces(["nlohmann"], () => {
                 this.emitNamespaces(["detail"], () => {
-
-                    this.forEachObject("leading-and-interposing", (_:any, className: Name) =>
+                    this.forEachObject("leading-and-interposing", (_: any, className: Name) =>
                         this.emitClassHeaders(className)
                     );
 
-                    this.forEachEnum("leading-and-interposing", (_:any, enumName: Name) =>
+                    this.forEachEnum("leading-and-interposing", (_: any, enumName: Name) =>
                         this.emitEnumHeaders(enumName)
                     );
 
