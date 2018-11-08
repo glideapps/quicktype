@@ -368,7 +368,8 @@ export const CPlusPlusLanguage: Language = {
   quickTestRendererOptions: [
     { unions: "indirection" },
     { "source-style": "multi-source" },
-    { "code-format": "with-struct" }
+    { "code-format": "with-struct" },
+    { "wstring": "use-wstring" }
   ],
   sourceFiles: ["src/language/CPlusPlus.ts"]
 };
