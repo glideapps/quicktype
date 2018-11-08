@@ -1052,7 +1052,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected emitClassHeaders(className: Name): void {
-        const ourQualifier = this.ourQualifier(true) as string;
+        const ourQualifier = this.ourQualifier(true);
         this.emitLine("void from_json(const json& _j, ", ourQualifier, className, "& _x);");
         this.emitLine("void to_json(json& _j, const ", ourQualifier, className, "& _x);");
     }
@@ -1099,16 +1099,16 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             true
                         );
                         if (this._options.wstring && cppType === "std::string") {
-                            EncodeValueStart = ourQualifier.concat(this._utf16FromUtf8Start);
-                            EncodeValueEnd = this._utf16FromUtf8End;
+                            EncodeValueStart = [ourQualifier, this._utf16FromUtf8Start];
+                            EncodeValueEnd = [this._utf16FromUtf8End];
                         }
                         if (this._options.wstring && t instanceof MapType) {
-                            EncodeValueStart = ourQualifier.concat(this._utf16FromUtf8MapStart);
-                            EncodeValueEnd = this._utf16FromUtf8MapEnd;
+                            EncodeValueStart = [ourQualifier, this._utf16FromUtf8MapStart];
+                            EncodeValueEnd = [this._utf16FromUtf8MapEnd];
                         }
                         if (this._options.wstring && t instanceof ArrayType) {
-                            EncodeValueStart = ourQualifier.concat(this._utf16FromUtf8ArrayStart);
-                            EncodeValueEnd = this._utf16FromUtf8ArrayEnd;
+                            EncodeValueStart = [ourQualifier, this._utf16FromUtf8ArrayStart];
+                            EncodeValueEnd = [this._utf16FromUtf8ArrayEnd];
                         }
                         this.emitLine(
                             AssignmentStart,
@@ -1129,18 +1129,19 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             ";"
                         );
                         return;
-                    } else if (t.kind === "null" || t.kind === "any") {
-                        this.emitLine(
-                            AssignmentStart,
-                            ourQualifier,
-                            'get_untyped(_j, "',
-                            stringEscape(json),
-                            '")',
-                            AssignmentEnd,
-                            ";"
-                        );
-                        return;
                     }
+		}
+                if (t.kind === "null" || t.kind === "any") {
+                    this.emitLine(
+                        AssignmentStart,
+                        ourQualifier,
+                       'get_untyped(_j, "',
+                        stringEscape(json),
+                        '")',
+                        AssignmentEnd,
+                        ";"
+                    );
+                    return;
                 }
                 cppType = this.cppType(
                     t,
@@ -1149,16 +1150,16 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     true
                 );
                 if (this._options.wstring && cppType === "std::string") {
-                    EncodeValueStart = ourQualifier.concat(this._utf16FromUtf8Start);
-                    EncodeValueEnd = this._utf16FromUtf8End;
+                    EncodeValueStart = [ourQualifier, this._utf16FromUtf8Start];
+                    EncodeValueEnd = [this._utf16FromUtf8End];
                 }
                 if (this._options.wstring && t instanceof MapType) {
-                    EncodeValueStart = ourQualifier.concat(this._utf16FromUtf8MapStart);
-                    EncodeValueEnd = this._utf16FromUtf8MapEnd;
+                    EncodeValueStart = [ourQualifier, this._utf16FromUtf8MapStart];
+                    EncodeValueEnd = [this._utf16FromUtf8MapEnd];
                 }
                 if (this._options.wstring && t instanceof ArrayType) {
-                    EncodeValueStart = ourQualifier.concat(this._utf16FromUtf8ArrayStart);
-                    EncodeValueEnd = this._utf16FromUtf8ArrayEnd;
+                    EncodeValueStart = [ourQualifier, this._utf16FromUtf8ArrayStart];
+                    EncodeValueEnd = [this._utf16FromUtf8ArrayEnd];
                 }
                 this.emitLine(
                     AssignmentStart,
@@ -1197,17 +1198,17 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 } else {
                     Getter = [name];
                 }
-                if (this._options.wstring && cppType === this._stringType) {
-                    EncodeValueStart = ourQualifier.concat(this._utf8FromUtf16Start);
-                    EncodeValueEnd = this._utf8FromUtf16End;
+                if (this._options.wstring && cppType === "std::string") {
+                    EncodeValueStart = [ourQualifier, this._utf8FromUtf16Start];
+                    EncodeValueEnd = [this._utf8FromUtf16End];
                 }
                 if (this._options.wstring && t instanceof MapType) {
-                    EncodeValueStart = ourQualifier.concat(this._utf8FromUtf16MapStart);
-                    EncodeValueEnd = this._utf8FromUtf16MapEnd;
+                    EncodeValueStart = [ourQualifier, this._utf8FromUtf16MapStart];
+                    EncodeValueEnd = [this._utf8FromUtf16MapEnd];
                 }
                 if (this._options.wstring && t instanceof ArrayType) {
-                    EncodeValueStart = ourQualifier.concat(this._utf8FromUtf16ArrayStart);
-                    EncodeValueEnd = this._utf8FromUtf16ArrayEnd;
+                    EncodeValueStart = [ourQualifier, this._utf8FromUtf16ArrayStart];
+                    EncodeValueEnd = [this._utf8FromUtf16ArrayEnd];
                 }
                 this.emitLine(
                     "_j[",
