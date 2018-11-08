@@ -1130,7 +1130,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         );
                         return;
                     }
-		}
+        }
                 if (t.kind === "null" || t.kind === "any") {
                     this.emitLine(
                         AssignmentStart,
