@@ -595,7 +595,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected isImplicitCycleBreaker(_t: Type): boolean {
-        return panic("A renderer that invokes isCycleBreakerType must implement canBeCycleBreakerType");
+        return panic("A renderer that invokes isCycleBreakerType must implement isImplicitCycleBreaker");
     }
 
     protected canBreakCycles(_t: Type): boolean {
