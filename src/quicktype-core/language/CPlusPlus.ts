@@ -1712,7 +1712,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             " + ",
                             this._stringType.createStringLiteral(["<"]),
                             " + ",
-                            this._stringType.wrapToString(["(*c.", getterMinValue, "()) + "]),
+                            this._stringType.wrapToString(["*c.", getterMinValue, "()"]),
+                            " + ",
                             this._stringType.createStringLiteral([")"]),
                             ");"
                         );
@@ -1736,7 +1737,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             " + ",
                             this._stringType.createStringLiteral([">"]),
                             " + ",
-                            this._stringType.wrapToString(["(*c.", getterMaxValue, "()) + "]),
+                            this._stringType.wrapToString(["*c.", getterMaxValue, "()"]),
+                            " + ",
                             this._stringType.createStringLiteral([")"]),
                             ");"
                         );
@@ -1777,7 +1779,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             " + ",
                             this._stringType.createStringLiteral(["<"]),
                             " + ",
-                            this._stringType.wrapToString(["(*c.", getterMinLength, "()) + "]),
+                            this._stringType.wrapToString(["*c.", getterMinLength, "()"]),
+                            " + ",
                             this._stringType.createStringLiteral([")"]),
                             ");"
                         );
@@ -1801,7 +1804,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             " + ",
                             this._stringType.createStringLiteral([">"]),
                             " + ",
-                            this._stringType.wrapToString(["(*c.", getterMaxLength, "()) + "]),
+                            this._stringType.wrapToString(["*c.", getterMaxLength, "()"]),
+                            " + ",
                             this._stringType.createStringLiteral([")"]),
                             ");"
                         );
