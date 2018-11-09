@@ -424,7 +424,7 @@ export class BaseString {
     }
 
     public wrapToString(inner: Sourcelike): Sourcelike {
-        return this._toString.wrap( [], inner);
+        return this._toString.wrap([], inner);
     }
 }
 
@@ -738,7 +738,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         inJsonNamespace: ctx.inJsonNamespace
                     },
                     withIssues,
-		    false
+                    false
                 )
             );
         }
@@ -1091,12 +1091,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
     protected emitTopLevelHeaders(t: Type, className: Name): void {
         // Maps need ecoding conversions, since they have a string in the key. Other types don't.
-        if (t instanceof MapType && this._stringType != this.NarrowString)
-        {
-           const ourQualifier = this.ourQualifier(true);
-           this.emitLine("void from_json(const json& _j, ", ourQualifier, className, "& _x);");
-           this.emitLine("void to_json(json& _j, const ", ourQualifier, className, "& _x);");
-	}
+        if (t instanceof MapType && this._stringType !== this.NarrowString) {
+            const ourQualifier = this.ourQualifier(true);
+            this.emitLine("void from_json(const json& _j, ", ourQualifier, className, "& _x);");
+            this.emitLine("void to_json(json& _j, const ", ourQualifier, className, "& _x);");
+        }
     }
 
     protected emitClassHeaders(className: Name): void {
@@ -1107,66 +1106,53 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
     protected emitTopLevelFunction(t: Type, className: Name): void {
         // Maps need ecoding conversions, since they have a string in the key. Other types don't.
-        if (t instanceof MapType && this._stringType != this.NarrowString)
-        {
-        const ourQualifier = this.ourQualifier(true);
-        let cppType: Sourcelike;
-        let toType: Sourcelike;
-    
-        this.emitBlock(["inline void from_json(const json& _j, ", ourQualifier, className, "& _x)"], false, () => {
-            cppType = this.cppType(
-                t,
-                { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
-                false,
-                true
-            );
-            toType = this.cppType(
-                t,
-                { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
-                false,
-                false
-            );
+        if (t instanceof MapType && this._stringType !== this.NarrowString) {
+            const ourQualifier = this.ourQualifier(true);
+            let cppType: Sourcelike;
+            let toType: Sourcelike;
 
-            this.emitLine([
-                "_x = ",
-                this._stringType.wrapEncodingChange(
-                [ourQualifier],
-                cppType,
-                toType, [
-		    "_j.get<",
-	            cppType,
-		    ">()"
-                ]),
-                ";"
-            ]);
-        });
+            this.emitBlock(["inline void from_json(const json& _j, ", ourQualifier, className, "& _x)"], false, () => {
+                cppType = this.cppType(
+                    t,
+                    { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+                    false,
+                    true
+                );
+                toType = this.cppType(
+                    t,
+                    { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+                    false,
+                    false
+                );
 
-        this.emitBlock(["inline void to_json(json& _j, const ", ourQualifier, className, "& _x)"], false, () => {
-            cppType = this.cppType(
-                t,
-                { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
-                false,
-                false
-            );
-            toType = this.cppType(
-                t,
-                { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
-                false,
-                true
-            );
+                this.emitLine([
+                    "_x = ",
+                    this._stringType.wrapEncodingChange([ourQualifier], cppType, toType, ["_j.get<", cppType, ">()"]),
+                    ";"
+                ]);
+            });
 
-            this.emitLine([
-                "_j = ",
-                this._stringType.wrapEncodingChange(
-                [ourQualifier],
-                cppType,
-                toType,
-                "_x"
-                ),
-                ";"
-            ]);
-        });
-	}
+            this.emitBlock(["inline void to_json(json& _j, const ", ourQualifier, className, "& _x)"], false, () => {
+                cppType = this.cppType(
+                    t,
+                    { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+                    false,
+                    false
+                );
+                toType = this.cppType(
+                    t,
+                    { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+                    false,
+                    true
+                );
+
+                this.emitLine([
+                    "_j = ",
+                    this._stringType.wrapEncodingChange([ourQualifier], cppType, toType, "_x"),
+                    ";"
+                ]);
+            });
+        }
     }
 
     protected emitClassFunctions(c: ClassType, className: Name): void {
@@ -1215,9 +1201,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                                 [
                                     this._stringType.wrapEncodingChange(
                                         [ourQualifier],
-					[ optionalType, "<", cppType, ">" ],
-					[ optionalType, "<", toType, ">" ],
-					[
+                                        [optionalType, "<", cppType, ">"],
+                                        [optionalType, "<", toType, ">"],
+                                        [
                                             ourQualifier,
                                             "get_optional<",
                                             cppType,
@@ -1229,7 +1215,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                                                 [this._stringType.createStringLiteral([stringEscape(json)])]
                                             ),
                                             ")"
-					])
+                                        ]
+                                    )
                                 ]
                             ),
                             ";"
@@ -1954,11 +1941,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
         this.forEachDeclaration("interposing", decl => this.emitDeclaration(decl));
         if (this._options.justTypes) return;
-    this.forEachTopLevel(
-        "leading",
-         (t: Type, name: Name) => this.emitTopLevelTypedef(t, name),
-        t => this.namedTypeToNameForTopLevel(t) === undefined
-    );
+        this.forEachTopLevel(
+            "leading",
+            (t: Type, name: Name) => this.emitTopLevelTypedef(t, name),
+            t => this.namedTypeToNameForTopLevel(t) === undefined
+        );
     }
 
     protected emitGenerators(): void {
@@ -2011,8 +1998,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     this.emitAllUnionFunctions();
                 }
 
-                this.forEachTopLevel("leading-and-interposing", (t: Type, name: Name) => 
-                    this.emitTopLevelFunction(t, name),
+                this.forEachTopLevel(
+                    "leading-and-interposing",
+                    (t: Type, name: Name) => this.emitTopLevelFunction(t, name),
                     t => this.namedTypeToNameForTopLevel(t) === undefined
                 );
             });
@@ -2237,7 +2225,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.emitNamespaces(this._namespaceNames, () => {
                 this.forEachTopLevel(
                     "leading",
-		    (t: Type, name: Name) => this.emitTopLevelTypedef(t, name),
+                    (t: Type, name: Name) => this.emitTopLevelTypedef(t, name),
                     t => this.namedTypeToNameForTopLevel(t) === undefined
                 );
             });
