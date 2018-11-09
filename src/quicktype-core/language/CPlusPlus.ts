@@ -341,14 +341,14 @@ interface StringType {
     getConstType(): string;
     getSMatch(): string;
     getRegex(): string;
-    createStringLiteral(inner: Sourcelike[]): Sourcelike[];
-    wrapToString(inner: Sourcelike[]): Sourcelike[];
+    createStringLiteral(inner: Sourcelike): Sourcelike;
+    wrapToString(inner: Sourcelike): Sourcelike;
     wrapEncodingChange(
         qualifier: Sourcelike[],
         fromType: Sourcelike,
         toType: Sourcelike,
-        inner: Sourcelike[]
-    ): Sourcelike[];
+        inner: Sourcelike
+    ): Sourcelike;
     emitHelperFunctions(): void;
 }
 
@@ -368,16 +368,8 @@ export class WrappingCode {
         this._end = end;
     }
 
-    wrap(qualifier: Sourcelike[], inner: Sourcelike[]): Sourcelike[] {
+    wrap(qualifier: Sourcelike, inner: Sourcelike): Sourcelike {
         return [addQualifier(qualifier, this._start), inner, this._end];
-    }
-
-    wrapWithTemplate(qualifier: Sourcelike[], templateArgs: Sourcelike[], inner: Sourcelike[]): Sourcelike[] {
-        return [
-            addQualifier(qualifier, [this._start, "<", arrayIntercalate(",", templateArgs), ">", "("]),
-            inner,
-            this._end
-        ];
     }
 }
 
@@ -427,12 +419,12 @@ export class BaseString {
         return this._regex;
     }
 
-    public createStringLiteral(inner: Sourcelike[]): Sourcelike[] {
+    public createStringLiteral(inner: Sourcelike): Sourcelike {
         return [this._stringLiteralPrefix, '"', inner, '"'];
     }
 
-    public wrapToString(inner: Sourcelike[]): Sourcelike[] {
-        return this._toString.wrap([], inner);
+    public wrapToString(inner: Sourcelike): Sourcelike {
+        return this._toString.wrap( [], inner);
     }
 }
 
@@ -746,7 +738,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         inJsonNamespace: ctx.inJsonNamespace
                     },
                     withIssues,
-                    forceNarrowString
+		    false
                 )
             );
         }
@@ -1097,10 +1089,84 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         });
     }
 
+    protected emitTopLevelHeaders(t: Type, className: Name): void {
+        // Maps need ecoding conversions, since they have a string in the key. Other types don't.
+        if (t instanceof MapType && this._stringType != this.NarrowString)
+        {
+           const ourQualifier = this.ourQualifier(true);
+           this.emitLine("void from_json(const json& _j, ", ourQualifier, className, "& _x);");
+           this.emitLine("void to_json(json& _j, const ", ourQualifier, className, "& _x);");
+	}
+    }
+
     protected emitClassHeaders(className: Name): void {
         const ourQualifier = this.ourQualifier(true);
         this.emitLine("void from_json(const json& _j, ", ourQualifier, className, "& _x);");
         this.emitLine("void to_json(json& _j, const ", ourQualifier, className, "& _x);");
+    }
+
+    protected emitTopLevelFunction(t: Type, className: Name): void {
+        // Maps need ecoding conversions, since they have a string in the key. Other types don't.
+        if (t instanceof MapType && this._stringType != this.NarrowString)
+        {
+        const ourQualifier = this.ourQualifier(true);
+        let cppType: Sourcelike;
+        let toType: Sourcelike;
+    
+        this.emitBlock(["inline void from_json(const json& _j, ", ourQualifier, className, "& _x)"], false, () => {
+            cppType = this.cppType(
+                t,
+                { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+                false,
+                true
+            );
+            toType = this.cppType(
+                t,
+                { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+                false,
+                false
+            );
+
+            this.emitLine([
+                "_x = ",
+                this._stringType.wrapEncodingChange(
+                [ourQualifier],
+                cppType,
+                toType, [
+		    "_j.get<",
+	            cppType,
+		    ">()"
+                ]),
+                ";"
+            ]);
+        });
+
+        this.emitBlock(["inline void to_json(json& _j, const ", ourQualifier, className, "& _x)"], false, () => {
+            cppType = this.cppType(
+                t,
+                { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+                false,
+                false
+            );
+            toType = this.cppType(
+                t,
+                { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+                false,
+                true
+            );
+
+            this.emitLine([
+                "_j = ",
+                this._stringType.wrapEncodingChange(
+                [ourQualifier],
+                cppType,
+                toType,
+                "_x"
+                ),
+                ";"
+            ]);
+        });
+	}
     }
 
     protected emitClassFunctions(c: ClassType, className: Name): void {
@@ -1131,23 +1197,39 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                                 inJsonNamespace: true
                             },
                             false,
+                            true
+                        );
+                        toType = this.cppTypeInOptional(
+                            nonNulls,
+                            {
+                                needsForwardIndirection: false,
+                                needsOptionalIndirection: false,
+                                inJsonNamespace: true
+                            },
+                            false,
                             false
                         );
                         this.emitLine(
                             Assignment.wrap(
                                 [],
                                 [
-                                    ourQualifier,
-                                    "get_optional<",
-                                    cppType,
-                                    ">(_j, ",
                                     this._stringType.wrapEncodingChange(
                                         [ourQualifier],
-                                        this._stringType.getType(),
-                                        this.NarrowString.getType(),
-                                        [this._stringType.createStringLiteral([stringEscape(json)])]
-                                    ),
-                                    ")"
+					[ optionalType, "<", cppType, ">" ],
+					[ optionalType, "<", toType, ">" ],
+					[
+                                            ourQualifier,
+                                            "get_optional<",
+                                            cppType,
+                                            ">(_j, ",
+                                            this._stringType.wrapEncodingChange(
+                                                [ourQualifier],
+                                                this._stringType.getType(),
+                                                this.NarrowString.getType(),
+                                                [this._stringType.createStringLiteral([stringEscape(json)])]
+                                            ),
+                                            ")"
+					])
                                 ]
                             ),
                             ";"
@@ -1872,11 +1954,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
         this.forEachDeclaration("interposing", decl => this.emitDeclaration(decl));
         if (this._options.justTypes) return;
-        this.forEachTopLevel(
-            "leading",
-            (t: Type, name: Name) => this.emitTopLevelTypedef(t, name),
-            t => this.namedTypeToNameForTopLevel(t) === undefined
-        );
+    this.forEachTopLevel(
+        "leading",
+         (t: Type, name: Name) => this.emitTopLevelTypedef(t, name),
+        t => this.namedTypeToNameForTopLevel(t) === undefined
+    );
     }
 
     protected emitGenerators(): void {
@@ -1895,7 +1977,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.ensureBlankLine();
         }
 
-        if (!this._options.justTypes && this.haveNamedTypes) {
+        if (!this._options.justTypes) {
             let namespaces = ["nlohmann"];
             if (this._options.msbuildPermissive) {
                 namespaces = ["nlohmann", "detail"];
@@ -1903,6 +1985,10 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.emitNamespaces(namespaces, () => {
                 this.forEachObject("leading-and-interposing", (_: any, className: Name) =>
                     this.emitClassHeaders(className)
+                );
+
+                this.forEachTopLevel("leading-and-interposing", (t: Type, className: Name) =>
+                    this.emitTopLevelHeaders(t, className)
                 );
 
                 this.forEachEnum("leading-and-interposing", (_: any, enumName: Name) => this.emitEnumHeaders(enumName));
@@ -1924,6 +2010,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 if (this.haveUnions) {
                     this.emitAllUnionFunctions();
                 }
+
+                this.forEachTopLevel("leading-and-interposing", (t: Type, name: Name) => 
+                    this.emitTopLevelFunction(t, name),
+                    t => this.namedTypeToNameForTopLevel(t) === undefined
+                );
             });
         }
     }
@@ -2146,7 +2237,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.emitNamespaces(this._namespaceNames, () => {
                 this.forEachTopLevel(
                     "leading",
-                    (t: Type, name: Name) => this.emitTopLevelTypedef(t, name),
+		    (t: Type, name: Name) => this.emitTopLevelTypedef(t, name),
                     t => this.namedTypeToNameForTopLevel(t) === undefined
                 );
             });
@@ -2228,8 +2319,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             _qualifier: Sourcelike[],
             _fromType: Sourcelike,
             _toType: Sourcelike,
-            inner: Sourcelike[]
-        ): Sourcelike[] {
+            inner: Sourcelike
+        ): Sourcelike {
             return inner;
         }
 
@@ -2256,8 +2347,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             qualifier: Sourcelike[],
             fromType: Sourcelike,
             toType: Sourcelike,
-            inner: Sourcelike[]
-        ): Sourcelike[] {
+            inner: Sourcelike
+        ): Sourcelike {
             if (this.superThis.sourcelikeToString(fromType) === this.superThis.sourcelikeToString(toType)) {
                 return inner;
             }
