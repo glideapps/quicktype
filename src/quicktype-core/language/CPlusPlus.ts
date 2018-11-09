@@ -343,12 +343,17 @@ interface StringType {
     getRegex(): string;
     createStringLiteral(inner: Sourcelike[]): Sourcelike[];
     wrapToString(inner: Sourcelike[]): Sourcelike[];
-    wrapEncodingChange(qualifier: Sourcelike[], fromType: Sourcelike, toType: Sourcelike, inner: Sourcelike[]): Sourcelike[];
+    wrapEncodingChange(
+        qualifier: Sourcelike[],
+        fromType: Sourcelike,
+        toType: Sourcelike,
+        inner: Sourcelike[]
+    ): Sourcelike[];
     emitHelperFunctions(): void;
 }
 
 export function addQualifier(qualifier: Sourcelike, qualified: Sourcelike[]): Sourcelike[] {
-    if (qualified.length == 0) {
+    if (qualified.length === 0) {
         return [];
     }
     return [qualifier, qualified];
@@ -368,7 +373,11 @@ export class WrappingCode {
     }
 
     wrapWithTemplate(qualifier: Sourcelike[], templateArgs: Sourcelike[], inner: Sourcelike[]): Sourcelike[] {
-    return [addQualifier(qualifier, [this._start, "<", arrayIntercalate(",", templateArgs), ">", "("] ), inner, this._end];
+        return [
+            addQualifier(qualifier, [this._start, "<", arrayIntercalate(",", templateArgs), ">", "("]),
+            inner,
+            this._end
+        ];
     }
 }
 
@@ -399,7 +408,7 @@ export class BaseString {
             (this._stringLiteralPrefix = stringLiteralPrefix),
             (this._toString = toString),
             (this._encodingClass = encodingClass),
-            (this._encodingFunction = encodingFunction)
+            (this._encodingFunction = encodingFunction);
     }
 
     public getType(): string {
@@ -1121,8 +1130,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                                 needsOptionalIndirection: false,
                                 inJsonNamespace: true
                             },
-			    false,
-			    false
+                            false,
+                            false
                         );
                         this.emitLine(
                             Assignment.wrap(
@@ -1133,7 +1142,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                                     cppType,
                                     ">(_j, ",
                                     this._stringType.wrapEncodingChange(
-                                        [ourQualifier], this._stringType.getType(), this.NarrowString.getType(),
+                                        [ourQualifier],
+                                        this._stringType.getType(),
+                                        this.NarrowString.getType(),
                                         [this._stringType.createStringLiteral([stringEscape(json)])]
                                     ),
                                     ")"
@@ -1152,7 +1163,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                                 ourQualifier,
                                 "get_untyped(_j, ",
                                 this._stringType.wrapEncodingChange(
-                                    [ourQualifier], this._stringType.getType(), this.NarrowString.getType(),
+                                    [ourQualifier],
+                                    this._stringType.getType(),
+                                    this.NarrowString.getType(),
                                     [this._stringType.createStringLiteral([stringEscape(json)])]
                                 ),
                                 ")"
@@ -1180,7 +1193,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         this._stringType.wrapEncodingChange([ourQualifier], cppType, toType, [
                             "_j.at(",
                             this._stringType.wrapEncodingChange(
-                                [ourQualifier], this._stringType.getType(), this.NarrowString.getType(),
+                                [ourQualifier],
+                                this._stringType.getType(),
+                                this.NarrowString.getType(),
                                 this._stringType.createStringLiteral([stringEscape(json)])
                             ),
                             ").get<",
@@ -1219,7 +1234,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.emitLine(
                     "_j[",
                     this._stringType.wrapEncodingChange(
-                        [ourQualifier], this._stringType.getType(), this.NarrowString.getType(),
+                        [ourQualifier],
+                        this._stringType.getType(),
+                        this.NarrowString.getType(),
                         this._stringType.createStringLiteral([stringEscape(json)])
                     ),
                     "] = ",
@@ -1299,12 +1316,12 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         false,
                         true
                     );
-			let toType = this.cppType(
-			    typeForKind,
-			    { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
-			    false,
-			    false
-			);
+                    let toType = this.cppType(
+                        typeForKind,
+                        { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+                        false,
+                        false
+                    );
                     this.emitLine(
                         "_x = ",
                         this._stringType.wrapEncodingChange([ourQualifier], cppType, toType, [
@@ -1381,7 +1398,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     maybeElse,
                     "if (_j == ",
                     this._stringType.wrapEncodingChange(
-                        [ourQualifier], this._stringType.getType(), this.NarrowString.getType(),
+                        [ourQualifier],
+                        this._stringType.getType(),
+                        this.NarrowString.getType(),
                         [this._stringType.createStringLiteral([stringEscape(jsonName)])]
                     ),
                     ") _x = ",
@@ -1407,7 +1426,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         name,
                         ": _j = ",
                         this._stringType.wrapEncodingChange(
-                            [ourQualifier], this._stringType.getType(), this.NarrowString.getType(),
+                            [ourQualifier],
+                            this._stringType.getType(),
+                            this.NarrowString.getType(),
                             [this._stringType.createStringLiteral([stringEscape(jsonName)])]
                         ),
                         "; break;"
@@ -1565,7 +1586,12 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 "(",
                 this._stringType.getConstType(),
                 " msg) : std::runtime_error(",
-                this._stringType.wrapEncodingChange([ourQualifier], this._stringType.getType(), this.NarrowString.getType(), ["msg"]),
+                this._stringType.wrapEncodingChange(
+                    [ourQualifier],
+                    this._stringType.getType(),
+                    this.NarrowString.getType(),
+                    ["msg"]
+                ),
                 ") {}"
             );
         });
@@ -2162,22 +2188,22 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
     }
 
-   protected isConversionRequired(t: Type) {
-	let originalType = this.cppType(
-	    t,
-	    { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
-	    false,
-	    false
-	);
+    protected isConversionRequired(t: Type) {
+        let originalType = this.cppType(
+            t,
+            { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+            false,
+            false
+        );
 
-	let newType = this.cppType(
-	    t,
-	    { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
-	    false,
-	    true
-	);
+        let newType = this.cppType(
+            t,
+            { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+            false,
+            true
+        );
 
-	return originalType != newType;
+        return originalType !== newType;
     }
 
     public NarrowString = new class extends BaseString implements StringType {
@@ -2189,14 +2215,19 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 "std::regex",
                 "",
                 new WrappingCode(["std::to_string("], [")"]),
-		"",
-		""
+                "",
+                ""
             );
         }
 
-    public wrapEncodingChange(qualifier: Sourcelike[], fromType: Sourcelike, toType: Sourcelike, inner: Sourcelike[]): Sourcelike[] {
-    	return inner;
-    }
+        public wrapEncodingChange(
+            _qualifier: Sourcelike[],
+            _fromType: Sourcelike,
+            _toType: Sourcelike,
+            inner: Sourcelike[]
+        ): Sourcelike[] {
+            return inner;
+        }
 
         public emitHelperFunctions(): void {
             return;
@@ -2212,19 +2243,34 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 "std::wregex",
                 "L",
                 new WrappingCode(["std::to_wstring("], [")"]),
-		"Utf16_Utf8",
-		"convert"
+                "Utf16_Utf8",
+                "convert"
             );
         }
 
-    public wrapEncodingChange(qualifier: Sourcelike[], fromType: Sourcelike, toType: Sourcelike, inner: Sourcelike[]): Sourcelike[] {
-        if (this.superThis.sourcelikeToString(fromType) == this.superThis.sourcelikeToString(toType))
-        {
-            return inner;
-        } 
+        public wrapEncodingChange(
+            qualifier: Sourcelike[],
+            fromType: Sourcelike,
+            toType: Sourcelike,
+            inner: Sourcelike[]
+        ): Sourcelike[] {
+            if (this.superThis.sourcelikeToString(fromType) === this.superThis.sourcelikeToString(toType)) {
+                return inner;
+            }
 
-        return [ addQualifier(qualifier, [this._encodingClass]), "<", fromType, ", ", toType, ">::", this._encodingFunction, "(", inner, ")" ];
-    }
+            return [
+                addQualifier(qualifier, [this._encodingClass]),
+                "<",
+                fromType,
+                ", ",
+                toType,
+                ">::",
+                this._encodingFunction,
+                "(",
+                inner,
+                ")"
+            ];
+        }
 
         public emitHelperFunctions(): void {
             this.superThis.emitLine("template<typename T>");
@@ -2235,33 +2281,49 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.superThis.emitBlock(["class Utf16_Utf8"], true, () => {
                 this.superThis.emitLine("private:");
                 this.superThis.emitLine("template<typename TF, typename TT>");
-                this.superThis.emitBlock(["static toType convert(tag<std::shared_ptr<TF> >, tag<std::shared_ptr<TT> >, fromType ptr)"], false, () => {
-                    this.superThis.emitLine("if (ptr == nullptr) return std::unique_ptr<TT>(); else return std::unique_ptr<TT>(new TT(Utf16_Utf8<TF,TT>::convert(*ptr)));");
-                });
+                this.superThis.emitBlock(
+                    ["static toType convert(tag<std::shared_ptr<TF> >, tag<std::shared_ptr<TT> >, fromType ptr)"],
+                    false,
+                    () => {
+                        this.superThis.emitLine(
+                            "if (ptr == nullptr) return std::unique_ptr<TT>(); else return std::unique_ptr<TT>(new TT(Utf16_Utf8<TF,TT>::convert(*ptr)));"
+                        );
+                    }
+                );
                 this.superThis.ensureBlankLine();
 
                 this.superThis.emitLine("template<typename TF, typename TT>");
-                this.superThis.emitBlock(["static toType convert(tag<std::vector<TF> >, tag<std::vector<TT> >, fromType v)"], false, () => {
-                    this.superThis.emitLine("auto it = v.begin();");
-                    this.superThis.emitLine("auto newVector = std::vector<TT>();");
-                    this.superThis.emitBlock(["while (it != v.end())"], false, () => {
-                        this.superThis.emitLine("newVector.push_back(Utf16_Utf8<TF,TT>::convert(*it));");
-                        this.superThis.emitLine("it++;");
-                    });
-                    this.superThis.emitLine("return newVector;");
-                });
+                this.superThis.emitBlock(
+                    ["static toType convert(tag<std::vector<TF> >, tag<std::vector<TT> >, fromType v)"],
+                    false,
+                    () => {
+                        this.superThis.emitLine("auto it = v.begin();");
+                        this.superThis.emitLine("auto newVector = std::vector<TT>();");
+                        this.superThis.emitBlock(["while (it != v.end())"], false, () => {
+                            this.superThis.emitLine("newVector.push_back(Utf16_Utf8<TF,TT>::convert(*it));");
+                            this.superThis.emitLine("it++;");
+                        });
+                        this.superThis.emitLine("return newVector;");
+                    }
+                );
                 this.superThis.ensureBlankLine();
 
                 this.superThis.emitLine("template<typename KF, typename VF, typename KT, typename VT>");
-                this.superThis.emitBlock(["static toType convert(tag<std::map<KF,VF> >, tag<std::map<KT,VT> >, fromType m)"], false, () => {
-                    this.superThis.emitLine("auto it = m.begin();");
-                    this.superThis.emitLine("auto newMap = std::map<KT, VT>();");
-                    this.superThis.emitBlock(["while (it != m.end())"], false, () => {
-                        this.superThis.emitLine("newMap.insert(std::pair<KT, VT>(Utf16_Utf8<KF, KT>::convert(it->first), Utf16_Utf8<VF, VT>::convert(it->second)));");
-                        this.superThis.emitLine("it++;");
-                    });
-                    this.superThis.emitLine("return newMap;");
-                });
+                this.superThis.emitBlock(
+                    ["static toType convert(tag<std::map<KF,VF> >, tag<std::map<KT,VT> >, fromType m)"],
+                    false,
+                    () => {
+                        this.superThis.emitLine("auto it = m.begin();");
+                        this.superThis.emitLine("auto newMap = std::map<KT, VT>();");
+                        this.superThis.emitBlock(["while (it != m.end())"], false, () => {
+                            this.superThis.emitLine(
+                                "newMap.insert(std::pair<KT, VT>(Utf16_Utf8<KF, KT>::convert(it->first), Utf16_Utf8<VF, VT>::convert(it->second)));"
+                            );
+                            this.superThis.emitLine("it++;");
+                        });
+                        this.superThis.emitLine("return newMap;");
+                    }
+                );
                 this.superThis.ensureBlankLine();
 
                 this.superThis.emitLine("template<typename TF, typename TT>");
@@ -2270,14 +2332,26 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 });
                 this.superThis.ensureBlankLine();
 
-                this.superThis.emitBlock(["static std::wstring convert(tag<std::string>, tag<std::wstring>, fromType str)"], false, () => {
-                    this.superThis.emitLine("return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes(str.data());");
-                });
+                this.superThis.emitBlock(
+                    ["static std::wstring convert(tag<std::string>, tag<std::wstring>, fromType str)"],
+                    false,
+                    () => {
+                        this.superThis.emitLine(
+                            "return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes(str.data());"
+                        );
+                    }
+                );
                 this.superThis.ensureBlankLine();
 
-                this.superThis.emitBlock(["static std::string convert(tag<std::wstring>, tag<std::string>, fromType str)"], false, () => {
-                    this.superThis.emitLine("return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.to_bytes(str.data());");
-                });
+                this.superThis.emitBlock(
+                    ["static std::string convert(tag<std::wstring>, tag<std::string>, fromType str)"],
+                    false,
+                    () => {
+                        this.superThis.emitLine(
+                            "return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.to_bytes(str.data());"
+                        );
+                    }
+                );
                 this.superThis.ensureBlankLine();
 
                 this.superThis.emitLine("public:");
