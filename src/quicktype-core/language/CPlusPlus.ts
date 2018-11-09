@@ -343,15 +343,12 @@ interface StringType {
     getRegex(): string;
     createStringLiteral(inner: Sourcelike[]): Sourcelike[];
     wrapToString(inner: Sourcelike[]): Sourcelike[];
-    wrapUtf8FromEncoding(qualifier: Sourcelike[], inner: Sourcelike[]): Sourcelike[];
-    wrapEncodingFromUtf8(qualifier: Sourcelike[], inner: Sourcelike[]): Sourcelike[];
-    wrapEncodingFromUtf8WithType(qualifier: Sourcelike[], t: Type, inner: Sourcelike[]): Sourcelike[];
-    wrapUtf8FromEncodingWithType(qualifier: Sourcelike[], t: Type, inner: Sourcelike[]): Sourcelike[];
+    wrapEncodingChange(qualifier: Sourcelike[], fromType: Sourcelike, toType: Sourcelike, inner: Sourcelike[]): Sourcelike[];
     emitHelperFunctions(): void;
 }
 
-export function AddQualifier(qualifier: Sourcelike[], qualified: Sourcelike[]): Sourcelike[] {
-    if (qualified == null || qualified.length === 0) {
+export function addQualifier(qualifier: Sourcelike, qualified: Sourcelike[]): Sourcelike[] {
+    if (qualified.length == 0) {
         return [];
     }
     return [qualifier, qualified];
@@ -367,7 +364,11 @@ export class WrappingCode {
     }
 
     wrap(qualifier: Sourcelike[], inner: Sourcelike[]): Sourcelike[] {
-        return [AddQualifier(qualifier, this._start), inner, this._end];
+        return [addQualifier(qualifier, this._start), inner, this._end];
+    }
+
+    wrapWithTemplate(qualifier: Sourcelike[], templateArgs: Sourcelike[], inner: Sourcelike[]): Sourcelike[] {
+    return [addQualifier(qualifier, [this._start, "<", arrayIntercalate(",", templateArgs), ">", "("] ), inner, this._end];
     }
 }
 
@@ -378,12 +379,8 @@ export class BaseString {
     public _regex: string;
     public _stringLiteralPrefix: string;
     public _toString: WrappingCode;
-    public _encodingFromUtf8: WrappingCode;
-    public _utf8FromEncoding: WrappingCode;
-    public _encodingFromUtf8Map: WrappingCode;
-    public _utf8FromEncodingMap: WrappingCode;
-    public _encodingFromUtf8Array: WrappingCode;
-    public _utf8FromEncodingArray: WrappingCode;
+    public _encodingClass: Sourcelike;
+    public _encodingFunction: Sourcelike;
 
     constructor(
         stringType: string,
@@ -392,12 +389,8 @@ export class BaseString {
         regex: string,
         stringLiteralPrefix: string,
         toString: WrappingCode,
-        encodingFromUtf8: WrappingCode,
-        utf8FromEncoding: WrappingCode,
-        encodingFromUtf8Map: WrappingCode,
-        utf8FromEncodingMap: WrappingCode,
-        encodingFromUtf8Array: WrappingCode,
-        utf8FromEncodingArray: WrappingCode
+        encodingClass: string,
+        encodingFunction: string
     ) {
         (this._stringType = stringType),
             (this._constStringType = constStringType),
@@ -405,12 +398,8 @@ export class BaseString {
             (this._regex = regex),
             (this._stringLiteralPrefix = stringLiteralPrefix),
             (this._toString = toString),
-            (this._encodingFromUtf8 = encodingFromUtf8),
-            (this._utf8FromEncoding = utf8FromEncoding),
-            (this._encodingFromUtf8Map = encodingFromUtf8Map),
-            (this._utf8FromEncodingMap = utf8FromEncodingMap),
-            (this._encodingFromUtf8Array = encodingFromUtf8Array),
-            (this._utf8FromEncodingArray = utf8FromEncodingArray);
+            (this._encodingClass = encodingClass),
+            (this._encodingFunction = encodingFunction)
     }
 
     public getType(): string {
@@ -435,40 +424,6 @@ export class BaseString {
 
     public wrapToString(inner: Sourcelike[]): Sourcelike[] {
         return this._toString.wrap([], inner);
-    }
-
-    public wrapUtf8FromEncoding(qualifier: Sourcelike[], inner: Sourcelike[]): Sourcelike[] {
-        return this._utf8FromEncoding.wrap(qualifier, inner);
-    }
-
-    public wrapEncodingFromUtf8(qualifier: Sourcelike[], inner: Sourcelike[]): Sourcelike[] {
-        return this._encodingFromUtf8.wrap(qualifier, inner);
-    }
-
-    public wrapEncodingFromUtf8WithType(qualifier: Sourcelike[], t: Type, inner: Sourcelike[]): Sourcelike[] {
-        if (t.kind === "string") {
-            return this._encodingFromUtf8.wrap(qualifier, inner);
-        }
-        if (t instanceof MapType) {
-            return this._encodingFromUtf8Map.wrap(qualifier, inner);
-        }
-        if (t instanceof ArrayType) {
-            return this._encodingFromUtf8Array.wrap(qualifier, inner);
-        }
-        return inner;
-    }
-
-    public wrapUtf8FromEncodingWithType(qualifier: Sourcelike[], t: Type, inner: Sourcelike[]): Sourcelike[] {
-        if (t.kind === "string") {
-            return this._utf8FromEncoding.wrap(qualifier, inner);
-        }
-        if (t instanceof MapType) {
-            return this._utf8FromEncodingMap.wrap(qualifier, inner);
-        }
-        if (t instanceof ArrayType) {
-            return this._utf8FromEncodingArray.wrap(qualifier, inner);
-        }
-        return inner;
     }
 }
 
@@ -1142,6 +1097,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     protected emitClassFunctions(c: ClassType, className: Name): void {
         const ourQualifier = this.ourQualifier(true);
         let cppType: Sourcelike;
+        let toType: Sourcelike;
 
         this.emitBlock(["inline void from_json(const json& _j, ", ourQualifier, className, "& _x)"], false, () => {
             this.forEachClassProperty(c, "none", (name, json, p) => {
@@ -1165,8 +1121,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                                 needsOptionalIndirection: false,
                                 inJsonNamespace: true
                             },
-                            false,
-                            true
+			    false,
+			    false
                         );
                         this.emitLine(
                             Assignment.wrap(
@@ -1176,8 +1132,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                                     "get_optional<",
                                     cppType,
                                     ">(_j, ",
-                                    this._stringType.wrapUtf8FromEncoding(
-                                        [ourQualifier],
+                                    this._stringType.wrapEncodingChange(
+                                        [ourQualifier], this._stringType.getType(), this.NarrowString.getType(),
                                         [this._stringType.createStringLiteral([stringEscape(json)])]
                                     ),
                                     ")"
@@ -1195,8 +1151,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             [
                                 ourQualifier,
                                 "get_untyped(_j, ",
-                                this._stringType.wrapUtf8FromEncoding(
-                                    [ourQualifier],
+                                this._stringType.wrapEncodingChange(
+                                    [ourQualifier], this._stringType.getType(), this.NarrowString.getType(),
                                     [this._stringType.createStringLiteral([stringEscape(json)])]
                                 ),
                                 ")"
@@ -1212,13 +1168,19 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     false,
                     true
                 );
+                toType = this.cppType(
+                    t,
+                    { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+                    false,
+                    false
+                );
                 this.emitLine(
                     Assignment.wrap(
                         [],
-                        this._stringType.wrapEncodingFromUtf8WithType([ourQualifier], t, [
+                        this._stringType.wrapEncodingChange([ourQualifier], cppType, toType, [
                             "_j.at(",
-                            this._stringType.wrapUtf8FromEncoding(
-                                [ourQualifier],
+                            this._stringType.wrapEncodingChange(
+                                [ourQualifier], this._stringType.getType(), this.NarrowString.getType(),
                                 this._stringType.createStringLiteral([stringEscape(json)])
                             ),
                             ").get<",
@@ -1241,6 +1203,12 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     false,
                     false
                 );
+                toType = this.cppType(
+                    t,
+                    { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+                    false,
+                    true
+                );
                 const [getterName, ,] = defined(this._gettersAndSettersForPropertyName.get(name));
                 let Getter: Sourcelike[];
                 if (this._options.codeFormat) {
@@ -1250,12 +1218,12 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 }
                 this.emitLine(
                     "_j[",
-                    this._stringType.wrapUtf8FromEncoding(
-                        [ourQualifier],
+                    this._stringType.wrapEncodingChange(
+                        [ourQualifier], this._stringType.getType(), this.NarrowString.getType(),
                         this._stringType.createStringLiteral([stringEscape(json)])
                     ),
                     "] = ",
-                    this._stringType.wrapEncodingFromUtf8WithType([ourQualifier], t, ["_x.", Getter]),
+                    this._stringType.wrapEncodingChange([ourQualifier], cppType, toType, ["_x.", Getter]),
                     ";"
                 );
             });
@@ -1331,9 +1299,15 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         false,
                         true
                     );
+			let toType = this.cppType(
+			    typeForKind,
+			    { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+			    false,
+			    false
+			);
                     this.emitLine(
                         "_x = ",
-                        this._stringType.wrapEncodingFromUtf8WithType([ourQualifier], typeForKind, [
+                        this._stringType.wrapEncodingChange([ourQualifier], cppType, toType, [
                             "_j.get<",
                             cppType,
                             ">()"
@@ -1362,9 +1336,19 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             false,
                             false
                         );
+                        const toType = this.cppType(
+                            t,
+                            {
+                                needsForwardIndirection: true,
+                                needsOptionalIndirection: true,
+                                inJsonNamespace: true
+                            },
+                            false,
+                            true
+                        );
                         this.emitLine(
                             "_j = ",
-                            this._stringType.wrapEncodingFromUtf8WithType([ourQualifier], t, [
+                            this._stringType.wrapEncodingChange([ourQualifier], cppType, toType, [
                                 "boost::get<",
                                 cppType,
                                 ">(_x)"
@@ -1396,8 +1380,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.emitLine(
                     maybeElse,
                     "if (_j == ",
-                    this._stringType.wrapUtf8FromEncoding(
-                        [ourQualifier],
+                    this._stringType.wrapEncodingChange(
+                        [ourQualifier], this._stringType.getType(), this.NarrowString.getType(),
                         [this._stringType.createStringLiteral([stringEscape(jsonName)])]
                     ),
                     ") _x = ",
@@ -1422,8 +1406,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         "::",
                         name,
                         ": _j = ",
-                        this._stringType.wrapUtf8FromEncoding(
-                            [ourQualifier],
+                        this._stringType.wrapEncodingChange(
+                            [ourQualifier], this._stringType.getType(), this.NarrowString.getType(),
                             [this._stringType.createStringLiteral([stringEscape(jsonName)])]
                         ),
                         "; break;"
@@ -1581,7 +1565,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 "(",
                 this._stringType.getConstType(),
                 " msg) : std::runtime_error(",
-                this._stringType.wrapUtf8FromEncoding([ourQualifier], ["msg"]),
+                this._stringType.wrapEncodingChange([ourQualifier], this._stringType.getType(), this.NarrowString.getType(), ["msg"]),
                 ") {}"
             );
         });
@@ -2178,6 +2162,24 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
     }
 
+   protected isConversionRequired(t: Type) {
+	let originalType = this.cppType(
+	    t,
+	    { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+	    false,
+	    false
+	);
+
+	let newType = this.cppType(
+	    t,
+	    { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+	    false,
+	    true
+	);
+
+	return originalType != newType;
+    }
+
     public NarrowString = new class extends BaseString implements StringType {
         constructor() {
             super(
@@ -2187,14 +2189,14 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 "std::regex",
                 "",
                 new WrappingCode(["std::to_string("], [")"]),
-                new WrappingCode([], []),
-                new WrappingCode([], []),
-                new WrappingCode([], []),
-                new WrappingCode([], []),
-                new WrappingCode([], []),
-                new WrappingCode([], [])
+		"",
+		""
             );
         }
+
+    public wrapEncodingChange(qualifier: Sourcelike[], fromType: Sourcelike, toType: Sourcelike, inner: Sourcelike[]): Sourcelike[] {
+    	return inner;
+    }
 
         public emitHelperFunctions(): void {
             return;
@@ -2210,151 +2212,79 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 "std::wregex",
                 "L",
                 new WrappingCode(["std::to_wstring("], [")"]),
-                new WrappingCode(["Utf16FromUtf8("], [")"]),
-                new WrappingCode(["Utf8FromUtf16("], [")"]),
-                new WrappingCode(["Utf16FromUtf8Map("], [")"]),
-                new WrappingCode(["Utf8FromUtf16Map("], [")"]),
-                new WrappingCode(["Utf16FromUtf8Array("], [")"]),
-                new WrappingCode(["Utf8FromUtf16Array("], [")"])
+		"Utf16_Utf8",
+		"convert"
             );
         }
 
+    public wrapEncodingChange(qualifier: Sourcelike[], fromType: Sourcelike, toType: Sourcelike, inner: Sourcelike[]): Sourcelike[] {
+        if (this.superThis.sourcelikeToString(fromType) == this.superThis.sourcelikeToString(toType))
+        {
+            return inner;
+        } 
+
+        return [ addQualifier(qualifier, [this._encodingClass]), "<", fromType, ", ", toType, ">::", this._encodingFunction, "(", inner, ")" ];
+    }
+
         public emitHelperFunctions(): void {
-            this.superThis.ensureBlankLine();
-            this.superThis.emitBlock(["inline std::wstring Utf16FromUtf8 (const std::string str)"], false, () => {
-                this.superThis.emitLine(
-                    "return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes(str.data());"
-                );
-            });
-            this.superThis.ensureBlankLine();
-            this.superThis.emitBlock(["inline std::string Utf8FromUtf16 (const std::wstring wstr)"], false, () => {
-                this.superThis.emitLine(
-                    "return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.to_bytes(wstr.data());"
-                );
-            });
-            this.superThis.ensureBlankLine();
-            this.superThis.emitBlock(
-                ["inline std::shared_ptr<std::wstring> Utf16FromUtf8 (const std::shared_ptr<std::string> str)"],
-                false,
-                () => {
-                    this.superThis.emitLine(
-                        "if (str == nullptr) return std::unique_ptr<std::wstring>(); else return std::unique_ptr<std::wstring>(new std::wstring(Utf16FromUtf8(*str)));"
-                    );
-                }
-            );
-            this.superThis.ensureBlankLine();
-            this.superThis.emitBlock(
-                ["inline std::shared_ptr<std::string> Utf8FromUtf16 (const std::shared_ptr<std::wstring> wstr)"],
-                false,
-                () => {
-                    this.superThis.emitLine(
-                        "if (wstr == nullptr) return std::unique_ptr<std::string>(); else return std::unique_ptr<std::string>(new std::string(Utf8FromUtf16(*wstr)));"
-                    );
-                }
-            );
+            this.superThis.emitLine("template<typename T>");
+            this.superThis.emitLine("struct tag {};");
             this.superThis.ensureBlankLine();
 
-            this.superThis.emitLine("template <typename T>");
-            this.superThis.emitBlock(
-                ["inline std::map<std::wstring, T> Utf16FromUtf8Map(const std::map<std::string, T> m)"],
-                false,
-                () => {
-                    this.superThis.emitLine("auto it = m.begin();");
-                    this.superThis.emitLine("auto newMap = std::map<std::wstring, T>();");
-                    this.superThis.emitLine(
-                        "while (it != m.end()) { newMap.insert(std::pair<std::wstring, T>(Utf16FromUtf8(it->first), it->second)); it++; }"
-                    );
-                    this.superThis.emitLine("return newMap;");
-                }
-            );
-            this.superThis.ensureBlankLine();
-            this.superThis.emitLine("template <typename T>");
-            this.superThis.emitBlock(
-                ["inline std::map<std::string, T> Utf8FromUtf16Map(const std::map<std::wstring, T> m)"],
-                false,
-                () => {
-                    this.superThis.emitLine("auto it = m.begin();");
-                    this.superThis.emitLine("auto newMap = std::map<std::string, T>();");
-                    this.superThis.emitLine(
-                        "while (it != m.end()) { newMap.insert(std::pair<std::string, T>(Utf8FromUtf16(it->first), it->second)); it++; }"
-                    );
-                    this.superThis.emitLine("return newMap;");
-                }
-            );
-            this.superThis.ensureBlankLine();
-            this.superThis.emitBlock(
-                [
-                    "inline std::map<std::wstring, std::wstring> Utf16FromUtf8Map(const std::map<std::string, std::string> m)"
-                ],
-                false,
-                () => {
-                    this.superThis.emitLine("auto it = m.begin();");
-                    this.superThis.emitLine("auto newMap = std::map<std::wstring, std::wstring>();");
-                    this.superThis.emitLine(
-                        "while (it != m.end()) { newMap.insert(std::pair<std::wstring, std::wstring>(Utf16FromUtf8(it->first), Utf16FromUtf8(it->second))); it++; }"
-                    );
-                    this.superThis.emitLine("return newMap;");
-                }
-            );
-            this.superThis.ensureBlankLine();
-            this.superThis.emitBlock(
-                [
-                    "inline std::map<std::string, std::string> Utf8FromUtf16Map(const std::map<std::wstring, std::wstring> m)"
-                ],
-                false,
-                () => {
-                    this.superThis.emitLine("auto it = m.begin();");
-                    this.superThis.emitLine("auto newMap = std::map<std::string, std::string>();");
-                    this.superThis.emitLine(
-                        "while (it != m.end()) { newMap.insert(std::pair<std::string, std::string>(Utf8FromUtf16(it->first), Utf8FromUtf16(it->second))); it++; }"
-                    );
-                    this.superThis.emitLine("return newMap;");
-                }
-            );
-            this.superThis.ensureBlankLine();
+            this.superThis.emitLine("template<typename fromType, typename toType>");
+            this.superThis.emitBlock(["class Utf16_Utf8"], true, () => {
+                this.superThis.emitLine("private:");
+                this.superThis.emitLine("template<typename TF, typename TT>");
+                this.superThis.emitBlock(["static toType convert(tag<std::shared_ptr<TF> >, tag<std::shared_ptr<TT> >, fromType ptr)"], false, () => {
+                    this.superThis.emitLine("if (ptr == nullptr) return std::unique_ptr<TT>(); else return std::unique_ptr<TT>(new TT(Utf16_Utf8<TF,TT>::convert(*ptr)));");
+                });
+                this.superThis.ensureBlankLine();
 
-            this.superThis.emitLine("template <typename T>");
-            this.superThis.emitBlock(
-                ["inline std::vector<T> Utf16FromUtf8Array(const std::vector<T> v)"],
-                false,
-                () => {
-                    this.superThis.emitLine("return v;");
-                }
-            );
-            this.superThis.ensureBlankLine();
-            this.superThis.emitLine("template <typename T>");
-            this.superThis.emitBlock(
-                ["inline std::vector<T> Utf8FromUtf16Array(const std::vector<T> v)"],
-                false,
-                () => {
-                    this.superThis.emitLine("return v;");
-                }
-            );
-            this.superThis.ensureBlankLine();
-            this.superThis.emitBlock(
-                ["inline std::vector<std::wstring> Utf16FromUtf8Array(const std::vector<std::string> v)"],
-                false,
-                () => {
+                this.superThis.emitLine("template<typename TF, typename TT>");
+                this.superThis.emitBlock(["static toType convert(tag<std::vector<TF> >, tag<std::vector<TT> >, fromType v)"], false, () => {
                     this.superThis.emitLine("auto it = v.begin();");
-                    this.superThis.emitLine("auto newVector = std::vector<std::wstring>();");
-                    this.superThis.emitLine("while (it != v.end()) { newVector.push_back(Utf16FromUtf8(*it)); it++; }");
+                    this.superThis.emitLine("auto newVector = std::vector<TT>();");
+                    this.superThis.emitBlock(["while (it != v.end())"], false, () => {
+                        this.superThis.emitLine("newVector.push_back(Utf16_Utf8<TF,TT>::convert(*it));");
+                        this.superThis.emitLine("it++;");
+                    });
                     this.superThis.emitLine("return newVector;");
-                }
-            );
-            this.superThis.ensureBlankLine();
-            this.superThis.emitBlock(
-                ["inline std::vector<std::string> Utf8FromUtf16Array(const std::vector<std::wstring> v)"],
-                false,
-                () => {
-                    this.superThis.emitLine("auto it = v.begin();");
-                    this.superThis.emitLine("auto newVector = std::vector<std::string>();");
-                    this.superThis.emitLine(
-                        "while (it != v.end())  { newVector.push_back(Utf8FromUtf16(*it)); it++; }"
-                    );
-                    this.superThis.emitLine("return newVector;");
-                }
-            );
-            this.superThis.ensureBlankLine();
+                });
+                this.superThis.ensureBlankLine();
+
+                this.superThis.emitLine("template<typename KF, typename VF, typename KT, typename VT>");
+                this.superThis.emitBlock(["static toType convert(tag<std::map<KF,VF> >, tag<std::map<KT,VT> >, fromType m)"], false, () => {
+                    this.superThis.emitLine("auto it = m.begin();");
+                    this.superThis.emitLine("auto newMap = std::map<KT, VT>();");
+                    this.superThis.emitBlock(["while (it != m.end())"], false, () => {
+                        this.superThis.emitLine("newMap.insert(std::pair<KT, VT>(Utf16_Utf8<KF, KT>::convert(it->first), Utf16_Utf8<VF, VT>::convert(it->second)));");
+                        this.superThis.emitLine("it++;");
+                    });
+                    this.superThis.emitLine("return newMap;");
+                });
+                this.superThis.ensureBlankLine();
+
+                this.superThis.emitLine("template<typename TF, typename TT>");
+                this.superThis.emitBlock(["static fromType convert(tag<TF>, tag<TT>, fromType from)"], false, () => {
+                    this.superThis.emitLine("return from;");
+                });
+                this.superThis.ensureBlankLine();
+
+                this.superThis.emitBlock(["static std::wstring convert(tag<std::string>, tag<std::wstring>, fromType str)"], false, () => {
+                    this.superThis.emitLine("return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes(str.data());");
+                });
+                this.superThis.ensureBlankLine();
+
+                this.superThis.emitBlock(["static std::string convert(tag<std::wstring>, tag<std::string>, fromType str)"], false, () => {
+                    this.superThis.emitLine("return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.to_bytes(str.data());");
+                });
+                this.superThis.ensureBlankLine();
+
+                this.superThis.emitLine("public:");
+                this.superThis.emitBlock(["static toType convert(fromType in)"], false, () => {
+                    this.superThis.emitLine("return convert(tag<fromType>(), tag<toType>(), in);");
+                });
+            });
         }
     }(this);
 }
