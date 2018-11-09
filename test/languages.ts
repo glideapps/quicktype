@@ -109,7 +109,6 @@ export const PythonLanguage: Language = {
   },
   diffViaSchema: true,
   skipDiffViaSchema: [
-    "combinations.json",
     "keywords.json",
     "0cffa.json",
     "127a1.json",
@@ -146,7 +145,6 @@ export const RustLanguage: Language = {
   },
   diffViaSchema: true,
   skipDiffViaSchema: [
-    "combinations.json",
     "bug427.json",
     "keywords.json",
     "recursive.json",
@@ -233,7 +231,7 @@ export const RubyLanguage: Language = {
     "keywords.json",
     "nst-test-suite.json",
     "recursive.json",
-    "combinations.json",
+    "combinations3.json",
     "bug427.json",
     "bug863.json",
     "kitchen-sink.json",
@@ -337,7 +335,6 @@ export const CPlusPlusLanguage: Language = {
   diffViaSchema: true,
   skipDiffViaSchema: [
     "github-events.json",
-    "combinations.json",
     "bug427.json",
     "keywords.json",
     "0a91a.json",
@@ -681,7 +678,10 @@ export const KotlinLanguage: Language = {
     "f74d5.json",
     "a3d8c.json",
     // Klaxon has a hard time with null inside collections
-    "combinations.json",
+    "combinations1.json",
+    "combinations2.json",
+    "combinations3.json",
+    "combinations4.json",
     "unions.json",
     "nst-test-suite.json",
     // Klaxon does not support top-level primitives
@@ -761,8 +761,10 @@ export const KotlinJacksonLanguage: Language = {
     "5f7fe.json",
     "f74d5.json",
     "a3d8c.json",
-    // Klaxon has a hard time with null inside collections
-    "combinations.json",
+    "combinations1.json",
+    "combinations2.json",
+    "combinations3.json",
+    "combinations4.json",
     "unions.json",
     "nst-test-suite.json",
     // Klaxon does not support top-level primitives
@@ -800,7 +802,7 @@ export const KotlinJacksonLanguage: Language = {
     "top-level-enum.schema"
   ],
   skipMiscJSON: false,
-  rendererOptions: {"framework": "jackson"},
+  rendererOptions: { framework: "jackson" },
   quickTestRendererOptions: [],
   sourceFiles: ["src/Language/Kotlin.ts"]
 };
