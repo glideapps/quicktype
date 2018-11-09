@@ -2416,22 +2416,22 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.superThis.ensureBlankLine();
 
                 this.superThis.emitBlock(
-                    ["static std::wstring convert(tag<std::string>, tag<std::wstring>, fromType str)"],
+                    ["static std::wstring convert(tag<std::string>, tag<std::wstring>, std::string str)"],
                     false,
                     () => {
                         this.superThis.emitLine(
-                            "return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes(str.data());"
+                            "return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t, 0x10ffff, std::little_endian>, wchar_t>{}.from_bytes(str.data());"
                         );
                     }
                 );
                 this.superThis.ensureBlankLine();
 
                 this.superThis.emitBlock(
-                    ["static std::string convert(tag<std::wstring>, tag<std::string>, fromType str)"],
+                    ["static std::string convert(tag<std::wstring>, tag<std::string>, std::wstring str)"],
                     false,
                     () => {
                         this.superThis.emitLine(
-                            "return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.to_bytes(str.data());"
+                            "return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t, 0x10ffff, std::little_endian>, wchar_t>{}.to_bytes(str.data());"
                         );
                     }
                 );
