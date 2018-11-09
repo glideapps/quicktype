@@ -315,33 +315,39 @@ class JSONFixture extends LanguageFixture {
 
     let { priority, others } = samplesFromSources(sources, prioritySamples, miscSamples, "json");
 
-    const combinationsInput = _.find(prioritySamples, p => p.endsWith("/priority/combinations.json"));
-    if (combinationsInput === undefined) {
-      return failWith("priority/combinations.json sample not found", prioritySamples);
+    const combinationInputs = _.map([1, 2, 3, 4], n =>
+      _.find(prioritySamples, p => p.endsWith(`/priority/combinations${n}.json`))
+    );
+    if (combinationInputs.some(p => p === undefined)) {
+      return failWith("priority/combinations[1234].json samples not found", prioritySamples);
     }
     if (sources.length === 0 && !ONLY_OUTPUT) {
-      const quickTestSamples = _.map(this.language.quickTestRendererOptions, qt => {
-        if (Array.isArray(qt)) {
-          const [filename, ro] = qt;
-          const input = _.find(([] as string[]).concat(prioritySamples, miscSamples), p =>
-            p.endsWith(`/${filename}`)
-          );
-          if (input === undefined) {
-            return failWith(`quick-test sample ${filename} not found`, qt);
+      const quickTestSamples = _.chain(this.language.quickTestRendererOptions)
+        .flatMap(qt => {
+          if (Array.isArray(qt)) {
+            const [filename, ro] = qt;
+            const input = _.find(([] as string[]).concat(prioritySamples, miscSamples), p =>
+              p.endsWith(`/${filename}`)
+            );
+            if (input === undefined) {
+              return failWith(`quick-test sample ${filename} not found`, qt);
+            }
+            return [
+              {
+                path: input,
+                additionalRendererOptions: ro,
+                saveOutput: false
+              }
+            ];
+          } else {
+            return _.map(combinationInputs, p => ({
+              path: defined(p),
+              additionalRendererOptions: qt,
+              saveOutput: false
+            }));
           }
-          return {
-            path: input,
-            additionalRendererOptions: ro,
-            saveOutput: false
-          };
-        } else {
-          return {
-            path: combinationsInput,
-            additionalRendererOptions: qt,
-            saveOutput: false
-          };
-        }
-      });
+        })
+        .value();
       priority = quickTestSamples.concat(priority);
     }
 
