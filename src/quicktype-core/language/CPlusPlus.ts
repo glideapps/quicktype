@@ -918,7 +918,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitLine(cppType, " ", name, ";");
     }
 
-    protected emitClassMembers(c: ClassType, constraints: Map<string, string> | undefined): void {
+    protected emitClassMembers(c: ClassType, constraints: Map<string, Sourcelike> | undefined): void {
         if (this._options.codeFormat) {
             this.emitLine("private:");
 
@@ -1029,29 +1029,26 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         });
     }
 
-    protected generateClassConstraints(c: ClassType): Map<string, string> | undefined {
-        let res: Map<string, string> = new Map<string, string>();
+    protected generateClassConstraints(c: ClassType): Map<string, Sourcelike> | undefined {
+        let res: Map<string, Sourcelike> = new Map<string, Sourcelike>();
         this.forEachClassProperty(c, "none", (_name, jsonName, property) => {
             const constraints = constraintsForType(property.type);
             if (constraints === undefined) return;
             const { minMax, minMaxLength, pattern } = constraints;
-            // FIXME: Use an array for this
-            let constrArg: string = "(";
-            constrArg += minMax !== undefined && minMax[0] !== undefined ? minMax[0] : "boost::none";
-            constrArg += ", ";
-            constrArg += minMax !== undefined && minMax[1] !== undefined ? minMax[1] : "boost::none";
-            constrArg += ", ";
-            constrArg += minMaxLength !== undefined && minMaxLength[0] !== undefined ? minMaxLength[0] : "boost::none";
-            constrArg += ", ";
-            constrArg += minMaxLength !== undefined && minMaxLength[1] !== undefined ? minMaxLength[1] : "boost::none";
-            constrArg += ", ";
-            constrArg +=
-                pattern === undefined
-                    ? "boost::none"
-                    : this._stringType.getType() + "(" + this._stringType.createStringLiteral([pattern]) + ")";
-            constrArg += ")";
 
-            res.set(jsonName, this.constraintMember(jsonName) + constrArg);
+            res.set(jsonName, [
+                 "(",
+                (minMax !== undefined && minMax[0] !== undefined) ? String(minMax[0]) : "boost::none",
+                ", ",
+                (minMax !== undefined && minMax[1] !== undefined) ? String(minMax[1]) : "boost::none",
+                ", ",
+                (minMaxLength !== undefined && minMaxLength[0] !== undefined) ? String(minMaxLength[0]) : "boost::none",
+                ", ",
+                (minMaxLength !== undefined && minMaxLength[1] !== undefined) ? String(minMaxLength[1]) : "boost::none",
+                ", ",
+                (pattern === undefined) ? "boost::none" : [this._stringType.getType(), "(", this._stringType.createStringLiteral([pattern]), ")"],
+                ")"
+            ]);
         });
 
         return res.size === 0 ? undefined : res;
@@ -1068,7 +1065,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 } else {
                     this.emitLine(className, "() :");
                     let numEmits: number = 0;
-                    constraints.forEach((initializer: string, _propName: string) => {
+                    constraints.forEach((initializer: Sourcelike, _propName: string) => {
                         numEmits++;
                         this.indent(() => {
                             if (numEmits === constraints.size) {
