@@ -643,6 +643,19 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     " data = nlohmann::json::parse(jsonString);"
                 );
             }
+            if (this._options.wstring) {
+                this.emitLine("//");
+                this.emitLine("//  You can get std::wstring data back out using");
+                this.forEachTopLevel("none", (_, topLevelName) => {
+                    this.emitLine(
+                        "//     std::wcout << ",
+                        this.ourQualifier(false),
+                        "wdump(",
+                        topLevelName,
+                        ");"
+                    );
+                });
+            }
         }
         this.ensureBlankLine();
 
@@ -2443,6 +2456,19 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     this.superThis.emitLine("return convert(tag<fromType>(), tag<toType>(), in);");
                 });
             });
+            this.superThis.ensureBlankLine();
+
+            this.superThis.emitLine("template<typename T>");
+            this.superThis.emitBlock(
+                ["std::wstring wdump(const T& j)"],
+                false,
+                () => {
+                    this.superThis.emitLine("std::ostringstream s;");
+                    this.superThis.emitLine("s << j;");
+                    this.superThis.emitLine("return quicktype::Utf16_Utf8<std::string, std::wstring>::convert(s.str()); ");
+                }
+            );
+            this.superThis.ensureBlankLine();
         }
     }(this);
 }
