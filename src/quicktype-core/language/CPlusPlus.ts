@@ -1050,7 +1050,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             const { minMax, minMaxLength, pattern } = constraints;
 
             res.set(jsonName, [
-                this.constraintMember(jsonName)
+                this.constraintMember(jsonName),
                  "(",
                 (minMax !== undefined && minMax[0] !== undefined) ? String(minMax[0]) : "boost::none",
                 ", ",
