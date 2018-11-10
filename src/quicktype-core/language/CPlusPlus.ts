@@ -775,11 +775,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected ourQualifier(inJsonNamespace: boolean): Sourcelike {
-        return inJsonNamespace ? [arrayIntercalate("::", this._namespaceNames), "::"] : [];
+        return (inJsonNamespace || this._options.msbuildPermissive) ? [arrayIntercalate("::", this._namespaceNames), "::"] : [];
     }
 
     protected jsonQualifier(inJsonNamespace: boolean): Sourcelike {
-        return inJsonNamespace ? [] : "nlohmann::";
+        return (inJsonNamespace || this._options.msbuildPermissive) ? [] : "nlohmann::";
     }
 
     protected variantIndirection(needIndirection: boolean, typeSrc: Sourcelike): Sourcelike {
