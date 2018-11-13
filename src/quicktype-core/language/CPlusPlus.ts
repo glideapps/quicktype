@@ -1875,6 +1875,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.emitLine("return json();");
         });
 
+        this.ensureBlankLine();
+
         this.emitBlock(["inline json get_untyped(const json &j, std::string property)"], false, () => {
             this.emitLine("return get_untyped(j, property.data());");
         });
