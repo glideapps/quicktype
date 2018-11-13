@@ -352,14 +352,14 @@ interface StringType {
     emitHelperFunctions(): void;
 }
 
-export function addQualifier(qualifier: Sourcelike, qualified: Sourcelike[]): Sourcelike[] {
+function addQualifier(qualifier: Sourcelike, qualified: Sourcelike[]): Sourcelike[] {
     if (qualified.length === 0) {
         return [];
     }
     return [qualifier, qualified];
 }
 
-export class WrappingCode {
+class WrappingCode {
     private _start: Sourcelike[];
     private _end: Sourcelike[];
 
@@ -373,7 +373,7 @@ export class WrappingCode {
     }
 }
 
-export class BaseString {
+class BaseString {
     public _stringType: string;
     public _constStringType: string;
     public _smatch: string;
@@ -821,13 +821,13 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     this.nameForNamedType(classType)
                 ]),
             mapType => {
-                let KeyType = this._stringType.getType();
+                let keyType = this._stringType.getType();
                 if (forceNarrowString) {
-                    KeyType = "std::string";
+                    keyType = "std::string";
                 }
                 return [
                     "std::map<",
-                    KeyType,
+                    keyType,
                     ", ",
                     this.cppType(
                         mapType.values,
@@ -1176,11 +1176,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 const [, , setterName] = defined(this._gettersAndSettersForPropertyName.get(name));
                 const t = p.type;
 
-                let Assignment: WrappingCode;
+                let assignment: WrappingCode;
                 if (this._options.codeFormat) {
-                    Assignment = new WrappingCode(["_x.", setterName, "( "], [")"]);
+                    assignment = new WrappingCode(["_x.", setterName, "("], [")"]);
                 } else {
-                    Assignment = new WrappingCode(["_x.", name, " = "], []);
+                    assignment = new WrappingCode(["_x.", name, " = "], []);
                 }
 
                 if (t instanceof UnionType) {
@@ -1207,7 +1207,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             false
                         );
                         this.emitLine(
-                            Assignment.wrap(
+                            assignment.wrap(
                                 [],
                                 [
                                     this._stringType.wrapEncodingChange(
@@ -1237,7 +1237,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 }
                 if (t.kind === "null" || t.kind === "any") {
                     this.emitLine(
-                        Assignment.wrap(
+                        assignment.wrap(
                             [],
                             [
                                 ourQualifier,
@@ -1268,7 +1268,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     false
                 );
                 this.emitLine(
-                    Assignment.wrap(
+                    assignment.wrap(
                         [],
                         this._stringType.wrapEncodingChange([ourQualifier], cppType, toType, [
                             "_j.at(",
@@ -1305,11 +1305,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     true
                 );
                 const [getterName, ,] = defined(this._gettersAndSettersForPropertyName.get(name));
-                let Getter: Sourcelike[];
+                let getter: Sourcelike[];
                 if (this._options.codeFormat) {
-                    Getter = [getterName, "()"];
+                    getter = [getterName, "()"];
                 } else {
-                    Getter = [name];
+                    getter = [name];
                 }
                 this.emitLine(
                     "_j[",
@@ -1320,7 +1320,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         this._stringType.createStringLiteral([stringEscape(json)])
                     ),
                     "] = ",
-                    this._stringType.wrapEncodingChange([ourQualifier], cppType, toType, ["_x.", Getter]),
+                    this._stringType.wrapEncodingChange([ourQualifier], cppType, toType, ["_x.", getter]),
                     ";"
                 );
             });
@@ -1825,7 +1825,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.ensureBlankLine();
 
                 this.emitBlock(["if (c.", getterPattern, "() != boost::none)"], false, () => {
-                    this.emitLine("", this._stringType.getSMatch(), " result;");
+                    this.emitLine(this._stringType.getSMatch(), " result;");
                     this.emitLine(
                         "std::regex_search(value, result, ",
                         this._stringType.getRegex(),
@@ -2466,7 +2466,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 () => {
                     this.superThis.emitLine("std::ostringstream s;");
                     this.superThis.emitLine("s << j;");
-                    this.superThis.emitLine("return quicktype::Utf16_Utf8<std::string, std::wstring>::convert(s.str()); ");
+                    this.superThis.emitLine("return ", this.superThis.ourQualifier(false), "Utf16_Utf8<std::string, std::wstring>::convert(s.str()); ");
                 }
             );
             this.superThis.ensureBlankLine();
