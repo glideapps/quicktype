@@ -143,7 +143,7 @@ First, install `typescript` globally via `npm`:
 
 Clone this repo and do:
 
-#### Linux
+#### macOS / Linux
 
 ```bash
 npm install
