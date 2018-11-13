@@ -646,6 +646,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             if (this._options.wstring) {
                 this.emitLine("//");
                 this.emitLine("//  You can get std::wstring data back out using");
+                this.emitLine("//");
                 this.forEachTopLevel("none", (_, topLevelName) => {
                     this.emitLine(
                         "//     std::wcout << ",
