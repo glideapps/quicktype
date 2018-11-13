@@ -651,7 +651,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     this.emitLine(
                         "//     std::wcout << ",
                         this.ourQualifier(false),
-                        "wdump((nlogmann::json) ",
+                        "wdump((nlohmann::json) ",
                         topLevelName,
                         ");"
                     );
