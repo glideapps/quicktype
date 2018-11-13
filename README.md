@@ -139,11 +139,24 @@ quicktype pokedex.ts -o src/ios/models.swift
 
 `quicktype` is implemented in TypeScript and requires `nodejs` and `npm` to build and run.
 
+First, install `typescript` globally via `npm`:
+
 Clone this repo and do:
+
+#### macOS / Linux
 
 ```bash
 npm install
 script/quicktype # rebuild (slow) and run (fast)
+```
+
+#### Windows
+
+```bash
+npm install --ignore-scripts # Install dependencies
+npm install -g typescript # Install typescript globally
+tsc --project src/cli # Rebuild
+node dist\cli\index.js # Run
 ```
 
 ### Edit
