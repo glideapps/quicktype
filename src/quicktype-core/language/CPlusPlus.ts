@@ -1423,9 +1423,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected emitUnionTypedefs(u: UnionType, unionName: Name): void {
-        this.emitLine("typedef ", this.variantType(u, false), " ", unionName, ";");
+        this.emitLine("using ", unionName, " = ", this.variantType(u, false), ";");
     }
-    
+
     protected emitUnionHeaders(u: UnionType): void {
         const nonNulls = removeNullFromUnion(u, true)[1];
         const variantType = this.cppTypeInOptional(
@@ -1629,19 +1629,19 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
     protected emitTopLevelTypedef(t: Type, name: Name): void {
         this.emitLine(
-            "typedef ",
+            "using ",
+            name,
+            " = ",
             this.cppType(
                 t,
                 { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false },
                 true,
                 false
             ),
-            " ",
-            name,
             ";"
         );
     }
-    
+
     protected emitAllUnionFunctions(): void {
         this.forEachUniqueUnion(
             "interposing",
