@@ -609,6 +609,14 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this._gettersAndSettersForPropertyName.set(name, getterAndSetterNames);
         return getterAndSetterNames;
     }
+    
+    protected withConst(s: Sourcelike): Sourcelike {
+        if (this._options.westConst) {
+            return ["const ", s];
+        } else {
+            return [s, " const"];
+        }
+    }
 
     protected emitInclude(global: boolean, name: Sourcelike): void {
         this.emitLine("#include ", global ? "<" : '"', name, global ? ">" : '"');
@@ -1015,68 +1023,34 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         this.emitLine("void ", setterName, "(", rendered, " value) { this->", name, " = value; }");
                     }
                 } else {
-                    if(this._options.westConst) {
-                        this.emitLine("const ", rendered, " & ", getterName, "() const { return ", name, "; }");
-                    } else {
-                        this.emitLine(rendered, " const & ", getterName, "() const { return ", name, "; }");                     
-                    }
+                    this.emitLine(this.withConst(rendered), " & ", getterName, "() const { return ", name, "; }");
                     this.emitLine(rendered, " & ", mutableGetterName, "() { return ", name, "; }");
                     if (constraints !== undefined && constraints.has(jsonName)) {
-                        if(this._options.westConst) {
-                            this.emitLine(
-                                "void ",
-                                setterName,
-                                "(const ",
-                                rendered,
-                                " & value) { ",
-                                checkConst,
-                                "(",
-                                this._stringType.createStringLiteral([name]),
-                                ", ",
-                                this.constraintMember(jsonName),
-                                ", value); this->",
-                                name,
-                                " = value; }"
-                            );
-                        } else {
-                            this.emitLine(
-                                "void ",
-                                setterName,
-                                "(",
-                                rendered,
-                                " const & value) { ",
-                                checkConst,
-                                "(",
-                                this._stringType.createStringLiteral([name]),
-                                ", ",
-                                this.constraintMember(jsonName),
-                                ", value); this->",
-                                name,
-                                " = value; }"
-                            );                            
-                        }
+                        this.emitLine(
+                            "void ",
+                            setterName,
+                            "(",
+                            this.withConst(rendered),
+                            " & value) { ",
+                            checkConst,
+                            "(",
+                            this._stringType.createStringLiteral([name]),
+                            ", ",
+                            this.constraintMember(jsonName),
+                            ", value); this->",
+                            name,
+                            " = value; }"
+                        );
                     } else {
-                        if(this._options.westConst) {
-                            this.emitLine(
-                                "void ",
-                                setterName,
-                                "(const ",
-                                rendered,
-                                " & value) { this->",
-                                name,
-                                " = value; }"
-                            );
-                        } else {
-                            this.emitLine(
-                                "void ",
-                                setterName,
-                                "(",
-                                rendered,
-                                " const & value) { this->",
-                                name,
-                                " = value; }"
-                            );                            
-                        }
+                        this.emitLine(
+                            "void ",
+                            setterName,
+                            "(",
+                            this.withConst(rendered),
+                            " & value) { this->",
+                            name,
+                            " = value; }"
+                        );
                     }
                 }
                 this.ensureBlankLine();
@@ -1147,26 +1121,16 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         if (t instanceof MapType && this._stringType !== this.NarrowString) {
             const ourQualifier = this.ourQualifier(true);
             
-            if(this._options.westConst) {
-                this.emitLine("void from_json(const json & j, ", ourQualifier, className, " & x);");
-                this.emitLine("void to_json(json & j, const ", ourQualifier, className, " & x);");
-            } else {
-                this.emitLine("void from_json(json const & j, ", ourQualifier, className, " & x);");
-                this.emitLine("void to_json(json & j, ", ourQualifier, className, " const & x);");
-            }
+            this.emitLine("void from_json(", this.withConst("json") ," & j, ", ourQualifier, className, " & x);");
+            this.emitLine("void to_json(json & j, ", this.withConst([ourQualifier, className]), " & x);");
         }
     }
 
     protected emitClassHeaders(className: Name): void {
         const ourQualifier = this.ourQualifier(true);
         
-        if(this._options.westConst) {
-            this.emitLine("void from_json(const json & j, ", ourQualifier, className, " & x);");
-            this.emitLine("void to_json(json & j, const ", ourQualifier, className, " & x);");
-        } else {
-            this.emitLine("void from_json(json const & j, ", ourQualifier, className, " & x);");
-            this.emitLine("void to_json(json & j, ", ourQualifier, className, " const & x);");
-        }
+        this.emitLine("void from_json(", this.withConst("json")," & j, ", ourQualifier, className, " & x);");
+        this.emitLine("void to_json(json & j, ", this.withConst([ourQualifier, className]), " & x);");
     }
 
     protected emitTopLevelFunction(t: Type, className: Name): void {
@@ -1177,10 +1141,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             let toType: Sourcelike;
 
             this.emitBlock(
-                this._options.westConst ?
-                ["inline void from_json(const json & j, ", ourQualifier, className, "& x)"]:
-                ["inline void from_json(json const & j, ", ourQualifier, className, "& x)"]
-                , false, () => {
+                ["inline void from_json(", this.withConst("json"), " & j, ", ourQualifier, className, "& x)"],
+                false, () => {
                 cppType = this.cppType(
                     t,
                     { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
@@ -1202,10 +1164,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             });
 
             this.emitBlock(
-                this._options.westConst ?
-                ["inline void to_json(json & j, const ", ourQualifier, className, " & x)"] :
-                ["inline void to_json(json & j, ", ourQualifier, className, " const & x)"]
-                , false, () => {
+                ["inline void to_json(json & j, ", this.withConst([ourQualifier, className]), " & x)"],
+                false, () => {
                 cppType = this.cppType(
                     t,
                     { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
@@ -1234,10 +1194,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         let toType: Sourcelike;
 
         this.emitBlock(
-            this._options.westConst ? 
-            ["inline void from_json(const json & j, ", ourQualifier, className, "& x)"] : 
-            ["inline void from_json(json const & j, ", ourQualifier, className, "& x)"]
-            , false, () => {
+            ["inline void from_json(", this.withConst("json")," & j, ", ourQualifier, className, "& x)"],
+            false, () => {
             this.forEachClassProperty(c, "none", (name, json, p) => {
                 const [, , setterName] = defined(this._gettersAndSettersForPropertyName.get(name));
                 const t = p.type;
@@ -1356,10 +1314,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.ensureBlankLine();
         
         this.emitBlock(
-            this._options.westConst ? 
-            ["inline void to_json(json & j, const ", ourQualifier, className, " & x)"] : 
-            ["inline void to_json(json & j, ", ourQualifier, className, " const & x)"]
-            , false, () => {
+            ["inline void to_json(json & j, ", this.withConst([ourQualifier, className]), " & x)"],
+            false, () => {
             this.emitLine("j = json::object();");
             this.forEachClassProperty(c, "none", (name, json, p) => {
                 const t = p.type;
@@ -1430,13 +1386,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             false
         );
         
-        if(this._options.westConst) {
-            this.emitLine("void from_json(const json & j, ", variantType, " & x);");
-            this.emitLine("void to_json(json & j, const ", variantType, " & x);");
-        } else {
-            this.emitLine("void from_json(json const & j, ", variantType, " & x);");
-            this.emitLine("void to_json(json & j, ", variantType, " const & x);");
-        }
+        this.emitLine("void from_json(", this.withConst("json")," & j, ", variantType, " & x);");
+        this.emitLine("void to_json(json & j, ", this.withConst(variantType), " & x);");
     }
 
     protected emitUnionFunctions(u: UnionType): void {
@@ -1461,10 +1412,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         );
 
         this.emitBlock(
-            this._options.westConst ? 
-            ["inline void from_json(const json & j, ", variantType, " & x)"] :
-            ["inline void from_json(json const & j, ", variantType, " & x)"]
-            , false, () => {
+            ["inline void from_json(", this.withConst("json"), " & j, ", variantType, " & x)"],
+            false, () => {
             let onFirst = true;
             for (const [kind, func] of functionForKind) {
                 const typeForKind = iterableFind(nonNulls, t => t.kind === kind);
@@ -1500,10 +1449,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.ensureBlankLine();
         
         this.emitBlock(
-            this._options.westConst ?         
-            ["inline void to_json(json & j, const ", variantType, " & x)"] : 
-            ["inline void to_json(json & j, ", variantType, " const & x)"]
-            , false, () => {
+            ["inline void to_json(json & j, ", this.withConst(variantType), " & x)"],
+            false, () => {
             this.emitBlock("switch (x.which())", false, () => {
                 let i = 0;
                 for (const t of nonNulls) {
@@ -1550,23 +1497,16 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     protected emitEnumHeaders(enumName: Name): void {
         const ourQualifier = this.ourQualifier(true);
         
-        if(this._options.westConst) {
-            this.emitLine("void from_json(const json & j, ", ourQualifier, enumName, " & x);");
-            this.emitLine("void to_json(json & j, const ", ourQualifier, enumName, " & x);");
-        } else {
-            this.emitLine("void from_json(json const & j, ", ourQualifier, enumName, " & x);");
-            this.emitLine("void to_json(json & j, ", ourQualifier, enumName, " const & x);");
-        }
+        this.emitLine("void from_json(", this.withConst("json"), " & j, ", ourQualifier, enumName, " & x);");
+        this.emitLine("void to_json(json & j, ", this.withConst([ourQualifier, enumName]), " & x);");
     }
 
     protected emitEnumFunctions(e: EnumType, enumName: Name): void {
         const ourQualifier = this.ourQualifier(true);
 
         this.emitBlock(
-            this._options.westConst ?
-            ["inline void from_json(const json & j, ", ourQualifier, enumName, " & x)"] :
-            ["inline void from_json(json const & j, ", ourQualifier, enumName, " & x)"]
-            , false, () => {
+            ["inline void from_json(", this.withConst("json"), " & j, ", ourQualifier, enumName, " & x)"],
+            false, () => {
             let onFirst = true;
             this.forEachEnumCase(e, "none", (name, jsonName) => {
                 const maybeElse = onFirst ? "" : "else ";
@@ -1593,10 +1533,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.ensureBlankLine();
         
         this.emitBlock(
-            this._options.westConst ? 
-            ["inline void to_json(json & j, const ", ourQualifier, enumName, " & x)"] : 
-            ["inline void to_json(json & j, ", ourQualifier, enumName, " const & x)"]
-            , false, () => {
+            ["inline void to_json(json & j, ", this.withConst([ourQualifier, enumName]), " & x)"],
+            false, () => {
             this.emitBlock("switch (x)", false, () => {
                 this.forEachEnumCase(e, "none", (name, jsonName) => {
                     this.emitLine(
@@ -1671,31 +1609,17 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitLine("template <typename T>");
         this.emitBlock(["struct adl_serializer<", optionalType, "<T>>"], true, () => {
             
-            if(this._options.westConst) {
-                this.emitBlock(["static void to_json(json & j, const ", optionalType, "<T> & opt)"], false, () => {
-                    this.emitLine("if (!opt) j = nullptr; else j = *opt;");
-                });
+            this.emitBlock(["static void to_json(json & j, ", this.withConst(optionalType), "<T> & opt)"], false, () => {
+                this.emitLine("if (!opt) j = nullptr; else j = *opt;");
+            });
 
-                this.ensureBlankLine();
+            this.ensureBlankLine();
 
-                this.emitBlock(["static ", optionalType, "<T> from_json(const json & j)"], false, () => {
-                    this.emitLine(
-                        `if (j.is_null()) return std::unique_ptr<T>(); else return std::unique_ptr<T>(new T(j.get<T>()));`
-                    );
-                });
-            } else {
-                this.emitBlock(["static void to_json(json & j, ", optionalType, "<T> const & opt)"], false, () => {
-                    this.emitLine("if (!opt) j = nullptr; else j = *opt;");
-                });
-
-                this.ensureBlankLine();
-
-                this.emitBlock(["static ", optionalType, "<T> from_json(json const & j)"], false, () => {
-                    this.emitLine(
-                        `if (j.is_null()) return std::unique_ptr<T>(); else return std::unique_ptr<T>(new T(j.get<T>()));`
-                    );
-                });                
-            }
+            this.emitBlock(["static ", optionalType, "<T> from_json(", this.withConst("json"), " & j)"], false, () => {
+                this.emitLine(
+                    `if (j.is_null()) return std::unique_ptr<T>(); else return std::unique_ptr<T>(new T(j.get<T>()));`
+                );
+            });
         });
     }
 
@@ -1812,10 +1736,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
         const checkConst = this.lookupGlobalName(GlobalNames.CheckConstraint);
         this.emitBlock(
-            this._options.westConst ? 
-            ["void ", checkConst, "(", this._stringType.getConstType(), " name, const ", classConstraint, " & c, int64_t value)"] :
-            ["void ", checkConst, "(", this._stringType.getConstType(), " name, ", classConstraint, " const & c, int64_t value)"]
-            ,
+            ["void ", checkConst, "(", this._stringType.getConstType(), " name, ", this.withConst(classConstraint), " & c, int64_t value)"],            
             false,
             () => {
                 this.emitBlock(
@@ -1872,9 +1793,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.ensureBlankLine();
 
         this.emitBlock(
-            this._options.westConst ? 
-            ["void ", checkConst, "(", this._stringType.getConstType(), " name, const ", classConstraint, " & c, ", this._stringType.getConstType(), " value)"] : 
-            ["void ", checkConst, "(", this._stringType.getConstType(), " name, ", classConstraint, " const & c, ", this._stringType.getConstType(), " value)"],
+            ["void ", checkConst, "(", this._stringType.getConstType(), " name, ", this.withConst(classConstraint), " & c, ", this._stringType.getConstType(), " value)"],
             false,
             () => {
                 this.emitBlock(
@@ -1972,9 +1891,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
         this.emitBlock(
         [
-            this._options.westConst ?
-            "inline json get_untyped(const json & j, const char * property)" :
-            "inline json get_untyped(json const & j, char const * property)"
+            "inline json get_untyped(", this.withConst("json"), " & j, ", this.withConst("char"), " * property)"
         ], false, () => {
             this.emitBlock(["if (j.find(property) != j.end())"], false, () => {
                 this.emitLine("return j.at(property).get<json>();");
@@ -1986,9 +1903,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
         this.emitBlock(
         [
-            this._options.westConst ?
-            "inline json get_untyped(const json & j, std::string property)" : 
-            "inline json get_untyped(json const & j, std::string property)"
+            "inline json get_untyped(", this.withConst("json"), " & j, std::string property)"
         ], false, () => {
             this.emitLine("return get_untyped(j, property.data());");
         });
@@ -1999,9 +1914,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.emitLine("template <typename T>");
             
             this.emitBlock(
-                this._options.westConst ?
-                ["inline ", optionalType, "<T> get_optional(const json & j, const char * property)"]:
-                ["inline ", optionalType, "<T> get_optional(json const & j, char const * property)"],
+                ["inline ", optionalType, "<T> get_optional(", this.withConst("json"), " & j, ", this.withConst("char"), " * property)"],
                 false,
                 () => {
                     this.emitBlock(["if (j.find(property) != j.end())"], false, () => {
@@ -2016,9 +1929,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.emitLine("template <typename T>");
             
             this.emitBlock(
-                this._options.westConst ?
-                ["inline ", optionalType, "<T> get_optional(const json & j, std::string property)"] : 
-                ["inline ", optionalType, "<T> get_optional(json const & j, std::string property)"],
+                ["inline ", optionalType, "<T> get_optional(", this.withConst("json"), " & j, std::string property)"],
                 false,
                 () => {
                     this.emitLine("return get_optional<T>(j, property.data());");
