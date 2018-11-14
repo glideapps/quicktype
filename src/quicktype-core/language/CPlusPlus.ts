@@ -1105,15 +1105,15 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         // Maps need ecoding conversions, since they have a string in the key. Other types don't.
         if (t instanceof MapType && this._stringType !== this.NarrowString) {
             const ourQualifier = this.ourQualifier(true);
-            this.emitLine("void from_json(const json& _j, ", ourQualifier, className, "& _x);");
-            this.emitLine("void to_json(json& _j, const ", ourQualifier, className, "& _x);");
+            this.emitLine("void from_json(const json& j, ", ourQualifier, className, "& x);");
+            this.emitLine("void to_json(json& j, const ", ourQualifier, className, "& x);");
         }
     }
 
     protected emitClassHeaders(className: Name): void {
         const ourQualifier = this.ourQualifier(true);
-        this.emitLine("void from_json(const json& _j, ", ourQualifier, className, "& _x);");
-        this.emitLine("void to_json(json& _j, const ", ourQualifier, className, "& _x);");
+        this.emitLine("void from_json(const json& j, ", ourQualifier, className, "& x);");
+        this.emitLine("void to_json(json& j, const ", ourQualifier, className, "& x);");
     }
 
     protected emitTopLevelFunction(t: Type, className: Name): void {
@@ -1123,7 +1123,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             let cppType: Sourcelike;
             let toType: Sourcelike;
 
-            this.emitBlock(["inline void from_json(const json& _j, ", ourQualifier, className, "& _x)"], false, () => {
+            this.emitBlock(["inline void from_json(const json& j, ", ourQualifier, className, "& x)"], false, () => {
                 cppType = this.cppType(
                     t,
                     { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
@@ -1138,13 +1138,13 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 );
 
                 this.emitLine([
-                    "_x = ",
-                    this._stringType.wrapEncodingChange([ourQualifier], cppType, toType, ["_j.get<", cppType, ">()"]),
+                    "x = ",
+                    this._stringType.wrapEncodingChange([ourQualifier], cppType, toType, ["j.get<", cppType, ">()"]),
                     ";"
                 ]);
             });
 
-            this.emitBlock(["inline void to_json(json& _j, const ", ourQualifier, className, "& _x)"], false, () => {
+            this.emitBlock(["inline void to_json(json& j, const ", ourQualifier, className, "& x)"], false, () => {
                 cppType = this.cppType(
                     t,
                     { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
@@ -1159,8 +1159,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 );
 
                 this.emitLine([
-                    "_j = ",
-                    this._stringType.wrapEncodingChange([ourQualifier], cppType, toType, "_x"),
+                    "j = ",
+                    this._stringType.wrapEncodingChange([ourQualifier], cppType, toType, "x"),
                     ";"
                 ]);
             });
@@ -1172,16 +1172,16 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         let cppType: Sourcelike;
         let toType: Sourcelike;
 
-        this.emitBlock(["inline void from_json(const json& _j, ", ourQualifier, className, "& _x)"], false, () => {
+        this.emitBlock(["inline void from_json(const json& j, ", ourQualifier, className, "& x)"], false, () => {
             this.forEachClassProperty(c, "none", (name, json, p) => {
                 const [, , setterName] = defined(this._gettersAndSettersForPropertyName.get(name));
                 const t = p.type;
 
                 let assignment: WrappingCode;
                 if (this._options.codeFormat) {
-                    assignment = new WrappingCode(["_x.", setterName, "("], [")"]);
+                    assignment = new WrappingCode(["x.", setterName, "("], [")"]);
                 } else {
-                    assignment = new WrappingCode(["_x.", name, " = "], []);
+                    assignment = new WrappingCode(["x.", name, " = "], []);
                 }
 
                 if (t instanceof UnionType) {
@@ -1219,7 +1219,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                                             ourQualifier,
                                             "get_optional<",
                                             cppType,
-                                            ">(_j, ",
+                                            ">(j, ",
                                             this._stringType.wrapEncodingChange(
                                                 [ourQualifier],
                                                 this._stringType.getType(),
@@ -1242,7 +1242,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             [],
                             [
                                 ourQualifier,
-                                "get_untyped(_j, ",
+                                "get_untyped(j, ",
                                 this._stringType.wrapEncodingChange(
                                     [ourQualifier],
                                     this._stringType.getType(),
@@ -1272,7 +1272,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     assignment.wrap(
                         [],
                         this._stringType.wrapEncodingChange([ourQualifier], cppType, toType, [
-                            "_j.at(",
+                            "j.at(",
                             this._stringType.wrapEncodingChange(
                                 [ourQualifier],
                                 this._stringType.getType(),
@@ -1289,8 +1289,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             });
         });
         this.ensureBlankLine();
-        this.emitBlock(["inline void to_json(json& _j, const ", ourQualifier, className, "& _x)"], false, () => {
-            this.emitLine("_j = json::object();");
+        this.emitBlock(["inline void to_json(json& j, const ", ourQualifier, className, "& x)"], false, () => {
+            this.emitLine("j = json::object();");
             this.forEachClassProperty(c, "none", (name, json, p) => {
                 const t = p.type;
                 cppType = this.cppType(
@@ -1313,7 +1313,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     getter = [name];
                 }
                 this.emitLine(
-                    "_j[",
+                    "j[",
                     this._stringType.wrapEncodingChange(
                         [ourQualifier],
                         this._stringType.getType(),
@@ -1321,7 +1321,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         this._stringType.createStringLiteral([stringEscape(json)])
                     ),
                     "] = ",
-                    this._stringType.wrapEncodingChange([ourQualifier], cppType, toType, ["_x.", getter]),
+                    this._stringType.wrapEncodingChange([ourQualifier], cppType, toType, ["x.", getter]),
                     ";"
                 );
             });
@@ -1359,8 +1359,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             false,
             false
         );
-        this.emitLine("void from_json(const json& _j, ", variantType, "& _x);");
-        this.emitLine("void to_json(json& _j, const ", variantType, "& _x);");
+        this.emitLine("void from_json(const json& j, ", variantType, "& x);");
+        this.emitLine("void to_json(json& j, const ", variantType, "& x);");
     }
 
     protected emitUnionFunctions(u: UnionType): void {
@@ -1384,12 +1384,12 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             false
         );
 
-        this.emitBlock(["inline void from_json(const json& _j, ", variantType, "& _x)"], false, () => {
+        this.emitBlock(["inline void from_json(const json& j, ", variantType, "& x)"], false, () => {
             let onFirst = true;
             for (const [kind, func] of functionForKind) {
                 const typeForKind = iterableFind(nonNulls, t => t.kind === kind);
                 if (typeForKind === undefined) continue;
-                this.emitLine(onFirst ? "if" : "else if", " (_j.", func, "())");
+                this.emitLine(onFirst ? "if" : "else if", " (j.", func, "())");
                 this.indent(() => {
                     const cppType = this.cppType(
                         typeForKind,
@@ -1404,9 +1404,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         false
                     );
                     this.emitLine(
-                        "_x = ",
+                        "x = ",
                         this._stringType.wrapEncodingChange([ourQualifier], cppType, toType, [
-                            "_j.get<",
+                            "j.get<",
                             cppType,
                             ">()"
                         ]),
@@ -1418,8 +1418,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.emitLine('else throw "Could not deserialize";');
         });
         this.ensureBlankLine();
-        this.emitBlock(["inline void to_json(json& _j, const ", variantType, "& _x)"], false, () => {
-            this.emitBlock("switch (_x.which())", false, () => {
+        this.emitBlock(["inline void to_json(json& j, const ", variantType, "& x)"], false, () => {
+            this.emitBlock("switch (x.which())", false, () => {
                 let i = 0;
                 for (const t of nonNulls) {
                     this.emitLine("case ", i.toString(), ":");
@@ -1445,11 +1445,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             true
                         );
                         this.emitLine(
-                            "_j = ",
+                            "j = ",
                             this._stringType.wrapEncodingChange([ourQualifier], cppType, toType, [
                                 "boost::get<",
                                 cppType,
-                                ">(_x)"
+                                ">(x)"
                             ]),
                             ";"
                         );
@@ -1464,27 +1464,27 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
     protected emitEnumHeaders(enumName: Name): void {
         const ourQualifier = this.ourQualifier(true);
-        this.emitLine("void from_json(const json& _j, ", ourQualifier, enumName, "& _x);");
-        this.emitLine("void to_json(json& _j, const ", ourQualifier, enumName, "& _x);");
+        this.emitLine("void from_json(const json& j, ", ourQualifier, enumName, "& x);");
+        this.emitLine("void to_json(json& j, const ", ourQualifier, enumName, "& x);");
     }
 
     protected emitEnumFunctions(e: EnumType, enumName: Name): void {
         const ourQualifier = this.ourQualifier(true);
 
-        this.emitBlock(["inline void from_json(const json& _j, ", ourQualifier, enumName, "& _x)"], false, () => {
+        this.emitBlock(["inline void from_json(const json& j, ", ourQualifier, enumName, "& x)"], false, () => {
             let onFirst = true;
             this.forEachEnumCase(e, "none", (name, jsonName) => {
                 const maybeElse = onFirst ? "" : "else ";
                 this.emitLine(
                     maybeElse,
-                    "if (_j == ",
+                    "if (j == ",
                     this._stringType.wrapEncodingChange(
                         [ourQualifier],
                         this._stringType.getType(),
                         this.NarrowString.getType(),
                         [this._stringType.createStringLiteral([stringEscape(jsonName)])]
                     ),
-                    ") _x = ",
+                    ") x = ",
                     ourQualifier,
                     enumName,
                     "::",
@@ -1496,8 +1496,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.emitLine('else throw "Input JSON does not conform to schema";');
         });
         this.ensureBlankLine();
-        this.emitBlock(["inline void to_json(json& _j, const ", ourQualifier, enumName, "& _x)"], false, () => {
-            this.emitBlock("switch (_x)", false, () => {
+        this.emitBlock(["inline void to_json(json& j, const ", ourQualifier, enumName, "& x)"], false, () => {
+            this.emitBlock("switch (x)", false, () => {
                 this.forEachEnumCase(e, "none", (name, jsonName) => {
                     this.emitLine(
                         "case ",
@@ -1505,7 +1505,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         enumName,
                         "::",
                         name,
-                        ": _j = ",
+                        ": j = ",
                         this._stringType.wrapEncodingChange(
                             [ourQualifier],
                             this._stringType.getType(),
