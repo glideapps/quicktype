@@ -1609,7 +1609,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitLine("template <typename T>");
         this.emitBlock(["struct adl_serializer<", optionalType, "<T>>"], true, () => {
             
-            this.emitBlock(["static void to_json(json & j, ", this.withConst(optionalType), "<T> & opt)"], false, () => {
+            this.emitBlock(["static void to_json(json & j, ", this.withConst([optionalType, "<T>"]), " & opt)"], false, () => {
                 this.emitLine("if (!opt) j = nullptr; else j = *opt;");
             });
 
