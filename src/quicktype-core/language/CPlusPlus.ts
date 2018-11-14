@@ -1017,8 +1017,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 } else {
                     if(this._options.constStyle) {
                         this.emitLine("const ", rendered, " & ", getterName, "() const { return ", name, "; }");
-                    }
-                    else {
+                    } else {
                         this.emitLine(rendered, " const & ", getterName, "() const { return ", name, "; }");                     
                     }
                     this.emitLine(rendered, " & ", mutableGetterName, "() { return ", name, "; }");
@@ -1039,8 +1038,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                                 name,
                                 " = value; }"
                             );
-                        }
-                        else {
+                        } else {
                             this.emitLine(
                                 "void ",
                                 setterName,
@@ -1068,8 +1066,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                                 name,
                                 " = value; }"
                             );
-                        }
-                        else {
+                        } else {
                             this.emitLine(
                                 "void ",
                                 setterName,
@@ -1153,8 +1150,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             if(this._options.constStyle) {
                 this.emitLine("void from_json(const json & j, ", ourQualifier, className, " & x);");
                 this.emitLine("void to_json(json & j, const ", ourQualifier, className, " & x);");
-            }
-            else {
+            } else {
                 this.emitLine("void from_json(json const & j, ", ourQualifier, className, " & x);");
                 this.emitLine("void to_json(json & j, ", ourQualifier, className, " const & x);");
             }
@@ -1167,8 +1163,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         if(this._options.constStyle) {
             this.emitLine("void from_json(const json & j, ", ourQualifier, className, " & x);");
             this.emitLine("void to_json(json & j, const ", ourQualifier, className, " & x);");
-        }
-        else {
+        } else {
             this.emitLine("void from_json(json const & j, ", ourQualifier, className, " & x);");
             this.emitLine("void to_json(json & j, ", ourQualifier, className, " const & x);");
         }
@@ -1438,8 +1433,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         if(this._options.constStyle) {
             this.emitLine("void from_json(const json & j, ", variantType, " & x);");
             this.emitLine("void to_json(json & j, const ", variantType, " & x);");
-        }
-        else {
+        } else {
             this.emitLine("void from_json(json const & j, ", variantType, " & x);");
             this.emitLine("void to_json(json & j, ", variantType, " const & x);");
         }
@@ -1559,8 +1553,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         if(this._options.constStyle) {
             this.emitLine("void from_json(const json & j, ", ourQualifier, enumName, " & x);");
             this.emitLine("void to_json(json & j, const ", ourQualifier, enumName, " & x);");
-        } 
-        else {
+        } else {
             this.emitLine("void from_json(json const & j, ", ourQualifier, enumName, " & x);");
             this.emitLine("void to_json(json & j, ", ourQualifier, enumName, " const & x);");
         }
@@ -1690,8 +1683,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         `if (j.is_null()) return std::unique_ptr<T>(); else return std::unique_ptr<T>(new T(j.get<T>()));`
                     );
                 });
-            }
-            else {
+            } else {
                 this.emitBlock(["static void to_json(json & j, ", optionalType, "<T> const & opt)"], false, () => {
                     this.emitLine("if (!opt) j = nullptr; else j = *opt;");
                 });
