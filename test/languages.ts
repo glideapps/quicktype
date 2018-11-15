@@ -366,7 +366,8 @@ export const CPlusPlusLanguage: Language = {
     { unions: "indirection" },
     { "source-style": "multi-source" },
     { "code-format": "with-struct" },
-    { "wstring": "use-wstring" }
+    { "wstring": "use-wstring" },
+    { "const-style": "east-const" }
   ],
   sourceFiles: ["src/language/CPlusPlus.ts"]
 };
