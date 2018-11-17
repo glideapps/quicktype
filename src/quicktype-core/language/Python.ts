@@ -505,9 +505,13 @@ export type ConverterFunction =
     | "str"
     | "to-enum"
     | "list"
+    | "list-of"
     | "to-class"
+    | "to-class-of"
     | "dict"
+    | "dict-of"
     | "union"
+    | "union-of"
     | "from-datetime"
     | "from-stringified-bool"
     | "is-type";
@@ -709,6 +713,35 @@ export class JSONPythonRenderer extends PythonRenderer {
         );
     }
 
+    protected emitListOfConverter(): void {
+        const tvar = this.typeVar();
+        this.emitBlock(
+            [
+                "def from_list_of(f",
+                this.typeHint(": ", this.withTyping("Callable"), "[[", this.withTyping("Any"), "], ", tvar, "]"),
+                ")",
+                this.typeHint(" -> ", this.withTyping("Callable"), "[[", this.withTyping("Any"), "], ", this.withTyping("List"), "[", tvar, "]", "]"),
+                ":"
+            ],
+            () => {
+                this.emitBlock(
+                    [
+                        "def _from_list(",
+                        this.typingDecl("x", "Any"),
+                        ")",
+                        this.typeHint(" -> ", this.withTyping("List"), "[", tvar, "]"),
+                        ":"
+                    ],
+                    () => {
+                        this.emitLine("assert isinstance(x, list)");
+                        this.emitLine("return [f(y) for y in x]");
+                    }
+                );
+                this.emitLine("return _from_list");
+            }
+        );
+    }
+
     protected emitToClassConverter(): void {
         const tvar = this.typeVar();
         this.emitBlock(
@@ -724,6 +757,35 @@ export class JSONPythonRenderer extends PythonRenderer {
             () => {
                 this.emitLine("assert isinstance(x, c)");
                 this.emitLine("return ", this.cast(this.withTyping("Any"), "x"), ".to_dict()");
+            }
+        );
+    }
+
+    protected emitToClassOfConverter(): void {
+        const tvar = this.typeVar();
+        this.emitBlock(
+            [
+                "def to_class_of(c",
+                this.typeHint(": ", this.withTyping("Type"), "[", tvar, "]"),
+                ")",
+                this.typeHint(" -> ", this.withTyping("Callable"), "[[", this.withTyping("Any"), "], dict]"),
+                ":"
+            ],
+            () => {
+                this.emitBlock(
+                    [
+                        "def _to_class(",
+                        this.typingDecl("x", "Any"),
+                        ")",
+                        this.typeHint(" -> dict"),
+                        ":"
+                    ],
+                    () => {
+                        this.emitLine("assert isinstance(x, c)");
+                        this.emitLine("return ", this.cast(this.withTyping("Any"), "x"), ".to_dict()");
+                    }
+                );
+                this.emitLine("return _to_class");
             }
         );
     }
@@ -747,6 +809,34 @@ export class JSONPythonRenderer extends PythonRenderer {
         );
     }
 
+    protected emitDictOfConverter(): void {
+        const tvar = this.typeVar();
+        this.emitBlock(
+            [
+                "def from_dict_of(f",
+                this.typeHint(": ", this.withTyping("Callable"), "[[", this.withTyping("Any"), "], ", tvar, "]"),
+                ")",
+                this.typeHint(" -> ", this.withTyping("Callable"), "[[", this.withTyping("Any"), "], ", this.withTyping("Dict"), "[str, ", tvar, "]", "]"),
+                ":"
+            ],
+            () => {
+                this.emitBlock(
+                    [
+                        "def _from_dict(",
+                        this.typingDecl("x", "Any"),
+                        ")",
+                        this.typeHint(" -> ", this.withTyping("Dict"), "[str, ", tvar, "]"),
+                        ":"
+                    ],
+                    () => {
+                        this.emitLine("assert isinstance(x, dict)");
+                        this.emitLine("return { k: f(v) for (k, v) in x.items() }");
+                    }
+                );
+                this.emitLine("return _from_dict");
+            }
+        );
+    }
     // This is not easily idiomatically typeable in Python.  See
     // https://stackoverflow.com/questions/51066468/computed-types-in-mypy/51084497
     protected emitUnionConverter(): void {
@@ -757,6 +847,18 @@ export class JSONPythonRenderer extends PythonRenderer {
         except:
             pass
     assert False`);
+    }
+
+    protected emitUnionOfConverter(): void {
+        this.emitMultiline(`def from_union_of(fs):
+    def _from_union(x):
+        for f in fs:
+            try:
+                return f(x)
+            except:
+                pass
+        assert False
+    return _from_union`);
     }
 
     protected emitFromDatetimeConverter(): void {
@@ -823,12 +925,20 @@ export class JSONPythonRenderer extends PythonRenderer {
                 return this.emitToEnumConverter();
             case "list":
                 return this.emitListConverter();
+            case "list-of":
+                return this.emitListOfConverter();
             case "to-class":
                 return this.emitToClassConverter();
+            case "to-class-of":
+                return this.emitToClassOfConverter();
             case "dict":
                 return this.emitDictConverter();
+            case "dict-of":
+                return this.emitDictOfConverter();
             case "union":
                 return this.emitUnionConverter();
+            case "union-of":
+                return this.emitUnionOfConverter();
             case "from-datetime":
                 return this.emitFromDatetimeConverter();
             case "from-stringified-bool":
