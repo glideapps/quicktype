@@ -1,6 +1,6 @@
 import { iterableFirst, iterableEvery, setMap } from "collection-utils";
 
-import { Type, ClassType, setOperationCasesEqual, ClassProperty } from "../Type";
+import { Type, ClassType, setOperationCasesEqual, ClassProperty, isPrimitiveStringTypeKind } from "../Type";
 import { removeNullFromType } from "../TypeUtils";
 import { defined, panic } from "../support/Support";
 import { TypeGraph, TypeRef } from "../TypeGraph";
@@ -10,6 +10,7 @@ import { unifyTypes, unionBuilderForUnification } from "../UnifyClasses";
 import { MarkovChain, load, evaluate } from "../MarkovChain";
 
 const mapSizeThreshold = 20;
+const stringMapSizeThreshold = 50;
 
 let markovChain: MarkovChain | undefined = undefined;
 
@@ -30,6 +31,15 @@ function shouldBeMap(properties: ReadonlyMap<string, ClassProperty>): ReadonlySe
     // questions asked.
     if (iterableEvery(properties.keys(), n => /^[0-9]+$/.test(n))) {
         return setMap(properties.values(), cp => cp.type);
+    }
+
+    // If all properties are strings or null then an object must have at least
+    // `stringMapSizeThreshold` to qualify as a map.
+    if (
+        numProperties < stringMapSizeThreshold &&
+        iterableEvery(properties.values(), cp => isPrimitiveStringTypeKind(cp.type.kind) || cp.type.kind === "null")
+    ) {
+        return undefined;
     }
 
     if (numProperties < mapSizeThreshold) {
