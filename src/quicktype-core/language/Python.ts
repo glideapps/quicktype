@@ -517,21 +517,36 @@ type TopLevelConverterNames = {
     toDict: Name;
 };
 
+// A value or a lambda.  All four combinations are valid:
+//
+// * `value` and `lambda`: a value given by applying `value` to `lambda`, i.e. `lambda(value)`
+// * `lambda` only: a lambda given by `lambda`
+// * `value` only: a value given by `value`
+// * neither: the identity function, i.e. `lambda x: x`
 export type ValueOrLambda = {
     value: Sourcelike | undefined;
     lambda?: MultiWord;
 };
 
+// Return the result of composing `input` and `f`.  `input` can be a
+// value or a lambda, but `f` must be a lambda or a TypeScript function
+// (i.e. it can't be a value).
+//
+// * If `input` is a value, the result is `f(input)`.
+// * If `input` is a lambda, the result is `lambda x: f(input(x))`
 function compose(input: ValueOrLambda, f: (arg: Sourcelike) => Sourcelike): ValueOrLambda;
 function compose(input: ValueOrLambda, f: ValueOrLambda): ValueOrLambda;
 function compose(input: ValueOrLambda, f: ValueOrLambda | ((arg: Sourcelike) => Sourcelike)): ValueOrLambda {
     if (typeof f === "function") {
         if (input.value !== undefined) {
+            // `input` is a value, so just apply `f` to its source form.
             return { value: f(makeValue(input)) };
         }
         if (input.lambda !== undefined) {
+            // `input` is a lambda, so build `lambda x: f(input(x))`.
             return { lambda: multiWord(" ", "lambda x:", f([parenIfNeeded(input.lambda), "(x)"])), value: undefined };
         }
+        // `input` is the identify function, so the composition is `lambda x: f(x)`.
         return { lambda: multiWord(" ", "lambda x:", f("x")), value: undefined };
     }
 
@@ -539,36 +554,45 @@ function compose(input: ValueOrLambda, f: ValueOrLambda | ((arg: Sourcelike) => 
         return panic("Cannot compose into a value");
     }
     if (f.lambda === undefined) {
+        // `f` is the identity function, so the result is just `input`.
         return input;
     }
 
     if (input.value === undefined) {
+        // `input` is a lambda
         if (input.lambda === undefined) {
+            // `input` is the identity function, so the result is just `f`.
             return f;
         }
+        // `input` is a lambda, so the result is `lambda x: f(input(x))`.
         return {
             lambda: multiWord("", "lambda x: ", parenIfNeeded(f.lambda), "(", parenIfNeeded(input.lambda), "(x))"),
             value: undefined
         };
     }
 
+    // `input` is a value, so return `f(input)`.
     return { lambda: f.lambda, value: makeValue(input) };
 }
 
 const identity: ValueOrLambda = { value: undefined };
 
+// If `vol` is a lambda, return it in its source form.  If it's
+// a value, return a `lambda` that returns the value.
 function makeLambda(vol: ValueOrLambda): MultiWord {
     if (vol.lambda !== undefined) {
         if (vol.value === undefined) {
             return vol.lambda;
         }
-        return multiWord("", "lambda x: ", parenIfNeeded(vol.lambda), "(x)");
+        return multiWord("", "lambda x: ", parenIfNeeded(vol.lambda), "(", vol.value, ")");
     } else if (vol.value !== undefined) {
         return multiWord(" ", "lambda x:", vol.value);
     }
     return multiWord(" ", "lambda x:", "x");
 }
 
+// If `vol` is a value, return the value in its source form.
+// Calling this with `vol` being a lambda is not allowed.
 function makeValue(vol: ValueOrLambda): Sourcelike {
     if (vol.value === undefined) {
         return panic("Cannot make value from lambda without value");
@@ -840,6 +864,7 @@ export class JSONPythonRenderer extends PythonRenderer {
         }
     }
 
+    // Return the name of the Python converter function `cf`.
     protected conv(cf: ConverterFunction): Sourcelike {
         this._deserializerFunctions.add(cf);
         const name = cf.replace(/-/g, "_");
@@ -847,6 +872,7 @@ export class JSONPythonRenderer extends PythonRenderer {
         return ["from_", name];
     }
 
+    // Applies the converter function to `arg`
     protected convFn(cf: ConverterFunction, arg: ValueOrLambda): ValueOrLambda {
         return compose(
             arg,
@@ -987,6 +1013,9 @@ export class JSONPythonRenderer extends PythonRenderer {
         }
     }
 
+    // Returns the code to deserialize `value` as type `t`.  If `t` has
+    // an associated transformer, the code for that transformer is
+    // returned.
     protected deserializer(value: ValueOrLambda, t: Type): ValueOrLambda {
         const xf = transformationForType(t);
         if (xf !== undefined) {
