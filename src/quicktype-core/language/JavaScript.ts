@@ -2,6 +2,7 @@ import { arrayIntercalate } from "collection-utils";
 
 import { Type, ClassProperty, ClassType, ObjectType } from "../Type";
 import { matchType, directlyReachableSingleNamedType } from "../TypeUtils";
+import { acronymOption, acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
 import {
     utf16LegalizeCharacters,
     utf16StringEscape,
@@ -23,6 +24,7 @@ import { RenderContext } from "../Renderer";
 import { isES3IdentifierPart, isES3IdentifierStart } from "./JavaScriptUnicodeMaps";
 
 export const javaScriptOptions = {
+    acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
     runtimeTypecheck: new BooleanOption("runtime-typecheck", "Verify JSON.parse results at runtime", true)
 };
 
@@ -46,7 +48,10 @@ export class JavaScriptTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [javaScriptOptions.runtimeTypecheck];
+        return [
+            javaScriptOptions.runtimeTypecheck,
+            javaScriptOptions.acronymStyle
+        ];
     }
 
     get supportsOptionalClassProperties(): boolean {
@@ -67,7 +72,11 @@ export class JavaScriptTargetLanguage extends TargetLanguage {
 
 export const legalizeName = utf16LegalizeCharacters(isES3IdentifierPart);
 
-export function nameStyle(original: string, upper: boolean): string {
+export function nameStyle(
+    original: string,
+    upper: boolean,
+    acronymsStyle: (s: string) => string = allUpperWordStyle
+): string {
     const words = splitIntoWords(original);
     return combineWords(
         words,
@@ -75,7 +84,7 @@ export function nameStyle(original: string, upper: boolean): string {
         upper ? firstUpperWordStyle : allLowerWordStyle,
         firstUpperWordStyle,
         upper ? allUpperWordStyle : allLowerWordStyle,
-        allUpperWordStyle,
+        acronymsStyle,
         "",
         isES3IdentifierStart
     );
@@ -93,7 +102,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
     }
 
     protected makeNamedTypeNamer(): Namer {
-        return funPrefixNamer("types", s => nameStyle(s, true));
+        return funPrefixNamer("types", s => nameStyle(s, true, acronymStyle(this._jsOptions.acronymStyle)));
     }
 
     protected namerForObjectProperty(): Namer {
@@ -105,7 +114,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return funPrefixNamer("enum-cases", s => nameStyle(s, true));
+        return funPrefixNamer("enum-cases", s => nameStyle(s, true, acronymStyle(this._jsOptions.acronymStyle)));
     }
 
     protected namedTypeToNameForTopLevel(type: Type): Type | undefined {

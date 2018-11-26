@@ -590,7 +590,8 @@ export const TypeScriptLanguage: Language = {
   quickTestRendererOptions: [
     { "runtime-typecheck": "false" },
     { "nice-property-names": "true" },
-    { "declare-unions": "true" }
+    { "declare-unions": "true" },
+    { "acronym-style": "pascal" },
   ],
   sourceFiles: ["src/language/TypeScript.ts"]
 };
