@@ -11,7 +11,6 @@ import {
     JavaScriptRenderer,
     JavaScriptTypeAnnotations,
     legalizeName,
-    nameStyle
 } from "./JavaScript";
 import { defined, panic } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
@@ -84,8 +83,6 @@ function quotePropertyName(original: string): string {
     }
 }
 
-const nicePropertiesNamingFunction = funPrefixNamer("properties", s => nameStyle(s, false));
-
 export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
     constructor(
         targetLanguage: TargetLanguage,
@@ -97,7 +94,7 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
 
     protected namerForObjectProperty(): Namer {
         if (this._tsFlowOptions.nicePropertyNames) {
-            return nicePropertiesNamingFunction;
+            return funPrefixNamer("properties", s => super.nameStyle(s, false));
         } else {
             return super.namerForObjectProperty();
         }

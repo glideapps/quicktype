@@ -7,9 +7,9 @@ import {
     utf16LegalizeCharacters,
     utf16StringEscape,
     splitIntoWords,
+    capitalize,
     combineWords,
     firstUpperWordStyle,
-    allUpperWordStyle,
     camelCase,
     allLowerWordStyle
 } from "../support/Strings";
@@ -72,24 +72,6 @@ export class JavaScriptTargetLanguage extends TargetLanguage {
 
 export const legalizeName = utf16LegalizeCharacters(isES3IdentifierPart);
 
-export function nameStyle(
-    original: string,
-    upper: boolean,
-    acronymsStyle: (s: string) => string = allUpperWordStyle
-): string {
-    const words = splitIntoWords(original);
-    return combineWords(
-        words,
-        legalizeName,
-        upper ? firstUpperWordStyle : allLowerWordStyle,
-        firstUpperWordStyle,
-        upper ? allUpperWordStyle : allLowerWordStyle,
-        acronymsStyle,
-        "",
-        isES3IdentifierStart
-    );
-}
-
 const identityNamingFunction = funPrefixNamer("properties", s => s);
 
 export class JavaScriptRenderer extends ConvenienceRenderer {
@@ -101,8 +83,26 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
         super(targetLanguage, renderContext);
     }
 
+    protected nameStyle(
+        original: string,
+        upper: boolean,
+    ): string {
+        const acronyms = acronymStyle(this._jsOptions.acronymStyle);
+        const words = splitIntoWords(original);
+        return combineWords(
+            words,
+            legalizeName,
+            upper ? firstUpperWordStyle : allLowerWordStyle,
+            firstUpperWordStyle,
+            upper ? s => capitalize(acronyms(s)) : allLowerWordStyle,
+            acronyms,
+            "",
+            isES3IdentifierStart
+        );
+    }
+
     protected makeNamedTypeNamer(): Namer {
-        return funPrefixNamer("types", s => nameStyle(s, true, acronymStyle(this._jsOptions.acronymStyle)));
+        return funPrefixNamer("types", s => this.nameStyle(s, true));
     }
 
     protected namerForObjectProperty(): Namer {
@@ -114,7 +114,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return funPrefixNamer("enum-cases", s => nameStyle(s, true, acronymStyle(this._jsOptions.acronymStyle)));
+        return funPrefixNamer("enum-cases", s => this.nameStyle(s, true));
     }
 
     protected namedTypeToNameForTopLevel(type: Type): Type | undefined {
