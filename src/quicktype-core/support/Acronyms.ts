@@ -1109,7 +1109,7 @@ export enum AcronymStyleOptions {
 export const acronymOption = function(defaultOption: AcronymStyleOptions) {
     return new EnumOption(
         "acronym-style",
-        "acronym naming convention",
+        "Acronym naming style",
         [
             [AcronymStyleOptions.Original, AcronymStyleOptions.Original],
             [AcronymStyleOptions.Pascal, AcronymStyleOptions.Pascal],
