@@ -94,7 +94,7 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
 
     protected namerForObjectProperty(): Namer {
         if (this._tsFlowOptions.nicePropertyNames) {
-            return funPrefixNamer("properties", s => super.nameStyle(s, false));
+            return funPrefixNamer("properties", s => this.nameStyle(s, false));
         } else {
             return super.namerForObjectProperty();
         }
