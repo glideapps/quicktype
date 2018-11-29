@@ -581,6 +581,13 @@ function parseOptions(definitions: OptionDefinition[], argv: string[], partial: 
         assert(!partial, "Partial option parsing should not have failed");
         return messageError("DriverCLIOptionParsingFailed", { message: e.message });
     }
+    for (const k of Object.keys(opts)) {
+        if (opts[k] === null) {
+            return messageError("DriverCLIOptionParsingFailed", {
+                message: `Missing value for command line option "${k}"`
+            });
+        }
+    }
 
     const options: { rendererOptions: RendererOptions; [key: string]: any } = { rendererOptions: {} };
     for (const o of definitions) {
