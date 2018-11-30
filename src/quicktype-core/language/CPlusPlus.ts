@@ -106,7 +106,7 @@ export const cPlusPlusOptions = {
         pascalUpperAcronymsValue,
         camelUpperAcronymsValue
     ]),
-    boost: new BooleanOption("boost", "Do not require a dependency on boost (Requires C++17)", true)
+    boost: new BooleanOption("boost", "Require a dependency on boost. Without boost, C++17 is required", true)
 };
 
 export class CPlusPlusTargetLanguage extends TargetLanguage {
