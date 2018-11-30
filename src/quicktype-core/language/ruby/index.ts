@@ -164,7 +164,7 @@ export class RubyRenderer extends ConvenienceRenderer {
             _anyType => ["Types::Any", optional],
             _nullType => ["Types::Nil", optional],
             _boolType => ["Types::Bool", optional],
-            _integerType => ["Types::Int", optional],
+            _integerType => ["Types::Integer", optional],
             _doubleType => ["Types::Double", optional],
             _stringType => ["Types::String", optional],
             arrayType => ["Types.Array(", this.dryType(arrayType.items), ")", optional],
@@ -569,7 +569,7 @@ export class RubyRenderer extends ConvenienceRenderer {
                         double: has.double || t.kind === "double"
                     };
                 });
-                if (has.int) declarations.push([["Int"], [` = ${this._options.strictness}Int`]]);
+                if (has.int) declarations.push([["Integer"], [` = ${this._options.strictness}Int`]]);
                 if (this._options.strictness === Strictness.Strict) {
                     if (has.nil) declarations.push([["Nil"], [` = ${this._options.strictness}Nil`]]);
                 }
