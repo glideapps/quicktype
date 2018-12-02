@@ -30,8 +30,8 @@
         "pluralize": "^7.0.0",
         "stream-json": "1.1.3",
         "string-to-stream": "^1.1.0",
-        "typescript-json-schema": "quicktype/typescript-json-schema#8ce897297cd101605a8f331e439e3281585ce12e",
-        "unicode-properties": "github:quicktype/unicode-properties#dist",
+        "@mark.probst/typescript-json-schema": "~0.31.0",
+        "@mark.probst/unicode-properties": "~1.1.0",
         "urijs": "^1.19.1",
         "uuid": "^3.2.1",
         "wordwrap": "^1.0.0"
