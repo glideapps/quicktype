@@ -328,7 +328,7 @@ export const CPlusPlusLanguage: Language = {
   base: "test/fixtures/cplusplus",
   setupCommand:
     "curl -o json.hpp https://raw.githubusercontent.com/nlohmann/json/87df1d6708915ffbfa26a051ad7562ecc22e5579/src/json.hpp",
-  compileCommand: "g++ -O0 -o quicktype -std=c++14 main.cpp",
+  compileCommand: "g++ -O0 -o quicktype -std=c++17 main.cpp",
   runCommand(sample: string) {
     return `./quicktype "${sample}"`;
   },
@@ -367,7 +367,8 @@ export const CPlusPlusLanguage: Language = {
     { "source-style": "multi-source" },
     { "code-format": "with-struct" },
     { "wstring": "use-wstring" },
-    { "const-style": "east-const" }
+    { "const-style": "east-const" },
+    { "boost": "no-boost"}
   ],
   sourceFiles: ["src/language/CPlusPlus.ts"]
 };
