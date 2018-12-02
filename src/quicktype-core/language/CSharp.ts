@@ -48,7 +48,7 @@ import {
 } from "../Transformers";
 import { RenderContext } from "../Renderer";
 
-const unicode = require("unicode-properties");
+const unicode = require("@mark.probst/unicode-properties");
 
 export type Version = 5 | 6;
 export type OutputFeatures = { helpers: boolean; attributes: boolean };
