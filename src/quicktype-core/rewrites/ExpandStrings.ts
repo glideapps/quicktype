@@ -5,7 +5,8 @@ import {
     iterableReduce,
     setUnion,
     setIntersect,
-    setIsSuperset
+    setIsSuperset,
+    areEqual
 } from "collection-utils";
 
 import { PrimitiveType } from "../Type";
@@ -152,11 +153,13 @@ export function expandStrings(ctx: RunContext, graph: TypeGraph, inference: Enum
             return builder.getStringType(attributes, StringTypes.unrestricted, forwardingRef);
         }
 
+        const setMatches = inference === "all" ? areEqual : setIsSuperset;
+
         const types: TypeRef[] = [];
         const cases = defined(mappedStringTypes.cases);
         if (cases.size > 0) {
             const keys = new Set(cases.keys());
-            const fullCases = enumSets.find(s => setIsSuperset(s, keys));
+            const fullCases = enumSets.find(s => setMatches(s, keys));
             if (inference !== "none" && !isAlwaysEmptyString(Array.from(keys)) && fullCases !== undefined) {
                 types.push(builder.getEnumType(emptyTypeAttributes, fullCases));
             } else {
