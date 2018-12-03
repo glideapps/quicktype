@@ -368,7 +368,7 @@ export const CPlusPlusLanguage: Language = {
     { "code-format": "with-struct" },
     { "wstring": "use-wstring" },
     { "const-style": "east-const" },
-    { "boost": "no-boost"}
+    { "boost": "false"}
   ],
   sourceFiles: ["src/language/CPlusPlus.ts"]
 };
