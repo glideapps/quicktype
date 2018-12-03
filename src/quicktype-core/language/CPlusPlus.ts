@@ -458,6 +458,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     private _optionalType: string;
     private _nulloptType: string;
     private _variantType: string;
+    private _variantIndexMethodName: string;
 
     protected readonly typeNamingStyle: NamingStyle;
     protected readonly enumeratorNamingStyle: NamingStyle;
@@ -496,10 +497,12 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this._optionalType = "boost::optional";
             this._nulloptType = "boost::none";
             this._variantType = "boost::variant";
+            this._variantIndexMethodName = "which";
         } else {
             this._optionalType = "std::optional";
             this._nulloptType = "std::nullopt";
             this._variantType = "std::variant";
+            this._variantIndexMethodName = "index";
         }
 
         this.setupGlobalNames();
@@ -1473,7 +1476,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitBlock(
             ["inline void to_json(json & j, ", this.withConst(variantType), " & x)"],
             false, () => {
-            this.emitBlock("switch (x.which())", false, () => {
+            this.emitBlock(["switch (x.", this._variantIndexMethodName, "())"], false, () => {
                 let i = 0;
                 for (const t of nonNulls) {
                     this.emitLine("case ", i.toString(), ":");
