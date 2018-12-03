@@ -32,6 +32,12 @@ RUN apt-get install dotnet-sdk-2.0.0 --assume-yes
 
 # Install Boost for C++
 RUN apt-get install libboost-all-dev --assume-yes
+RUN apt-get update && apt-get install software-properties-common python-software-properties --assume-yes
+RUN add-apt-repository ppa:jonathonf/gcc-7.1
+RUN apt-get update
+RUN apt-get install g++-7 --assume-yes
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7
+RUN update-alternatives --config gcc
 
 # Install Rust
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
@@ -51,7 +57,6 @@ RUN /bin/bash -c "source /root/.sdkman/bin/sdkman-init.sh && sdk install kotlin"
 ENV PATH="/root/.sdkman/candidates/kotlin/current/bin:${PATH}"
 
 # Python
-RUN apt-get install software-properties-common python-software-properties --assume-yes
 RUN add-apt-repository ppa:jonathonf/python-3.6
 RUN apt-get update
 RUN apt-get install python3.6 --assume-yes
