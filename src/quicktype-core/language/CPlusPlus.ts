@@ -105,7 +105,8 @@ export const cPlusPlusOptions = {
         camelValue,
         pascalUpperAcronymsValue,
         camelUpperAcronymsValue
-    ])
+    ]),
+    boost: new BooleanOption("boost", "Require a dependency on boost. Without boost, C++17 is required", true)
 };
 
 export class CPlusPlusTargetLanguage extends TargetLanguage {
@@ -126,7 +127,8 @@ export class CPlusPlusTargetLanguage extends TargetLanguage {
             cPlusPlusOptions.typeNamingStyle,
             cPlusPlusOptions.memberNamingStyle,
             cPlusPlusOptions.enumeratorNamingStyle,
-            cPlusPlusOptions.enumType
+            cPlusPlusOptions.enumType,
+            cPlusPlusOptions.boost
         ];
     }
 
@@ -453,6 +455,10 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     private _forbiddenGlobalNames: string[];
     private readonly _memberNamingFunction: Namer;
     private _stringType: StringType;
+    private _optionalType: string;
+    private _nulloptType: string;
+    private _variantType: string;
+    private _variantIndexMethodName: string;
 
     protected readonly typeNamingStyle: NamingStyle;
     protected readonly enumeratorNamingStyle: NamingStyle;
@@ -485,6 +491,18 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this._stringType = this.WideString;
         } else {
             this._stringType = this.NarrowString;
+        }
+
+        if (_options.boost) {
+            this._optionalType = "boost::optional";
+            this._nulloptType = "boost::none";
+            this._variantType = "boost::variant";
+            this._variantIndexMethodName = "which";
+        } else {
+            this._optionalType = "std::optional";
+            this._nulloptType = "std::nullopt";
+            this._variantType = "std::variant";
+            this._variantIndexMethodName = "index";
         }
 
         this.setupGlobalNames();
@@ -633,8 +651,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         } else if (!this._options.justTypes) {
             this.emitCommentLines([
                 " To parse this JSON data, first install",
-                "",
-                "     Boost     http://www.boost.org",
+                "",]);
+            if (this._options.boost) {
+                this.emitCommentLines(["     Boost     http://www.boost.org"]);
+            }
+            this.emitCommentLines([
                 "     json.hpp  https://github.com/nlohmann/json",
                 "",
                 " Then include this file, and then do",
@@ -679,7 +700,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.ensureBlankLine();
 
         if (this.haveNamedUnions) {
-            this.emitInclude(true, "boost/variant.hpp");
+            if (this._options.boost) {
+                this.emitInclude(true, "boost/variant.hpp");
+            } else {
+                this.emitInclude(true, "variant");
+            }
         }
         if (!this._options.justTypes) {
             if (!this._options.includeLocation) {
@@ -771,7 +796,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 )
             );
         }
-        return ["boost::variant<", typeList, ">"];
+        return [this._variantType, "<", typeList, ">"];
     }
 
     protected variantType(u: UnionType, inJsonNamespace: boolean): Sourcelike {
@@ -1068,15 +1093,15 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             res.set(jsonName, [
                 this.constraintMember(jsonName),
                  "(",
-                (minMax !== undefined && minMax[0] !== undefined) ? String(minMax[0]) : "boost::none",
+                (minMax !== undefined && minMax[0] !== undefined) ? String(minMax[0]) : this._nulloptType,
                 ", ",
-                (minMax !== undefined && minMax[1] !== undefined) ? String(minMax[1]) : "boost::none",
+                (minMax !== undefined && minMax[1] !== undefined) ? String(minMax[1]) : this._nulloptType,
                 ", ",
-                (minMaxLength !== undefined && minMaxLength[0] !== undefined) ? String(minMaxLength[0]) : "boost::none",
+                (minMaxLength !== undefined && minMaxLength[0] !== undefined) ? String(minMaxLength[0]) : this._nulloptType,
                 ", ",
-                (minMaxLength !== undefined && minMaxLength[1] !== undefined) ? String(minMaxLength[1]) : "boost::none",
+                (minMaxLength !== undefined && minMaxLength[1] !== undefined) ? String(minMaxLength[1]) : this._nulloptType,
                 ", ",
-                (pattern === undefined) ? "boost::none" : [this._stringType.getType(), "(", this._stringType.createStringLiteral([pattern]), ")"],
+                (pattern === undefined) ? this._nulloptType : [this._stringType.getType(), "(", this._stringType.createStringLiteral([pattern]), ")"],
                 ")"
             ]);
         });
@@ -1451,7 +1476,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitBlock(
             ["inline void to_json(json & j, ", this.withConst(variantType), " & x)"],
             false, () => {
-            this.emitBlock("switch (x.which())", false, () => {
+            this.emitBlock(["switch (x.", this._variantIndexMethodName, "())"], false, () => {
                 let i = 0;
                 for (const t of nonNulls) {
                     this.emitLine("case ", i.toString(), ":");
@@ -1479,7 +1504,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         this.emitLine(
                             "j = ",
                             this._stringType.wrapEncodingChange([ourQualifier], cppType, toType, [
-                                "boost::get<",
+                                this._options.boost ? "boost::get<" : "std::get<",
                                 cppType,
                                 ">(x)"
                             ]),
@@ -1666,7 +1691,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.emitLine("private:");
             let constraintMembers: ConstraintMember[] = this.getConstraintMembers();
             for (const member of constraintMembers) {
-                this.emitMember(["boost::optional<", member.cppType, ">"], this.lookupMemberName(member.name));
+                this.emitMember([this._optionalType, "<", member.cppType, ">"], this.lookupMemberName(member.name));
             }
             this.ensureBlankLine();
             this.emitLine("public:");
@@ -1674,7 +1699,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.indent(() => {
                 this.iterableForEach(constraintMembers, ({ name, cppType }, pos) => {
                     const comma = pos === "first" || pos === "middle" ? "," : [];
-                    this.emitLine("boost::optional<", cppType, "> ", this.lookupMemberName(name), comma);
+                    this.emitLine(this._optionalType, "<", cppType, "> ", this.lookupMemberName(name), comma);
                 });
             });
 
@@ -1740,7 +1765,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             false,
             () => {
                 this.emitBlock(
-                    ["if (c.", getterMinValue, "() != boost::none && value < *c.", getterMinValue, "())"],
+                    ["if (c.", getterMinValue, "() != ", this._nulloptType, " && value < *c.", getterMinValue, "())"],
                     false,
                     () => {
                         this.emitLine(
@@ -1765,7 +1790,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.ensureBlankLine();
 
                 this.emitBlock(
-                    ["if (c.", getterMaxValue, "() != boost::none && value > *c.", getterMaxValue, "())"],
+                    ["if (c.", getterMaxValue, "() != ", this._nulloptType, " && value > *c.", getterMaxValue, "())"],
                     false,
                     () => {
                         this.emitLine(
@@ -1797,7 +1822,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             false,
             () => {
                 this.emitBlock(
-                    ["if (c.", getterMinLength, "() != boost::none && value.length() < *c.", getterMinLength, "())"],
+                    ["if (c.", getterMinLength, "() != ", this._nulloptType, " && value.length() < *c.", getterMinLength, "())"],
                     false,
                     () => {
                         this.emitLine(
@@ -1822,7 +1847,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.ensureBlankLine();
 
                 this.emitBlock(
-                    ["if (c.", getterMaxLength, "() != boost::none && value.length() > *c.", getterMaxLength, "())"],
+                    ["if (c.", getterMaxLength, "() != ", this._nulloptType, " && value.length() > *c.", getterMaxLength, "())"],
                     false,
                     () => {
                         this.emitLine(
@@ -1846,7 +1871,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 );
                 this.ensureBlankLine();
 
-                this.emitBlock(["if (c.", getterPattern, "() != boost::none)"], false, () => {
+                this.emitBlock(["if (c.", getterPattern, "() != ", this._nulloptType, ")"], false, () => {
                     this.emitLine(this._stringType.getSMatch(), " result;");
                     this.emitLine(
                         "std::regex_search(value, result, ",
@@ -1944,7 +1969,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.ensureBlankLine();
 
         if (this._options.codeFormat) {
-            this.emitInclude(true, `boost/optional.hpp`);
+            if (this._options.boost) {
+                this.emitInclude(true, `boost/optional.hpp`);
+            }   else {
+                this.emitInclude(true, `optional`);
+            }
             this.emitInclude(true, `stdexcept`);
             this.emitInclude(true, `regex`);
         }
