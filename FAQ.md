@@ -3,7 +3,7 @@
 -   [What is this?](#what-is-this)
 -   [How does this work?](#how-does-this-work)
 -   [How do I use this with my code?](#how-do-i-use-this-with-my-code)
--   [Why does quicktype complain about my JSON?](#why-does-quicktype-complain-about-my-json)
+-   [No code appears when I paste my JSON](#why-does-quicktype-complain-about-my-json)
 -   [I think I found a bug!](#i-think-i-found-a-bug)
 -   [When will you support my favorite language?](#when-will-you-support-my-favorite-language)
 -   [Why do my types have weird names?](#why-do-my-types-have-weird-names)
@@ -27,13 +27,15 @@ You paste JSON on the left, and code appears on the right. [This video](https://
 
 The generated code has comments at the start with a short code sample that shows how to convert a JSON string to instances of the generated types. You can also go the other way, which is very easy, too, but you'll have to look at the generated code to see how it works.
 
-## Why does quicktype complain about my JSON?
+## No code appears when I paste my JSON
 
-Probably because your JSON is invalid. The two most common issues we're seeing are
+This is probably because your JSON is invalid. The most common issues we're seeing are
 
 -   Trailing commas in arrays and objects: `[1, 2, 3]` is valid JSON, while `[1, 2, 3,]` is not.
 
 -   Unquoted property keys in objects: `{ "name": "Mark" }` is valid JSON, while `{ name: "Mark" }` is not.
+
+-   Comments: JSON does not support comments.
 
 If you're unsure whether your JSON is valid, please use [JSONLint](https://jsonlint.com).
 
