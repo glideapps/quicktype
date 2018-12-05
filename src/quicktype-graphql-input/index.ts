@@ -234,10 +234,11 @@ class GQLQuery {
                 result = builder.getEnumType(makeNames(name, fieldName, containingTypeName), new Set(values));
                 break;
             case TypeKind.INPUT_OBJECT:
-                return panic("FIXME: Support input objects");
+                // FIXME: Support input objects
+                return panic("Input objects not supported");
             case TypeKind.LIST:
                 if (!fieldType.ofType) {
-                    return panic("No type for list.");
+                    return panic("No type for list");
                 }
                 result = builder.getArrayType(
                     emptyTypeAttributes,
@@ -328,7 +329,7 @@ class GQLQuery {
     };
 
     makeType(builder: TypeBuilder, query: OperationDefinitionNode, queryName: string): TypeRef {
-        if(query.operation === "query") {
+        if (query.operation === "query") {
             return this.makeIRTypeFromSelectionSet(
                 builder,
                 query.selectionSet,
