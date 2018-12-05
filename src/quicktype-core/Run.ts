@@ -601,6 +601,11 @@ function offsetSpan(span: Span, lineOffset: number): Span {
     return { start: offsetLocation(span.start, lineOffset), end: offsetLocation(span.end, lineOffset) };
 }
 
+/**
+ * Combines a multi-file render result into a single output.  All the files
+ * are concatenated and prefixed with a `//`-style comment giving the
+ * filename.
+ */
 export function combineRenderResults(result: MultiFileRenderResult): SerializedRenderResult {
     if (result.size <= 1) {
         const first = mapFirst(result);
