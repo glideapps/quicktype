@@ -14,7 +14,7 @@
     "dependencies": {
         "quicktype-core": "the build script replaces this",
         "typescript": "~3.2.1",
-        "@mark.probst/typescript-json-schema": "~0.31.0"
+        "@mark.probst/typescript-json-schema": "~0.32.0"
     },
     "devDependencies": {
         "@types/node": "^8.10.10",
