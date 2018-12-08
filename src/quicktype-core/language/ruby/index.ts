@@ -569,7 +569,7 @@ export class RubyRenderer extends ConvenienceRenderer {
                         double: has.double || t.kind === "double"
                     };
                 });
-                if (has.int) declarations.push([["Integer"], [` = ${this._options.strictness}Int`]]);
+                if (has.int) declarations.push([["Integer"], [` = ${this._options.strictness}Integer`]]);
                 if (this._options.strictness === Strictness.Strict) {
                     if (has.nil) declarations.push([["Nil"], [` = ${this._options.strictness}Nil`]]);
                 }
