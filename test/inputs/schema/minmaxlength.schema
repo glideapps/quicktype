@@ -26,6 +26,16 @@
         }
       ]
     },
+    "inUnion": {
+      "oneOf": [
+        {
+          "type": "number"
+        },
+        {
+          "$ref": "#/properties/minmaxlength"
+        }
+      ]
+    },
     "minMaxUnion": {
       "oneOf": [
         {
@@ -57,5 +67,14 @@
       ]
     }
   },
-  "required": ["minlength", "maxlength", "minmaxlength", "union", "minMaxUnion", "intersection", "minMaxIntersection"]
+  "required": [
+    "minlength",
+    "maxlength",
+    "minmaxlength",
+    "union",
+    "inUnion",
+    "minMaxUnion",
+    "intersection",
+    "minMaxIntersection"
+  ]
 }

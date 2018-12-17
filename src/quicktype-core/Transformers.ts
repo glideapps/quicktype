@@ -865,6 +865,64 @@ export class StringifyTransformer extends ProducerTransformer {
     }
 }
 
+export class MinMaxLengthCheckTransformer extends ProducerTransformer {
+    constructor(
+        graph: TypeGraph,
+        sourceTypeRef: TypeRef,
+        consumer: Transformer | undefined,
+        readonly minLength: number | undefined,
+        readonly maxLength: number | undefined
+    ) {
+        super("min-max-length-check", graph, sourceTypeRef, consumer);
+    }
+
+    get canFail(): boolean {
+        return true;
+    }
+
+    reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
+        if (this.consumer === undefined) {
+            return new MinMaxLengthCheckTransformer(
+                this.graph,
+                targetTypeRef,
+                continuationTransformer,
+                this.minLength,
+                this.maxLength
+            );
+        } else {
+            return this.consumer.reverse(
+                targetTypeRef,
+                new MinMaxLengthCheckTransformer(
+                    this.graph,
+                    this.consumer.sourceTypeRef,
+                    continuationTransformer,
+                    this.minLength,
+                    this.maxLength
+                )
+            );
+        }
+    }
+
+    reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
+        return new MinMaxLengthCheckTransformer(
+            builder.typeGraph,
+            builder.reconstituteTypeRef(this.sourceTypeRef),
+            definedMap(this.consumer, xfer => xfer.reconstitute(builder)),
+            this.minLength,
+            this.maxLength
+        );
+    }
+
+    equals(other: any): boolean {
+        if (!super.equals(other)) return false;
+        return (
+            other instanceof MinMaxLengthCheckTransformer &&
+            this.minLength === other.minLength &&
+            this.maxLength === other.maxLength
+        );
+    }
+}
+
 export class Transformation {
     constructor(
         private readonly _graph: TypeGraph,
