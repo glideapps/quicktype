@@ -140,7 +140,12 @@ function replaceUnion(
     function transformerForStringType(t: Type): Transformer | undefined {
         const memberRef = memberForKind(t.kind);
         if (t.kind === "string") {
-            return consumer(memberRef);
+            const minMax = minMaxLengthForType(t);
+            if (minMax === undefined) {
+                return consumer(memberRef);
+            }
+            const [min, max] = minMax;
+            return new MinMaxLengthCheckTransformer(graph, getStringType(), consumer(memberRef), min, max);
         } else if (t instanceof EnumType && transformedTypes.has(t)) {
             return makeEnumTransformer(graph, t, getStringType(), consumer(memberRef));
         } else {
