@@ -10,10 +10,13 @@ import { JSONSchema } from "../input/JSONSchemaStore";
 // `areEqual`, `hashCodeOf`.
 export type MinMaxConstraint = [number | undefined, number | undefined];
 
-function checkMinMaxConstraint(minmax: MinMaxConstraint): MinMaxConstraint {
+function checkMinMaxConstraint(minmax: MinMaxConstraint): MinMaxConstraint | undefined {
     const [min, max] = minmax;
     if (typeof min === "number" && typeof max === "number" && min > max) {
         return messageError("MiscInvalidMinMaxConstraint", { min, max });
+    }
+    if (min === undefined && max === undefined) {
+        return undefined;
     }
     return minmax;
 }
@@ -32,7 +35,7 @@ export class MinMaxConstraintTypeAttributeKind extends TypeAttributeKind<MinMaxC
         return true;
     }
 
-    combine(arr: MinMaxConstraint[]): MinMaxConstraint {
+    combine(arr: MinMaxConstraint[]): MinMaxConstraint | undefined {
         assert(arr.length > 0);
 
         let [min, max] = arr[0];
@@ -52,7 +55,7 @@ export class MinMaxConstraintTypeAttributeKind extends TypeAttributeKind<MinMaxC
         return checkMinMaxConstraint([min, max]);
     }
 
-    intersect(arr: MinMaxConstraint[]): MinMaxConstraint {
+    intersect(arr: MinMaxConstraint[]): MinMaxConstraint | undefined {
         assert(arr.length > 0);
 
         let [min, max] = arr[0];
