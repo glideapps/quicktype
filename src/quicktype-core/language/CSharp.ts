@@ -44,9 +44,11 @@ import {
     StringifyTransformer,
     Transformation,
     ArrayDecodingTransformer,
-    ArrayEncodingTransformer
+    ArrayEncodingTransformer,
+    MinMaxLengthCheckTransformer
 } from "../Transformers";
 import { RenderContext } from "../Renderer";
+import { minMaxLengthForType } from "../attributes/Constraints";
 
 const unicode = require("@mark.probst/unicode-properties");
 
@@ -79,6 +81,9 @@ function needTransformerForType(t: Type): "automatic" | "manual" | "nullable" | 
     }
     if (t instanceof EnumType) return "automatic";
     if (t.kind === "integer-string" || t.kind === "bool-string") return "manual";
+    if (t.kind === "string") {
+        return minMaxLengthForType(t) !== undefined ? "manual" : "none";
+    }
     return "none";
 }
 
@@ -1213,6 +1218,20 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         } else if (xfer instanceof StringProducerTransformer) {
             const value = this.stringCaseValue(directTargetType(xfer.consumer), xfer.result);
             return this.emitConsume(value, xfer.consumer, targetType, emitFinish);
+        } else if (xfer instanceof MinMaxLengthCheckTransformer) {
+            const min = xfer.minLength;
+            const max = xfer.maxLength;
+            const conditions: Sourcelike[] = [];
+
+            if (min !== undefined) {
+                conditions.push([variable, ".Length >= ", min.toString()]);
+            }
+            if (max !== undefined) {
+                conditions.push([variable, ".Length <= ", max.toString()]);
+            }
+            this.emitLine("if (", arrayIntercalate([" && "], conditions), ")");
+            this.emitBlock(() => this.emitConsume(variable, xfer.consumer, targetType, emitFinish));
+            return false;
         } else if (xfer instanceof UnionInstantiationTransformer) {
             if (!(targetType instanceof UnionType)) {
                 return panic("Union instantiation transformer must produce a union type");
