@@ -1,4 +1,5 @@
 import { addHashCode, hashCodeInit, hashString } from "collection-utils";
+import JSON5 from "json5";
 
 import { defined, panic, assert } from "../support/Support";
 import { TransformedStringTypeKind, isPrimitiveStringTypeKind, transformedStringTypeTargetTypeKindsMap } from "../Type";
@@ -272,7 +273,7 @@ export class CompressedJSONFromString extends CompressedJSON<string> {
     }
 
     parseSync(input: string): Value {
-        const json = JSON.parse(input);
+        const json = JSON5.parse(input);
         this.process(json);
         return this.finish();
     }
