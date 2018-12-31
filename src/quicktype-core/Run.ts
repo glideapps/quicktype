@@ -1,4 +1,5 @@
 import { mapFirst } from "collection-utils";
+import JSON5 from 'json5';
 
 import * as targetLanguages from "./language/All";
 import { TargetLanguage, MultiFileRenderResult } from "./TargetLanguage";
@@ -528,7 +529,7 @@ class Run implements RunContext {
 
         const schemaString = needIR ? undefined : inputData.singleStringSchemaSource();
         if (schemaString !== undefined) {
-            const lines = JSON.stringify(JSON.parse(schemaString), undefined, 4).split("\n");
+            const lines = JSON.stringify(JSON5.parse(schemaString), undefined, 4).split("\n");
             lines.push("");
             const srr = { lines, annotations: [] };
             return new Map([[this._options.outputFilename, srr] as [string, SerializedRenderResult]]);

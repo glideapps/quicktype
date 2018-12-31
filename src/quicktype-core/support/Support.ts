@@ -1,5 +1,7 @@
 import { Base64 } from "js-base64";
 import * as pako from "pako";
+import JSON5 from 'json5';
+
 import { messageError } from "../Messages";
 
 export type StringMap = { [name: string]: any };
@@ -110,7 +112,7 @@ export function parseJSON(text: string, description: string, address: string = "
         if (text.charCodeAt(0) === 0xfeff) {
             text = text.slice(1);
         }
-        return JSON.parse(text);
+        return JSON5.parse(text);
     } catch (e) {
         let message: string;
 

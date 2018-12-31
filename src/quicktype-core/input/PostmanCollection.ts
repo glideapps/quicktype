@@ -1,9 +1,11 @@
+import JSON5 from 'json5';
+
 import { parseJSON } from "../support/Support";
 import { JSONSourceData } from "./Inputs";
 
 function isValidJSON(s: string): boolean {
     try {
-        JSON.parse(s);
+        JSON5.parse(s);
         return true;
     } catch (error) {
         return false;
