@@ -18,6 +18,7 @@ import { CrystalTargetLanguage } from "./Crystal";
 import { RubyTargetLanguage } from "./ruby";
 import { DartTargetLanguage } from "./Dart";
 import { PythonTargetLanguage } from "./Python";
+import { PikeTargetLanguage } from "./Pike";
 
 export const all: TargetLanguage[] = [
     new NewtonsoftCSharpTargetLanguage(),
@@ -36,7 +37,8 @@ export const all: TargetLanguage[] = [
     new JSONSchemaTargetLanguage(),
     new RubyTargetLanguage(),
     new DartTargetLanguage(),
-    new PythonTargetLanguage("Python", ["python", "py"], "py")
+    new PythonTargetLanguage("Python", ["python", "py"], "py"),
+    new PikeTargetLanguage()
 ];
 
 export function languageNamed(name: string, targetLanguages?: TargetLanguage[]): TargetLanguage | undefined {
