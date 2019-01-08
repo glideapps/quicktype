@@ -366,9 +366,9 @@ export const CPlusPlusLanguage: Language = {
     { unions: "indirection" },
     { "source-style": "multi-source" },
     { "code-format": "with-struct" },
-    { "wstring": "use-wstring" },
+    { wstring: "use-wstring" },
     { "const-style": "east-const" },
-    { "boost": "false"}
+    { boost: "false" }
   ],
   sourceFiles: ["src/language/CPlusPlus.ts"]
 };
@@ -592,7 +592,7 @@ export const TypeScriptLanguage: Language = {
     { "runtime-typecheck": "false" },
     { "nice-property-names": "true" },
     { "declare-unions": "true" },
-    { "acronym-style": "pascal" },
+    { "acronym-style": "pascal" }
   ],
   sourceFiles: ["src/language/TypeScript.ts"]
 };
@@ -829,4 +829,24 @@ export const DartLanguage: Language = {
   rendererOptions: {},
   quickTestRendererOptions: [],
   sourceFiles: ["src/Language/Dart.ts"]
+};
+
+export const PikeLanguage: Language = {
+  name: "pike",
+  base: "test/fixtures/pike",
+  runCommand(sample: string) {
+    return `pike main.pike \"${sample}\"`;
+  },
+  diffViaSchema: false,
+  skipDiffViaSchema: [],
+  allowMissingNull: true,
+  features: ["union"],
+  output: "TopLevel.pike",
+  topLevel: "TopLevel",
+  skipJSON: [],
+  skipMiscJSON: false,
+  skipSchema: [],
+  rendererOptions: {},
+  quickTestRendererOptions: [],
+  sourceFiles: ["src/Language/Pike.ts"]
 };
