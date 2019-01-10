@@ -1,5 +1,3 @@
-"use strict";
-
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { Name, Namer, funPrefixNamer } from "../Naming";
 import { Option } from "../RendererOptions";
