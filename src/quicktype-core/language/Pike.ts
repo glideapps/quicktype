@@ -1,4 +1,4 @@
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
+import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { Name, Namer, funPrefixNamer } from "../Naming";
 import { Option } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
@@ -10,14 +10,68 @@ import { legalizeCharacters, isLetterOrUnderscoreOrDigit, stringEscape, makeName
 
 export const pikeOptions = {};
 
-const baseClassName = "JsonEncodable";
+const keywords = [
+    "nomask",
+    "final",
+    "static",
+    "extern",
+    "private",
+    "local",
+    "public",
+    "protected",
+    "inline",
+    "optional",
+    "variant",
+    "void",
+    "mixed",
+    "array",
+    "__attribute__",
+    "__deprecated__",
+    "mapping",
+    "multiset",
+    "object",
+    "function",
+    "__func__",
+    "program",
+    "string",
+    "float",
+    "int",
+    "enum",
+    "typedef",
+    "if",
+    "do",
+    "for",
+    "while",
+    "else",
+    "foreach",
+    "catch",
+    "gauge",
+    "class",
+    "break",
+    "case",
+    "constant",
+    "continue",
+    "default",
+    "import",
+    "inherit",
+    "lambda",
+    "predef",
+    "return",
+    "sscanf",
+    "switch",
+    "typeof",
+    "global"
+];
+
+const conversionFunctionName = "TO_MIXED";
 const legalizeName = legalizeCharacters(isLetterOrUnderscoreOrDigit);
-const namingFunction = funPrefixNamer("namer", makeNameStyle("underscore", legalizeName));
-const namedTypeNamingFunction = funPrefixNamer("namer", makeNameStyle("pascal", legalizeName));
+const enumNamingFunction = funPrefixNamer("enumNamer", makeNameStyle("upper-underscore", legalizeName));
+const namingFunction = funPrefixNamer("genericNamer", makeNameStyle("underscore", legalizeName));
+const namedTypeNamingFunction = funPrefixNamer("typeNamer", makeNameStyle("pascal", legalizeName));
 
 export class PikeTargetLanguage extends TargetLanguage {
     constructor() {
-        super("Pike", ["pike", "pikelang"], "Pike");
+        super("Pike", ["pike", "pikelang"], "pmod");
     }
     protected getOptions(): Option<any>[] {
         return [];
@@ -30,17 +84,29 @@ export class PikeTargetLanguage extends TargetLanguage {
 
 export class PikeRenderer extends ConvenienceRenderer {
     protected emitSourceStructure(): void {
-        this.emitBaseClass();
+        this.emitInformationComment();
+        this.emitConversionFunction();
+        this.ensureBlankLine();
+        this.forEachTopLevel(
+            "leading",
+            (t, name) => {
+                this.emitTopLevelTypedef(t, name);
+                this.emitTopLevelConverter(name);
+                this.ensureBlankLine();
+            },
+            t => this.namedTypeToNameForTopLevel(t) === undefined
+        );
+        this.ensureBlankLine();
         this.forEachNamedType(
             "leading-and-interposing",
-            (c: ClassType, className: Name) => this.emitClass(c, className),
+            (c: ClassType, className: Name) => this.emitClassDefinition(c, className),
             (e, n) => this.emitEnum(e, n),
             (u, n) => this.emitUnion(u, n)
         );
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return namingFunction;
+        return enumNamingFunction;
     }
     protected makeNamedTypeNamer(): Namer {
         return namedTypeNamingFunction;
@@ -54,8 +120,20 @@ export class PikeRenderer extends ConvenienceRenderer {
         return namingFunction;
     }
 
-    protected forbiddenNamesForObjectProperties(): string[] {
-        return ["private", "protected", "public", "return"];
+    protected forbiddenNamesForGlobalNamespace(): string[] {
+        return [...keywords];
+    }
+
+    protected forbiddenForObjectProperties(_c: ClassType, _className: Name): ForbiddenWordsInfo {
+        return { names: [], includeGlobalForbidden: true };
+    }
+
+    protected forbiddenForEnumCases(_e: EnumType, _enumName: Name): ForbiddenWordsInfo {
+        return { names: [], includeGlobalForbidden: true };
+    }
+
+    protected forbiddenForUnionMembers(_u: UnionType, _unionName: Name): ForbiddenWordsInfo {
+        return { names: [], includeGlobalForbidden: true };
     }
 
     protected sourceFor(t: Type): MultiWord {
@@ -91,58 +169,22 @@ export class PikeRenderer extends ConvenienceRenderer {
         );
     }
 
-    private emitBlock(line: Sourcelike, f: () => void): void {
-        this.emitLine(line, " {");
-        this.indent(f);
-        this.emitLine("}");
-    }
-
-    private emitBaseClass(): void {
-        this.emitBlock(["class ", baseClassName, ";"], () => {
-            this.emitBlock(["string encode_json() "], () => {
-                this.emitLine(["array(string) members = map(indices(this), lambda(string idx) {"]);
-                this.indent(() => {
-                    this.emitLine(["return callablep(this[idx])? 0 : idx;"]);
-                });
-                this.emitLine(["});"]);
-                this.emitLine(["members -= ({0});"]);
-                this.ensureBlankLine();
-                this.emitLine(["array values = map(members, lambda(string idx) {"]);
-                this.indent(() => {
-                    this.emitLine(["return this[idx];"]);
-                });
-                this.emitLine(["});"]);
-                this.ensureBlankLine();
-                this.emitLine(["return Standards.JSON.encode(mkmapping(members, values));"]);
-            });
-        });
-    }
-
-    private emitClassMembers(c: ClassType): void {
-        let table: Sourcelike[][] = [];
-        this.forEachClassProperty(c, "none", (name, jsonName, p) => {
-            const pikeType = this.sourceFor(p.type).source;
-
-            table.push([[pikeType, " "], [name, "; "], ['// json: "', stringEscape(jsonName), '"']]);
-        });
-        this.emitTable(table);
-    }
-
-    private emitClass(c: ClassType, className: Name): void {
+    protected emitClassDefinition(c: ClassType, className: Name): void {
         this.emitDescription(this.descriptionForType(c));
         this.emitBlock(["class ", className], () => {
-            this.emitLine(["inherit ", baseClassName, ";"]);
-            this.ensureBlankLine();
             this.emitClassMembers(c);
             this.ensureBlankLine();
+            this.emitEncodingFunction(c);
         });
+        this.ensureBlankLine();
+        this.emitDecodingFunction(className, c);
     }
 
     protected emitEnum(e: EnumType, enumName: Name): void {
         this.emitBlock([e.kind, " ", enumName], () => {
             let table: Sourcelike[][] = [];
             this.forEachEnumCase(e, "none", (name, jsonName) => {
-                table.push([[name, ", "], ['// json: "', stringEscape(jsonName), '"']]);
+                table.push([[name, ' = "', jsonName, '", '], ['// json: "', stringEscape(jsonName), '"']]);
             });
             this.emitTable(table);
         });
@@ -172,5 +214,77 @@ export class PikeRenderer extends ConvenienceRenderer {
             unionName,
             ";"
         ]);
+    }
+
+    private emitBlock(line: Sourcelike, f: () => void): void {
+        this.emitLine(line, " {");
+        this.indent(f);
+        this.emitLine("}");
+    }
+    private emitClassMembers(c: ClassType): void {
+        let table: Sourcelike[][] = [];
+        this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+            const pikeType = this.sourceFor(p.type).source;
+
+            table.push([[pikeType, " "], [name, "; "], ['// json: "', stringEscape(jsonName), '"']]);
+        });
+        this.emitTable(table);
+    }
+
+    private emitInformationComment() {
+        this.emitLine(["// This source has been automatically generated by quicktype."]);
+        this.emitLine(["// ( https://github.com/quicktype/quicktype )"]);
+        this.ensureBlankLine();
+        this.emitLine(["// To use this code, simply import it into your project as a Pike module."]);
+        this.ensureBlankLine();
+        this.emitLine(["// To JSON-encode your object, you can pass it to `Standards.JSON.encode`"]);
+        this.emitLine(["// or call `encode_json` on it."]);
+        this.ensureBlankLine();
+        this.emitLine(["// To decode a JSON string, first pass it to `Standards.JSON.decode`,"]);
+        this.emitLine(["// and then pass the result to `<YourClass>_from_JSON`."]);
+        this.emitLine(["// It will return an instance of <YourClass>."]);
+        this.emitLine(["// Bear in mind that these functions have unexpected behavior,"]);
+        this.emitLine(["// and will likely throw an error, if the JSON string does not"]);
+        this.emitLine(["// match the expected interface, even if the JSON is valid."]);
+        this.emitLine([]);
+        this.ensureBlankLine();
+    }
+
+    private emitTopLevelTypedef(t: Type, name: Name) {
+        this.emitLine("typedef ", this.sourceFor(t).source, " ", name, ";");
+    }
+
+    private emitTopLevelConverter(name: Name) {
+        this.emitBlock([name, " ", name, "_from_JSON(mixed json)"], () => {
+            this.emitLine(["return map(json, ", name, "Element_from_JSON);"]);
+        });
+    }
+
+    private emitConversionFunction() {
+        this.emitLine(["#define ", conversionFunctionName, "(x) Standards.JSON.decode(Standards.JSON.encode(x))"]);
+    }
+
+    private emitEncodingFunction(c: ClassType) {
+        this.emitBlock(["string encode_json() "], () => {
+            this.emitLine(["mapping(string:mixed) json = ([]);"]);
+            this.ensureBlankLine();
+            this.forEachClassProperty(c, "none", (name, jsonName) => {
+                this.emitLine(['json["', jsonName, '"] = ', conversionFunctionName, "(", name, ");"]);
+            });
+            this.ensureBlankLine();
+            this.emitLine(["return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);"]);
+        });
+    }
+
+    private emitDecodingFunction(className: Name, c: ClassType) {
+        this.emitBlock([className, " ", className, "_from_JSON(mixed json)"], () => {
+            this.emitLine([className, " retval = ", className, "();"]);
+            this.ensureBlankLine();
+            this.forEachClassProperty(c, "none", (name, jsonName) => {
+                this.emitLine(["retval.", name, ' = json["', jsonName, '"];']);
+            });
+            this.ensureBlankLine();
+            this.emitLine(["return retval;"]);
+        });
     }
 }
