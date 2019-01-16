@@ -11,5 +11,5 @@ steps:
     - command: "FIXTURE=swift,schema-swift,rust,schema-rust,elm,schema-elm,dart,schema-dart .buildkite/build-pr.sh"
       label: "swift rust elm dart"
 
-    - command: "FIXTURE=csharp,schema-csharp,ruby,schema-ruby,golang,schema-golang .buildkite/build-pr.sh"
-      label: "csharp ruby golang"
+    - command: "FIXTURE=csharp,schema-csharp,ruby,schema-ruby,golang,schema-golang,pike,schema-pike .buildkite/build-pr.sh"
+      label: "csharp ruby golang pike"

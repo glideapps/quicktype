@@ -366,9 +366,9 @@ export const CPlusPlusLanguage: Language = {
     { unions: "indirection" },
     { "source-style": "multi-source" },
     { "code-format": "with-struct" },
-    { "wstring": "use-wstring" },
+    { wstring: "use-wstring" },
     { "const-style": "east-const" },
-    { "boost": "false"}
+    { boost: "false" }
   ],
   sourceFiles: ["src/language/CPlusPlus.ts"]
 };
@@ -592,7 +592,7 @@ export const TypeScriptLanguage: Language = {
     { "runtime-typecheck": "false" },
     { "nice-property-names": "true" },
     { "declare-unions": "true" },
-    { "acronym-style": "pascal" },
+    { "acronym-style": "pascal" }
   ],
   sourceFiles: ["src/language/TypeScript.ts"]
 };
@@ -829,4 +829,59 @@ export const DartLanguage: Language = {
   rendererOptions: {},
   quickTestRendererOptions: [],
   sourceFiles: ["src/Language/Dart.ts"]
+};
+
+export const PikeLanguage: Language = {
+  name: "pike",
+  base: "test/fixtures/pike",
+  runCommand(sample: string) {
+    return `pike main.pike \"${sample}\"`;
+  },
+  diffViaSchema: false,
+  skipDiffViaSchema: [],
+  allowMissingNull: true,
+  features: ["union"],
+  output: "TopLevel.pmod",
+  topLevel: "TopLevel",
+  skipJSON: [
+    "blns-object.json", // illegal characters in expressions
+    "identifiers.json", // quicktype internal error
+    "no-classes.json", // unable to handle top-level primitives
+    "7eb30.json", // illegal characters in expressions
+    "c6cfd.json", // illegal characters in values
+    // all below: Pike's Stdio.File.write() does not support wide strings.
+    "nst-test-suite.json",
+    "0b91a.json",
+    "29f47.json",
+    "337ed.json",
+    "33d2e.json",
+    "458db.json",
+    "6c155.json",
+    "6de06.json",
+    "734ad.json",
+    "8592b.json",
+    "9ac3b.json",
+    "cb0cc.json",
+    "d23d5.json",
+    "dc44f.json",
+    "dec3a.json",
+    "f22f5.json",
+    "f22f5.json"
+  ],
+  skipMiscJSON: false,
+  skipSchema: [
+    "top-level-enum.schema", // output generated properly, but not a class
+    "keyword-unions.schema", // seems like a problem with deserializing
+    "integer-float-union.schema", // no implicit cast int <-> float in Pike
+    "minmax.schema", // no implicit cast int <-> float in Pike
+    // all below: not failing on expected failure. That's because Pike's quite tolerant with assignments.
+    "go-schema-pattern-properties.schema",
+    "class-with-additional.schema",
+    "multi-type-enum.schema",
+    "class-map-union.schema",
+    "implicit-class-array-union.schema"
+  ],
+  rendererOptions: {},
+  quickTestRendererOptions: [],
+  sourceFiles: ["src/Language/Pike.ts"]
 };

@@ -43,6 +43,10 @@ RUN update-alternatives --config gcc
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
+# Install Pike
+RUN apt-get update
+RUN apt-get install pike8.0-full --assume-yes
+
 # Tool to limit elm-make cores
 RUN git clone https://github.com/obmarg/libsysconfcpus.git
 RUN cd libsysconfcpus && ./configure && make && make install

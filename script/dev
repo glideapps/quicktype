@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-docker pull schani/quicktype
-docker build --cache-from schani/quicktype -t quicktype .
+# docker pull schani/quicktype
+docker build --cache-from quicktype -t quicktype .
 docker run -it \
     -p 3000:3000 \
     --volume=$PWD:/quicktype \
