@@ -844,20 +844,12 @@ export const PikeLanguage: Language = {
   output: "TopLevel.pmod",
   topLevel: "TopLevel",
   skipJSON: [
-    "github-events.json",
-    "us-senators.json",
-    "bug790.json",
     "bug863.json",
     "bug855-short.json",
     "blns-object.json",
-    "bug427.json",
-    "identifiers.json",
+    "identifiers.json", // quicktype internal error
     "no-classes.json",
-    "name-style.json",
-    "nbl-stats.json",
     "nst-test-suite.json",
-    "simple-identifiers.json",
-    "optional-union.json",
     "00c36.json",
     "7fbfb.json",
     "c8c7e.json",
@@ -865,9 +857,8 @@ export const PikeLanguage: Language = {
     "e53b5.json",
     "ed095.json",
     "7eb30.json",
-    "dd1ce.json",
-    "cb81e.json",
     "c6cfd.json",
+    "2df80.json",
     // Pike's Stdio.File.write() does not support wide strings.
     "0b91a.json",
     "29f47.json",
@@ -884,15 +875,7 @@ export const PikeLanguage: Language = {
     "dc44f.json",
     "dec3a.json",
     "f22f5.json",
-    "f22f5.json",
-    // Pike's enums pollute the global namespace.
-    // Output pmod fails to compile if there are two enum keys with the same name.
-    "0b91a.json",
-    "0e0c2.json",
-    "1b409.json",
-    "2d4e2.json",
-    "2df80.json",
-    "e8b04.json"
+    "f22f5.json"
   ],
   skipMiscJSON: false,
   skipSchema: [
@@ -907,7 +890,6 @@ export const PikeLanguage: Language = {
     "minmax.schema",
     // Pike's enums pollute the global namespace.
     // Output pmod fails to compile if there are two enum keys with the same name.
-    "enum.schema",
     "top-level-enum.schema",
     "multi-type-enum.schema"
   ],
