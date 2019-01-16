@@ -844,22 +844,13 @@ export const PikeLanguage: Language = {
   output: "TopLevel.pmod",
   topLevel: "TopLevel",
   skipJSON: [
-    "bug863.json",
-    "bug855-short.json",
-    "blns-object.json",
+    "blns-object.json", // illegal characters in expressions
     "identifiers.json", // quicktype internal error
-    "no-classes.json",
+    "no-classes.json", // unable to handle top-level primitives
+    "7eb30.json", // illegal characters in expressions
+    "c6cfd.json", // illegal characters in values
+    // all below: Pike's Stdio.File.write() does not support wide strings.
     "nst-test-suite.json",
-    "00c36.json",
-    "7fbfb.json",
-    "c8c7e.json",
-    "cda6c.json",
-    "e53b5.json",
-    "ed095.json",
-    "7eb30.json",
-    "c6cfd.json",
-    "2df80.json",
-    // Pike's Stdio.File.write() does not support wide strings.
     "0b91a.json",
     "29f47.json",
     "337ed.json",
@@ -879,19 +870,16 @@ export const PikeLanguage: Language = {
   ],
   skipMiscJSON: false,
   skipSchema: [
-    // Weird problems
+    "top-level-enum.schema", // output generated properly, but not a class
+    "keyword-unions.schema", // seems like a problem with deserializing
+    "integer-float-union.schema", // no implicit cast int <-> float in Pike
+    "minmax.schema", // no implicit cast int <-> float in Pike
+    // all below: not failing on expected failure. That's because Pike's quite tolerant with assignments.
     "go-schema-pattern-properties.schema",
     "class-with-additional.schema",
-    // Weird union-related problems
+    "multi-type-enum.schema",
     "class-map-union.schema",
-    "implicit-class-array-union.schema",
-    "integer-float-union.schema", // no implicit cast int <-> float in Pike
-    "keyword-unions.schema",
-    "minmax.schema",
-    // Pike's enums pollute the global namespace.
-    // Output pmod fails to compile if there are two enum keys with the same name.
-    "top-level-enum.schema",
-    "multi-type-enum.schema"
+    "implicit-class-array-union.schema"
   ],
   rendererOptions: {},
   quickTestRendererOptions: [],
