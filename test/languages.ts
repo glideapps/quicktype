@@ -581,10 +581,12 @@ export const TypeScriptLanguage: Language = {
     "e8b04.json"
   ],
   allowMissingNull: false,
-  features: ["enum", "union", "no-defaults", "strict-optional"],
+  features: ["enum", "union", "no-defaults", "strict-optional", "date-time"],
   output: "TopLevel.ts",
   topLevel: "TopLevel",
-  skipJSON: [],
+  skipJSON: [
+    "7681c.json" // year 0 is out of range
+  ],
   skipMiscJSON: false,
   skipSchema: ["keyword-unions.schema"], // can't handle "constructor" property
   rendererOptions: { "explicit-unions": "yes" },
@@ -607,10 +609,12 @@ export const JavaScriptLanguage: Language = {
   diffViaSchema: false,
   skipDiffViaSchema: [],
   allowMissingNull: false,
-  features: ["enum", "union", "no-defaults", "strict-optional"],
+  features: ["enum", "union", "no-defaults", "strict-optional", "date-time"],
   output: "TopLevel.js",
   topLevel: "TopLevel",
-  skipJSON: [],
+  skipJSON: [
+    "7681c.json" // year 0 is out of range
+  ],
   skipMiscJSON: false,
   skipSchema: ["keyword-unions.schema"], // can't handle "constructor" property
   rendererOptions: {},
@@ -630,7 +634,9 @@ export const FlowLanguage: Language = {
   features: ["enum", "union", "no-defaults", "strict-optional"],
   output: "TopLevel.js",
   topLevel: "TopLevel",
-  skipJSON: [],
+  skipJSON: [
+    "7681c.json" // year 0 is out of range
+  ],
   skipMiscJSON: false,
   skipSchema: [
     "keyword-unions.schema" // can't handle "constructor" property

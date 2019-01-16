@@ -133,6 +133,12 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
                 } else {
                     return singleWord(this.nameForNamedType(unionType));
                 }
+            },
+            transformedStringType => {
+                if (transformedStringType.kind === "date-time") {
+                    return singleWord("Date");
+                }
+                return singleWord("string");
             }
         );
     }
@@ -281,7 +287,7 @@ export class FlowTargetLanguage extends TypeScriptFlowBaseTargetLanguage {
 
 export class FlowRenderer extends TypeScriptFlowBaseRenderer {
     protected forbiddenNamesForGlobalNamespace(): string[] {
-        return ["Class", "Object", "String", "Array", "JSON", "Error"];
+        return ["Class", "Date", "Object", "String", "Array", "JSON", "Error"];
     }
 
     protected get typeAnnotations(): JavaScriptTypeAnnotations {

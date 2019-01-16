@@ -1,6 +1,6 @@
 import { arrayIntercalate } from "collection-utils";
 
-import { Type, ClassProperty, ClassType, ObjectType } from "../Type";
+import { TransformedStringTypeKind,  PrimitiveStringTypeKind, Type, ClassProperty, ClassType, ObjectType } from "../Type";
 import { matchType, directlyReachableSingleNamedType } from "../TypeUtils";
 import { acronymOption, acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
 import {
@@ -19,6 +19,7 @@ import { Sourcelike, modifySource } from "../Source";
 import { Namer, Name, funPrefixNamer } from "../Naming";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
+import { StringTypeMapping } from "../TypeBuilder";
 import { BooleanOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
 import { isES3IdentifierPart, isES3IdentifierStart } from "./JavaScriptUnicodeMaps";
@@ -52,6 +53,14 @@ export class JavaScriptTargetLanguage extends TargetLanguage {
             javaScriptOptions.runtimeTypecheck,
             javaScriptOptions.acronymStyle
         ];
+    }
+
+    get stringTypeMapping(): StringTypeMapping {
+        const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
+        const dateTimeType = "date-time";
+        mapping.set("date", dateTimeType);
+        mapping.set("date-time", dateTimeType);
+        return mapping;
     }
 
     get supportsOptionalClassProperties(): boolean {
@@ -155,6 +164,12 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
             unionType => {
                 const children = Array.from(unionType.getChildren()).map((type: Type) => this.typeMapTypeFor(type));
                 return ["u(", ...arrayIntercalate(", ", children), ")"];
+            },
+            transformedStringType => {
+                if (transformedStringType.kind === "date-time") {
+                    return "Date";
+                }
+                return `""`;
             }
         );
     }
@@ -319,6 +334,17 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
         return val.map(el => transform(el, typ, getProps));
     }
 
+    function transformDate(typ${anyAnnotation}, val${anyAnnotation})${anyAnnotation} {
+        if (val === null) {
+            return null;
+        }
+        const d = new Date(val);
+        if (isNaN(d.valueOf())) {
+            return invalidValue("Date", val);
+        }
+        return d;
+    }
+
     function transformObject(props${anyMapAnnotation}, additional${anyAnnotation}, val${anyAnnotation})${anyAnnotation} {
         if (val === null || typeof val !== "object" || Array.isArray(val)) {
             return invalidValue("object", val);
@@ -353,6 +379,8 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
             : typ.hasOwnProperty("props")         ? transformObject(getProps(typ), typ.additional, val)
             : invalidValue(typ, val);
     }
+    // Numbers can be parsed by Date but shouldn't be.
+    if (typ === Date && typeof val !== "number") return transformDate(typ, val);
     return transformPrimitive(typ, val);
 }
 
