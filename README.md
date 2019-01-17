@@ -31,8 +31,8 @@
 | -------------------------------------------- | ------------------------------------ | ------------------------------------ | -------------------------------------- | ---------------------------------------- | -------------------------------------------- |
 
 
-| [Swift](https://app.quicktype.io/#l=swift) | [Objective-C](https://app.quicktype.io/#l=objc) | [Elm](https://app.quicktype.io/#l=elm) | [JSON Schema](https://app.quicktype.io/#l=schema) |
-| ------------------------------------------ | ----------------------------------------------- | -------------------------------------- | ------------------------------------------------- |
+| [Swift](https://app.quicktype.io/#l=swift) | [Objective-C](https://app.quicktype.io/#l=objc) | [Elm](https://app.quicktype.io/#l=elm) | [JSON Schema](https://app.quicktype.io/#l=schema) | [Pike](https://app.quicktype.io/#l=pike) |
+| ------------------------------------------ | ----------------------------------------------- | -------------------------------------- | ------------------------------------------------- | ------------------------------------------------- |
 
 
 _Missing your favorite language? Please implement it!_
@@ -196,6 +196,7 @@ files, URLs, or add other options.
 -   `swift` compiler
 -   `clang` and Objective-C Foundation (must be tested separately on macOS)
 -   `rust` tools
+-   `pike` interpreter
 -   [Bundler](https://bundler.io) for Ruby
 
 We've assembled all of these tools in a Docker container that you build and test within:
