@@ -846,7 +846,6 @@ export const PikeLanguage: Language = {
   skipJSON: [
     "blns-object.json", // illegal characters in expressions
     "identifiers.json", // quicktype internal error
-    "no-classes.json", // unable to handle top-level primitives
     "7eb30.json", // illegal characters in expressions
     "c6cfd.json", // illegal characters in values
     // all below: Pike's Stdio.File.write() does not support wide strings.

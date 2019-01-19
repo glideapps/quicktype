@@ -272,8 +272,14 @@ export class PikeRenderer extends ConvenienceRenderer {
 
     private emitTopLevelConverter(t: Type, name: Name) {
         this.emitBlock([name, " ", name, "_from_JSON(mixed json)"], () => {
-            if (t instanceof ArrayType) {
-                this.emitLine(["return map(json, ", this.sourceFor(t.items).source, "_from_JSON);"]);
+            if (t instanceof PrimitiveType) {
+                this.emitLine(["return json;"]);
+            }
+            else if (t instanceof ArrayType) {
+                if (t.items instanceof PrimitiveType)
+                    this.emitLine(["return json;"]);
+                else
+                    this.emitLine(["return map(json, ", this.sourceFor(t.items).source, "_from_JSON);"]);
             } else if (t instanceof MapType) {
                 const type = this.sourceFor(t.values).source;
                 this.emitLine(["mapping(string:", type, ") retval = ([]);"]);
