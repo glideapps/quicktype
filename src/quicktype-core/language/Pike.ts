@@ -65,7 +65,6 @@ const keywords = [
     "global"
 ];
 
-const conversionFunctionName = "TO_MIXED";
 const legalizeName = legalizeCharacters(isLetterOrUnderscoreOrDigit);
 const enumNamingFunction = funPrefixNamer("enumNamer", makeNameStyle("upper-underscore", legalizeName));
 const namingFunction = funPrefixNamer("genericNamer", makeNameStyle("underscore", legalizeName));
@@ -87,8 +86,6 @@ export class PikeTargetLanguage extends TargetLanguage {
 export class PikeRenderer extends ConvenienceRenderer {
     protected emitSourceStructure(): void {
         this.emitInformationComment();
-        this.ensureBlankLine();
-        this.emitConversionFunction();
         this.ensureBlankLine();
         this.forEachTopLevel(
             "leading",
@@ -286,19 +283,15 @@ export class PikeRenderer extends ConvenienceRenderer {
         });
     }
 
-    private emitConversionFunction() {
-        this.emitLine(["#define ", conversionFunctionName, "(x) Standards.JSON.decode(Standards.JSON.encode(x))"]);
-    }
-
     private emitEncodingFunction(c: ClassType) {
         this.emitBlock(["string encode_json() "], () => {
             this.emitLine(["mapping(string:mixed) json = ([]);"]);
             this.ensureBlankLine();
             this.forEachClassProperty(c, "none", (name, jsonName) => {
-                this.emitLine(['json["', stringEscape(jsonName), '"] = ', conversionFunctionName, "(", name, ");"]);
+                this.emitLine(['json["', stringEscape(jsonName), '"] = ', name, ";"]);
             });
             this.ensureBlankLine();
-            this.emitLine(["return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);"]);
+            this.emitLine(["return Standards.JSON.encode(json);"]);
         });
     }
 
