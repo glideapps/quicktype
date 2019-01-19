@@ -274,8 +274,7 @@ export class PikeRenderer extends ConvenienceRenderer {
         this.emitBlock([name, " ", name, "_from_JSON(mixed json)"], () => {
             if (t instanceof PrimitiveType) {
                 this.emitLine(["return json;"]);
-            }
-            else if (t instanceof ArrayType) {
+            } else if (t instanceof ArrayType) {
                 if (t.items instanceof PrimitiveType)
                     this.emitLine(["return json;"]);
                 else
@@ -300,7 +299,7 @@ export class PikeRenderer extends ConvenienceRenderer {
                 this.forEachClassProperty(c, "none", (name, jsonName) => {
                     this.emitLine(['"', stringEscape(jsonName), '" : ', name, ","]);
                 });
-            })
+            });
             this.ensureBlankLine();
             this.emitLine(["return Standards.JSON.encode(json);"]);
         });
