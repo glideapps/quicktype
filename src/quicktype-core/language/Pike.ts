@@ -225,11 +225,16 @@ export class PikeRenderer extends ConvenienceRenderer {
         });
     }
 
-    private emitBlock(line: Sourcelike, f: () => void): void {
-        this.emitLine(line, " {");
+    private emitBlock(line: Sourcelike, f: () => void, opening: Sourcelike = " {", closing: Sourcelike = "}"): void {
+        this.emitLine(line, opening);
         this.indent(f);
-        this.emitLine("}");
+        this.emitLine(closing);
     }
+
+    private emitMappingBlock(line: Sourcelike, f: () => void): void {
+        this.emitBlock(line, f, "([", "]);");
+    }
+
     private emitClassMembers(c: ClassType): void {
         let table: Sourcelike[][] = [];
         this.forEachClassProperty(c, "none", (name, jsonName, p) => {
@@ -284,12 +289,12 @@ export class PikeRenderer extends ConvenienceRenderer {
     }
 
     private emitEncodingFunction(c: ClassType) {
-        this.emitBlock(["string encode_json() "], () => {
-            this.emitLine(["mapping(string:mixed) json = ([]);"]);
-            this.ensureBlankLine();
-            this.forEachClassProperty(c, "none", (name, jsonName) => {
-                this.emitLine(['json["', stringEscape(jsonName), '"] = ', name, ";"]);
-            });
+        this.emitBlock(["string encode_json()"], () => {
+            this.emitMappingBlock(["mapping(string:mixed) json = "], () => {
+                this.forEachClassProperty(c, "none", (name, jsonName) => {
+                    this.emitLine(['"', stringEscape(jsonName), '" : ', name, ","]);
+                });
+            })
             this.ensureBlankLine();
             this.emitLine(["return Standards.JSON.encode(json);"]);
         });
