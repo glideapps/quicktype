@@ -65,7 +65,6 @@ const keywords = [
     "global"
 ];
 
-const conversionFunctionName = "TO_MIXED";
 const legalizeName = legalizeCharacters(isLetterOrUnderscoreOrDigit);
 const enumNamingFunction = funPrefixNamer("enumNamer", makeNameStyle("upper-underscore", legalizeName));
 const namingFunction = funPrefixNamer("genericNamer", makeNameStyle("underscore", legalizeName));
@@ -87,8 +86,6 @@ export class PikeTargetLanguage extends TargetLanguage {
 export class PikeRenderer extends ConvenienceRenderer {
     protected emitSourceStructure(): void {
         this.emitInformationComment();
-        this.ensureBlankLine();
-        this.emitConversionFunction();
         this.ensureBlankLine();
         this.forEachTopLevel(
             "leading",
@@ -228,11 +225,16 @@ export class PikeRenderer extends ConvenienceRenderer {
         });
     }
 
-    private emitBlock(line: Sourcelike, f: () => void): void {
-        this.emitLine(line, " {");
+    private emitBlock(line: Sourcelike, f: () => void, opening: Sourcelike = " {", closing: Sourcelike = "}"): void {
+        this.emitLine(line, opening);
         this.indent(f);
-        this.emitLine("}");
+        this.emitLine(closing);
     }
+
+    private emitMappingBlock(line: Sourcelike, f: () => void): void {
+        this.emitBlock(line, f, "([", "]);");
+    }
+
     private emitClassMembers(c: ClassType): void {
         let table: Sourcelike[][] = [];
         this.forEachClassProperty(c, "none", (name, jsonName, p) => {
@@ -270,8 +272,13 @@ export class PikeRenderer extends ConvenienceRenderer {
 
     private emitTopLevelConverter(t: Type, name: Name) {
         this.emitBlock([name, " ", name, "_from_JSON(mixed json)"], () => {
-            if (t instanceof ArrayType) {
-                this.emitLine(["return map(json, ", this.sourceFor(t.items).source, "_from_JSON);"]);
+            if (t instanceof PrimitiveType) {
+                this.emitLine(["return json;"]);
+            } else if (t instanceof ArrayType) {
+                if (t.items instanceof PrimitiveType)
+                    this.emitLine(["return json;"]);
+                else
+                    this.emitLine(["return map(json, ", this.sourceFor(t.items).source, "_from_JSON);"]);
             } else if (t instanceof MapType) {
                 const type = this.sourceFor(t.values).source;
                 this.emitLine(["mapping(string:", type, ") retval = ([]);"]);
@@ -286,19 +293,15 @@ export class PikeRenderer extends ConvenienceRenderer {
         });
     }
 
-    private emitConversionFunction() {
-        this.emitLine(["#define ", conversionFunctionName, "(x) Standards.JSON.decode(Standards.JSON.encode(x))"]);
-    }
-
     private emitEncodingFunction(c: ClassType) {
-        this.emitBlock(["string encode_json() "], () => {
-            this.emitLine(["mapping(string:mixed) json = ([]);"]);
-            this.ensureBlankLine();
-            this.forEachClassProperty(c, "none", (name, jsonName) => {
-                this.emitLine(['json["', stringEscape(jsonName), '"] = ', conversionFunctionName, "(", name, ");"]);
+        this.emitBlock(["string encode_json()"], () => {
+            this.emitMappingBlock(["mapping(string:mixed) json = "], () => {
+                this.forEachClassProperty(c, "none", (name, jsonName) => {
+                    this.emitLine(['"', stringEscape(jsonName), '" : ', name, ","]);
+                });
             });
             this.ensureBlankLine();
-            this.emitLine(["return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);"]);
+            this.emitLine(["return Standards.JSON.encode(json);"]);
         });
     }
 
