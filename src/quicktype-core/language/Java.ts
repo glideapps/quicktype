@@ -1,31 +1,18 @@
-import { TypeKind, Type, ArrayType, MapType, EnumType, UnionType, ClassType, ClassProperty } from "../Type";
-import { matchType, nullableFromUnion, removeNullFromUnion, directlyReachableSingleNamedType } from "../TypeUtils";
-import { Sourcelike, maybeAnnotated } from "../Source";
-import {
-    utf16LegalizeCharacters,
-    escapeNonPrintableMapper,
-    utf16ConcatMap,
-    standardUnicodeHexEscape,
-    isAscii,
-    isLetter,
-    isDigit,
-    capitalize,
-    splitIntoWords,
-    combineWords,
-    allUpperWordStyle,
-    firstUpperWordStyle,
-    allLowerWordStyle
-} from "../support/Strings";
-import { Name, Namer, funPrefixNamer, DependencyName } from "../Naming";
-import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { TargetLanguage } from "../TargetLanguage";
-import { BooleanOption, StringOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { defined, assert, assertNever } from "../support/Support";
+import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { DependencyName, funPrefixNamer, Name, Namer } from "../Naming";
 import { RenderContext } from "../Renderer";
+import { BooleanOption, EnumOption, getOptionValues, Option, OptionValues, StringOption } from "../RendererOptions";
+import { maybeAnnotated, Sourcelike } from "../Source";
 import { acronymOption, acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
+import { allLowerWordStyle, allUpperWordStyle, capitalize, combineWords, escapeNonPrintableMapper, firstUpperWordStyle, isAscii, isDigit, isLetter, splitIntoWords, standardUnicodeHexEscape, utf16ConcatMap, utf16LegalizeCharacters } from "../support/Strings";
+import { assert, assertNever, defined } from "../support/Support";
+import { TargetLanguage } from "../TargetLanguage";
+import { ArrayType, ClassProperty, ClassType, EnumType, MapType, Type, TypeKind, UnionType } from "../Type";
+import { directlyReachableSingleNamedType, matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
 export const javaOptions = {
+    useList: new EnumOption("array-type", "Use T[] or List<T>", [["array", true], ["list", false]]),
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
     // FIXME: Do this via a configurable named eventually.
@@ -38,7 +25,12 @@ export class JavaTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [javaOptions.packageName, javaOptions.justTypes, javaOptions.acronymStyle];
+        return [
+            javaOptions.packageName,
+            javaOptions.justTypes,
+            javaOptions.acronymStyle,
+            javaOptions.useList
+        ];
     }
 
     get supportsUnionsWithBothNumberTypes(): boolean {
@@ -303,7 +295,9 @@ export class JavaRenderer extends ConvenienceRenderer {
     }
 
     protected emitPackageAndImports(imports: string[]): void {
-        const allImports = ["java.util.Map"].concat(this._options.justTypes ? [] : imports);
+        const allImports = ["java.util.Map"]
+            .concat(this._options.useList ? [] : "java.util.List")
+            .concat(this._options.justTypes ? [] : imports);
         this.emitLine("package ", this._options.packageName, ";");
         this.ensureBlankLine();
         for (const pkg of allImports) {
@@ -336,7 +330,14 @@ export class JavaRenderer extends ConvenienceRenderer {
             _integerType => (reference ? "Long" : "long"),
             _doubleType => (reference ? "Double" : "double"),
             _stringType => "String",
-            arrayType => [this.javaType(false, arrayType.items, withIssues), "[]"],
+            arrayType => {
+                const itemsType = this.javaType(false, arrayType.items, withIssues);
+                if (this._options.useList) {
+                    return ["List<", itemsType, ">"];
+                } else {
+                    return [itemsType, "[]"];
+                }
+            },
             classType => this.nameForNamedType(classType),
             mapType => ["Map<String, ", this.javaType(true, mapType.values, withIssues), ">"],
             enumType => this.nameForNamedType(enumType),
