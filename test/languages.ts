@@ -96,7 +96,9 @@ export const JavaLanguage: Language = {
   skipMiscJSON: false,
   skipSchema: ["keyword-unions.schema"], // generates classes with names that are case-insensitively equal
   rendererOptions: {},
-  quickTestRendererOptions: [],
+  quickTestRendererOptions: [
+    { "array-type": "list" }
+  ],
   sourceFiles: ["src/language/Java.ts"]
 };
 
