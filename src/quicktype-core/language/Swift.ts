@@ -641,7 +641,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
     }
 
     private emitNewEncoderDecoder(): void {
-        this.emitBlock("func newJSONDecoder() -> JSONDecoder", () => {
+        this.emitBlock("fileprivate func newJSONDecoder() -> JSONDecoder", () => {
             this.emitLine("let decoder = JSONDecoder()");
             if (!this._options.linux) {
                 this.emitBlock("if #available(iOS 10.0, OSX 10.12, tvOS 10.0, watchOS 3.0, *)", () => {
@@ -670,7 +670,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
             this.emitLine("return decoder");
         });
         this.ensureBlankLine();
-        this.emitBlock("func newJSONEncoder() -> JSONEncoder", () => {
+        this.emitBlock("fileprivate func newJSONEncoder() -> JSONEncoder", () => {
             this.emitLine("let encoder = JSONEncoder()");
             if (!this._options.linux) {
                 this.emitBlock("if #available(iOS 10.0, OSX 10.12, tvOS 10.0, watchOS 3.0, *)", () => {
