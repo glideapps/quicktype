@@ -1,29 +1,15 @@
-import { TypeKind, Type, ArrayType, MapType, EnumType, UnionType, ClassType, ClassProperty } from "../Type";
-import { matchType, nullableFromUnion, removeNullFromUnion, directlyReachableSingleNamedType } from "../TypeUtils";
-import { Sourcelike, maybeAnnotated } from "../Source";
-import {
-    utf16LegalizeCharacters,
-    escapeNonPrintableMapper,
-    utf16ConcatMap,
-    standardUnicodeHexEscape,
-    isAscii,
-    isLetter,
-    isDigit,
-    capitalize,
-    splitIntoWords,
-    combineWords,
-    allUpperWordStyle,
-    firstUpperWordStyle,
-    allLowerWordStyle
-} from "../support/Strings";
-import { Name, Namer, funPrefixNamer, DependencyName } from "../Naming";
-import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { TargetLanguage } from "../TargetLanguage";
-import { BooleanOption, StringOption, EnumOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { defined, assert, assertNever } from "../support/Support";
+import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { DependencyName, funPrefixNamer, Name, Namer } from "../Naming";
 import { RenderContext } from "../Renderer";
+import { BooleanOption, EnumOption, getOptionValues, Option, OptionValues, StringOption } from "../RendererOptions";
+import { maybeAnnotated, Sourcelike } from "../Source";
 import { acronymOption, acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
+import { allLowerWordStyle, allUpperWordStyle, capitalize, combineWords, escapeNonPrintableMapper, firstUpperWordStyle, isAscii, isDigit, isLetter, splitIntoWords, standardUnicodeHexEscape, utf16ConcatMap, utf16LegalizeCharacters } from "../support/Strings";
+import { assert, assertNever, defined } from "../support/Support";
+import { TargetLanguage } from "../TargetLanguage";
+import { ArrayType, ClassProperty, ClassType, EnumType, MapType, Type, TypeKind, UnionType } from "../Type";
+import { directlyReachableSingleNamedType, matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
 export const javaOptions = {
     useList: new EnumOption("array-type", "Use T[] or List<T>", [["array", false], ["list", true]], "array"),
@@ -363,7 +349,7 @@ export class JavaRenderer extends ConvenienceRenderer {
     protected javaTypeWithoutGenerics(reference: boolean, t: Type): Sourcelike {
         if (t instanceof ArrayType) {
             if (this._options.useList) {
-                return [this.javaTypeWithoutGenerics(true, t.items)];
+                return ["List<", this.javaTypeWithoutGenerics(true, t.items), ">"];
             } else {
                 return [this.javaTypeWithoutGenerics(false, t.items), "[]"];
             }
@@ -464,7 +450,7 @@ export class JavaRenderer extends ConvenienceRenderer {
             const { fieldName } = this.unionField(u, t);
             const rendered = this.javaTypeWithoutGenerics(true, t);
             if (this._options.useList && t instanceof ArrayType) {
-                this.emitLine("value.", fieldName, " = jsonParser.readValueAs(new TypeReference<List<", rendered, ">>() {});");
+                this.emitLine("value.", fieldName, " = jsonParser.readValueAs(new TypeReference<", rendered, ">() {});");
             } else {
                 this.emitLine("value.", fieldName, " = jsonParser.readValueAs(", rendered, ".class);");
             }
