@@ -1,15 +1,29 @@
-import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { DependencyName, funPrefixNamer, Name, Namer } from "../Naming";
-import { RenderContext } from "../Renderer";
-import { BooleanOption, EnumOption, getOptionValues, Option, OptionValues, StringOption } from "../RendererOptions";
-import { maybeAnnotated, Sourcelike } from "../Source";
-import { acronymOption, acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
-import { allLowerWordStyle, allUpperWordStyle, capitalize, combineWords, escapeNonPrintableMapper, firstUpperWordStyle, isAscii, isDigit, isLetter, splitIntoWords, standardUnicodeHexEscape, utf16ConcatMap, utf16LegalizeCharacters } from "../support/Strings";
-import { assert, assertNever, defined } from "../support/Support";
-import { TargetLanguage } from "../TargetLanguage";
-import { ArrayType, ClassProperty, ClassType, EnumType, MapType, Type, TypeKind, UnionType } from "../Type";
-import { directlyReachableSingleNamedType, matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
+import {anyTypeIssueAnnotation, nullTypeIssueAnnotation} from "../Annotation";
+import {ConvenienceRenderer, ForbiddenWordsInfo} from "../ConvenienceRenderer";
+import {DependencyName, funPrefixNamer, Name, Namer} from "../Naming";
+import {RenderContext} from "../Renderer";
+import {BooleanOption, EnumOption, getOptionValues, Option, OptionValues, StringOption} from "../RendererOptions";
+import {maybeAnnotated, Sourcelike} from "../Source";
+import {acronymOption, acronymStyle, AcronymStyleOptions} from "../support/Acronyms";
+import {
+    allLowerWordStyle,
+    allUpperWordStyle,
+    capitalize,
+    combineWords,
+    escapeNonPrintableMapper,
+    firstUpperWordStyle,
+    isAscii,
+    isDigit,
+    isLetter,
+    splitIntoWords,
+    standardUnicodeHexEscape,
+    utf16ConcatMap,
+    utf16LegalizeCharacters
+} from "../support/Strings";
+import {assert, assertNever, defined} from "../support/Support";
+import {TargetLanguage} from "../TargetLanguage";
+import {ArrayType, ClassProperty, ClassType, EnumType, MapType, Type, TypeKind, UnionType} from "../Type";
+import {directlyReachableSingleNamedType, matchType, nullableFromUnion, removeNullFromUnion} from "../TypeUtils";
 
 export const javaOptions = {
     useList: new EnumOption("array-type", "Use T[] or List<T>", [["array", false], ["list", true]], "array"),
@@ -295,7 +309,7 @@ export class JavaRenderer extends ConvenienceRenderer {
     }
 
     protected emitPackageAndImports(imports: string[]): void {
-        const allImports = ["java.util.*"].concat(this._options.justTypes ? [] : imports);
+        const allImports = ["java.util.*"].concat(imports);
         this.emitLine("package ", this._options.packageName, ";");
         this.ensureBlankLine();
         for (const pkg of allImports) {
@@ -385,9 +399,13 @@ export class JavaRenderer extends ConvenienceRenderer {
 
     protected importsForType(t: ClassType | UnionType | EnumType): string[] {
         if (t instanceof ClassType) {
-            return ["com.fasterxml.jackson.annotation.*"];
+            return this._options.justTypes ? [] : ["com.fasterxml.jackson.annotation.*"];
         }
         if (t instanceof UnionType) {
+            if (this._options.justTypes)
+            {
+                return ["java.io.IOException"];
+            }
             return [
                 "java.io.IOException",
                 "com.fasterxml.jackson.core.*"
@@ -399,7 +417,11 @@ export class JavaRenderer extends ConvenienceRenderer {
                 ]);
         }
         if (t instanceof EnumType) {
-            return ["java.io.IOException", "com.fasterxml.jackson.annotation.*"];
+            if (this._options.justTypes){
+                return ["java.io.IOException"];
+            } else {
+                return ["java.io.IOException", "com.fasterxml.jackson.annotation.*"];
+            }
         }
         return assertNever(t);
     }
@@ -557,7 +579,10 @@ export class JavaRenderer extends ConvenienceRenderer {
         this.emitBlock(["public enum ", enumName], () => {
             this.emitLine(caseNames);
             this.ensureBlankLine();
-            this.emitLine("@JsonValue");
+
+            if (! this._options.justTypes) {
+                this.emitLine("@JsonValue");
+            }
             this.emitBlock("public String toValue()", () => {
                 this.emitLine("switch (this) {");
                 this.forEachEnumCase(e, "none", (name, jsonName) => {
@@ -567,7 +592,10 @@ export class JavaRenderer extends ConvenienceRenderer {
                 this.emitLine("return null;");
             });
             this.ensureBlankLine();
-            this.emitLine("@JsonCreator");
+
+            if (! this._options.justTypes) {
+                this.emitLine("@JsonCreator");
+            }
             this.emitBlock(["public static ", enumName, " forValue(String value) throws IOException"], () => {
                 this.forEachEnumCase(e, "none", (name, jsonName) => {
                     this.emitLine('if (value.equals("', stringEscape(jsonName), '")) return ', name, ";");
