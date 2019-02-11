@@ -1,10 +1,10 @@
-import {anyTypeIssueAnnotation, nullTypeIssueAnnotation} from "../Annotation";
-import {ConvenienceRenderer, ForbiddenWordsInfo} from "../ConvenienceRenderer";
-import {DependencyName, funPrefixNamer, Name, Namer} from "../Naming";
-import {RenderContext} from "../Renderer";
-import {BooleanOption, EnumOption, getOptionValues, Option, OptionValues, StringOption} from "../RendererOptions";
-import {maybeAnnotated, Sourcelike} from "../Source";
-import {acronymOption, acronymStyle, AcronymStyleOptions} from "../support/Acronyms";
+import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
+import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { DependencyName, funPrefixNamer, Name, Namer } from "../Naming";
+import { RenderContext } from "../Renderer";
+import { BooleanOption, EnumOption, getOptionValues, Option, OptionValues, StringOption } from "../RendererOptions";
+import { maybeAnnotated, Sourcelike } from "../Source";
+import { acronymOption, acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
 import {
     allLowerWordStyle,
     allUpperWordStyle,
@@ -20,10 +20,10 @@ import {
     utf16ConcatMap,
     utf16LegalizeCharacters
 } from "../support/Strings";
-import {assert, assertNever, defined} from "../support/Support";
-import {TargetLanguage} from "../TargetLanguage";
-import {ArrayType, ClassProperty, ClassType, EnumType, MapType, Type, TypeKind, UnionType} from "../Type";
-import {directlyReachableSingleNamedType, matchType, nullableFromUnion, removeNullFromUnion} from "../TypeUtils";
+import { assert, assertNever, defined } from "../support/Support";
+import { TargetLanguage } from "../TargetLanguage";
+import { ArrayType, ClassProperty, ClassType, EnumType, MapType, Type, TypeKind, UnionType } from "../Type";
+import { directlyReachableSingleNamedType, matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
 export const javaOptions = {
     useList: new EnumOption("array-type", "Use T[] or List<T>", [["array", false], ["list", true]], "array"),
@@ -39,12 +39,7 @@ export class JavaTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [
-            javaOptions.packageName,
-            javaOptions.justTypes,
-            javaOptions.acronymStyle,
-            javaOptions.useList
-        ];
+        return [javaOptions.packageName, javaOptions.justTypes, javaOptions.acronymStyle, javaOptions.useList];
     }
 
     get supportsUnionsWithBothNumberTypes(): boolean {
@@ -402,22 +397,15 @@ export class JavaRenderer extends ConvenienceRenderer {
             return this._options.justTypes ? [] : ["com.fasterxml.jackson.annotation.*"];
         }
         if (t instanceof UnionType) {
-            if (this._options.justTypes)
-            {
+            if (this._options.justTypes) {
                 return ["java.io.IOException"];
             }
-            return [
-                "java.io.IOException",
-                "com.fasterxml.jackson.core.*"
-            ]
+            return ["java.io.IOException", "com.fasterxml.jackson.core.*"]
                 .concat(this._options.useList ? ["com.fasterxml.jackson.core.type.*"] : [])
-                .concat([
-                    "com.fasterxml.jackson.databind.*",
-                    "com.fasterxml.jackson.databind.annotation.*"
-                ]);
+                .concat(["com.fasterxml.jackson.databind.*", "com.fasterxml.jackson.databind.annotation.*"]);
         }
         if (t instanceof EnumType) {
-            if (this._options.justTypes){
+            if (this._options.justTypes) {
                 return ["java.io.IOException"];
             } else {
                 return ["java.io.IOException", "com.fasterxml.jackson.annotation.*"];
@@ -472,7 +460,13 @@ export class JavaRenderer extends ConvenienceRenderer {
             const { fieldName } = this.unionField(u, t);
             const rendered = this.javaTypeWithoutGenerics(true, t);
             if (this._options.useList && t instanceof ArrayType) {
-                this.emitLine("value.", fieldName, " = jsonParser.readValueAs(new TypeReference<", rendered, ">() {});");
+                this.emitLine(
+                    "value.",
+                    fieldName,
+                    " = jsonParser.readValueAs(new TypeReference<",
+                    rendered,
+                    ">() {});"
+                );
             } else {
                 this.emitLine("value.", fieldName, " = jsonParser.readValueAs(", rendered, ".class);");
             }
@@ -580,7 +574,7 @@ export class JavaRenderer extends ConvenienceRenderer {
             this.emitLine(caseNames);
             this.ensureBlankLine();
 
-            if (! this._options.justTypes) {
+            if (!this._options.justTypes) {
                 this.emitLine("@JsonValue");
             }
             this.emitBlock("public String toValue()", () => {
@@ -593,7 +587,7 @@ export class JavaRenderer extends ConvenienceRenderer {
             });
             this.ensureBlankLine();
 
-            if (! this._options.justTypes) {
+            if (!this._options.justTypes) {
                 this.emitLine("@JsonCreator");
             }
             this.emitBlock(["public static ", enumName, " forValue(String value) throws IOException"], () => {
