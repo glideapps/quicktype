@@ -10,7 +10,7 @@ import {
     JavaScriptTargetLanguage,
     JavaScriptRenderer,
     JavaScriptTypeAnnotations,
-    legalizeName,
+    legalizeName
 } from "./JavaScript";
 import { defined, panic } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
