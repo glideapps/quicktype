@@ -188,12 +188,12 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
     }
 
     protected deserializerFunctionLine(t: Type, name: Name): Sourcelike {
-        return ["to", name, "(json: string): ", this.sourceFor(t).source];
+        return ["function to", name, "(json: string): ", this.sourceFor(t).source];
     }
 
     protected serializerFunctionLine(t: Type, name: Name): Sourcelike {
         const camelCaseName = modifySource(camelCase, name);
-        return ["", camelCaseName, "ToJson(value: ", this.sourceFor(t).source, "): string"];
+        return ["function ", camelCaseName, "ToJson(value: ", this.sourceFor(t).source, "): string"];
     }
 
     protected get moduleLine(): string | undefined {
@@ -228,11 +228,12 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
     }
 
     protected deserializerFunctionLine(t: Type, name: Name): Sourcelike {
-        return ["public static ", super.deserializerFunctionLine(t, name)];
+        return ["public static to", name, "(json: string): ", this.sourceFor(t).source];
     }
 
     protected serializerFunctionLine(t: Type, name: Name): Sourcelike {
-        return ["public static ", super.serializerFunctionLine(t, name)];
+        const camelCaseName = modifySource(camelCase, name);
+        return ["public static ", camelCaseName, "ToJson(value: ", this.sourceFor(t).source, "): string"];
     }
 
     protected get moduleLine(): string | undefined {
