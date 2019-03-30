@@ -273,6 +273,9 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
                 }
             });
         });
+    }
+
+  protected emitConvertModuleHelpers(): void { 
         if (this._jsOptions.runtimeTypecheck) {
             const {
                 any: anyAnnotation,
@@ -414,7 +417,7 @@ function r(name${stringAnnotation}) {
 `);
             this.emitTypeMap();
         }
-    }
+  }
 
     protected emitConvertModule(): void {
         this.ensureBlankLine();
@@ -478,6 +481,8 @@ function r(name${stringAnnotation}) {
         this.emitTypes();
 
         this.emitConvertModule();
+
+        this.emitConvertModuleHelpers() 
 
         this.emitModuleExports();
     }

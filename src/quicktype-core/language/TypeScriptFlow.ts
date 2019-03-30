@@ -188,12 +188,12 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
     }
 
     protected deserializerFunctionLine(t: Type, name: Name): Sourcelike {
-        return ["function to", name, "(json: string): ", this.sourceFor(t).source];
+        return ["to", name, "(json: string): ", this.sourceFor(t).source];
     }
 
     protected serializerFunctionLine(t: Type, name: Name): Sourcelike {
         const camelCaseName = modifySource(camelCase, name);
-        return ["function ", camelCaseName, "ToJson(value: ", this.sourceFor(t).source, "): string"];
+        return ["", camelCaseName, "ToJson(value: ", this.sourceFor(t).source, "): string"];
     }
 
     protected get moduleLine(): string | undefined {
@@ -228,15 +228,15 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
     }
 
     protected deserializerFunctionLine(t: Type, name: Name): Sourcelike {
-        return ["export ", super.deserializerFunctionLine(t, name)];
+        return ["public static ", super.deserializerFunctionLine(t, name)];
     }
 
     protected serializerFunctionLine(t: Type, name: Name): Sourcelike {
-        return ["export ", super.serializerFunctionLine(t, name)];
+        return ["public static ", super.serializerFunctionLine(t, name)];
     }
 
     protected get moduleLine(): string | undefined {
-        return "export namespace Convert";
+        return "export class Convert";
     }
 
     protected get typeAnnotations(): JavaScriptTypeAnnotations {
