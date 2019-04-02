@@ -79,20 +79,21 @@ export {
     newtonsoftCSharpOptions,
     NewtonsoftCSharpRenderer
 } from "./language/CSharp";
-export { GoTargetLanguage, GoRenderer } from "./language/Golang";
-export { ObjectiveCTargetLanguage, ObjectiveCRenderer } from "./language/Objective-C";
-export { JavaTargetLanguage, JavaRenderer } from "./language/Java";
-export { JavaScriptTargetLanguage, JavaScriptRenderer } from "./language/JavaScript";
+export { GoTargetLanguage, GoRenderer, goOptions } from "./language/Golang";
+export { ObjectiveCTargetLanguage, ObjectiveCRenderer, objcOptions } from "./language/Objective-C";
+export { JavaTargetLanguage, JavaRenderer, javaOptions } from "./language/Java";
+export { JavaScriptTargetLanguage, JavaScriptRenderer, javaScriptOptions } from "./language/JavaScript";
 export {
     TypeScriptTargetLanguage,
     TypeScriptRenderer,
     FlowTargetLanguage,
-    FlowRenderer
+    FlowRenderer,
+    tsFlowOptions
 } from "./language/TypeScriptFlow";
-export { SwiftTargetLanguage, SwiftRenderer } from "./language/Swift";
-export { KotlinTargetLanguage, KotlinRenderer } from "./language/Kotlin";
-export { ElmTargetLanguage, ElmRenderer } from "./language/Elm";
+export { SwiftTargetLanguage, SwiftRenderer, swiftOptions } from "./language/Swift";
+export { KotlinTargetLanguage, KotlinRenderer, kotlinOptions } from "./language/Kotlin";
+export { ElmTargetLanguage, ElmRenderer, elmOptions } from "./language/Elm";
 export { JSONSchemaTargetLanguage, JSONSchemaRenderer } from "./language/JSONSchema";
-export { RustTargetLanguage, RustRenderer } from "./language/Rust";
-export { RubyTargetLanguage, RubyRenderer } from "./language/ruby";
+export { RustTargetLanguage, RustRenderer, rustOptions } from "./language/Rust";
+export { RubyTargetLanguage, RubyRenderer, rubyOptions } from "./language/ruby";
 export { CrystalTargetLanguage, CrystalRenderer } from "./language/Crystal";
