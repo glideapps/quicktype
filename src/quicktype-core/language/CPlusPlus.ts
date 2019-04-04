@@ -1631,21 +1631,28 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected emitOptionalHelpers(): void {
-        this.emitLine("template <typename T>");
-        this.emitBlock(["struct adl_serializer<", optionalType, "<T>>"], true, () => {
-            
-            this.emitBlock(["static void to_json(json & j, ", this.withConst([optionalType, "<T>"]), " & opt)"], false, () => {
-                this.emitLine("if (!opt) j = nullptr; else j = *opt;");
-            });
+        this.emitLine("#ifndef NLOHMANN_OPT_HELPER");
+        this.emitLine("#define NLOHMANN_OPT_HELPER");
 
-            this.ensureBlankLine();
+        this.emitNamespaces(["nlohmann"], () => {
+            this.emitLine("template <typename T>");
+            this.emitBlock(["struct adl_serializer<", optionalType, "<T>>"], true, () => {
+                
+                this.emitBlock(["static void to_json(json & j, ", this.withConst([optionalType, "<T>"]), " & opt)"], false, () => {
+                    this.emitLine("if (!opt) j = nullptr; else j = *opt;");
+                });
 
-            this.emitBlock(["static ", optionalType, "<T> from_json(", this.withConst("json"), " & j)"], false, () => {
-                this.emitLine(
-                    `if (j.is_null()) return std::unique_ptr<T>(); else return std::unique_ptr<T>(new T(j.get<T>()));`
-                );
+                this.ensureBlankLine();
+
+                this.emitBlock(["static ", optionalType, "<T> from_json(", this.withConst("json"), " & j)"], false, () => {
+                    this.emitLine(
+                        `if (j.is_null()) return std::unique_ptr<T>(); else return std::unique_ptr<T>(new T(j.get<T>()));`
+                    );
+                });
             });
         });
+
+        this.emitLine("#endif");
     }
 
     protected emitDeclaration(decl: Declaration): void {
@@ -2001,9 +2008,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
         if (this.haveUnions) {
             this.ensureBlankLine();
-            this.emitNamespaces(["nlohmann"], () => {
-                this.emitOptionalHelpers();
-            });
+            this.emitOptionalHelpers();
         }
 
         this.finishFile();
@@ -2093,11 +2098,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.emitTypes();
         } else {
             if (!this._options.justTypes && this.haveNamedTypes && this.haveUnions) {
-                this.emitNamespaces(["nlohmann"], () => {
-                    if (this.haveUnions) {
-                        this.emitOptionalHelpers();
-                    }
-                });
+                this.emitOptionalHelpers();
                 this.ensureBlankLine();
             }
             this.emitNamespaces(this._namespaceNames, () => this.emitTypes());
