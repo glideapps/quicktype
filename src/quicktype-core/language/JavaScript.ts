@@ -1,6 +1,13 @@
 import { arrayIntercalate } from "collection-utils";
 
-import { TransformedStringTypeKind,  PrimitiveStringTypeKind, Type, ClassProperty, ClassType, ObjectType } from "../Type";
+import {
+    TransformedStringTypeKind,
+    PrimitiveStringTypeKind,
+    Type,
+    ClassProperty,
+    ClassType,
+    ObjectType
+} from "../Type";
 import { matchType, directlyReachableSingleNamedType } from "../TypeUtils";
 import { acronymOption, acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
 import {
@@ -49,10 +56,7 @@ export class JavaScriptTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [
-            javaScriptOptions.runtimeTypecheck,
-            javaScriptOptions.acronymStyle
-        ];
+        return [javaScriptOptions.runtimeTypecheck, javaScriptOptions.acronymStyle];
     }
 
     get stringTypeMapping(): StringTypeMapping {
@@ -92,10 +96,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
         super(targetLanguage, renderContext);
     }
 
-    protected nameStyle(
-        original: string,
-        upper: boolean,
-    ): string {
+    protected nameStyle(original: string, upper: boolean): string {
         const acronyms = acronymStyle(this._jsOptions.acronymStyle);
         const words = splitIntoWords(original);
         return combineWords(
@@ -273,6 +274,9 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
                 }
             });
         });
+    }
+
+    protected emitConvertModuleHelpers(): void {
         if (this._jsOptions.runtimeTypecheck) {
             const {
                 any: anyAnnotation,
@@ -478,6 +482,8 @@ function r(name${stringAnnotation}) {
         this.emitTypes();
 
         this.emitConvertModule();
+
+        this.emitConvertModuleHelpers();
 
         this.emitModuleExports();
     }

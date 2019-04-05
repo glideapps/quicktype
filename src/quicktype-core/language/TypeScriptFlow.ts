@@ -10,7 +10,7 @@ import {
     JavaScriptTargetLanguage,
     JavaScriptRenderer,
     JavaScriptTypeAnnotations,
-    legalizeName,
+    legalizeName
 } from "./JavaScript";
 import { defined, panic } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
@@ -228,15 +228,16 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
     }
 
     protected deserializerFunctionLine(t: Type, name: Name): Sourcelike {
-        return ["export ", super.deserializerFunctionLine(t, name)];
+        return ["public static to", name, "(json: string): ", this.sourceFor(t).source];
     }
 
     protected serializerFunctionLine(t: Type, name: Name): Sourcelike {
-        return ["export ", super.serializerFunctionLine(t, name)];
+        const camelCaseName = modifySource(camelCase, name);
+        return ["public static ", camelCaseName, "ToJson(value: ", this.sourceFor(t).source, "): string"];
     }
 
     protected get moduleLine(): string | undefined {
-        return "export namespace Convert";
+        return "export class Convert";
     }
 
     protected get typeAnnotations(): JavaScriptTypeAnnotations {
