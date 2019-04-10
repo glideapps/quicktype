@@ -402,7 +402,16 @@ export class DartRenderer extends ConvenienceRenderer {
                     case "date-time":
                         return [dynamic, ".toIso8601String()"];
                     case "date":
-                        return ['"${', dynamic, ".year()", "}-${", dynamic, ".month()}-${", dynamic, '.day()}"'];
+                        return [
+                            '"${',
+                            dynamic,
+                            ".year.toString().padLeft(4, '0')",
+                            "}-${",
+                            dynamic,
+                            ".month.toString().padLeft(2, '0')}-${",
+                            dynamic,
+                            ".day.toString().padLeft(2, '0')}\""
+                        ];
                     default:
                         return dynamic;
                 }
