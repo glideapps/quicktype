@@ -1,4 +1,12 @@
-import { Type, EnumType, UnionType, ClassType, ClassProperty } from "../Type";
+import {
+    Type,
+    EnumType,
+    UnionType,
+    ClassType,
+    ClassProperty,
+    TransformedStringTypeKind,
+    PrimitiveStringTypeKind
+} from "../Type";
 import { matchType, nullableFromUnion, directlyReachableSingleNamedType } from "../TypeUtils";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import {
@@ -17,6 +25,9 @@ import {
     isPrintable,
     decapitalize
 } from "../support/Strings";
+
+import { StringTypeMapping } from "../TypeBuilder";
+
 import { Name, Namer, funPrefixNamer, DependencyName } from "../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
@@ -42,6 +53,14 @@ export class DartTargetLanguage extends TargetLanguage {
 
     get supportsUnionsWithBothNumberTypes(): boolean {
         return true;
+    }
+
+    get stringTypeMapping(): StringTypeMapping {
+        const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
+        mapping.set("date", "date");
+        mapping.set("date-time", "date-time");
+        //        mapping.set("uuid", "uuid");
+        return mapping;
     }
 
     protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): DartRenderer {
@@ -149,8 +168,8 @@ function dartNameStyle(startWithUpper: boolean, upperUnderscore: boolean, origin
     const firstWordStyle = upperUnderscore
         ? allUpperWordStyle
         : startWithUpper
-            ? firstUpperWordStyle
-            : allLowerWordStyle;
+        ? firstUpperWordStyle
+        : allLowerWordStyle;
     const restWordStyle = upperUnderscore ? allUpperWordStyle : firstUpperWordStyle;
     return combineWords(
         words,
@@ -303,6 +322,15 @@ export class DartRenderer extends ConvenienceRenderer {
                     return "dynamic";
                 }
                 return this.dartType(maybeNullable, withIssues);
+            },
+            transformedStringType => {
+                switch (transformedStringType.kind) {
+                    case "date-time":
+                    case "date":
+                        return "DateTime";
+                    default:
+                        return "String";
+                }
             }
         );
     }
@@ -336,6 +364,15 @@ export class DartRenderer extends ConvenienceRenderer {
                     return dynamic;
                 }
                 return [dynamic, " == null ? null : ", this.fromDynamicExpression(maybeNullable, dynamic)];
+            },
+            transformedStringType => {
+                switch (transformedStringType.kind) {
+                    case "date-time":
+                    case "date":
+                        return ["DateTime.parse(", dynamic, ")"];
+                    default:
+                        return dynamic;
+                }
             }
         );
     }
@@ -359,6 +396,25 @@ export class DartRenderer extends ConvenienceRenderer {
                     return dynamic;
                 }
                 return [dynamic, " == null ? null : ", this.toDynamicExpression(maybeNullable, dynamic)];
+            },
+            transformedStringType => {
+                switch (transformedStringType.kind) {
+                    case "date-time":
+                        return [dynamic, ".toIso8601String()"];
+                    case "date":
+                        return [
+                            '"${',
+                            dynamic,
+                            ".year.toString().padLeft(4, '0')",
+                            "}-${",
+                            dynamic,
+                            ".month.toString().padLeft(2, '0')}-${",
+                            dynamic,
+                            ".day.toString().padLeft(2, '0')}\""
+                        ];
+                    default:
+                        return dynamic;
+                }
             }
         );
     }
