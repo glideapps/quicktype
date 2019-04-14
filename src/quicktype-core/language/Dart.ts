@@ -468,7 +468,7 @@ export class DartRenderer extends ConvenienceRenderer {
                 this.ensureBlankLine();
                 this.emitLine(
                     "String ",
-                    this._options.methodNamesWithMap ? "toJson() => " : "toRawJson() =>",
+                    this._options.methodNamesWithMap ? "toJson() => " : "toRawJson() => ",
                     "json.encode(",
                     this._options.methodNamesWithMap ? "toMap" : "toJson",
                     "());"
