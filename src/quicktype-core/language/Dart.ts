@@ -49,7 +49,7 @@ export class DartTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [dartOptions.justTypes];
+        return [dartOptions.justTypes, dartOptions.codersInClass, dartOptions.methodNamesWithMap];
     }
 
     get supportsUnionsWithBothNumberTypes(): boolean {
