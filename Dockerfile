@@ -72,7 +72,7 @@ RUN apt-get -y install apt-transport-https
 RUN sh -c 'curl https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -'
 RUN sh -c 'curl https://storage.googleapis.com/download.dartlang.org/linux/debian/dart_stable.list > /etc/apt/sources.list.d/dart_stable.list'
 RUN apt-get -y update
-RUN apt-get -y install dart
+RUN apt-get -y --allow-unauthenticated install dart
 
 # Crystal
 RUN curl -sL "https://keybase.io/crystal/pgp_keys.asc" | apt-key add -
