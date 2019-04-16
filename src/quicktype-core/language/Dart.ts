@@ -36,10 +36,11 @@ import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { defined } from "../support/Support";
 import { RenderContext } from "../Renderer";
 import { arrayIntercalate } from "collection-utils";
-import { pythonOptions } from "./Python";
 
 export const dartOptions = {
-    justTypes: new BooleanOption("just-types", "Types only", false)
+    justTypes: new BooleanOption("just-types", "Types only", false),
+    codersInClass: new BooleanOption("coders-in-class ", "Put encoder & decoder in Class", false),
+    methodNamesWithMap: new BooleanOption("from-map ", "Use method names fromMap() & toMap()", false)
 };
 
 export class DartTargetLanguage extends TargetLanguage {
@@ -48,7 +49,7 @@ export class DartTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [pythonOptions.justTypes];
+        return [dartOptions.justTypes, dartOptions.codersInClass, dartOptions.methodNamesWithMap];
     }
 
     get supportsUnionsWithBothNumberTypes(): boolean {
@@ -136,7 +137,9 @@ const keywords = [
     "String",
     "File",
     "fromJson",
-    "toJson"
+    "toJson",
+    "fromMap",
+    "toMap"
 ];
 
 const typeNamingFunction = funPrefixNamer("types", n => dartNameStyle(true, false, n));
@@ -354,7 +357,14 @@ export class DartRenderer extends ConvenienceRenderer {
             _stringType => dynamic,
             arrayType =>
                 this.mapList(this.dartType(arrayType.items), dynamic, this.fromDynamicExpression(arrayType.items, "x")),
-            classType => [this.nameForNamedType(classType), ".fromJson(", dynamic, ")"],
+            classType => [
+                this.nameForNamedType(classType),
+                ".from",
+                this._options.methodNamesWithMap ? "Map" : "Json",
+                "(",
+                dynamic,
+                ")"
+            ],
             mapType =>
                 this.mapMap(this.dartType(mapType.values), dynamic, this.fromDynamicExpression(mapType.values, "v")),
             enumType => [defined(this._enumValues.get(enumType)), ".map[", dynamic, "]"],
@@ -387,7 +397,7 @@ export class DartRenderer extends ConvenienceRenderer {
             _doubleType => dynamic,
             _stringType => dynamic,
             arrayType => this.mapList("dynamic", dynamic, this.toDynamicExpression(arrayType.items, "x")),
-            _classType => [dynamic, ".toJson()"],
+            _classType => [dynamic, ".to", this._options.methodNamesWithMap ? "Map" : "Json", "()"],
             mapType => this.mapMap("dynamic", dynamic, this.toDynamicExpression(mapType.values, "v")),
             enumType => [defined(this._enumValues.get(enumType)), ".reverse[", dynamic, "]"],
             unionType => {
@@ -441,8 +451,40 @@ export class DartRenderer extends ConvenienceRenderer {
 
             if (this._options.justTypes) return;
 
+            if (this._options.codersInClass) {
+                this.ensureBlankLine();
+                this.emitLine(
+                    "factory ",
+                    className,
+                    ".from",
+                    this._options.methodNamesWithMap ? "Json" : "RawJson",
+                    "(String str) => ",
+                    className,
+                    ".from",
+                    this._options.methodNamesWithMap ? "Map" : "Json",
+                    "(json.decode(str));"
+                );
+
+                this.ensureBlankLine();
+                this.emitLine(
+                    "String ",
+                    this._options.methodNamesWithMap ? "toJson() => " : "toRawJson() => ",
+                    "json.encode(",
+                    this._options.methodNamesWithMap ? "toMap" : "toJson",
+                    "());"
+                );
+            }
+
             this.ensureBlankLine();
-            this.emitLine("factory ", className, ".fromJson(Map<String, dynamic> json) => new ", className, "(");
+            this.emitLine(
+                "factory ",
+                className,
+                ".from",
+                this._options.methodNamesWithMap ? "Map" : "Json",
+                "(Map<String, dynamic> json) => new ",
+                className,
+                "("
+            );
             this.indent(() => {
                 this.forEachClassProperty(c, "none", (name, jsonName, property) => {
                     this.emitLine(
@@ -454,9 +496,10 @@ export class DartRenderer extends ConvenienceRenderer {
                 });
             });
             this.emitLine(");");
+
             this.ensureBlankLine();
 
-            this.emitLine("Map<String, dynamic> toJson() => {");
+            this.emitLine("Map<String, dynamic> to", this._options.methodNamesWithMap ? "Map" : "Json", "() => {");
             this.indent(() => {
                 this.forEachClassProperty(c, "none", (name, jsonName, property) => {
                     this.emitLine(
@@ -512,18 +555,34 @@ export class DartRenderer extends ConvenienceRenderer {
     protected emitSourceStructure(): void {
         this.emitFileHeader();
 
-        if (!this._options.justTypes) {
+        if (!this._options.justTypes && !this._options.codersInClass) {
             this.forEachTopLevel("leading-and-interposing", (t, name) => {
                 const { encoder, decoder } = defined(this._topLevelDependents.get(name));
-                this.emitBlock([this.dartType(t), " ", decoder, "(String str)"], () => {
-                    this.emitLine("final jsonData = json.decode(str);");
-                    this.emitLine("return ", this.fromDynamicExpression(t, "jsonData"), ";");
-                });
+
+                this.emitLine(
+                    this.dartType(t),
+                    " ",
+                    decoder,
+                    "(String str) => ",
+                    this.fromDynamicExpression(t, "json.decode(str)"),
+                    ";"
+                );
+
                 this.ensureBlankLine();
-                this.emitBlock(["String ", encoder, "(", this.dartType(t), " data)"], () => {
-                    this.emitLine("final dyn = ", this.toDynamicExpression(t, "data"), ";");
-                    this.emitLine("return json.encode(dyn);");
-                });
+
+                this.emitLine(
+                    "String ",
+                    encoder,
+                    "(",
+                    this.dartType(t),
+                    " data) => json.encode(",
+                    this.toDynamicExpression(t, "data"),
+                    ");"
+                );
+
+                // this.emitBlock(["String ", encoder, "(", this.dartType(t), " data)"], () => {
+                //     this.emitJsonEncoderBlock(t);
+                // });
             });
         }
 
