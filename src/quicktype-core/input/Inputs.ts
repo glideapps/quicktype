@@ -1,4 +1,5 @@
 import { iterableFirst, iterableFind, iterableSome, setFilterMap, withDefault, arrayMapSync } from "collection-utils";
+import JSON5 from 'json5';
 
 import { Value, CompressedJSON, CompressedJSONFromString } from "./CompressedJSON";
 import { panic, errorMessage, defined } from "../support/Support";

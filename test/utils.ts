@@ -3,6 +3,7 @@ import * as path from "path";
 
 import * as _ from "lodash";
 import * as shell from "shelljs";
+import JSON5 from 'json5';
 
 import { main as quicktype_, CLIOptions } from "../dist/cli";
 import { RendererOptions } from "../dist/quicktype-core/Run";
@@ -237,9 +238,9 @@ export function compareJsonFileToJson(args: ComparisonArgs) {
         () => exec(given.command, given.env).stdout
       );
 
-  const givenJSON = callAndReportFailure("Could not parse output JSON", () => JSON.parse(jsonString));
+  const givenJSON = callAndReportFailure("Could not parse output JSON", () => JSON5.parse(jsonString));
   const expectedJSON = callAndReportFailure("Could not read or parse expected JSON file", () =>
-    JSON.parse(fs.readFileSync(expectedFile, "utf8"))
+    JSON5.parse(fs.readFileSync(expectedFile, "utf8"))
   );
 
   let jsonAreEqual = strict

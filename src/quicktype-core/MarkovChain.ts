@@ -1,3 +1,5 @@
+import JSON5 from 'json5';
+
 import { panic, assert, inflateBase64 } from "./support/Support";
 import { encodedMarkovChain } from "./EncodedMarkovChain";
 
@@ -85,7 +87,7 @@ export function train(lines: string[], depth: number): MarkovChain {
 }
 
 export function load(): MarkovChain {
-    return JSON.parse(inflateBase64(encodedMarkovChain));
+    return JSON5.parse(inflateBase64(encodedMarkovChain));
 }
 
 export function evaluateFull(mc: MarkovChain, word: string): [number, number[]] {

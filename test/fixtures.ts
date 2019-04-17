@@ -3,6 +3,7 @@ import * as path from "path";
 import * as fs from "fs";
 import { randomBytes } from "crypto";
 import * as shell from "shelljs";
+import JSON5 from 'json5';
 
 const Ajv = require("ajv");
 
@@ -444,8 +445,8 @@ class JSONSchemaJSONFixture extends JSONToXToYFixture {
     additionalRendererOptions: RendererOptions,
     additionalFiles: string[]
   ): Promise<number> {
-    let input = JSON.parse(fs.readFileSync(filename, "utf8"));
-    let schema = JSON.parse(fs.readFileSync(this.language.output, "utf8"));
+    let input = JSON5.parse(fs.readFileSync(filename, "utf8"));
+    let schema = JSON5.parse(fs.readFileSync(this.language.output, "utf8"));
 
     let ajv = new Ajv({ format: "full", unknownFormats: ["integer", "boolean"] });
     // Make Ajv's date-time compatible with what we recognize.  All non-standard
