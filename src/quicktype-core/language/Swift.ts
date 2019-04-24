@@ -490,7 +490,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
         this.emitLine("typealias ", name, " = ", this.swiftType(t, true));
     }
 
-    private getProtocolString(): Sourcelike {
+    protected getProtocolsArray(_t: Type): string[] {
         const protocols: string[] = [];
         if (!this._options.justTypes) {
             protocols.push("Codable");
@@ -503,7 +503,11 @@ export class SwiftRenderer extends ConvenienceRenderer {
         if (this._options.protocol.equatable) {
             protocols.push("Equatable");
         }
+        return protocols;
+    }
 
+    private getProtocolString(_t: Type): Sourcelike {
+        const protocols = this.getProtocolsArray(_t);
         return protocols.length > 0 ? ": " + protocols.join(", ") : "";
     }
 
@@ -547,7 +551,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
 
         const isClass = this._options.useClasses || this.isCycleBreakerType(c);
         const structOrClass = isClass ? "class" : "struct";
-        this.emitBlockWithAccess([structOrClass, " ", className, this.getProtocolString()], () => {
+        this.emitBlockWithAccess([structOrClass, " ", className, this.getProtocolString(c)], () => {
             if (this._options.dense) {
                 let lastProperty: ClassProperty | undefined = undefined;
                 let lastNames: Name[] = [];
@@ -790,7 +794,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
 
         const indirect = this.isCycleBreakerType(u) ? "indirect " : "";
         const [maybeNull, nonNulls] = removeNullFromUnion(u, sortBy);
-        this.emitBlockWithAccess([indirect, "enum ", unionName, this.getProtocolString()], () => {
+        this.emitBlockWithAccess([indirect, "enum ", unionName, this.getProtocolString(u)], () => {
             this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
                 this.emitLine("case ", name, "(", this.swiftType(t), ")");
             });
