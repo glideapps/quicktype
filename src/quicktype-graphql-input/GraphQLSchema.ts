@@ -35,6 +35,12 @@ export enum TypeKind {
     NON_NULL = "NON_NULL" // Indicates this type is a non-null. `ofType` is a valid field.
 }
 
+export enum VariableKind {
+    NAMED = 'NamedType',
+    LIST = 'ListType',
+    NON_NULL = 'NonNullType'
+}
+
 export type GraphQLSchema = {
     __schema: {
         __typename: "__Schema";

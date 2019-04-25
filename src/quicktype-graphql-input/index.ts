@@ -32,7 +32,7 @@ import {
     RunContext
 } from "../quicktype-core";
 
-import { TypeKind, GraphQLSchema } from "./GraphQLSchema";
+import { TypeKind, GraphQLSchema, VariableKind } from "./GraphQLSchema";
 
 interface GQLType {
     kind: TypeKind;
@@ -235,8 +235,12 @@ class GQLQuery {
                 result = builder.getEnumType(makeNames(name, fieldName, containingTypeName), new Set(values));
                 break;
             case TypeKind.INPUT_OBJECT:
-                // FIXME: Support input objects
-                return panic("Input objects not supported");
+                return this.makeIRTypeFromInputObject(
+                    builder,
+                    fieldType,
+                    fieldNode.name.value,
+                    containingTypeName
+                );
             case TypeKind.LIST:
                 if (!fieldType.ofType) {
                     return panic("No type for list");
@@ -268,6 +272,46 @@ class GQLQuery {
         const fragment = this._fragments[name];
         if (!fragment) return panic(`Fragment ${name} is not defined.`);
         return fragment;
+    };
+
+    private InputObjectDepth: number = 0;
+    private makeIRTypeFromInputObject = (
+        builder: TypeBuilder,
+        gqlType: GQLType,
+        containingFieldName: string | null,
+        containingTypeName: string | null,
+        overrideName?: string
+    ): TypeRef => {
+        if (this.InputObjectDepth > 3) {
+            // TODO: Support objects with depth > 3 and recursive references
+            return builder.getPrimitiveType("null");
+        }
+        this.InputObjectDepth++;
+        if (!gqlType.name) {
+            return panic("Input object type doesn't have a name.");
+        }
+        if (!gqlType.inputFields) {
+            return panic("Input object type doesn't have fields.");
+        }
+        const nameOrOverride = overrideName || gqlType.name;
+        const properties = new Map<string, ClassProperty>();
+        gqlType.inputFields.forEach((field) => {
+            let fieldType = this.makeIRTypeFromFieldNode(
+                builder,
+                {
+                    kind: "Field",
+                    name: {
+                        value: field.name,
+                        kind: "Name"
+                    }
+                },
+                field.type,
+                nameOrOverride
+            );
+            properties.set(field.name, builder.makeClassProperty(fieldType, !!field.defaultValue));
+        });
+        this.InputObjectDepth--;
+        return builder.getClassType(makeNames(nameOrOverride, containingFieldName, containingTypeName), properties);
     };
 
     private makeIRTypeFromSelectionSet = (
@@ -357,6 +401,46 @@ class GQLQuery {
         }
 
         return panic(`Unknown query operation type: "${query.operation}"`);
+    }
+
+    makeInputType(builder: TypeBuilder, query: OperationDefinitionNode, queryName: string): TypeRef {
+        const name = queryName + "Input";
+        const defs = query.variableDefinitions || [];
+        const properties = defs.reduce(
+            (props, definition) => {
+                let variableType = definition.type;
+                let optional = true;
+                let list = false;
+                if (variableType.kind === VariableKind.NON_NULL) {
+                    optional = false;
+                    variableType = variableType.type;
+                }
+                if (variableType.kind === VariableKind.LIST) {
+                    list = true;
+                    variableType = variableType.type;
+                }
+                if (variableType.kind !== VariableKind.NAMED) {
+                    return panic(`Named type not found for variable "${definition.variable.name.value}"`);
+                }
+                const gqlType = this._schema.types[variableType.name.value];
+                let irType = this.makeIRTypeFromFieldNode(
+                    builder,
+                    {
+                        kind: "Field",
+                        name: variableType.name
+                    },
+                    gqlType,
+                    name
+                );
+                if (list) {
+                    irType = builder.getArrayType(emptyTypeAttributes, irType);
+                }
+                props.set(definition.variable.name.value, builder.makeClassProperty(irType, optional));
+                return props;
+            },
+            new Map<string, ClassProperty>()
+        );
+        return builder.getClassType(makeNames(name, null, null), properties);
     }
 }
 
@@ -508,6 +592,14 @@ function makeGraphQLQueryTypes(
             })
         );
         types.set(queryName, t);
+        if (odn.variableDefinitions && odn.variableDefinitions.length) {
+            const inputDataType = query.makeInputType(builder, odn, queryName);
+            const inputOrNullType = builder.getUnionType(
+                emptyTypeAttributes,
+                new Set([inputDataType, builder.getPrimitiveType("null")])
+            );
+            types.set(queryName + "Inputs", inputOrNullType);
+        }
     }
     return types;
 }
@@ -545,8 +637,10 @@ export class GraphQLInput implements Input<GraphQLSourceData> {
     addTypesSync(_ctx: RunContext, typeBuilder: TypeBuilder): void {
         for (const [name, { schema, query }] of this._topLevels) {
             const newTopLevels = makeGraphQLQueryTypes(name, typeBuilder, schema, query);
+            let first = true;
             for (const [actualName, t] of newTopLevels) {
-                typeBuilder.addTopLevel(this._topLevels.size === 1 ? name : actualName, t);
+                typeBuilder.addTopLevel(this._topLevels.size === 1 && first ? name : actualName, t);
+                first = false;
             }
         }
     }
