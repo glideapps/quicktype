@@ -34,7 +34,8 @@
         "@mark.probst/unicode-properties": "~1.1.0",
         "urijs": "^1.19.1",
         "uuid": "^3.2.1",
-        "wordwrap": "^1.0.0"
+        "wordwrap": "^1.0.0",
+        "yaml": "^1.5.0"
     },
     "devDependencies": {
         "@types/urijs": "github:quicktype/types-urijs",
@@ -44,6 +45,7 @@
         "@types/node": "^8.10.10",
         "@types/shelljs": "^0.7.8",
         "@types/semver": "^5.5.0",
+        "@types/yaml": "^1.0.2",
         "ajv": "^5.5.2",
         "deep-equal": "^1.0.1",
         "elm": "0.18.0-exp5",
