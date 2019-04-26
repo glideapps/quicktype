@@ -808,7 +808,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
 
         const indirect = this.isCycleBreakerType(u) ? "indirect " : "";
         const [maybeNull, nonNulls] = removeNullFromUnion(u, sortBy);
-        this.emitBlockWithAccess([indirect, "enum ", unionName, this.getProtocolString()], () => {
+        this.emitBlockWithAccess([indirect, "enum ", unionName, this.getProtocolString(false)], () => {
             this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
                 this.emitLine("case ", name, "(", this.swiftType(t), ")");
             });
