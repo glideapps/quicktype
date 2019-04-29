@@ -496,7 +496,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
         this.emitLine("typealias ", name, " = ", this.swiftType(t, true));
     }
 
-    protected getProtocolsArray(_t: Type, isClass: Boolean): string[] {
+    protected getProtocolsArray(_t: Type, isClass: boolean): string[] {
         const protocols: string[] = [];
 
         // [Michael Fey (@MrRooni), 2019-4-24] Technically NSObject isn't a "protocol" in this instance, but this felt like the best place to slot in this superclass declaration.
@@ -518,7 +518,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
         return protocols;
     }
 
-    private getProtocolString(_t: Type, isClass: Boolean): Sourcelike {
+    private getProtocolString(_t: Type, isClass: boolean): Sourcelike {
         const protocols = this.getProtocolsArray(_t, isClass);
         return protocols.length > 0 ? ": " + protocols.join(", ") : "";
     }
