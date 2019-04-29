@@ -558,6 +558,10 @@ export class SwiftRenderer extends ConvenienceRenderer {
             : this._options.accessLevel + " ";
     }
 
+    protected propertyLinesDefinition(name: Name, parameter: ClassProperty): Sourcelike {
+        return [this.accessLevel, "let ", name, ": ", this.swiftPropertyType(parameter)];
+    }
+
     private renderClassDefinition(c: ClassType, className: Name): void {
         this.emitDescription(this.descriptionForType(c));
 
@@ -612,8 +616,9 @@ export class SwiftRenderer extends ConvenienceRenderer {
             } else {
                 this.forEachClassProperty(c, "none", (name, jsonName, p) => {
                     const description = this.descriptionForClassProperty(c, jsonName);
+                    const propertyLines = this.propertyLinesDefinition(name, p);
                     this.emitDescription(description);
-                    this.emitLine(this.accessLevel, "let ", name, ": ", this.swiftPropertyType(p));
+                    this.emitLine(propertyLines);
                 });
             }
 
