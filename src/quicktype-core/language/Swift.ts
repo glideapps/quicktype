@@ -496,7 +496,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
         this.emitLine("typealias ", name, " = ", this.swiftType(t, true));
     }
 
-    private getProtocolString(isClass: Boolean): Sourcelike {
+    protected getProtocolsArray(_t: Type, isClass: Boolean): string[] {
         const protocols: string[] = [];
 
         // [Michael Fey (@MrRooni), 2019-4-24] Technically NSObject isn't a "protocol" in this instance, but this felt like the best place to slot in this superclass declaration.
@@ -515,7 +515,11 @@ export class SwiftRenderer extends ConvenienceRenderer {
         if (this._options.protocol.equatable) {
             protocols.push("Equatable");
         }
+        return protocols;
+    }
 
+    private getProtocolString(_t: Type, isClass: Boolean): Sourcelike {
+        const protocols = this.getProtocolsArray(_t, isClass);
         return protocols.length > 0 ? ": " + protocols.join(", ") : "";
     }
 
@@ -565,7 +569,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
             this.emitItem("@objcMembers ");
         }
 
-        this.emitBlockWithAccess([structOrClass, " ", className, this.getProtocolString(isClass)], () => {
+        this.emitBlockWithAccess([structOrClass, " ", className, this.getProtocolString(c, isClass)], () => {
             if (this._options.dense) {
                 let lastProperty: ClassProperty | undefined = undefined;
                 let lastNames: Name[] = [];
@@ -808,7 +812,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
 
         const indirect = this.isCycleBreakerType(u) ? "indirect " : "";
         const [maybeNull, nonNulls] = removeNullFromUnion(u, sortBy);
-        this.emitBlockWithAccess([indirect, "enum ", unionName, this.getProtocolString(false)], () => {
+        this.emitBlockWithAccess([indirect, "enum ", unionName, this.getProtocolString(u, false)], () => {
             this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
                 this.emitLine("case ", name, "(", this.swiftType(t), ")");
             });
