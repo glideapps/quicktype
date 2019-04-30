@@ -54,6 +54,11 @@ export const swiftOptions = {
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
     dense: new EnumOption("density", "Code density", [["dense", true], ["normal", false]], "dense", "secondary"),
     linux: new BooleanOption("support-linux", "Support Linux", false, "secondary"),
+    objcSupport: new BooleanOption(
+        "objective-c-support",
+        "Objects inherit from NSObject and @objcMembers is added to classes",
+        false
+    ),
     accessLevel: new EnumOption(
         "access-level",
         "Access level",
@@ -110,7 +115,8 @@ export class SwiftTargetLanguage extends TargetLanguage {
             swiftOptions.linux,
             swiftOptions.namedTypePrefix,
             swiftOptions.protocol,
-            swiftOptions.acronymStyle
+            swiftOptions.acronymStyle,
+            swiftOptions.objcSupport
         ];
     }
 
@@ -490,8 +496,14 @@ export class SwiftRenderer extends ConvenienceRenderer {
         this.emitLine("typealias ", name, " = ", this.swiftType(t, true));
     }
 
-    protected getProtocolsArray(_t: Type): string[] {
+    protected getProtocolsArray(_t: Type, isClass: boolean): string[] {
         const protocols: string[] = [];
+
+        // [Michael Fey (@MrRooni), 2019-4-24] Technically NSObject isn't a "protocol" in this instance, but this felt like the best place to slot in this superclass declaration.
+        if (isClass && this._options.objcSupport) {
+            protocols.push("NSObject");
+        }
+
         if (!this._options.justTypes) {
             protocols.push("Codable");
         }
@@ -506,8 +518,8 @@ export class SwiftRenderer extends ConvenienceRenderer {
         return protocols;
     }
 
-    private getProtocolString(_t: Type): Sourcelike {
-        const protocols = this.getProtocolsArray(_t);
+    private getProtocolString(_t: Type, isClass: boolean): Sourcelike {
+        const protocols = this.getProtocolsArray(_t, isClass);
         return protocols.length > 0 ? ": " + protocols.join(", ") : "";
     }
 
@@ -551,7 +563,13 @@ export class SwiftRenderer extends ConvenienceRenderer {
 
         const isClass = this._options.useClasses || this.isCycleBreakerType(c);
         const structOrClass = isClass ? "class" : "struct";
-        this.emitBlockWithAccess([structOrClass, " ", className, this.getProtocolString(c)], () => {
+
+        if (isClass && this._options.objcSupport) {
+            // [Michael Fey (@MrRooni), 2019-4-24] Swift 5 or greater, must come before the access declaration for the class.
+            this.emitItem("@objcMembers ");
+        }
+
+        this.emitBlockWithAccess([structOrClass, " ", className, this.getProtocolString(c, isClass)], () => {
             if (this._options.dense) {
                 let lastProperty: ClassProperty | undefined = undefined;
                 let lastNames: Name[] = [];
@@ -794,7 +812,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
 
         const indirect = this.isCycleBreakerType(u) ? "indirect " : "";
         const [maybeNull, nonNulls] = removeNullFromUnion(u, sortBy);
-        this.emitBlockWithAccess([indirect, "enum ", unionName, this.getProtocolString(u)], () => {
+        this.emitBlockWithAccess([indirect, "enum ", unionName, this.getProtocolString(u, false)], () => {
             this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
                 this.emitLine("case ", name, "(", this.swiftType(t), ")");
             });

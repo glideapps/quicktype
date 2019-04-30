@@ -138,6 +138,10 @@ export abstract class Renderer {
         this._emitContext.preventBlankLine();
     }
 
+    emitItem(item: Sourcelike): void {
+        this._emitContext.emitItem(item);
+    }
+
     emitLine(...lineParts: Sourcelike[]): void {
         if (lineParts.length === 1) {
             this._emitContext.emitItem(lineParts[0]);
