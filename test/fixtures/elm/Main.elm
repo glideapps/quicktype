@@ -1,31 +1,40 @@
-port module Main exposing (..)
+port module Main exposing (fromJS, main, toJS)
 
--- this is required for the ports
-import Json.Decode exposing (decodeString)
+import Json.Decode exposing (decodeString, errorToString)
 import QuickType
 
+
 port fromJS : (String -> msg) -> Sub msg
+
+
 port toJS : String -> Cmd msg
+
 
 type Msg
     = FromJS String
+
 
 update : Msg -> () -> ( (), Cmd Msg )
 update msg _ =
     case msg of
         FromJS str ->
             case decodeString QuickType.quickType str of
-            Ok r -> ((), toJS (QuickType.quickTypeToString r))
-            Err err -> ((), toJS ("Error: " ++ err))
+                Ok r ->
+                    ( (), toJS (QuickType.quickTypeToString r) )
+
+                Err err ->
+                    ( (), toJS ("Error: " ++ errorToString err) )
+
 
 subscriptions : () -> Sub Msg
 subscriptions _ =
-    fromJS (FromJS)
+    fromJS FromJS
 
-main : Program Never () Msg
+
+main : Program () () Msg
 main =
-    Platform.program
-        { init = ( (), Cmd.none )
+    Platform.worker
+        { init = \() -> ( (), Cmd.none )
         , update = update
         , subscriptions = subscriptions
         }

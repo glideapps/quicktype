@@ -47,7 +47,7 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 RUN apt-get -y update
 RUN apt-get -y install pike8.0-full --assume-yes
 
-# Tool to limit elm-make cores
+# Tool to limit `elm make` cores
 RUN git clone https://github.com/obmarg/libsysconfcpus.git
 RUN cd libsysconfcpus && ./configure && make && make install
 
