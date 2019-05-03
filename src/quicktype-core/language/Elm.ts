@@ -329,7 +329,7 @@ export class ElmRenderer extends ConvenienceRenderer {
             arrayType =>
                 multiWord(
                     " ",
-                    ["make", this.arrayType, "Encoder"],
+                    ["Jenc.", decapitalize(this.arrayType)],
                     parenIfNeeded(this.encoderNameForType(arrayType.items))
                 ),
             classType => singleWord(this.encoderNameForNamedType(classType)),
@@ -435,7 +435,7 @@ export class ElmRenderer extends ConvenienceRenderer {
         this.emitLine(decoderName, " : Jdec.Decoder ", className);
         this.emitLine(decoderName, " =");
         this.indent(() => {
-            this.emitLine("Jpipe.decode ", className);
+            this.emitLine("Jdec.succeed ", className);
             this.indent(() => {
                 this.forEachClassProperty(c, "none", (_, jsonName, p) => {
                     const propDecoder = parenIfNeeded(this.decoderNameForProperty(p));
@@ -576,11 +576,11 @@ export class ElmRenderer extends ConvenienceRenderer {
             this.emitCommentLines([
                 "To decode the JSON data, add this file to your project, run",
                 "",
-                "    elm-package install NoRedInk/elm-decode-pipeline",
+                "    elm install NoRedInk/elm-json-decode-pipeline",
                 "",
                 "add these imports",
                 "",
-                "    import Json.Decode exposing (decodeString)`);"
+                "    import Json.Decode exposing (decodeString)"
             ]);
             this.emitLine(
                 "--     import ",
@@ -649,12 +649,6 @@ import Dict exposing (Dict, map, toList)`);
         this.ensureBlankLine();
 
         this.emitLine("--- encoder helpers");
-        this.ensureBlankLine();
-        this.emitLine("make", this.arrayType, "Encoder : (a -> Jenc.Value) -> ", this.arrayType, " a -> Jenc.Value");
-        this.emitLine("make", this.arrayType, "Encoder f arr =");
-        this.indent(() => {
-            this.emitLine("Jenc.", decapitalize(this.arrayType), " (", this.arrayType, ".map f arr)");
-        });
         this.ensureBlankLine();
         this.emitMultiline(`makeDictEncoder : (a -> Jenc.Value) -> Dict String a -> Jenc.Value
 makeDictEncoder f dict =
