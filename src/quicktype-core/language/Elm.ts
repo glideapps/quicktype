@@ -84,7 +84,6 @@ const forbiddenNames = [
     "Maybe",
     "map",
     "toList",
-    "makeArrayEncoder",
     "makeDictEncoder",
     "makeNullableEncoder",
     "Int",
