@@ -447,7 +447,7 @@ export class ElmRenderer extends ConvenienceRenderer {
 
         const encoderName = this.encoderNameForNamedType(c);
         this.emitLine(encoderName, " : ", className, " -> Jenc.Value");
-        this.emitLine(encoderName, " x =");
+        this.emitLine(encoderName, " v =");
         this.indent(() => {
             this.emitLine("Jenc.object");
             this.indent(() => {
@@ -455,7 +455,7 @@ export class ElmRenderer extends ConvenienceRenderer {
                 this.forEachClassProperty(c, "none", (name, jsonName, p) => {
                     const bracketOrComma = onFirst ? "[" : ",";
                     const propEncoder = this.encoderNameForProperty(p).source;
-                    this.emitLine(bracketOrComma, ' ("', stringEscape(jsonName), '", ', propEncoder, " x.", name, ")");
+                    this.emitLine(bracketOrComma, ' ("', stringEscape(jsonName), '", ', propEncoder, " v.", name, ")");
                     onFirst = false;
                 });
                 if (onFirst) {
@@ -490,7 +490,7 @@ export class ElmRenderer extends ConvenienceRenderer {
 
         const encoderName = this.encoderNameForNamedType(e);
         this.emitLine(encoderName, " : ", enumName, " -> Jenc.Value");
-        this.emitLine(encoderName, " x = case x of");
+        this.emitLine(encoderName, " v = case v of");
         this.indent(() => {
             this.forEachEnumCase(e, "none", (name, jsonName) => {
                 this.emitLine(name, ' -> Jenc.string "', stringEscape(jsonName), '"');
@@ -535,7 +535,7 @@ export class ElmRenderer extends ConvenienceRenderer {
 
         const encoderName = this.encoderNameForNamedType(u);
         this.emitLine(encoderName, " : ", unionName, " -> Jenc.Value");
-        this.emitLine(encoderName, " x = case x of");
+        this.emitLine(encoderName, " v = case v of");
         this.indent(() => {
             this.forEachUnionMember(u, null, "none", sortOrder, (constructor, t) => {
                 if (t.kind === "null") {
@@ -656,7 +656,7 @@ makeDictEncoder f dict =
 makeNullableEncoder : (a -> Jenc.Value) -> Maybe a -> Jenc.Value
 makeNullableEncoder f m =
     case m of
-    Just x -> f x
+    Just v -> f v
     Nothing -> Jenc.null`);
     }
 }
