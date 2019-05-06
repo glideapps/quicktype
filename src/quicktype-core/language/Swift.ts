@@ -1,4 +1,5 @@
 import { arrayIntercalate } from "collection-utils";
+import { assert, assertNever, defined } from "../support/Support";
 
 import { TargetLanguage } from "../TargetLanguage";
 import {
@@ -281,6 +282,7 @@ function unicodeEscape(codePoint: number): string {
 const stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
 
 export class SwiftRenderer extends ConvenienceRenderer {
+    private _currentFilename: string | undefined;
     private _needAny: boolean = false;
     private _needNull: boolean = false;
 
@@ -558,7 +560,29 @@ export class SwiftRenderer extends ConvenienceRenderer {
             : this._options.accessLevel + " ";
     }
 
+    /// startFile takes a file name, appends ".swift" to it and sets it as the current filename.
+    protected startFile(basename: Sourcelike): void {
+        assert(this._currentFilename === undefined, "Previous file wasn't finished: " + this._currentFilename);
+        // FIXME: The filenames should actually be Sourcelikes, too
+        this._currentFilename = `${this.sourcelikeToString(basename)}.swift`;
+    }
+
+    /// finishFile pushes the current file name onto the collection of finished files and then resets the current file name. These finished files are used in index.ts to write the output.
+    protected finishFile(): void {
+        super.finishFile(defined(this._currentFilename));
+        this._currentFilename = undefined;
+    }
+
     private renderClassDefinition(c: ClassType, className: Name): void {
+        this.startFile(className);
+
+        this.forEachTopLevel(
+            "leading",
+            (t: Type, name: Name) => this.renderTopLevelAlias(t, name),
+            t => this.namedTypeToNameForTopLevel(t) === undefined
+        );
+
+        this.renderHeader();
         this.emitDescription(this.descriptionForType(c));
 
         const isClass = this._options.useClasses || this.isCycleBreakerType(c);
@@ -660,6 +684,44 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 });
             }
         });
+
+        if (!this._options.justTypes) {
+            // FIXME: We emit only the MARK line for top-level-enum.schema
+            if (this._options.convenienceInitializers) {
+                this.ensureBlankLine();
+                this.emitMark("Convenience initializers and mutators");
+                this.emitConvenienceInitializersExtension(c, className);
+                this.ensureBlankLine();
+                this.forEachTopLevel("leading-and-interposing", (t: Type, name: Name) =>
+                    this.emitTopLevelMapAndArrayConvenienceInitializerExtensions(t, name)
+                );
+            }
+        }
+
+        if (
+            (!this._options.justTypes && this._options.convenienceInitializers) ||
+            this._options.urlSession ||
+            this._options.alamofire
+        ) {
+            this.ensureBlankLine();
+            this.emitNewEncoderDecoder();
+        }
+
+        if (this._options.urlSession) {
+            this.ensureBlankLine();
+            this.emitMark("URLSession response handlers", true);
+            this.ensureBlankLine();
+            this.emitURLSessionExtension(className);
+        }
+
+        if (this._options.alamofire) {
+            this.ensureBlankLine();
+            this.emitMark("Alamofire response handlers", true);
+            this.ensureBlankLine();
+            this.emitAlamofireExtension(className);
+        }
+
+        this.finishFile();
     }
 
     private emitNewEncoderDecoder(): void {
@@ -761,6 +823,8 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
     }
 
     private renderEnumDefinition(e: EnumType, enumName: Name): void {
+        this.startFile(enumName);
+
         this.emitDescription(this.descriptionForType(e));
 
         const protocols: string[] = [];
@@ -792,9 +856,13 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
                 });
             });
         }
+
+        this.finishFile();
     }
 
     private renderUnionDefinition(u: UnionType, unionName: Name): void {
+        this.startFile(unionName);
+
         function sortBy(t: Type): string {
             const kind = t.kind;
             if (kind === "class") return kind;
@@ -856,6 +924,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
                 });
             }
         });
+        this.finishFile();
     }
 
     private emitTopLevelMapAndArrayConvenienceInitializerExtensions(t: Type, name: Name): void {
@@ -906,6 +975,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
     }
 
     private emitSupportFunctions4 = (): void => {
+        this.startFile("JSONSchemaSupport");
         // This assumes that this method is called after declarations
         // are emitted.
         if (this._needAny || this._needNull) {
@@ -1152,6 +1222,8 @@ ${this.accessLevel}class JSONAny: Codable {
     }
 }`);
         }
+
+        this.finishFile();
     };
 
     private emitConvenienceMutator(c: ClassType, className: Name) {
@@ -1190,13 +1262,15 @@ ${this.accessLevel}class JSONAny: Codable {
     }
 
     protected emitSourceStructure(): void {
-        this.renderHeader();
+        // this.forEachTopLevel(
+        //     "leading",
+        //     (t: Type, name: Name) => this.renderTopLevelAlias(t, name),
+        //     t => this.namedTypeToNameForTopLevel(t) === undefined
+        // );
 
-        this.forEachTopLevel(
-            "leading",
-            (t: Type, name: Name) => this.renderTopLevelAlias(t, name),
-            t => this.namedTypeToNameForTopLevel(t) === undefined
-        );
+                if (!this._options.justTypes) {
+            this.emitSupportFunctions4();
+        }
 
         this.forEachNamedType(
             "leading-and-interposing",
@@ -1204,53 +1278,11 @@ ${this.accessLevel}class JSONAny: Codable {
             (e: EnumType, enumName: Name) => this.renderEnumDefinition(e, enumName),
             (u: UnionType, unionName: Name) => this.renderUnionDefinition(u, unionName)
         );
+  
 
-        if (!this._options.justTypes) {
-            // FIXME: We emit only the MARK line for top-level-enum.schema
-            if (this._options.convenienceInitializers) {
-                this.ensureBlankLine();
-                this.emitMark("Convenience initializers and mutators");
-                this.forEachNamedType(
-                    "leading-and-interposing",
-                    (c: ClassType, className: Name) => this.emitConvenienceInitializersExtension(c, className),
-                    () => undefined,
-                    () => undefined
-                );
-                this.ensureBlankLine();
-                this.forEachTopLevel("leading-and-interposing", (t: Type, name: Name) =>
-                    this.emitTopLevelMapAndArrayConvenienceInitializerExtensions(t, name)
-                );
-            }
-
-            this.ensureBlankLine();
-            this.emitSupportFunctions4();
-        }
-
-        if (
-            (!this._options.justTypes && this._options.convenienceInitializers) ||
-            this._options.urlSession ||
-            this._options.alamofire
-        ) {
-            this.ensureBlankLine();
-            this.emitNewEncoderDecoder();
-        }
-
-        if (this._options.urlSession) {
-            this.ensureBlankLine();
-            this.emitMark("URLSession response handlers", true);
-            this.ensureBlankLine();
-            this.emitURLSessionExtension();
-        }
-
-        if (this._options.alamofire) {
-            this.ensureBlankLine();
-            this.emitMark("Alamofire response handlers", true);
-            this.ensureBlankLine();
-            this.emitAlamofireExtension();
-        }
     }
 
-    private emitURLSessionExtension() {
+    private emitURLSessionExtension(className: Name) {
         this.ensureBlankLine();
         this.emitBlockWithAccess("extension URLSession", () => {
             this
@@ -1264,24 +1296,22 @@ ${this.accessLevel}class JSONAny: Codable {
     }
 }`);
             this.ensureBlankLine();
-            this.forEachTopLevel("leading-and-interposing", (_, name) => {
-                this.emitBlock(
-                    [
-                        "func ",
-                        modifySource(camelCase, name),
-                        "Task(with url: URL, completionHandler: @escaping (",
-                        name,
-                        "?, URLResponse?, Error?) -> Void) -> URLSessionDataTask"
-                    ],
-                    () => {
-                        this.emitLine(`return self.codableTask(with: url, completionHandler: completionHandler)`);
-                    }
-                );
-            });
+            this.emitBlock(
+                [
+                    "func ",
+                    modifySource(camelCase, className),
+                    "Task(with url: URL, completionHandler: @escaping (",
+                    className,
+                    "?, URLResponse?, Error?) -> Void) -> URLSessionDataTask"
+                ],
+                () => {
+                    this.emitLine(`return self.codableTask(with: url, completionHandler: completionHandler)`);
+                }
+            );
         });
     }
 
-    private emitAlamofireExtension() {
+    private emitAlamofireExtension(className: Name) {
         this.ensureBlankLine();
         this.emitBlockWithAccess("extension DataRequest", () => {
             this
@@ -1302,21 +1332,19 @@ fileprivate func responseDecodable<T: Decodable>(queue: DispatchQueue? = nil, co
     return response(queue: queue, responseSerializer: decodableResponseSerializer(), completionHandler: completionHandler)
 }`);
             this.ensureBlankLine();
-            this.forEachTopLevel("leading-and-interposing", (_, name) => {
-                this.emitLine("@discardableResult");
-                this.emitBlock(
-                    [
-                        "func response",
-                        name,
-                        "(queue: DispatchQueue? = nil, completionHandler: @escaping (DataResponse<",
-                        name,
-                        ">) -> Void) -> Self"
-                    ],
-                    () => {
-                        this.emitLine(`return responseDecodable(queue: queue, completionHandler: completionHandler)`);
-                    }
-                );
-            });
+            this.emitLine("@discardableResult");
+            this.emitBlock(
+                [
+                    "func response",
+                    className,
+                    "(queue: DispatchQueue? = nil, completionHandler: @escaping (DataResponse<",
+                    className,
+                    ">) -> Void) -> Self"
+                ],
+                () => {
+                    this.emitLine(`return responseDecodable(queue: queue, completionHandler: completionHandler)`);
+                }
+            );
         });
     }
 }
