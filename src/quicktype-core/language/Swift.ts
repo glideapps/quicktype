@@ -1,5 +1,5 @@
 import { arrayIntercalate } from "collection-utils";
-import { assert, assertNever, defined } from "../support/Support";
+import { assert, defined } from "../support/Support";
 
 import { TargetLanguage } from "../TargetLanguage";
 import {
@@ -1268,7 +1268,7 @@ ${this.accessLevel}class JSONAny: Codable {
         //     t => this.namedTypeToNameForTopLevel(t) === undefined
         // );
 
-                if (!this._options.justTypes) {
+        if (!this._options.justTypes) {
             this.emitSupportFunctions4();
         }
 
@@ -1278,8 +1278,6 @@ ${this.accessLevel}class JSONAny: Codable {
             (e: EnumType, enumName: Name) => this.renderEnumDefinition(e, enumName),
             (u: UnionType, unionName: Name) => this.renderUnionDefinition(u, unionName)
         );
-  
-
     }
 
     private emitURLSessionExtension(className: Name) {
