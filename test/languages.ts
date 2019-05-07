@@ -490,7 +490,7 @@ export const SwiftLanguage: Language = {
   ],
   allowMissingNull: true,
   features: ["enum", "union", "no-defaults", "date-time"],
-  output: "TopLevel.swift",
+  output: "JSONSchemaSupport.swift",
   topLevel: "TopLevel",
   skipJSON: [
     // Swift only supports top-level arrays and objects
