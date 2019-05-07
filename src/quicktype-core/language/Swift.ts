@@ -677,11 +677,17 @@ export class SwiftRenderer extends ConvenienceRenderer {
                     if (properties.length > 0) properties.push(", ");
                     properties.push(name, ": ", this.swiftPropertyType(p));
                 });
-                this.emitBlockWithAccess(["init(", ...properties, ")"], () => {
-                    this.forEachClassProperty(c, "none", name => {
-                        this.emitLine("self.", name, " = ", name);
+                if (this.propertyCount(c) === 0) {
+                    this.emitBlockWithAccess(["override init()"], () => {
+                        "";
                     });
-                });
+                } else {
+                    this.emitBlockWithAccess(["init(", ...properties, ")"], () => {
+                        this.forEachClassProperty(c, "none", name => {
+                            this.emitLine("self.", name, " = ", name);
+                        });
+                    });
+                }
             }
         });
 
@@ -770,7 +776,11 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         this.emitBlockWithAccess(["extension ", className], () => {
             if (isClass) {
                 this.emitBlock("convenience init(data: Data) throws", () => {
-                    this.emitLine("let me = try newJSONDecoder().decode(", this.swiftType(c), ".self, from: data)");
+                    if (this.propertyCount(c) > 0) {
+                        this.emitLine("let me = try newJSONDecoder().decode(", this.swiftType(c), ".self, from: data)");
+                    } else {
+                        this.emitLine("let _ = try newJSONDecoder().decode(", this.swiftType(c), ".self, from: data)");
+                    }
                     let args: Sourcelike[] = [];
                     this.forEachClassProperty(c, "none", name => {
                         if (args.length > 0) args.push(", ");

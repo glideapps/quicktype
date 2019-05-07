@@ -644,6 +644,12 @@ export abstract class ConvenienceRenderer extends Renderer {
         this._alphabetizeProperties = value;
     }
 
+    // Returns the number of properties defined for the specified object type.
+    protected propertyCount(o: ObjectType): number {
+        const propertyNames = defined(this._propertyNamesStoreView).get(o);
+        return propertyNames.size;
+    }
+
     protected forEachClassProperty(
         o: ObjectType,
         blankLocations: BlankLineConfig,
@@ -898,7 +904,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             processed.add(process(t));
         }
 
-        for (; ;) {
+        for (;;) {
             const maybeType = queue.pop();
             if (maybeType === undefined) {
                 break;
