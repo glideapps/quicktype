@@ -698,15 +698,6 @@ export class SwiftRenderer extends ConvenienceRenderer {
             }
         }
 
-        if (
-            (!this._options.justTypes && this._options.convenienceInitializers) ||
-            this._options.urlSession ||
-            this._options.alamofire
-        ) {
-            this.ensureBlankLine();
-            this.emitNewEncoderDecoder();
-        }
-
         if (this._options.urlSession) {
             this.ensureBlankLine();
             this.emitMark("URLSession response handlers", true);
@@ -725,7 +716,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
     }
 
     private emitNewEncoderDecoder(): void {
-        this.emitBlock("fileprivate func newJSONDecoder() -> JSONDecoder", () => {
+        this.emitBlock("func newJSONDecoder() -> JSONDecoder", () => {
             this.emitLine("let decoder = JSONDecoder()");
             if (!this._options.linux) {
                 this.emitBlock("if #available(iOS 10.0, OSX 10.12, tvOS 10.0, watchOS 3.0, *)", () => {
@@ -754,7 +745,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
             this.emitLine("return decoder");
         });
         this.ensureBlankLine();
-        this.emitBlock("fileprivate func newJSONEncoder() -> JSONEncoder", () => {
+        this.emitBlock("func newJSONEncoder() -> JSONEncoder", () => {
             this.emitLine("let encoder = JSONEncoder()");
             if (!this._options.linux) {
                 this.emitBlock("if #available(iOS 10.0, OSX 10.12, tvOS 10.0, watchOS 3.0, *)", () => {
@@ -976,9 +967,24 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
 
     private emitSupportFunctions4 = (): void => {
         this.startFile("JSONSchemaSupport");
+
+        this.emitLine("import Foundation");
+
+        if (
+            (!this._options.justTypes && this._options.convenienceInitializers) ||
+            this._options.urlSession ||
+            this._options.alamofire
+        ) {
+            this.ensureBlankLine();
+            this.emitMark("Helper functions for creating encoders and decoders");
+            this.ensureBlankLine();
+            this.emitNewEncoderDecoder();
+        }
+
         // This assumes that this method is called after declarations
         // are emitted.
         if (this._needAny || this._needNull) {
+            this.ensureBlankLine();
             this.emitMark("Encode/decode helpers");
             this.ensureBlankLine();
             this.emitMultiline(`${this.accessLevel}class JSONNull: Codable, Hashable {
@@ -989,6 +995,10 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
                 
     public var hashValue: Int {
         return 0
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        // No-op
     }
 
     public init() {}
@@ -1268,16 +1278,16 @@ ${this.accessLevel}class JSONAny: Codable {
         //     t => this.namedTypeToNameForTopLevel(t) === undefined
         // );
 
-        if (!this._options.justTypes) {
-            this.emitSupportFunctions4();
-        }
-
         this.forEachNamedType(
             "leading-and-interposing",
             (c: ClassType, className: Name) => this.renderClassDefinition(c, className),
             (e: EnumType, enumName: Name) => this.renderEnumDefinition(e, enumName),
             (u: UnionType, unionName: Name) => this.renderUnionDefinition(u, unionName)
         );
+
+        if (!this._options.justTypes) {
+            this.emitSupportFunctions4();
+        }
     }
 
     private emitURLSessionExtension(className: Name) {
