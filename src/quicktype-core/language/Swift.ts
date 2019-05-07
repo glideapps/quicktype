@@ -566,6 +566,14 @@ export class SwiftRenderer extends ConvenienceRenderer {
             : this._options.accessLevel + " ";
     }
 
+    private get objcMembersDeclaration(): string {
+        if (this._options.objcSupport) {
+            return "@objcMembers ";
+        }
+
+        return "";
+    }
+
     /// startFile takes a file name, appends ".swift" to it and sets it as the current filename.
     protected startFile(basename: Sourcelike): void {
         assert(this._currentFilename === undefined, "Previous file wasn't finished: " + this._currentFilename);
@@ -590,7 +598,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
 
         if (isClass && this._options.objcSupport) {
             // [Michael Fey (@MrRooni), 2019-4-24] Swift 5 or greater, must come before the access declaration for the class.
-            this.emitItem("@objcMembers ");
+            this.emitItem(this.objcMembersDeclaration);
         }
 
         this.emitBlockWithAccess([structOrClass, " ", className, this.getProtocolString(c, isClass)], () => {
@@ -678,7 +686,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                     if (properties.length > 0) properties.push(", ");
                     properties.push(name, ": ", this.swiftPropertyType(p));
                 });
-                if (this.propertyCount(c) === 0) {
+                if (this.propertyCount(c) === 0 && this._options.objcSupport) {
                     this.emitBlockWithAccess(["override init()"], () => {
                         "";
                     });
@@ -984,14 +992,14 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
 
         this.emitLine("import Foundation");
 
-        // TODO: [Roo, 2019-5-6] This can't stay here… Find where it was originally and put it back
+        // TODO: [Michael Fey (@MrRooni), 2019-5-6] This can't stay here… Find where it was originally and put it back
         this.forEachTopLevel(
             "leading",
             (t: Type, name: Name) => this.renderTopLevelAlias(t, name),
             t => this.namedTypeToNameForTopLevel(t) === undefined
         );
 
-        // TODO: [Roo, 2019-5-6] This can't stay here… Find where it was originally and put it back
+        // TODO: [Michael Fey (@MrRooni), 2019-5-6] This can't stay here… Find where it was originally and put it back
         if (this._options.convenienceInitializers) {
             this.ensureBlankLine();
             this.forEachTopLevel("leading-and-interposing", (t: Type, name: Name) =>
@@ -1016,21 +1024,34 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             this.ensureBlankLine();
             this.emitMark("Encode/decode helpers");
             this.ensureBlankLine();
-            this.emitMultiline(`${this.accessLevel}class JSONNull: Codable, Hashable {
-    
-    public static func == (lhs: JSONNull, rhs: JSONNull) -> Bool {
+            if (this._options.objcSupport) {
+                this.emitLine(this.objcMembersDeclaration, this.accessLevel, "class JSONNull: NSObject, Codable {");
+            } else {
+                this.emitLine(this.accessLevel, "class JSONNull: Codable, Hashable {");
+            }
+            this.ensureBlankLine();
+            this.emitMultiline(`    public static func == (lhs: JSONNull, rhs: JSONNull) -> Bool {
         return true
-    }
-                
-    public var hashValue: Int {
+    }`);
+
+            if (this._options.objcSupport === false) {
+                this.ensureBlankLine();
+                this.emitMultiline(`    public var hashValue: Int {
         return 0
     }
 
     public func hash(into hasher: inout Hasher) {
         // No-op
-    }
+    }`);
+            }
 
-    public init() {}
+            this.ensureBlankLine();
+            if (this._options.objcSupport) {
+                this.emitItem("    override ");
+            } else {
+                this.emitItem("    ");
+            }
+            this.emitMultiline(`public init() {}
     
     public required init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
@@ -1065,10 +1086,16 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
     var stringValue: String {
         return key
     }
-}
+}`);
 
-${this.accessLevel}class JSONAny: Codable {
-    ${this.accessLevel}let value: Any
+            this.ensureBlankLine();
+            if (this._options.objcSupport) {
+                this.emitLine(this.objcMembersDeclaration, this.accessLevel, "class JSONAny: NSObject, Codable {");
+            } else {
+                this.emitLine(this.accessLevel, "class JSONAny: Codable {");
+            }
+            this.ensureBlankLine();
+            this.emitMultiline(`    ${this.accessLevel}let value: Any
     
     static func decodingError(forCodingPath codingPath: [CodingKey]) -> DecodingError {
         let context = DecodingError.Context(codingPath: codingPath, debugDescription: "Cannot decode JSONAny")
