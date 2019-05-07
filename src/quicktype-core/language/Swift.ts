@@ -578,12 +578,6 @@ export class SwiftRenderer extends ConvenienceRenderer {
     private renderClassDefinition(c: ClassType, className: Name): void {
         this.startFile(className);
 
-        this.forEachTopLevel(
-            "leading",
-            (t: Type, name: Name) => this.renderTopLevelAlias(t, name),
-            t => this.namedTypeToNameForTopLevel(t) === undefined
-        );
-
         this.renderHeader();
         this.emitDescription(this.descriptionForType(c));
 
@@ -700,9 +694,6 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 this.emitMark("Convenience initializers and mutators");
                 this.emitConvenienceInitializersExtension(c, className);
                 this.ensureBlankLine();
-                this.forEachTopLevel("leading-and-interposing", (t: Type, name: Name) =>
-                    this.emitTopLevelMapAndArrayConvenienceInitializerExtensions(t, name)
-                );
             }
         }
 
@@ -987,6 +978,21 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         this.startFile("JSONSchemaSupport");
 
         this.emitLine("import Foundation");
+
+        // TODO: [Roo, 2019-5-6] This can't stay here… Find where it was originally and put it back
+        this.forEachTopLevel(
+            "leading",
+            (t: Type, name: Name) => this.renderTopLevelAlias(t, name),
+            t => this.namedTypeToNameForTopLevel(t) === undefined
+        );
+
+        // TODO: [Roo, 2019-5-6] This can't stay here… Find where it was originally and put it back
+        if (this._options.convenienceInitializers) {
+            this.ensureBlankLine();
+            this.forEachTopLevel("leading-and-interposing", (t: Type, name: Name) =>
+                this.emitTopLevelMapAndArrayConvenienceInitializerExtensions(t, name)
+            );
+        }
 
         if (
             (!this._options.justTypes && this._options.convenienceInitializers) ||
