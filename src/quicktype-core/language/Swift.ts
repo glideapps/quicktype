@@ -490,6 +490,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
         }
         this.ensureBlankLine();
         this.emitLine("import Foundation");
+        this.ensureBlankLine();
         if (!this._options.justTypes && this._options.alamofire) {
             this.emitLine("import Alamofire");
         }
@@ -827,6 +828,9 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
     private renderEnumDefinition(e: EnumType, enumName: Name): void {
         this.startFile(enumName);
 
+        this.emitLine("import Foundation");
+        this.ensureBlankLine();
+
         this.emitDescription(this.descriptionForType(e));
 
         const protocols: string[] = [];
@@ -864,6 +868,9 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
 
     private renderUnionDefinition(u: UnionType, unionName: Name): void {
         this.startFile(unionName);
+
+        this.emitLine("import Foundation");
+        this.ensureBlankLine();
 
         function sortBy(t: Type): string {
             const kind = t.kind;
