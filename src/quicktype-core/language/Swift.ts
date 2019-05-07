@@ -555,6 +555,10 @@ export class SwiftRenderer extends ConvenienceRenderer {
         return groups;
     }
 
+    protected propertyLinesDefinition(name: Name, parameter: ClassProperty): Sourcelike {
+        return [this.accessLevel, "let ", name, ": ", this.swiftPropertyType(parameter)];
+    }
+
     /// Access level with trailing space (e.g. "public "), or empty string
     private get accessLevel(): string {
         return this._options.accessLevel === "internal"
@@ -632,8 +636,9 @@ export class SwiftRenderer extends ConvenienceRenderer {
             } else {
                 this.forEachClassProperty(c, "none", (name, jsonName, p) => {
                     const description = this.descriptionForClassProperty(c, jsonName);
+                    const propertyLines = this.propertyLinesDefinition(name, p);
                     this.emitDescription(description);
-                    this.emitLine(this.accessLevel, "let ", name, ": ", this.swiftPropertyType(p));
+                    this.emitLine(propertyLines);
                 });
             }
 
