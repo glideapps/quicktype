@@ -497,7 +497,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
     }
 
     private renderTopLevelAlias(t: Type, name: Name): void {
-        this.emitLine("typealias ", name, " = ", this.swiftType(t, true));
+        this.emitLine(this.accessLevel, "typealias ", name, " = ", this.swiftType(t, true));
     }
 
     protected getProtocolsArray(_t: Type, isClass: boolean): string[] {
