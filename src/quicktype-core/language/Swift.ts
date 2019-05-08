@@ -36,7 +36,7 @@ import {
     camelCase,
     addPrefixIfNecessary
 } from "../support/Strings";
-import { RenderContext } from "../Renderer";
+import { RenderContext, ForEachPosition } from "../Renderer";
 import { StringTypeMapping } from "../TypeBuilder";
 import { panic } from "../support/Support";
 import { DefaultDateTimeRecognizer, DateTimeRecognizer } from "../DateTime";
@@ -96,6 +96,13 @@ class SwiftDateTimeRecognizer extends DefaultDateTimeRecognizer {
     isDateTime(str: string): boolean {
         return str.match(swiftDateTimeRegex) !== null;
     }
+}
+
+export interface SwiftProperty {
+    name: Name;
+    jsonName: string;
+    parameter: ClassProperty;
+    position: ForEachPosition;
 }
 
 export class SwiftTargetLanguage extends TargetLanguage {
@@ -653,18 +660,28 @@ export class SwiftRenderer extends ConvenienceRenderer {
             ) {
                 // Make an initializer that initalizes all fields
                 this.ensureBlankLine();
-                let properties: Sourcelike[] = [];
-                this.forEachClassProperty(c, "none", (name, _, p) => {
-                    if (properties.length > 0) properties.push(", ");
-                    properties.push(name, ": ", this.swiftPropertyType(p));
-                });
-                this.emitBlockWithAccess(["init(", ...properties, ")"], () => {
-                    this.forEachClassProperty(c, "none", name => {
-                        this.emitLine("self.", name, " = ", name);
-                    });
+                let initProperties = this.initializableProperties(c);
+                let propertiesLines: Sourcelike[] = [];
+                for (let property of initProperties) {
+                    if (propertiesLines.length > 0) propertiesLines.push(", ");
+                    propertiesLines.push(property.name, ": ", this.swiftPropertyType(property.parameter));
+                }
+                this.emitBlockWithAccess(["init(", ...propertiesLines, ")"], () => {
+                    for (let property of initProperties) {
+                        this.emitLine("self.", property.name, " = ", property.name);
+                    }
                 });
             }
         });
+    }
+
+    protected initializableProperties(c: ClassType): SwiftProperty[] {
+        const properties: SwiftProperty[] = [];
+        this.forEachClassProperty(c, "none", (name, jsonName, parameter, position) => {
+            const property = { name, jsonName, parameter, position };
+            properties.push(property);
+        });
+        return properties;
     }
 
     private emitNewEncoderDecoder(): void {
