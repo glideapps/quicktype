@@ -579,6 +579,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
         assert(this._currentFilename === undefined, "Previous file wasn't finished: " + this._currentFilename);
         // FIXME: The filenames should actually be Sourcelikes, too
         this._currentFilename = `${this.sourcelikeToString(basename)}.swift`;
+        this.initializeEmitContextForFilename(this._currentFilename);
     }
 
     /// finishFile pushes the current file name onto the collection of finished files and then resets the current file name. These finished files are used in index.ts to write the output.

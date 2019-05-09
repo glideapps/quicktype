@@ -119,6 +119,7 @@ export abstract class Renderer {
 
     private _names: ReadonlyMap<Name, string> | undefined;
     private _finishedFiles: Map<string, Source>;
+    private _finishedEmitContexts: Map<string, EmitContext>;
 
     private _emitContext: EmitContext;
 
@@ -127,6 +128,7 @@ export abstract class Renderer {
         this.leadingComments = renderContext.leadingComments;
 
         this._finishedFiles = new Map();
+        this._finishedEmitContexts = new Map();
         this._emitContext = new EmitContext();
     }
 
@@ -266,10 +268,20 @@ export abstract class Renderer {
         return assignNames(this.setUpNaming());
     }
 
+    protected initializeEmitContextForFilename(filename: string): void {
+        if (this._finishedEmitContexts.has(filename.toLowerCase().toString())) {
+            const existingEmitContext = this._finishedEmitContexts.get(filename.toLowerCase().toString());
+            if (existingEmitContext !== undefined) {
+                this._emitContext = existingEmitContext;
+            }
+        }
+    }
+
     protected finishFile(filename: string): void {
         assert(!this._finishedFiles.has(filename), `Tried to emit file ${filename} more than once`);
         const source = sourcelikeToSource(this._emitContext.source);
         this._finishedFiles.set(filename, source);
+        this._finishedEmitContexts.set(filename.toLowerCase().toString(), this._emitContext);
         this._emitContext = new EmitContext();
     }
 
