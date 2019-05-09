@@ -292,7 +292,7 @@ export abstract class Renderer {
 
     protected initializeEmitContextForFilename(filename: string): void {
         if (this._finishedEmitContexts.has(filename.toLowerCase().toString())) {
-            const existingEmitContext = this._finishedEmitContexts.get(filename.toLowerCase().toString());
+            const existingEmitContext = this._finishedEmitContexts.get(filename.toLowerCase());
             if (existingEmitContext !== undefined) {
                 this._emitContext = existingEmitContext;
             }
@@ -305,7 +305,7 @@ export abstract class Renderer {
         this._finishedFiles.set(filename, source);
 
         // [Michael Fey (@MrRooni), 2019-5-9] We save the current EmitContext for possible reuse later. We put it into the map with a lowercased version of the key so we can do a case-insensitive lookup later. The reason we lowercase it is because some schema (looking at you keyword-unions.schema) define objects of the sme name with different casing. BOOL vs. bool, for example.
-        this._finishedEmitContexts.set(filename.toLowerCase().toString(), this._emitContext);
+        this._finishedEmitContexts.set(filename.toLowerCase(), this._emitContext);
         this._emitContext = new EmitContext();
     }
 
