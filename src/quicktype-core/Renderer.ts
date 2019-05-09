@@ -95,6 +95,11 @@ class EmitContext {
         this.pushItem(item);
     }
 
+    containsItem(item: Sourcelike): boolean {
+        const existingItem = this._currentEmitTarget.find((value: Sourcelike) => item === value);
+        return existingItem !== undefined;
+    }
+
     ensureBlankLine(numBlankLines: number): void {
         if (this._preventBlankLine) return;
         this._numBlankLinesNeeded = Math.max(this._numBlankLinesNeeded, numBlankLines);
@@ -142,6 +147,23 @@ export abstract class Renderer {
 
     emitItem(item: Sourcelike): void {
         this._emitContext.emitItem(item);
+    }
+
+    emitItemOnce(item: Sourcelike): void {
+        if (this._emitContext.containsItem(item)) {
+            return;
+        }
+
+        this.emitItem(item);
+    }
+
+    emitLineOnce(...lineParts: Sourcelike[]): void {
+        if (lineParts.length === 1) {
+            this.emitItemOnce(lineParts[0]);
+        } else if (lineParts.length > 1) {
+            this.emitItemOnce(lineParts);
+        }
+        this._emitContext.emitNewline();
     }
 
     emitLine(...lineParts: Sourcelike[]): void {

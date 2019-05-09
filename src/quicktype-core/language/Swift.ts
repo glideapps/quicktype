@@ -489,7 +489,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
             }
         }
         this.ensureBlankLine();
-        this.emitLine("import Foundation");
+        this.emitLineOnce("import Foundation");
         this.ensureBlankLine();
         if (!this._options.justTypes && this._options.alamofire) {
             this.emitLine("import Alamofire");
@@ -833,7 +833,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
     private renderEnumDefinition(e: EnumType, enumName: Name): void {
         this.startFile(enumName);
 
-        this.emitLine("import Foundation");
+        this.emitLineOnce("import Foundation");
         this.ensureBlankLine();
 
         this.emitDescription(this.descriptionForType(e));
@@ -874,7 +874,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
     private renderUnionDefinition(u: UnionType, unionName: Name): void {
         this.startFile(unionName);
 
-        this.emitLine("import Foundation");
+        this.emitLineOnce("import Foundation");
         this.ensureBlankLine();
 
         function sortBy(t: Type): string {
@@ -991,7 +991,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
     private emitSupportFunctions4 = (): void => {
         this.startFile("JSONSchemaSupport");
 
-        this.emitLine("import Foundation");
+        this.emitLineOnce("import Foundation");
 
         // TODO: [Michael Fey (@MrRooni), 2019-5-6] This can't stay here… Find where it was originally and put it back
         this.forEachTopLevel(
