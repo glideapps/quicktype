@@ -432,6 +432,8 @@ export class SwiftRenderer extends ConvenienceRenderer {
         if (this.leadingComments !== undefined) {
             this.emitCommentLines(this.leadingComments);
         } else if (!this._options.justTypes) {
+            this.emitLine("// This file was generated from JSON Schema using quicktype, do not modify it directly.");
+            this.emitLine("// Generated on ", new Date().toString());
             this.emitLine("// To parse the JSON, add this file to your project and do:");
             this.emitLine("//");
             if (this._options.convenienceInitializers && !(type instanceof EnumType)) {
