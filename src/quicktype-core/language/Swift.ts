@@ -60,6 +60,7 @@ export const swiftOptions = {
         "Objects inherit from NSObject and @objcMembers is added to classes",
         false
     ),
+    swift5Support: new BooleanOption("swift-5-support", "Renders output in a Swift 5 compatible mode", false),
     accessLevel: new EnumOption(
         "access-level",
         "Access level",
@@ -124,7 +125,8 @@ export class SwiftTargetLanguage extends TargetLanguage {
             swiftOptions.namedTypePrefix,
             swiftOptions.protocol,
             swiftOptions.acronymStyle,
-            swiftOptions.objcSupport
+            swiftOptions.objcSupport,
+            swiftOptions.swift5Support
         ];
     }
 
@@ -1052,11 +1054,14 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
                 this.ensureBlankLine();
                 this.emitMultiline(`    public var hashValue: Int {
         return 0
-    }
+    }`);
 
-    public func hash(into hasher: inout Hasher) {
+                if (this._options.swift5Support) {
+                    this.ensureBlankLine();
+                    this.emitMultiline(`    public func hash(into hasher: inout Hasher) {
         // No-op
     }`);
+                }
             }
 
             this.ensureBlankLine();
