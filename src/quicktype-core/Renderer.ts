@@ -303,6 +303,8 @@ export abstract class Renderer {
         assert(!this._finishedFiles.has(filename), `Tried to emit file ${filename} more than once`);
         const source = sourcelikeToSource(this._emitContext.source);
         this._finishedFiles.set(filename, source);
+
+        // [Michael Fey (@MrRooni), 2019-5-9] We save the current EmitContext for possible reuse later. We put it into the map with a lowercased version of the key so we can do a case-insensitive lookup later. The reason we lowercase it is because some schema (looking at you keyword-unions.schema) define objects of the sme name with different casing. BOOL vs. bool, for example.
         this._finishedEmitContexts.set(filename.toLowerCase().toString(), this._emitContext);
         this._emitContext = new EmitContext();
     }
