@@ -428,59 +428,53 @@ export class SwiftRenderer extends ConvenienceRenderer {
         return null;
     }
 
-    private renderHeader(): void {
+    private renderHeader(type: Type, name: Name): void {
         if (this.leadingComments !== undefined) {
             this.emitCommentLines(this.leadingComments);
         } else if (!this._options.justTypes) {
             this.emitLine("// To parse the JSON, add this file to your project and do:");
             this.emitLine("//");
-            this.forEachTopLevel("none", (t, name) => {
-                if (this._options.convenienceInitializers && !(t instanceof EnumType)) {
-                    this.emitLine("//   let ", modifySource(camelCase, name), " = try ", name, "(json)");
-                } else {
-                    this.emitLine(
-                        "//   let ",
-                        modifySource(camelCase, name),
-                        " = ",
-                        "try? newJSONDecoder().decode(",
-                        name,
-                        ".self, from: jsonData)"
-                    );
-                }
-            });
+            if (this._options.convenienceInitializers && !(type instanceof EnumType)) {
+                this.emitLine("//   let ", modifySource(camelCase, name), " = try ", name, "(json)");
+            } else {
+                this.emitLine(
+                    "//   let ",
+                    modifySource(camelCase, name),
+                    " = ",
+                    "try? newJSONDecoder().decode(",
+                    name,
+                    ".self, from: jsonData)"
+                );
+            }
 
             if (this._options.urlSession) {
                 this.emitLine("//");
                 this.emitLine("// To read values from URLs:");
-                this.forEachTopLevel("none", (_, name) => {
-                    const lowerName = modifySource(camelCase, name);
-                    this.emitLine("//");
-                    this.emitLine(
-                        "//   let task = URLSession.shared.",
-                        lowerName,
-                        "Task(with: url) { ",
-                        lowerName,
-                        ", response, error in"
-                    );
-                    this.emitLine("//     if let ", lowerName, " = ", lowerName, " {");
-                    this.emitLine("//       ...");
-                    this.emitLine("//     }");
-                    this.emitLine("//   }");
-                    this.emitLine("//   task.resume()");
-                });
+                const lowerName = modifySource(camelCase, name);
+                this.emitLine("//");
+                this.emitLine(
+                    "//   let task = URLSession.shared.",
+                    lowerName,
+                    "Task(with: url) { ",
+                    lowerName,
+                    ", response, error in"
+                );
+                this.emitLine("//     if let ", lowerName, " = ", lowerName, " {");
+                this.emitLine("//       ...");
+                this.emitLine("//     }");
+                this.emitLine("//   }");
+                this.emitLine("//   task.resume()");
             }
 
             if (this._options.alamofire) {
                 this.emitLine("//");
                 this.emitLine("// To parse values from Alamofire responses:");
-                this.forEachTopLevel("none", (_, name) => {
-                    this.emitLine("//");
-                    this.emitLine("//   Alamofire.request(url).response", name, " { response in");
-                    this.emitLine("//     if let ", modifySource(camelCase, name), " = response.result.value {");
-                    this.emitLine("//       ...");
-                    this.emitLine("//     }");
-                    this.emitLine("//   }");
-                });
+                this.emitLine("//");
+                this.emitLine("//   Alamofire.request(url).response", name, " { response in");
+                this.emitLine("//     if let ", modifySource(camelCase, name), " = response.result.value {");
+                this.emitLine("//       ...");
+                this.emitLine("//     }");
+                this.emitLine("//   }");
             }
 
             if (this._options.protocol.hashable || this._options.protocol.equatable) {
@@ -499,7 +493,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
         this.emitLineOnce("import Foundation");
         this.ensureBlankLine();
         if (!this._options.justTypes && this._options.alamofire) {
-            this.emitLine("import Alamofire");
+            this.emitLineOnce("import Alamofire");
         }
     }
 
@@ -598,7 +592,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
     private renderClassDefinition(c: ClassType, className: Name): void {
         this.startFile(className);
 
-        this.renderHeader();
+        this.renderHeader(c, className);
         this.emitDescription(this.descriptionForType(c));
 
         const isClass = this._options.useClasses || this.isCycleBreakerType(c);
