@@ -732,13 +732,6 @@ export class SwiftRenderer extends ConvenienceRenderer {
             }
         }
 
-        if (this._options.urlSession) {
-            this.ensureBlankLine();
-            this.emitMark("URLSession response handlers", true);
-            this.ensureBlankLine();
-            this.emitURLSessionExtension(className);
-        }
-
         if (this._options.alamofire) {
             this.ensureBlankLine();
             this.emitMark("Alamofire response handlers", true);
@@ -1047,6 +1040,13 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             this.emitMark("Helper functions for creating encoders and decoders");
             this.ensureBlankLine();
             this.emitNewEncoderDecoder();
+        }
+
+        if (this._options.urlSession) {
+            this.ensureBlankLine();
+            this.emitMark("URLSession response handlers", true);
+            this.ensureBlankLine();
+            this.emitURLSessionExtension();
         }
 
         // This assumes that this method is called after declarations
@@ -1380,7 +1380,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         }
     }
 
-    private emitURLSessionExtension(className: Name) {
+    private emitURLSessionExtension() {
         this.ensureBlankLine();
         this.emitBlockWithAccess("extension URLSession", () => {
             this
@@ -1394,18 +1394,20 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
     }
 }`);
             this.ensureBlankLine();
-            this.emitBlock(
-                [
-                    "func ",
-                    modifySource(camelCase, className),
-                    "Task(with url: URL, completionHandler: @escaping (",
-                    className,
-                    "?, URLResponse?, Error?) -> Void) -> URLSessionDataTask"
-                ],
-                () => {
-                    this.emitLine(`return self.codableTask(with: url, completionHandler: completionHandler)`);
-                }
-            );
+            this.forEachTopLevel("leading-and-interposing", (_, name) => {
+                this.emitBlock(
+                    [
+                        "func ",
+                        modifySource(camelCase, name),
+                        "Task(with url: URL, completionHandler: @escaping (",
+                        name,
+                        "?, URLResponse?, Error?) -> Void) -> URLSessionDataTask"
+                    ],
+                    () => {
+                        this.emitLine(`return self.codableTask(with: url, completionHandler: completionHandler)`);
+                    }
+                );
+            });
         });
     }
 
