@@ -61,6 +61,11 @@ export const swiftOptions = {
         false
     ),
     swift5Support: new BooleanOption("swift-5-support", "Renders output in a Swift 5 compatible mode", false),
+    multiFileOutput: new BooleanOption(
+        "multi-file-output",
+        "Renders each top-level object in its own Swift file",
+        false
+    ),
     accessLevel: new EnumOption(
         "access-level",
         "Access level",
@@ -126,7 +131,8 @@ export class SwiftTargetLanguage extends TargetLanguage {
             swiftOptions.protocol,
             swiftOptions.acronymStyle,
             swiftOptions.objcSupport,
-            swiftOptions.swift5Support
+            swiftOptions.swift5Support,
+            swiftOptions.multiFileOutput
         ];
     }
 
@@ -434,8 +440,10 @@ export class SwiftRenderer extends ConvenienceRenderer {
         if (this.leadingComments !== undefined) {
             this.emitCommentLines(this.leadingComments);
         } else if (!this._options.justTypes) {
-            this.emitLine("// This file was generated from JSON Schema using quicktype, do not modify it directly.");
-            this.emitLine("// Generated on ", new Date().toString());
+            this.emitLineOnce(
+                "// This file was generated from JSON Schema using quicktype, do not modify it directly."
+            );
+            this.emitLineOnce("// Generated on ", new Date().toString());
             this.emitLine("// To parse the JSON, add this file to your project and do:");
             this.emitLine("//");
             if (this._options.convenienceInitializers && !(type instanceof EnumType)) {
@@ -581,15 +589,23 @@ export class SwiftRenderer extends ConvenienceRenderer {
 
     /// startFile takes a file name, appends ".swift" to it and sets it as the current filename.
     protected startFile(basename: Sourcelike): void {
+        if (this._options.multiFileOutput === false) {
+            return;
+        }
+
         assert(this._currentFilename === undefined, "Previous file wasn't finished: " + this._currentFilename);
         // FIXME: The filenames should actually be Sourcelikes, too
         this._currentFilename = `${this.sourcelikeToString(basename)}.swift`;
         this.initializeEmitContextForFilename(this._currentFilename);
     }
 
-    /// finishFile pushes the current file name onto the collection of finished files and then resets the current file name. These finished files are used in index.ts to write the output.
-    protected finishFile(): void {
-        super.finishFile(defined(this._currentFilename));
+    /// endFile pushes the current file name onto the collection of finished files and then resets the current file name. These finished files are used in index.ts to write the output.
+    protected endFile(): void {
+        if (this._options.multiFileOutput === false) {
+            return;
+        }
+
+        this.finishFile(defined(this._currentFilename));
         this._currentFilename = undefined;
     }
 
@@ -731,7 +747,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
             this.emitAlamofireExtension(className);
         }
 
-        this.finishFile();
+        this.endFile();
     }
 
     protected initializableProperties(c: ClassType): SwiftProperty[] {
@@ -883,7 +899,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             });
         }
 
-        this.finishFile();
+        this.endFile();
     }
 
     private renderUnionDefinition(u: UnionType, unionName: Name): void {
@@ -953,7 +969,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
                 });
             }
         });
-        this.finishFile();
+        this.endFile();
     }
 
     private emitTopLevelMapAndArrayConvenienceInitializerExtensions(t: Type, name: Name): void {
@@ -1308,7 +1324,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
 }`);
         }
 
-        this.finishFile();
+        this.endFile();
     };
 
     private emitConvenienceMutator(c: ClassType, className: Name) {
