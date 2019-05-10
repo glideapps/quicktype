@@ -1011,14 +1011,12 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
 
         this.emitLineOnce("import Foundation");
 
-        // TODO: [Michael Fey (@MrRooni), 2019-5-6] This can't stay here… Find where it was originally and put it back
         this.forEachTopLevel(
             "leading",
             (t: Type, name: Name) => this.renderTopLevelAlias(t, name),
             t => this.namedTypeToNameForTopLevel(t) === undefined
         );
 
-        // TODO: [Michael Fey (@MrRooni), 2019-5-6] This can't stay here… Find where it was originally and put it back
         if (this._options.convenienceInitializers) {
             this.ensureBlankLine();
             this.forEachTopLevel("leading-and-interposing", (t: Type, name: Name) =>
@@ -1364,12 +1362,6 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
     }
 
     protected emitSourceStructure(): void {
-        // this.forEachTopLevel(
-        //     "leading",
-        //     (t: Type, name: Name) => this.renderTopLevelAlias(t, name),
-        //     t => this.namedTypeToNameForTopLevel(t) === undefined
-        // );
-
         this.forEachNamedType(
             "leading-and-interposing",
             (c: ClassType, className: Name) => this.renderClassDefinition(c, className),
