@@ -502,10 +502,10 @@ export class SwiftRenderer extends ConvenienceRenderer {
         }
         this.ensureBlankLine();
         this.emitLineOnce("import Foundation");
-        this.ensureBlankLine();
         if (!this._options.justTypes && this._options.alamofire) {
             this.emitLineOnce("import Alamofire");
         }
+        this.ensureBlankLine();
     }
 
     private renderTopLevelAlias(t: Type, name: Name): void {
@@ -567,10 +567,6 @@ export class SwiftRenderer extends ConvenienceRenderer {
         return groups;
     }
 
-    protected propertyLinesDefinition(name: Name, parameter: ClassProperty): Sourcelike {
-        return [this.accessLevel, "let ", name, ": ", this.swiftPropertyType(parameter)];
-    }
-
     /// Access level with trailing space (e.g. "public "), or empty string
     private get accessLevel(): string {
         return this._options.accessLevel === "internal"
@@ -606,6 +602,10 @@ export class SwiftRenderer extends ConvenienceRenderer {
 
         this.finishFile(defined(this._currentFilename));
         this._currentFilename = undefined;
+    }
+
+    protected propertyLinesDefinition(name: Name, parameter: ClassProperty): Sourcelike {
+        return [this.accessLevel, "let ", name, ": ", this.swiftPropertyType(parameter)];
     }
 
     private renderClassDefinition(c: ClassType, className: Name): void {
