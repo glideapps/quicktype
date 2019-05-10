@@ -443,7 +443,6 @@ export class SwiftRenderer extends ConvenienceRenderer {
             this.emitLineOnce(
                 "// This file was generated from JSON Schema using quicktype, do not modify it directly."
             );
-            this.emitLineOnce("// Generated on ", new Date().toString());
             this.emitLine("// To parse the JSON, add this file to your project and do:");
             this.emitLine("//");
             if (this._options.convenienceInitializers && !(type instanceof EnumType)) {
