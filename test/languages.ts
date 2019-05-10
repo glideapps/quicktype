@@ -96,7 +96,9 @@ export const JavaLanguage: Language = {
   skipMiscJSON: false,
   skipSchema: ["keyword-unions.schema"], // generates classes with names that are case-insensitively equal
   rendererOptions: {},
-  quickTestRendererOptions: [{ "array-type": "list" }],
+  quickTestRendererOptions: [
+    { "array-type": "list" }
+  ],
   sourceFiles: ["src/language/Java.ts"]
 };
 
@@ -448,7 +450,7 @@ export const ElmLanguage: Language = {
 export const SwiftLanguage: Language = {
   name: "swift",
   base: "test/fixtures/swift",
-  compileCommand: `swiftc -o quicktype *.swift`,
+  compileCommand: `swiftc -o quicktype main.swift quicktype.swift`,
   runCommand(sample: string) {
     return `./quicktype "${sample}"`;
   },
@@ -490,7 +492,7 @@ export const SwiftLanguage: Language = {
   ],
   allowMissingNull: true,
   features: ["enum", "union", "no-defaults", "date-time"],
-  output: "JSONSchemaSupport.swift",
+  output: "quicktype.swift",
   topLevel: "TopLevel",
   skipJSON: [
     // Swift only supports top-level arrays and objects
