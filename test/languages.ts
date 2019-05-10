@@ -96,9 +96,7 @@ export const JavaLanguage: Language = {
   skipMiscJSON: false,
   skipSchema: ["keyword-unions.schema"], // generates classes with names that are case-insensitively equal
   rendererOptions: {},
-  quickTestRendererOptions: [
-    { "array-type": "list" }
-  ],
+  quickTestRendererOptions: [{ "array-type": "list" }],
   sourceFiles: ["src/language/Java.ts"]
 };
 
@@ -488,7 +486,8 @@ export const SwiftLanguage: Language = {
     "e8b04.json",
     "f6a65.json", // date-time issues
     "fcca3.json",
-    "f82d9.json"
+    "f82d9.json",
+    "bug863.json" // Unable to resolve reserved keyword use, "description"
   ],
   allowMissingNull: true,
   features: ["enum", "union", "no-defaults", "date-time"],
