@@ -291,7 +291,7 @@ export abstract class Renderer {
     }
 
     protected initializeEmitContextForFilename(filename: string): void {
-        if (this._finishedEmitContexts.has(filename.toLowerCase().toString())) {
+        if (this._finishedEmitContexts.has(filename.toLowerCase())) {
             const existingEmitContext = this._finishedEmitContexts.get(filename.toLowerCase());
             if (existingEmitContext !== undefined) {
                 this._emitContext = existingEmitContext;
