@@ -614,6 +614,8 @@ export class SwiftRenderer extends ConvenienceRenderer {
         this.renderHeader(c, className);
         this.emitDescription(this.descriptionForType(c));
 
+        this.emitMark(this.sourcelikeToString(className), true);
+
         const isClass = this._options.useClasses || this.isCycleBreakerType(c);
         const structOrClass = isClass ? "class" : "struct";
 
@@ -726,17 +728,10 @@ export class SwiftRenderer extends ConvenienceRenderer {
             // FIXME: We emit only the MARK line for top-level-enum.schema
             if (this._options.convenienceInitializers) {
                 this.ensureBlankLine();
-                this.emitMark("Convenience initializers and mutators");
+                this.emitMark(this.sourcelikeToString(className) + " convenience initializers and mutators");
                 this.emitConvenienceInitializersExtension(c, className);
                 this.ensureBlankLine();
             }
-        }
-
-        if (this._options.alamofire) {
-            this.ensureBlankLine();
-            this.emitMark("Alamofire response handlers", true);
-            this.ensureBlankLine();
-            this.emitAlamofireExtension(className);
         }
 
         this.endFile();
@@ -1037,7 +1032,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             this._options.alamofire
         ) {
             this.ensureBlankLine();
-            this.emitMark("Helper functions for creating encoders and decoders");
+            this.emitMark("Helper functions for creating encoders and decoders", true);
             this.ensureBlankLine();
             this.emitNewEncoderDecoder();
         }
@@ -1049,11 +1044,18 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             this.emitURLSessionExtension();
         }
 
+        if (this._options.alamofire) {
+            this.ensureBlankLine();
+            this.emitMark("Alamofire response handlers", true);
+            this.ensureBlankLine();
+            this.emitAlamofireExtension();
+        }
+
         // This assumes that this method is called after declarations
         // are emitted.
         if (this._needAny || this._needNull) {
             this.ensureBlankLine();
-            this.emitMark("Encode/decode helpers");
+            this.emitMark("Encode/decode helpers", true);
             this.ensureBlankLine();
             if (this._options.objcSupport) {
                 this.emitLine(this.objcMembersDeclaration, this.accessLevel, "class JSONNull: NSObject, Codable {");
@@ -1411,7 +1413,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         });
     }
 
-    private emitAlamofireExtension(className: Name) {
+    private emitAlamofireExtension() {
         this.ensureBlankLine();
         this.emitBlockWithAccess("extension DataRequest", () => {
             this
@@ -1432,19 +1434,21 @@ fileprivate func responseDecodable<T: Decodable>(queue: DispatchQueue? = nil, co
     return response(queue: queue, responseSerializer: decodableResponseSerializer(), completionHandler: completionHandler)
 }`);
             this.ensureBlankLine();
-            this.emitLine("@discardableResult");
-            this.emitBlock(
-                [
-                    "func response",
-                    className,
-                    "(queue: DispatchQueue? = nil, completionHandler: @escaping (DataResponse<",
-                    className,
-                    ">) -> Void) -> Self"
-                ],
-                () => {
-                    this.emitLine(`return responseDecodable(queue: queue, completionHandler: completionHandler)`);
-                }
-            );
+            this.forEachTopLevel("leading-and-interposing", (_, name) => {
+                this.emitLine("@discardableResult");
+                this.emitBlock(
+                    [
+                        "func response",
+                        name,
+                        "(queue: DispatchQueue? = nil, completionHandler: @escaping (DataResponse<",
+                        name,
+                        ">) -> Void) -> Self"
+                    ],
+                    () => {
+                        this.emitLine(`return responseDecodable(queue: queue, completionHandler: completionHandler)`);
+                    }
+                );
+            });
         });
     }
 }
