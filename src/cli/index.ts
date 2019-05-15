@@ -267,6 +267,7 @@ function inferCLIOptions(opts: Partial<CLIOptions>, targetLanguage: TargetLangua
     /* tslint:disable:strict-boolean-expressions */
     const options: CLIOptions = {
         src: opts.src || [],
+        srcUrls: opts.srcUrls,
         srcLang: srcLang,
         lang: language.displayName,
         topLevel: opts.topLevel || inferTopLevel(opts),
