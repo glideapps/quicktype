@@ -438,26 +438,54 @@ export class SwiftRenderer extends ConvenienceRenderer {
         return null;
     }
 
+    private renderSingleFileHeaderComments(): void {
+        this.emitLineOnce("// This file was generated from JSON Schema using quicktype, do not modify it directly.");
+        this.emitLineOnce("// To parse the JSON, add this file to your project and do:");
+        this.emitLineOnce("//");
+        this.forEachTopLevel("none", (t, topLevelName) => {
+            if (this._options.convenienceInitializers && !(t instanceof EnumType)) {
+                this.emitLineOnce(
+                    "//   let ",
+                    modifySource(camelCase, topLevelName),
+                    " = try ",
+                    topLevelName,
+                    "(json)"
+                );
+            } else {
+                this.emitLineOnce(
+                    "//   let ",
+                    modifySource(camelCase, topLevelName),
+                    " = ",
+                    "try? newJSONDecoder().decode(",
+                    topLevelName,
+                    ".self, from: jsonData)"
+                );
+            }
+        });
+    }
+
     private renderHeader(type: Type, name: Name): void {
         if (this.leadingComments !== undefined) {
             this.emitCommentLines(this.leadingComments);
         } else if (!this._options.justTypes) {
-            this.emitLineOnce(
-                "// This file was generated from JSON Schema using quicktype, do not modify it directly."
-            );
-            this.emitLine("// To parse the JSON, add this file to your project and do:");
-            this.emitLine("//");
-            if (this._options.convenienceInitializers && !(type instanceof EnumType)) {
-                this.emitLine("//   let ", modifySource(camelCase, name), " = try ", name, "(json)");
-            } else {
-                this.emitLine(
-                    "//   let ",
-                    modifySource(camelCase, name),
-                    " = ",
-                    "try? newJSONDecoder().decode(",
-                    name,
-                    ".self, from: jsonData)"
+            if (this._options.multiFileOutput) {
+                this.emitLineOnce(
+                    "// This file was generated from JSON Schema using quicktype, do not modify it directly."
                 );
+                this.emitLineOnce("// To parse the JSON, add this file to your project and do:");
+                this.emitLineOnce("//");
+                if (this._options.convenienceInitializers && !(type instanceof EnumType)) {
+                    this.emitLine("//   let ", modifySource(camelCase, name), " = try ", name, "(json)");
+                } else {
+                    this.emitLine(
+                        "//   let ",
+                        modifySource(camelCase, name),
+                        " = ",
+                        "try? newJSONDecoder().decode(",
+                        name,
+                        ".self, from: jsonData)"
+                    );
+                }
             }
 
             if (this._options.urlSession) {
@@ -1364,6 +1392,10 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
     }
 
     protected emitSourceStructure(): void {
+        if (this._options.multiFileOutput == false) {
+            this.renderSingleFileHeaderComments();
+        }
+
         this.forEachNamedType(
             "leading-and-interposing",
             (c: ClassType, className: Name) => this.renderClassDefinition(c, className),
