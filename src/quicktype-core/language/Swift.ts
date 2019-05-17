@@ -48,6 +48,7 @@ const MAX_SAMELINE_PROPERTIES = 4;
 export const swiftOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     convenienceInitializers: new BooleanOption("initializers", "Generate initializers and mutators", true),
+    explicitCodingKeys: new BooleanOption("coding-keys", "Explicit CodingKey values in Codable types", true),
     urlSession: new BooleanOption("url-session", "URLSession task extensions", false),
     alamofire: new BooleanOption("alamofire", "Alamofire extensions", false),
     namedTypePrefix: new StringOption("type-prefix", "Prefix for type names", "PREFIX", "", "secondary"),
@@ -123,6 +124,7 @@ export class SwiftTargetLanguage extends TargetLanguage {
             swiftOptions.useClasses,
             swiftOptions.dense,
             swiftOptions.convenienceInitializers,
+            swiftOptions.explicitCodingKeys,
             swiftOptions.accessLevel,
             swiftOptions.urlSession,
             swiftOptions.alamofire,
@@ -683,7 +685,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                     this.emitBlock("enum CodingKeys: String, CodingKey", () => {
                         for (const group of groups) {
                             const { name, label } = group[0];
-                            if (label !== undefined) {
+                            if (this._options.explicitCodingKeys && label !== undefined) {
                                 this.emitLine("case ", name, ' = "', label, '"');
                             } else {
                                 const names = arrayIntercalate<Sourcelike>(", ", group.map(p => p.name));
