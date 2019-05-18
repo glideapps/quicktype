@@ -1393,7 +1393,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
     }
 
     protected emitSourceStructure(): void {
-        if (this._options.multiFileOutput == false) {
+        if (this._options.multiFileOutput === false) {
             this.renderSingleFileHeaderComments();
         }
 
