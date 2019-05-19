@@ -149,21 +149,26 @@ export abstract class Renderer {
         this._emitContext.emitItem(item);
     }
 
-    emitItemOnce(item: Sourcelike): void {
+    emitItemOnce(item: Sourcelike): boolean {
         if (this._emitContext.containsItem(item)) {
-            return;
+            return false;
         }
 
         this.emitItem(item);
+        return true;
     }
 
     emitLineOnce(...lineParts: Sourcelike[]): void {
+        let lineEmitted: boolean = true;
         if (lineParts.length === 1) {
-            this.emitItemOnce(lineParts[0]);
+            lineEmitted = this.emitItemOnce(lineParts[0]);
         } else if (lineParts.length > 1) {
-            this.emitItemOnce(lineParts);
+            lineEmitted = this.emitItemOnce(lineParts);
         }
-        this._emitContext.emitNewline();
+
+        if (lineEmitted) {
+            this._emitContext.emitNewline();
+        }
     }
 
     emitLine(...lineParts: Sourcelike[]): void {
