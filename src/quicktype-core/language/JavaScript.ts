@@ -10,6 +10,8 @@ import {
 } from "../Type";
 import { matchType, directlyReachableSingleNamedType } from "../TypeUtils";
 import { acronymOption, acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
+import { convertersOption, ConvertersOptions } from "../support/Converters";
+
 import {
     utf16LegalizeCharacters,
     utf16StringEscape,
@@ -33,7 +35,8 @@ import { isES3IdentifierPart, isES3IdentifierStart } from "./JavaScriptUnicodeMa
 
 export const javaScriptOptions = {
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
-    runtimeTypecheck: new BooleanOption("runtime-typecheck", "Verify JSON.parse results at runtime", true)
+    runtimeTypecheck: new BooleanOption("runtime-typecheck", "Verify JSON.parse results at runtime", true),
+    converters: convertersOption()
 };
 
 export type JavaScriptTypeAnnotations = {
@@ -56,7 +59,7 @@ export class JavaScriptTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [javaScriptOptions.runtimeTypecheck, javaScriptOptions.acronymStyle];
+        return [javaScriptOptions.runtimeTypecheck, javaScriptOptions.acronymStyle, javaScriptOptions.converters];
     }
 
     get stringTypeMapping(): StringTypeMapping {
@@ -255,7 +258,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
     }
 
     protected emitConvertModuleBody(): void {
-        this.forEachTopLevel("interposing", (t, name) => {
+        const converter = (t: Type, name: Name) => {
             const typeMap = this.typeMapTypeFor(t);
             this.emitBlock([this.deserializerFunctionLine(t, name), " "], "", () => {
                 if (!this._jsOptions.runtimeTypecheck) {
@@ -273,7 +276,17 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
                     this.emitLine("return JSON.stringify(uncast(value, ", typeMap, "), null, 2);");
                 }
             });
-        });
+        };
+
+        switch (this._jsOptions.converters) {
+            case ConvertersOptions.AllObjects:
+                this.forEachObject("interposing", converter);
+                break;
+
+            default:
+                this.forEachTopLevel("interposing", converter);
+                break;
+        }
     }
 
     protected emitConvertModuleHelpers(): void {

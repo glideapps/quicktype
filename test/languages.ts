@@ -595,7 +595,8 @@ export const TypeScriptLanguage: Language = {
     { "runtime-typecheck": "false" },
     { "nice-property-names": "true" },
     { "declare-unions": "true" },
-    { "acronym-style": "pascal" }
+    { "acronym-style": "pascal" },
+    { converters: "all-objects" }
   ],
   sourceFiles: ["src/language/TypeScript.ts"]
 };
@@ -619,7 +620,7 @@ export const JavaScriptLanguage: Language = {
   skipMiscJSON: false,
   skipSchema: ["keyword-unions.schema"], // can't handle "constructor" property
   rendererOptions: {},
-  quickTestRendererOptions: [{ "runtime-typecheck": "false" }],
+  quickTestRendererOptions: [{ "runtime-typecheck": "false" }, { converters: "top-level" }],
   sourceFiles: ["src/language/JavaScript.ts"]
 };
 
