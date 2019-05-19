@@ -149,21 +149,26 @@ export abstract class Renderer {
         this._emitContext.emitItem(item);
     }
 
-    emitItemOnce(item: Sourcelike): void {
+    emitItemOnce(item: Sourcelike): boolean {
         if (this._emitContext.containsItem(item)) {
-            return;
+            return false;
         }
 
         this.emitItem(item);
+        return true;
     }
 
     emitLineOnce(...lineParts: Sourcelike[]): void {
+        let lineEmitted: boolean = true;
         if (lineParts.length === 1) {
-            this.emitItemOnce(lineParts[0]);
+            lineEmitted = this.emitItemOnce(lineParts[0]);
         } else if (lineParts.length > 1) {
-            this.emitItemOnce(lineParts);
+            lineEmitted = this.emitItemOnce(lineParts);
         }
-        this._emitContext.emitNewline();
+
+        if (lineEmitted) {
+            this._emitContext.emitNewline();
+        }
     }
 
     emitLine(...lineParts: Sourcelike[]): void {
@@ -300,7 +305,12 @@ export abstract class Renderer {
     }
 
     protected finishFile(filename: string): void {
-        assert(!this._finishedFiles.has(filename), `Tried to emit file ${filename} more than once`);
+        if (this._finishedFiles.has(filename)) {
+            console.log(
+                `[WARNING] Tried to emit file ${filename} more than once. If performing multi-file output this warning can be safely ignored.`
+            );
+        }
+
         const source = sourcelikeToSource(this._emitContext.source);
         this._finishedFiles.set(filename, source);
 
