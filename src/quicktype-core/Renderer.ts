@@ -300,7 +300,12 @@ export abstract class Renderer {
     }
 
     protected finishFile(filename: string): void {
-        assert(!this._finishedFiles.has(filename), `Tried to emit file ${filename} more than once`);
+        if (this._finishedFiles.has(filename)) {
+            console.log(
+                `[WARNING] Tried to emit file ${filename} more than once. If performing multi-file output this warning can be safely ignored.`
+            );
+        }
+
         const source = sourcelikeToSource(this._emitContext.source);
         this._finishedFiles.set(filename, source);
 
