@@ -22,7 +22,7 @@ import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils"
 import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { BooleanOption, EnumOption, Option, getOptionValues, OptionValues } from "../RendererOptions";
-import { defined } from "../support/Support";
+import { assert, defined } from "../support/Support";
 import { RenderContext } from "../Renderer";
 
 export enum Density {
@@ -43,7 +43,8 @@ export const rustOptions = {
         ["crate", Visibility.Crate],
         ["public", Visibility.Public]
     ]),
-    deriveDebug: new BooleanOption("derive-debug", "Derive Debug impl", false)
+    deriveDebug: new BooleanOption("derive-debug", "Derive Debug impl", false),
+    multiFileOutput: new BooleanOption("multi-file-output", "Renders each top-level object in its own Go file", false)
 };
 
 export class RustTargetLanguage extends TargetLanguage {
@@ -56,7 +57,7 @@ export class RustTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [rustOptions.density, rustOptions.visibility, rustOptions.deriveDebug];
+        return [rustOptions.density, rustOptions.visibility, rustOptions.deriveDebug, rustOptions.multiFileOutput];
     }
 }
 
@@ -181,6 +182,8 @@ const standardUnicodeRustEscape = (codePoint: number): string => {
 const rustStringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, standardUnicodeRustEscape));
 
 export class RustRenderer extends ConvenienceRenderer {
+    private _currentFilename: string | undefined;
+
     constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
@@ -289,7 +292,36 @@ export class RustRenderer extends ConvenienceRenderer {
         return "";
     }
 
+    /// startFile takes a file name, lowercases it, appends ".rs" to it, and sets it as the current filename.
+    protected startFile(basename: Sourcelike): void {
+        if (this._options.multiFileOutput === false) {
+            return;
+        }
+
+        assert(this._currentFilename === undefined, "Previous file wasn't finished: " + this._currentFilename);
+        // FIXME: The filenames should actually be Sourcelikes, too
+        this._currentFilename = `${this.sourcelikeToString(basename)}.rs`.toLowerCase();
+        this.initializeEmitContextForFilename(this._currentFilename);
+    }
+
+    /// endFile pushes the current file name onto the collection of finished files and then resets the current file name. These finished files are used in index.ts to write the output.
+    protected endFile(): void {
+        if (this._options.multiFileOutput === false) {
+            return;
+        }
+
+        this.finishFile(defined(this._currentFilename));
+        this._currentFilename = undefined;
+    }
+
     protected emitStructDefinition(c: ClassType, className: Name): void {
+        this.startFile(className);
+        this.emitLeadingComments(this.sourcelikeToString(className));
+        this.emitLineOnce("extern crate serde_json;");
+        if (this.haveMaps) {
+            this.emitLineOnce("use std::collections::HashMap;");
+        }
+
         this.emitDescription(this.descriptionForType(c));
         this.emitLine("#[derive(", this._options.deriveDebug ? "Debug, " : "", "Serialize, Deserialize)]");
 
@@ -302,6 +334,7 @@ export class RustRenderer extends ConvenienceRenderer {
             });
 
         this.emitBlock(["pub struct ", className], structBody);
+        this.endFile();
     }
 
     protected emitBlock(line: Sourcelike, f: () => void): void {
@@ -311,12 +344,17 @@ export class RustRenderer extends ConvenienceRenderer {
     }
 
     protected emitUnion(u: UnionType, unionName: Name): void {
+        this.startFile(unionName);
         const isMaybeWithSingleType = nullableFromUnion(u);
 
         if (isMaybeWithSingleType !== null) {
             return;
         }
 
+        this.emitLineOnce("extern crate serde_json;");
+        if (this.haveMaps) {
+            this.emitLineOnce("use std::collections::HashMap;");
+        }
         this.emitDescription(this.descriptionForType(u));
         this.emitLine("#[derive(", this._options.deriveDebug ? "Debug, " : "", "Serialize, Deserialize)]");
         this.emitLine("#[serde(untagged)]");
@@ -330,10 +368,16 @@ export class RustRenderer extends ConvenienceRenderer {
                 this.emitLine([fieldName, "(", rustType, "),"]);
             })
         );
+        this.endFile();
     }
 
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
+        this.startFile(enumName);
         this.emitDescription(this.descriptionForType(e));
+        this.emitLineOnce("extern crate serde_json;");
+        if (this.haveMaps) {
+            this.emitLineOnce("use std::collections::HashMap;");
+        }
         this.emitLine("#[derive(", this._options.deriveDebug ? "Debug, " : "", "Serialize, Deserialize)]");
 
         const blankLines = this._options.density === Density.Dense ? "none" : "interposing";
@@ -343,19 +387,19 @@ export class RustRenderer extends ConvenienceRenderer {
                 this.emitLine([name, ","]);
             })
         );
+        this.endFile();
     }
 
     protected emitTopLevelAlias(t: Type, name: Name): void {
         this.emitLine("pub type ", name, " = ", this.rustType(t), ";");
     }
 
-    protected emitLeadingComments(): void {
+    protected emitLeadingComments(objectName: string): void {
         if (this.leadingComments !== undefined) {
             this.emitCommentLines(this.leadingComments);
             return;
         }
 
-        const topLevelName = defined(mapFirst(this.topLevels));
         this.emitMultiline(
             `// Example code that deserializes and serializes the model.
 // extern crate serde;
@@ -363,29 +407,38 @@ export class RustRenderer extends ConvenienceRenderer {
 // extern crate serde_derive;
 // extern crate serde_json;
 //
-// use generated_module::${topLevelName};
+// use generated_module::${objectName};
 //
 // fn main() {
 //     let json = r#"{"answer": 42}"#;
-//     let model: ${topLevelName} = serde_json::from_str(&json).unwrap();
+//     let model: ${objectName} = serde_json::from_str(&json).unwrap();
 // }`
         );
+        this.ensureBlankLine();
     }
 
-    protected emitSourceStructure(): void {
-        this.emitLeadingComments();
-        this.ensureBlankLine();
-        this.emitLine("extern crate serde_json;");
-
+    protected emitHelperFunctions(): void {
+        this.startFile("jsonschemasupport");
         if (this.haveMaps) {
-            this.emitLine("use std::collections::HashMap;");
+            this.emitLineOnce("use std::collections::HashMap;");
         }
-
         this.forEachTopLevel(
             "leading",
             (t, name) => this.emitTopLevelAlias(t, name),
             t => this.namedTypeToNameForTopLevel(t) === undefined
         );
+        this.endFile();
+    }
+
+    protected emitSourceStructure(): void {
+        if (this._options.multiFileOutput === false) {
+            const topLevelName = defined(mapFirst(this.topLevels));
+            if (topLevelName !== undefined) {
+                this.emitLeadingComments(`${topLevelName}`);
+            }
+        }
+
+        this.emitHelperFunctions();
 
         this.forEachObject("leading-and-interposing", (c: ClassType, name: Name) => this.emitStructDefinition(c, name));
         this.forEachUnion("leading-and-interposing", (u, name) => this.emitUnion(u, name));
