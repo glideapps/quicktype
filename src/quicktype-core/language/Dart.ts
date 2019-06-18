@@ -39,8 +39,8 @@ import { arrayIntercalate } from "collection-utils";
 
 export const dartOptions = {
     justTypes: new BooleanOption("just-types", "Types only", false),
-    codersInClass: new BooleanOption("coders-in-class ", "Put encoder & decoder in Class", false),
-    methodNamesWithMap: new BooleanOption("from-map ", "Use method names fromMap() & toMap()", false)
+    codersInClass: new BooleanOption("coders-in-class", "Put encoder & decoder in Class", false),
+    methodNamesWithMap: new BooleanOption("from-map", "Use method names fromMap() & toMap()", false)
 };
 
 export class DartTargetLanguage extends TargetLanguage {
