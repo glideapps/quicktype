@@ -1172,7 +1172,7 @@ export class JSONPythonRenderer extends PythonRenderer {
 
         this.emitLine("@staticmethod");
         this.emitBlock(
-            ["def from_dict(", this.typingDecl("obj", "Any"), ")", this.typeHint(" -> ", this.namedType(t)), ":"],
+            ["def from_dict(", this.typingDecl("obj", "dict"), ")", this.typeHint(" -> ", this.namedType(t)), ":"],
             () => {
                 const args: Sourcelike[] = [];
                 this.emitLine("assert isinstance(obj, dict)");
