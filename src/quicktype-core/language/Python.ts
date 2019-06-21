@@ -759,7 +759,7 @@ export class JSONPythonRenderer extends PythonRenderer {
                 "def from_dict(f",
                 this.typeHint(": ", this.withTyping("Callable"), "[[", this.withTyping("Any"), "], ", tvar, "]"),
                 ", ",
-                this.typingDecl("x", "Any"),
+                this.typingDecl("x", "dict"),
                 ")",
                 this.typeHint(" -> ", this.withTyping("Dict"), "[str, ", tvar, "]"),
                 ":"
@@ -1261,14 +1261,14 @@ export class JSONPythonRenderer extends PythonRenderer {
             const { fromDict, toDict } = defined(this._topLevelConverterNames.get(name));
             const pythonType = this.pythonType(t);
             this.emitBlock(
-                ["def ", fromDict, "(", this.typingDecl("s", "Any"), ")", this.typeHint(" -> ", pythonType), ":"],
+                ["def ", fromDict, "(", this.typingDecl("s", "dict"), ")", this.typeHint(" -> ", pythonType), ":"],
                 () => {
                     this.emitLine("return ", makeValue(this.deserializer({ value: "s" }, t)));
                 }
             );
             this.ensureBlankLine(2);
             this.emitBlock(
-                ["def ", toDict, "(x", this.typeHint(": ", pythonType), ")", this.typingReturn("Any"), ":"],
+                ["def ", toDict, "(x", this.typeHint(": ", pythonType), ")", this.typingReturn("dict"), ":"],
                 () => {
                     this.emitLine("return ", makeValue(this.serializer({ value: "x" }, t)));
                 }
