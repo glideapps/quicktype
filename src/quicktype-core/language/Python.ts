@@ -1243,7 +1243,7 @@ export class JSONPythonRenderer extends PythonRenderer {
             this.emitLine("import dateutil.parser");
         }
 
-        if (!this._typeVars.size && !this._haveEnumTypeVar) return;
+        if (this._typeVars.size === 0 && !this._haveEnumTypeVar) return;
 
         this.ensureBlankLine(2);
         this._typeVars.forEach(name => {
