@@ -73,6 +73,10 @@ export const cPlusPlusOptions = {
         "not-permissive",
         "secondary"
     ),
+    useTopLevelNamespace: new BooleanOption(
+        "useTopLevelNamespace",
+        "Moves to_json and from_json functions under the top level namespace",
+        false),
     westConst : new EnumOption(
       "const-style",
       "Put const to the left/west (const T) or right/east (T const)",
@@ -121,6 +125,7 @@ export class CPlusPlusTargetLanguage extends TargetLanguage {
             cPlusPlusOptions.codeFormat,
             cPlusPlusOptions.wstring,
             cPlusPlusOptions.msbuildPermissive,
+            cPlusPlusOptions.useTopLevelNamespace,
             cPlusPlusOptions.westConst,
             cPlusPlusOptions.typeSourceStyle,
             cPlusPlusOptions.includeLocation,
@@ -2049,6 +2054,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             let namespaces = ["nlohmann"];
             if (this._options.msbuildPermissive) {
                 namespaces = ["nlohmann", "detail"];
+            }
+            if (this._options.useTopLevelNamespace) {
+                namespaces = this._namespaceNames.slice();
             }
             this.emitNamespaces(namespaces, () => {
                 this.forEachObject("leading-and-interposing", (_: any, className: Name) =>
