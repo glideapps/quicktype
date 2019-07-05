@@ -57,10 +57,10 @@ function pathExtension(path: string): string | undefined {
 
 export function uriInferenceAttributesProducer(s: string): TypeAttributes {
     try {
-        const uri = URI.parse(s);
-        const extension = pathExtension(uri.path);
+        const uri = URI(s);
+        const extension = pathExtension(uri.path());
         const extensions = extension === undefined ? [] : [extension.toLowerCase()];
-        return uriTypeAttributeKind.makeAttributes([new Set([uri.protocol.toLowerCase()]), new Set(extensions)]);
+        return uriTypeAttributeKind.makeAttributes([new Set([uri.protocol().toLowerCase()]), new Set(extensions)]);
     } catch {
         return emptyTypeAttributes;
     }
