@@ -775,7 +775,7 @@ export async function makeQuicktypeOptions(
             if (options.graphqlIntrospect !== undefined) {
                 schemaString = await introspectServer(
                     options.graphqlIntrospect,
-                    withDefault(options.httpMethod, "GET"),
+                    withDefault(options.httpMethod, "POST"),
                     withDefault<string[]>(options.httpHeader, [])
                 );
                 if (options.graphqlSchema !== undefined) {
