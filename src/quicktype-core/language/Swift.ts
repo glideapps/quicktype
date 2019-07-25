@@ -865,7 +865,30 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             });
 
             this.ensureBlankLine();
+
+            this.emitBlock([convenience, "init(dictionary: [AnyHashable:Any]) throws"], () => {
+                this.emitMultiline(`    guard JSONSerialization.isValidJSONObject(dictionary) else {
+                    throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)
+                }
+
+        let data = try JSONSerialization.data(withJSONObject: dictionary, options: [])
+            try self.init(data: data)`);
+            });
+
+            this.ensureBlankLine();
+
             this.emitConvenienceMutator(c, className);
+
+            this.ensureBlankLine();
+
+            this.emitMultiline(`    func dictionaryRepresentation() throws -> [AnyHashable:Any] {
+        let data = try self.jsonData()
+        guard let dictionaryRep = try JSONSerialization.jsonObject(with: data, options: []) as? [AnyHashable:Any] else {
+            throw NSError(domain: "JSONEncoding", code: 0, userInfo: nil)
+        }
+
+        return dictionaryRep
+    }`);
 
             // Convenience serializers
             this.ensureBlankLine();
