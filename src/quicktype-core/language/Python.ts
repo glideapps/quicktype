@@ -121,7 +121,7 @@ export const pythonOptions = {
 
 export class PythonTargetLanguage extends TargetLanguage {
     protected getOptions(): Option<any>[] {
-        return [pythonOptions.features, pythonOptions.justTypes];
+        return [pythonOptions.features, pythonOptions.justTypes, pythonOptions.nicePropertyNames];
     }
 
     get stringTypeMapping(): StringTypeMapping {
