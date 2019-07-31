@@ -115,7 +115,8 @@ export const pythonOptions = {
         ],
         "3.6"
     ),
-    justTypes: new BooleanOption("just-types", "Classes only", false)
+    justTypes: new BooleanOption("just-types", "Classes only", false),
+    nicePropertyNames: new BooleanOption("nice-property-names", "Transform property names to be pythonic", false),
 };
 
 export class PythonTargetLanguage extends TargetLanguage {
@@ -257,7 +258,11 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected namerForObjectProperty(): Namer {
-        return funPrefixNamer("property", s => snakeNameStyle(this.pyOptions.features.version, s, false));
+        if (this.pyOptions.nicePropertyNames) {
+            return funPrefixNamer("property", s => snakeNameStyle(this.pyOptions.features.version, s, false));
+        } else {
+            return funPrefixNamer("properties", s => s);
+        }
     }
 
     protected makeUnionMemberNamer(): null {
