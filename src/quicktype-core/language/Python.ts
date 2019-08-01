@@ -1,6 +1,6 @@
 import { TargetLanguage } from "../TargetLanguage";
 import { StringTypeMapping } from "../TypeBuilder";
-import { TransformedStringTypeKind, PrimitiveStringTypeKind, Type, EnumType, ClassType, UnionType } from "../Type";
+import { TransformedStringTypeKind, PrimitiveStringTypeKind, Type, EnumType, ClassType, UnionType, ClassProperty } from "../Type";
 import { RenderContext } from "../Renderer";
 import { Option, getOptionValues, OptionValues, EnumOption, BooleanOption } from "../RendererOptions";
 import { ConvenienceRenderer, ForbiddenWordsInfo, topLevelNameOrder } from "../ConvenienceRenderer";
@@ -33,7 +33,7 @@ import {
     StringifyTransformer,
     EncodingTransformer
 } from "../Transformers";
-import { arrayIntercalate, setUnionInto, mapUpdateInto, iterableSome } from "collection-utils";
+import { arrayIntercalate, setUnionInto, mapUpdateInto, iterableSome, mapSortBy } from "collection-utils";
 
 const unicode = require("@mark.probst/unicode-properties");
 
@@ -337,7 +337,7 @@ export class PythonRenderer extends ConvenienceRenderer {
             unionType => {
                 const maybeNullable = nullableFromUnion(unionType);
                 if (maybeNullable !== null) {
-                    return [this.withTyping("Optional"), "[", this.pythonType(maybeNullable), "]"];
+                    return [this.withTyping("Optional"), "[", this.pythonType(maybeNullable), "] = None"];
                 }
                 const memberTypes = Array.from(unionType.sortedMembers).map(m => this.pythonType(m));
                 return [this.withTyping("Union"), "[", arrayIntercalate(", ", memberTypes), "]"];
@@ -417,6 +417,8 @@ export class PythonRenderer extends ConvenienceRenderer {
                 if (t.getProperties().size === 0) {
                     this.emitLine("pass");
                 } else {
+                    const sort = (v: ClassProperty) => (v.type instanceof UnionType && nullableFromUnion(v.type) ? 1 : 0)
+                    t.setProperties(mapSortBy(t.getProperties(), sort), undefined, false)
                     this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
                         this.emitDescription(this.descriptionForClassProperty(t, jsonName));
                         this.emitLine(name, this.typeHint(": ", this.pythonType(cp.type)));
