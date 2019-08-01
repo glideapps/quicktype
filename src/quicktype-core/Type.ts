@@ -479,8 +479,8 @@ export class ObjectType extends Type {
         }
     }
 
-    setProperties(properties: ReadonlyMap<string, ClassProperty>, additionalPropertiesRef: TypeRef | undefined) {
-        assert(this._properties === undefined, "Tried to set object properties twice");
+    setProperties(properties: ReadonlyMap<string, ClassProperty>, additionalPropertiesRef: TypeRef | undefined, assertFirstTime = true) {
+      if (assertFirstTime) assert(this._properties === undefined, "Tried to set object properties twice");
 
         if (this instanceof MapType) {
             assert(properties.size === 0, "Cannot set properties on map type");
