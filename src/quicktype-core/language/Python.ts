@@ -417,8 +417,10 @@ export class PythonRenderer extends ConvenienceRenderer {
                 if (t.getProperties().size === 0) {
                     this.emitLine("pass");
                 } else {
-                    const sort = (v: ClassProperty) => (v.type instanceof UnionType && nullableFromUnion(v.type) ? 1 : 0)
-                    t.setProperties(mapSortBy(t.getProperties(), sort), undefined, false)
+                    const sort = (v: ClassProperty) => (
+                        Boolean(v.type instanceof UnionType && Boolean(nullableFromUnion(v.type))) ? 1 : 0
+                    );
+                    t.setProperties(mapSortBy(t.getProperties(), sort), undefined, false);
                     this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
                         this.emitDescription(this.descriptionForClassProperty(t, jsonName));
                         this.emitLine(name, this.typeHint(": ", this.pythonType(cp.type)));
