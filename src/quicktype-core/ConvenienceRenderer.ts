@@ -644,6 +644,10 @@ export abstract class ConvenienceRenderer extends Renderer {
         this._alphabetizeProperties = value;
     }
 
+    getAlphabetizeProperties(): boolean {
+        return this._alphabetizeProperties;
+    }
+
     // Returns the number of properties defined for the specified object type.
     protected propertyCount(o: ObjectType): number {
         const propertyNames = defined(this._propertyNamesStoreView).get(o);

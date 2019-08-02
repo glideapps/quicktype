@@ -337,7 +337,9 @@ export class PythonRenderer extends ConvenienceRenderer {
             unionType => {
                 const maybeNullable = nullableFromUnion(unionType);
                 if (maybeNullable !== null) {
-                    return [this.withTyping("Optional"), "[", this.pythonType(maybeNullable), "] = None"];
+                    let rest: string[] = [];
+                    if (this.getAlphabetizeProperties()) rest.push(" = None");
+                    return [this.withTyping("Optional"), "[", this.pythonType(maybeNullable), "]", ...rest];
                 }
                 const memberTypes = Array.from(unionType.sortedMembers).map(m => this.pythonType(m));
                 return [this.withTyping("Union"), "[", arrayIntercalate(", ", memberTypes), "]"];
