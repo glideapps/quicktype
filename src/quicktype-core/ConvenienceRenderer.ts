@@ -654,10 +654,11 @@ export abstract class ConvenienceRenderer extends Renderer {
         return propertyNames.size;
     }
 
-    protected sortClassProperties(properties: ReadonlyMap<string, ClassProperty>): ReadonlyMap<string, ClassProperty> {
+    protected sortClassProperties(properties: ReadonlyMap<string, ClassProperty>, propertyNames: ReadonlyMap<string, Name>): ReadonlyMap<string, ClassProperty> {
         if (this._alphabetizeProperties) {
             return mapSortBy(properties, (_p: ClassProperty, jsonName: string) => {
-                return jsonName;
+                const name = defined(propertyNames.get(jsonName));
+                return defined(this.names.get(name));
             });
         } else {
             return properties;
@@ -670,7 +671,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         f: (name: Name, jsonName: string, p: ClassProperty, position: ForEachPosition) => void
     ): void {
         const propertyNames = defined(this._propertyNamesStoreView).get(o);
-        const sortedProperties = this.sortClassProperties(o.getProperties());
+        const sortedProperties = this.sortClassProperties(o.getProperties(), propertyNames);
         this.forEachWithBlankLines(sortedProperties, blankLocations, (p, jsonName, pos) => {
             const name = defined(propertyNames.get(jsonName));
             f(name, jsonName, p, pos);

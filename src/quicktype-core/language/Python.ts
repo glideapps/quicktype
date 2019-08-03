@@ -410,17 +410,13 @@ export class PythonRenderer extends ConvenienceRenderer {
         return this.typeHint(" -> ", this.withTyping(type));
     }
 
-    protected sortClassProperties(properties: ReadonlyMap<string, ClassProperty>): ReadonlyMap<string, ClassProperty> {
-        if (this.getAlphabetizeProperties()) {
-            return mapSortBy(properties, (_p: ClassProperty, jsonName: string) => {
-                return jsonName;
-            });
-        } else if (this.pyOptions.features.dataClasses) {
+    protected sortClassProperties(properties: ReadonlyMap<string, ClassProperty>, propertyNames: ReadonlyMap<string, Name>): ReadonlyMap<string, ClassProperty> {
+        if (this.pyOptions.features.dataClasses) {
             return mapSortBy(properties, (p: ClassProperty,) => {
                 return p.type instanceof UnionType && nullableFromUnion(p.type) != null ? 1 : 0;
             });
         } else {
-            return properties;
+            return super.sortClassProperties(properties, propertyNames);
         }
     }
 
