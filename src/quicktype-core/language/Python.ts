@@ -33,7 +33,7 @@ import {
     StringifyTransformer,
     EncodingTransformer
 } from "../Transformers";
-import { arrayIntercalate, setUnionInto, mapUpdateInto, iterableSome, mapSortBy } from "collection-utils";
+import { arrayIntercalate, setUnionInto, mapUpdateInto, iterableSome } from "collection-utils";
 
 const unicode = require("@mark.probst/unicode-properties");
 
@@ -410,6 +410,16 @@ export class PythonRenderer extends ConvenienceRenderer {
         return this.typeHint(" -> ", this.withTyping(type));
     }
 
+    protected sortClassProperties(p: ClassProperty, jsonName: string): number | string {
+        if (this.getAlphabetizeProperties()) {
+            return jsonName;
+        }
+        if (this.pyOptions.features.dataClasses) {
+            return p.type instanceof UnionType && Boolean(nullableFromUnion(p.type)) ? 1 : 0;
+        }
+        return 0;
+    }
+
     protected emitClass(t: ClassType): void {
         if (this.pyOptions.features.dataClasses) {
             this.emitLine("@", this.withImport("dataclasses", "dataclass"));
@@ -419,10 +429,6 @@ export class PythonRenderer extends ConvenienceRenderer {
                 if (t.getProperties().size === 0) {
                     this.emitLine("pass");
                 } else {
-                    const sort = (v: ClassProperty) => (
-                        v.type instanceof UnionType && Boolean(nullableFromUnion(v.type)) ? 1 : 0
-                    );
-                    t.setProperties(mapSortBy(t.getProperties(), sort), undefined, false);
                     this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
                         this.emitDescription(this.descriptionForClassProperty(t, jsonName));
                         this.emitLine(name, this.typeHint(": ", this.pythonType(cp.type)));

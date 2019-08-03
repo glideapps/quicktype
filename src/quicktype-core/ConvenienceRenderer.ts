@@ -654,24 +654,24 @@ export abstract class ConvenienceRenderer extends Renderer {
         return propertyNames.size;
     }
 
+    protected sortClassProperties(_p: ClassProperty, jsonName: string): number | string {
+        if (this._alphabetizeProperties) {
+            return jsonName;
+        }
+        return 0;
+    }
+
     protected forEachClassProperty(
         o: ObjectType,
         blankLocations: BlankLineConfig,
         f: (name: Name, jsonName: string, p: ClassProperty, position: ForEachPosition) => void
     ): void {
         const propertyNames = defined(this._propertyNamesStoreView).get(o);
-        if (this._alphabetizeProperties) {
-            const alphabetizedPropertyNames = mapSortBy(propertyNames, n => defined(this.names.get(n)));
-            this.forEachWithBlankLines(alphabetizedPropertyNames, blankLocations, (name, jsonName, pos) => {
-                const p = defined(o.getProperties().get(jsonName));
-                f(name, jsonName, p, pos);
-            });
-        } else {
-            this.forEachWithBlankLines(o.getProperties(), blankLocations, (p, jsonName, pos) => {
-                const name = defined(propertyNames.get(jsonName));
-                f(name, jsonName, p, pos);
-            });
-        }
+        const sortedProperties = mapSortBy(o.getProperties(), this.sortClassProperties.bind(this));
+        this.forEachWithBlankLines(sortedProperties, blankLocations, (p, jsonName, pos) => {
+            const name = defined(propertyNames.get(jsonName));
+            f(name, jsonName, p, pos);
+        });
     }
 
     protected nameForUnionMember(u: UnionType, t: Type): Name {
