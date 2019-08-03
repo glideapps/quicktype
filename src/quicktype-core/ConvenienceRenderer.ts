@@ -644,7 +644,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         this._alphabetizeProperties = value;
     }
 
-    getAlphabetizeProperties(): boolean {
+    protected getAlphabetizeProperties(): boolean {
         return this._alphabetizeProperties;
     }
 

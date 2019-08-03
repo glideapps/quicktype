@@ -420,7 +420,7 @@ export class PythonRenderer extends ConvenienceRenderer {
                     this.emitLine("pass");
                 } else {
                     const sort = (v: ClassProperty) => (
-                        Boolean(v.type instanceof UnionType && Boolean(nullableFromUnion(v.type))) ? 1 : 0
+                        v.type instanceof UnionType && Boolean(nullableFromUnion(v.type)) ? 1 : 0
                     );
                     t.setProperties(mapSortBy(t.getProperties(), sort), undefined, false);
                     this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
