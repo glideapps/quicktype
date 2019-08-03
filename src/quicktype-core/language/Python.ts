@@ -33,7 +33,7 @@ import {
     StringifyTransformer,
     EncodingTransformer
 } from "../Transformers";
-import { arrayIntercalate, setUnionInto, mapUpdateInto, iterableSome } from "collection-utils";
+import { arrayIntercalate, setUnionInto, mapUpdateInto, iterableSome, mapSortBy } from "collection-utils";
 
 const unicode = require("@mark.probst/unicode-properties");
 
@@ -410,14 +410,18 @@ export class PythonRenderer extends ConvenienceRenderer {
         return this.typeHint(" -> ", this.withTyping(type));
     }
 
-    protected sortClassProperties(p: ClassProperty, jsonName: string): number | string {
+    protected sortClassProperties(properties: ReadonlyMap<string, ClassProperty>): ReadonlyMap<string, ClassProperty> {
         if (this.getAlphabetizeProperties()) {
-            return jsonName;
+            return mapSortBy(properties, (_p: ClassProperty, jsonName: string) => {
+                return jsonName;
+            });
+        } else if (this.pyOptions.features.dataClasses) {
+            return mapSortBy(properties, (p: ClassProperty,) => {
+                return p.type instanceof UnionType && nullableFromUnion(p.type) != null ? 1 : 0;
+            });
+        } else {
+            return properties;
         }
-        if (this.pyOptions.features.dataClasses) {
-            return p.type instanceof UnionType && Boolean(nullableFromUnion(p.type)) ? 1 : 0;
-        }
-        return 0;
     }
 
     protected emitClass(t: ClassType): void {
