@@ -1,6 +1,6 @@
 import { TargetLanguage } from "../TargetLanguage";
 import { StringTypeMapping } from "../TypeBuilder";
-import { TransformedStringTypeKind, PrimitiveStringTypeKind, Type, EnumType, ClassType, UnionType } from "../Type";
+import { TransformedStringTypeKind, PrimitiveStringTypeKind, Type, EnumType, ClassType, UnionType, ClassProperty } from "../Type";
 import { RenderContext } from "../Renderer";
 import { Option, getOptionValues, OptionValues, EnumOption, BooleanOption } from "../RendererOptions";
 import { ConvenienceRenderer, ForbiddenWordsInfo, topLevelNameOrder } from "../ConvenienceRenderer";
@@ -33,7 +33,7 @@ import {
     StringifyTransformer,
     EncodingTransformer
 } from "../Transformers";
-import { arrayIntercalate, setUnionInto, mapUpdateInto, iterableSome } from "collection-utils";
+import { arrayIntercalate, setUnionInto, mapUpdateInto, iterableSome, mapSortBy } from "collection-utils";
 
 const unicode = require("@mark.probst/unicode-properties");
 
@@ -342,7 +342,9 @@ export class PythonRenderer extends ConvenienceRenderer {
             unionType => {
                 const maybeNullable = nullableFromUnion(unionType);
                 if (maybeNullable !== null) {
-                    return [this.withTyping("Optional"), "[", this.pythonType(maybeNullable), "]"];
+                    let rest: string[] = [];
+                    if (!this.getAlphabetizeProperties() && this.pyOptions.features.dataClasses) rest.push(" = None");
+                    return [this.withTyping("Optional"), "[", this.pythonType(maybeNullable), "]", ...rest];
                 }
                 const memberTypes = Array.from(unionType.sortedMembers).map(m => this.pythonType(m));
                 return [this.withTyping("Union"), "[", arrayIntercalate(", ", memberTypes), "]"];
@@ -411,6 +413,16 @@ export class PythonRenderer extends ConvenienceRenderer {
 
     protected typingReturn(type: string): Sourcelike {
         return this.typeHint(" -> ", this.withTyping(type));
+    }
+
+    protected sortClassProperties(properties: ReadonlyMap<string, ClassProperty>, propertyNames: ReadonlyMap<string, Name>): ReadonlyMap<string, ClassProperty> {
+        if (this.pyOptions.features.dataClasses) {
+            return mapSortBy(properties, (p: ClassProperty,) => {
+                return p.type instanceof UnionType && nullableFromUnion(p.type) != null ? 1 : 0;
+            });
+        } else {
+            return super.sortClassProperties(properties, propertyNames);
+        }
     }
 
     protected emitClass(t: ClassType): void {

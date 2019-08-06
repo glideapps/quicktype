@@ -644,10 +644,25 @@ export abstract class ConvenienceRenderer extends Renderer {
         this._alphabetizeProperties = value;
     }
 
+    protected getAlphabetizeProperties(): boolean {
+        return this._alphabetizeProperties;
+    }
+
     // Returns the number of properties defined for the specified object type.
     protected propertyCount(o: ObjectType): number {
         const propertyNames = defined(this._propertyNamesStoreView).get(o);
         return propertyNames.size;
+    }
+
+    protected sortClassProperties(properties: ReadonlyMap<string, ClassProperty>, propertyNames: ReadonlyMap<string, Name>): ReadonlyMap<string, ClassProperty> {
+        if (this._alphabetizeProperties) {
+            return mapSortBy(properties, (_p: ClassProperty, jsonName: string) => {
+                const name = defined(propertyNames.get(jsonName));
+                return defined(this.names.get(name));
+            });
+        } else {
+            return properties;
+        }
     }
 
     protected forEachClassProperty(
@@ -656,18 +671,11 @@ export abstract class ConvenienceRenderer extends Renderer {
         f: (name: Name, jsonName: string, p: ClassProperty, position: ForEachPosition) => void
     ): void {
         const propertyNames = defined(this._propertyNamesStoreView).get(o);
-        if (this._alphabetizeProperties) {
-            const alphabetizedPropertyNames = mapSortBy(propertyNames, n => defined(this.names.get(n)));
-            this.forEachWithBlankLines(alphabetizedPropertyNames, blankLocations, (name, jsonName, pos) => {
-                const p = defined(o.getProperties().get(jsonName));
-                f(name, jsonName, p, pos);
-            });
-        } else {
-            this.forEachWithBlankLines(o.getProperties(), blankLocations, (p, jsonName, pos) => {
-                const name = defined(propertyNames.get(jsonName));
-                f(name, jsonName, p, pos);
-            });
-        }
+        const sortedProperties = this.sortClassProperties(o.getProperties(), propertyNames);
+        this.forEachWithBlankLines(sortedProperties, blankLocations, (p, jsonName, pos) => {
+            const name = defined(propertyNames.get(jsonName));
+            f(name, jsonName, p, pos);
+        });
     }
 
     protected nameForUnionMember(u: UnionType, t: Type): Name {
