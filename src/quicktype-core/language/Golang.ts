@@ -217,6 +217,36 @@ export class GoRenderer extends ConvenienceRenderer {
         );
     }
 
+    private goInterfaceOrBuiltin(t: Type, withIssues: boolean = false): Sourcelike {
+        return matchType<Sourcelike>(
+            t,
+            _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "interface{}"),
+            _nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "interface{}"),
+            _boolType => "bool",
+            _integerType => "int64",
+            _doubleType => "float64",
+            _stringType => "string",
+            arrayType => ["[]", this.goInterfaceOrBuiltin(arrayType.items, withIssues)],
+            classType => [this.nameForNamedType(classType), "IFace"],
+            mapType => {
+                let valueSource: Sourcelike;
+                const v = mapType.values;
+                if (v instanceof UnionType && nullableFromUnion(v) === null) {
+                    valueSource = ["*", this.nameForNamedType(v), "IFace"];
+                } else {
+                    valueSource = this.goInterfaceOrBuiltin(v, withIssues);
+                }
+                return ["map[string]", valueSource];
+            },
+            enumType => this.nameForNamedType(enumType),
+            unionType => {
+                const nullable = nullableFromUnion(unionType);
+                if (nullable !== null) return this.goInterfaceOrBuiltin(nullable, withIssues);
+                return [this.nameForNamedType(unionType), "IFace"];
+            }
+        );
+    }
+
     private emitTopLevel(t: Type, name: Name): void {
         this.startFile(name);
 
@@ -258,6 +288,7 @@ export class GoRenderer extends ConvenienceRenderer {
         this.emitPackageDefinitons(false);
 
         let columns: Sourcelike[][] = [];
+        let methods: any = [];
         this.forEachClassProperty(c, "none", (name, jsonName, p) => {
             const goType = this.propertyGoType(p);
             const comment = singleDescriptionComment(this.descriptionForClassProperty(c, jsonName));
@@ -269,6 +300,9 @@ export class GoRenderer extends ConvenienceRenderer {
                 comment
             ]);
 
+            const ifaceType = this.goInterfaceOrBuiltin(p.type);
+            methods.push(["  ", name, "() ", ifaceType]);
+
             this.emitFunc(["(g *", className, ") ", name, "() ", goType], () => {
                 this.emitLine("return g.Source__", name);
             });
@@ -277,6 +311,10 @@ export class GoRenderer extends ConvenienceRenderer {
 
         this.emitDescription(this.descriptionForType(c));
         this.emitStruct(className, columns);
+
+        this.emitLine("type ", className, "IFace = interface {");
+        methods.forEach((method: any) => this.emitLine(method));
+        this.emitLine("}");
         this.endFile();
     }
 
