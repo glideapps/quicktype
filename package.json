@@ -1,10 +1,10 @@
 {
-    "name": "quicktype",
-    "version": "15.0.0",
+    "name": "@matiasanaya/quicktype-go-methods",
+    "version": "16.0.0",
     "license": "Apache-2.0",
     "main": "dist/cli/index.js",
     "types": "dist/cli/index.d.ts",
-    "repository": "https://github.com/quicktype/quicktype",
+    "repository": "https://github.com/matiasanaya/quicktype",
     "scripts": {
         "pub": "script/publish.sh",
         "prepare": "npm run build",
