@@ -283,6 +283,40 @@ export class GoRenderer extends ConvenienceRenderer {
         this.endFile();
     }
 
+    private isNonPrimitiveArray(t: Type): Boolean {
+        return matchType<Boolean>(
+            t,
+            _anyType => false,
+            _nullType => false,
+            _boolType => false,
+            _integerType => false,
+            _doubleType => false,
+            _stringType => false,
+            arrayType => !this.isPrimitive(arrayType.items),
+            _classType => false,
+            _mapType => false,
+            _enumType => false,
+            _unionType => false
+        );
+    }
+
+    private isPrimitive(t: Type): Boolean {
+        return matchType<Boolean>(
+            t,
+            _anyType => false,
+            _nullType => false,
+            _boolType => true,
+            _integerType => true,
+            _doubleType => true,
+            _stringType => true,
+            arrayType => this.isPrimitive(arrayType.items),
+            _classType => false,
+            mapType => this.isPrimitive(mapType.values),
+            _enumType => true,
+            _unionType => false
+        );
+    }
+
     private emitClass(c: ClassType, className: Name): void {
         this.startFile(className);
         this.emitPackageDefinitons(false);
@@ -303,8 +337,20 @@ export class GoRenderer extends ConvenienceRenderer {
             const ifaceType = this.goInterfaceOrBuiltin(p.type);
             methods.push(["  ", name, "() ", ifaceType]);
 
-            this.emitFunc(["(g *", className, ") ", name, "() ", goType], () => {
-                this.emitLine("return g.Source__", name);
+            this.emitFunc(["(g *", className, ") ", name, "() ", ifaceType], () => {
+                if (this.isNonPrimitiveArray(p.type)) {
+                    this.emitLine("out := ", ifaceType, "{}");
+                    this.emitLine("for _, original := range g.Source__", name, "{");
+                    this.emitLine("  cp := original");
+                    this.emitLine("  out = append(out, &cp)");
+                    this.emitLine("}");
+                    this.emitLine("return out");
+                } else if (!this.isPrimitive(p.type) && !goType.toString().startsWith("*")) {
+                    this.emitLine("original := g.Source__", name);
+                    this.emitLine("return &original");
+                } else {
+                    this.emitLine("return g.Source__", name);
+                }
             });
             this.ensureBlankLine();
         });
