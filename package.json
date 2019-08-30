@@ -1,6 +1,6 @@
 {
     "name": "@matiasanaya/quicktype-go-methods",
-    "version": "17.0.1",
+    "version": "17.0.2",
     "license": "Apache-2.0",
     "main": "dist/cli/index.js",
     "types": "dist/cli/index.d.ts",

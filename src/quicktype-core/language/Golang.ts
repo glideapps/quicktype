@@ -348,6 +348,12 @@ export class GoRenderer extends ConvenienceRenderer {
                 } else if (!this.isPrimitive(p.type) && !goType.toString().startsWith("*")) {
                     this.emitLine("original := g.Source__", name);
                     this.emitLine("return &original");
+                } else if (!this.isPrimitive(p.type)) {
+                    this.emitLine("original := g.Source__", name);
+                    this.emitLine("if original == nil {");
+                    this.emitLine("  return nil");
+                    this.emitLine("}");
+                    this.emitLine("return original");
                 } else {
                     this.emitLine("return g.Source__", name);
                 }
