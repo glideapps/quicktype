@@ -1101,7 +1101,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 ", ",
                 (minMaxLength !== undefined && minMaxLength[1] !== undefined) ? String(minMaxLength[1]) : this._nulloptType,
                 ", ",
-                (pattern === undefined) ? this._nulloptType : [this._stringType.getType(), "(", this._stringType.createStringLiteral([pattern]), ")"],
+                (pattern === undefined) ? this._nulloptType : [this._stringType.getType(), "(", this._stringType.createStringLiteral([stringEscape(pattern)]), ")"],
                 ")"
             ]);
         });
