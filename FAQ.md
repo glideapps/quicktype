@@ -12,7 +12,7 @@
 -   [This map/dictionary should be a class!](#this-mapdictionary-should-be-a-class)
 -   [This class should be a map/dictionary!](#this-class-should-be-a-mapdictionary)
 -   [Where can I learn more about JSON Schema?](#where-can-i-learn-more-about-json-schema)
--   [I'd like to customize the output for my particular application.](#id-like-to-customize-the-output-for-my-particular-application.)
+-   [I'd like to customize the output for my particular application.](#id-like-to-customize-the-output-for-my-particular-application)
 -   [quicktype is awesome, I'd like to support it!](#quicktype-is-awesome-id-like-to-support-it)
 
 ## What is this?
