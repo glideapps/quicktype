@@ -38,9 +38,9 @@ import { RenderContext } from "../Renderer";
 import { arrayIntercalate } from "collection-utils";
 
 export const dartOptions = {
-    justTypes: new BooleanOption("just-types", "Types only", false),
-    codersInClass: new BooleanOption("coders-in-class", "Put encoder & decoder in Class", false),
-    methodNamesWithMap: new BooleanOption("from-map", "Use method names fromMap() & toMap()", false)
+    justTypes: BooleanOption("just-types", "Types only", false),
+    codersInClass: BooleanOption("coders-in-class", "Put encoder & decoder in Class", false),
+    methodNamesWithMap: BooleanOption("from-map", "Use method names fromMap() & toMap()", false)
 };
 
 export class DartTargetLanguage extends TargetLanguage {
@@ -57,7 +57,7 @@ export class DartTargetLanguage extends TargetLanguage {
     }
 
     get stringTypeMapping(): StringTypeMapping {
-        const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
+        const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = Map();
         mapping.set("date", "date");
         mapping.set("date-time", "date-time");
         //        mapping.set("uuid", "uuid");
@@ -66,7 +66,7 @@ export class DartTargetLanguage extends TargetLanguage {
 
     protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): DartRenderer {
         const options = getOptionValues(dartOptions, untypedOptionValues);
-        return new DartRenderer(this, renderContext, options);
+        return DartRenderer(this, renderContext, options);
     }
 }
 
@@ -192,10 +192,10 @@ type TopLevelDependents = {
 };
 
 export class DartRenderer extends ConvenienceRenderer {
-    private readonly _gettersAndSettersForPropertyName = new Map<Name, [Name, Name]>();
+    private readonly _gettersAndSettersForPropertyName = Map<Name, [Name, Name]>();
     private _needEnumValues = false;
-    private readonly _topLevelDependents = new Map<Name, TopLevelDependents>();
-    private readonly _enumValues = new Map<EnumType, Name>();
+    private readonly _topLevelDependents = Map<Name, TopLevelDependents>();
+    private readonly _enumValues = Map<EnumType, Name>();
 
     constructor(
         targetLanguage: TargetLanguage,
@@ -241,8 +241,8 @@ export class DartRenderer extends ConvenienceRenderer {
     }
 
     protected makeTopLevelDependencyNames(_t: Type, name: Name): DependencyName[] {
-        const encoder = new DependencyName(propertyNamingFunction, name.order, lookup => `${lookup(name)}_to_json`);
-        const decoder = new DependencyName(propertyNamingFunction, name.order, lookup => `${lookup(name)}_from_json`);
+        const encoder = DependencyName(propertyNamingFunction, name.order, lookup => `${lookup(name)}_to_json`);
+        const decoder = DependencyName(propertyNamingFunction, name.order, lookup => `${lookup(name)}_from_json`);
         this._topLevelDependents.set(name, { encoder, decoder });
         return [encoder, decoder];
     }
@@ -254,8 +254,8 @@ export class DartRenderer extends ConvenienceRenderer {
         _jsonName: string,
         name: Name
     ): [Name, Name] {
-        const getterName = new DependencyName(propertyNamingFunction, name.order, lookup => `get_${lookup(name)}`);
-        const setterName = new DependencyName(propertyNamingFunction, name.order, lookup => `set_${lookup(name)}`);
+        const getterName = DependencyName(propertyNamingFunction, name.order, lookup => `get_${lookup(name)}`);
+        const setterName = DependencyName(propertyNamingFunction, name.order, lookup => `set_${lookup(name)}`);
         return [getterName, setterName];
     }
 
@@ -273,7 +273,7 @@ export class DartRenderer extends ConvenienceRenderer {
 
     protected makeNamedTypeDependencyNames(t: Type, name: Name): DependencyName[] {
         if (!(t instanceof EnumType)) return [];
-        const enumValue = new DependencyName(propertyNamingFunction, name.order, lookup => `${lookup(name)}_values`);
+        const enumValue = DependencyName(propertyNamingFunction, name.order, lookup => `${lookup(name)}_values`);
         this._enumValues.set(t, enumValue);
         return [enumValue];
     }
@@ -339,11 +339,11 @@ export class DartRenderer extends ConvenienceRenderer {
     }
 
     protected mapList(itemType: Sourcelike, list: Sourcelike, mapper: Sourcelike): Sourcelike {
-        return ["new List<", itemType, ">.from(", list, ".map((x) => ", mapper, "))"];
+        return ["List<", itemType, ">.from(", list, ".map((x) => ", mapper, "))"];
     }
 
     protected mapMap(valueType: Sourcelike, map: Sourcelike, valueMapper: Sourcelike): Sourcelike {
-        return ["new Map.from(", map, ").map((k, v) => new MapEntry<String, ", valueType, ">(k, ", valueMapper, "))"];
+        return ["Map.from(", map, ").map((k, v) => MapEntry<String, ", valueType, ">(k, ", valueMapper, "))"];
     }
 
     protected fromDynamicExpression(t: Type, ...dynamic: Sourcelike[]): Sourcelike {
@@ -481,7 +481,7 @@ export class DartRenderer extends ConvenienceRenderer {
                 className,
                 ".from",
                 this._options.methodNamesWithMap ? "Map" : "Json",
-                "(Map<String, dynamic> json) => new ",
+                "(Map<String, dynamic> json) => ",
                 className,
                 "("
             );
@@ -523,7 +523,7 @@ export class DartRenderer extends ConvenienceRenderer {
         if (this._options.justTypes) return;
 
         this.ensureBlankLine();
-        this.emitLine("final ", defined(this._enumValues.get(e)), " = new EnumValues({");
+        this.emitLine("final ", defined(this._enumValues.get(e)), " = EnumValues({");
         this.indent(() => {
             this.forEachEnumCase(e, "none", (name, jsonName, pos) => {
                 const comma = pos === "first" || pos === "middle" ? "," : [];
@@ -545,7 +545,7 @@ export class DartRenderer extends ConvenienceRenderer {
 
     Map<T, String> get reverse {
         if (reverseMap == null) {
-            reverseMap = map.map((k, v) => new MapEntry(v, k));
+            reverseMap = map.map((k, v) => MapEntry(v, k));
         }
         return reverseMap;
     }
