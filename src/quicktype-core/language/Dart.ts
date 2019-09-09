@@ -339,11 +339,11 @@ export class DartRenderer extends ConvenienceRenderer {
     }
 
     protected mapList(itemType: Sourcelike, list: Sourcelike, mapper: Sourcelike): Sourcelike {
-        return ["new List<", itemType, ">.from(", list, ".map((x) => ", mapper, "))"];
+        return ["List<", itemType, ">.from(", list, ".map((x) => ", mapper, "))"];
     }
 
     protected mapMap(valueType: Sourcelike, map: Sourcelike, valueMapper: Sourcelike): Sourcelike {
-        return ["new Map.from(", map, ").map((k, v) => new MapEntry<String, ", valueType, ">(k, ", valueMapper, "))"];
+        return ["Map.from(", map, ").map((k, v) => MapEntry<String, ", valueType, ">(k, ", valueMapper, "))"];
     }
 
     protected fromDynamicExpression(t: Type, ...dynamic: Sourcelike[]): Sourcelike {
@@ -481,7 +481,7 @@ export class DartRenderer extends ConvenienceRenderer {
                 className,
                 ".from",
                 this._options.methodNamesWithMap ? "Map" : "Json",
-                "(Map<String, dynamic> json) => new ",
+                "(Map<String, dynamic> json) => ",
                 className,
                 "("
             );
@@ -523,7 +523,7 @@ export class DartRenderer extends ConvenienceRenderer {
         if (this._options.justTypes) return;
 
         this.ensureBlankLine();
-        this.emitLine("final ", defined(this._enumValues.get(e)), " = new EnumValues({");
+        this.emitLine("final ", defined(this._enumValues.get(e)), " = EnumValues({");
         this.indent(() => {
             this.forEachEnumCase(e, "none", (name, jsonName, pos) => {
                 const comma = pos === "first" || pos === "middle" ? "," : [];
