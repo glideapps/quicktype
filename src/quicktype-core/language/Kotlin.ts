@@ -311,7 +311,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
         };
 
         this.emitDescription(this.descriptionForType(c));
-        this.emitClassAnnotation(c, className);
+        this.emitClassAnnotations(c, className);
         this.emitLine("data class ", className, " (");
         this.indent(() => {
             let count = c.getProperties().size;
@@ -354,7 +354,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
         this.emitLine(")");
     }
 
-    protected emitClassAnnotation(_c: ClassType, _className: Name) {
+    protected emitClassAnnotations(_c: ClassType, _className: Name) {
         // to be overridden
     }
 
@@ -1075,13 +1075,60 @@ export class KotlinXRenderer extends KotlinRenderer {
         );
     }
 
+    protected emitUsageHeader(): void {
+        this.emitLine("// To parse the JSON, install kotlin's serialization plugin and do:");
+        this.emitLine("//");
+        this.forEachTopLevel("none", (_, name) => {
+            this.emitLine("//   val ", modifySource(camelCase, name), " = ", name, ".fromJson(jsonString)");
+        });
+    }
+
     protected emitHeader(): void {
         super.emitHeader();
 
+        console.log("Running KotlinXRenderer");
         this.emitLine("import kotlinx.serialization.*");
         this.emitLine("import kotlinx.serialization.json.*");
+        this.emitLine("import kotlinx.serialization.internal.*");
+
+        const hasUnions = iterableSome(
+            this.typeGraph.allNamedTypes(),
+            t => t instanceof UnionType && nullableFromUnion(t) === null
+        );
+        const hasEmptyObjects = iterableSome(
+            this.typeGraph.allNamedTypes(),
+            c => c instanceof ClassType && c.getProperties().size === 0
+        );
+
+        // TODO
+        // if (hasUnions || this.haveEnums || hasEmptyObjects) {
+        //     this.emitGenericConverter();
+        // }
+
+        let converters: Sourcelike[][] = [];
+        if (hasEmptyObjects) {
+            converters.push([[".convert(JsonObject::class,"], [" { it.obj!! },"], [" { it.toJsonString() })"]]);
+        }
+        this.forEachEnum("none", (_, name) => {
+            converters.push([
+                [".convert(", name, "::class,"],
+                [" { ", name, ".fromValue(it.string!!) },"],
+                [' { "\\"${it.value}\\"" })']
+            ]);
+        });
+        this.forEachUnion("none", (_, name) => {
+            converters.push([
+                [".convert(", name, "::class,"],
+                [" { ", name, ".fromJson(it) },"],
+                [" { it.toJson() }, true)"]
+            ]);
+        });
+
         this.ensureBlankLine();
         this.emitLine("private val json = Json(JsonConfiguration.Stable)");
+        if (converters.length > 0) {
+            this.indent(() => this.emitTable(converters));
+        }
     }
 
     // TODO
@@ -1138,27 +1185,36 @@ export class KotlinXRenderer extends KotlinRenderer {
         );
     }
 
-    protected emitClassAnnotation(_c: ClassType, _className: Name) {
+    protected emitClassAnnotations(_c: ClassType, _className: Name) {
         this.emitLine("@Serializable");
     }
 
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
 
+        this.emitLine(["@Serializable(with = ", enumName, ".Companion::class)"]);
         this.emitBlock(["enum class ", enumName, "(val value: String)"], () => {
             let count = e.cases.size;
             this.forEachEnumCase(e, "none", (name, json) => {
                 this.emitLine(name, `("${stringEscape(json)}")`, --count === 0 ? ";" : ",");
             });
             this.ensureBlankLine();
-            this.emitBlock("companion object", () => {
-                this.emitBlock(["public fun fromValue(value: String): ", enumName, " = when (value)"], () => {
+            this.emitBlock(["companion object : KSerializer<", enumName, ">"], () => {
+                this.emitBlock("override val descriptor: SerialDescriptor get()", () => {
+                   this.emitLine("return StringDescriptor");
+                });
+
+                this.emitBlock(["override fun deserialize(decoder: Decoder): ", enumName, " = when (decoder.decodeString())"], () => {
                     let table: Sourcelike[][] = [];
                     this.forEachEnumCase(e, "none", (name, json) => {
                         table.push([[`"${stringEscape(json)}"`], [" -> ", name]]);
                     });
                     table.push([["else"], [" -> throw IllegalArgumentException()"]]);
                     this.emitTable(table);
+                });
+
+                this.emitBlock(["override fun serialize(encoder: Encoder, obj: ", enumName, ")"], () => {
+                    this.emitLine(["return encoder.encodeString(obj.value)"]);
                 });
             });
         });
