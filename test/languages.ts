@@ -734,7 +734,6 @@ export const KotlinLanguage: Language = {
   rendererOptions: {},
   quickTestRendererOptions: [],
   sourceFiles: ["src/Language/Kotlin.ts"]
-
 };
 
 export const KotlinJacksonLanguage: Language = {
