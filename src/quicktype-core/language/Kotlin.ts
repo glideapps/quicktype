@@ -990,7 +990,7 @@ export class KotlinXRenderer extends KotlinRenderer {
         this.emitLine("// To parse the JSON, install kotlin's serialization plugin and do:");
         this.emitLine("//");
         this.forEachTopLevel("none", (_, name) => {
-            this.emitLine("//   val ", modifySource(camelCase, name), " = ", name, ".fromJson(jsonString)");
+            this.emitLine("//   val ", modifySource(camelCase, name), " = Json(JsonConfiguration.Stable).parse(", name, ".serializer(),", " jsonString)");
         });
     }
 
@@ -999,6 +999,7 @@ export class KotlinXRenderer extends KotlinRenderer {
 
         this.emitLine("import kotlinx.serialization.*");
         this.emitLine("import kotlinx.serialization.json.*");
+        this.emitLine("import kotlinx.serialization.internal.*");
     }
 
     protected emitClassAnnotations(_c: ClassType, _className: Name) {
