@@ -311,6 +311,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
         };
 
         this.emitDescription(this.descriptionForType(c));
+        this.emitClassAnnotation(c, className);
         this.emitLine("data class ", className, " (");
         this.indent(() => {
             let count = c.getProperties().size;
@@ -351,6 +352,10 @@ export class KotlinRenderer extends ConvenienceRenderer {
 
     protected emitClassDefinitionMethods(_c: ClassType, _className: Name) {
         this.emitLine(")");
+    }
+
+    protected emitClassAnnotation(_c: ClassType, _className: Name) {
+        // to be overridden
     }
 
     protected renameAttribute(_name: Name, _jsonName: string, _required: boolean, _meta: Array<() => void>) {
@@ -1131,6 +1136,10 @@ export class KotlinXRenderer extends KotlinRenderer {
                 });
             }
         );
+    }
+
+    protected emitClassAnnotation(_c: ClassType, _className: Name) {
+        this.emitLine("@Serializable");
     }
 
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
