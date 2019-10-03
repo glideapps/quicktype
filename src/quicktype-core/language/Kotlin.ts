@@ -1006,6 +1006,22 @@ export class KotlinXRenderer extends KotlinRenderer {
         this.emitLine("@Serializable");
     }
 
+    protected renameAttribute(name: Name, jsonName: string, _required: boolean, meta: Array<() => void>) {
+        const rename = this._rename(name, jsonName);
+        if (rename !== undefined) {
+            meta.push(() => this.emitLine(rename));
+        }
+    }
+
+    private _rename(propName: Name, jsonName: string): Sourcelike | undefined {
+        const escapedName = stringEscape(jsonName);
+        const namesDiffer = this.sourcelikeToString(propName) !== escapedName;
+        if (namesDiffer) {
+            return ["@SerialName(\"", escapedName, "\")"];
+        }
+        return undefined;
+    }
+
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
 
