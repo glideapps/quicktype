@@ -53,6 +53,7 @@ export const swiftOptions = {
     alamofire: new BooleanOption("alamofire", "Alamofire extensions", false),
     namedTypePrefix: new StringOption("type-prefix", "Prefix for type names", "PREFIX", "", "secondary"),
     useClasses: new EnumOption("struct-or-class", "Structs or classes", [["struct", false], ["class", true]]),
+    mutableProperties: new BooleanOption("mutable-properties", "Use var instead of let for object properties", false),
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
     dense: new EnumOption("density", "Code density", [["dense", true], ["normal", false]], "dense", "secondary"),
     linux: new BooleanOption("support-linux", "Support Linux", false, "secondary"),
@@ -134,7 +135,8 @@ export class SwiftTargetLanguage extends TargetLanguage {
             swiftOptions.acronymStyle,
             swiftOptions.objcSupport,
             swiftOptions.swift5Support,
-            swiftOptions.multiFileOutput
+            swiftOptions.multiFileOutput,
+            swiftOptions.mutableProperties
         ];
     }
 
@@ -635,7 +637,8 @@ export class SwiftRenderer extends ConvenienceRenderer {
     }
 
     protected propertyLinesDefinition(name: Name, parameter: ClassProperty): Sourcelike {
-        return [this.accessLevel, "let ", name, ": ", this.swiftPropertyType(parameter)];
+        const useMutableProperties = this._options.mutableProperties;
+        return [this.accessLevel, useMutableProperties ? "var " : "let ", name, ": ", this.swiftPropertyType(parameter)];
     }
 
     private renderClassDefinition(c: ClassType, className: Name): void {
@@ -662,7 +665,9 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 const emitLastProperty = () => {
                     if (lastProperty === undefined) return;
 
-                    let sources: Sourcelike[] = [[this.accessLevel, "let "]];
+                    const useMutableProperties = this._options.mutableProperties;
+
+                    let sources: Sourcelike[] = [[this.accessLevel, useMutableProperties ? "var " : "let "]];
                     lastNames.forEach((n, i) => {
                         if (i > 0) sources.push(", ");
                         sources.push(n);
