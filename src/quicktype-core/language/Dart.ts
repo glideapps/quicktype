@@ -40,7 +40,9 @@ import { arrayIntercalate } from "collection-utils";
 export const dartOptions = {
     justTypes: new BooleanOption("just-types", "Types only", false),
     codersInClass: new BooleanOption("coders-in-class", "Put encoder & decoder in Class", false),
-    methodNamesWithMap: new BooleanOption("from-map", "Use method names fromMap() & toMap()", false)
+    methodNamesWithMap: new BooleanOption("from-map", "Use method names fromMap() & toMap()", false),
+    requiredProperties: new BooleanOption("required-props", "Make all properties required", false),
+    finalProperties: new BooleanOption("final-props", "Make all properties final", false)
 };
 
 export class DartTargetLanguage extends TargetLanguage {
@@ -49,7 +51,13 @@ export class DartTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [dartOptions.justTypes, dartOptions.codersInClass, dartOptions.methodNamesWithMap];
+        return [
+            dartOptions.justTypes,
+            dartOptions.codersInClass,
+            dartOptions.methodNamesWithMap,
+            dartOptions.requiredProperties,
+            dartOptions.finalProperties
+        ];
     }
 
     get supportsUnionsWithBothNumberTypes(): boolean {
@@ -171,8 +179,8 @@ function dartNameStyle(startWithUpper: boolean, upperUnderscore: boolean, origin
     const firstWordStyle = upperUnderscore
         ? allUpperWordStyle
         : startWithUpper
-        ? firstUpperWordStyle
-        : allLowerWordStyle;
+            ? firstUpperWordStyle
+            : allLowerWordStyle;
     const restWordStyle = upperUnderscore ? allUpperWordStyle : firstUpperWordStyle;
     return combineWords(
         words,
@@ -293,6 +301,9 @@ export class DartRenderer extends ConvenienceRenderer {
         });
 
         this.ensureBlankLine();
+        if (this._options.requiredProperties) {
+            this.emitLine("import 'package:meta/meta.dart';");
+        }
         this.emitLine("import 'dart:convert';");
     }
 
@@ -436,14 +447,20 @@ export class DartRenderer extends ConvenienceRenderer {
                 this.emitLine(className, "();");
             } else {
                 this.forEachClassProperty(c, "none", (name, _, p) => {
-                    this.emitLine(this.dartType(p.type, true), " ", name, ";");
+                    this.emitLine(
+                        this._options.finalProperties ? "final " : "",
+                        this.dartType(p.type, true), " ", name, ";"
+                    );
                 });
                 this.ensureBlankLine();
 
                 this.emitLine(className, "({");
                 this.indent(() => {
                     this.forEachClassProperty(c, "none", (name, _, _p) => {
-                        this.emitLine("this.", name, ",");
+                        this.emitLine(
+                            this._options.requiredProperties ? "@required " : "",
+                            "this.", name, ","
+                        );
                     });
                 });
                 this.emitLine("});");
