@@ -42,7 +42,8 @@ export const dartOptions = {
     codersInClass: new BooleanOption("coders-in-class", "Put encoder & decoder in Class", false),
     methodNamesWithMap: new BooleanOption("from-map", "Use method names fromMap() & toMap()", false),
     requiredProperties: new BooleanOption("required-props", "Make all properties required", false),
-    finalProperties: new BooleanOption("final-props", "Make all properties final", false)
+    finalProperties: new BooleanOption("final-props", "Make all properties final", false),
+    generateCopyWith: new BooleanOption("copy-with", "Generate CopyWith method", false),
 };
 
 export class DartTargetLanguage extends TargetLanguage {
@@ -56,7 +57,8 @@ export class DartTargetLanguage extends TargetLanguage {
             dartOptions.codersInClass,
             dartOptions.methodNamesWithMap,
             dartOptions.requiredProperties,
-            dartOptions.finalProperties
+            dartOptions.finalProperties,
+            dartOptions.generateCopyWith
         ];
     }
 
@@ -464,6 +466,28 @@ export class DartRenderer extends ConvenienceRenderer {
                     });
                 });
                 this.emitLine("});");
+            }
+
+            if (this._options.generateCopyWith) {
+
+                this.ensureBlankLine();
+                this.emitLine(className, " copyWith({");
+                this.indent(() => {
+                    this.forEachClassProperty(c, "none", (name, _, _p) => {
+                        this.emitLine(this.dartType(_p.type, true), " ", name, ",");
+                    });
+                });
+                this.emitLine("}) => ");
+                this.indent(() => {
+                    this.emitLine(className, "(");
+                    this.indent(() => {
+                        this.forEachClassProperty(c, "none", (name, _, _p) => {
+                            this.emitLine(name, ": ", name, " ?? ", "this.", name, ",");
+                        });
+                    });
+                    this.emitLine(");");
+                });
+
             }
 
             if (this._options.justTypes) return;
