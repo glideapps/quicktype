@@ -750,10 +750,6 @@ export class SwiftRenderer extends ConvenienceRenderer {
                         "";
                     });
                 } else {
-                    this.emitBlockWithAccess(["init()"], () => {
-                        this.emitLine("");
-                    });
-
                     this.emitBlockWithAccess(["init(", ...propertiesLines, ")"], () => {
                         for (let property of initProperties) {
                             this.emitLine("self.", property.name, " = ", property.name);
