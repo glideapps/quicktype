@@ -40,14 +40,15 @@ import { RenderContext } from "../Renderer";
 export enum Framework {
     None,
     Jackson,
-    Klaxon
+    Klaxon,
+    KotlinX,
 }
 
 export const kotlinOptions = {
     framework: new EnumOption(
         "framework",
         "Serialization framework",
-        [["just-types", Framework.None], ["jackson", Framework.Jackson], ["klaxon", Framework.Klaxon]],
+        [["just-types", Framework.None], ["jackson", Framework.Jackson], ["klaxon", Framework.Klaxon], ["kotlinx", Framework.KotlinX]],
         "klaxon"
     ),
     packageName: new StringOption("package", "Package", "PACKAGE", "quicktype")
@@ -83,6 +84,8 @@ export class KotlinTargetLanguage extends TargetLanguage {
                 return new KotlinJacksonRenderer(this, renderContext, options);
             case Framework.Klaxon:
                 return new KotlinKlaxonRenderer(this, renderContext, options);
+            case Framework.KotlinX:
+                return new KotlinXRenderer(this, renderContext, options);
             default:
                 return assertNever(options.framework);
         }
@@ -308,6 +311,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
         };
 
         this.emitDescription(this.descriptionForType(c));
+        this.emitClassAnnotations(c, className);
         this.emitLine("data class ", className, " (");
         this.indent(() => {
             let count = c.getProperties().size;
@@ -348,6 +352,10 @@ export class KotlinRenderer extends ConvenienceRenderer {
 
     protected emitClassDefinitionMethods(_c: ClassType, _className: Name) {
         this.emitLine(")");
+    }
+
+    protected emitClassAnnotations(_c: ClassType, _className: Name) {
+        // to be overridden
     }
 
     protected renameAttribute(_name: Name, _jsonName: string, _required: boolean, _meta: Array<() => void>) {
@@ -961,6 +969,90 @@ private fun <T> ObjectMapper.convert(k: kotlin.reflect.KClass<*>, fromJson: (Jso
                 this.emitTable(table);
             });
             this.emitLine("}");
+        });
+    }
+}
+
+/**
+ * Currently supports simple classes, enums, and TS string unions (which are also enums).
+ * TODO: Union, Any, Top Level Array, Top Level Map
+ */
+export class KotlinXRenderer extends KotlinRenderer {
+    constructor(
+        targetLanguage: TargetLanguage,
+        renderContext: RenderContext,
+        _kotlinOptions: OptionValues<typeof kotlinOptions>
+    ) {
+        super(targetLanguage, renderContext, _kotlinOptions);
+    }
+
+    protected emitUsageHeader(): void {
+        this.emitLine("// To parse the JSON, install kotlin's serialization plugin and do:");
+        this.emitLine("//");
+        const table: Sourcelike[][] = [];
+        table.push(["// val ", "json", " = Json(JsonConfiguration.Stable)"]);
+        this.forEachTopLevel("none", (_, name) => {
+            table.push(["// val ", modifySource(camelCase, name), ` = json.parse(${this.sourcelikeToString(name)}.serializer(), jsonString)`]);
+        });
+        this.emitTable(table);
+    }
+
+    protected emitHeader(): void {
+        super.emitHeader();
+
+        this.emitLine("import kotlinx.serialization.*");
+        this.emitLine("import kotlinx.serialization.json.*");
+        this.emitLine("import kotlinx.serialization.internal.*");
+    }
+
+    protected emitClassAnnotations(_c: ClassType, _className: Name) {
+        this.emitLine("@Serializable");
+    }
+
+    protected renameAttribute(name: Name, jsonName: string, _required: boolean, meta: Array<() => void>) {
+        const rename = this._rename(name, jsonName);
+        if (rename !== undefined) {
+            meta.push(() => this.emitLine(rename));
+        }
+    }
+
+    private _rename(propName: Name, jsonName: string): Sourcelike | undefined {
+        const escapedName = stringEscape(jsonName);
+        const namesDiffer = this.sourcelikeToString(propName) !== escapedName;
+        if (namesDiffer) {
+            return ["@SerialName(\"", escapedName, "\")"];
+        }
+        return undefined;
+    }
+
+    protected emitEnumDefinition(e: EnumType, enumName: Name): void {
+        this.emitDescription(this.descriptionForType(e));
+
+        this.emitLine(["@Serializable(with = ", enumName, ".Companion::class)"]);
+        this.emitBlock(["enum class ", enumName, "(val value: String)"], () => {
+            let count = e.cases.size;
+            this.forEachEnumCase(e, "none", (name, json) => {
+                this.emitLine(name, `("${stringEscape(json)}")`, --count === 0 ? ";" : ",");
+            });
+            this.ensureBlankLine();
+            this.emitBlock(["companion object : KSerializer<", enumName, ">"], () => {
+                this.emitBlock("override val descriptor: SerialDescriptor get()", () => {
+                   this.emitLine("return StringDescriptor");
+                });
+
+                this.emitBlock(["override fun deserialize(decoder: Decoder): ", enumName, " = when (decoder.decodeString())"], () => {
+                    let table: Sourcelike[][] = [];
+                    this.forEachEnumCase(e, "none", (name, json) => {
+                        table.push([[`"${stringEscape(json)}"`], [" -> ", name]]);
+                    });
+                    table.push([["else"], [" -> throw IllegalArgumentException()"]]);
+                    this.emitTable(table);
+                });
+
+                this.emitBlock(["override fun serialize(encoder: Encoder, obj: ", enumName, ")"], () => {
+                    this.emitLine(["return encoder.encodeString(obj.value)"]);
+                });
+            });
         });
     }
 }

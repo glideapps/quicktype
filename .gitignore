@@ -27,3 +27,4 @@ test/fixtures/objective-c/quicktype
 /bin
 /.node-persist
 /.vs
+.idea
