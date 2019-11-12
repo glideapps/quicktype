@@ -4,7 +4,7 @@ import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { Name, Namer, funPrefixNamer } from "../Naming";
 import { EnumOption, Option, StringOption, OptionValues, getOptionValues } from "../RendererOptions";
-import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
+import {Sourcelike, maybeAnnotated, modifySource, SourcelikeArray} from "../Source";
 import {
     allLowerWordStyle,
     allUpperWordStyle,
@@ -984,6 +984,16 @@ export class KotlinXRenderer extends KotlinRenderer {
         _kotlinOptions: OptionValues<typeof kotlinOptions>
     ) {
         super(targetLanguage, renderContext, _kotlinOptions);
+    }
+
+    // Kotlinx serializers really don't like open-ended fields, and will refuse to compile map<string,any>.
+    // HOWEVER-- they will allow you to declare such a thing as a JsonObject.
+    protected kotlinType(t: Type, withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
+        const proposed = super.kotlinType(t, withIssues, noOptional) as SourcelikeArray;
+        return this.sourcelikeToString(proposed)
+            .replace("Any", "JsonObject")
+            .replace("List<Any>", "JsonArray")
+            .replace("Map<String, JsonObject>", "JsonObject");
     }
 
     protected emitUsageHeader(): void {
