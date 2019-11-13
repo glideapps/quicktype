@@ -4,7 +4,7 @@ import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { Name, Namer, funPrefixNamer } from "../Naming";
 import { EnumOption, Option, StringOption, OptionValues, getOptionValues } from "../RendererOptions";
-import {Sourcelike, maybeAnnotated, modifySource} from "../Source";
+import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import {
     allLowerWordStyle,
     allUpperWordStyle,
