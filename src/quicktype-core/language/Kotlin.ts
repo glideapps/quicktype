@@ -239,7 +239,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
     }
 
     // (asarazan): I've broken out the following three functions
-    // because some renderers, such as kotlinx, can cope with `any`, while most probably can't.
+    // because some renderers, such as kotlinx, can cope with `any`, while some get mad.
     protected anyType(withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
         const optional = noOptional ? "" : "?";
         return maybeAnnotated(withIssues, anyTypeIssueAnnotation, ["Any", optional]);
