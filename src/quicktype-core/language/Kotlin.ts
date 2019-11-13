@@ -4,7 +4,7 @@ import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { Name, Namer, funPrefixNamer } from "../Naming";
 import { EnumOption, Option, StringOption, OptionValues, getOptionValues } from "../RendererOptions";
-import {Sourcelike, maybeAnnotated, modifySource, SourcelikeArray} from "../Source";
+import {Sourcelike, maybeAnnotated, modifySource} from "../Source";
 import {
     allLowerWordStyle,
     allUpperWordStyle,
@@ -238,13 +238,26 @@ export class KotlinRenderer extends ConvenienceRenderer {
         this.emitLine(close);
     }
 
+    // (asarazan): I've broken out the following three functions
+    // because some renderers, such as kotlinx, can cope with `any`, while most probably can't.
+    protected anyType(withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
+        const optional = noOptional ? "" : "?";
+        return maybeAnnotated(withIssues, anyTypeIssueAnnotation, ["Any", optional]);
+    }
+
+    protected arrayType(arrayType: ArrayType, withIssues: boolean = false, _noOptional: boolean = false): Sourcelike {
+        return ["List<", this.kotlinType(arrayType.items, withIssues), ">"];
+    }
+
+    protected mapType(mapType: MapType, withIssues: boolean = false, _noOptional: boolean = false): Sourcelike {
+        return ["Map<String, ", this.kotlinType(mapType.values, withIssues), ">"];
+    }
+
     protected kotlinType(t: Type, withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
         const optional = noOptional ? "" : "?";
         return matchType<Sourcelike>(
             t,
-            _anyType => {
-                return maybeAnnotated(withIssues, anyTypeIssueAnnotation, ["Any", optional]);
-            },
+            _anyType => this.anyType(withIssues, noOptional),
             _nullType => {
                 return maybeAnnotated(withIssues, nullTypeIssueAnnotation, ["Any", optional]);
             },
@@ -252,9 +265,9 @@ export class KotlinRenderer extends ConvenienceRenderer {
             _integerType => "Long",
             _doubleType => "Double",
             _stringType => "String",
-            arrayType => ["List<", this.kotlinType(arrayType.items, withIssues), ">"],
+            arrayType => this.arrayType(arrayType, withIssues),
             classType => this.nameForNamedType(classType),
-            mapType => ["Map<String, ", this.kotlinType(mapType.values, withIssues), ">"],
+            mapType => this.mapType(mapType, withIssues),
             enumType => this.nameForNamedType(enumType),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
@@ -986,14 +999,26 @@ export class KotlinXRenderer extends KotlinRenderer {
         super(targetLanguage, renderContext, _kotlinOptions);
     }
 
-    // Kotlinx serializers really don't like open-ended fields, and will refuse to compile map<string,any>.
-    // HOWEVER-- they will allow you to declare such a thing as a JsonObject.
-    protected kotlinType(t: Type, withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
-        const proposed = super.kotlinType(t, withIssues, noOptional) as SourcelikeArray;
-        return this.sourcelikeToString(proposed)
-            .replace("Any", "JsonObject")
-            .replace("List<Any>", "JsonArray")
-            .replace("Map<String, JsonObject>", "JsonObject");
+    protected anyType(_withIssues: boolean = false, _noOptional: boolean = false): Sourcelike {
+        return "JsonObject";
+    }
+
+    protected arrayType(arrayType: ArrayType, withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
+        const valType = this.kotlinType(arrayType.items, withIssues, true);
+        const name = this.sourcelikeToString(valType);
+        if (name === "JsonObject") {
+            return "JsonArray";
+        }
+        return super.arrayType(arrayType, withIssues, noOptional);
+    }
+
+    protected mapType(mapType: MapType, withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
+        const valType = this.kotlinType(mapType.values, withIssues, true);
+        const name = this.sourcelikeToString(valType);
+        if (name === "JsonObject") {
+            return "JsonObject";
+        }
+        return super.mapType(mapType, withIssues, noOptional);
     }
 
     protected emitUsageHeader(): void {

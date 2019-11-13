@@ -28,3 +28,4 @@ test/fixtures/objective-c/quicktype
 /.node-persist
 /.vs
 .idea
+.DS_Store
