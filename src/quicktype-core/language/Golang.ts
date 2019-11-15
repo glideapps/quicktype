@@ -84,9 +84,7 @@ function singleDescriptionComment(description: string[] | undefined): string {
 }
 
 function canOmitEmpty(cp: ClassProperty): boolean {
-    if (!cp.isOptional) return false;
-    const t = cp.type;
-    return ["union", "null", "any", "array"].indexOf(t.kind) < 0;
+    return cp.isOptional;
 }
 
 export class GoRenderer extends ConvenienceRenderer {
@@ -381,11 +379,14 @@ export class GoRenderer extends ConvenienceRenderer {
     }
 
     private emitPackageDefinitons(includeJSONEncodingImport: boolean): void {
-        if (!this._options.justTypes) {
+        if (this._options.packageName !== "") {
             this.ensureBlankLine();
             const packageDeclaration = "package " + this._options.packageName;
             this.emitLineOnce(packageDeclaration);
             this.ensureBlankLine();
+        }
+
+        if (!this._options.justTypes) {
             if (this.haveNamedUnions && this._options.multiFileOutput === false) {
                 this.emitLineOnce('import "bytes"');
                 this.emitLineOnce('import "errors"');
