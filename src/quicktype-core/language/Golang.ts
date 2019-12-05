@@ -84,9 +84,7 @@ function singleDescriptionComment(description: string[] | undefined): string {
 }
 
 function canOmitEmpty(cp: ClassProperty): boolean {
-    if (!cp.isOptional) return false;
-    const t = cp.type;
-    return ["union", "null", "any", "array"].indexOf(t.kind) < 0;
+    return !!cp.isOptional;
 }
 
 export class GoRenderer extends ConvenienceRenderer {
