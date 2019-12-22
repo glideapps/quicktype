@@ -131,6 +131,80 @@ quicktype pokedex.json -o pokedex.ts --just-types
 quicktype pokedex.ts -o src/ios/models.swift
 ```
 
+### Calling `quicktype` from JavaScript
+
+You can use `quicktype` as a JavaScript function within `node` or browsers. First add the `quicktype-core` package:
+
+```bash
+$ npm install quicktype-core
+```
+
+In general, first you create an `InputData` value with one or more JSON samples, JSON schemas, TypeScript sources, or other supported input types. Then you call `quicktype`, passing that `InputData` value and any options you want.
+
+```javascript
+const {
+  quicktype,
+  InputData,
+  jsonInputForTargetLanguage,
+  JSONSchemaInput,
+  JSONSchemaStore
+} = require("quicktype-core");
+
+async function quicktypeJSON(targetLanguage, typeName, jsonString) {
+  const jsonInput = jsonInputForTargetLanguage(targetLanguage);
+
+  // We could add multiple samples for the same desired
+  // type, or many sources for other types. Here we're
+  // just making one type from one piece of sample JSON.
+  await jsonInput.addSource({
+    name: typeName,
+    samples: [jsonString]
+  });
+
+  const inputData = new InputData();
+  inputData.addInput(jsonInput);
+
+  return await quicktype({
+    inputData,
+    lang: targetLanguage
+  });
+}
+
+async function quicktypeJSONSchema(targetLanguage, typeName, jsonSchemaString) {
+  const schemaInput = new JSONSchemaInput(new JSONSchemaStore());
+
+  // We could add multiple schemas for multiple types,
+  // but here we're just making one type from JSON schema.
+  await schemaInput.addSource({ name: typeName, schema: jsonSchemaString });
+
+  const inputData = new InputData();
+  inputData.addInput(schemaInput);
+
+  return await quicktype({
+    inputData,
+    lang: targetLanguage
+  });
+}
+
+async function main() {
+  const { lines: swiftPerson } = await quicktypeJSON(
+    "swift",
+    "Person",
+    jsonString
+  );
+  console.log(swiftPerson.join("\n"));
+
+  const { lines: pythonPerson } = await quicktypeJSONSchema(
+    "python",
+    "Person",
+    jsonSchemaString
+  );
+  console.log(pythonPerson.join("\n"));
+}
+
+main();
+```
+
 ## Contributing
 
 `quicktype` is [Open Source](LICENSE) and we love contributors! In fact, we have a [list of issues](https://github.com/quicktype/quicktype/issues?utf8=✓&q=is%3Aissue+is%3Aopen+label%3Ahelp-wanted) that are low-priority for us, but for which we'd happily accept contributions. Support for new target languages is also strongly desired. If you'd like to contribute, need help with anything at all, or would just like to talk things over, come [join us on Slack](http://slack.quicktype.io).
