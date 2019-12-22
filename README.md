@@ -6,10 +6,10 @@
 
 `quicktype` generates strongly-typed models and serializers from JSON, JSON Schema, and [GraphQL queries](https://blog.quicktype.io/graphql-with-quicktype/), making it a breeze to work with JSON type-safely in any programming language.
 
--   [Try `quicktype` in your browser](https://app.quicktype.io).
--   View [awesome JSON APIs](https://github.com/typeguard/awesome-typed-datasets) that have been strongly typed with `quicktype`.
--   Read ['A first look at quicktype'](http://blog.quicktype.io/first-look/) for more introduction.
--   If you have any questions, check out the [FAQ](FAQ.md) first.
+- [Try `quicktype` in your browser](https://app.quicktype.io).
+- View [awesome JSON APIs](https://github.com/typeguard/awesome-typed-datasets) that have been strongly typed with `quicktype`.
+- Read ['A first look at quicktype'](http://blog.quicktype.io/first-look/) for more introduction.
+- If you have any questions, check out the [FAQ](FAQ.md) first.
 
 ### Supported Inputs
 
@@ -32,7 +32,7 @@
 
 
 | [Swift](https://app.quicktype.io/#l=swift) | [Objective-C](https://app.quicktype.io/#l=objc) | [Elm](https://app.quicktype.io/#l=elm) | [JSON Schema](https://app.quicktype.io/#l=schema) | [Pike](https://app.quicktype.io/#l=pike) |
-| ------------------------------------------ | ----------------------------------------------- | -------------------------------------- | ------------------------------------------------- | ------------------------------------------------- |
+| ------------------------------------------ | ----------------------------------------------- | -------------------------------------- | ------------------------------------------------- | ---------------------------------------- |
 
 
 _Missing your favorite language? Please implement it!_
@@ -49,10 +49,10 @@ npm install -g quicktype
 
 Other options:
 
--   [Homebrew](http://formulae.brew.sh/formula/quicktype) _(infrequently updated)_
--   [Xcode extension](https://itunes.apple.com/us/app/paste-json-as-code-quicktype/id1330801220?mt=12)\*
--   [VSCode extension](https://marketplace.visualstudio.com/items/quicktype.quicktype)\*
--   [Visual Studio extension](https://marketplace.visualstudio.com/items?itemName=typeguard.quicktype-vs)\*
+- [Homebrew](http://formulae.brew.sh/formula/quicktype) _(infrequently updated)_
+- [Xcode extension](https://itunes.apple.com/us/app/paste-json-as-code-quicktype/id1330801220?mt=12)\*
+- [VSCode extension](https://marketplace.visualstudio.com/items/quicktype.quicktype)\*
+- [Visual Studio extension](https://marketplace.visualstudio.com/items?itemName=typeguard.quicktype-vs)\*
 
 <small>\* limited functionality</small>
 
@@ -116,9 +116,9 @@ You can achieve a similar result by writing or generating a [TypeScript](http://
 
 ```typescript
 interface Person {
-    name: string;
-    nickname?: string; // an optional property
-    luckyNumber: number;
+  name: string;
+  nickname?: string; // an optional property
+  luckyNumber: number;
 }
 ```
 
@@ -130,6 +130,82 @@ quicktype pokedex.json -o pokedex.ts --just-types
 # Review the TypeScript, make changes, etc.
 quicktype pokedex.ts -o src/ios/models.swift
 ```
+
+### Calling `quicktype` from JavaScript
+
+You can use `quicktype` as a JavaScript function within `node` or browsers. First add the `quicktype-core` package:
+
+```bash
+$ npm install quicktype-core
+```
+
+In general, first you create an `InputData` value with one or more JSON samples, JSON schemas, TypeScript sources, or other supported input types. Then you call `quicktype`, passing that `InputData` value and any options you want.
+
+```javascript
+const {
+  quicktype,
+  InputData,
+  jsonInputForTargetLanguage,
+  JSONSchemaInput,
+  JSONSchemaStore
+} = require("quicktype-core");
+
+async function quicktypeJSON(targetLanguage, typeName, jsonString) {
+  const jsonInput = jsonInputForTargetLanguage(targetLanguage);
+
+  // We could add multiple samples for the same desired
+  // type, or many sources for other types. Here we're
+  // just making one type from one piece of sample JSON.
+  await jsonInput.addSource({
+    name: typeName,
+    samples: [jsonString]
+  });
+
+  const inputData = new InputData();
+  inputData.addInput(jsonInput);
+
+  return await quicktype({
+    inputData,
+    lang: targetLanguage
+  });
+}
+
+async function quicktypeJSONSchema(targetLanguage, typeName, jsonSchemaString) {
+  const schemaInput = new JSONSchemaInput(new JSONSchemaStore());
+
+  // We could add multiple schemas for multiple types,
+  // but here we're just making one type from JSON schema.
+  await schemaInput.addSource({ name: typeName, schema: jsonSchemaString });
+
+  const inputData = new InputData();
+  inputData.addInput(schemaInput);
+
+  return await quicktype({
+    inputData,
+    lang: targetLanguage
+  });
+}
+
+async function main() {
+  const { lines: swiftPerson } = await quicktypeJSON(
+    "swift",
+    "Person",
+    jsonString
+  );
+  console.log(swiftPerson.join("\n"));
+
+  const { lines: pythonPerson } = await quicktypeJSONSchema(
+    "python",
+    "Person",
+    jsonSchemaString
+  );
+  console.log(pythonPerson.join("\n"));
+}
+
+main();
+```
+
+The argument to `quicktype` is a complex object with many optional properties. [Explore its definition](https://github.com/quicktype/quicktype/blob/javascript-use-examples/src/quicktype-core/Run.ts#L171) to understand what options are allowed.
 
 ## Contributing
 
@@ -187,17 +263,17 @@ files, URLs, or add other options.
 
 `quicktype` has many complex test dependencies:
 
--   `crystal` compiler
--   `dotnetcore` SDK
--   Java, Maven
--   `elm` tools
--   `g++` C++ compiler
--   `golang` stack
--   `swift` compiler
--   `clang` and Objective-C Foundation (must be tested separately on macOS)
--   `rust` tools
--   `pike` interpreter
--   [Bundler](https://bundler.io) for Ruby
+- `crystal` compiler
+- `dotnetcore` SDK
+- Java, Maven
+- `elm` tools
+- `g++` C++ compiler
+- `golang` stack
+- `swift` compiler
+- `clang` and Objective-C Foundation (must be tested separately on macOS)
+- `rust` tools
+- `pike` interpreter
+- [Bundler](https://bundler.io) for Ruby
 
 We've assembled all of these tools in a Docker container that you build and test within:
 
