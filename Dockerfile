@@ -27,13 +27,12 @@ ENV PATH="${workdir}/swift-4.1.3-RELEASE-ubuntu16.04/usr/bin:${PATH}"
 RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
 
 # Add .NET core package sources
-RUN curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
-RUN mv microsoft.gpg /etc/apt/trusted.gpg.d/microsoft.gpg
-RUN sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-ubuntu-xenial-prod xenial main" > /etc/apt/sources.list.d/dotnetdev.list'
+RUN curl -o packages-microsoft-prod.deb https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb
+RUN dpkg -i packages-microsoft-prod.deb
 
 RUN apt-get -y update
 RUN apt-get -y install nodejs maven default-jdk clang binutils golang-go --assume-yes
-RUN apt-get -y install dotnet-sdk-2.0.0 dotnet-runtime-2.0.0 --assume-yes
+RUN apt-get -y install dotnet-sdk-3.1 --assume-yes
 
 # Install Boost for C++
 RUN apt-get -y install libboost-all-dev --assume-yes
