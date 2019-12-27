@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# docker pull schani/quicktype
+# docker pull dvdsgl/quicktype
 docker build --cache-from quicktype -t quicktype .
 docker run -it \
     -p 3000:3000 \

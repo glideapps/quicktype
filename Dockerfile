@@ -1,6 +1,6 @@
-# To push this repo, log in as "schani" on DockerHub, and
-#   docker tag IMAGE-ID schani/quicktype
-#   docker push schani/quicktype
+# To push this repo, log in as "dvdsgl" on DockerHub, and
+#   docker tag IMAGE-ID dvdsgl/quicktype
+#   docker push dvdsgl/quicktype
 
 FROM ubuntu:xenial-20180525
 
