@@ -12,6 +12,14 @@ WORKDIR ${workdir}
 RUN apt-get -y update --fix-missing
 RUN apt-get -y install curl git apt-transport-https --assume-yes
 
+# Python
+RUN apt-get -y install build-essential checkinstall --assume-yes
+RUN apt-get -y install libreadline-gplv2-dev libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev libffi-dev zlib1g-dev --assume-yes
+RUN curl -o Python-3.6.0.tgz https://www.python.org/ftp/python/3.6.0/Python-3.6.0.tgz && tar xzf Python-3.6.0.tgz
+RUN cd Python-3.6.0 && ./configure --enable-optimizations && make altinstall
+RUN curl https://bootstrap.pypa.io/get-pip.py | python3.6
+RUN pip3.6 install mypy python-dateutil
+
 # Install Swift
 RUN curl -o swift.tar.gz https://swift.org/builds/swift-4.1.3-release/ubuntu1604/swift-4.1.3-RELEASE/swift-4.1.3-RELEASE-ubuntu16.04.tar.gz
 RUN tar -zxf swift.tar.gz
@@ -59,13 +67,6 @@ RUN gem install bundler
 RUN curl -s https://get.sdkman.io | bash
 RUN /bin/bash -c "source /root/.sdkman/bin/sdkman-init.sh && sdk install kotlin"
 ENV PATH="/root/.sdkman/candidates/kotlin/current/bin:${PATH}"
-
-# Python
-RUN add-apt-repository ppa:jonathonf/python-3.6
-RUN apt-get -y update
-RUN apt-get -y install python3.6 --assume-yes
-RUN curl https://bootstrap.pypa.io/get-pip.py | python3.6
-RUN pip3.6 install mypy python-dateutil
 
 # Dart
 RUN apt-get -y install apt-transport-https
