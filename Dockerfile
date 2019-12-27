@@ -2,7 +2,7 @@
 #   docker tag IMAGE-ID dvdsgl/quicktype
 #   docker push dvdsgl/quicktype
 
-FROM ubuntu:xenial-20180525
+FROM ubuntu:eoan
 
 ENV workdir /app
 
@@ -13,12 +13,9 @@ RUN apt-get -y update --fix-missing
 RUN apt-get -y install curl git apt-transport-https --assume-yes
 
 # Python
-RUN apt-get -y install build-essential checkinstall --assume-yes
-RUN apt-get -y install libreadline-gplv2-dev libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev libffi-dev zlib1g-dev --assume-yes
-RUN curl -o Python-3.6.0.tgz https://www.python.org/ftp/python/3.6.0/Python-3.6.0.tgz && tar xzf Python-3.6.0.tgz
-RUN cd Python-3.6.0 && ./configure --enable-optimizations && make altinstall
-RUN curl https://bootstrap.pypa.io/get-pip.py | python3.6
-RUN pip3.6 install mypy python-dateutil
+RUN apt-get -y install python3.8 python3-distutils --assume-yes
+RUN curl https://bootstrap.pypa.io/get-pip.py | python3.8
+RUN pip3.8 install mypy python-dateutil
 
 # Install Swift
 RUN curl -o swift.tar.gz https://swift.org/builds/swift-4.1.3-release/ubuntu1604/swift-4.1.3-RELEASE/swift-4.1.3-RELEASE-ubuntu16.04.tar.gz
