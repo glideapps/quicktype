@@ -18,6 +18,7 @@ import {
     isNumeric,
     isPrintable,
     legalizeCharacters,
+    originalWord,
     splitIntoWords,
     utf32ConcatMap
 } from "../support/Strings";
@@ -79,7 +80,7 @@ export class KotlinTargetLanguage extends TargetLanguage {
 
         switch (options.framework) {
             case Framework.None:
-                return new KotlinRenderer(this, renderContext, options);
+                return new KotlinNoFrameworkRenderer(this, renderContext, options);
             case Framework.Jackson:
                 return new KotlinJacksonRenderer(this, renderContext, options);
             case Framework.Klaxon:
@@ -154,15 +155,15 @@ function isStartCharacter(codePoint: number): boolean {
 
 const legalizeName = legalizeCharacters(isPartCharacter);
 
-function kotlinNameStyle(isUpper: boolean, original: string): string {
+function kotlinNameStyle(isUpper: boolean, original: string, ignoreAcronym: boolean = false): string {
     const words = splitIntoWords(original);
     return combineWords(
         words,
         legalizeName,
         isUpper ? firstUpperWordStyle : allLowerWordStyle,
         firstUpperWordStyle,
-        isUpper ? allUpperWordStyle : allLowerWordStyle,
-        allUpperWordStyle,
+        isUpper ? allUpperWordStyle : (ignoreAcronym ? originalWord : allLowerWordStyle),
+        ignoreAcronym ? originalWord : allUpperWordStyle,
         "",
         isStartCharacter
     );
@@ -426,6 +427,13 @@ export class KotlinRenderer extends ConvenienceRenderer {
             (e, n) => this.emitEnumDefinition(e, n),
             (u, n) => this.emitUnionDefinition(u, n)
         );
+    }
+}
+
+export class KotlinNoFrameworkRenderer extends KotlinRenderer {
+
+    protected namerForObjectProperty(): Namer {
+        return funPrefixNamer("lower", s => kotlinNameStyle(false, s, true));
     }
 }
 
