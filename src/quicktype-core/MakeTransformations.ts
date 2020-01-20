@@ -9,6 +9,7 @@ import {
     Type,
     ArrayType,
     PrimitiveType,
+    isNumberTypeKind,
     isPrimitiveStringTypeKind,
     targetTypeKindForTransformedStringTypeKind,
     PrimitiveStringTypeKind
@@ -27,12 +28,13 @@ import {
     DecodingTransformer,
     ParseStringTransformer,
     ArrayDecodingTransformer,
-    MinMaxLengthCheckTransformer
+    MinMaxLengthCheckTransformer,
+    MinMaxValueTransformer
 } from "./Transformers";
 import { TypeAttributes, emptyTypeAttributes, combineTypeAttributes } from "./attributes/TypeAttributes";
 import { StringTypes } from "./attributes/StringTypes";
 import { RunContext } from "./Run";
-import { minMaxLengthForType } from "./attributes/Constraints";
+import { minMaxLengthForType, minMaxValueForType } from "./attributes/Constraints";
 
 function transformationAttributes(
     graph: TypeGraph,
@@ -249,6 +251,29 @@ function replaceEnum(
     return builder.getStringType(attributes, StringTypes.unrestricted, forwardingRef);
 }
 
+function replaceNumber(
+    t: PrimitiveType,
+    builder: GraphRewriteBuilder<Type>,
+    forwardingRef: TypeRef,
+    debugPrintTransformations: boolean
+): TypeRef {
+    const stringType = builder.getStringType(emptyTypeAttributes, StringTypes.unrestricted);
+    const [min, max] = defined(minMaxValueForType(t));
+    const transformer = new DecodingTransformer(
+        builder.typeGraph,
+        stringType,
+        new MinMaxValueTransformer(builder.typeGraph, stringType, undefined, min, max)
+    );
+    const reconstitutedAttributes = builder.reconstituteTypeAttributes(t.getAttributes());
+    const attributes = transformationAttributes(
+        builder.typeGraph,
+        builder.getPrimitiveType("double", reconstitutedAttributes, undefined),
+        transformer,
+        debugPrintTransformations
+    );
+    return builder.getPrimitiveType("double", attributes, forwardingRef);
+}
+
 function replaceString(
     t: PrimitiveType,
     builder: GraphRewriteBuilder<Type>,
@@ -322,6 +347,9 @@ export function makeTransformations(ctx: RunContext, graph: TypeGraph, targetLan
         }
         if (t.kind === "string") {
             return replaceString(t as PrimitiveType, builder, forwardingRef, ctx.debugPrintTransformations);
+        }
+        if (isNumberTypeKind(t.kind)) {
+            return replaceNumber(t as PrimitiveType, builder, forwardingRef, ctx.debugPrintTransformations);
         }
         if (isPrimitiveStringTypeKind(t.kind)) {
             return replaceTransformedStringType(
