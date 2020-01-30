@@ -48,7 +48,8 @@ export const rubyOptions = {
         ["strict", Strictness.Strict],
         ["coercible", Strictness.Coercible],
         ["none", Strictness.None]
-    ])
+    ]),
+    legacyGemVesion: new BooleanOption("legacy-dry", "Use pre-1.0 dry-types", false)
 };
 
 export class RubyTargetLanguage extends TargetLanguage {
@@ -57,7 +58,7 @@ export class RubyTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [rubyOptions.justTypes, rubyOptions.strictness];
+        return [rubyOptions.justTypes, rubyOptions.strictness, rubyOptions.legacyGemVesion];
     }
 
     get supportsOptionalClassProperties(): boolean {
@@ -159,12 +160,13 @@ export class RubyRenderer extends ConvenienceRenderer {
 
     private dryType(t: Type, isOptional: boolean = false): Sourcelike {
         const optional = isOptional ? ".optional" : "";
+        const intTypeDeclaration = this._options.legacyGemVesion ? 'Int' : 'Integer'
         return matchType<Sourcelike>(
             t,
             _anyType => ["Types::Any", optional],
             _nullType => ["Types::Nil", optional],
             _boolType => ["Types::Bool", optional],
-            _integerType => ["Types::Int", optional],
+            _integerType => [`Types::${intTypeDeclaration}`, optional],
             _doubleType => ["Types::Double", optional],
             _stringType => ["Types::String", optional],
             arrayType => ["Types.Array(", this.dryType(arrayType.items), ")", optional],
@@ -428,9 +430,9 @@ export class RubyRenderer extends ConvenienceRenderer {
                     this.forEachClassProperty(c, "none", (name, jsonName, p) => {
                         const dynamic = p.isOptional
                             ? // If key is not found in hash, this will be nil
-                              `d["${stringEscape(jsonName)}"]`
+                            `d["${stringEscape(jsonName)}"]`
                             : // This will raise a runtime error if the key is not found in the hash
-                              `d.fetch("${stringEscape(jsonName)}")`;
+                            `d.fetch("${stringEscape(jsonName)}")`;
 
                         if (this.propertyTypeMarshalsImplicitlyFromDynamic(p.type)) {
                             inits.push([[name, ": "], [dynamic, ","]]);
@@ -553,7 +555,9 @@ export class RubyRenderer extends ConvenienceRenderer {
 
     private emitTypesModule() {
         this.emitBlock(["module Types"], () => {
-            this.emitLine("include Dry::Types.module");
+            const includeType = this._options.legacyGemVesion ? 'Dry::Types.module' : 'Dry.Types()'
+            const intTypeDeclaration = this._options.legacyGemVesion ? 'Integer' : 'Int'
+            this.emitLine(`include ${includeType}`);
 
             const declarations: Sourcelike[][] = [];
 
@@ -569,7 +573,7 @@ export class RubyRenderer extends ConvenienceRenderer {
                         double: has.double || t.kind === "double"
                     };
                 });
-                if (has.int) declarations.push([["Int"], [` = ${this._options.strictness}Int`]]);
+                if (has.int) declarations.push([[intTypeDeclaration], [` = ${this._options.strictness}${intTypeDeclaration}`]]);
                 if (this._options.strictness === Strictness.Strict) {
                     if (has.nil) declarations.push([["Nil"], [` = ${this._options.strictness}Nil`]]);
                 }
