@@ -160,7 +160,7 @@ export class RubyRenderer extends ConvenienceRenderer {
 
     private dryType(t: Type, isOptional: boolean = false): Sourcelike {
         const optional = isOptional ? ".optional" : "";
-        const intTypeDeclaration = this._options.legacyGemVesion ? 'Int' : 'Integer'
+        const intTypeDeclaration = this._options.legacyGemVesion ? "Int" : "Integer";
         return matchType<Sourcelike>(
             t,
             _anyType => ["Types::Any", optional],
@@ -555,8 +555,8 @@ export class RubyRenderer extends ConvenienceRenderer {
 
     private emitTypesModule() {
         this.emitBlock(["module Types"], () => {
-            const includeType = this._options.legacyGemVesion ? 'Dry::Types.module' : 'Dry.Types()'
-            const intTypeDeclaration = this._options.legacyGemVesion ? 'Integer' : 'Int'
+            const includeType = this._options.legacyGemVesion ? "Dry::Types.module" : "Dry.Types(default: :nominal)";
+            const intTypeDeclaration = this._options.legacyGemVesion ? "Integer" : "Int";
             this.emitLine(`include ${includeType}`);
 
             const declarations: Sourcelike[][] = [];
@@ -624,6 +624,7 @@ export class RubyRenderer extends ConvenienceRenderer {
         this.emitLine("require 'json'");
         this.emitLine("require 'dry-types'");
         this.emitLine("require 'dry-struct'");
+        if (this._options.legacyGemVesion) this.emitLine("require 'dry/types/compat/int'");
 
         this.ensureBlankLine();
         this.emitTypesModule();

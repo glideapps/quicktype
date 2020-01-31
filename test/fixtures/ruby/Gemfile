@@ -1,4 +1,4 @@
 source 'https://rubygems.org'
 
-gem 'dry-types'
-gem 'dry-struct'
+gem 'dry-types', '1.2'
+gem 'dry-struct', '1.0'
