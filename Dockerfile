@@ -56,7 +56,7 @@ RUN apt-get -y install build-essential curl openssl libreadline6 libreadline6-de
 RUN curl -o ruby-2.7.0.tar.gz https://cache.ruby-lang.org/pub/ruby/2.7/ruby-2.7.0.tar.gz
 RUN tar -xvf ruby-2.7.0.tar.gz
 RUN cd ruby-2.7.0 && ./configure && make && make test && make install
-RUN gem install bundler
+RUN gem install bundler -v 1.17.3
 
 # Kotlin
 RUN apt-get -y install unzip zip
