@@ -52,7 +52,10 @@ RUN git clone https://github.com/obmarg/libsysconfcpus.git
 RUN cd libsysconfcpus && ./configure && make && make install
 
 # Ruby
-RUN apt-get -y install ruby --assume-yes
+RUN apt-get -y install build-essential curl openssl libreadline6 libreadline6-dev zlib1g zlib1g-dev libssl-dev libyaml-dev libxml2-dev libxslt-dev autoconf libc6-dev ncurses-dev
+RUN curl -o ruby-2.7.0.tar.gz https://cache.ruby-lang.org/pub/ruby/2.7/ruby-2.7.0.tar.gz
+RUN tar -xvf ruby-2.7.0.tar.gz
+RUN cd ruby-2.7.0 && ./configure && make && make test && make install
 RUN gem install bundler
 
 # Kotlin
