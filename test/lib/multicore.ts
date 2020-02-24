@@ -34,8 +34,9 @@ export async function inParallel<Item, Result, Acc>(args: ParallelArgs<Item, Res
     await setup();
 
     cluster.on("message", worker => {
-      if (items.length) {
-        worker.send(items.shift());
+      const next = items.shift();
+      if (next !== undefined) {
+        worker.send(next);
       } else {
         worker.kill();
       }
