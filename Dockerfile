@@ -61,7 +61,7 @@ RUN /bin/bash -c "source /root/.sdkman/bin/sdkman-init.sh && sdk install kotlin"
 ENV PATH="/root/.sdkman/candidates/kotlin/current/bin:${PATH}"
 
 # Python
-RUN add-apt-repository ppa:jonathonf/python-3.6
+RUN add-apt-repository ppa:deadsnakes/ppa
 RUN apt-get -y update
 RUN apt-get -y install python3.6 --assume-yes
 RUN curl https://bootstrap.pypa.io/get-pip.py | python3.6
