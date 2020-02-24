@@ -78,7 +78,7 @@ function combineNames(names: ReadonlySet<string>): string {
     return first;
 }
 
-export const tooManyNamesThreshold = 20;
+export const tooManyNamesThreshold = 1000;
 
 export abstract class TypeNames {
     static makeWithDistance(
