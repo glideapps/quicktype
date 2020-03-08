@@ -192,11 +192,12 @@ class GQLQuery {
         fieldType: GQLType,
         containingTypeName: string
     ): TypeRef => {
-        const optional = hasOptionalDirectives(fieldNode.directives);
+        let optional = hasOptionalDirectives(fieldNode.directives);
         let result: TypeRef;
         switch (fieldType.kind) {
             case TypeKind.SCALAR:
                 result = makeScalar(builder, fieldType);
+                optional = true;
                 break;
             case TypeKind.OBJECT:
             case TypeKind.INTERFACE:
