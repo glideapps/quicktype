@@ -82,7 +82,7 @@ function needTransformerForType(t: Type): "automatic" | "manual" | "nullable" | 
     }
     if (t instanceof EnumType) return "automatic";
     if (t.kind === "double")
-        return minMaxValueForType(t) ? "manual" : "none";
+        return minMaxValueForType(t) !== undefined ? "manual" : "none";
     if (t.kind === "integer-string" || t.kind === "bool-string") return "manual";
     if (t.kind === "string") {
         return minMaxLengthForType(t) !== undefined ? "manual" : "none";
@@ -970,7 +970,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                     "), null, serializer);"
                 );
             } else if (source.kind !== "null") {
-                var output = targetType.kind == "double" ? targetType : source;
+                let output = targetType.kind === "double" ? targetType : source;
                 this.emitLine("var ", variableName, " = ", this.deserializeTypeCode(this.csType(output)), ";");
             }
             return this.emitConsume(variableName, xfer.consumer, targetType, emitFinish);

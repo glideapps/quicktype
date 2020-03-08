@@ -981,7 +981,6 @@ export class MinMaxValueTransformer extends ProducerTransformer {
     }
 }
 
-
 export class Transformation {
     constructor(
         private readonly _graph: TypeGraph,
