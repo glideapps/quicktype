@@ -45,10 +45,11 @@ import {
     Transformation,
     ArrayDecodingTransformer,
     ArrayEncodingTransformer,
-    MinMaxLengthCheckTransformer
+    MinMaxLengthCheckTransformer,
+    MinMaxValueTransformer
 } from "../Transformers";
 import { RenderContext } from "../Renderer";
-import { minMaxLengthForType } from "../attributes/Constraints";
+import { minMaxLengthForType, minMaxValueForType } from "../attributes/Constraints";
 
 const unicode = require("@mark.probst/unicode-properties");
 
@@ -80,6 +81,8 @@ function needTransformerForType(t: Type): "automatic" | "manual" | "nullable" | 
         return "none";
     }
     if (t instanceof EnumType) return "automatic";
+    if (t.kind === "double")
+        return minMaxValueForType(t) !== undefined ? "manual" : "none";
     if (t.kind === "integer-string" || t.kind === "bool-string") return "manual";
     if (t.kind === "string") {
         return minMaxLengthForType(t) !== undefined ? "manual" : "none";
@@ -967,7 +970,8 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                     "), null, serializer);"
                 );
             } else if (source.kind !== "null") {
-                this.emitLine("var ", variableName, " = ", this.deserializeTypeCode(this.csType(source)), ";");
+                let output = targetType.kind === "double" ? targetType : source;
+                this.emitLine("var ", variableName, " = ", this.deserializeTypeCode(this.csType(output)), ";");
             }
             return this.emitConsume(variableName, xfer.consumer, targetType, emitFinish);
         } else if (xfer instanceof ArrayDecodingTransformer) {
@@ -1228,6 +1232,20 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             }
             if (max !== undefined) {
                 conditions.push([variable, ".Length <= ", max.toString()]);
+            }
+            this.emitLine("if (", arrayIntercalate([" && "], conditions), ")");
+            this.emitBlock(() => this.emitConsume(variable, xfer.consumer, targetType, emitFinish));
+            return false;
+        } else if (xfer instanceof MinMaxValueTransformer) {
+            const min = xfer.minimum;
+            const max = xfer.maximum;
+            const conditions: Sourcelike[] = [];
+
+            if (min !== undefined) {
+                conditions.push([variable, " >= ", min.toString()]);
+            }
+            if (max !== undefined) {
+                conditions.push([variable, " <= ", max.toString()]);
             }
             this.emitLine("if (", arrayIntercalate([" && "], conditions), ")");
             this.emitBlock(() => this.emitConsume(variable, xfer.consumer, targetType, emitFinish));
