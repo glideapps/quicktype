@@ -1021,6 +1021,20 @@ export class KotlinXRenderer extends KotlinRenderer {
         return super.mapType(mapType, withIssues, noOptional);
     }
 
+    protected emitTopLevelMap(t: MapType, name: Name): void {
+        const elementType = this.kotlinType(t.values);
+        if (elementType === "JsonObject") {
+            this.emitLine(["typealias ", name, " = JsonObject"]);
+        } else {
+            super.emitTopLevelMap(t, name);
+        }
+    }
+
+    protected emitTopLevelArray(t: ArrayType, name: Name): void {
+        const elementType = this.kotlinType(t.items);
+        this.emitLine(["typealias ", name, " = JsonArray<", elementType, ">"]);
+    }
+
     protected emitUsageHeader(): void {
         this.emitLine("// To parse the JSON, install kotlin's serialization plugin and do:");
         this.emitLine("//");
@@ -1072,20 +1086,20 @@ export class KotlinXRenderer extends KotlinRenderer {
             this.ensureBlankLine();
             this.emitBlock(["companion object : KSerializer<", enumName, ">"], () => {
                 this.emitBlock("override val descriptor: SerialDescriptor get()", () => {
-                   this.emitLine("return StringDescriptor");
+                   this.emitLine("return PrimitiveDescriptor(\"", this._kotlinOptions.packageName, ".", enumName, "\", PrimitiveKind.STRING)");
                 });
 
-                this.emitBlock(["override fun deserialize(decoder: Decoder): ", enumName, " = when (decoder.decodeString())"], () => {
+                this.emitBlock(["override fun deserialize(decoder: Decoder): ", enumName, " = when (val value = decoder.decodeString())"], () => {
                     let table: Sourcelike[][] = [];
                     this.forEachEnumCase(e, "none", (name, json) => {
                         table.push([[`"${stringEscape(json)}"`], [" -> ", name]]);
                     });
-                    table.push([["else"], [" -> throw IllegalArgumentException()"]]);
+                    table.push([["else"], [" -> throw IllegalArgumentException(\"", enumName, " could not parse: $value\")"]]);
                     this.emitTable(table);
                 });
 
-                this.emitBlock(["override fun serialize(encoder: Encoder, obj: ", enumName, ")"], () => {
-                    this.emitLine(["return encoder.encodeString(obj.value)"]);
+                this.emitBlock(["override fun serialize(encoder: Encoder, value: ", enumName, ")"], () => {
+                    this.emitLine(["return encoder.encodeString(value.value)"]);
                 });
             });
         });
