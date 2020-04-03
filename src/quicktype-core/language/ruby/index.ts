@@ -583,7 +583,7 @@ export class RubyRenderer extends ConvenienceRenderer {
                 if (has.double)
                     declarations.push([
                         ["Double"],
-                        [` = ${this._options.strictness}Float | ${this._options.strictness}Int`]
+                        [` = ${this._options.strictness}Float | ${this._options.strictness}${intTypeDeclaration}`]
                     ]);
             }
 

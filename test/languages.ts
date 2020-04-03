@@ -289,8 +289,8 @@ export const RubyLanguage: Language = {
     "top-level-enum.schema"
   ],
   skipMiscJSON: false,
-  rendererOptions: { "legacy-dry": "true" },
-  quickTestRendererOptions: [{ "legacy-dry": "true" }],
+  rendererOptions: { "legacy-dry": "false" },
+  quickTestRendererOptions: [{ "legacy-dry": "false" }],
   sourceFiles: ["src/language/ruby/index.ts"]
 };
 
