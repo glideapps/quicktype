@@ -556,7 +556,7 @@ export class RubyRenderer extends ConvenienceRenderer {
     private emitTypesModule() {
         this.emitBlock(["module Types"], () => {
             const includeType = this._options.legacyGemVesion ? "Dry::Types.module" : "Dry.Types(default: :nominal)";
-            const intTypeDeclaration = this._options.legacyGemVesion ? "Integer" : "Int";
+            const intTypeDeclaration = this._options.legacyGemVesion ? "Int" : "Integer";
             this.emitLine(`include ${includeType}`);
 
             const declarations: Sourcelike[][] = [];
