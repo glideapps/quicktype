@@ -381,11 +381,12 @@ export class GoRenderer extends ConvenienceRenderer {
     }
 
     private emitPackageDefinitons(includeJSONEncodingImport: boolean): void {
+        this.ensureBlankLine();
+        const packageDeclaration = "package " + this._options.packageName;
+        this.emitLineOnce(packageDeclaration);
+        this.ensureBlankLine();
+
         if (!this._options.justTypes) {
-            this.ensureBlankLine();
-            const packageDeclaration = "package " + this._options.packageName;
-            this.emitLineOnce(packageDeclaration);
-            this.ensureBlankLine();
             if (this.haveNamedUnions && this._options.multiFileOutput === false) {
                 this.emitLineOnce('import "bytes"');
                 this.emitLineOnce('import "errors"');
