@@ -578,9 +578,9 @@ export class CSharpRenderer extends ConvenienceRenderer {
 
 export const newtonsoftCSharpOptions = Object.assign({}, cSharpOptions, {
     features: new EnumOption("features", "Output features", [
-        ["complete", { helpers: true, attributes: true }],
-        ["attributes-only", { helpers: false, attributes: true }],
-        ["just-types", { helpers: false, attributes: false }]
+        ["complete", { namespace: true, helpers: true, attributes: true }],
+        ["attributes-only", { namespace: true, helpers: false, attributes: true }],
+        ["just-types", { namespace: true, helpers: false, attributes: false }]
     ]),
     baseclass: new EnumOption(
         "base-class",
@@ -628,6 +628,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
 
     private readonly _needHelpers: boolean;
     private readonly _needAttributes: boolean;
+    private readonly _needNamespace: boolean;
 
     constructor(
         targetLanguage: TargetLanguage,
@@ -637,6 +638,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         super(targetLanguage, renderContext, _options);
         this._needHelpers = _options.features.helpers;
         this._needAttributes = _options.features.attributes;
+        this._needNamespace = _options.features.namespace;
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
@@ -1342,6 +1344,6 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
     }
 
     protected needNamespace(): boolean {
-        return this._needHelpers || this._needAttributes;
+        return this._needNamespace;
     }
 }
