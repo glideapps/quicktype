@@ -30,7 +30,9 @@ export const javaOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
     // FIXME: Do this via a configurable named eventually.
-    packageName: new StringOption("package", "Generated package name", "NAME", "io.quicktype")
+    packageName: new StringOption("package", "Generated package name", "NAME", "io.quicktype"),
+    lombok: new BooleanOption("lombok", "Use lombok", false, "primary"),
+
 };
 
 export class JavaTargetLanguage extends TargetLanguage {
@@ -39,7 +41,7 @@ export class JavaTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [javaOptions.packageName, javaOptions.justTypes, javaOptions.acronymStyle, javaOptions.useList];
+        return [javaOptions.useList, javaOptions.justTypes, javaOptions.acronymStyle, javaOptions.packageName, javaOptions.lombok];
     }
 
     get supportsUnionsWithBothNumberTypes(): boolean {
@@ -394,7 +396,12 @@ export class JavaRenderer extends ConvenienceRenderer {
 
     protected importsForType(t: ClassType | UnionType | EnumType): string[] {
         if (t instanceof ClassType) {
-            return this._options.justTypes ? [] : ["com.fasterxml.jackson.annotation.*"];
+            const imports = [];
+            if (!this._options.justTypes)
+                imports.push("com.fasterxml.jackson.annotation.*");
+            if (this._options.lombok)
+                imports.push("lombok.Data");
+            return imports;
         }
         if (t instanceof UnionType) {
             if (this._options.justTypes) {
@@ -418,19 +425,27 @@ export class JavaRenderer extends ConvenienceRenderer {
         this.emitFileHeader(className, this.importsForType(c));
         this.emitDescription(this.descriptionForType(c));
         this.emitClassAttributes(c, className);
+        if (this._options.lombok) {
+            this.emitLine("@Data");
+        }
         this.emitBlock(["public class ", className], () => {
-            this.forEachClassProperty(c, "none", (name, _, p) => {
+            this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+                if (this._options.lombok) {
+                    this.emitAccessorAttributes(c, className, name, jsonName, p, false);
+                }
                 this.emitLine("private ", this.javaType(false, p.type, true), " ", name, ";");
             });
-            this.forEachClassProperty(c, "leading-and-interposing", (name, jsonName, p) => {
-                this.emitDescription(this.descriptionForClassProperty(c, jsonName));
-                const [getterName, setterName] = defined(this._gettersAndSettersForPropertyName.get(name));
-                this.emitAccessorAttributes(c, className, name, jsonName, p, false);
-                const rendered = this.javaType(false, p.type);
-                this.emitLine("public ", rendered, " ", getterName, "() { return ", name, "; }");
-                this.emitAccessorAttributes(c, className, name, jsonName, p, true);
-                this.emitLine("public void ", setterName, "(", rendered, " value) { this.", name, " = value; }");
-            });
+            if (!this._options.lombok) {
+                this.forEachClassProperty(c, "leading-and-interposing", (name, jsonName, p) => {
+                    this.emitDescription(this.descriptionForClassProperty(c, jsonName));
+                    const [getterName, setterName] = defined(this._gettersAndSettersForPropertyName.get(name));
+                    this.emitAccessorAttributes(c, className, name, jsonName, p, false);
+                    const rendered = this.javaType(false, p.type);
+                    this.emitLine("public ", rendered, " ", getterName, "() { return ", name, "; }");
+                    this.emitAccessorAttributes(c, className, name, jsonName, p, true);
+                    this.emitLine("public void ", setterName, "(", rendered, " value) { this.", name, " = value; }");
+                });
+            }
         });
         this.finishFile();
     }
@@ -605,6 +620,7 @@ export class JavaRenderer extends ConvenienceRenderer {
         this.emitCommentLines([
             "To use this code, add the following Maven dependency to your project:",
             "",
+            this._options.lombok ? "    org.projectlombok : lombok : 1.18.2" : "",
             "    com.fasterxml.jackson.core : jackson-databind : 2.9.0",
             "",
             "Import this package:",

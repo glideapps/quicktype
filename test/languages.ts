@@ -100,6 +100,29 @@ export const JavaLanguage: Language = {
   sourceFiles: ["src/language/Java.ts"]
 };
 
+export const JavaLanguageWithLombok: Language = {
+  name: "java",
+  base: "test/fixtures/java-lombok",
+  setupCommand: "mvn package",
+  compileCommand: "mvn package",
+  runCommand(sample: string) {
+    return `java -cp target/QuickTypeTest-1.0-SNAPSHOT.jar io.quicktype.App "${sample}"`;
+  },
+  // FIXME: implement comparing multiple files
+  diffViaSchema: false,
+  skipDiffViaSchema: [],
+  allowMissingNull: false,
+  features: ["enum", "union"],
+  output: "src/main/java/io/quicktype/TopLevel.java",
+  topLevel: "TopLevel",
+  skipJSON: ["identifiers.json", "simple-identifiers.json", "nst-test-suite.json"],
+  skipMiscJSON: false,
+  skipSchema: ["keyword-unions.schema"], // generates classes with names that are case-insensitively equal
+  rendererOptions: {},
+  quickTestRendererOptions: [{ "array-type": "list", "lombok": "true" }],
+  sourceFiles: ["src/language/Java.ts"]
+};
+
 export const PythonLanguage: Language = {
   name: "python",
   base: "test/fixtures/python",
