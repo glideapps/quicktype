@@ -83,6 +83,7 @@ export { GoTargetLanguage, GoRenderer, goOptions } from "./language/Golang";
 export { ObjectiveCTargetLanguage, ObjectiveCRenderer, objcOptions } from "./language/Objective-C";
 export { JavaTargetLanguage, JavaRenderer, javaOptions } from "./language/Java";
 export { JavaScriptTargetLanguage, JavaScriptRenderer, javaScriptOptions } from "./language/JavaScript";
+export { JavaScriptPropTypesTargetLanguage, JavaScriptPropTypesRenderer, javaScriptPropTypesOptions } from "./language/JavaScriptPropTypes"
 export {
     TypeScriptTargetLanguage,
     TypeScriptRenderer,
