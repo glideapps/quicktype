@@ -52,6 +52,7 @@ export {
     ArrayType,
     ClassType,
     ClassProperty,
+    EnumType,
     MapType,
     UnionType,
     TypeKind,
