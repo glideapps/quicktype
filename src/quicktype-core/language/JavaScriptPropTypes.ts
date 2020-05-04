@@ -31,7 +31,7 @@ export class JavaScriptPropTypesTargetLanguage extends TargetLanguage {
 
     constructor(
         displayName: string = "JavaScriptPropTypes",
-        names: string[] = ["prop-types"],
+        names: string[] = ["javascript-prop-types"],
         extension: string = "js"
     ) {
         super(displayName, names, extension);

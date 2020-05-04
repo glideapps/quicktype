@@ -890,5 +890,24 @@ export const PikeLanguage: Language = {
   ],
   rendererOptions: {},
   quickTestRendererOptions: [],
-  sourceFiles: ["src/Language/Pike.ts"]
+  sourceFiles: ["src/Language/Pike.ts"],
+};
+
+export const JavaScriptPropTypesLanguage: Language = {
+  name: "javascript-prop-types",
+  base: "test/fixtures/javascript-prop-types",
+  // FIXME: Replace `wc` with a proper check
+  compileCommand: "wc toplevel.js",
+  diffViaSchema: false,
+  skipDiffViaSchema: [],
+  allowMissingNull: false,
+  features: [],
+  output: "toplevel.js",
+  topLevel: "TopLevel",
+  skipJSON: [],
+  skipSchema: [],
+  skipMiscJSON: false,
+  rendererOptions: {},
+  quickTestRendererOptions: [],
+  sourceFiles: ["src/Language/JavaScriptPropTypes.ts"],
 };
