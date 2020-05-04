@@ -83,21 +83,21 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         return format(matchType<Sourcelike>(
             t,
             _anyType => `PropTypes.any`,
-            _nullType => panic('There is no null equivalent in PropTypes.'),
-            _boolType => 'PropTypes.bool',
-            _integerType => 'PropTypes.number',
-            _doubleType => 'PropTypes.number',
-            _stringType => 'PropTypes.string',
+            _nullType => panic("There is no null equivalent in PropTypes."),
+            _boolType => "PropTypes.bool",
+            _integerType => "PropTypes.number",
+            _doubleType => "PropTypes.number",
+            _stringType => "PropTypes.string",
             arrayType => `PropTypes.arrayOf(${this.typeMapTypeFor(arrayType.items, false)})`,
-            _classType => panic('Should already be handled.'),
-            _mapType => 'PropTypes.object',
+            _classType => panic("Should already be handled."),
+            _mapType => "PropTypes.object",
             enumType => `PropTypes.oneOf(['${Array.from(enumType.cases.values()).join("' ,'")}'])`,
             unionType => {
                 const children = Array.from(unionType.getChildren()).map((type: Type) => this.typeMapTypeFor(type, false));
-                return `PropTypes.oneOfType([${children.join(',')}])`
+                return `PropTypes.oneOfType([${children.join(",")}])`;
             },
             _transformedStringType => {
-                return 'PropTypes.string';
+                return "PropTypes.string";
             }
         ));
     }
@@ -111,7 +111,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
     }
 
     protected emitUsageComments(): void {
-        this.emitLine('// For use with proptypes.')
+        this.emitLine("// For use with proptypes.");
     }
 
     protected emitBlock(source: Sourcelike, end: Sourcelike, emit: () => void) {
@@ -122,24 +122,23 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
 
     protected emitImports(): void {
         this.ensureBlankLine();
-        this.emitLine('import PropTypes from \'prop-types\';')
+        this.emitLine("import PropTypes from \"prop-types\";");
     }
 
     protected emitTypes(): void {
-        this.ensureBlankLine();
-
         this.forEachObject("none", (t: ObjectType, name: Name) => {
-            this.emitLine('export const ', name, ' = PropTypes.shape({')
+            this.ensureBlankLine();
+            this.emitLine("export const ", name, " = PropTypes.shape({");
             this.indent(() => {
                 this.forEachClassProperty(t, "none", (_, jsonName, property) => {
                     this.emitLine(
                         utf16StringEscape(jsonName),
-                        ': ',
+                        ": ",
                         this.typeMapTypeForProperty(property),
-                        ',');
+                        ",");
                 });
             });
-            this.emitLine('});');
+            this.emitLine("});");
         });
     }
 
