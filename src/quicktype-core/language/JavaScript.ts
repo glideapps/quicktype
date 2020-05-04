@@ -351,7 +351,7 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
         return val.map(el => transform(el, typ, getProps));
     }
 
-    function transformDate(typ${anyAnnotation}, val${anyAnnotation})${anyAnnotation} {
+    function transformDate(val${anyAnnotation})${anyAnnotation} {
         if (val === null) {
             return null;
         }
@@ -397,7 +397,7 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
             : invalidValue(typ, val);
     }
     // Numbers can be parsed by Date but shouldn't be.
-    if (typ === Date && typeof val !== "number") return transformDate(typ, val);
+    if (typ === Date && typeof val !== "number") return transformDate(val);
     return transformPrimitive(typ, val);
 }
 
