@@ -22,7 +22,7 @@ export { RenderContext } from "./Renderer";
 export { Option, OptionDefinition, getOptionValues } from "./RendererOptions";
 export { TargetLanguage } from "./TargetLanguage";
 export { all as defaultTargetLanguages, languageNamed } from "./language/All";
-export { Sourcelike, SerializedRenderResult, Annotation, modifySource } from "./Source";
+export { MultiWord, Sourcelike, SerializedRenderResult, Annotation, modifySource, singleWord, parenIfNeeded } from "./Source";
 export { Name, funPrefixNamer, Namer } from "./Naming";
 export { IssueAnnotationData } from "./Annotation";
 export {
@@ -52,6 +52,7 @@ export {
     ArrayType,
     ClassType,
     ClassProperty,
+    EnumType,
     MapType,
     UnionType,
     TypeKind,
