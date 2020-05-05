@@ -1,9 +1,9 @@
 import * as fs from "fs";
-import { Readable } from "stream";
+import {Readable} from "stream";
 
-import { getStream } from "./get-stream";
+import {getStream} from "./get-stream";
 
-import { messageError, JSONSchemaStore, JSONSchema, parseJSON, panic } from "../quicktype-core";
+import {messageError, panic} from "../../index";
 
 // The typings for this module are screwy
 const isURL = require("is-url");
@@ -64,16 +64,5 @@ export async function readFromFileOrURL(fileOrURL: string, httpHeaders?: string[
     } catch (e) {
         const message = typeof e.message === "string" ? e.message : "Unknown error";
         return messageError("MiscReadError", { fileOrURL, message });
-    }
-}
-
-export class FetchingJSONSchemaStore extends JSONSchemaStore {
-    constructor(private readonly _httpHeaders?: string[]) {
-        super();
-    }
-
-    async fetch(address: string): Promise<JSONSchema | undefined> {
-        // console.log(`Fetching ${address}`);
-        return parseJSON(await readFromFileOrURL(address, this._httpHeaders), "JSON Schema", address);
     }
 }
