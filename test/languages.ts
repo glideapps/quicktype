@@ -639,6 +639,9 @@ export const JavaScriptPropTypesLanguage: Language = {
   output: "toplevel.js",
   topLevel: "TopLevel",
   skipJSON: [
+    "bug863.json",
+    "bug855-short.json",
+    "no-classes.json",
     "7681c.json" // year 0 is out of range
   ],
   skipSchema: ["keyword-unions.schema"], // can't handle "constructor" property

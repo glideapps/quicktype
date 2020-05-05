@@ -104,12 +104,10 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         return super.makeNameForProperty(c, className, p, jsonName, undefined);
     }
 
-    typeMapTypeFor(t: Type, required: boolean = true): Sourcelike {
+    typeMapTypeFor(t: Type, _required: boolean = true): Sourcelike {
         if (["class", "object", "enum"].indexOf(t.kind) >= 0) {
             return this.nameForNamedType(t);
         }
-
-        console.log(required);
 
         return matchType<Sourcelike>(
             t,
@@ -161,6 +159,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         this.forEachTopLevel("none", (type, name) => {
             topLevels.push({ type, name });
         });
+
         this.forEachObject("none", (t: ObjectType, name: Name) => {
             if (topLevels.find(value => value.name === name)) {
                 return;

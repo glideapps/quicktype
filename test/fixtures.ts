@@ -692,6 +692,114 @@ class GraphQLFixture extends LanguageFixture {
   }
 }
 
+class CommandSuccessfulLanguageFixture extends LanguageFixture {
+  constructor(language: languages.Language, public name: string = language.name) {
+    super(language);
+  }
+
+  runForName(name: string): boolean {
+    return this.name === name || name === "json";
+  }
+
+  async runQuicktype(sample: string, additionalRendererOptions: RendererOptions): Promise<void> {
+    // FIXME: add options
+    await quicktypeForLanguage(this.language, sample, "json", true, additionalRendererOptions);
+  }
+
+  async test(
+      _filename: string,
+      _additionalRendererOptions: RendererOptions,
+      _additionalFiles: string[]
+  ): Promise<number> {
+    if (this.language.compileCommand) {
+      await execAsync(this.language.compileCommand);
+    }
+
+    if (this.language.runCommand === undefined) {
+      return 1;
+    }
+/*
+    compareJsonFileToJson(comparisonArgs(this.language, filename, filename, additionalRendererOptions));
+
+    if (
+        this.language.diffViaSchema &&
+        !_.includes(this.language.skipDiffViaSchema, path.basename(filename))
+    ) {
+      debug("* Diffing with code generated via JSON Schema");
+      // Make a schema
+      await quicktype({
+        src: [filename],
+        lang: "schema",
+        out: "schema.json",
+        topLevel: this.language.topLevel,
+        rendererOptions: {}
+      });
+      // Quicktype from the schema and compare to expected code
+      shell.mv(this.language.output, `${this.language.output}.expected`);
+      await quicktypeForLanguage(this.language, "schema.json", "schema", true, additionalRendererOptions);
+    }
+*/
+    return 0;
+  }
+
+  shouldSkipTest(sample: Sample): boolean {
+    if (fs.statSync(sample.path).size > 32 * 1024 * 1024) {
+      return true;
+    }
+    return _.includes(this.language.skipJSON, path.basename(sample.path));
+  }
+
+  getSamples(sources: string[]): { priority: Sample[]; others: Sample[] } {
+    // FIXME: this should only run once
+    const prioritySamples = _.concat(
+        testsInDir("test/inputs/json/priority", "json"),
+        testsInDir("test/inputs/json/samples", "json")
+    );
+
+    const miscSamples = this.language.skipMiscJSON ? [] : testsInDir("test/inputs/json/misc", "json");
+
+    let { priority, others } = samplesFromSources(sources, prioritySamples, miscSamples, "json");
+
+    const combinationInputs = _.map([1, 2, 3, 4], n =>
+        _.find(prioritySamples, p => p.endsWith(`/priority/combinations${n}.json`))
+    );
+    if (combinationInputs.some(p => p === undefined)) {
+      return failWith("priority/combinations[1234].json samples not found", prioritySamples);
+    }
+    if (sources.length === 0 && !ONLY_OUTPUT) {
+      const quickTestSamples = _.chain(this.language.quickTestRendererOptions)
+          .flatMap(qt => {
+            if (Array.isArray(qt)) {
+              const [filename, ro] = qt;
+              const input = _.find(([] as string[]).concat(prioritySamples, miscSamples), p =>
+                  p.endsWith(`/${filename}`)
+              );
+              if (input === undefined) {
+                return failWith(`quick-test sample ${filename} not found`, qt);
+              }
+              return [
+                {
+                  path: input,
+                  additionalRendererOptions: ro,
+                  saveOutput: false
+                }
+              ];
+            } else {
+              return _.map(combinationInputs, p => ({
+                path: defined(p),
+                additionalRendererOptions: qt,
+                saveOutput: false
+              }));
+            }
+          })
+          .value();
+      priority = quickTestSamples.concat(priority);
+    }
+
+    return { priority, others };
+  }
+}
+
 export const allFixtures: Fixture[] = [
   // new JSONFixture(languages.CrystalLanguage),
   new JSONFixture(languages.CSharpLanguage),
@@ -711,7 +819,6 @@ export const allFixtures: Fixture[] = [
   new JSONFixture(languages.KotlinJacksonLanguage, "kotlin-jackson"),
   new JSONFixture(languages.DartLanguage),
   new JSONFixture(languages.PikeLanguage),
-  new JSONFixture(languages.JavaScriptPropTypesLanguage),
   new JSONSchemaJSONFixture(languages.CSharpLanguage),
   new JSONTypeScriptFixture(languages.CSharpLanguage),
   // new JSONSchemaFixture(languages.CrystalLanguage),
@@ -731,7 +838,6 @@ export const allFixtures: Fixture[] = [
   new JSONSchemaFixture(languages.KotlinJacksonLanguage, "schema-kotlin-jackson"),
   new JSONSchemaFixture(languages.DartLanguage),
   new JSONSchemaFixture(languages.PikeLanguage),
-  new JSONSchemaFixture(languages.JavaScriptPropTypesLanguage),
   // FIXME: Why are we missing so many language with GraphQL?
   new GraphQLFixture(languages.CSharpLanguage),
   new GraphQLFixture(languages.JavaLanguage),
@@ -745,5 +851,5 @@ export const allFixtures: Fixture[] = [
   new GraphQLFixture(languages.JavaScriptLanguage),
   new GraphQLFixture(languages.DartLanguage),
   new GraphQLFixture(languages.PikeLanguage),
-  new GraphQLFixture(languages.JavaScriptPropTypesLanguage),
+  new CommandSuccessfulLanguageFixture(languages.JavaScriptPropTypesLanguage),
 ];
