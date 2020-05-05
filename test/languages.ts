@@ -20,6 +20,7 @@ export interface Language {
   setupCommand?: string;
   compileCommand?: string;
   runCommand?: (sample: string) => string;
+  copyInput?: boolean;
   diffViaSchema: boolean;
   skipDiffViaSchema: string[];
   allowMissingNull: boolean;
@@ -624,6 +625,29 @@ export const JavaScriptLanguage: Language = {
   sourceFiles: ["src/language/JavaScript.ts"]
 };
 
+export const JavaScriptPropTypesLanguage: Language = {
+  name: "javascript-prop-types",
+  base: "test/fixtures/javascript-prop-types",
+  runCommand(sample: string) {
+    return `npm install && node main.js \"${sample}\"`;
+  },
+  copyInput: true,
+  diffViaSchema: false,
+  skipDiffViaSchema: [],
+  allowMissingNull: false,
+  features: ["enum", "union", "no-defaults", "strict-optional", "date-time"],
+  output: "toplevel.js",
+  topLevel: "TopLevel",
+  skipJSON: [
+    "7681c.json" // year 0 is out of range
+  ],
+  skipSchema: ["keyword-unions.schema"], // can't handle "constructor" property
+  skipMiscJSON: false,
+  rendererOptions: {},
+  quickTestRendererOptions: [{ "runtime-typecheck": "false" }, { converters: "top-level" }],
+  sourceFiles: ["src/Language/JavaScriptPropTypes.ts"],
+};
+
 export const FlowLanguage: Language = {
   name: "flow",
   base: "test/fixtures/flow",
@@ -890,5 +914,5 @@ export const PikeLanguage: Language = {
   ],
   rendererOptions: {},
   quickTestRendererOptions: [],
-  sourceFiles: ["src/Language/Pike.ts"]
+  sourceFiles: ["src/Language/Pike.ts"],
 };

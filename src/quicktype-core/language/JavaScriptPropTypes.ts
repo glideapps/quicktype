@@ -6,7 +6,7 @@ import {funPrefixNamer, Name, Namer} from "../Naming";
 import {acronymOption, acronymStyle, AcronymStyleOptions} from "../support/Acronyms";
 import {
     capitalize,
-    ClassProperty,
+    ClassProperty, ClassType,
     combineWords,
     firstUpperWordStyle,
     matchType, ObjectType, panic,
@@ -18,6 +18,8 @@ import {allLowerWordStyle, utf16StringEscape} from "../support/Strings";
 import {isES3IdentifierStart} from "./JavaScriptUnicodeMaps";
 import {legalizeName} from "./JavaScript";
 import {convertersOption} from "../support/Converters";
+import {directlyReachableSingleNamedType} from "../TypeUtils";
+import {arrayIntercalate} from "collection-utils";
 
 export const javaScriptPropTypesOptions = {
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
@@ -31,7 +33,7 @@ export class JavaScriptPropTypesTargetLanguage extends TargetLanguage {
 
     constructor(
         displayName: string = "JavaScriptPropTypes",
-        names: string[] = ["prop-types"],
+        names: string[] = ["javascript-prop-types"],
         extension: string = "js"
     ) {
         super(displayName, names, extension);
@@ -59,7 +61,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
     protected nameStyle(original: string, upper: boolean): string {
         const acronyms = acronymStyle(this._jsOptions.acronymStyle);
         const words = splitIntoWords(original);
-        const name = combineWords(
+        return combineWords(
             words,
             legalizeName,
             upper ? firstUpperWordStyle : allLowerWordStyle,
@@ -69,37 +71,66 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
             "",
             isES3IdentifierStart
         );
+    }
 
-        return name;
+    protected makeNamedTypeNamer(): Namer {
+        return funPrefixNamer("types", s => this.nameStyle(s, true));
+    }
+
+    protected namerForObjectProperty(): Namer {
+        return identityNamingFunction;
+    }
+
+    protected makeUnionMemberNamer(): null {
+        return null;
+    }
+
+    protected makeEnumCaseNamer(): Namer {
+        return funPrefixNamer("enum-cases", s => this.nameStyle(s, true));
+    }
+
+    protected namedTypeToNameForTopLevel(type: Type): Type | undefined {
+        return directlyReachableSingleNamedType(type);
+    }
+
+    protected makeNameForProperty(
+        c: ClassType,
+        className: Name,
+        p: ClassProperty,
+        jsonName: string,
+        _assignedName: string | undefined
+    ): Name | undefined {
+        // Ignore the assigned name
+        return super.makeNameForProperty(c, className, p, jsonName, undefined);
     }
 
     typeMapTypeFor(t: Type, required: boolean = true): Sourcelike {
-        if (["class", "object"].indexOf(t.kind) >= 0) {
+        if (["class", "object", "enum"].indexOf(t.kind) >= 0) {
             return this.nameForNamedType(t);
         }
 
-        const format = (val: Sourcelike) => required ? `${val}.isRequired` : val;
+        console.log(required);
 
-        return format(matchType<Sourcelike>(
+        return matchType<Sourcelike>(
             t,
-            _anyType => `PropTypes.any`,
-            _nullType => panic("There is no null equivalent in PropTypes."),
+            _anyType => "PropTypes.any",
+            _nullType => "PropTypes.any",
             _boolType => "PropTypes.bool",
             _integerType => "PropTypes.number",
             _doubleType => "PropTypes.number",
             _stringType => "PropTypes.string",
-            arrayType => `PropTypes.arrayOf(${this.typeMapTypeFor(arrayType.items, false)})`,
+            arrayType => ["PropTypes.arrayOf(", this.typeMapTypeFor(arrayType.items, false), ")"],
             _classType => panic("Should already be handled."),
             _mapType => "PropTypes.object",
-            enumType => `PropTypes.oneOf(['${Array.from(enumType.cases.values()).join("' ,'")}'])`,
+            _enumType => panic("Should already be handled."),
             unionType => {
                 const children = Array.from(unionType.getChildren()).map((type: Type) => this.typeMapTypeFor(type, false));
-                return `PropTypes.oneOfType([${children.join(",")}])`;
+                return ["PropTypes.oneOf(", ...arrayIntercalate(", ", children), ")"];
             },
             _transformedStringType => {
                 return "PropTypes.string";
             }
-        ));
+        );
     }
 
     typeMapTypeForProperty(p: ClassProperty): Sourcelike {
@@ -107,7 +138,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         if (!p.isOptional) {
             return typeMap;
         }
-        return ["u(undefined, ", typeMap, ")"];
+        return ["PropType.any"];
     }
 
     protected emitUsageComments(): void {
@@ -152,21 +183,5 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         this.emitImports();
 
         this.emitTypes();
-    }
-
-    protected makeEnumCaseNamer(): Namer | null {
-        return funPrefixNamer("enum-cases", s => this.nameStyle(s, true));
-    }
-
-    protected makeNamedTypeNamer(): Namer {
-        return funPrefixNamer("types", s => this.nameStyle(s, true));
-    }
-
-    protected makeUnionMemberNamer(): Namer | null {
-        return null;
-    }
-
-    protected namerForObjectProperty(): Namer | null {
-        return identityNamingFunction;
     }
 }

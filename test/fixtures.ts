@@ -210,6 +210,10 @@ abstract class LanguageFixture extends Fixture {
 
     shell.cp("-R", this.language.base, cwd);
 
+    if (this.language.copyInput) {
+      shell.cp(sampleFile, cwd);
+    }
+
     let numFiles = -1;
     await inDir(cwd, async () => {
       await this.runQuicktype(sampleFile, sample.additionalRendererOptions);
@@ -707,6 +711,7 @@ export const allFixtures: Fixture[] = [
   new JSONFixture(languages.KotlinJacksonLanguage, "kotlin-jackson"),
   new JSONFixture(languages.DartLanguage),
   new JSONFixture(languages.PikeLanguage),
+  new JSONFixture(languages.JavaScriptPropTypesLanguage),
   new JSONSchemaJSONFixture(languages.CSharpLanguage),
   new JSONTypeScriptFixture(languages.CSharpLanguage),
   // new JSONSchemaFixture(languages.CrystalLanguage),
@@ -726,6 +731,7 @@ export const allFixtures: Fixture[] = [
   new JSONSchemaFixture(languages.KotlinJacksonLanguage, "schema-kotlin-jackson"),
   new JSONSchemaFixture(languages.DartLanguage),
   new JSONSchemaFixture(languages.PikeLanguage),
+  new JSONSchemaFixture(languages.JavaScriptPropTypesLanguage),
   // FIXME: Why are we missing so many language with GraphQL?
   new GraphQLFixture(languages.CSharpLanguage),
   new GraphQLFixture(languages.JavaLanguage),
@@ -738,5 +744,6 @@ export const allFixtures: Fixture[] = [
   new GraphQLFixture(languages.FlowLanguage),
   new GraphQLFixture(languages.JavaScriptLanguage),
   new GraphQLFixture(languages.DartLanguage),
-  new GraphQLFixture(languages.PikeLanguage)
+  new GraphQLFixture(languages.PikeLanguage),
+  new GraphQLFixture(languages.JavaScriptPropTypesLanguage),
 ];
