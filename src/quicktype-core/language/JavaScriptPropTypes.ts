@@ -125,7 +125,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
             _enumType => panic("Should already be handled."),
             unionType => {
                 const children = Array.from(unionType.getChildren()).map((type: Type) => this.typeMapTypeFor(type, false));
-                return ["PropTypes.oneOf(", ...arrayIntercalate(", ", children), ")"];
+                return ["PropTypes.oneOf([", ...arrayIntercalate(", ", children), "])"];
             },
             _transformedStringType => {
                 return "PropTypes.string";
@@ -157,20 +157,36 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
     }
 
     protected emitTypes(): void {
-        this.forEachObject("none", (t: ObjectType, name: Name) => {
-            this.ensureBlankLine();
-            this.emitLine("export const ", name, " = PropTypes.shape({");
-            this.indent(() => {
-                this.forEachClassProperty(t, "none", (_, jsonName, property) => {
-                    this.emitLine(
-                        utf16StringEscape(jsonName),
-                        ": ",
-                        this.typeMapTypeForProperty(property),
-                        ",");
-                });
-            });
-            this.emitLine("});");
+        const topLevels: any[] = [];
+        this.forEachTopLevel("none", (type, name) => {
+            topLevels.push({ type, name });
         });
+        this.forEachObject("none", (t: ObjectType, name: Name) => {
+            if (topLevels.find(value => value.name === name)) {
+                return;
+            }
+
+            this.emitObject(name, t);
+        });
+
+        topLevels.forEach(value => {
+            this.emitObject(value.name, value.type);
+        });
+    }
+
+    private emitObject(name: Name, t: ObjectType) {
+        this.ensureBlankLine();
+        this.emitLine("export const ", name, " = PropTypes.shape({");
+        this.indent(() => {
+            this.forEachClassProperty(t, "none", (_, jsonName, property) => {
+                this.emitLine(
+                    utf16StringEscape(jsonName),
+                    ": ",
+                    this.typeMapTypeForProperty(property),
+                    ",");
+            });
+        });
+        this.emitLine("});");
     }
 
     protected emitSourceStructure(): void {
