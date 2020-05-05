@@ -638,8 +638,8 @@ export const JavaScriptPropTypesLanguage: Language = {
   features: ["enum", "union", "no-defaults", "strict-optional", "date-time"],
   output: "toplevel.js",
   topLevel: "TopLevel",
-  skipJSON: [],
-  skipSchema: ["keyword-unions.schema"], // can't handle "constructor" property
+  skipJSON: ["ed095.json"],
+  skipSchema: [],
   skipMiscJSON: false,
   rendererOptions: {},
   quickTestRendererOptions: [{ "runtime-typecheck": "false" }, { converters: "top-level" }],
