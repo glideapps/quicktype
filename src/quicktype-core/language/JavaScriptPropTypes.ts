@@ -94,7 +94,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return funPrefixNamer("enum-cases", (s) => this.nameStyle(s, true));
+        return funPrefixNamer("enum-cases", (s) => this.nameStyle(s, false));
     }
 
     protected namedTypeToNameForTopLevel(type: Type): Type | undefined {
@@ -171,16 +171,29 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
     }
 
     protected emitTypes(): void {
-        const topLevels: any[] = [];
+        this.ensureBlankLine();
+        this.forEachObject("none", (_type: ObjectType, name: Name) => {
+            this.emitLine("let _", name, ";");
+        });
+
+        this.forEachEnum("none", (enumType, enumName) => {
+            const options: Sourcelike = [];
+            this.forEachEnumCase(enumType, "none", (name: Name, _jsonName, _position) => {
+                options.push("'");
+                options.push(name);
+                options.push("'");
+                options.push(", ");
+            });
+            options.pop();
+
+            this.emitLine(["const _", enumName, " = PropTypes.oneOf([", ...options, "]);"]);
+        });
+
+        this.forEachObject("none", (type: ObjectType, name: Name) => {
+            this.emitObject(name, type);
+        });
+
         this.forEachTopLevel("none", (type, name) => {
-            topLevels.push({ type, name });
-        });
-
-        this.forEachObject("none", (t: ObjectType, name: Name) => {
-            this.emitObject(name, t);
-        });
-
-        topLevels.forEach(({ type, name }) => {
             if (type instanceof PrimitiveType) {
                 this.ensureBlankLine();
                 this.emitLine("export const ", name, " = ", this.typeMapTypeFor(type), ";");
@@ -191,7 +204,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
                         "export const ",
                         name,
                         " = PropTypes.arrayOf(",
-                        this.typeMapTypeFor(type.items),
+                        this.typeMapTypeFor((type as any).items),
                         ");"
                     );
                 } else {
@@ -204,7 +217,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
 
     private emitObject(name: Name, t: ObjectType) {
         this.ensureBlankLine();
-        this.emitLine("const _", name, " = PropTypes.shape({");
+        this.emitLine("_", name, " = PropTypes.shape({");
         this.indent(() => {
             this.forEachClassProperty(t, "none", (_, jsonName, property) => {
                 this.emitLine(`"${utf16StringEscape(jsonName)}"`, ": ", this.typeMapTypeForProperty(property), ",");

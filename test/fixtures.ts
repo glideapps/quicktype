@@ -20,7 +20,7 @@ import {
   testsInDir,
   ComparisonArgs,
   mkdirs,
-  callAndExpectFailure
+  callAndExpectFailure,
 } from "./utils";
 import * as languages from "./languages";
 import { RendererOptions } from "../dist/quicktype-core/Run";
@@ -96,11 +96,11 @@ function comparisonArgs(
     expectedFile: expectedFilename,
     given: {
       command: defined(language.runCommand)(inputFilename),
-      env: runEnvForLanguage(additionalRendererOptions)
+      env: runEnvForLanguage(additionalRendererOptions),
     },
     strict: false,
     allowMissingNull: language.allowMissingNull,
-    allowStringifiedIntegers: allowStringifiedIntegers(language, expectedFilename)
+    allowStringifiedIntegers: allowStringifiedIntegers(language, expectedFilename),
   };
 }
 
@@ -148,7 +148,7 @@ export abstract class Fixture {
       `*`,
       chalk.dim(`[${index + 1}/${total}]`),
       chalk.magenta(this.name) + chalk.dim(`(${rendererOptions})`),
-      path.join(cwd, chalk.cyan(path.basename(sample.path)))
+      path.join(cwd, chalk.cyan(path.basename(sample.path))),
     ];
     if (shouldSkip) {
       messageParts.push(chalk.red("SKIP"));
@@ -200,7 +200,7 @@ abstract class LanguageFixture extends Fixture {
     const cwd = this.getRunDirectory();
     const sampleFile = path.resolve(sample.path);
     const shouldSkip = this.shouldSkipTest(sample);
-    const additionalFiles = this.additionalFiles(sample).map(p => path.resolve(p));
+    const additionalFiles = this.additionalFiles(sample).map((p) => path.resolve(p));
 
     const message = this.runMessageStart(sample, index, total, cwd, shouldSkip);
 
@@ -288,7 +288,7 @@ class JSONFixture extends LanguageFixture {
         lang: "schema",
         out: "schema.json",
         topLevel: this.language.topLevel,
-        rendererOptions: {}
+        rendererOptions: {},
       });
       // Quicktype from the schema and compare to expected code
       shell.mv(this.language.output, `${this.language.output}.expected`);
@@ -319,18 +319,18 @@ class JSONFixture extends LanguageFixture {
 
     let { priority, others } = samplesFromSources(sources, prioritySamples, miscSamples, "json");
 
-    const combinationInputs = _.map([1, 2, 3, 4], n =>
-      _.find(prioritySamples, p => p.endsWith(`/priority/combinations${n}.json`))
+    const combinationInputs = _.map([1, 2, 3, 4], (n) =>
+      _.find(prioritySamples, (p) => p.endsWith(`/priority/combinations${n}.json`))
     );
-    if (combinationInputs.some(p => p === undefined)) {
+    if (combinationInputs.some((p) => p === undefined)) {
       return failWith("priority/combinations[1234].json samples not found", prioritySamples);
     }
     if (sources.length === 0 && !ONLY_OUTPUT) {
       const quickTestSamples = _.chain(this.language.quickTestRendererOptions)
-        .flatMap(qt => {
+        .flatMap((qt) => {
           if (Array.isArray(qt)) {
             const [filename, ro] = qt;
-            const input = _.find(([] as string[]).concat(prioritySamples, miscSamples), p =>
+            const input = _.find(([] as string[]).concat(prioritySamples, miscSamples), (p) =>
               p.endsWith(`/${filename}`)
             );
             if (input === undefined) {
@@ -340,14 +340,14 @@ class JSONFixture extends LanguageFixture {
               {
                 path: input,
                 additionalRendererOptions: ro,
-                saveOutput: false
-              }
+                saveOutput: false,
+              },
             ];
           } else {
-            return _.map(combinationInputs, p => ({
+            return _.map(combinationInputs, (p) => ({
               path: defined(p),
               additionalRendererOptions: qt,
-              saveOutput: false
+              saveOutput: false,
             }));
           }
         })
@@ -390,7 +390,7 @@ class JSONToXToYFixture extends JSONFixture {
       skipSchema: [],
       rendererOptions,
       quickTestRendererOptions: [],
-      sourceFiles: language.sourceFiles
+      sourceFiles: language.sourceFiles,
     });
     this.runLanguage = language;
     this.name = `${this._fixturePrefix}-${language.name}`;
@@ -438,7 +438,7 @@ class JSONSchemaJSONFixture extends JSONToXToYFixture {
       "blns-object.json", // AJV refuses to even "compile" the schema we generate
       "31189.json", // same here
       "437e7.json", // uri/string confusion
-      "ed095.json" // same here on Travis
+      "ed095.json", // same here on Travis
     ];
     super("schema-json", "schema", "schema.json", {}, skipJSON, language);
   }
@@ -460,7 +460,7 @@ class JSONSchemaJSONFixture extends JSONToXToYFixture {
     let valid = ajv.validate(schema, input);
     if (!valid) {
       failWith("Generated schema does not validate input JSON.", {
-        filename
+        filename,
       });
     }
 
@@ -475,12 +475,12 @@ class JSONSchemaJSONFixture extends JSONToXToYFixture {
       lang: this.language.name,
       topLevel: this.language.topLevel,
       out: schemaSchema,
-      rendererOptions: {}
+      rendererOptions: {},
     });
     compareJsonFileToJson({
       expectedFile: this.language.output,
       given: { file: schemaSchema },
-      strict: true
+      strict: true,
     });
 
     return 1;
@@ -546,7 +546,7 @@ const skipTypeScriptTests = [
   "ed095.json", // top-level is a map
   "f3139.json",
   "f3edf.json",
-  "f466a.json"
+  "f466a.json",
 ];
 
 class JSONTypeScriptFixture extends JSONToXToYFixture {
@@ -598,10 +598,10 @@ class JSONSchemaFixture extends LanguageFixture {
     }
     if (this.language.runCommand === undefined) return 0;
 
-    const failExtensions = this.language.features.map(f => `.fail.${f}.json`).concat([".fail.json"]);
+    const failExtensions = this.language.features.map((f) => `.fail.${f}.json`).concat([".fail.json"]);
 
     for (const filename of additionalFiles) {
-      if (failExtensions.some(ext => filename.endsWith(ext))) {
+      if (failExtensions.some((ext) => filename.endsWith(ext))) {
         callAndExpectFailure(
           `Expected failure on input ${filename}`,
           () =>
@@ -707,9 +707,9 @@ class CommandSuccessfulLanguageFixture extends LanguageFixture {
   }
 
   async test(
-      _filename: string,
-      _additionalRendererOptions: RendererOptions,
-      _additionalFiles: string[]
+    filename: string,
+    _additionalRendererOptions: RendererOptions,
+    _additionalFiles: string[]
   ): Promise<number> {
     if (this.language.compileCommand) {
       await execAsync(this.language.compileCommand);
@@ -718,7 +718,13 @@ class CommandSuccessfulLanguageFixture extends LanguageFixture {
     if (this.language.runCommand === undefined) {
       return 1;
     }
-/*
+
+    const command = this.language.runCommand(filename);
+
+    console.log(command);
+
+    await execAsync(command);
+    /*
     compareJsonFileToJson(comparisonArgs(this.language, filename, filename, additionalRendererOptions));
 
     if (
@@ -752,47 +758,47 @@ class CommandSuccessfulLanguageFixture extends LanguageFixture {
   getSamples(sources: string[]): { priority: Sample[]; others: Sample[] } {
     // FIXME: this should only run once
     const prioritySamples = _.concat(
-        testsInDir("test/inputs/json/priority", "json"),
-        testsInDir("test/inputs/json/samples", "json")
+      testsInDir("test/inputs/json/priority", "json"),
+      testsInDir("test/inputs/json/samples", "json")
     );
 
     const miscSamples = this.language.skipMiscJSON ? [] : testsInDir("test/inputs/json/misc", "json");
 
     let { priority, others } = samplesFromSources(sources, prioritySamples, miscSamples, "json");
 
-    const combinationInputs = _.map([1, 2, 3, 4], n =>
-        _.find(prioritySamples, p => p.endsWith(`/priority/combinations${n}.json`))
+    const combinationInputs = _.map([1, 2, 3, 4], (n) =>
+      _.find(prioritySamples, (p) => p.endsWith(`/priority/combinations${n}.json`))
     );
-    if (combinationInputs.some(p => p === undefined)) {
+    if (combinationInputs.some((p) => p === undefined)) {
       return failWith("priority/combinations[1234].json samples not found", prioritySamples);
     }
     if (sources.length === 0 && !ONLY_OUTPUT) {
       const quickTestSamples = _.chain(this.language.quickTestRendererOptions)
-          .flatMap(qt => {
-            if (Array.isArray(qt)) {
-              const [filename, ro] = qt;
-              const input = _.find(([] as string[]).concat(prioritySamples, miscSamples), p =>
-                  p.endsWith(`/${filename}`)
-              );
-              if (input === undefined) {
-                return failWith(`quick-test sample ${filename} not found`, qt);
-              }
-              return [
-                {
-                  path: input,
-                  additionalRendererOptions: ro,
-                  saveOutput: false
-                }
-              ];
-            } else {
-              return _.map(combinationInputs, p => ({
-                path: defined(p),
-                additionalRendererOptions: qt,
-                saveOutput: false
-              }));
+        .flatMap((qt) => {
+          if (Array.isArray(qt)) {
+            const [filename, ro] = qt;
+            const input = _.find(([] as string[]).concat(prioritySamples, miscSamples), (p) =>
+              p.endsWith(`/${filename}`)
+            );
+            if (input === undefined) {
+              return failWith(`quick-test sample ${filename} not found`, qt);
             }
-          })
-          .value();
+            return [
+              {
+                path: input,
+                additionalRendererOptions: ro,
+                saveOutput: false,
+              },
+            ];
+          } else {
+            return _.map(combinationInputs, (p) => ({
+              path: defined(p),
+              additionalRendererOptions: qt,
+              saveOutput: false,
+            }));
+          }
+        })
+        .value();
       priority = quickTestSamples.concat(priority);
     }
 
