@@ -204,6 +204,7 @@ interface GraphInputs {
     targetLanguage: TargetLanguage;
     stringTypeMapping: StringTypeMapping;
     conflateNumbers: boolean;
+    shouldFlattenUnions: boolean;
     typeBuilder: TypeBuilder;
 }
 
@@ -280,6 +281,7 @@ class Run implements RunContext {
         const targetLanguage = getTargetLanguage(this._options.lang);
         const stringTypeMapping = this.stringTypeMapping;
         const conflateNumbers = !targetLanguage.supportsUnionsWithBothNumberTypes;
+        const shouldFlattenUnions = !targetLanguage.supportsArbitraryUnions;
         const typeBuilder = new TypeBuilder(
             0,
             stringTypeMapping,
@@ -289,7 +291,7 @@ class Run implements RunContext {
             false
         );
 
-        return { targetLanguage, stringTypeMapping, conflateNumbers, typeBuilder };
+        return { targetLanguage, stringTypeMapping, conflateNumbers, shouldFlattenUnions, typeBuilder };
     }
 
     private async makeGraph(allInputs: InputData): Promise<TypeGraph> {
@@ -327,7 +329,7 @@ class Run implements RunContext {
     }
 
     private processGraph(allInputs: InputData, graphInputs: GraphInputs): TypeGraph {
-        const { targetLanguage, stringTypeMapping, conflateNumbers, typeBuilder } = graphInputs;
+        const { targetLanguage, stringTypeMapping, conflateNumbers, shouldFlattenUnions, typeBuilder } = graphInputs;
 
         let graph = typeBuilder.finish();
         if (this._options.debugPrintGraph) {
@@ -368,6 +370,7 @@ class Run implements RunContext {
                                 graph,
                                 stringTypeMapping,
                                 conflateNumbers,
+                                shouldFlattenUnions,
                                 true,
                                 debugPrintReconstitution
                             ))
@@ -399,6 +402,7 @@ class Run implements RunContext {
                         graph,
                         stringTypeMapping,
                         conflateNumbers,
+                        shouldFlattenUnions,
                         false,
                         debugPrintReconstitution
                     ))
@@ -448,6 +452,7 @@ class Run implements RunContext {
                     graph,
                     stringTypeMapping,
                     conflateNumbers,
+                    shouldFlattenUnions,
                     false,
                     debugPrintReconstitution
                 ))
@@ -480,6 +485,7 @@ class Run implements RunContext {
                     graph,
                     stringTypeMapping,
                     conflateNumbers,
+                    shouldFlattenUnions,
                     false,
                     debugPrintReconstitution
                 ))

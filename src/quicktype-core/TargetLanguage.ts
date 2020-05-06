@@ -69,7 +69,24 @@ export abstract class TargetLanguage {
         return false;
     }
 
+    /**
+     * Whether the language can distinguish between an `integer` and
+     * `double`-type union variant.
+     *
+     * By default such variants are merged into one.
+     */
     get supportsUnionsWithBothNumberTypes(): boolean {
+        return this.supportsArbitraryUnions;
+    }
+
+    /**
+     * Whether the language allows for unions of arbitrary types.
+     *
+     * This currently bypasses union flattening entirely, so note that
+     * declaring support for arbitrary unions practically forces
+     * `supportsUnionsWithBothNumberTypes` to `true`.
+     **/
+    get supportsArbitraryUnions(): boolean {
         return false;
     }
 

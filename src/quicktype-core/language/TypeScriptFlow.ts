@@ -48,6 +48,10 @@ export abstract class TypeScriptFlowBaseTargetLanguage extends JavaScriptTargetL
         return true;
     }
 
+    get supportsArbitraryUnions(): boolean {
+        return true;
+    }
+
     protected abstract makeRenderer(
         renderContext: RenderContext,
         untypedOptionValues: { [name: string]: any }
