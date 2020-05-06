@@ -133,7 +133,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
                 const children = Array.from(unionType.getChildren()).map((type: Type) =>
                     this.typeMapTypeFor(type, false)
                 );
-                return ["PropTypes.oneOf([", ...arrayIntercalate(", ", children), "])"];
+                return ["PropTypes.oneOfType([", ...arrayIntercalate(", ", children), "])"];
             },
             (_transformedStringType) => {
                 return "PropTypes.string";
@@ -141,7 +141,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         );
 
         if (required) {
-            return [match, ".isRequired"];
+            return [match];
         }
 
         return match;
@@ -172,6 +172,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
 
     protected emitTypes(): void {
         this.ensureBlankLine();
+
         this.forEachObject("none", (_type: ObjectType, name: Name) => {
             this.emitLine("let _", name, ";");
         });
@@ -186,13 +187,48 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
             });
             options.pop();
 
-            this.emitLine(["const _", enumName, " = PropTypes.oneOf([", ...options, "]);"]);
+            this.emitLine(["const _", enumName, " = PropTypes.oneOfType([", ...options, "]);"]);
         });
 
+        const order: number[] = [];
+        const mapKey: Name[] = [];
+        const mapValue: Sourcelike[][] = [];
         this.forEachObject("none", (type: ObjectType, name: Name) => {
-            this.emitObject(name, type);
+            mapKey.push(name);
+            mapValue.push(this.gatherSource(() => this.emitObject(name, type)));
         });
 
+        // order these
+        mapKey.forEach((_, index) => {
+            // assume first
+            let ordinal = 0;
+
+            // pull out all names
+            const source = mapValue[index];
+            const names = source.filter((value) => value as Name);
+
+            // must be behind all these names
+            for (let i = 0; i < names.length; i++) {
+                const depName = names[i];
+
+                // find this name's ordinal, if it has already been added
+                for (let j = 0; j < order.length; j++) {
+                    const depIndex = order[j];
+                    if (mapKey[depIndex] === depName) {
+                        // this is the index of the dependency, so make sure we come after it
+                        ordinal = Math.max(ordinal, depIndex + 1);
+                    }
+                }
+            }
+
+            // insert index
+            order.splice(ordinal, 0, index);
+        });
+
+        // now emit ordered source
+        order.forEach((i) => this.emitGatheredSource(mapValue[i]));
+
+        // now emit top levels
         this.forEachTopLevel("none", (type, name) => {
             if (type instanceof PrimitiveType) {
                 this.ensureBlankLine();

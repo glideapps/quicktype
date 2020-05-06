@@ -638,7 +638,13 @@ export const JavaScriptPropTypesLanguage: Language = {
   features: ["enum", "union", "no-defaults", "strict-optional", "date-time"],
   output: "toplevel.js",
   topLevel: "TopLevel",
-  skipJSON: ["ed095.json"],
+  skipJSON: [
+    "ed095.json",
+    "bug790.json", // renderer does not support recursion
+    "recursive.json", // renderer does not support recursion
+    "spotify-album.json", // renderer does not support recursion
+    "76ae1.json", // renderer does not support recursion
+  ],
   skipSchema: [],
   skipMiscJSON: false,
   rendererOptions: {},

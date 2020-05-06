@@ -716,35 +716,16 @@ class CommandSuccessfulLanguageFixture extends LanguageFixture {
     }
 
     if (this.language.runCommand === undefined) {
-      return 1;
+      throw new Error("Invalid run command.");
     }
 
     const command = this.language.runCommand(filename);
+    const results = await execAsync(command);
 
-    console.log(command);
-
-    await execAsync(command);
-    /*
-    compareJsonFileToJson(comparisonArgs(this.language, filename, filename, additionalRendererOptions));
-
-    if (
-        this.language.diffViaSchema &&
-        !_.includes(this.language.skipDiffViaSchema, path.basename(filename))
-    ) {
-      debug("* Diffing with code generated via JSON Schema");
-      // Make a schema
-      await quicktype({
-        src: [filename],
-        lang: "schema",
-        out: "schema.json",
-        topLevel: this.language.topLevel,
-        rendererOptions: {}
-      });
-      // Quicktype from the schema and compare to expected code
-      shell.mv(this.language.output, `${this.language.output}.expected`);
-      await quicktypeForLanguage(this.language, "schema.json", "schema", true, additionalRendererOptions);
+    if (results.stdout.indexOf("Success") === -1) {
+      throw new Error(`Test failed:\n${results.stdout}`);
     }
-*/
+
     return 0;
   }
 
