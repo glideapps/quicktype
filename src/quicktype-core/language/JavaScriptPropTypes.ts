@@ -156,7 +156,22 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
     }
 
     protected emitUsageComments(): void {
-        this.emitLine("// For use with proptypes.");
+        this.emitCommentLines(
+            [
+                "Example usage:",
+                "",
+                "import { MyShape } from './myShape.js';",
+                "",
+                "class MyComponent extends React.Component {",
+                "  //",
+                "}",
+                "",
+                "MyComponent.propTypes = {",
+                "  input: MyShape",
+                "};",
+            ],
+            "// "
+        );
     }
 
     protected emitBlock(source: Sourcelike, end: Sourcelike, emit: () => void) {
