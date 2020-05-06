@@ -8,6 +8,7 @@ import { CPlusPlusTargetLanguage } from "./CPlusPlus";
 import { ObjectiveCTargetLanguage } from "./Objective-C";
 import { JavaTargetLanguage } from "./Java";
 import { JavaScriptTargetLanguage } from "./JavaScript";
+import { JavaScriptPropTypesTargetLanguage } from "./JavaScriptPropTypes";
 import { TypeScriptTargetLanguage, FlowTargetLanguage } from "./TypeScriptFlow";
 import { SwiftTargetLanguage } from "./Swift";
 import { KotlinTargetLanguage } from "./Kotlin";
@@ -30,6 +31,7 @@ export const all: TargetLanguage[] = [
     new JavaTargetLanguage(),
     new TypeScriptTargetLanguage(),
     new JavaScriptTargetLanguage(),
+    new JavaScriptPropTypesTargetLanguage(),
     new FlowTargetLanguage(),
     new SwiftTargetLanguage(),
     new KotlinTargetLanguage(),
