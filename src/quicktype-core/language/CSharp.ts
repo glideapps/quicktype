@@ -9,7 +9,7 @@ import {
     ArrayType,
     TransformedStringTypeKind,
     PrimitiveStringTypeKind,
-    PrimitiveType
+    PrimitiveType,
 } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion, directlyReachableSingleNamedType } from "../TypeUtils";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
@@ -19,7 +19,7 @@ import {
     splitIntoWords,
     combineWords,
     firstUpperWordStyle,
-    camelCase
+    camelCase,
 } from "../support/Strings";
 import { defined, assert, panic } from "../support/Support";
 import { Name, DependencyName, Namer, funPrefixNamer, SimpleName } from "../Naming";
@@ -46,7 +46,7 @@ import {
     ArrayDecodingTransformer,
     ArrayEncodingTransformer,
     MinMaxLengthCheckTransformer,
-    MinMaxValueTransformer
+    MinMaxValueTransformer,
 } from "../Transformers";
 import { RenderContext } from "../Renderer";
 import { minMaxLengthForType, minMaxValueForType } from "../attributes/Constraints";
@@ -59,7 +59,7 @@ export type OutputFeatures = { helpers: boolean; attributes: boolean };
 export enum AccessModifier {
     None,
     Public,
-    Internal
+    Internal,
 }
 
 export type CSharpTypeForAny = "object" | "dynamic";
@@ -81,8 +81,7 @@ function needTransformerForType(t: Type): "automatic" | "manual" | "nullable" | 
         return "none";
     }
     if (t instanceof EnumType) return "automatic";
-    if (t.kind === "double")
-        return minMaxValueForType(t) !== undefined ? "manual" : "none";
+    if (t.kind === "double") return minMaxValueForType(t) !== undefined ? "manual" : "none";
     if (t.kind === "integer-string" || t.kind === "bool-string") return "manual";
     if (t.kind === "string") {
         return minMaxLengthForType(t) !== undefined ? "manual" : "none";
@@ -114,25 +113,52 @@ function csTypeForTransformedStringType(t: PrimitiveType): Sourcelike {
 }
 
 export const cSharpOptions = {
-    useList: new EnumOption("array-type", "Use T[] or List<T>", [["array", false], ["list", true]]),
-    dense: new EnumOption("density", "Property density", [["normal", false], ["dense", true]], "normal", "secondary"),
+    useList: new EnumOption("array-type", "Use T[] or List<T>", [
+        ["array", false],
+        ["list", true],
+    ]),
+    dense: new EnumOption(
+        "density",
+        "Property density",
+        [
+            ["normal", false],
+            ["dense", true],
+        ],
+        "normal",
+        "secondary"
+    ),
     // FIXME: Do this via a configurable named eventually.
     namespace: new StringOption("namespace", "Generated namespace", "NAME", "QuickType"),
-    version: new EnumOption<Version>("csharp-version", "C# version", [["5", 5], ["6", 6]], "6", "secondary"),
+    version: new EnumOption<Version>(
+        "csharp-version",
+        "C# version",
+        [
+            ["5", 5],
+            ["6", 6],
+        ],
+        "6",
+        "secondary"
+    ),
     typeForAny: new EnumOption<CSharpTypeForAny>(
         "any-type",
         'Type to use for "any"',
-        [["object", "object"], ["dynamic", "dynamic"]],
+        [
+            ["object", "object"],
+            ["dynamic", "dynamic"],
+        ],
         "object",
         "secondary"
     ),
     useDecimal: new EnumOption(
         "number-type",
         "Type to use for numbers",
-        [["double", false], ["decimal", true]],
+        [
+            ["double", false],
+            ["decimal", true],
+        ],
         "double",
         "secondary"
-    )
+    ),
 };
 
 export class CSharpTargetLanguage extends TargetLanguage {
@@ -143,7 +169,7 @@ export class CSharpTargetLanguage extends TargetLanguage {
             cSharpOptions.dense,
             cSharpOptions.useList,
             cSharpOptions.useDecimal,
-            cSharpOptions.typeForAny
+            cSharpOptions.typeForAny,
         ];
     }
 
@@ -245,9 +271,9 @@ export class CSharpRenderer extends ConvenienceRenderer {
                 "Equals",
                 "GetType",
                 "MemberwiseClone",
-                "ReferenceEquals"
+                "ReferenceEquals",
             ],
-            includeGlobalForbidden: false
+            includeGlobalForbidden: false,
         };
     }
 
@@ -296,13 +322,13 @@ export class CSharpRenderer extends ConvenienceRenderer {
         const actualType = follow(t);
         return matchType<Sourcelike>(
             actualType,
-            _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, this._csOptions.typeForAny),
-            _nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, this._csOptions.typeForAny),
-            _boolType => "bool",
-            _integerType => "long",
-            _doubleType => this.doubleType,
-            _stringType => "string",
-            arrayType => {
+            (_anyType) => maybeAnnotated(withIssues, anyTypeIssueAnnotation, this._csOptions.typeForAny),
+            (_nullType) => maybeAnnotated(withIssues, nullTypeIssueAnnotation, this._csOptions.typeForAny),
+            (_boolType) => "bool",
+            (_integerType) => "long",
+            (_doubleType) => this.doubleType,
+            (_stringType) => "string",
+            (arrayType) => {
                 const itemsType = this.csType(arrayType.items, follow, withIssues);
                 if (this._csOptions.useList) {
                     return ["List<", itemsType, ">"];
@@ -310,15 +336,15 @@ export class CSharpRenderer extends ConvenienceRenderer {
                     return [itemsType, "[]"];
                 }
             },
-            classType => this.nameForNamedType(classType),
-            mapType => ["Dictionary<string, ", this.csType(mapType.values, follow, withIssues), ">"],
-            enumType => this.nameForNamedType(enumType),
-            unionType => {
+            (classType) => this.nameForNamedType(classType),
+            (mapType) => ["Dictionary<string, ", this.csType(mapType.values, follow, withIssues), ">"],
+            (enumType) => this.nameForNamedType(enumType),
+            (unionType) => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) return this.nullableCSType(nullable, noFollow);
                 return this.nameForNamedType(unionType);
             },
-            transformedStringType => csTypeForTransformedStringType(transformedStringType)
+            (transformedStringType) => csTypeForTransformedStringType(transformedStringType)
         );
     }
 
@@ -458,9 +484,9 @@ export class CSharpRenderer extends ConvenienceRenderer {
                     this.emitLine("public ", csType, " ", fieldName, ";");
                 });
                 this.ensureBlankLine();
-                const nullTests: Sourcelike[] = Array.from(nonNulls).map(t => [
+                const nullTests: Sourcelike[] = Array.from(nonNulls).map((t) => [
                     this.nameForUnionMember(u, t),
-                    " == null"
+                    " == null",
                 ]);
                 this.ensureBlankLine();
                 this.forEachUnionMember(u, nonNulls, "none", null, (fieldName, t) => {
@@ -478,7 +504,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
 
     private emitEnumDefinition(e: EnumType, enumName: Name): void {
         const caseNames: Sourcelike[] = [];
-        this.forEachEnumCase(e, "none", name => {
+        this.forEachEnumCase(e, "none", (name) => {
             if (caseNames.length > 0) caseNames.push(", ");
             caseNames.push(name);
         });
@@ -578,18 +604,22 @@ export class CSharpRenderer extends ConvenienceRenderer {
 
 export const newtonsoftCSharpOptions = Object.assign({}, cSharpOptions, {
     features: new EnumOption("features", "Output features", [
-        ["complete", { helpers: true, attributes: true }],
-        ["attributes-only", { helpers: false, attributes: true }],
-        ["just-types", { helpers: false, attributes: false }]
+        ["complete", { namespaces: true, helpers: true, attributes: true }],
+        ["attributes-only", { namespaces: true, helpers: false, attributes: true }],
+        ["just-namespace-and-types", { namespaces: true, helpers: false, attributes: false }],
+        ["just-types", { namespaces: true, helpers: false, attributes: false }],
     ]),
     baseclass: new EnumOption(
         "base-class",
         "Base class",
-        [["EntityData", "EntityData"], ["Object", undefined]],
+        [
+            ["EntityData", "EntityData"],
+            ["Object", undefined],
+        ],
         "Object",
         "secondary"
     ),
-    checkRequired: new BooleanOption("check-required", "Fail if required properties are missing", false)
+    checkRequired: new BooleanOption("check-required", "Fail if required properties are missing", false),
 });
 
 export class NewtonsoftCSharpTargetLanguage extends CSharpTargetLanguage {
@@ -607,7 +637,7 @@ export class NewtonsoftCSharpTargetLanguage extends CSharpTargetLanguage {
             newtonsoftCSharpOptions.features,
             newtonsoftCSharpOptions.checkRequired,
             newtonsoftCSharpOptions.typeForAny,
-            newtonsoftCSharpOptions.baseclass
+            newtonsoftCSharpOptions.baseclass,
         ];
     }
 
@@ -628,6 +658,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
 
     private readonly _needHelpers: boolean;
     private readonly _needAttributes: boolean;
+    private readonly _needNamespaces: boolean;
 
     constructor(
         targetLanguage: TargetLanguage,
@@ -637,6 +668,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         super(targetLanguage, renderContext, _options);
         this._needHelpers = _options.features.helpers;
         this._needAttributes = _options.features.attributes;
+        this._needNamespaces = _options.features.namespaces;
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
@@ -651,7 +683,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             "MetadataPropertyHandling",
             "DateParseHandling",
             "FromJson",
-            "Required"
+            "Required",
         ];
         if (this._options.dense) {
             forbidden.push("J", "R", "N");
@@ -676,7 +708,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             }
             return new SimpleName([`${xfer.kind}_converter`], namingFunction, inferredNameOrder + 30);
         }
-        return new DependencyName(namingFunction, typeName.order + 30, lookup => `${lookup(typeName)}_converter`);
+        return new DependencyName(namingFunction, typeName.order + 30, (lookup) => `${lookup(typeName)}_converter`);
     }
 
     protected makeNamedTypeDependencyNames(t: Type, name: Name): DependencyName[] {
@@ -685,7 +717,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         const extensionsName = new DependencyName(
             namingFunction,
             name.order + 30,
-            lookup => `${lookup(name)}_extensions`
+            (lookup) => `${lookup(name)}_extensions`
         );
         this._enumExtensionsNames.set(name, extensionsName);
         return [extensionsName];
@@ -853,7 +885,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             // Sometimes multiple top-levels will resolve to the same type, so we have to take care
             // not to emit more than one extension method for the same type.
             const seenTypes = new Set<Type>();
-            this.forEachTopLevel("none", t => {
+            this.forEachTopLevel("none", (t) => {
                 // FIXME: Make ToJson a Named
                 if (!seenTypes.has(t)) {
                     seenTypes.add(t);
@@ -987,7 +1019,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 this.emitDecodeTransformer(
                     xfer.itemTransformer,
                     xfer.itemTargetType,
-                    v => this.emitLine(variableName, ".Add(", v, ");"),
+                    (v) => this.emitLine(variableName, ".Add(", v, ");"),
                     "arrayItem"
                 );
                 // FIXME: handle EOF
@@ -1078,7 +1110,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
 
         if (xfer instanceof ChoiceTransformer) {
             const caseXfers = xfer.transformers;
-            if (caseXfers.length > 1 && caseXfers.every(caseXfer => caseXfer instanceof StringMatchTransformer)) {
+            if (caseXfers.length > 1 && caseXfers.every((caseXfer) => caseXfer instanceof StringMatchTransformer)) {
                 this.emitLine("switch (", variable, ")");
                 this.emitBlock(() => {
                     for (const caseXfer of caseXfers) {
@@ -1300,7 +1332,9 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                     this.emitLine("if (reader.TokenType == JsonToken.Null) return null;");
                 }
 
-                const allHandled = this.emitDecodeTransformer(xfer, targetType, v => this.emitLine("return ", v, ";"));
+                const allHandled = this.emitDecodeTransformer(xfer, targetType, (v) =>
+                    this.emitLine("return ", v, ";")
+                );
                 if (!allHandled) {
                     this.emitThrow(['"Cannot unmarshal type ', csType, '"']);
                 }
@@ -1342,6 +1376,6 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
     }
 
     protected needNamespace(): boolean {
-        return this._needHelpers || this._needAttributes;
+        return this._needNamespaces;
     }
 }
