@@ -393,7 +393,7 @@ export class GoRenderer extends ConvenienceRenderer {
     }
 
     private emitPackageDefinitons(includeJSONEncodingImport: boolean): void {
-        if (this._options.justTypesAndPackage) {
+        if (!this._options.justTypes || this._options.justTypesAndPackage) {
             this.ensureBlankLine();
             const packageDeclaration = "package " + this._options.packageName;
             this.emitLineOnce(packageDeclaration);
