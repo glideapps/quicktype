@@ -606,7 +606,7 @@ export const newtonsoftCSharpOptions = Object.assign({}, cSharpOptions, {
     features: new EnumOption("features", "Output features", [
         ["complete", { namespaces: true, helpers: true, attributes: true }],
         ["attributes-only", { namespaces: true, helpers: false, attributes: true }],
-        ["just-namespace-and-types", { namespaces: true, helpers: false, attributes: false }],
+        ["just-types-and-namespace", { namespaces: true, helpers: false, attributes: false }],
         ["just-types", { namespaces: true, helpers: false, attributes: false }],
     ]),
     baseclass: new EnumOption(
