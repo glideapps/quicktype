@@ -33,7 +33,7 @@ public class Converter {
 
     private static void instantiateMapper() {
         ObjectMapper mapper = new ObjectMapper();
-        reader = mapper.reader(TopLevel.class);
+        reader = mapper.readerFor(TopLevel.class);
         writer = mapper.writerFor(TopLevel.class);
     }
 

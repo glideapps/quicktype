@@ -687,7 +687,7 @@ export class JavaRenderer extends ConvenienceRenderer {
                     () => {
                         const renderedForClass = this.javaTypeWithoutGenerics(false, topLevelType);
                         this.emitLine("ObjectMapper mapper = new ObjectMapper();");
-                        this.emitLine(readerName, " = mapper.reader(", renderedForClass, ".class);");
+                        this.emitLine(readerName, " = mapper.readerFor(", renderedForClass, ".class);");
                         this.emitLine(writerName, " = mapper.writerFor(", renderedForClass, ".class);");
                     }
                 );
