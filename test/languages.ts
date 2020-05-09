@@ -90,7 +90,11 @@ export const JavaLanguage: Language = {
   diffViaSchema: false,
   skipDiffViaSchema: [],
   allowMissingNull: false,
-  features: ["enum", "union"],
+  features: [
+      "enum",
+      "union",
+      "uuid"
+    ],
   output: "src/main/java/io/quicktype/TopLevel.java",
   topLevel: "TopLevel",
   skipJSON: ["identifiers.json", "simple-identifiers.json", "nst-test-suite.json"],
@@ -113,7 +117,11 @@ export const JavaLanguageWithLombok: Language = {
   diffViaSchema: false,
   skipDiffViaSchema: [],
   allowMissingNull: false,
-  features: ["enum", "union"],
+  features: [
+      "enum",
+      "union",
+      "uuid"
+    ],
   output: "src/main/java/io/quicktype/TopLevel.java",
   topLevel: "TopLevel",
   skipJSON: ["identifiers.json", "simple-identifiers.json", "nst-test-suite.json"],
