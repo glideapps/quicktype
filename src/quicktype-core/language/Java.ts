@@ -70,11 +70,7 @@ export class JavaTargetLanguage extends TargetLanguage {
         const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
         mapping.set("date", "date");
         mapping.set("time", "time");
-
-        /* Breaks unit tests, because it does not return the timedate in the same format.
         mapping.set("date-time", "date-time");
-        */
-
         mapping.set("uuid", "uuid");
         return mapping;
     }
@@ -89,6 +85,11 @@ const keywords = [
     "Boolean",
     "String",
     "Map",
+    "UUID",
+    "OffsetDateTime",
+    "OffsetTime",
+    "LocalDate",
+    "LocalDateTime",
     "Exception",
     "IOException",
     "JsonProperty",
@@ -974,9 +975,7 @@ export class JavaRenderer extends ConvenienceRenderer {
                         this.emitLine("ObjectMapper mapper = new ObjectMapper();");
                         this.emitLine("mapper.findAndRegisterModules();");
                         this.emitLine("mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);");
-                        /* Disabled as long as timedate is.
                         this.emitOffsetDateTimeConverterAndRegister();
-                        */
                         this.emitLine(readerName, " = mapper.readerFor(", renderedForClass, ".class);");
                         this.emitLine(writerName, " = mapper.writerFor(", renderedForClass, ".class);");
                     }
