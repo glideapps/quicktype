@@ -120,8 +120,8 @@ export const JavaLanguageWithLombok: Language = {
   skipMiscJSON: false,
   skipSchema: ["keyword-unions.schema"], // generates classes with names that are case-insensitively equal
   rendererOptions: {},
-  quickTestRendererOptions: [{ "array-type": "list", "lombok": "true" }],
-  sourceFiles: ["src/language/Java.ts"]
+  quickTestRendererOptions: [{ "array-type": "list", lombok: "true" }],
+  sourceFiles: ["src/language/Java.ts"],
 };
 
 export const PythonLanguage: Language = {
@@ -617,6 +617,7 @@ export const TypeScriptLanguage: Language = {
   rendererOptions: { "explicit-unions": "yes" },
   quickTestRendererOptions: [
     { "runtime-typecheck": "false" },
+    { "runtime-typecheck-ignore-unknown-properties": "true" },
     { "nice-property-names": "true" },
     { "declare-unions": "true" },
     { "acronym-style": "pascal" },
@@ -644,7 +645,11 @@ export const JavaScriptLanguage: Language = {
   skipMiscJSON: false,
   skipSchema: ["keyword-unions.schema"], // can't handle "constructor" property
   rendererOptions: {},
-  quickTestRendererOptions: [{ "runtime-typecheck": "false" }, { converters: "top-level" }],
+  quickTestRendererOptions: [
+    { "runtime-typecheck": "false" },
+    { "runtime-typecheck-ignore-unknown-properties": "true" },
+    { converters: "top-level" },
+  ],
   sourceFiles: ["src/language/JavaScript.ts"],
 };
 
@@ -671,7 +676,11 @@ export const JavaScriptPropTypesLanguage: Language = {
   skipSchema: [],
   skipMiscJSON: false,
   rendererOptions: {},
-  quickTestRendererOptions: [{ "runtime-typecheck": "false" }, { converters: "top-level" }],
+  quickTestRendererOptions: [
+    { "runtime-typecheck": "false" },
+    { "runtime-typecheck-ignore-unknown-properties": "true" },
+    { converters: "top-level" },
+  ],
   sourceFiles: ["src/Language/JavaScriptPropTypes.ts"],
 };
 
@@ -697,6 +706,7 @@ export const FlowLanguage: Language = {
   rendererOptions: { "explicit-unions": "yes" },
   quickTestRendererOptions: [
     { "runtime-typecheck": "false" },
+    { "runtime-typecheck-ignore-unknown-properties": "true" },
     { "nice-property-names": "true" },
     { "declare-unions": "true" },
   ],

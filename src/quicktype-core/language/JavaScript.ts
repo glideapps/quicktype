@@ -36,7 +36,13 @@ import { isES3IdentifierPart, isES3IdentifierStart } from "./JavaScriptUnicodeMa
 export const javaScriptOptions = {
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
     runtimeTypecheck: new BooleanOption("runtime-typecheck", "Verify JSON.parse results at runtime", true),
-    converters: convertersOption()
+    runtimeTypecheckIgnoreUnknownProperties: new BooleanOption(
+        "runtime-typecheck-ignore-unknown-properties",
+        "Ignore unknown properties when verifying at runtime",
+        false,
+        "secondary"
+    ),
+    converters: convertersOption(),
 };
 
 export type JavaScriptTypeAnnotations = {
@@ -59,7 +65,12 @@ export class JavaScriptTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [javaScriptOptions.runtimeTypecheck, javaScriptOptions.acronymStyle, javaScriptOptions.converters];
+        return [
+            javaScriptOptions.runtimeTypecheck,
+            javaScriptOptions.runtimeTypecheckIgnoreUnknownProperties,
+            javaScriptOptions.acronymStyle,
+            javaScriptOptions.converters,
+        ];
     }
 
     get stringTypeMapping(): StringTypeMapping {
@@ -374,7 +385,11 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
         });
         Object.getOwnPropertyNames(val).forEach(key => {
             if (!Object.prototype.hasOwnProperty.call(props, key)) {
-                result[key] = transform(val[key], additional, getProps);
+                result[key] = ${
+                    this._jsOptions.runtimeTypecheckIgnoreUnknownProperties
+                        ? `val[key]`
+                        : `transform(val[key], additional, getProps)`
+                };
             }
         });
         return result;
