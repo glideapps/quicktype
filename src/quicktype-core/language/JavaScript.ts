@@ -382,16 +382,16 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
             const prop = props[key];
             const v = Object.prototype.hasOwnProperty.call(val, key) ? val[key] : undefined;
             result[prop.key] = transform(v, prop.typ, getProps);
-        });${
-            this._jsOptions.runtimeTypecheckIgnoreUnknownProperties
-                ? ""
-                : `
+        });
         Object.getOwnPropertyNames(val).forEach(key => {
             if (!Object.prototype.hasOwnProperty.call(props, key)) {
-                result[key] = transform(val[key], additional, getProps);
+                result[key] = ${
+                    this._jsOptions.runtimeTypecheckIgnoreUnknownProperties
+                        ? `val[key]`
+                        : `transform(val[key], additional, getProps)`
+                };
             }
-        });`
-        }
+        });
         return result;
     }
 
