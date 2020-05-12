@@ -333,8 +333,6 @@ function jsToJSONProps(typ${anyAnnotation})${anyAnnotation} {
     return typ.jsToJSON;
 }
 
-var ignoreUnknownProperties = ${this._jsOptions.runtimeTypecheckIgnoreUnknownProperties};
-
 function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnotation})${anyAnnotation} {
     function transformPrimitive(typ${stringAnnotation}, val${anyAnnotation})${anyAnnotation} {
         if (typeof typ === typeof val) return val;
@@ -384,12 +382,16 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
             const prop = props[key];
             const v = Object.prototype.hasOwnProperty.call(val, key) ? val[key] : undefined;
             result[prop.key] = transform(v, prop.typ, getProps);
-        });
+        });${
+            this._jsOptions.runtimeTypecheckIgnoreUnknownProperties
+                ? ""
+                : `
         Object.getOwnPropertyNames(val).forEach(key => {
             if (!Object.prototype.hasOwnProperty.call(props, key) && !ignoreUnknownProperties) {
                 result[key] = transform(val[key], additional, getProps);
             }
-        });
+        });`
+        }
         return result;
     }
 
