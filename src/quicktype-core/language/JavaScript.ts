@@ -36,7 +36,13 @@ import { isES3IdentifierPart, isES3IdentifierStart } from "./JavaScriptUnicodeMa
 export const javaScriptOptions = {
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
     runtimeTypecheck: new BooleanOption("runtime-typecheck", "Verify JSON.parse results at runtime", true),
-    converters: convertersOption()
+    runtimeTypecheckIgnoreUnknownProperties: new BooleanOption(
+        "runtime-typecheck-ignore-unknown-properties",
+        "Ignore unknown properties when verifying at runtime",
+        false,
+        "secondary"
+    ),
+    converters: convertersOption(),
 };
 
 export type JavaScriptTypeAnnotations = {
@@ -59,7 +65,12 @@ export class JavaScriptTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [javaScriptOptions.runtimeTypecheck, javaScriptOptions.acronymStyle, javaScriptOptions.converters];
+        return [
+            javaScriptOptions.runtimeTypecheck,
+            javaScriptOptions.runtimeTypecheckIgnoreUnknownProperties,
+            javaScriptOptions.acronymStyle,
+            javaScriptOptions.converters,
+        ];
     }
 
     get stringTypeMapping(): StringTypeMapping {
@@ -322,6 +333,8 @@ function jsToJSONProps(typ${anyAnnotation})${anyAnnotation} {
     return typ.jsToJSON;
 }
 
+var ignoreUnknownProperties = ${this._jsOptions.runtimeTypecheckIgnoreUnknownProperties};
+
 function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnotation})${anyAnnotation} {
     function transformPrimitive(typ${stringAnnotation}, val${anyAnnotation})${anyAnnotation} {
         if (typeof typ === typeof val) return val;
@@ -373,7 +386,7 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
             result[prop.key] = transform(v, prop.typ, getProps);
         });
         Object.getOwnPropertyNames(val).forEach(key => {
-            if (!Object.prototype.hasOwnProperty.call(props, key)) {
+            if (!Object.prototype.hasOwnProperty.call(props, key) && !ignoreUnknownProperties) {
                 result[key] = transform(val[key], additional, getProps);
             }
         });

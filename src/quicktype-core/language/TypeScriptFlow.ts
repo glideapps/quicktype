@@ -39,6 +39,7 @@ export abstract class TypeScriptFlowBaseTargetLanguage extends JavaScriptTargetL
             tsFlowOptions.nicePropertyNames,
             tsFlowOptions.declareUnions,
             tsFlowOptions.runtimeTypecheck,
+            tsFlowOptions.runtimeTypecheckIgnoreUnknownProperties,
             tsFlowOptions.acronymStyle,
             tsFlowOptions.converters
         ];
