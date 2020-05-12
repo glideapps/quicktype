@@ -1276,7 +1276,7 @@ export class JacksonRenderer extends JavaRenderer {
             "",
             this._options.lombok ? "    org.projectlombok : lombok : 1.18.2" : "",
             "    com.fasterxml.jackson.core     : jackson-databind          : 2.9.0",
-            "    com.fasterxml.jackson.datatype : jackson-datatype-jsr310   : 2.9.0",
+            this._options.dateTimeProvider === "java8" ? "    com.fasterxml.jackson.datatype : jackson-datatype-jsr310   : 2.9.0" : "",
             "",
             "Import this package:",
             "",
