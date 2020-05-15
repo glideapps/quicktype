@@ -36,7 +36,10 @@
         "urijs": "^1.19.1",
         "uuid": "^3.2.1",
         "wordwrap": "^1.0.0",
-        "yaml": "^1.5.0"
+        "yaml": "^1.5.0",
+        "readable-stream": "2.3.0",
+        "isomorphic-fetch": "^2.2.1",
+        "browser-or-node": "^1.2.1"
     },
     "devDependencies": {
         "@types/urijs": "^1.19.8",
@@ -65,7 +68,9 @@
         "@types/graphql": "^0.11.7",
         "@types/js-base64": "^2.3.1",
         "@types/pako": "^1.0.0",
-        "@types/pluralize": "0.0.28"
+        "@types/pluralize": "0.0.28",
+        "@types/readable-stream": "2.3.0",
+        "@types/browser-or-node": "^1.2.0"
     },
     "files": [
         "dist/**"

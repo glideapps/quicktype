@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as _ from "lodash";
-import { Readable } from "stream";
+import { Readable } from "readable-stream";
 import { hasOwnProperty, definedMap, withDefault, mapFromObject, mapMap } from "collection-utils";
 
 import {

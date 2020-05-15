@@ -1,7 +1,5 @@
-import * as stream from "stream";
-
+import { Readable } from "readable-stream";
 import { CompressedJSON, Value } from "../quicktype-core/input/CompressedJSON";
-
 const { Parser } = require("stream-json");
 
 const methodMap: { [name: string]: string } = {
@@ -19,8 +17,8 @@ const methodMap: { [name: string]: string } = {
     falseValue: "handleFalseValue"
 };
 
-export class CompressedJSONFromStream extends CompressedJSON<stream.Readable> {
-    async parse(readStream: stream.Readable): Promise<Value> {
+export class CompressedJSONFromStream extends CompressedJSON<Readable> {
+    async parse(readStream: Readable): Promise<Value> {
         const combo = new Parser({ packKeys: true, packStrings: true });
         combo.on("data", (item: { name: string; value: string | undefined }) => {
             if (typeof methodMap[item.name] === "string") {
