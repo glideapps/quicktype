@@ -738,11 +738,13 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 this.emitLine("return self;");
             });
 
-            this.ensureBlankLine();
-            this.emitMethod("- (void)setValue:(nullable id)value forKey:(NSString *)key", () => {
-                this.emitLine("id resolved = ", className, ".properties[key];");
-                this.emitLine("if (resolved) [super setValue:value forKey:resolved];");
-            });
+            if (hasIrregularProperties) {
+                this.ensureBlankLine();
+                this.emitMethod("- (void)setValue:(nullable id)value forKey:(NSString *)key", () => {
+                    this.emitLine("id resolved = ", className, ".properties[key];");
+                    this.emitLine("if (resolved) [super setValue:value forKey:resolved];");
+                });
+            }
 
             this.ensureBlankLine();
             this.emitMethod("- (NSDictionary *)JSONDictionary", () => {
