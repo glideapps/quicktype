@@ -13,7 +13,7 @@
         "tslint": "tslint --project ."
     },
     "dependencies": {
-        "@types/urijs": "^1.19.1",
+        "@types/urijs": "^1.19.8",
         "collection-utils": "^1.0.1",
         "js-base64": "^2.4.3",
         "pako": "^1.0.6",
