@@ -1,7 +1,7 @@
-import { setFilter, iterableSome, iterableEvery } from "collection-utils";
+import { setFilter, iterableSome } from "collection-utils";
 
 import { TypeGraph, TypeRef, derefTypeRef } from "../TypeGraph";
-import { Type, UnionType, IntersectionType, ObjectType } from "../Type";
+import { Type, UnionType, IntersectionType } from "../Type";
 import { makeGroupsToFlatten } from "../TypeUtils";
 import { assert } from "../support/Support";
 import { StringTypeMapping } from "../TypeBuilder";
