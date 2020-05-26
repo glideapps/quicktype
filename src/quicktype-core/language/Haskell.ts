@@ -96,6 +96,7 @@ const forbiddenNames = [
     "Int",
     "True",
     "False",
+    "Enum",
     // Aeson types
     "encode",
     "decode",
@@ -105,6 +106,7 @@ const forbiddenNames = [
     "Object",
     "Result",
     "Series",
+    "Error",
 ];
 
 const legalizeName = legalizeCharacters((cp) => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp));
