@@ -1,13 +1,10 @@
-// object は対応できた
-// TODO: enum と union に対応する
 import { mapContains } from "collection-utils";
-
 import { TargetLanguage } from "../TargetLanguage";
 import { EnumOption, StringOption, BooleanOption, Option, getOptionValues, OptionValues } from "../RendererOptions";
 import { Type, ClassType, UnionType, EnumType, ClassProperty } from "../Type";
 import { matchType, nullableFromUnion } from "../TypeUtils";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { Namer, Name, DependencyName, funPrefixNamer } from "../Naming";
+import { Namer, Name, funPrefixNamer } from "../Naming";
 import {
     legalizeCharacters,
     isLetterOrUnderscoreOrDigit,
@@ -29,7 +26,6 @@ export const haskellOptions = {
         ["array", false],
         ["list", true],
     ]),
-    // FIXME: Do this via a configurable named eventually.
     moduleName: new StringOption("module", "Generated module name", "NAME", "QuickType"),
 };
 
@@ -109,8 +105,6 @@ const forbiddenNames = [
     "Object",
     "Result",
     "Series",
-    // Others
-    "QuickType",
 ];
 
 const legalizeName = legalizeCharacters((cp) => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp));
@@ -145,20 +139,8 @@ export class HaskellRenderer extends ConvenienceRenderer {
         return forbiddenNames;
     }
 
-    protected makeTopLevelDependencyNames(t: Type, topLevelName: Name): DependencyName[] {
-        t;
-        topLevelName;
-        return [];
-    }
-
     protected makeNamedTypeNamer(): Namer {
         return upperNamingFunction;
-    }
-
-    protected makeNamedTypeDependencyNames(_: Type, typeName: Name): DependencyName[] {
-        _;
-        typeName;
-        return [];
     }
 
     protected namerForObjectProperty(): Namer {
@@ -328,8 +310,7 @@ export class HaskellRenderer extends ConvenienceRenderer {
         });
     }
 
-    private emitTopLevelFunctions(t: Type, topLevelName: Name): void {
-        t;
+    private emitTopLevelFunctions(topLevelName: Name): void {
         this.emitLine("decodeTopLevel :: ByteString -> Maybe ", topLevelName);
         this.emitLine("decodeTopLevel = decode");
     }
@@ -352,7 +333,7 @@ export class HaskellRenderer extends ConvenienceRenderer {
 
         this.emitLine("instance ToJSON ", className, " where");
         this.indent(() => {
-            if (classProperties.length == 0) {
+            if (classProperties.length === 0) {
                 this.emitLine("toJSON = \\_ -> emptyObject");
             } else {
                 this.emitLine("toJSON (", className, ...classProperties, ") =");
@@ -376,17 +357,16 @@ export class HaskellRenderer extends ConvenienceRenderer {
         this.emitLine("instance FromJSON ", className, " where");
 
         this.indent(() => {
-            if (this.classPropertyLength(c) == 0) {
+            if (this.classPropertyLength(c) === 0) {
                 this.emitLine("parseJSON emptyObject = return ", className);
             } else {
                 this.emitLine("parseJSON (Object v) = ", className);
                 this.indent(() => {
                     let onFirst = true;
-                    this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+                    this.forEachClassProperty(c, "none", (_, jsonName, p) => {
                         const operator = p.isOptional ? ".:?" : ".:";
                         this.emitLine(onFirst ? "<$> " : "<*> ", "v ", operator, " \"", stringEscape(jsonName), "\"");
                         onFirst = false;
-                        name;
                     });
                 });
             }
@@ -434,10 +414,9 @@ export class HaskellRenderer extends ConvenienceRenderer {
         this.emitLine("instance ToJSON ", unionName, " where");
         this.indent(() => {
             this.forEachUnionMember(u, null, "none", null, (constructor, t) => {
-                if (t.kind == "null") {
+                if (t.kind === "null") {
                     this.emitLine("toJSON ", constructor, " = Null");
-                }
-                else {
+                } else {
                     this.emitLine("toJSON (", constructor, " x) = toJSON x");
                 }
             });
@@ -448,10 +427,9 @@ export class HaskellRenderer extends ConvenienceRenderer {
         this.emitLine("instance FromJSON ", unionName, " where");
         this.indent(() => {
             this.forEachUnionMember(u, null, "none", null, (constructor, t) => {
-                if (t.kind == "null") {
+                if (t.kind === "null") {
                     this.emitLine("parseJSON Null = return ", constructor);
-                }
-                else {
+                } else {
                     this.emitLine("parseJSON xs@(", this.encoderNameForType(t).source, " _) = (fmap ", constructor, " . parseJSON) xs");
                 }
             });
@@ -483,8 +461,8 @@ export class HaskellRenderer extends ConvenienceRenderer {
             if (!mapContains(this.topLevels, t)) exports.push([name, " (..)"]);
         });
 
-        this.emitLanguageExtensions('StrictData');
-        this.emitLanguageExtensions('OverloadedStrings');
+        this.emitLanguageExtensions("StrictData");
+        this.emitLanguageExtensions("OverloadedStrings");
 
         if (!this._options.justTypes) {
             this.ensureBlankLine();
@@ -522,7 +500,7 @@ import Data.Text (Text)`);
             (u: UnionType, unionName: Name) => this.emitUnionDefinition(u, unionName)
         );
 
-        this.forEachTopLevel("leading-and-interposing", (t: Type, topLevelName: Name) => this.emitTopLevelFunctions(t, topLevelName));
+        this.forEachTopLevel("leading-and-interposing", (_: Type, topLevelName: Name) => this.emitTopLevelFunctions(topLevelName));
 
         this.forEachNamedType(
             "leading-and-interposing",
