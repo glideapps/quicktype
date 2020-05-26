@@ -740,5 +740,6 @@ export const allFixtures: Fixture[] = [
   new GraphQLFixture(languages.FlowLanguage),
   new GraphQLFixture(languages.JavaScriptLanguage),
   new GraphQLFixture(languages.DartLanguage),
-  new GraphQLFixture(languages.PikeLanguage)
+  new GraphQLFixture(languages.PikeLanguage),
+  new GraphQLFixture(languages.HaskellLanguage),
 ];
