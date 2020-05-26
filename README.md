@@ -31,8 +31,8 @@
 | -------------------------------------------- | ------------------------------------ | ------------------------------------ | -------------------------------------- | ---------------------------------------- | -------------------------------------------- |
 
 
-| [Swift](https://app.quicktype.io/#l=swift) | [Objective-C](https://app.quicktype.io/#l=objc) | [Elm](https://app.quicktype.io/#l=elm) | [JSON Schema](https://app.quicktype.io/#l=schema) | [Pike](https://app.quicktype.io/#l=pike) |
-| ------------------------------------------ | ----------------------------------------------- | -------------------------------------- | ------------------------------------------------- | ---------------------------------------- |
+| [Swift](https://app.quicktype.io/#l=swift) | [Objective-C](https://app.quicktype.io/#l=objc) | [Elm](https://app.quicktype.io/#l=elm) | [JSON Schema](https://app.quicktype.io/#l=schema) | [Pike](https://app.quicktype.io/#l=pike) | [Prop-Types](https://app.quicktype.io/#l=javascript-prop-types) |
+| ------------------------------------------ | ----------------------------------------------- | -------------------------------------- | ------------------------------------------------- | ---------------------------------------- | --------------------------------------------------------------- |
 
 
 _Missing your favorite language? Please implement it!_
@@ -147,7 +147,7 @@ const {
   InputData,
   jsonInputForTargetLanguage,
   JSONSchemaInput,
-  JSONSchemaStore
+  JSONSchemaStore,
 } = require("quicktype-core");
 
 async function quicktypeJSON(targetLanguage, typeName, jsonString) {
@@ -158,7 +158,7 @@ async function quicktypeJSON(targetLanguage, typeName, jsonString) {
   // just making one type from one piece of sample JSON.
   await jsonInput.addSource({
     name: typeName,
-    samples: [jsonString]
+    samples: [jsonString],
   });
 
   const inputData = new InputData();
@@ -166,7 +166,7 @@ async function quicktypeJSON(targetLanguage, typeName, jsonString) {
 
   return await quicktype({
     inputData,
-    lang: targetLanguage
+    lang: targetLanguage,
   });
 }
 
@@ -182,7 +182,7 @@ async function quicktypeJSONSchema(targetLanguage, typeName, jsonSchemaString) {
 
   return await quicktype({
     inputData,
-    lang: targetLanguage
+    lang: targetLanguage,
   });
 }
 
@@ -209,7 +209,7 @@ The argument to `quicktype` is a complex object with many optional properties. [
 
 ## Contributing
 
-`quicktype` is [Open Source](LICENSE) and we love contributors! In fact, we have a [list of issues](https://github.com/quicktype/quicktype/issues?utf8=✓&q=is%3Aissue+is%3Aopen+label%3Ahelp-wanted) that are low-priority for us, but for which we'd happily accept contributions. Support for new target languages is also strongly desired. If you'd like to contribute, need help with anything at all, or would just like to talk things over, come [join us on Slack](http://slack.quicktype.io).
+`quicktype` is [Open Source](LICENSE) and we love contributors! In fact, we have a [list of issues](https://github.com/quicktype/quicktype/issues?utf8=✓&q=is%3Aissue+is%3Aopen+label%3Ahelp-wanted) that are low-priority for us, but for which we'd happily accept contributions. Support for new target languages is also strongly desired. If you'd like to contribute, need help with anything at all, or would just like to talk things over, come [join us on Slack](https://quicktype.slack.com/).
 
 ### Setup, Build, Run
 
