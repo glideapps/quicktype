@@ -896,7 +896,7 @@ export const PikeLanguage: Language = {
 export const HaskellLanguage: Language = {
   name: "haskell",
   base: "test/fixtures/haskell",
-  setupCommand: "true",
+  setupCommand: "stack install",
   compileCommand: "true",
   runCommand(sample: string) {
     return `stack run haskell -- "${sample}"`;
