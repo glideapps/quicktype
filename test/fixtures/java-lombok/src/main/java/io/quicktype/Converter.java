@@ -33,17 +33,21 @@ public class Converter {
 
     private static void instantiateMapper() {
         ObjectMapper mapper = new ObjectMapper();
+        mapper.findAndRegisterModules();
+        mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
         reader = mapper.readerFor(TopLevel.class);
         writer = mapper.writerFor(TopLevel.class);
     }
 
     private static ObjectReader getObjectReader() {
-        if (reader == null) instantiateMapper();
+        if (reader == null)
+            instantiateMapper();
         return reader;
     }
 
     private static ObjectWriter getObjectWriter() {
-        if (writer == null) instantiateMapper();
+        if (writer == null)
+            instantiateMapper();
         return writer;
     }
 }

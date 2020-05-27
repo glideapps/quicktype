@@ -90,7 +90,11 @@ export const JavaLanguage: Language = {
   diffViaSchema: false,
   skipDiffViaSchema: [],
   allowMissingNull: false,
-  features: ["enum", "union"],
+  features: [
+    "enum",
+    "union",
+    "uuid"
+  ],
   output: "src/main/java/io/quicktype/TopLevel.java",
   topLevel: "TopLevel",
   skipJSON: ["identifiers.json", "simple-identifiers.json", "nst-test-suite.json"],
@@ -101,27 +105,26 @@ export const JavaLanguage: Language = {
   sourceFiles: ["src/language/Java.ts"],
 };
 
+export const JavaLanguageWithLegacyDateTime: Language = {
+  ...JavaLanguage,
+  skipSchema: [
+    ...JavaLanguage.skipSchema,
+    "date-time.schema", // Expects less strict serialization.
+  ],
+  skipJSON: [
+    ...JavaLanguage.skipJSON,
+    "0a358.json", // Expects less strict serialization (optional milliseconds).
+    "337ed.json", // Expects less strict serialization (optional milliseconds).
+  ],
+  skipMiscJSON: true, // Handles edge cases differently and does not allow optional milliseconds.
+  rendererOptions: {"datetime-provider": "legacy"},
+  quickTestRendererOptions: [{ "array-type": "list"}],
+};
+
 export const JavaLanguageWithLombok: Language = {
-  name: "java",
+  ...JavaLanguage,
   base: "test/fixtures/java-lombok",
-  setupCommand: "mvn package",
-  compileCommand: "mvn package",
-  runCommand(sample: string) {
-    return `java -cp target/QuickTypeTest-1.0-SNAPSHOT.jar io.quicktype.App "${sample}"`;
-  },
-  // FIXME: implement comparing multiple files
-  diffViaSchema: false,
-  skipDiffViaSchema: [],
-  allowMissingNull: false,
-  features: ["enum", "union"],
-  output: "src/main/java/io/quicktype/TopLevel.java",
-  topLevel: "TopLevel",
-  skipJSON: ["identifiers.json", "simple-identifiers.json", "nst-test-suite.json"],
-  skipMiscJSON: false,
-  skipSchema: ["keyword-unions.schema"], // generates classes with names that are case-insensitively equal
-  rendererOptions: {},
-  quickTestRendererOptions: [{ "array-type": "list", lombok: "true" }],
-  sourceFiles: ["src/language/Java.ts"],
+  quickTestRendererOptions: [{ "array-type": "list", "lombok": "true"}],
 };
 
 export const PythonLanguage: Language = {
