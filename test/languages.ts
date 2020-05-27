@@ -1024,7 +1024,20 @@ export const HaskellLanguage: Language = {
     "keywords.json"
   ],
   skipMiscJSON: false,
-  skipSchema: [],
+  skipSchema: [
+    "any.schema",
+    "class-map-union.schema",
+    "direct-union.schema",
+    "enum.schema",
+    "go-schema-pattern-properties.schema",
+    "implicit-class-array-union.schema",
+    "intersection.schema",
+    "multi-type-enum.schema",
+    "keyword-unions.schema",
+    "optional-any.schema",
+    "required.schema",
+    "required-non-properties.schema",
+  ],
   rendererOptions: {},
   quickTestRendererOptions: [{ "array-type": "list" }],
   sourceFiles: ["src/language/Haskell.ts"]
