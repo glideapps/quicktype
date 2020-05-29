@@ -634,10 +634,11 @@ async function addTypesInSchema(
         attributes: TypeAttributes,
         properties: StringMap,
         requiredArray: string[],
-        additionalProperties: any
+        additionalProperties: any,
+        sortKey: (k: string) => number | string = (k: string) => k.toLowerCase()
     ): Promise<TypeRef> {
         const required = new Set(requiredArray);
-        const propertiesMap = mapSortBy(mapFromObject(properties), (_, k) => k.toLowerCase());
+        const propertiesMap = mapSortBy(mapFromObject(properties), (_, k) => sortKey(k));
         const props = await mapMapSync(propertiesMap, async (propSchema, propName) => {
             const propLoc = loc.push("properties", propName);
             const t = await toType(
@@ -846,8 +847,15 @@ async function addTypesInSchema(
                 inferredAttributes,
                 combineProducedAttributes(({ forObject }) => forObject)
             );
+            const order = schema.quicktypePropertyOrder ? schema.quicktypePropertyOrder : [];
+            const orderKey = (propertyName: string) => {
+                // use the index of the order array
+                const index = order.indexOf(propertyName);
+                // if no index then use the property name
+                return index !== -1 ? index : propertyName.toLowerCase();
+            };
 
-            return await makeObject(loc, objectAttributes, properties, required, additionalProperties);
+            return await makeObject(loc, objectAttributes, properties, required, additionalProperties, orderKey);
         }
 
         async function makeTypesFromCases(cases: any, kind: string): Promise<TypeRef[]> {
