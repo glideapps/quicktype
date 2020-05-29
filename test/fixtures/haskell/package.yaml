@@ -1,0 +1,15 @@
+name: haskell
+version: 0.0.1
+category: Data
+dependencies:
+  - base >= 4.7 && < 5
+  - aeson
+  - bytestring
+  - text
+  - unordered-containers
+  - vector
+
+executables:
+  haskell:
+    source-dirs: .
+    main: Main.hs
