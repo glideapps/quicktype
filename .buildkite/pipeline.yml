@@ -14,5 +14,5 @@ steps:
   - command: "FIXTURE=csharp,schema-csharp,ruby,schema-ruby,golang,schema-golang,pike,schema-pike .buildkite/build-pr.sh"
     label: "csharp ruby golang pike"
 
-  - command: "FIXTURE=haskell,schema-haskell .buildkite/build-pr.sh"
-    label: "haskell"
+  - command: "FIXTURE=haskell,schema-haskell,javascript-prop-types .buildkite/build-pr.sh"
+    label: "haskell javascript-prop-types"
