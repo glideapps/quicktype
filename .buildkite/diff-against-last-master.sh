@@ -8,6 +8,10 @@ PR_DIR="`mktemp -d`"
 DIFF_DIR="`mktemp -d`"
 
 MASTER_COMMIT="`git rev-parse master`"
+
+echo "master is $MASTER_COMMIT"
+echo "origin/master is `git rev-parse origin/master`"
+
 until aws s3 ls "s3://quicktype-outputs/$MASTER_COMMIT/outputs.tar.gz" >/dev/null ; do
         echo "No output found for $MASTER_COMMIT"
         MASTER_COMMIT="`git rev-parse $MASTER_COMMIT^`"
