@@ -1,7 +1,7 @@
-import fs from "fs";
-import process from "process";
-import { TopLevel } from "./toplevel.js";
-import checkPropTypes from "check-prop-types";
+const fs = require("fs");
+const process = require("process");
+const { TopLevel } = require("./toplevel.js");
+const checkPropTypes = require("check-prop-types");
 
 const sample = process.argv[2];
 const json = fs.readFileSync(sample);

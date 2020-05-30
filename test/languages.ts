@@ -678,7 +678,7 @@ export const JavaScriptPropTypesLanguage: Language = {
   ],
   skipSchema: [],
   skipMiscJSON: false,
-  rendererOptions: {},
+  rendererOptions: { "module-system": "common-js" },
   quickTestRendererOptions: [
     { "runtime-typecheck": "false" },
     { "runtime-typecheck-ignore-unknown-properties": "true" },
