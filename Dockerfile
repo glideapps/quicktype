@@ -82,8 +82,7 @@ RUN apt-get -y update
 RUN apt-get -y install crystal --assume-yes
 
 # Haskell
-RUN apt-get install -y wget
-RUN wget -qO- https://get.haskellstack.org/ | sh
+RUN curl -sL "https://get.haskellstack.org/" | sh
 
 ENV PATH="${workdir}/node_modules/.bin:${PATH}"
 
