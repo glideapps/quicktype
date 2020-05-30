@@ -56,6 +56,7 @@ RUN apt-get -y install ruby --assume-yes
 RUN gem install bundler
 
 # Kotlin
+RUN echo | openssl s_client -showcerts -servername get.sdkman.io -connect get.sdkman.io:443 2>/dev/null | awk '/-----BEGIN CERTIFICATE-----/, /-----END CERTIFICATE-----/' >> /usr/local/share/ca-certificates/ca-certificates.crt  && update-ca-certificates
 RUN curl -s https://get.sdkman.io | bash
 RUN /bin/bash -c "source /root/.sdkman/bin/sdkman-init.sh && sdk install kotlin"
 ENV PATH="/root/.sdkman/candidates/kotlin/current/bin:${PATH}"
