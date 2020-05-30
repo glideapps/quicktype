@@ -18,6 +18,12 @@
       <artifactId>jackson-databind</artifactId>
       <version>2.9.0</version>
     </dependency>
+    <dependency>
+      <scope>compile</scope>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jsr310</artifactId>
+      <version>2.9.0</version>
+    </dependency>
   </dependencies>
   <build>
     <plugins>

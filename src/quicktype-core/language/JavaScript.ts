@@ -36,7 +36,13 @@ import { isES3IdentifierPart, isES3IdentifierStart } from "./JavaScriptUnicodeMa
 export const javaScriptOptions = {
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
     runtimeTypecheck: new BooleanOption("runtime-typecheck", "Verify JSON.parse results at runtime", true),
-    converters: convertersOption()
+    runtimeTypecheckIgnoreUnknownProperties: new BooleanOption(
+        "runtime-typecheck-ignore-unknown-properties",
+        "Ignore unknown properties when verifying at runtime",
+        false,
+        "secondary"
+    ),
+    converters: convertersOption(),
 };
 
 export type JavaScriptTypeAnnotations = {
@@ -59,7 +65,12 @@ export class JavaScriptTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [javaScriptOptions.runtimeTypecheck, javaScriptOptions.acronymStyle, javaScriptOptions.converters];
+        return [
+            javaScriptOptions.runtimeTypecheck,
+            javaScriptOptions.runtimeTypecheckIgnoreUnknownProperties,
+            javaScriptOptions.acronymStyle,
+            javaScriptOptions.converters,
+        ];
     }
 
     get stringTypeMapping(): StringTypeMapping {
@@ -306,7 +317,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
 
 function jsonToJSProps(typ${anyAnnotation})${anyAnnotation} {
     if (typ.jsonToJS === undefined) {
-        var map${anyAnnotation} = {};
+        const map${anyAnnotation} = {};
         typ.props.forEach((p${anyAnnotation}) => map[p.json] = { key: p.js, typ: p.typ });
         typ.jsonToJS = map;
     }
@@ -315,7 +326,7 @@ function jsonToJSProps(typ${anyAnnotation})${anyAnnotation} {
 
 function jsToJSONProps(typ${anyAnnotation})${anyAnnotation} {
     if (typ.jsToJSON === undefined) {
-        var map${anyAnnotation} = {};
+        const map${anyAnnotation} = {};
         typ.props.forEach((p${anyAnnotation}) => map[p.js] = { key: p.json, typ: p.typ });
         typ.jsToJSON = map;
     }
@@ -330,9 +341,9 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
 
     function transformUnion(typs${anyArrayAnnotation}, val${anyAnnotation})${anyAnnotation} {
         // val must validate against one typ in typs
-        var l = typs.length;
-        for (var i = 0; i < l; i++) {
-            var typ = typs[i];
+        const l = typs.length;
+        for (let i = 0; i < l; i++) {
+            const typ = typs[i];
             try {
                 return transform(val, typ, getProps);
             } catch (_) {}
@@ -366,7 +377,7 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
         if (val === null || typeof val !== "object" || Array.isArray(val)) {
             return invalidValue("object", val);
         }
-        var result${anyAnnotation} = {};
+        const result${anyAnnotation} = {};
         Object.getOwnPropertyNames(props).forEach(key => {
             const prop = props[key];
             const v = Object.prototype.hasOwnProperty.call(val, key) ? val[key] : undefined;
@@ -374,7 +385,11 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
         });
         Object.getOwnPropertyNames(val).forEach(key => {
             if (!Object.prototype.hasOwnProperty.call(props, key)) {
-                result[key] = transform(val[key], additional, getProps);
+                result[key] = ${
+                    this._jsOptions.runtimeTypecheckIgnoreUnknownProperties
+                        ? `val[key]`
+                        : `transform(val[key], additional, getProps)`
+                };
             }
         });
         return result;

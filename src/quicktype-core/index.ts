@@ -87,6 +87,7 @@ export { GoTargetLanguage, GoRenderer, goOptions } from "./language/Golang";
 export { ObjectiveCTargetLanguage, ObjectiveCRenderer, objcOptions } from "./language/Objective-C";
 export { JavaTargetLanguage, JavaRenderer, javaOptions } from "./language/Java";
 export { JavaScriptTargetLanguage, JavaScriptRenderer, javaScriptOptions } from "./language/JavaScript";
+export { JavaScriptPropTypesTargetLanguage, JavaScriptPropTypesRenderer, javaScriptPropTypesOptions } from "./language/JavaScriptPropTypes";
 export {
     TypeScriptTargetLanguage,
     TypeScriptRenderer,
@@ -101,3 +102,4 @@ export { JSONSchemaTargetLanguage, JSONSchemaRenderer } from "./language/JSONSch
 export { RustTargetLanguage, RustRenderer, rustOptions } from "./language/Rust";
 export { RubyTargetLanguage, RubyRenderer, rubyOptions } from "./language/ruby";
 export { CrystalTargetLanguage, CrystalRenderer } from "./language/Crystal";
+export { HaskellTargetLanguage, HaskellRenderer, haskellOptions } from "./language/Haskell";
