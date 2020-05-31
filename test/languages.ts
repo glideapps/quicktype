@@ -659,8 +659,9 @@ export const JavaScriptLanguage: Language = {
 export const JavaScriptPropTypesLanguage: Language = {
   name: "javascript-prop-types",
   base: "test/fixtures/javascript-prop-types",
+  setupCommand: "npm install",
   runCommand(sample: string) {
-    return `npm install && node main.js \"${sample}\"`;
+    return `node main.js \"${sample}\"`;
   },
   copyInput: true,
   diffViaSchema: false,
