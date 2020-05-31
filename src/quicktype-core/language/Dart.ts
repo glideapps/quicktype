@@ -457,6 +457,15 @@ export class DartRenderer extends ConvenienceRenderer {
             if (c.getProperties().size === 0) {
                 this.emitLine(className, "();");
             } else {
+                this.emitLine(className, "({");
+                this.indent(() => {
+                    this.forEachClassProperty(c, "none", (name, _, _p) => {
+                        this.emitLine(this._options.requiredProperties ? "@required " : "", "this.", name, ",");
+                    });
+                });
+                this.emitLine("});");
+                this.ensureBlankLine();
+
                 this.forEachClassProperty(c, "none", (name, _, p) => {
                     this.emitLine(
                         this._options.finalProperties ? "final " : "",
@@ -466,15 +475,6 @@ export class DartRenderer extends ConvenienceRenderer {
                         ";"
                     );
                 });
-                this.ensureBlankLine();
-
-                this.emitLine(className, "({");
-                this.indent(() => {
-                    this.forEachClassProperty(c, "none", (name, _, _p) => {
-                        this.emitLine(this._options.requiredProperties ? "@required " : "", "this.", name, ",");
-                    });
-                });
-                this.emitLine("});");
             }
 
             if (this._options.generateCopyWith) {
