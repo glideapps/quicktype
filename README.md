@@ -4,10 +4,9 @@
 [![Build status](https://badge.buildkite.com/147309f9f492c2af1ea53df922be7140ba4035dbb31f61ee1e.svg)](https://buildkite.com/typeguard/quicktype-master)
 [![Join us in Slack](http://slack.quicktype.io/badge.svg)](http://slack.quicktype.io/)
 
-`quicktype` generates strongly-typed models and serializers from JSON, JSON Schema, and [GraphQL queries](https://blog.quicktype.io/graphql-with-quicktype/), making it a breeze to work with JSON type-safely in any programming language.
+`quicktype` generates strongly-typed models and serializers from JSON, JSON Schema, TypeScript, and [GraphQL queries](https://blog.quicktype.io/graphql-with-quicktype/), making it a breeze to work with JSON type-safely in many programming languages.
 
 - [Try `quicktype` in your browser](https://app.quicktype.io).
-- View [awesome JSON APIs](https://github.com/typeguard/awesome-typed-datasets) that have been strongly typed with `quicktype`.
 - Read ['A first look at quicktype'](http://blog.quicktype.io/first-look/) for more introduction.
 - If you have any questions, check out the [FAQ](FAQ.md) first.
 
