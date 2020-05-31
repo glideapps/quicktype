@@ -7,7 +7,6 @@
 `quicktype` generates strongly-typed models and serializers from JSON, JSON Schema, and [GraphQL queries](https://blog.quicktype.io/graphql-with-quicktype/), making it a breeze to work with JSON type-safely in any programming language.
 
 - [Try `quicktype` in your browser](https://app.quicktype.io).
-- View [awesome JSON APIs](https://github.com/typeguard/awesome-typed-datasets) that have been strongly typed with `quicktype`.
 - Read ['A first look at quicktype'](http://blog.quicktype.io/first-look/) for more introduction.
 - If you have any questions, check out the [FAQ](FAQ.md) first.
 
