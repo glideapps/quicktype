@@ -1,10 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as _ from "lodash";
-import { Readable } from "stream";
+import { Readable } from "readable-stream";
 import { hasOwnProperty, definedMap, withDefault, mapFromObject, mapMap } from "collection-utils";
-
-import { getStream } from "./get-stream";
 
 import {
     Options,
@@ -33,7 +31,11 @@ import {
     splitIntoWords,
     capitalize,
     JSONSourceData,
-    JSONInput
+    JSONInput,
+    getStream,
+    readableFromFileOrURL,
+    readFromFileOrURL,
+    FetchingJSONSchemaStore
 } from "../quicktype-core";
 import { schemaForTypeScriptSources } from "../quicktype-typescript-input";
 import { GraphQLInput } from "../quicktype-graphql-input";
@@ -41,7 +43,6 @@ import { GraphQLInput } from "../quicktype-graphql-input";
 import { urlsFromURLGrammar } from "./URLGrammar";
 import { introspectServer } from "./GraphQLIntrospection";
 import { JSONTypeSource, TypeSource, GraphQLTypeSource, SchemaTypeSource } from "./TypeSource";
-import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
 import { CompressedJSONFromStream } from "./CompressedJSONFromStream";
 
 const stringToStream = require("string-to-stream");
