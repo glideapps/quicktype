@@ -43,7 +43,7 @@ export const dartOptions = {
     methodNamesWithMap: new BooleanOption("from-map", "Use method names fromMap() & toMap()", false),
     requiredProperties: new BooleanOption("required-props", "Make all properties required", false),
     finalProperties: new BooleanOption("final-props", "Make all properties final", false),
-    generateCopyWith: new BooleanOption("copy-with", "Generate CopyWith method", false),
+    generateCopyWith: new BooleanOption("copy-with", "Generate CopyWith method", false)
 };
 
 export class DartTargetLanguage extends TargetLanguage {
@@ -181,8 +181,8 @@ function dartNameStyle(startWithUpper: boolean, upperUnderscore: boolean, origin
     const firstWordStyle = upperUnderscore
         ? allUpperWordStyle
         : startWithUpper
-            ? firstUpperWordStyle
-            : allLowerWordStyle;
+        ? firstUpperWordStyle
+        : allLowerWordStyle;
     const restWordStyle = upperUnderscore ? allUpperWordStyle : firstUpperWordStyle;
     return combineWords(
         words,
@@ -262,12 +262,12 @@ export class DartRenderer extends ConvenienceRenderer {
         const encoder = new DependencyName(
             propertyNamingFunction,
             name.order,
-            (lookup) => `${lookup(name)}_${this.toJson}`
+            lookup => `${lookup(name)}_${this.toJson}`
         );
         const decoder = new DependencyName(
             propertyNamingFunction,
             name.order,
-            (lookup) => `${lookup(name)}_${this.fromJson}`
+            lookup => `${lookup(name)}_${this.fromJson}`
         );
         this._topLevelDependents.set(name, { encoder, decoder });
         return [encoder, decoder];
@@ -386,8 +386,8 @@ export class DartRenderer extends ConvenienceRenderer {
             _stringType => dynamic,
             arrayType =>
                 this.mapList(this.dartType(arrayType.items), dynamic, this.fromDynamicExpression(arrayType.items, "x")),
-            (classType) => [this.nameForNamedType(classType), ".", this.fromJson, "(", dynamic, ")"],
-            (mapType) =>
+            classType => [this.nameForNamedType(classType), ".", this.fromJson, "(", dynamic, ")"],
+            mapType =>
                 this.mapMap(this.dartType(mapType.values), dynamic, this.fromDynamicExpression(mapType.values, "v")),
             enumType => [defined(this._enumValues.get(enumType)), ".map[", dynamic, "]"],
             unionType => {
@@ -419,10 +419,10 @@ export class DartRenderer extends ConvenienceRenderer {
             _doubleType => dynamic,
             _stringType => dynamic,
             arrayType => this.mapList("dynamic", dynamic, this.toDynamicExpression(arrayType.items, "x")),
+            _classType => [dynamic, ".", this.toJson, "()"],
             mapType => this.mapMap("dynamic", dynamic, this.toDynamicExpression(mapType.values, "v")),
             enumType => [defined(this._enumValues.get(enumType)), ".reverse[", dynamic, "]"],
             unionType => {
-            (_classType) => [dynamic, ".", this.toJson, "()"],
                 const maybeNullable = nullableFromUnion(unionType);
                 if (maybeNullable === null) {
                     return dynamic;
@@ -460,7 +460,10 @@ export class DartRenderer extends ConvenienceRenderer {
                 this.forEachClassProperty(c, "none", (name, _, p) => {
                     this.emitLine(
                         this._options.finalProperties ? "final " : "",
-                        this.dartType(p.type, true), " ", name, ";"
+                        this.dartType(p.type, true),
+                        " ",
+                        name,
+                        ";"
                     );
                 });
                 this.ensureBlankLine();
@@ -468,17 +471,13 @@ export class DartRenderer extends ConvenienceRenderer {
                 this.emitLine(className, "({");
                 this.indent(() => {
                     this.forEachClassProperty(c, "none", (name, _, _p) => {
-                        this.emitLine(
-                            this._options.requiredProperties ? "@required " : "",
-                            "this.", name, ","
-                        );
+                        this.emitLine(this._options.requiredProperties ? "@required " : "", "this.", name, ",");
                     });
                 });
                 this.emitLine("});");
             }
 
             if (this._options.generateCopyWith) {
-
                 this.ensureBlankLine();
                 this.emitLine(className, " copyWith({");
                 this.indent(() => {
@@ -496,7 +495,6 @@ export class DartRenderer extends ConvenienceRenderer {
                     });
                     this.emitLine(");");
                 });
-
             }
 
             if (this._options.justTypes) return;
