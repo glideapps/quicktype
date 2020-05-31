@@ -56,7 +56,7 @@ export const kotlinOptions = {
 
 export class KotlinTargetLanguage extends TargetLanguage {
     constructor() {
-        super("Kotlin (beta)", ["kotlin"], "kt");
+        super("Kotlin", ["kotlin"], "kt");
     }
 
     protected getOptions(): Option<any>[] {

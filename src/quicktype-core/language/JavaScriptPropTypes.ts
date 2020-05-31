@@ -1,5 +1,5 @@
 import { TargetLanguage } from "../TargetLanguage";
-import { getOptionValues, Option, OptionValues } from "../RendererOptions";
+import { getOptionValues, Option, OptionValues, EnumOption } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { funPrefixNamer, Name, Namer } from "../Naming";
@@ -28,6 +28,15 @@ import { PrimitiveType } from "../Type";
 export const javaScriptPropTypesOptions = {
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
     converters: convertersOption(),
+    moduleSystem: new EnumOption(
+        "module-system",
+        "Which module system to use",
+        [
+            ["common-js", false],
+            ["es6", true],
+        ],
+        "es6"
+    ),
 };
 
 export class JavaScriptPropTypesTargetLanguage extends TargetLanguage {
@@ -36,7 +45,7 @@ export class JavaScriptPropTypesTargetLanguage extends TargetLanguage {
     }
 
     constructor(
-        displayName: string = "JavaScriptPropTypes",
+        displayName: string = "JavaScript PropTypes",
         names: string[] = ["javascript-prop-types"],
         extension: string = "js"
     ) {
@@ -155,12 +164,21 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         return ["PropType.any"];
     }
 
+    private importStatement(lhs: Sourcelike, moduleName: Sourcelike): Sourcelike {
+        if (this._jsOptions.moduleSystem) {
+            return ["import ", lhs, " from ", moduleName, ";"];
+        } else {
+            return ["const ", lhs, " = require(", moduleName, ");"];
+        }
+    }
+
     protected emitUsageComments(): void {
+        // FIXME: Use the correct type name
         this.emitCommentLines(
             [
                 "Example usage:",
                 "",
-                "import { MyShape } from './myShape.js';",
+                this.importStatement("{ MyShape }", "./myShape.js"),
                 "",
                 "class MyComponent extends React.Component {",
                 "  //",
@@ -182,7 +200,15 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
 
     protected emitImports(): void {
         this.ensureBlankLine();
-        this.emitLine('import PropTypes from "prop-types";');
+        this.emitLine(this.importStatement("PropTypes", '"prop-types"'));
+    }
+
+    private emitExport(name: Sourcelike, value: Sourcelike): void {
+        if (this._jsOptions.moduleSystem) {
+            this.emitLine("export const ", name, " = ", value, ";");
+        } else {
+            this.emitLine("module.exports = exports = { ", name, ": ", value, " };");
+        }
     }
 
     protected emitTypes(): void {
@@ -247,20 +273,14 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         this.forEachTopLevel("none", (type, name) => {
             if (type instanceof PrimitiveType) {
                 this.ensureBlankLine();
-                this.emitLine("export const ", name, " = ", this.typeMapTypeFor(type), ";");
+                this.emitExport(name, this.typeMapTypeFor(type));
             } else {
                 if (type.kind === "array") {
                     this.ensureBlankLine();
-                    this.emitLine(
-                        "export const ",
-                        name,
-                        " = PropTypes.arrayOf(",
-                        this.typeMapTypeFor((type as any).items),
-                        ");"
-                    );
+                    this.emitExport(name, ["PropTypes.arrayOf(", this.typeMapTypeFor((type as any).items), ")"]);
                 } else {
                     this.ensureBlankLine();
-                    this.emitLine("export const ", name, " = _", name, ";");
+                    this.emitExport(name, ["_", name]);
                 }
             }
         });
