@@ -43,7 +43,7 @@ export const dartOptions = {
     methodNamesWithMap: new BooleanOption("from-map", "Use method names fromMap() & toMap()", false),
     requiredProperties: new BooleanOption("required-props", "Make all properties required", false),
     finalProperties: new BooleanOption("final-props", "Make all properties final", false),
-    generateCopyWith: new BooleanOption("copy-with", "Generate CopyWith method", false),
+    generateCopyWith: new BooleanOption("copy-with", "Generate CopyWith method", false)
 };
 
 export class DartTargetLanguage extends TargetLanguage {
@@ -181,8 +181,8 @@ function dartNameStyle(startWithUpper: boolean, upperUnderscore: boolean, origin
     const firstWordStyle = upperUnderscore
         ? allUpperWordStyle
         : startWithUpper
-            ? firstUpperWordStyle
-            : allLowerWordStyle;
+        ? firstUpperWordStyle
+        : allLowerWordStyle;
     const restWordStyle = upperUnderscore ? allUpperWordStyle : firstUpperWordStyle;
     return combineWords(
         words,
@@ -250,9 +250,25 @@ export class DartRenderer extends ConvenienceRenderer {
         return directlyReachableSingleNamedType(type);
     }
 
+    protected get toJson(): string {
+        return `to${this._options.methodNamesWithMap ? "Map" : "Json"}`;
+    }
+
+    protected get fromJson(): string {
+        return `from${this._options.methodNamesWithMap ? "Map" : "Json"}`;
+    }
+
     protected makeTopLevelDependencyNames(_t: Type, name: Name): DependencyName[] {
-        const encoder = new DependencyName(propertyNamingFunction, name.order, lookup => `${lookup(name)}_to_json`);
-        const decoder = new DependencyName(propertyNamingFunction, name.order, lookup => `${lookup(name)}_from_json`);
+        const encoder = new DependencyName(
+            propertyNamingFunction,
+            name.order,
+            lookup => `${lookup(name)}_${this.toJson}`
+        );
+        const decoder = new DependencyName(
+            propertyNamingFunction,
+            name.order,
+            lookup => `${lookup(name)}_${this.fromJson}`
+        );
         this._topLevelDependents.set(name, { encoder, decoder });
         return [encoder, decoder];
     }
@@ -370,14 +386,7 @@ export class DartRenderer extends ConvenienceRenderer {
             _stringType => dynamic,
             arrayType =>
                 this.mapList(this.dartType(arrayType.items), dynamic, this.fromDynamicExpression(arrayType.items, "x")),
-            classType => [
-                this.nameForNamedType(classType),
-                ".from",
-                this._options.methodNamesWithMap ? "Map" : "Json",
-                "(",
-                dynamic,
-                ")"
-            ],
+            classType => [this.nameForNamedType(classType), ".", this.fromJson, "(", dynamic, ")"],
             mapType =>
                 this.mapMap(this.dartType(mapType.values), dynamic, this.fromDynamicExpression(mapType.values, "v")),
             enumType => [defined(this._enumValues.get(enumType)), ".map[", dynamic, "]"],
@@ -410,7 +419,7 @@ export class DartRenderer extends ConvenienceRenderer {
             _doubleType => dynamic,
             _stringType => dynamic,
             arrayType => this.mapList("dynamic", dynamic, this.toDynamicExpression(arrayType.items, "x")),
-            _classType => [dynamic, ".to", this._options.methodNamesWithMap ? "Map" : "Json", "()"],
+            _classType => [dynamic, ".", this.toJson, "()"],
             mapType => this.mapMap("dynamic", dynamic, this.toDynamicExpression(mapType.values, "v")),
             enumType => [defined(this._enumValues.get(enumType)), ".reverse[", dynamic, "]"],
             unionType => {
@@ -451,10 +460,7 @@ export class DartRenderer extends ConvenienceRenderer {
                 this.emitLine(className, "({");
                 this.indent(() => {
                     this.forEachClassProperty(c, "none", (name, _, _p) => {
-                        this.emitLine(
-                            this._options.requiredProperties ? "@required " : "",
-                            "this.", name, ","
-                        );
+                        this.emitLine(this._options.requiredProperties ? "@required " : "", "this.", name, ",");
                     });
                 });
                 this.emitLine("});");
@@ -472,7 +478,6 @@ export class DartRenderer extends ConvenienceRenderer {
             }
 
             if (this._options.generateCopyWith) {
-
                 this.ensureBlankLine();
                 this.emitLine(className, " copyWith({");
                 this.indent(() => {
@@ -490,7 +495,6 @@ export class DartRenderer extends ConvenienceRenderer {
                     });
                     this.emitLine(");");
                 });
-
             }
 
             if (this._options.justTypes) return;
@@ -504,8 +508,8 @@ export class DartRenderer extends ConvenienceRenderer {
                     this._options.methodNamesWithMap ? "Json" : "RawJson",
                     "(String str) => ",
                     className,
-                    ".from",
-                    this._options.methodNamesWithMap ? "Map" : "Json",
+                    ".",
+                    this.fromJson,
                     "(json.decode(str));"
                 );
 
@@ -514,21 +518,13 @@ export class DartRenderer extends ConvenienceRenderer {
                     "String ",
                     this._options.methodNamesWithMap ? "toJson() => " : "toRawJson() => ",
                     "json.encode(",
-                    this._options.methodNamesWithMap ? "toMap" : "toJson",
+                    this.toJson,
                     "());"
                 );
             }
 
             this.ensureBlankLine();
-            this.emitLine(
-                "factory ",
-                className,
-                ".from",
-                this._options.methodNamesWithMap ? "Map" : "Json",
-                "(Map<String, dynamic> json) => ",
-                className,
-                "("
-            );
+            this.emitLine("factory ", className, ".", this.fromJson, "(Map<String, dynamic> json) => ", className, "(");
             this.indent(() => {
                 this.forEachClassProperty(c, "none", (name, jsonName, property) => {
                     this.emitLine(
@@ -543,7 +539,7 @@ export class DartRenderer extends ConvenienceRenderer {
 
             this.ensureBlankLine();
 
-            this.emitLine("Map<String, dynamic> to", this._options.methodNamesWithMap ? "Map" : "Json", "() => {");
+            this.emitLine("Map<String, dynamic> ", this.toJson, "() => {");
             this.indent(() => {
                 this.forEachClassProperty(c, "none", (name, jsonName, property) => {
                     this.emitLine(
