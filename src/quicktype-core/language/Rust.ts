@@ -46,8 +46,8 @@ export const rustOptions = {
         ["crate", Visibility.Crate],
         ["public", Visibility.Public]
     ]),
-    deriveDebug: new BooleanOption("derive-debug", "Derive Debug impl", true),
-    edition2018: new BooleanOption("edition-2018", "Edition 2018", true),
+    deriveDebug: new BooleanOption("derive-debug", "Derive Debug impl", false),
+    edition2018: new BooleanOption("edition-2018", "Edition 2018", false),
     leadingComments: new BooleanOption("leading-comments", "Leading Comments", true)
 };
 
