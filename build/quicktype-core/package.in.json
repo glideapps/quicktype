@@ -14,6 +14,7 @@
     },
     "dependencies": {
         "collection-utils": "^1.0.1",
+        "is-url": "^1.2.4",
         "js-base64": "^2.4.3",
         "pako": "^1.0.6",
         "pluralize": "^7.0.0",
