@@ -342,7 +342,15 @@ export const GoLanguage: Language = {
   features: ["union"],
   output: "quicktype.go",
   topLevel: "TopLevel",
-  skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json", "nst-test-suite.json"],
+  skipJSON: [
+    "identifiers.json",
+    "simple-identifiers.json",
+    "blns-object.json",
+    "nst-test-suite.json",
+    // can't differenciate empty array and nothing for optional empty array
+    // (omitempty).
+    "github-events.json",
+  ],
   skipMiscJSON: false,
   skipSchema: [],
   rendererOptions: {},
