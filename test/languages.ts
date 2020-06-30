@@ -352,7 +352,11 @@ export const GoLanguage: Language = {
     "github-events.json",
   ],
   skipMiscJSON: false,
-  skipSchema: [],
+  skipSchema: [
+    // can't differenciate empty array and nothing for optional empty array
+    // (omitempty).
+    "postman-collection.schema",
+  ],
   rendererOptions: {},
   quickTestRendererOptions: [],
   sourceFiles: ["src/language/Golang.ts"],
