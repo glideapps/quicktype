@@ -43,6 +43,7 @@ export const javaScriptOptions = {
         "secondary"
     ),
     converters: convertersOption(),
+    convertJson: new BooleanOption("convert-json", "Convert to and from JSON strings", true)
 };
 
 export type JavaScriptTypeAnnotations = {
@@ -70,6 +71,7 @@ export class JavaScriptTargetLanguage extends TargetLanguage {
             javaScriptOptions.runtimeTypecheckIgnoreUnknownProperties,
             javaScriptOptions.acronymStyle,
             javaScriptOptions.converters,
+            javaScriptOptions.convertJson
         ];
     }
 
@@ -272,19 +274,28 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
         const converter = (t: Type, name: Name) => {
             const typeMap = this.typeMapTypeFor(t);
             this.emitBlock([this.deserializerFunctionLine(t, name), " "], "", () => {
+                const parsedJson = this._jsOptions.convertJson ? "JSON.parse(json)" : "json";
                 if (!this._jsOptions.runtimeTypecheck) {
-                    this.emitLine("return JSON.parse(json);");
+                    this.emitLine("return ", parsedJson, ";");
                 } else {
-                    this.emitLine("return cast(JSON.parse(json), ", typeMap, ");");
+                    this.emitLine("return cast(", parsedJson, ", ", typeMap, ");");
                 }
             });
             this.ensureBlankLine();
 
             this.emitBlock([this.serializerFunctionLine(t, name), " "], "", () => {
-                if (!this._jsOptions.runtimeTypecheck) {
-                    this.emitLine("return JSON.stringify(value);");
+                if (this._jsOptions.convertJson) {
+                    if (!this._jsOptions.runtimeTypecheck) {
+                        this.emitLine("return JSON.stringify(value);");
+                    } else {
+                        this.emitLine("return JSON.stringify(uncast(value, ", typeMap, "), null, 2);");
+                    }
                 } else {
-                    this.emitLine("return JSON.stringify(uncast(value, ", typeMap, "), null, 2);");
+                    if (!this._jsOptions.runtimeTypecheck) {
+                        this.emitLine("return value;");
+                    } else {
+                        this.emitLine("return uncast(value, ", typeMap, ");");
+                    }
                 }
             });
         };
@@ -450,9 +461,11 @@ function r(name${stringAnnotation}) {
 
     protected emitConvertModule(): void {
         this.ensureBlankLine();
-        this.emitMultiline(`// Converts JSON strings to/from your types`);
+        this.emitMultiline(`// Converts JSON ${this._jsOptions.convertJson ? "strings" : "types"} to/from your types`);
         if (this._jsOptions.runtimeTypecheck) {
-            this.emitMultiline(`// and asserts the results of JSON.parse at runtime`);
+            this.emitMultiline(
+                `// and asserts the results${this._jsOptions.convertJson ? " of JSON.parse" : ""} at runtime`
+            );
         }
         const moduleLine = this.moduleLine;
         if (moduleLine === undefined) {
