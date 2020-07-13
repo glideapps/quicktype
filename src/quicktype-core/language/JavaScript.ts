@@ -29,7 +29,7 @@ import { Namer, Name, funPrefixNamer } from "../Naming";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
 import { StringTypeMapping } from "../TypeBuilder";
-import { BooleanOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
+import { BooleanOption, Option, OptionValues, getOptionValues, EnumOption } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
 import { isES3IdentifierPart, isES3IdentifierStart } from "./JavaScriptUnicodeMaps";
 
@@ -43,7 +43,16 @@ export const javaScriptOptions = {
         "secondary"
     ),
     converters: convertersOption(),
-    convertJson: new BooleanOption("convert-json", "Convert to and from JSON strings", true)
+    rawType: new EnumOption(
+        "raw-type",
+        "Type to raw input (json by default)",
+        [
+            ["json", "json" as const],
+            ["any", "any" as const]
+        ],
+        "json",
+        "secondary"
+    )
 };
 
 export type JavaScriptTypeAnnotations = {
@@ -71,7 +80,7 @@ export class JavaScriptTargetLanguage extends TargetLanguage {
             javaScriptOptions.runtimeTypecheckIgnoreUnknownProperties,
             javaScriptOptions.acronymStyle,
             javaScriptOptions.converters,
-            javaScriptOptions.convertJson
+            javaScriptOptions.rawType
         ];
     }
 
@@ -274,7 +283,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
         const converter = (t: Type, name: Name) => {
             const typeMap = this.typeMapTypeFor(t);
             this.emitBlock([this.deserializerFunctionLine(t, name), " "], "", () => {
-                const parsedJson = this._jsOptions.convertJson ? "JSON.parse(json)" : "json";
+                const parsedJson = this._jsOptions.rawType === "json" ? "JSON.parse(json)" : "json";
                 if (!this._jsOptions.runtimeTypecheck) {
                     this.emitLine("return ", parsedJson, ";");
                 } else {
@@ -284,7 +293,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
             this.ensureBlankLine();
 
             this.emitBlock([this.serializerFunctionLine(t, name), " "], "", () => {
-                if (this._jsOptions.convertJson) {
+                if (this._jsOptions.rawType === "json") {
                     if (!this._jsOptions.runtimeTypecheck) {
                         this.emitLine("return JSON.stringify(value);");
                     } else {
@@ -461,10 +470,12 @@ function r(name${stringAnnotation}) {
 
     protected emitConvertModule(): void {
         this.ensureBlankLine();
-        this.emitMultiline(`// Converts JSON ${this._jsOptions.convertJson ? "strings" : "types"} to/from your types`);
+        this.emitMultiline(
+            `// Converts JSON ${this._jsOptions.rawType === "json" ? "strings" : "types"} to/from your types`
+        );
         if (this._jsOptions.runtimeTypecheck) {
             this.emitMultiline(
-                `// and asserts the results${this._jsOptions.convertJson ? " of JSON.parse" : ""} at runtime`
+                `// and asserts the results${this._jsOptions.rawType === "json" ? " of JSON.parse" : ""} at runtime`
             );
         }
         const moduleLine = this.moduleLine;

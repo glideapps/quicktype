@@ -42,7 +42,7 @@ export abstract class TypeScriptFlowBaseTargetLanguage extends JavaScriptTargetL
             tsFlowOptions.runtimeTypecheckIgnoreUnknownProperties,
             tsFlowOptions.acronymStyle,
             tsFlowOptions.converters,
-            tsFlowOptions.convertJson
+            tsFlowOptions.rawType
         ];
     }
 
@@ -191,13 +191,13 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
     }
 
     protected deserializerFunctionLine(t: Type, name: Name): Sourcelike {
-        const jsonType = this._tsFlowOptions.convertJson ? "string" : "any";
+        const jsonType = this._tsFlowOptions.rawType === "json" ? "string" : "any";
         return ["function to", name, "(json: ", jsonType, "): ", this.sourceFor(t).source];
     }
 
     protected serializerFunctionLine(t: Type, name: Name): Sourcelike {
         const camelCaseName = modifySource(camelCase, name);
-        const returnType = this._tsFlowOptions.convertJson ? "string" : "any";
+        const returnType = this._tsFlowOptions.rawType === "json" ? "string" : "any";
         return ["function ", camelCaseName, "ToJson(value: ", this.sourceFor(t).source, "): ", returnType];
     }
 
@@ -238,13 +238,13 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
     }
 
     protected deserializerFunctionLine(t: Type, name: Name): Sourcelike {
-        const jsonType = this._tsFlowOptions.convertJson ? "string" : "any";
+        const jsonType = this._tsFlowOptions.rawType === "json" ? "string" : "any";
         return ["public static to", name, "(json: ", jsonType, "): ", this.sourceFor(t).source];
     }
 
     protected serializerFunctionLine(t: Type, name: Name): Sourcelike {
         const camelCaseName = modifySource(camelCase, name);
-        const returnType = this._tsFlowOptions.convertJson ? "string" : "any";
+        const returnType = this._tsFlowOptions.rawType === "json" ? "string" : "any";
         return ["public static ", camelCaseName, "ToJson(value: ", this.sourceFor(t).source, "): ", returnType];
     }
 
