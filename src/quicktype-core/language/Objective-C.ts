@@ -744,9 +744,9 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 this.emitLine("if (resolved) [super setValue:value forKey:resolved];");
             });
 
-            // setNilForKey: is automatically invoked by the NSObject setValue:forKey: when it is passed nil for a scalar (a.k.a. non-nullable) object
-            // The approach below sets the scalar to 0 in this case, and therefore assumes an initializer with incomplete data shouldn't be grounds for an exception.
-            // Put another way, if the initializer didn't have a key at all, there wouldn't be an exception raised, so sending nil for soemthing probably shouldn't cause one.
+            // setNilValueForKey: is automatically invoked by the NSObject setValue:forKey: when it is passed nil for a scalar (a.k.a. non-nullable) object
+            // The approach below sets the scalar to 0 in this case, and therefore assumes an initializer with incomplete data shouldn't be grounds for raising an exception.
+            // Put another way, if the initializer didn't have a key at all, there wouldn't be an exception raised, so sending nil for something probably shouldn't cause one.
             this.ensureBlankLine();
             this.emitMethod("- (void)setNilValueForKey:(NSString *)key", () => {
                 this.emitLine("id resolved = ", className, ".properties[key];");
