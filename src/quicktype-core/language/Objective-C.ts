@@ -748,7 +748,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             // The approach below sets the scalar to 0 in this case, and therefore assumes an initializer with incomplete data shouldn't be grounds for an exception.
             // Put another way, if the initializer didn't have a key at all, there wouldn't be an exception raised, so sending nil for soemthing probably shouldn't cause one.
             this.ensureBlankLine();
-            this.emitMethod("- (void)setNilForKey:(NSString *)key", () => {
+            this.emitMethod("- (void)setNilValueForKey:(NSString *)key", () => {
                 this.emitLine("id resolved = ", className, ".properties[key];");
                 this.emitLine("if (resolved) [super setValue:@(0) forKey:resolved];");
             });
