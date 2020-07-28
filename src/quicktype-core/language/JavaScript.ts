@@ -42,7 +42,7 @@ export const javaScriptOptions = {
         false,
         "secondary"
     ),
-    converters: convertersOption(),
+    converters: convertersOption()
 };
 
 export type JavaScriptTypeAnnotations = {
@@ -69,7 +69,7 @@ export class JavaScriptTargetLanguage extends TargetLanguage {
             javaScriptOptions.runtimeTypecheck,
             javaScriptOptions.runtimeTypecheckIgnoreUnknownProperties,
             javaScriptOptions.acronymStyle,
-            javaScriptOptions.converters,
+            javaScriptOptions.converters
         ];
     }
 
@@ -265,7 +265,15 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
     }
 
     protected get typeAnnotations(): JavaScriptTypeAnnotations {
-        return { any: "", anyArray: "", anyMap: "", string: "", stringArray: "", boolean: "", never: "" };
+        return {
+            any: "",
+            anyArray: "",
+            anyMap: "",
+            string: "",
+            stringArray: "",
+            boolean: "",
+            never: ""
+        };
     }
 
     protected emitConvertModuleBody(): void {
@@ -311,8 +319,12 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
                 never: neverAnnotation
             } = this.typeAnnotations;
             this.ensureBlankLine();
-            this.emitMultiline(`function invalidValue(typ${anyAnnotation}, val${anyAnnotation})${neverAnnotation} {
-    throw Error(\`Invalid value \${JSON.stringify(val)} for type \${JSON.stringify(typ)}\`);
+            this
+                .emitMultiline(`function invalidValue(typ${anyAnnotation}, val${anyAnnotation}, key${anyAnnotation} = '')${neverAnnotation} {
+    if (key) {
+        throw Error(\`Invalid value for key \"\${key}\". Expected type \${JSON.stringify(typ)} but got \${JSON.stringify(val)}\`);
+    }
+    throw Error(\`Invalid value \${JSON.stringify(val)} for type \${JSON.stringify(typ)}\`, );
 }
 
 function jsonToJSProps(typ${anyAnnotation})${anyAnnotation} {
@@ -333,10 +345,10 @@ function jsToJSONProps(typ${anyAnnotation})${anyAnnotation} {
     return typ.jsToJSON;
 }
 
-function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnotation})${anyAnnotation} {
+function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnotation}, key${anyAnnotation} = '')${anyAnnotation} {
     function transformPrimitive(typ${stringAnnotation}, val${anyAnnotation})${anyAnnotation} {
         if (typeof typ === typeof val) return val;
-        return invalidValue(typ, val);
+        return invalidValue(typ, val, key);
     }
 
     function transformUnion(typs${anyArrayAnnotation}, val${anyAnnotation})${anyAnnotation} {
@@ -381,14 +393,14 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
         Object.getOwnPropertyNames(props).forEach(key => {
             const prop = props[key];
             const v = Object.prototype.hasOwnProperty.call(val, key) ? val[key] : undefined;
-            result[prop.key] = transform(v, prop.typ, getProps);
+            result[prop.key] = transform(v, prop.typ, getProps, prop.key);
         });
         Object.getOwnPropertyNames(val).forEach(key => {
             if (!Object.prototype.hasOwnProperty.call(props, key)) {
                 result[key] = ${
                     this._jsOptions.runtimeTypecheckIgnoreUnknownProperties
                         ? `val[key]`
-                        : `transform(val[key], additional, getProps)`
+                        : `transform(val[key], additional, getProps, key)`
                 };
             }
         });
