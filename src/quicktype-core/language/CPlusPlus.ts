@@ -1,4 +1,4 @@
-﻿import {
+import {
     setUnion,
     arrayIntercalate,
     toReadonlyArray,
@@ -1526,34 +1526,67 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitLine("void to_json(json & j, ", this.withConst([ourQualifier, enumName]), " & x);");
     }
 
+    private isLargeEnum(e: EnumType) {
+        // This is just an estimation. Someone might want to do some
+        // benchmarks to find the optimum value here
+        return e.cases.size > 15;
+    }
+
     protected emitEnumFunctions(e: EnumType, enumName: Name): void {
         const ourQualifier = this.ourQualifier(true);
 
         this.emitBlock(
             ["inline void from_json(", this.withConst("json"), " & j, ", ourQualifier, enumName, " & x)"],
             false, () => {
-            let onFirst = true;
-            this.forEachEnumCase(e, "none", (name, jsonName) => {
-                const maybeElse = onFirst ? "" : "else ";
-                this.emitLine(
-                    maybeElse,
-                    "if (j == ",
-                    this._stringType.wrapEncodingChange(
-                        [ourQualifier],
-                        this._stringType.getType(),
-                        this.NarrowString.getType(),
-                        [this._stringType.createStringLiteral([stringEscape(jsonName)])]
-                    ),
-                    ") x = ",
-                    ourQualifier,
-                    enumName,
-                    "::",
-                    name,
-                    ";"
-                );
-                onFirst = false;
-            });
-            this.emitLine('else throw "Input JSON does not conform to schema";');
+                if (this.isLargeEnum(e)) {
+                    this.emitBlock(["static std::unordered_map<", this._stringType.getType(), ", ", ourQualifier, enumName, "> enumValues"], true, () => {
+                        this.forEachEnumCase(e, "none", (name, jsonName) => {
+                            this.emitLine(
+                                "{",
+                                this._stringType.wrapEncodingChange(
+                                    [ourQualifier],
+                                    this._stringType.getType(),
+                                    this.NarrowString.getType(),
+                                    [this._stringType.createStringLiteral([stringEscape(jsonName)])]
+                                ),
+                                ", ",
+                                ourQualifier,
+                                enumName,
+                                "::",
+                                name,
+                                "},"
+                            );
+                        });
+                    });
+
+                    this.emitLine("auto iter = enumValues.find(j);");
+                    this.emitBlock("if (iter != enumValues.end())", false, () => {
+                        this.emitLine("x = iter->second;");
+                    });
+                } else {
+                    let onFirst = true;
+                    this.forEachEnumCase(e, "none", (name, jsonName) => {
+                        const maybeElse = onFirst ? "" : "else ";
+                        this.emitLine(
+                            maybeElse,
+                            "if (j == ",
+                            this._stringType.wrapEncodingChange(
+                                [ourQualifier],
+                                this._stringType.getType(),
+                                this.NarrowString.getType(),
+                                [this._stringType.createStringLiteral([stringEscape(jsonName)])]
+                            ),
+                            ") x = ",
+                            ourQualifier,
+                            enumName,
+                            "::",
+                            name,
+                            ";"
+                        );
+                        onFirst = false;
+                    });
+                    this.emitLine('else throw "Input JSON does not conform to schema";');
+                }
         });
         this.ensureBlankLine();
         
@@ -1988,6 +2021,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         if (this._options.wstring) {
             this.emitInclude(true, `codecvt`);
             this.emitInclude(true, `locale`);
+        }
+
+        // Include unordered_map if contains large enums
+        if (Array.from(this.enums).some(enumType => this.isLargeEnum(enumType))) {
+            this.emitInclude(true, `unordered_map`);
         }
 
         this.ensureBlankLine();
