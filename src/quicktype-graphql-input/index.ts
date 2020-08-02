@@ -232,6 +232,7 @@ class GQLQuery {
                     name = fieldNode.name.value;
                     fieldName = null;
                 }
+                optional = true;
                 result = builder.getEnumType(makeNames(name, fieldName, containingTypeName), new Set(values));
                 break;
             case TypeKind.INPUT_OBJECT:
