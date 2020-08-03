@@ -29,7 +29,7 @@ import { Namer, Name, funPrefixNamer } from "../Naming";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
 import { StringTypeMapping } from "../TypeBuilder";
-import { BooleanOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
+import { BooleanOption, Option, OptionValues, getOptionValues, EnumOption } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
 import { isES3IdentifierPart, isES3IdentifierStart } from "./JavaScriptUnicodeMaps";
 
@@ -42,7 +42,17 @@ export const javaScriptOptions = {
         false,
         "secondary"
     ),
-    converters: convertersOption()
+    converters: convertersOption(),
+    rawType: new EnumOption<"json" | "any">(
+        "raw-type",
+        "Type to raw input (json by default)",
+        [
+            ["json", "json"],
+            ["any", "any"]
+        ],
+        "json",
+        "secondary"
+    )
 };
 
 export type JavaScriptTypeAnnotations = {
@@ -69,7 +79,8 @@ export class JavaScriptTargetLanguage extends TargetLanguage {
             javaScriptOptions.runtimeTypecheck,
             javaScriptOptions.runtimeTypecheckIgnoreUnknownProperties,
             javaScriptOptions.acronymStyle,
-            javaScriptOptions.converters
+            javaScriptOptions.converters,
+            javaScriptOptions.rawType
         ];
     }
 
@@ -280,19 +291,28 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
         const converter = (t: Type, name: Name) => {
             const typeMap = this.typeMapTypeFor(t);
             this.emitBlock([this.deserializerFunctionLine(t, name), " "], "", () => {
+                const parsedJson = this._jsOptions.rawType === "json" ? "JSON.parse(json)" : "json";
                 if (!this._jsOptions.runtimeTypecheck) {
-                    this.emitLine("return JSON.parse(json);");
+                    this.emitLine("return ", parsedJson, ";");
                 } else {
-                    this.emitLine("return cast(JSON.parse(json), ", typeMap, ");");
+                    this.emitLine("return cast(", parsedJson, ", ", typeMap, ");");
                 }
             });
             this.ensureBlankLine();
 
             this.emitBlock([this.serializerFunctionLine(t, name), " "], "", () => {
-                if (!this._jsOptions.runtimeTypecheck) {
-                    this.emitLine("return JSON.stringify(value);");
+                if (this._jsOptions.rawType === "json") {
+                    if (!this._jsOptions.runtimeTypecheck) {
+                        this.emitLine("return JSON.stringify(value);");
+                    } else {
+                        this.emitLine("return JSON.stringify(uncast(value, ", typeMap, "), null, 2);");
+                    }
                 } else {
-                    this.emitLine("return JSON.stringify(uncast(value, ", typeMap, "), null, 2);");
+                    if (!this._jsOptions.runtimeTypecheck) {
+                        this.emitLine("return value;");
+                    } else {
+                        this.emitLine("return uncast(value, ", typeMap, ");");
+                    }
                 }
             });
         };
@@ -462,9 +482,13 @@ function r(name${stringAnnotation}) {
 
     protected emitConvertModule(): void {
         this.ensureBlankLine();
-        this.emitMultiline(`// Converts JSON strings to/from your types`);
+        this.emitMultiline(
+            `// Converts JSON ${this._jsOptions.rawType === "json" ? "strings" : "types"} to/from your types`
+        );
         if (this._jsOptions.runtimeTypecheck) {
-            this.emitMultiline(`// and asserts the results of JSON.parse at runtime`);
+            this.emitMultiline(
+                `// and asserts the results${this._jsOptions.rawType === "json" ? " of JSON.parse" : ""} at runtime`
+            );
         }
         const moduleLine = this.moduleLine;
         if (moduleLine === undefined) {
