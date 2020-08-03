@@ -29,13 +29,13 @@
     "devDependencies": {
         "@types/urijs": "^1.19.8",
         "@types/js-base64": "^2.3.1",
-        "@types/node": "^8.10.10",
+        "@types/node": "8.10.10",
         "@types/pako": "^1.0.0",
         "@types/pluralize": "0.0.28",
         "@types/yaml": "^1.0.2",
         "typescript": "~3.2.1",
         "tslint": "^5.11.0",
-        "@types/readable-stream": "2.3.0",
+        "@types/readable-stream": "2.3.9",
         "@types/browser-or-node": "^1.2.0"
     },
     "files": ["dist/**"],
