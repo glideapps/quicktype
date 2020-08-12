@@ -136,6 +136,10 @@ export const PythonLanguage: Language = {
   },
   diffViaSchema: true,
   skipDiffViaSchema: [
+    // Unable to properly represent optional null type in Python
+    // https://github.com/quicktype/quicktype/pull/1516#issuecomment-657344532
+    "combinations1.json",
+    "combinations3.json",
     "keywords.json",
     "0cffa.json",
     "127a1.json",
