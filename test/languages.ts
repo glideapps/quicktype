@@ -136,10 +136,6 @@ export const PythonLanguage: Language = {
   },
   diffViaSchema: true,
   skipDiffViaSchema: [
-    // Unable to properly represent optional null type in Python
-    // https://github.com/quicktype/quicktype/pull/1516#issuecomment-657344532
-    "combinations1.json",
-    "combinations3.json",
     "keywords.json",
     "0cffa.json",
     "127a1.json",
@@ -150,7 +146,7 @@ export const PythonLanguage: Language = {
     "e8b04.json",
     "f6a65.json",
   ],
-  allowMissingNull: false,
+  allowMissingNull: true,
   features: ["enum", "union", "no-defaults", "date-time", "integer-string", "bool-string", "uuid"],
   output: "quicktype.py",
   topLevel: "TopLevel",
