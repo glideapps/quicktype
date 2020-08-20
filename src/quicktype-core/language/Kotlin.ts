@@ -42,14 +42,21 @@ export enum Framework {
     Jackson,
     Klaxon,
     KotlinX,
+    Gson
 }
 
 export const kotlinOptions = {
     framework: new EnumOption(
         "framework",
         "Serialization framework",
-        [["just-types", Framework.None], ["jackson", Framework.Jackson], ["klaxon", Framework.Klaxon], ["kotlinx", Framework.KotlinX]],
-        "klaxon"
+        [
+            ["just-types", Framework.None],
+            ["jackson", Framework.Jackson],
+            ["klaxon", Framework.Klaxon],
+            ["kotlinx", Framework.KotlinX],
+            ["gson", Framework.Gson]
+        ],
+        "gson"
     ),
     packageName: new StringOption("package", "Package", "PACKAGE", "quicktype")
 };
@@ -86,6 +93,8 @@ export class KotlinTargetLanguage extends TargetLanguage {
                 return new KotlinKlaxonRenderer(this, renderContext, options);
             case Framework.KotlinX:
                 return new KotlinXRenderer(this, renderContext, options);
+            case Framework.Gson:
+                return new KotlinGsonRenderer(this, renderContext, options);
             default:
                 return assertNever(options.framework);
         }
@@ -400,10 +409,16 @@ export class KotlinRenderer extends ConvenienceRenderer {
             {
                 let table: Sourcelike[][] = [];
                 this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
-                    table.push([["class ", name, "(val value: ", this.kotlinType(t), ")"], [" : ", unionName, "()"]]);
+                    table.push([
+                        ["class ", name, "(val value: ", this.kotlinType(t), ")"],
+                        [" : ", unionName, "()"]
+                    ]);
                 });
                 if (maybeNull !== null) {
-                    table.push([["class ", this.nameForUnionMember(u, maybeNull), "()"], [" : ", unionName, "()"]]);
+                    table.push([
+                        ["class ", this.nameForUnionMember(u, maybeNull), "()"],
+                        [" : ", unionName, "()"]
+                    ]);
                 }
                 this.emitTable(table);
             }
@@ -1041,7 +1056,11 @@ export class KotlinXRenderer extends KotlinRenderer {
         const table: Sourcelike[][] = [];
         table.push(["// val ", "json", " = Json(JsonConfiguration.Stable)"]);
         this.forEachTopLevel("none", (_, name) => {
-            table.push(["// val ", modifySource(camelCase, name), ` = json.parse(${this.sourcelikeToString(name)}.serializer(), jsonString)`]);
+            table.push([
+                "// val ",
+                modifySource(camelCase, name),
+                ` = json.parse(${this.sourcelikeToString(name)}.serializer(), jsonString)`
+            ]);
         });
         this.emitTable(table);
     }
@@ -1069,7 +1088,7 @@ export class KotlinXRenderer extends KotlinRenderer {
         const escapedName = stringEscape(jsonName);
         const namesDiffer = this.sourcelikeToString(propName) !== escapedName;
         if (namesDiffer) {
-            return ["@SerialName(\"", escapedName, "\")"];
+            return ['@SerialName("', escapedName, '")'];
         }
         return undefined;
     }
@@ -1086,22 +1105,70 @@ export class KotlinXRenderer extends KotlinRenderer {
             this.ensureBlankLine();
             this.emitBlock(["companion object : KSerializer<", enumName, ">"], () => {
                 this.emitBlock("override val descriptor: SerialDescriptor get()", () => {
-                   this.emitLine("return PrimitiveDescriptor(\"", this._kotlinOptions.packageName, ".", enumName, "\", PrimitiveKind.STRING)");
+                    this.emitLine(
+                        'return PrimitiveDescriptor("',
+                        this._kotlinOptions.packageName,
+                        ".",
+                        enumName,
+                        '", PrimitiveKind.STRING)'
+                    );
                 });
 
-                this.emitBlock(["override fun deserialize(decoder: Decoder): ", enumName, " = when (val value = decoder.decodeString())"], () => {
-                    let table: Sourcelike[][] = [];
-                    this.forEachEnumCase(e, "none", (name, json) => {
-                        table.push([[`"${stringEscape(json)}"`], [" -> ", name]]);
-                    });
-                    table.push([["else"], [" -> throw IllegalArgumentException(\"", enumName, " could not parse: $value\")"]]);
-                    this.emitTable(table);
-                });
+                this.emitBlock(
+                    [
+                        "override fun deserialize(decoder: Decoder): ",
+                        enumName,
+                        " = when (val value = decoder.decodeString())"
+                    ],
+                    () => {
+                        let table: Sourcelike[][] = [];
+                        this.forEachEnumCase(e, "none", (name, json) => {
+                            table.push([[`"${stringEscape(json)}"`], [" -> ", name]]);
+                        });
+                        table.push([
+                            ["else"],
+                            [' -> throw IllegalArgumentException("', enumName, ' could not parse: $value")']
+                        ]);
+                        this.emitTable(table);
+                    }
+                );
 
                 this.emitBlock(["override fun serialize(encoder: Encoder, value: ", enumName, ")"], () => {
                     this.emitLine(["return encoder.encodeString(value.value)"]);
                 });
             });
         });
+    }
+}
+
+export class KotlinGsonRenderer extends KotlinRenderer {
+    constructor(
+        targetLanguage: TargetLanguage,
+        renderContext: RenderContext,
+        _kotlinOptions: OptionValues<typeof kotlinOptions>
+    ) {
+        super(targetLanguage, renderContext, _kotlinOptions);
+    }
+
+    protected emitHeader(): void {
+        super.emitHeader();
+
+        this.emitLine(["import com.google.gson.Gson"]);
+    }
+
+    protected renameAttribute(name: Name, jsonName: string, _required: boolean, meta: Array<() => void>) {
+        const rename = this._rename(name, jsonName);
+        if (rename !== undefined) {
+            meta.push(() => this.emitLine(rename));
+        }
+    }
+
+    private _rename(propName: Name, jsonName: string): Sourcelike | undefined {
+        const escapedName = stringEscape(jsonName);
+        const namesDiffer = this.sourcelikeToString(propName) !== escapedName;
+        if (namesDiffer) {
+            return ['@SerializedName("', escapedName, '")'];
+        }
+        return undefined;
     }
 }
