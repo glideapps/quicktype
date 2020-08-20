@@ -1559,7 +1559,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         });
                     });
 
-                    this.emitLine("auto iter = enumValues.find(j);");
+                    this.emitLine(`auto iter = enumValues.find(j.get<${this._stringType.getType()}>());`);
                     this.emitBlock("if (iter != enumValues.end())", false, () => {
                         this.emitLine("x = iter->second;");
                     });
