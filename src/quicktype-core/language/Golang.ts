@@ -81,7 +81,14 @@ function isValueType(t: Type): boolean {
 
 function singleDescriptionComment(description: string[] | undefined): string {
     if (description === undefined) return "";
-    return "// " + description.join("; ") + "\n";
+    return (
+        "// " +
+        description
+            .map(s => s.trim())
+            .filter(Boolean)
+            .join("; ") +
+        "\n"
+    );
 }
 
 function canOmitEmpty(cp: ClassProperty): boolean {
