@@ -81,14 +81,7 @@ function isValueType(t: Type): boolean {
 
 function singleDescriptionComment(description: string[] | undefined): string {
     if (description === undefined) return "";
-    return (
-        "// " +
-        description
-            .map(s => s.trim())
-            .filter(Boolean)
-            .join("; ") +
-        "\n"
-    );
+    return "// " + description.map(s => s.trim()).filter(Boolean).join("; ");
 }
 
 function canOmitEmpty(cp: ClassProperty): boolean {
@@ -274,7 +267,8 @@ export class GoRenderer extends ConvenienceRenderer {
             const goType = this.propertyGoType(p);
             const comment = singleDescriptionComment(this.descriptionForClassProperty(c, jsonName));
             const omitEmpty = canOmitEmpty(p) ? ",omitempty" : [];
-            columns.push([comment, [name, " "], [goType, " "], ['`json:"', stringEscape(jsonName), omitEmpty, '"`']]);
+            columns.push([comment]);
+            columns.push([[name, " "], [goType, " "], ['`json:"', stringEscape(jsonName), omitEmpty, '"`']]);
         });
         this.emitDescription(this.descriptionForType(c));
         this.emitStruct(className, columns);
