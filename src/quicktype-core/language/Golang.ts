@@ -259,7 +259,8 @@ export class GoRenderer extends ConvenienceRenderer {
         this.emitPackageDefinitons(false);
         let columns: Sourcelike[][] = [];
         this.forEachClassProperty(c, "none", (name, jsonName, p) => {
-            const docStrings = (this.descriptionForClassProperty(c, jsonName) ?? []).map(d => "// " + d);
+            const description = this.descriptionForClassProperty(c, jsonName);
+            const docStrings = description !== undefined && description.length > 0 ? description.map(d => "// " + d) : [];
             const goType = this.propertyGoType(p);
             const omitEmpty = canOmitEmpty(p) ? ",omitempty" : [];
 
