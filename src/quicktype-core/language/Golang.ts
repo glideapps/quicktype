@@ -264,7 +264,7 @@ export class GoRenderer extends ConvenienceRenderer {
             const goType = this.propertyGoType(p);
             const omitEmpty = canOmitEmpty(p) ? ",omitempty" : [];
 
-            docStrings.forEach(c => columns.push([c]));
+            docStrings.forEach(doc => columns.push([doc]));
             columns.push([[name, " "], [goType, " "], ['`json:"', stringEscape(jsonName), omitEmpty, '"`']]);
         });
         this.emitDescription(this.descriptionForType(c));
