@@ -79,11 +79,6 @@ function isValueType(t: Type): boolean {
     return primitiveValueTypeKinds.indexOf(kind) >= 0 || kind === "class" || kind === "enum";
 }
 
-function singleDescriptionComment(description: string[] | undefined): string {
-    if (description === undefined) return "";
-    return "// " + description.map(s => s.trim()).filter(Boolean).join("; ");
-}
-
 function canOmitEmpty(cp: ClassProperty): boolean {
     if (!cp.isOptional) return false;
     const t = cp.type;
@@ -264,12 +259,11 @@ export class GoRenderer extends ConvenienceRenderer {
         this.emitPackageDefinitons(false);
         let columns: Sourcelike[][] = [];
         this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+            const docStrings = (this.descriptionForClassProperty(c, jsonName) ?? []).map(d => "// " + d);
             const goType = this.propertyGoType(p);
-            const comment = singleDescriptionComment(this.descriptionForClassProperty(c, jsonName));
             const omitEmpty = canOmitEmpty(p) ? ",omitempty" : [];
-            if (comment.length > 0) {
-                columns.push([comment]);
-            }
+
+            docStrings.forEach(c => columns.push([c]));
             columns.push([[name, " "], [goType, " "], ['`json:"', stringEscape(jsonName), omitEmpty, '"`']]);
         });
         this.emitDescription(this.descriptionForType(c));
