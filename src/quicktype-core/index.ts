@@ -20,7 +20,7 @@ export { JSONSchemaInput, JSONSchemaSourceData } from "./input/JSONSchemaInput";
 export { Ref, JSONSchemaType, JSONSchemaAttributes } from "./input/JSONSchemaInput";
 export { RenderContext } from "./Renderer";
 export { Option, OptionDefinition, getOptionValues } from "./RendererOptions";
-export { TargetLanguage } from "./TargetLanguage";
+export { TargetLanguage, MultiFileRenderResult } from "./TargetLanguage";
 export { all as defaultTargetLanguages, languageNamed } from "./language/All";
 export { MultiWord, Sourcelike, SerializedRenderResult, Annotation, modifySource, singleWord, parenIfNeeded } from "./Source";
 export { Name, funPrefixNamer, Namer } from "./Naming";
