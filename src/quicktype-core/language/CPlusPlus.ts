@@ -1363,18 +1363,29 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 } else {
                     getter = [name];
                 }
-                this.emitLine(
-                    "j[",
-                    this._stringType.wrapEncodingChange(
-                        [ourQualifier],
-                        this._stringType.getType(),
-                        this.NarrowString.getType(),
-                        this._stringType.createStringLiteral([stringEscape(json)])
-                    ),
-                    "] = ",
-                    this._stringType.wrapEncodingChange([ourQualifier], cppType, toType, ["x.", getter]),
-                    ";"
-                );
+                let assignment: Sourcelike[] = [
+                        "j[",
+                        this._stringType.wrapEncodingChange(
+                            [ourQualifier],
+                            this._stringType.getType(),
+                            this.NarrowString.getType(),
+                            this._stringType.createStringLiteral([stringEscape(json)])
+                        ),
+                        "] = ",
+                        this._stringType.wrapEncodingChange([ourQualifier], cppType, toType, ["x.", getter]),
+                        ";"
+                ];
+                if (t instanceof UnionType && removeNullFromUnion(t, true)[0]) {
+                    this.emitBlock(
+                        ["if (", this._stringType.wrapEncodingChange([ourQualifier], cppType, toType, ["x.", getter]),")"],
+                        false,
+                        () => {
+                            this.emitLine(assignment);
+                    });
+                }
+                else {
+                    this.emitLine(assignment);
+                }
             });
         });
     }
