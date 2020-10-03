@@ -1375,15 +1375,14 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         this._stringType.wrapEncodingChange([ourQualifier], cppType, toType, ["x.", getter]),
                         ";"
                 ];
-                if (t instanceof UnionType && removeNullFromUnion(t, true)[0]) {
+                if (t instanceof UnionType && removeNullFromUnion(t, true)[0] !== null) {
                     this.emitBlock(
                         ["if (", this._stringType.wrapEncodingChange([ourQualifier], cppType, toType, ["x.", getter]),")"],
                         false,
                         () => {
                             this.emitLine(assignment);
                     });
-                }
-                else {
+                } else {
                     this.emitLine(assignment);
                 }
             });
