@@ -25,7 +25,7 @@
     "js-base64": "^2.4.3",
     "lodash": "^4.17.19",
     "moment": "^2.22.1",
-    "node-fetch": "^1.7.1",
+    "node-fetch": "^2.6.1",
     "pako": "^1.0.6",
     "pluralize": "^7.0.0",
     "stream-json": "1.1.3",
