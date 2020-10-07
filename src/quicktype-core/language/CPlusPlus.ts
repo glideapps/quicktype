@@ -136,6 +136,10 @@ export class CPlusPlusTargetLanguage extends TargetLanguage {
         return true;
     }
 
+    get supportsOptionalClassProperties(): boolean {
+        return true;
+    }
+
     protected makeRenderer(
         renderContext: RenderContext,
         untypedOptionValues: { [name: string]: any }
@@ -1375,7 +1379,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         this._stringType.wrapEncodingChange([ourQualifier], cppType, toType, ["x.", getter]),
                         ";"
                 ];
-                if (t instanceof UnionType && removeNullFromUnion(t, true)[0] !== null) {
+                if (p.isOptional) {
                     this.emitBlock(
                         ["if (", this._stringType.wrapEncodingChange([ourQualifier], cppType, toType, ["x.", getter]),")"],
                         false,
