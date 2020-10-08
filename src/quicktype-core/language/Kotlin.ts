@@ -238,13 +238,12 @@ export class KotlinRenderer extends ConvenienceRenderer {
         this.emitLine(close);
     }
 
-    // (asarazan): I've broken out the following three functions
-    // because some renderers, such as kotlinx, can cope with `any`, while some get mad.
-    protected anyType(withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
-        const optional = noOptional ? "" : "?";
-        return maybeAnnotated(withIssues, anyTypeIssueAnnotation, ["Any", optional]);
+    protected anySourceType(optional: string): Sourcelike {
+        return ["Any", optional];
     }
 
+    // (asarazan): I've broken out the following two functions
+    // because some renderers, such as kotlinx, can cope with `any`, while some get mad.
     protected arrayType(arrayType: ArrayType, withIssues: boolean = false, _noOptional: boolean = false): Sourcelike {
         return ["List<", this.kotlinType(arrayType.items, withIssues), ">"];
     }
@@ -257,9 +256,11 @@ export class KotlinRenderer extends ConvenienceRenderer {
         const optional = noOptional ? "" : "?";
         return matchType<Sourcelike>(
             t,
-            _anyType => this.anyType(withIssues, noOptional),
+            _anyType => {
+                return maybeAnnotated(withIssues, anyTypeIssueAnnotation, this.anySourceType(optional));
+            },
             _nullType => {
-                return maybeAnnotated(withIssues, nullTypeIssueAnnotation, ["Any", optional]);
+                return maybeAnnotated(withIssues, nullTypeIssueAnnotation, this.anySourceType(optional));
             },
             _boolType => "Boolean",
             _integerType => "Long",
@@ -999,8 +1000,8 @@ export class KotlinXRenderer extends KotlinRenderer {
         super(targetLanguage, renderContext, _kotlinOptions);
     }
 
-    protected anyType(_withIssues: boolean = false, _noOptional: boolean = false): Sourcelike {
-        return "JsonObject";
+    protected anySourceType(optional: string): Sourcelike {
+        return ["JsonObject", optional];
     }
 
     protected arrayType(arrayType: ArrayType, withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
