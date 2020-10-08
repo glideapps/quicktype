@@ -1051,7 +1051,8 @@ export class KotlinXRenderer extends KotlinRenderer {
 
         this.emitLine("import kotlinx.serialization.*");
         this.emitLine("import kotlinx.serialization.json.*");
-        this.emitLine("import kotlinx.serialization.internal.*");
+        this.emitLine("import kotlinx.serialization.descriptors.*");
+        this.emitLine("import kotlinx.serialization.encoding.*");
     }
 
     protected emitClassAnnotations(_c: ClassType, _className: Name) {
@@ -1086,7 +1087,7 @@ export class KotlinXRenderer extends KotlinRenderer {
             this.ensureBlankLine();
             this.emitBlock(["companion object : KSerializer<", enumName, ">"], () => {
                 this.emitBlock("override val descriptor: SerialDescriptor get()", () => {
-                   this.emitLine("return PrimitiveDescriptor(\"", this._kotlinOptions.packageName, ".", enumName, "\", PrimitiveKind.STRING)");
+                   this.emitLine("return PrimitiveSerialDescriptor(\"", this._kotlinOptions.packageName, ".", enumName, "\", PrimitiveKind.STRING)");
                 });
 
                 this.emitBlock(["override fun deserialize(decoder: Decoder): ", enumName, " = when (val value = decoder.decodeString())"], () => {
