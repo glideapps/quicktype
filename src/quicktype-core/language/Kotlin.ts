@@ -1078,7 +1078,7 @@ export class KotlinXRenderer extends KotlinRenderer {
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
 
-        this.emitLine(["@Serializable(with = ", enumName, ".Companion::class)"]);
+        this.emitLine(["@Serializable"]);
         this.emitBlock(["enum class ", enumName, "(val value: String)"], () => {
             let count = e.cases.size;
             this.forEachEnumCase(e, "none", (name, json) => {
