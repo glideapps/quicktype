@@ -306,7 +306,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
 
     protected emitEmptyClassDefinition(c: ClassType, className: Name): void {
         this.emitDescription(this.descriptionForType(c));
-
+        this.emitClassAnnotations(c, className);
         this.emitLine("class ", className, "()");
     }
 
@@ -368,7 +368,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
         this.emitLine(")");
     }
 
-    protected emitClassAnnotations(_c: ClassType, _className: Name) {
+    protected emitClassAnnotations(_c: Type, _className: Name) {
         // to be overridden
     }
 
@@ -397,6 +397,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
         this.emitDescription(this.descriptionForType(u));
 
         const [maybeNull, nonNulls] = removeNullFromUnion(u, sortBy);
+        this.emitClassAnnotations(u, unionName);
         this.emitBlock(["sealed class ", unionName], () => {
             {
                 let table: Sourcelike[][] = [];
@@ -1056,7 +1057,7 @@ export class KotlinXRenderer extends KotlinRenderer {
         this.emitLine("import kotlinx.serialization.encoding.*");
     }
 
-    protected emitClassAnnotations(_c: ClassType, _className: Name) {
+    protected emitClassAnnotations(_c: Type, _className: Name) {
         this.emitLine("@Serializable");
     }
 
