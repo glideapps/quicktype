@@ -238,13 +238,12 @@ export class KotlinRenderer extends ConvenienceRenderer {
         this.emitLine(close);
     }
 
-    // (asarazan): I've broken out the following three functions
-    // because some renderers, such as kotlinx, can cope with `any`, while some get mad.
-    protected anyType(withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
-        const optional = noOptional ? "" : "?";
-        return maybeAnnotated(withIssues, anyTypeIssueAnnotation, ["Any", optional]);
+    protected anySourceType(optional: string): Sourcelike {
+        return ["Any", optional];
     }
 
+    // (asarazan): I've broken out the following two functions
+    // because some renderers, such as kotlinx, can cope with `any`, while some get mad.
     protected arrayType(arrayType: ArrayType, withIssues: boolean = false, _noOptional: boolean = false): Sourcelike {
         return ["List<", this.kotlinType(arrayType.items, withIssues), ">"];
     }
@@ -257,9 +256,11 @@ export class KotlinRenderer extends ConvenienceRenderer {
         const optional = noOptional ? "" : "?";
         return matchType<Sourcelike>(
             t,
-            _anyType => this.anyType(withIssues, noOptional),
+            _anyType => {
+                return maybeAnnotated(withIssues, anyTypeIssueAnnotation, this.anySourceType(optional));
+            },
             _nullType => {
-                return maybeAnnotated(withIssues, nullTypeIssueAnnotation, ["Any", optional]);
+                return maybeAnnotated(withIssues, nullTypeIssueAnnotation, this.anySourceType(optional));
             },
             _boolType => "Boolean",
             _integerType => "Long",
@@ -305,7 +306,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
 
     protected emitEmptyClassDefinition(c: ClassType, className: Name): void {
         this.emitDescription(this.descriptionForType(c));
-
+        this.emitClassAnnotations(c, className);
         this.emitLine("class ", className, "()");
     }
 
@@ -367,7 +368,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
         this.emitLine(")");
     }
 
-    protected emitClassAnnotations(_c: ClassType, _className: Name) {
+    protected emitClassAnnotations(_c: Type, _className: Name) {
         // to be overridden
     }
 
@@ -396,6 +397,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
         this.emitDescription(this.descriptionForType(u));
 
         const [maybeNull, nonNulls] = removeNullFromUnion(u, sortBy);
+        this.emitClassAnnotations(u, unionName);
         this.emitBlock(["sealed class ", unionName], () => {
             {
                 let table: Sourcelike[][] = [];
@@ -999,8 +1001,8 @@ export class KotlinXRenderer extends KotlinRenderer {
         super(targetLanguage, renderContext, _kotlinOptions);
     }
 
-    protected anyType(_withIssues: boolean = false, _noOptional: boolean = false): Sourcelike {
-        return "JsonObject";
+    protected anySourceType(optional: string): Sourcelike {
+        return ["JsonObject", optional];
     }
 
     protected arrayType(arrayType: ArrayType, withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
@@ -1051,10 +1053,11 @@ export class KotlinXRenderer extends KotlinRenderer {
 
         this.emitLine("import kotlinx.serialization.*");
         this.emitLine("import kotlinx.serialization.json.*");
-        this.emitLine("import kotlinx.serialization.internal.*");
+        this.emitLine("import kotlinx.serialization.descriptors.*");
+        this.emitLine("import kotlinx.serialization.encoding.*");
     }
 
-    protected emitClassAnnotations(_c: ClassType, _className: Name) {
+    protected emitClassAnnotations(_c: Type, _className: Name) {
         this.emitLine("@Serializable");
     }
 
@@ -1077,7 +1080,7 @@ export class KotlinXRenderer extends KotlinRenderer {
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
 
-        this.emitLine(["@Serializable(with = ", enumName, ".Companion::class)"]);
+        this.emitLine(["@Serializable"]);
         this.emitBlock(["enum class ", enumName, "(val value: String)"], () => {
             let count = e.cases.size;
             this.forEachEnumCase(e, "none", (name, json) => {
@@ -1086,7 +1089,7 @@ export class KotlinXRenderer extends KotlinRenderer {
             this.ensureBlankLine();
             this.emitBlock(["companion object : KSerializer<", enumName, ">"], () => {
                 this.emitBlock("override val descriptor: SerialDescriptor get()", () => {
-                   this.emitLine("return PrimitiveDescriptor(\"", this._kotlinOptions.packageName, ".", enumName, "\", PrimitiveKind.STRING)");
+                   this.emitLine("return PrimitiveSerialDescriptor(\"", this._kotlinOptions.packageName, ".", enumName, "\", PrimitiveKind.STRING)");
                 });
 
                 this.emitBlock(["override fun deserialize(decoder: Decoder): ", enumName, " = when (val value = decoder.decodeString())"], () => {
