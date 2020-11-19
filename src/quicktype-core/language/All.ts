@@ -21,6 +21,7 @@ import { DartTargetLanguage } from "./Dart";
 import { PythonTargetLanguage } from "./Python";
 import { PikeTargetLanguage } from "./Pike";
 import { HaskellTargetLanguage } from "./Haskell";
+import { PhpTargetLanguage } from "./Php";
 
 export const all: TargetLanguage[] = [
     new NewtonsoftCSharpTargetLanguage(),
@@ -43,6 +44,7 @@ export const all: TargetLanguage[] = [
     new PythonTargetLanguage("Python", ["python", "py"], "py"),
     new PikeTargetLanguage(),
     new HaskellTargetLanguage(),
+    new PhpTargetLanguage(),
 ];
 
 export function languageNamed(name: string, targetLanguages?: TargetLanguage[]): TargetLanguage | undefined {
