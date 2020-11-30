@@ -38,7 +38,7 @@ import { RenderContext } from "../Renderer";
 import { arrayIntercalate } from "collection-utils";
 import { snakeCase } from "lodash";
 
-export type CodersPlace = 'disabled' | 'top-level' | 'in-class';
+export type CodersPlace = "disabled" | "top-level" | "in-class";
 
 export const dartOptions = {
     justTypes: new BooleanOption("just-types", "Types only", false),
@@ -46,11 +46,11 @@ export const dartOptions = {
         "generate-coders", 
         "Encoder & decoder place", 
         [
-            ['disabled', 'disabled'],
-            ['top-level', 'top-level'],
-            ['in-class', 'in-class'],
+            ["disabled", "disabled"],
+            ["top-level", "top-level"],
+            ["in-class", "in-class"],
         ],
-        'disabled',
+        "disabled",
     ),
     methodNamesWithMap: new BooleanOption("from-map", "Use method names fromMap() & toMap()", false),
     requiredProperties: new BooleanOption("required-props", "Make all properties required", false),
@@ -327,7 +327,7 @@ export class DartRenderer extends ConvenienceRenderer {
 
         if (this._options.justTypes) return;
 
-        if (this._options.generateCoders != 'disabled') {
+        if (this._options.generateCoders !== "disabled") {
             this.emitLine("// To parse this JSON data, do");
             this.emitLine("//");
             this.forEachTopLevel("none", (_t, name) => {
@@ -343,7 +343,7 @@ export class DartRenderer extends ConvenienceRenderer {
         if (this._options.useFreezed) {
             this.emitLine("import 'package:freezed_annotation/freezed_annotation.dart';");
         }
-        if (this._options.generateCoders != 'disabled') {
+        if (this._options.generateCoders !== "disabled") {
             this.emitLine("import 'dart:convert';");
         }
         if (this._options.useFreezed) {
@@ -531,7 +531,7 @@ export class DartRenderer extends ConvenienceRenderer {
 
             if (this._options.justTypes) return;
 
-            if (this._options.generateCoders == 'in-class') {
+            if (this._options.generateCoders === "in-class") {
                 this.ensureBlankLine();
                 this.emitLine(
                     "factory ",
@@ -659,7 +659,7 @@ export class DartRenderer extends ConvenienceRenderer {
     protected emitSourceStructure(): void {
         this.emitFileHeader();
 
-        if (!this._options.justTypes && this._options.generateCoders == 'top-level') {
+        if (!this._options.justTypes && this._options.generateCoders === "top-level") {
             this.forEachTopLevel("leading-and-interposing", (t, name) => {
                 const { encoder, decoder } = defined(this._topLevelDependents.get(name));
 
