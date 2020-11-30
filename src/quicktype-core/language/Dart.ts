@@ -333,7 +333,7 @@ export class DartRenderer extends ConvenienceRenderer {
         this.emitLine("import 'dart:convert';");
         if (this._options.useFreezed) {
             this.ensureBlankLine();
-            const optionNameIsEmpty = this._options.partName?.length === 0;
+            const optionNameIsEmpty = this._options.partName.length === 0;
             const name = modifySource(snakeCase, optionNameIsEmpty ? [...this.topLevels.keys()][0] : this._options.partName);
             this.emitLine("part '", name, ".freezed.dart';");
             if (!this._options.justTypes) {
@@ -587,7 +587,6 @@ export class DartRenderer extends ConvenienceRenderer {
                     });
                 });
                 this.emitLine("}) = _", className, ";");
-                this.ensureBlankLine();
             }
 
             if (this._options.justTypes) return;
