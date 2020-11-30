@@ -46,7 +46,7 @@ export const dartOptions = {
     finalProperties: new BooleanOption("final-props", "Make all properties final", false),
     generateCopyWith: new BooleanOption("copy-with", "Generate CopyWith method", false),
     useFreezed: new BooleanOption("use-freezed", "Generate class definitions with @freezed compatibility", false),
-    partName: new StringOption('part-name', "Use this name in `part` directive", 'NAME', ''),
+    partName: new StringOption("part-name", "Use this name in `part` directive", "NAME", ""),
 };
 
 export class DartTargetLanguage extends TargetLanguage {
@@ -333,10 +333,11 @@ export class DartRenderer extends ConvenienceRenderer {
         this.emitLine("import 'dart:convert';");
         if (this._options.useFreezed) {
             this.ensureBlankLine();
-            const name = modifySource(snakeCase, this._options.partName || [...this.topLevels.keys()][0]);
-            this.emitLine('part \'', name, '.freezed.dart\';');
+            const optionNameIsEmpty = this._options.partName?.length === 0;
+            const name = modifySource(snakeCase, optionNameIsEmpty ? [...this.topLevels.keys()][0] : this._options.partName);
+            this.emitLine("part '", name, ".freezed.dart';");
             if (!this._options.justTypes) {
-                this.emitLine('part \'', name,'.g.dart\';');
+                this.emitLine("part '", name, ".g.dart';");
             }
         }
     }
@@ -577,15 +578,15 @@ export class DartRenderer extends ConvenienceRenderer {
         this.emitLine("@freezed");
         this.emitBlock(["abstract class ", className, " with _$", className], () => {
             if (c.getProperties().size === 0) {
-                this.emitLine("const factory ", className, "() = _", className, ';');
+                this.emitLine("const factory ", className, "() = _", className, ";");
             } else {
                 this.emitLine("const factory ", className, "({");
                 this.indent(() => {
                     this.forEachClassProperty(c, "none", (name, _, _p) => {
-                        this.emitLine(this._options.requiredProperties ? "@required " : "", this.dartType(_p.type, true), ' ', name, ",");
+                        this.emitLine(this._options.requiredProperties ? "@required " : "", this.dartType(_p.type, true), " ", name, ",");
                     });
                 });
-                this.emitLine("}) = _", className, ';');
+                this.emitLine("}) = _", className, ";");
                 this.ensureBlankLine();
             }
 
@@ -594,12 +595,12 @@ export class DartRenderer extends ConvenienceRenderer {
             this.ensureBlankLine();
             this.emitLine(
                 // factory PublicAnswer.fromJson(Map<String, dynamic> json) => _$PublicAnswerFromJson(json);
-                'factory ',
+                "factory ",
                 className,
-                '.fromJson(Map<String, dynamic> json) => ',
-                '_$',
+                ".fromJson(Map<String, dynamic> json) => ",
+                "_$",
                 className,
-                'FromJson(json);'
+                "FromJson(json);",
             );
         });
     }
