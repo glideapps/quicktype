@@ -31,11 +31,12 @@ import { StringTypeMapping } from "../TypeBuilder";
 import { Name, Namer, funPrefixNamer, DependencyName } from "../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
-import { Option, BooleanOption, getOptionValues, OptionValues } from "../RendererOptions";
+import { Option, BooleanOption, getOptionValues, OptionValues, StringOption } from "../RendererOptions";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { defined } from "../support/Support";
 import { RenderContext } from "../Renderer";
 import { arrayIntercalate } from "collection-utils";
+import { snakeCase } from "lodash";
 
 export const dartOptions = {
     justTypes: new BooleanOption("just-types", "Types only", false),
@@ -43,7 +44,9 @@ export const dartOptions = {
     methodNamesWithMap: new BooleanOption("from-map", "Use method names fromMap() & toMap()", false),
     requiredProperties: new BooleanOption("required-props", "Make all properties required", false),
     finalProperties: new BooleanOption("final-props", "Make all properties final", false),
-    generateCopyWith: new BooleanOption("copy-with", "Generate CopyWith method", false)
+    generateCopyWith: new BooleanOption("copy-with", "Generate CopyWith method", false),
+    useFreezed: new BooleanOption("use-freezed", "Generate class definitions with @freezed compatibility", false),
+    partName: new StringOption('part-name', "Use this name in `part` directive", 'NAME', ''),
 };
 
 export class DartTargetLanguage extends TargetLanguage {
@@ -58,7 +61,9 @@ export class DartTargetLanguage extends TargetLanguage {
             dartOptions.methodNamesWithMap,
             dartOptions.requiredProperties,
             dartOptions.finalProperties,
-            dartOptions.generateCopyWith
+            dartOptions.generateCopyWith,
+            dartOptions.useFreezed,
+            dartOptions.partName,
         ];
     }
 
@@ -322,7 +327,18 @@ export class DartRenderer extends ConvenienceRenderer {
         if (this._options.requiredProperties) {
             this.emitLine("import 'package:meta/meta.dart';");
         }
+        if (this._options.useFreezed) {
+            this.emitLine("import 'package:freezed_annotation/freezed_annotation.dart';");
+        }
         this.emitLine("import 'dart:convert';");
+        if (this._options.useFreezed) {
+            this.ensureBlankLine();
+            const name = modifySource(snakeCase, this._options.partName || [...this.topLevels.keys()][0]);
+            this.emitLine('part \'', name, '.freezed.dart\';');
+            if (!this._options.justTypes) {
+                this.emitLine('part \'', name,'.g.dart\';');
+            }
+        }
     }
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
@@ -555,6 +571,39 @@ export class DartRenderer extends ConvenienceRenderer {
         });
     }
 
+    protected emitFreezedClassDefinition(c: ClassType, className: Name): void {
+        this.emitDescription(this.descriptionForType(c));
+
+        this.emitLine("@freezed");
+        this.emitBlock(["abstract class ", className, " with _$", className], () => {
+            if (c.getProperties().size === 0) {
+                this.emitLine("const factory ", className, "() = _", className, ';');
+            } else {
+                this.emitLine("const factory ", className, "({");
+                this.indent(() => {
+                    this.forEachClassProperty(c, "none", (name, _, _p) => {
+                        this.emitLine(this._options.requiredProperties ? "@required " : "", this.dartType(_p.type, true), ' ', name, ",");
+                    });
+                });
+                this.emitLine("}) = _", className, ';');
+                this.ensureBlankLine();
+            }
+
+            if (this._options.justTypes) return;
+
+            this.ensureBlankLine();
+            this.emitLine(
+                // factory PublicAnswer.fromJson(Map<String, dynamic> json) => _$PublicAnswerFromJson(json);
+                'factory ',
+                className,
+                '.fromJson(Map<String, dynamic> json) => ',
+                '_$',
+                className,
+                'FromJson(json);'
+            );
+        });
+    }
+
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
         const caseNames: Sourcelike[] = Array.from(e.cases).map(c => this.nameForEnumCase(e, c));
         this.emitDescription(this.descriptionForType(e));
@@ -628,7 +677,7 @@ export class DartRenderer extends ConvenienceRenderer {
 
         this.forEachNamedType(
             "leading-and-interposing",
-            (c: ClassType, n: Name) => this.emitClassDefinition(c, n),
+            (c: ClassType, n: Name) => this._options.useFreezed ? this.emitFreezedClassDefinition(c, n) : this.emitClassDefinition(c, n),
             (e, n) => this.emitEnumDefinition(e, n),
             (_e, _n) => {
                 // We don't support this yet.
