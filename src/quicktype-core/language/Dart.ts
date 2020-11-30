@@ -50,7 +50,7 @@ export const dartOptions = {
             ["top-level", "top-level"],
             ["in-class", "in-class"],
         ],
-        "disabled",
+        "top-level",
     ),
     methodNamesWithMap: new BooleanOption("from-map", "Use method names fromMap() & toMap()", false),
     requiredProperties: new BooleanOption("required-props", "Make all properties required", false),
