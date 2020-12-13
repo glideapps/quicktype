@@ -33,7 +33,7 @@ RUN apt-get -y install dotnet-sdk-2.0.0 --assume-yes
 # Install Boost for C++
 RUN apt-get -y install libboost-all-dev --assume-yes
 RUN apt-get -y update && apt-get -y install software-properties-common python-software-properties --assume-yes
-RUN add-apt-repository ppa:jonathonf/gcc-7.1
+RUN add-apt-repository ppa:ubuntu-toolchain-r/test
 RUN apt-get -y update
 RUN apt-get -y install g++-7 --assume-yes
 RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7
