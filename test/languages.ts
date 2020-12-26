@@ -1135,3 +1135,23 @@ export const HaskellLanguage: Language = {
     quickTestRendererOptions: [{ "array-type": "list" }],
     sourceFiles: ["src/language/Haskell.ts"]
 };
+
+export const PHPLanguage: Language = {
+    name: "php",
+    base: "test/fixtures/php",
+    runCommand(sample: string) {
+        return `php main.php \"${sample}\"`;
+    },
+    diffViaSchema: false,
+    skipDiffViaSchema: [],
+    allowMissingNull: true,
+    features: ["enum"],
+    output: "TopLevel.php",
+    topLevel: "TopLevel",
+    skipJSON: [],
+    skipMiscJSON: false,
+    skipSchema: [],
+    rendererOptions: {},
+    quickTestRendererOptions: [],
+    sourceFiles: ["src/Language/Php.ts"]
+};

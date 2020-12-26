@@ -805,6 +805,7 @@ export const allFixtures: Fixture[] = [
     new JSONFixture(languages.DartLanguage),
     new JSONFixture(languages.PikeLanguage),
     new JSONFixture(languages.HaskellLanguage),
+    new JSONFixture(languages.PHPLanguage),
     new JSONSchemaJSONFixture(languages.CSharpLanguage),
     new JSONTypeScriptFixture(languages.CSharpLanguage),
     // new JSONSchemaFixture(languages.CrystalLanguage),
@@ -843,5 +844,6 @@ export const allFixtures: Fixture[] = [
     new GraphQLFixture(languages.DartLanguage),
     new GraphQLFixture(languages.PikeLanguage),
     new GraphQLFixture(languages.HaskellLanguage),
+    new GraphQLFixture(languages.PHPLanguage),
     new CommandSuccessfulLanguageFixture(languages.JavaScriptPropTypesLanguage)
 ];
