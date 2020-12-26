@@ -477,7 +477,7 @@ export class PhpRenderer extends ConvenienceRenderer {
     protected phpSampleConvert(className: Name, t: Type, lhs: Sourcelike[], args: Sourcelike[], idx: number, suffix: Sourcelike) {
         return matchType<void>(
             t,
-            _anyType => this.emitLine(...lhs, "'AnyType::", className, "::", args, "::" + idx, "'", suffix, "/*", "" + idx, ":", args,, "*/"),
+            _anyType => this.emitLine(...lhs, "'AnyType::", className, "::", args, "::" + idx, "'", suffix, "/*", "" + idx, ":", args, "*/"),
             _nullType => this.emitLine(...lhs, "null", suffix, " /*", "" + idx, ":", args, "*/"),
             _boolType => this.emitLine(...lhs, "true", suffix, " /*", "" + idx, ":", args, "*/"),
             _integerType => this.emitLine(...lhs, "" + idx, suffix, " /*", "" + idx, ":", args, "*/"),
