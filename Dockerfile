@@ -68,6 +68,11 @@ RUN apt-get -y install python3.6 --assume-yes
 RUN curl https://bootstrap.pypa.io/get-pip.py | python3.6
 RUN pip3.6 install mypy python-dateutil
 
+# PHP
+RUN export LANG=C.UTF-8 ; add-apt-repository ppa:ondrej/php
+RUN apt-get -y update
+RUN apt-get -y install php7.4 --assume-yes
+
 # Dart
 RUN apt-get -y install apt-transport-https
 RUN sh -c 'curl https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -'

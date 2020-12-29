@@ -162,6 +162,41 @@ export const PythonLanguage: Language = {
   sourceFiles: ["src/language/Python.ts"],
 };
 
+export const PhpLanguage: Language = {
+  name: "php",
+  base: "test/fixtures/php",
+  compileCommand: "true",
+  runCommand(sample: String) {
+    return `./run.sh "${sample}"`;
+  },
+  diffViaSchema: true,
+  skipDiffViaSchema: [
+    "keywords.json",
+    "0cffa.json",
+    "127a1.json",
+    "26b49.json",
+    "34702.json",
+    "7681c.json",
+    "c3303.json",
+    "e8b04.json",
+    "f6a65.json",
+  ],
+  allowMissingNull: false,
+  features: ["enum", "union", "no-defaults", "date-time", "integer-string", "bool-string", "uuid"],
+  output: "quicktype.php",
+  topLevel: "TopLevel",
+  skipJSON: [
+    "31189.json", // year 0 is out of range
+  ],
+  skipMiscJSON: false,
+  skipSchema: [
+    "keyword-unions.schema", // Requires more than 255 arguments
+  ],
+  rendererOptions: {},
+  quickTestRendererOptions: [{ "php-version": "7.4" }],
+  sourceFiles: ["src/language/Php.ts"],
+};
+
 export const RustLanguage: Language = {
   name: "rust",
   base: "test/fixtures/rust",
