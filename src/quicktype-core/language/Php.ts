@@ -9,15 +9,9 @@ import {
     allLowerWordStyle,
     allUpperWordStyle,
     combineWords,
-    escapeNonPrintableMapper,
     firstUpperWordStyle,
-    isAscii,
-    isDigit,
-    isLetter,
     splitIntoWords,
-    standardUnicodeHexEscape,
-    utf16ConcatMap,
-    utf16LegalizeCharacters
+    utf16ConcatMap
 } from "../support/Strings";
 import { defined } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
@@ -90,18 +84,42 @@ export class PhpTargetLanguage extends TargetLanguage {
     }
 }
 
-export const stringEscape = utf16ConcatMap(escapeNonPrintableMapper(isAscii, standardUnicodeHexEscape));
+export const stringEscape = (m: string) => {
+    return utf16ConcatMap(u => (u === 0x27 ? "\\'" : u === 0x5c ? "\\\\" : String.fromCharCode(u)))(m);
+};
 
+const legalStartChars = [
+    0x5f,
+    ...Array(26)
+        .fill(0)
+        .map((__, i) => i + 65),
+    ...Array(26)
+        .fill(0)
+        .map((__, i) => i + 97)
+];
 function isStartCharacter(codePoint: number): boolean {
-    if (codePoint === 0x5f) return true; // underscore
-    return isAscii(codePoint) && isLetter(codePoint);
+    return legalStartChars.indexOf(codePoint) >= 0;
 }
 
-function isPartCharacter(codePoint: number): boolean {
-    return isStartCharacter(codePoint) || (isAscii(codePoint) && isDigit(codePoint));
+const legalChars = [
+    0x5f,
+    ...Array(10)
+        .fill(0)
+        .map((__, i) => i + 48),
+    ...Array(26)
+        .fill(0)
+        .map((__, i) => i + 65),
+    ...Array(26)
+        .fill(0)
+        .map((__, i) => i + 97)
+];
+function isIdentifier(codePoint: number): boolean {
+    return legalChars.indexOf(codePoint) >= 0;
 }
 
-const legalizeName = utf16LegalizeCharacters(isPartCharacter);
+const legalizeName = (m: string) => {
+    return utf16ConcatMap(u => (isIdentifier(u) ? String.fromCharCode(u) : `U${u}`))(m);
+};
 
 export function phpNameStyle(
     startWithUpper: boolean,
@@ -109,8 +127,8 @@ export function phpNameStyle(
     original: string,
     acronymsStyle: (s: string) => string = allUpperWordStyle
 ): string {
-    const words = splitIntoWords(original);
-    return combineWords(
+    const words = splitIntoWords(legalizeName(original));
+    const ret = combineWords(
         words,
         legalizeName,
         upperUnderscore ? allUpperWordStyle : startWithUpper ? firstUpperWordStyle : allLowerWordStyle,
@@ -120,6 +138,7 @@ export function phpNameStyle(
         upperUnderscore ? "_" : "",
         isStartCharacter
     );
+    return ret;
 }
 
 export interface FunctionNames {
@@ -181,6 +200,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         _jsonName: string,
         name: Name
     ): FunctionNames {
+        // console.log("Name:", jsonName, "::", name as SimpleNameType);
         const getterName = new DependencyName(
             this.getNameStyling("propertyNamingFunction"),
             name.order,
@@ -301,12 +321,14 @@ export class PhpRenderer extends ConvenienceRenderer {
             _doubleType => "float",
             _stringType => "string",
             _arrayType => "array",
-            classType => this.nameForNamedType(classType),
+            classType => [this.nameForNamedType(classType), ""],
             _mapType => "stdClass",
             enumType => this.nameForNamedType(enumType),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
-                if (nullable !== null) return ["?", this.phpType(nullable)];
+                if (nullable !== null) {
+                    return ["?", this.phpType(nullable)];
+                }
                 let prefix = "";
                 return _.flatten(
                     Array.from(unionType.sortedMembers).map(m => {
@@ -344,12 +366,14 @@ export class PhpRenderer extends ConvenienceRenderer {
             _doubleType => "float",
             _stringType => "string",
             _arrayType => ["array<", this.phpType(_arrayType.items), ">"],
-            classType => this.nameForNamedType(classType),
+            classType => [this.nameForNamedType(classType), ""],
             _mapType => "stdClass",
             enumType => this.nameForNamedType(enumType),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
-                if (nullable !== null) return [this.phpType(nullable), "| null"];
+                if (nullable !== null) {
+                    return [this.phpDocType(nullable), "|null"];
+                }
                 let prefix = "";
                 return _.flatten(
                     Array.from(unionType.sortedMembers).map(m => {
@@ -489,8 +513,12 @@ export class PhpRenderer extends ConvenienceRenderer {
             this.emitLine("return (function($myi) {");
             this.indent(() => {
                 this.emitLine("$myo = new stdClass();");
-                this.emitLine("foreach ($myi  as $k => $v) {");
-                this.indent(() => this.phpToObjConvert(className, itemT.values, [attr, "['.$k.']"], "$v"));
+                this.emitLine("foreach ($myi as $k => $v) {");
+                this.indent(() => {
+                    this.emitLine("$myo->$k = (function($k, $v) {");
+                    this.indent(() => this.phpToObjConvert(className, itemT.values, [attr, "['.$k.']"], ["$v"]));
+                    this.emitLine("})($k, $v);");
+                });
                 this.emitLine("}");
                 this.emitLine("return $myo;");
             });
@@ -1226,18 +1254,9 @@ export class PhpRenderer extends ConvenienceRenderer {
         this.emitFileHeader(className, []);
 
         this.emitBlock(["class ", className], () => {
-            this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+            this.forEachClassProperty(c, "none", (name, _jsonName, p) => {
                 this.emitDescriptionBlock([_.flatten(["@var ", this.phpDocType(p.type)])]);
-                this.emitLine(
-                    "private ",
-                    this.phpType(p.type),
-                    " $",
-                    name,
-                    "; // json:",
-                    jsonName,
-                    " ",
-                    p.type.isNullable ? "Optional" : "Required"
-                );
+                this.emitLine("private ", this.phpType(p.type), " $", name, ";");
             });
 
             this.ensureBlankLine();
@@ -1309,9 +1328,9 @@ export class PhpRenderer extends ConvenienceRenderer {
                 () => {
                     let lines: Sourcelike[][] = [];
                     let p = "return ";
-                    this.forEachClassProperty(c, "none", (name, _jsonName, _p) => {
+                    this.forEachClassProperty(c, "none", (name, jsonName, _p) => {
                         const names = defined(this._gettersAndSettersForPropertyName.get(name));
-                        lines.push([p, className, "::", names.validate, "($this->", name, ")"]);
+                        lines.push([p, className, "::", names.validate, "($this->{'", stringEscape(jsonName), "'})"]);
                         p = "|| ";
                     });
                     lines.forEach((line, jdx) => {
@@ -1333,7 +1352,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                     this.emitLine("$out = new stdClass();");
                     this.forEachClassProperty(c, "none", (name, jsonName) => {
                         const names = defined(this._gettersAndSettersForPropertyName.get(name));
-                        this.emitLine("$out->{'", jsonName, "'} = $this->", names.to, "();");
+                        this.emitLine("$out->{'", stringEscape(jsonName), "'} = $this->", names.to, "();");
                     });
                     this.emitLine("return $out;");
                 }
@@ -1359,11 +1378,11 @@ export class PhpRenderer extends ConvenienceRenderer {
                             "::",
                             names.match,
                             "(property_exists($obj, '",
-                            jsonName,
+                            stringEscape(jsonName),
                             "') ? $obj->{'",
-                            jsonName,
+                            stringEscape(jsonName),
                             "'} : null)",
-                            pos === "last" ? ";" : ""
+                            pos === "only" || pos === "last" ? ";" : ""
                         );
                         comma = "|| ";
                     });
@@ -1389,17 +1408,23 @@ export class PhpRenderer extends ConvenienceRenderer {
                     this.forEachClassProperty(c, "none", (name, jsonName, p) => {
                         const names = defined(this._gettersAndSettersForPropertyName.get(name));
                         let nullable: Type = p.type;
-                        let optional: Sourcelike = ["$obj->{'", jsonName, "'}"];
+                        let optional: Sourcelike = ["$obj->{'", stringEscape(jsonName), "'}"];
                         if (nullable instanceof PrimitiveType && nullable.kind === "null") {
-                            optional = ["property_exists($obj, '", jsonName, "') ? $obj->{'", jsonName, "'} : null"];
+                            optional = [
+                                "property_exists($obj, '",
+                                stringEscape(jsonName),
+                                "') ? $obj->{'",
+                                stringEscape(jsonName),
+                                "'} : null"
+                            ];
                         } else if (nullable instanceof UnionType) {
                             const my = nullableFromUnion(nullable);
                             if (my !== null) {
                                 optional = [
                                     "property_exists($obj, '",
-                                    jsonName,
+                                    stringEscape(jsonName),
                                     "') ? $obj->{'",
-                                    jsonName,
+                                    stringEscape(jsonName),
                                     "'} : null"
                                 ];
                             }
