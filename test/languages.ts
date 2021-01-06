@@ -206,6 +206,42 @@ export const RustLanguage: Language = {
   sourceFiles: ["src/language/Rust.ts"],
 };
 
+export const JuliaLanguage: Language = {
+  name: "julia",
+  base: "test/fixtures/julia",
+  runCommand(sample: String) {
+    return `julia main.jl "${sample}"`;
+  },
+  diffViaSchema: true,
+  skipDiffViaSchema: [
+    "keywords.json",
+    "0cffa.json",
+    "127a1.json",
+    "26b49.json",
+    "34702.json",
+    "7681c.json",
+    "c3303.json",
+    "e8b04.json",
+    "f6a65.json"
+  ],
+  allowMissingNull: false,
+  features: [],
+  output: "quicktype.jl",
+  topLevel: "TopLevel",
+  skipJSON: [
+    "31189.json", // year 0 is out of range
+
+    "bug427.json"
+  ],
+  skipMiscJSON: false,
+  skipSchema: [
+    "keyword-unions.schema" // Requires more than 255 arguments
+  ],
+  rendererOptions: {},
+  quickTestRendererOptions: [],
+  sourceFiles: ["src/language/Julia.ts"]
+};
+
 export const CrystalLanguage: Language = {
   name: "crystal",
   base: "test/fixtures/crystal",

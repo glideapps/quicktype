@@ -104,3 +104,4 @@ export { RubyTargetLanguage, RubyRenderer, rubyOptions } from "./language/ruby";
 export { CrystalTargetLanguage, CrystalRenderer } from "./language/Crystal";
 export { HaskellTargetLanguage, HaskellRenderer, haskellOptions } from "./language/Haskell";
 export { DartTargetLanguage, DartRenderer, dartOptions } from "./language/Dart";
+export { JuliaTargetLanguage, JuliaRenderer, juliaOptions } from "./language/Julia";
