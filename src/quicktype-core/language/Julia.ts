@@ -1,4 +1,4 @@
-import { mapFirst } from "collection-utils";
+// import { mapFirst } from "collection-utils";
 
 import { TargetLanguage } from "../TargetLanguage";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
@@ -20,15 +20,18 @@ import { UnionType, Type, ClassType, EnumType } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { Option, getOptionValues, OptionValues } from "../RendererOptions";
-import { defined } from "../support/Support";
+import { Option } from "../RendererOptions";
+// import { Option, getOptionValues } from "../RendererOptions";
+// import { defined } from "../support/Support";
 import { RenderContext } from "../Renderer";
 
 export const juliaOptions = {};
 
 export class JuliaTargetLanguage extends TargetLanguage {
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): JuliaRenderer {
-        return new JuliaRenderer(this, renderContext, getOptionValues(juliaOptions, untypedOptionValues));
+    protected makeRenderer(renderContext: RenderContext, _untypedOptionValues: { [name: string]: any }): JuliaRenderer {
+        return new JuliaRenderer(this, renderContext,
+                            // getOptionValues(juliaOptions, untypedOptionValues)
+                           );
     }
 
     constructor() {
@@ -126,7 +129,7 @@ export class JuliaRenderer extends ConvenienceRenderer {
     constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        private readonly _options: OptionValues<typeof juliaOptions>
+        // private readonly _options: OptionValues<typeof juliaOptions>
     ) {
         super(targetLanguage, renderContext);
     }
@@ -239,7 +242,7 @@ export class JuliaRenderer extends ConvenienceRenderer {
         this.emitLine("StructTypes.names(::Type{", className, "}) = (")
         this.indent(
             function(){
-                self.forEachClassProperty(c, blankLines, (name, jsonName, prop) => {
+                self.forEachClassProperty(c, blankLines, (name, jsonName, _prop) => {
                 // self.emitDescription(self.descriptionForClassProperty(c, jsonName));
                 self.emitRenameAttribute(name, jsonName);
                 });
@@ -248,7 +251,7 @@ export class JuliaRenderer extends ConvenienceRenderer {
     }
 
     // TODO
-    protected hasRenames(c: ClassType): boolean {
+    protected hasRenames(_c: ClassType): boolean {
         // const blankLines = "none"
         // const self = this;
         // self.forEachClassProperty(c, blankLines, (name, jsonName, prop) => {
@@ -288,7 +291,7 @@ export class JuliaRenderer extends ConvenienceRenderer {
     }
 
     // TODO
-    protected emitUnion(u: UnionType, unionName: Name): void {
+    protected emitUnion(_u: UnionType, _unionName: Name): void {
         // const isMaybeWithSingleType = nullableFromUnion(u);
 
         // if (isMaybeWithSingleType !== null) {
@@ -313,7 +316,7 @@ export class JuliaRenderer extends ConvenienceRenderer {
 
         const blankLines = "none"
         this.emitBlock(["@option ", enumName, " begin"], () =>
-            this.forEachEnumCase(e, blankLines, (name, jsonName) => {
+            this.forEachEnumCase(e, blankLines, (name, _jsonName) => {
                 // this.emitRenameAttribute(name, jsonName);
                 this.emitLine(name);
             })
@@ -336,7 +339,7 @@ export class JuliaRenderer extends ConvenienceRenderer {
             return;
         }
 
-        const topLevelName = defined(mapFirst(this.topLevels));
+        // const topLevelName = defined(mapFirst(this.topLevels));
         this.emitMultiline(
             `# Example code that deserializes and serializes an object of type \"MyType\" from a string.
 # using JSON3
