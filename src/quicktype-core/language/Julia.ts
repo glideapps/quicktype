@@ -114,10 +114,9 @@ function juliaStyle(original: string, isSnakeCase: boolean): string {
 const snakeNamingFunction = funPrefixNamer("default", (original: string) => juliaStyle(original, true));
 const camelNamingFunction = funPrefixNamer("camel", (original: string) => juliaStyle(original, false));
 
-
 const standardUnicodeJuliaEscape = (codePoint: number): string => {
-    if (codePoint == 0x24) {
-        return "\\$"
+    if (codePoint === 0x24) {
+        return "\\$";
     } else {
         return standardUnicodeHexEscape(codePoint);
     }
@@ -232,22 +231,22 @@ export class JuliaRenderer extends ConvenienceRenderer {
         const escapedName = juliaStringEscape(jsonName);
         const namesDiffer = this.sourcelikeToString(propName) !== escapedName;
         if (namesDiffer) {
-            this.emitLine("(:", this.sourcelikeToString(propName), ", Symbol(raw\"", escapedName, "\")),");
+            this.emitLine("(:", this.sourcelikeToString(propName), ", Symbol(\"", escapedName, "\")),");
         }
     }
 
     protected emitNameTranslation(c: ClassType, className: Name): void {
-        const blankLines = "none"
+        const blankLines = "none";
         const self = this;
-        this.emitLine("StructTypes.names(::Type{", className, "}) = (")
+        this.emitLine("StructTypes.names(::Type{", className, "}) = (");
         this.indent(
-            function(){
+            function() {
                 self.forEachClassProperty(c, blankLines, (name, jsonName, _prop) => {
                 // self.emitDescription(self.descriptionForClassProperty(c, jsonName));
                 self.emitRenameAttribute(name, jsonName);
                 });
             });
-        this.emitLine(")")
+        this.emitLine(")");
     }
 
     // TODO
@@ -264,9 +263,9 @@ export class JuliaRenderer extends ConvenienceRenderer {
     protected emitStructDefinition(c: ClassType, className: Name): void {
         this.emitDescription(this.descriptionForType(c));
 
-        const blankLines = "none"
+        const blankLines = "none";
         const self = this;
-        const structBody = function(){
+        const structBody = function() {
             self.forEachClassProperty(c, blankLines, (name, jsonName, prop) => {
                 self.emitDescription(self.descriptionForClassProperty(c, jsonName));
                 self.emitLine(name, " :: ", self.breakCycle(prop.type, true));
@@ -314,7 +313,7 @@ export class JuliaRenderer extends ConvenienceRenderer {
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
 
-        const blankLines = "none"
+        const blankLines = "none";
         this.emitBlock(["@option ", enumName, " begin"], () =>
             this.forEachEnumCase(e, blankLines, (name, _jsonName) => {
                 // this.emitRenameAttribute(name, jsonName);
