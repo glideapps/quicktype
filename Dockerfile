@@ -33,7 +33,7 @@ RUN apt-get -y install dotnet-sdk-2.0.0 --assume-yes
 # Install Boost for C++
 RUN apt-get -y install libboost-all-dev --assume-yes
 RUN apt-get -y update && apt-get -y install software-properties-common python-software-properties --assume-yes
-RUN add-apt-repository ppa:jonathonf/gcc
+RUN add-apt-repository ppa:jonathonf/gcc -y
 RUN apt-get -y update
 RUN apt-get -y install g++-7 --assume-yes
 RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7
@@ -62,7 +62,7 @@ RUN /bin/bash -c "source /root/.sdkman/bin/sdkman-init.sh && sdk install kotlin"
 ENV PATH="/root/.sdkman/candidates/kotlin/current/bin:${PATH}"
 
 # Python
-RUN add-apt-repository ppa:deadsnakes/ppa
+RUN add-apt-repository ppa:deadsnakes/ppa -y
 RUN apt-get -y update
 RUN apt-get -y install python3.6 --assume-yes
 RUN curl https://bootstrap.pypa.io/get-pip.py | python3.6
