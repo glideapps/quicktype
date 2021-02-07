@@ -837,6 +837,14 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
     protected cppType(t: Type, ctx: TypeContext, withIssues: boolean, forceNarrowString: boolean, isOptional: boolean): Sourcelike {
         const inJsonNamespace = ctx.inJsonNamespace;
+        if (isOptional && t instanceof UnionType) { // avoid have optionalType<optionalType<Type>>
+            for (const tChild of t.getChildren()) {
+                if (tChild.isNullable) {
+                    isOptional = false;
+                    break;
+                }
+            }
+        }
         let typeSource = matchType<Sourcelike>(
             t,
             _anyType =>
