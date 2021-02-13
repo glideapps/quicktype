@@ -847,10 +847,14 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
         let typeSource = matchType<Sourcelike>(
             t,
-            _anyType =>
-                maybeAnnotated(withIssues, anyTypeIssueAnnotation, [this.jsonQualifier(inJsonNamespace), "json"]),
-            _nullType =>
-                maybeAnnotated(withIssues, nullTypeIssueAnnotation, [this.jsonQualifier(inJsonNamespace), "json"]),
+            _anyType => {
+                isOptional = false;
+                return maybeAnnotated(withIssues, anyTypeIssueAnnotation, [this.jsonQualifier(inJsonNamespace), "json"]);
+            },
+            _nullType => {
+                isOptional = false;
+                return maybeAnnotated(withIssues, nullTypeIssueAnnotation, [this.jsonQualifier(inJsonNamespace), "json"]);
+            },
             _boolType => "bool",
             _integerType => "int64_t",
             _doubleType => "double",
@@ -1051,7 +1055,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                  * a member called 'value' value = value will screw up the compiler
                  */
                 const checkConst = this.lookupGlobalName(GlobalNames.CheckConstraint);
-                if ((property.type instanceof UnionType && property.type.findMember("null") !== undefined) || property.isOptional) {
+                if ((property.type instanceof UnionType && property.type.findMember("null") !== undefined) || (property.isOptional && property.type.kind !== "null" && property.type.kind !== "any")) {
                     this.emitLine(rendered, " ", getterName, "() const { return ", name, "; }");
                     if (constraints !== undefined && constraints.has(jsonName)) {
                         this.emitLine(
@@ -1261,6 +1265,26 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     assignment = new WrappingCode(["x.", name, " = "], []);
                 }
 
+                if (t.kind === "null" || t.kind === "any") {
+                    this.emitLine(
+                        assignment.wrap(
+                            [],
+                            [
+                                ourQualifier,
+                                "get_untyped(j, ",
+                                this._stringType.wrapEncodingChange(
+                                    [ourQualifier],
+                                    this._stringType.getType(),
+                                    this.NarrowString.getType(),
+                                    [this._stringType.createStringLiteral([stringEscape(json)])]
+                                ),
+                                ")"
+                            ]
+                        ),
+                        ";"
+                    );
+                    return;
+                }
                 if (p.isOptional || t instanceof UnionType) {
                     const [nullOrOptional, typeSet] = function (): [boolean, ReadonlySet<Type>] {
                         if (t instanceof UnionType) {
@@ -1321,26 +1345,6 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         );
                         return;
                     }
-                }
-                if (t.kind === "null" || t.kind === "any") {
-                    this.emitLine(
-                        assignment.wrap(
-                            [],
-                            [
-                                ourQualifier,
-                                "get_untyped(j, ",
-                                this._stringType.wrapEncodingChange(
-                                    [ourQualifier],
-                                    this._stringType.getType(),
-                                    this.NarrowString.getType(),
-                                    [this._stringType.createStringLiteral([stringEscape(json)])]
-                                ),
-                                ")"
-                            ]
-                        ),
-                        ";"
-                    );
-                    return;
                 }
                 cppType = this.cppType(
                     t,
