@@ -415,11 +415,11 @@ export const CPlusPlusLanguage: Language = {
 export const ElmLanguage: Language = {
   name: "elm",
   base: "test/fixtures/elm",
-  setupCommand: "rm -rf elm-stuff/build-artifacts && elm-make --yes",
+  setupCommand: "rm -rf elm-stuff/build-artifacts",
   compileCommand:
     process.env.CI === "true"
-      ? "sysconfcpus -n 1 elm-make Main.elm QuickType.elm --output elm.js"
-      : "elm-make Main.elm QuickType.elm --output elm.js",
+      ? "sysconfcpus -n 1 elm make Main.elm --output elm.js"
+      : "elm make Main.elm --output elm.js",
   runCommand(sample: string) {
     return `node ./runner.js "${sample}"`;
   },
@@ -480,7 +480,7 @@ export const ElmLanguage: Language = {
     "keyword-unions.schema", // can't handle "hasOwnProperty" for some reason
   ],
   rendererOptions: {},
-  quickTestRendererOptions: [{ "array-type": "list" }],
+  quickTestRendererOptions: [],
   sourceFiles: ["src/language/Elm.ts"],
 };
 
