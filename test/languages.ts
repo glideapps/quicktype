@@ -415,7 +415,7 @@ export const CPlusPlusLanguage: Language = {
 export const ElmLanguage: Language = {
   name: "elm",
   base: "test/fixtures/elm",
-  setupCommand: "rm -rf elm-stuff/build-artifacts",
+  setupCommand: "rm -rf elm-stuff",
   compileCommand:
     process.env.CI === "true"
       ? "sysconfcpus -n 1 elm make Main.elm --output elm.js"
