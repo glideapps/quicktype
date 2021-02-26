@@ -169,6 +169,11 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
             }
             properties = props;
             required = req.sort();
+
+            // the spec says required cannot be an empty array: http://json-schema.org/understanding-json-schema/reference/object.html#required-properties
+            if (required.length === 0) {
+                required = undefined;
+            }
         }
         const additional = o.getAdditionalProperties();
         const additionalProperties = additional !== undefined ? this.schemaForType(additional) : false;
