@@ -47,7 +47,7 @@ export const dartOptions = {
     generateCopyWith: new BooleanOption("copy-with", "Generate CopyWith method", false),
     useFreezed: new BooleanOption("use-freezed", "Generate class definitions with @freezed compatibility", false),
     useHive: new BooleanOption("use-hive", "Generate annotations for Hive type adapters", false),
-    partName: new StringOption("part-name", "Use this name in `part` directive", "NAME", ""),
+    partName: new StringOption("part-name", "Use this name in `part` directive", "NAME", "")
 };
 
 export class DartTargetLanguage extends TargetLanguage {
@@ -65,7 +65,7 @@ export class DartTargetLanguage extends TargetLanguage {
             dartOptions.generateCopyWith,
             dartOptions.useFreezed,
             dartOptions.useHive,
-            dartOptions.partName,
+            dartOptions.partName
         ];
     }
 
@@ -342,8 +342,11 @@ export class DartRenderer extends ConvenienceRenderer {
         if (this._options.useFreezed || this._options.useHive) {
             this.ensureBlankLine();
             const optionNameIsEmpty = this._options.partName.length === 0;
-            const name = modifySource(snakeCase, optionNameIsEmpty ? [...this.topLevels.keys()][0] : this._options.partName);
-            if(this._options.useFreezed) {
+            const name = modifySource(
+                snakeCase,
+                optionNameIsEmpty ? [...this.topLevels.keys()][0] : this._options.partName
+            );
+            if (this._options.useFreezed) {
                 this.emitLine("part '", name, ".freezed.dart';");
             }
             if (!this._options.justTypes) {
@@ -482,7 +485,7 @@ export class DartRenderer extends ConvenienceRenderer {
         this.emitDescription(this.descriptionForType(c));
         if (this._options.useHive) {
             this.classCounter++;
-            this.emitLine(`@HiveType(typeId: ${this.classCounter})`);        
+            this.emitLine(`@HiveType(typeId: ${this.classCounter})`);
             this.classPropertyCounter = 0;
         }
         this.emitBlock(["class ", className], () => {
@@ -499,14 +502,14 @@ export class DartRenderer extends ConvenienceRenderer {
                 this.ensureBlankLine();
 
                 this.forEachClassProperty(c, "none", (name, jsonName, p) => {
-                    const description = this.descriptionForClassProperty(c, jsonName)
+                    const description = this.descriptionForClassProperty(c, jsonName);
                     if (description !== undefined) {
                         this.emitDescription(description);
                     }
 
                     if (this._options.useHive) {
                         this.classPropertyCounter++;
-                        this.emitLine(`@HiveField(${this.classPropertyCounter})`);    
+                        this.emitLine(`@HiveField(${this.classPropertyCounter})`);
                     }
 
                     this.emitLine(
@@ -608,7 +611,13 @@ export class DartRenderer extends ConvenienceRenderer {
                 this.emitLine("const factory ", className, "({");
                 this.indent(() => {
                     this.forEachClassProperty(c, "none", (name, _, _p) => {
-                        this.emitLine(this._options.requiredProperties ? "@required " : "", this.dartType(_p.type, true), " ", name, ",");
+                        this.emitLine(
+                            this._options.requiredProperties ? "@required " : "",
+                            this.dartType(_p.type, true),
+                            " ",
+                            name,
+                            ","
+                        );
                     });
                 });
                 this.emitLine("}) = _", className, ";");
@@ -624,7 +633,7 @@ export class DartRenderer extends ConvenienceRenderer {
                 ".fromJson(Map<String, dynamic> json) => ",
                 "_$",
                 className,
-                "FromJson(json);",
+                "FromJson(json);"
             );
         });
     }
@@ -702,7 +711,8 @@ export class DartRenderer extends ConvenienceRenderer {
 
         this.forEachNamedType(
             "leading-and-interposing",
-            (c: ClassType, n: Name) => this._options.useFreezed ? this.emitFreezedClassDefinition(c, n) : this.emitClassDefinition(c, n),
+            (c: ClassType, n: Name) =>
+                this._options.useFreezed ? this.emitFreezedClassDefinition(c, n) : this.emitClassDefinition(c, n),
             (e, n) => this.emitEnumDefinition(e, n),
             (_e, _n) => {
                 // We don't support this yet.
