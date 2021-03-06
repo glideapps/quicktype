@@ -458,7 +458,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                     "//   let ",
                     modifySource(camelCase, topLevelName),
                     " = ",
-                    "try? newJSONDecoder().decode(",
+                    "try? JSONDecoder().decode(",
                     topLevelName,
                     ".self, from: jsonData)"
                 );
