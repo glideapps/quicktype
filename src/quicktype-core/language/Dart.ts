@@ -23,7 +23,8 @@ import {
     firstUpperWordStyle,
     allLowerWordStyle,
     isPrintable,
-    decapitalize
+    decapitalize,
+    snakeCase
 } from "../support/Strings";
 
 import { StringTypeMapping } from "../TypeBuilder";
@@ -36,7 +37,6 @@ import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { defined } from "../support/Support";
 import { RenderContext } from "../Renderer";
 import { arrayIntercalate } from "collection-utils";
-import { snakeCase } from "lodash";
 
 export const dartOptions = {
     justTypes: new BooleanOption("just-types", "Types only", false),
@@ -342,6 +342,7 @@ export class DartRenderer extends ConvenienceRenderer {
         if (this._options.useFreezed || this._options.useHive) {
             this.ensureBlankLine();
             const optionNameIsEmpty = this._options.partName.length === 0;
+            // FIXME: This should use a `Name`, not `modifySource`
             const name = modifySource(
                 snakeCase,
                 optionNameIsEmpty ? [...this.topLevels.keys()][0] : this._options.partName

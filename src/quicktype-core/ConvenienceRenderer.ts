@@ -42,9 +42,7 @@ const unionMemberNameOrder = 40;
 
 function splitDescription(descriptions: Iterable<string> | undefined): string[] | undefined {
     if (descriptions === undefined) return undefined;
-    const description = Array.from(descriptions)
-        .join("\n\n")
-        .trim();
+    const description = Array.from(descriptions).join("\n\n").trim();
     if (description === "") return undefined;
     return wordWrap(description)
         .split("\n")
@@ -654,7 +652,10 @@ export abstract class ConvenienceRenderer extends Renderer {
         return propertyNames.size;
     }
 
-    protected sortClassProperties(properties: ReadonlyMap<string, ClassProperty>, propertyNames: ReadonlyMap<string, Name>): ReadonlyMap<string, ClassProperty> {
+    protected sortClassProperties(
+        properties: ReadonlyMap<string, ClassProperty>,
+        propertyNames: ReadonlyMap<string, Name>
+    ): ReadonlyMap<string, ClassProperty> {
         if (this._alphabetizeProperties) {
             return mapSortBy(properties, (_p: ClassProperty, jsonName: string) => {
                 const name = defined(propertyNames.get(jsonName));
@@ -679,11 +680,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected nameForUnionMember(u: UnionType, t: Type): Name {
-        return defined(
-            defined(this._memberNamesStoreView)
-                .get(u)
-                .get(t)
-        );
+        return defined(defined(this._memberNamesStoreView).get(u).get(t));
     }
 
     protected nameForEnumCase(e: EnumType, caseName: string): Name {
@@ -899,8 +896,8 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected forEachType<TResult>(process: (t: Type) => TResult): Set<TResult> {
-        const visitedTypes = new Set();
-        const processed = new Set();
+        const visitedTypes = new Set<Type>();
+        const processed = new Set<TResult>();
         const queue = Array.from(this.typeGraph.topLevels.values());
 
         function visit(t: Type) {
