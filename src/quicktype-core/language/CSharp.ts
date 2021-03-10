@@ -331,13 +331,13 @@ export class CSharpRenderer extends ConvenienceRenderer {
             (arrayType) => {
                 const itemsType = this.csType(arrayType.items, follow, withIssues);
                 if (this._csOptions.useList) {
-                    return ["List<", itemsType, ">"];
+                    return ["System.Collections.Generic.List<", itemsType, ">"];
                 } else {
                     return [itemsType, "[]"];
                 }
             },
             (classType) => this.nameForNamedType(classType),
-            (mapType) => ["Dictionary<string, ", this.csType(mapType.values, follow, withIssues), ">"],
+            (mapType) => ["System.Collections.Generic.Dictionary<string, ", this.csType(mapType.values, follow, withIssues), ">"],
             (enumType) => this.nameForNamedType(enumType),
             (unionType) => {
                 const nullable = nullableFromUnion(unionType);
