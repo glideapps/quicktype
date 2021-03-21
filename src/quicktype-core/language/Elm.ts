@@ -81,30 +81,6 @@ export const elmOptions = {
     ])
 };
 
-// TARGET
-
-export class ElmTargetLanguage extends TargetLanguage {
-    constructor() {
-        super("Elm", ["elm"], "elm");
-    }
-
-    protected getOptions(): Option<any>[] {
-        return [elmOptions.justTypes, elmOptions.moduleName, elmOptions.useArray];
-    }
-
-    get supportsOptionalClassProperties(): boolean {
-        return true;
-    }
-
-    get supportsUnionsWithBothNumberTypes(): boolean {
-        return true;
-    }
-
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): ElmRenderer {
-        return new ElmRenderer(this, renderContext, getOptionValues(elmOptions, untypedOptionValues));
-    }
-}
-
 // Types
 
 type RequiredOrOptional = {
@@ -126,8 +102,6 @@ type NamedTypeDependent = {
 // 🛠
 
 const legalizeName = legalizeCharacters(cp => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp));
-const lowerNamingFunction = funPrefixNamer("lower", n => elmNameStyle(n, false));
-const upperNamingFunction = funPrefixNamer("upper", n => elmNameStyle(n, true));
 
 function elmNameStyle(original: string, upper: boolean): string {
     const words = splitIntoWords(original);
@@ -142,6 +116,9 @@ function elmNameStyle(original: string, upper: boolean): string {
         isLetterOrUnderscore
     );
 }
+
+const lowerNamingFunction = funPrefixNamer("lower", n => elmNameStyle(n, false));
+const upperNamingFunction = funPrefixNamer("upper", n => elmNameStyle(n, true));
 
 function optional(fallback: string): RequiredOrOptional {
     return { reqOrOpt: "Json.Decode.Pipeline.optional", fallback };
@@ -178,7 +155,7 @@ export class ElmRenderer extends ConvenienceRenderer {
     // NAMES
     // -----
 
-    protected forbiddenForObjectProperties(_c: ClassType, _className: Name): ForbiddenWordsInfo {
+    protected forbiddenForObjectProperties(): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: true };
     }
 
@@ -760,5 +737,29 @@ import Dict exposing (Dict)`);
         this.emitMultiline(`makeNullableEncoder : (a -> Json.Encode.Value) -> Maybe a -> Json.Encode.Value
 makeNullableEncoder encoder =
     Maybe.map encoder >> Maybe.withDefault Json.Encode.null`);
+    }
+}
+
+// TARGET
+
+export class ElmTargetLanguage extends TargetLanguage {
+    constructor() {
+        super("Elm", ["elm"], "elm");
+    }
+
+    protected getOptions(): Option<unknown>[] {
+        return [elmOptions.justTypes, elmOptions.moduleName, elmOptions.useArray];
+    }
+
+    get supportsOptionalClassProperties(): boolean {
+        return true;
+    }
+
+    get supportsUnionsWithBothNumberTypes(): boolean {
+        return true;
+    }
+
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: unknown }): ElmRenderer {
+        return new ElmRenderer(this, renderContext, getOptionValues(elmOptions, untypedOptionValues));
     }
 }

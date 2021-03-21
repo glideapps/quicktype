@@ -418,7 +418,7 @@ export const ElmLanguage: Language = {
   setupCommand: "rm -rf elm-stuff",
   compileCommand:
     process.env.CI === "true"
-      ? "sysconfcpus -n 1 elm make Main.elm --output elm.js"
+      ? "elm make Main.elm --output elm.js +RTS -N1"
       : "elm make Main.elm --output elm.js",
   runCommand(sample: string) {
     return `node ./runner.js "${sample}"`;
