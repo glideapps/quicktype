@@ -227,37 +227,29 @@ export class JuliaRenderer extends ConvenienceRenderer {
         return isCycleBreaker ? ["Box{", juliaType, "}"] : juliaType;
     }
 
-    private emitRenameAttribute(propName: Name, jsonName: string) {
+    private makeRename(propName: Name, jsonName: string): [string, string] | undefined {
+        const propNameString = this.sourcelikeToString(propName);
         const escapedName = juliaStringEscape(jsonName);
-        const namesDiffer = this.sourcelikeToString(propName) !== escapedName;
-        if (namesDiffer) {
-            this.emitLine("(:", this.sourcelikeToString(propName), ", Symbol(\"", escapedName, "\")),");
-        }
+        if (escapedName === propNameString) return undefined;
+        return [propNameString, escapedName];
     }
 
     protected emitNameTranslation(c: ClassType, className: Name): void {
-        const blankLines = "none";
-        const self = this;
+        const renames: [string, string][] = [];
+        this.forEachClassProperty(c, "none", (name, jsonName, _prop) => {
+            const rename = this.makeRename(name, jsonName);
+            if (rename !== undefined) {
+                renames.push(rename);
+            }
+        });
+        if (renames.length === 0) return;
         this.emitLine("StructTypes.names(::Type{", className, "}) = (");
-        this.indent(
-            function() {
-                self.forEachClassProperty(c, blankLines, (name, jsonName, _prop) => {
-                // self.emitDescription(self.descriptionForClassProperty(c, jsonName));
-                self.emitRenameAttribute(name, jsonName);
-                });
-            });
+        this.indent(() => {
+            for (const [propNameString, escapedName] of renames) {
+                this.emitLine("(:", propNameString, ', Symbol("', escapedName, '")),');
+            }
+        });
         this.emitLine(")");
-    }
-
-    // TODO
-    protected hasRenames(_c: ClassType): boolean {
-        // const blankLines = "none"
-        // const self = this;
-        // self.forEachClassProperty(c, blankLines, (name, jsonName, prop) => {
-        //     const escapedName = juliaStringEscape(jsonName);
-        //     const namesDiffer = this.sourcelikeToString(name) !== escapedName;
-        // });
-        return true;
     }
 
     protected emitStructDefinition(c: ClassType, className: Name): void {
@@ -278,9 +270,7 @@ export class JuliaRenderer extends ConvenienceRenderer {
         this.emitLine("StructTypes.StructType(::Type{", className, "}) = StructTypes.Mutable()");
 
         this.ensureBlankLine();
-        if (this.hasRenames(c)) {
-            this.emitNameTranslation(c, className);
-        }
+        this.emitNameTranslation(c, className);
     }
 
     protected emitBlock(line: Sourcelike, f: () => void): void {
