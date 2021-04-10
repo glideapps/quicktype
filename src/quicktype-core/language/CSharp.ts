@@ -412,12 +412,11 @@ export class CSharpRenderer extends ConvenienceRenderer {
             ? this.nullableCSType(t, followTargetType, true)
             : this.csType(t, followTargetType, true);
 
-        let propertyArray = ["public "];
+        const propertyArray = ["public "];
 
         if (this._csOptions.virtual)
             propertyArray.push("virtual ");
         
-
         return [...propertyArray, csType, " ", name, " { get; set; }"];
     }
 
