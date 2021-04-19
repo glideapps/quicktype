@@ -36,7 +36,7 @@ import {
 } from "../Transformers";
 import { arrayIntercalate, setUnionInto, mapUpdateInto, iterableSome, mapSortBy } from "collection-utils";
 
-const unicode = require("@mark.probst/unicode-properties");
+const unicode = require("unicode-properties");
 
 const forbiddenTypeNames = [
     "Any",

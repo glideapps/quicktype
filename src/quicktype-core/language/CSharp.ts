@@ -51,7 +51,7 @@ import {
 import { RenderContext } from "../Renderer";
 import { minMaxLengthForType, minMaxValueForType } from "../attributes/Constraints";
 
-const unicode = require("@mark.probst/unicode-properties");
+const unicode = require("unicode-properties");
 
 export type Version = 5 | 6;
 export type OutputFeatures = { helpers: boolean; attributes: boolean };

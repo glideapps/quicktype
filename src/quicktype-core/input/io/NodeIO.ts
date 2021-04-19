@@ -5,8 +5,7 @@ import {getStream} from "./get-stream";
 
 import {messageError, panic} from "../../index";
 
-// The typings for this module are screwy
-const isURL = require("is-url");
+const isURL = require("is-url-superb");
 const fetch = require("isomorphic-fetch");
 
 interface HttpHeaders {
