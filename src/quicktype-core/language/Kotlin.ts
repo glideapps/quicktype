@@ -1041,7 +1041,7 @@ export class KotlinXRenderer extends KotlinRenderer {
         this.emitLine("// To parse the JSON, install kotlin's serialization plugin and do:");
         this.emitLine("//");
         const table: Sourcelike[][] = [];
-        table.push(["// val ", "json", " = Json(JsonConfiguration.Stable)"]);
+        table.push(["// val ", "json", " = Json { allowStructuredMapKeys = true }"]);
         this.forEachTopLevel("none", (_, name) => {
             table.push(["// val ", modifySource(camelCase, name), ` = json.parse(${this.sourcelikeToString(name)}.serializer(), jsonString)`]);
         });
