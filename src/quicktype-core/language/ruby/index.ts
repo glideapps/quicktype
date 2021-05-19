@@ -21,17 +21,13 @@ import {
     utf32ConcatMap,
     isPrintable,
     escapeNonPrintableMapper,
-    intToHex
+    intToHex,
+    snakeCase
 } from "../../support/Strings";
 import { RenderContext } from "../../Renderer";
 
 function unicodeEscape(codePoint: number): string {
     return "\\u{" + intToHex(codePoint, 0) + "}";
-}
-
-function snakeCase(str: string): string {
-    const words = splitIntoWords(str).map(({ word }) => word.toLowerCase());
-    return words.join("_");
 }
 
 const stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
@@ -433,10 +429,16 @@ export class RubyRenderer extends ConvenienceRenderer {
                               `d.fetch("${stringEscape(jsonName)}")`;
 
                         if (this.propertyTypeMarshalsImplicitlyFromDynamic(p.type)) {
-                            inits.push([[name, ": "], [dynamic, ","]]);
+                            inits.push([
+                                [name, ": "],
+                                [dynamic, ","]
+                            ]);
                         } else {
                             const expression = this.fromDynamic(p.type, dynamic, p.isOptional);
-                            inits.push([[name, ": "], [expression, ","]]);
+                            inits.push([
+                                [name, ": "],
+                                [expression, ","]
+                            ]);
                         }
                     });
                     this.emitTable(inits);
