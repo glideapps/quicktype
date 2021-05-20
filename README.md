@@ -148,7 +148,7 @@ const {
   InputData,
   jsonInputForTargetLanguage,
   JSONSchemaInput,
-  JSONSchemaStore,
+  FetchingJSONSchemaStore,
 } = require("quicktype-core");
 
 async function quicktypeJSON(targetLanguage, typeName, jsonString) {
@@ -172,7 +172,7 @@ async function quicktypeJSON(targetLanguage, typeName, jsonString) {
 }
 
 async function quicktypeJSONSchema(targetLanguage, typeName, jsonSchemaString) {
-  const schemaInput = new JSONSchemaInput(new JSONSchemaStore());
+  const schemaInput = new JSONSchemaInput(new FetchingJSONSchemaStore());
 
   // We could add multiple schemas for multiple types,
   // but here we're just making one type from JSON schema.

@@ -33,7 +33,7 @@
     "typescript": "~3.2.1",
     "@mark.probst/typescript-json-schema": "~0.32.0",
     "@mark.probst/unicode-properties": "~1.1.0",
-    "urijs": "^1.19.1",
+    "urijs": "^1.19.6",
     "uuid": "^3.2.1",
     "wordwrap": "^1.0.0",
     "yaml": "^1.5.0",

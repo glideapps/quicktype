@@ -310,7 +310,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
         this.emitLine("class ", className, "()");
     }
 
-    private emitClassDefinition(c: ClassType, className: Name): void {
+    protected emitClassDefinition(c: ClassType, className: Name): void {
         if (c.getProperties().size === 0) {
             this.emitEmptyClassDefinition(c, className);
             return;
@@ -387,7 +387,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
         });
     }
 
-    private emitUnionDefinition(u: UnionType, unionName: Name): void {
+    protected emitUnionDefinition(u: UnionType, unionName: Name): void {
         function sortBy(t: Type): string {
             const kind = t.kind;
             if (kind === "class") return kind;
