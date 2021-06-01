@@ -619,11 +619,13 @@ export class ElmRenderer extends ConvenienceRenderer {
 
         this.forEachTopLevel("none", (_, name) => {
             let { encoder, decoder } = defined(this._topLevelDependents.get(name));
+            const namedTypeDependents = defined(this._namedTypeDependents.get(name));
             if (decoder === undefined) {
-                decoder = defined(this._namedTypeDependents.get(name)).decoder;
+                decoder = namedTypeDependents.decoder;
             }
+            const rawEncoder = namedTypeDependents.encoder;
             topLevelDecoders.push(decoder);
-            exports.push(name, encoder, decoder);
+            exports.push(name, encoder, rawEncoder, decoder);
         });
 
         this.forEachObject("none", (t: ClassType, name: Name) => {
