@@ -789,7 +789,7 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
                 this.emitLine(`@Suppress("UNCHECKED_CAST")`);
                 this.emitTable([
                     ["override fun toJson(value: Any)", " = toJson(value as T)"],
-                    ["override fun fromJson(jv: JsonValue)", " = fromJson(jv) as Any"],
+                    ["override fun fromJson(jv: JsonValue)", " = jv.inside?.let { fromJson(jv) as Any }"],
                     [
                         "override fun canConvert(cls: Class<*>)",
                         " = cls == k.java || (isUnion && cls.superclass == k.java)"
