@@ -36,19 +36,25 @@ import {
 } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 import { RenderContext } from "../Renderer";
+import { PrimitiveStringTypeKind, StringTypeMapping, TransformedStringTypeKind } from "..";
 
 export enum Framework {
     None,
     Jackson,
     Klaxon,
-    KotlinX,
+    KotlinX
 }
 
 export const kotlinOptions = {
     framework: new EnumOption(
         "framework",
         "Serialization framework",
-        [["just-types", Framework.None], ["jackson", Framework.Jackson], ["klaxon", Framework.Klaxon], ["kotlinx", Framework.KotlinX]],
+        [
+            ["just-types", Framework.None],
+            ["jackson", Framework.Jackson],
+            ["klaxon", Framework.Klaxon],
+            ["kotlinx", Framework.KotlinX]
+        ],
         "klaxon"
     ),
     packageName: new StringOption("package", "Package", "PACKAGE", "quicktype")
@@ -89,6 +95,15 @@ export class KotlinTargetLanguage extends TargetLanguage {
             default:
                 return assertNever(options.framework);
         }
+    }
+
+    get stringTypeMapping(): StringTypeMapping {
+        const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
+        mapping.set("date", "date");
+        mapping.set("time", "time");
+        mapping.set("date-time", "date-time");
+        mapping.set("uuid", "uuid");
+        return mapping;
     }
 }
 
@@ -182,13 +197,33 @@ function stringEscape(s: string): string {
 const upperNamingFunction = funPrefixNamer("upper", s => kotlinNameStyle(true, s));
 const lowerNamingFunction = funPrefixNamer("lower", s => kotlinNameStyle(false, s));
 
+class KotlinDateTimeProvider {
+    dateTimeImports: string[] = ["java.time.OffsetDateTime"];
+    dateImports: string[] = ["java.time.LocalDate"];
+    timeImports: string[] = ["java.time.OffsetTime"];
+    imports: string[] = [
+        "java.time.LocalDate",
+        "java.time.OffsetTime",
+        "java.time.OffsetDateTime",
+        "java.time.format.DateTimeFormatter"
+    ];
+
+    dateTimeType: string = "OffsetDateTime";
+    dateType: string = "LocalDate";
+    timeType: string = "OffsetTime";
+}
+
 export class KotlinRenderer extends ConvenienceRenderer {
+    protected readonly _dateTimeProvider: KotlinDateTimeProvider;
+
     constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         protected readonly _kotlinOptions: OptionValues<typeof kotlinOptions>
     ) {
         super(targetLanguage, renderContext);
+
+        this._dateTimeProvider = new KotlinDateTimeProvider();
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
@@ -274,8 +309,77 @@ export class KotlinRenderer extends ConvenienceRenderer {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) return [this.kotlinType(nullable, withIssues), optional];
                 return this.nameForNamedType(unionType);
+            },
+            transformedStringType => {
+                if (transformedStringType.kind === "time") {
+                    return this._dateTimeProvider.timeType;
+                }
+                if (transformedStringType.kind === "date") {
+                    return this._dateTimeProvider.dateType;
+                }
+                if (transformedStringType.kind === "date-time") {
+                    return this._dateTimeProvider.dateTimeType;
+                }
+                if (transformedStringType.kind === "uuid") {
+                    return "UUID";
+                }
+                return "String";
             }
         );
+    }
+
+    protected kotlinImport(t: Type): string[] {
+        return matchType<string[]>(
+            t,
+            _anyType => [],
+            _nullType => [],
+            _boolType => [],
+            _integerType => [],
+            _doubleType => [],
+            _stringType => [],
+            arrayType => [...this.kotlinImport(arrayType.items)],
+            _classType => [],
+            mapType => [...this.kotlinImport(mapType.values)],
+            _enumType => [],
+            unionType => {
+                const imports: string[] = [];
+                unionType.members.forEach(type => this.kotlinImport(type).forEach(imp => imports.push(imp)));
+                return imports;
+            },
+            transformedStringType => {
+                if (transformedStringType.kind === "time") {
+                    return this._dateTimeProvider.timeImports;
+                }
+                if (transformedStringType.kind === "date") {
+                    return this._dateTimeProvider.dateImports;
+                }
+                if (transformedStringType.kind === "date-time") {
+                    return this._dateTimeProvider.dateTimeImports;
+                }
+                if (transformedStringType.kind === "uuid") {
+                    return ["java.util.UUID"];
+                }
+                return [];
+            }
+        );
+    }
+
+    protected emitImports(): void {
+        const imports: string[] = this._dateTimeProvider.imports;
+        this.forEachNamedType(
+            "leading-and-interposing",
+            (c: ClassType) => {
+                this.forEachClassProperty(c, "none", (_name, _jsonName, p) => {
+                    this.kotlinImport(p.type).forEach(imp => imports.push(imp));
+                });
+            },
+            () => {},
+            () => {}
+        );
+        imports.sort();
+        for (const pkg of [...new Set(imports)]) {
+            this.emitLine("import ", pkg);
+        }
     }
 
     protected emitUsageHeader(): void {
@@ -402,10 +506,16 @@ export class KotlinRenderer extends ConvenienceRenderer {
             {
                 let table: Sourcelike[][] = [];
                 this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
-                    table.push([["class ", name, "(val value: ", this.kotlinType(t), ")"], [" : ", unionName, "()"]]);
+                    table.push([
+                        ["class ", name, "(val value: ", this.kotlinType(t), ")"],
+                        [" : ", unionName, "()"]
+                    ]);
                 });
                 if (maybeNull !== null) {
-                    table.push([["class ", this.nameForUnionMember(u, maybeNull), "()"], [" : ", unionName, "()"]]);
+                    table.push([
+                        ["class ", this.nameForUnionMember(u, maybeNull), "()"],
+                        [" : ", unionName, "()"]
+                    ]);
                 }
                 this.emitTable(table);
             }
@@ -503,20 +613,31 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
         super.emitHeader();
 
         this.emitLine("import com.beust.klaxon.*");
+        this.emitImports();
 
-        const hasUnions = iterableSome(
-            this.typeGraph.allNamedTypes(),
-            t => t instanceof UnionType && nullableFromUnion(t) === null
-        );
         const hasEmptyObjects = iterableSome(
             this.typeGraph.allNamedTypes(),
             c => c instanceof ClassType && c.getProperties().size === 0
         );
-        if (hasUnions || this.haveEnums || hasEmptyObjects) {
-            this.emitGenericConverter();
-        }
+        this.emitGenericConverter();
 
-        let converters: Sourcelike[][] = [];
+        let converters: Sourcelike[][] = [
+            [
+                [".convert(OffsetDateTime::class,"],
+                [" { OffsetDateTime.parse(it.string!!) },"],
+                [' { "\\"${it.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)}\\"" })']
+            ],
+            [
+                [".convert(LocalDate::class,"],
+                [" { LocalDate.parse(it.string!!) },"],
+                [' { "\\"${it.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)}\\"" })']
+            ],
+            [
+                [".convert(OffsetTime::class,"],
+                [" { OffsetTime.parse(it.string!!) },"],
+                [' { "\\"${it.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)}\\"" })']
+            ]
+        ];
         if (hasEmptyObjects) {
             converters.push([[".convert(JsonObject::class,"], [" { it.obj!! },"], [" { it.toJsonString() })"]]);
         }
@@ -722,6 +843,9 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
     }
 }
 
+/**
+ * TODO: Date Time support
+ */
 export class KotlinJacksonRenderer extends KotlinRenderer {
     constructor(
         targetLanguage: TargetLanguage,
@@ -990,7 +1114,7 @@ private fun <T> ObjectMapper.convert(k: kotlin.reflect.KClass<*>, fromJson: (Jso
 
 /**
  * Currently supports simple classes, enums, and TS string unions (which are also enums).
- * TODO: Union, Any, Top Level Array, Top Level Map
+ * TODO: Union, Any, Top Level Array, Top Level Map, Date Time
  */
 export class KotlinXRenderer extends KotlinRenderer {
     constructor(
@@ -1043,7 +1167,11 @@ export class KotlinXRenderer extends KotlinRenderer {
         const table: Sourcelike[][] = [];
         table.push(["// val ", "json", " = Json(JsonConfiguration.Stable)"]);
         this.forEachTopLevel("none", (_, name) => {
-            table.push(["// val ", modifySource(camelCase, name), ` = json.parse(${this.sourcelikeToString(name)}.serializer(), jsonString)`]);
+            table.push([
+                "// val ",
+                modifySource(camelCase, name),
+                ` = json.parse(${this.sourcelikeToString(name)}.serializer(), jsonString)`
+            ]);
         });
         this.emitTable(table);
     }
@@ -1072,7 +1200,7 @@ export class KotlinXRenderer extends KotlinRenderer {
         const escapedName = stringEscape(jsonName);
         const namesDiffer = this.sourcelikeToString(propName) !== escapedName;
         if (namesDiffer) {
-            return ["@SerialName(\"", escapedName, "\")"];
+            return ['@SerialName("', escapedName, '")'];
         }
         return undefined;
     }
@@ -1089,17 +1217,33 @@ export class KotlinXRenderer extends KotlinRenderer {
             this.ensureBlankLine();
             this.emitBlock(["companion object : KSerializer<", enumName, ">"], () => {
                 this.emitBlock("override val descriptor: SerialDescriptor get()", () => {
-                   this.emitLine("return PrimitiveSerialDescriptor(\"", this._kotlinOptions.packageName, ".", enumName, "\", PrimitiveKind.STRING)");
+                    this.emitLine(
+                        'return PrimitiveSerialDescriptor("',
+                        this._kotlinOptions.packageName,
+                        ".",
+                        enumName,
+                        '", PrimitiveKind.STRING)'
+                    );
                 });
 
-                this.emitBlock(["override fun deserialize(decoder: Decoder): ", enumName, " = when (val value = decoder.decodeString())"], () => {
-                    let table: Sourcelike[][] = [];
-                    this.forEachEnumCase(e, "none", (name, json) => {
-                        table.push([[`"${stringEscape(json)}"`], [" -> ", name]]);
-                    });
-                    table.push([["else"], [" -> throw IllegalArgumentException(\"", enumName, " could not parse: $value\")"]]);
-                    this.emitTable(table);
-                });
+                this.emitBlock(
+                    [
+                        "override fun deserialize(decoder: Decoder): ",
+                        enumName,
+                        " = when (val value = decoder.decodeString())"
+                    ],
+                    () => {
+                        let table: Sourcelike[][] = [];
+                        this.forEachEnumCase(e, "none", (name, json) => {
+                            table.push([[`"${stringEscape(json)}"`], [" -> ", name]]);
+                        });
+                        table.push([
+                            ["else"],
+                            [' -> throw IllegalArgumentException("', enumName, ' could not parse: $value")']
+                        ]);
+                        this.emitTable(table);
+                    }
+                );
 
                 this.emitBlock(["override fun serialize(encoder: Encoder, value: ", enumName, ")"], () => {
                     this.emitLine(["return encoder.encodeString(value.value)"]);
