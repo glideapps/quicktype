@@ -47,7 +47,15 @@ export const dartOptions = {
     generateCopyWith: new BooleanOption("copy-with", "Generate CopyWith method", false),
     useFreezed: new BooleanOption("use-freezed", "Generate class definitions with @freezed compatibility", false),
     useHive: new BooleanOption("use-hive", "Generate annotations for Hive type adapters", false),
-    partName: new StringOption("part-name", "Use this name in `part` directive", "NAME", "")
+    partName: new StringOption("part-name", "Use this name in `part` directive", "NAME", ""),
+    detectEnum: new BooleanOption("enum-detect", "this detects the enum", false),
+    nullSafty: new BooleanOption("null-safty", "this uses the null safty and dart 2.0 friendly", false),
+    allPropertyNullable: new BooleanOption("all-nullable", "this makes the the properties nullable ", false),
+    sameAsKey: new BooleanOption(
+        "name-same-as-key",
+        "use this to name the properties name and enum name same as the key in json",
+        false
+    )
 };
 
 export class DartTargetLanguage extends TargetLanguage {
@@ -65,7 +73,11 @@ export class DartTargetLanguage extends TargetLanguage {
             dartOptions.generateCopyWith,
             dartOptions.useFreezed,
             dartOptions.useHive,
-            dartOptions.partName
+            dartOptions.partName,
+            dartOptions.sameAsKey,
+            dartOptions.detectEnum,
+            dartOptions.nullSafty,
+            dartOptions.allPropertyNullable
         ];
     }
 
@@ -163,6 +175,9 @@ const typeNamingFunction = funPrefixNamer("types", n => dartNameStyle(true, fals
 const propertyNamingFunction = funPrefixNamer("properties", n => dartNameStyle(false, false, n));
 const enumCaseNamingFunction = funPrefixNamer("enum-cases", n => dartNameStyle(true, true, n));
 
+const propertyOriginalNamingFunction = funPrefixNamer("properties", n => n);
+const enumCaseOriginalNamingFunction = funPrefixNamer("enum-cases", n => n);
+
 // Escape the dollar sign, which is used in string interpolation
 const stringEscape = utf16ConcatMap(
     escapeNonPrintableMapper(cp => isPrintable(cp) && cp !== 0x24, standardUnicodeHexEscape)
@@ -237,15 +252,15 @@ export class DartRenderer extends ConvenienceRenderer {
     }
 
     protected namerForObjectProperty(): Namer {
-        return propertyNamingFunction;
+        return this._options.sameAsKey ? propertyOriginalNamingFunction : propertyNamingFunction;
     }
 
     protected makeUnionMemberNamer(): Namer {
-        return propertyNamingFunction;
+        return this._options.sameAsKey ? propertyOriginalNamingFunction : propertyNamingFunction;
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return enumCaseNamingFunction;
+        return this._options.sameAsKey ? enumCaseOriginalNamingFunction : enumCaseNamingFunction;
     }
 
     protected unionNeedsName(u: UnionType): boolean {
@@ -318,6 +333,10 @@ export class DartRenderer extends ConvenienceRenderer {
             this.emitCommentLines(this.leadingComments);
         }
 
+        // this is to ignore the linting rule in while property name are other than camelCase
+        // enum and unions are not PascalCase
+        if (this._options.sameAsKey) this.emitLine("// ignore_for_file: non_constant_identifier_names");
+
         if (this._options.justTypes) return;
 
         this.emitLine("// To parse this JSON data, do");
@@ -328,10 +347,11 @@ export class DartRenderer extends ConvenienceRenderer {
         });
 
         this.ensureBlankLine();
-        if (this._options.requiredProperties) {
+        if (this._options.requiredProperties && !this._options.nullSafty) {
             this.emitLine("import 'package:meta/meta.dart';");
         }
         if (this._options.useFreezed) {
+            if (!this._options.justTypes) this.emitLine("import 'package:json_annotation/json_annotation.dart';");
             this.emitLine("import 'package:freezed_annotation/freezed_annotation.dart';");
         }
         if (this._options.useHive) {
@@ -378,7 +398,7 @@ export class DartRenderer extends ConvenienceRenderer {
             arrayType => ["List<", this.dartType(arrayType.items, withIssues), ">"],
             classType => this.nameForNamedType(classType),
             mapType => ["Map<String, ", this.dartType(mapType.values, withIssues), ">"],
-            enumType => this.nameForNamedType(enumType),
+            enumType => (this._options.detectEnum ? this.nameForNamedType(enumType) : "String"),
             unionType => {
                 const maybeNullable = nullableFromUnion(unionType);
                 if (maybeNullable === null) {
@@ -399,7 +419,9 @@ export class DartRenderer extends ConvenienceRenderer {
     }
 
     protected mapList(itemType: Sourcelike, list: Sourcelike, mapper: Sourcelike): Sourcelike {
-        return ["List<", itemType, ">.from(", list, ".map((x) => ", mapper, "))"];
+        return this._options.allPropertyNullable
+            ? [list, "==null?null: List<", itemType, ">.from(", list, "!.map((x) => ", mapper, "))"]
+            : ["List<", itemType, ">.from(", list, ".map((x) => ", mapper, "))"];
     }
 
     protected mapMap(valueType: Sourcelike, map: Sourcelike, valueMapper: Sourcelike): Sourcelike {
@@ -420,13 +442,15 @@ export class DartRenderer extends ConvenienceRenderer {
             classType => [this.nameForNamedType(classType), ".", this.fromJson, "(", dynamic, ")"],
             mapType =>
                 this.mapMap(this.dartType(mapType.values), dynamic, this.fromDynamicExpression(mapType.values, "v")),
-            enumType => [defined(this._enumValues.get(enumType)), ".map[", dynamic, "]"],
+            enumType =>
+                this._options.detectEnum ? [defined(this._enumValues.get(enumType)), ".map[", dynamic, "]"] : dynamic,
+
             unionType => {
                 const maybeNullable = nullableFromUnion(unionType);
                 if (maybeNullable === null) {
                     return dynamic;
                 }
-                return [dynamic, " == null ? null : ", this.fromDynamicExpression(maybeNullable, dynamic)];
+                return [this.fromDynamicExpression(maybeNullable, dynamic)];
             },
             transformedStringType => {
                 switch (transformedStringType.kind) {
@@ -450,24 +474,28 @@ export class DartRenderer extends ConvenienceRenderer {
             _doubleType => dynamic,
             _stringType => dynamic,
             arrayType => this.mapList("dynamic", dynamic, this.toDynamicExpression(arrayType.items, "x")),
-            _classType => [dynamic, ".", this.toJson, "()"],
+            _classType => [dynamic, this._options.allPropertyNullable ? "?." : ".", this.toJson, "()"],
             mapType => this.mapMap("dynamic", dynamic, this.toDynamicExpression(mapType.values, "v")),
-            enumType => [defined(this._enumValues.get(enumType)), ".reverse[", dynamic, "]"],
+            enumType =>
+                this._options.detectEnum
+                    ? [defined(this._enumValues.get(enumType)), ".reverse[", dynamic, "]"]
+                    : dynamic,
             unionType => {
                 const maybeNullable = nullableFromUnion(unionType);
                 if (maybeNullable === null) {
                     return dynamic;
                 }
-                return [dynamic, " == null ? null : ", this.toDynamicExpression(maybeNullable, dynamic)];
+                return [this.toDynamicExpression(maybeNullable, dynamic)];
             },
             transformedStringType => {
                 switch (transformedStringType.kind) {
                     case "date-time":
-                        return [dynamic, ".toIso8601String()"];
+                        return [dynamic, this._options.allPropertyNullable ? "?" : "", ".toIso8601String()"];
                     case "date":
                         return [
                             '"${',
                             dynamic,
+                            this._options.allPropertyNullable ? "?" : "",
                             ".year.toString().padLeft(4, '0')",
                             "}-${",
                             dynamic,
@@ -496,7 +524,16 @@ export class DartRenderer extends ConvenienceRenderer {
                 this.emitLine(className, "({");
                 this.indent(() => {
                     this.forEachClassProperty(c, "none", (name, _, _p) => {
-                        this.emitLine(this._options.requiredProperties ? "@required " : "", "this.", name, ",");
+                        this.emitLine(
+                            this._options.requiredProperties
+                                ? this._options.nullSafty
+                                    ? "required "
+                                    : "@required "
+                                : " ",
+                            "this.",
+                            name,
+                            ","
+                        );
                     });
                 });
                 this.emitLine("});");
@@ -516,7 +553,9 @@ export class DartRenderer extends ConvenienceRenderer {
                     this.emitLine(
                         this._options.finalProperties ? "final " : "",
                         this.dartType(p.type, true),
+                        this._options.allPropertyNullable ? "?" : " ",
                         " ",
+
                         name,
                         ";"
                     );
@@ -613,8 +652,13 @@ export class DartRenderer extends ConvenienceRenderer {
                 this.indent(() => {
                     this.forEachClassProperty(c, "none", (name, _, _p) => {
                         this.emitLine(
-                            this._options.requiredProperties ? "@required " : "",
+                            this._options.requiredProperties
+                                ? this._options.nullSafty
+                                    ? "required "
+                                    : "@required "
+                                : " ",
                             this.dartType(_p.type, true),
+                            this._options.allPropertyNullable ? "?" : " ",
                             " ",
                             name,
                             ","
@@ -661,19 +705,34 @@ export class DartRenderer extends ConvenienceRenderer {
 
     protected emitEnumValues(): void {
         this.ensureBlankLine();
-        this.emitMultiline(`class EnumValues<T> {
-    Map<String, T> map;
-    Map<T, String> reverseMap;
 
-    EnumValues(this.map);
-
-    Map<T, String> get reverse {
-        if (reverseMap == null) {
+        if (this._options.nullSafty) {
+            this.emitMultiline(`class EnumValues<T> {
+        Map<String, T> map;
+        late Map<T, String> reverseMap;
+    
+        EnumValues(this.map);
+    
+        Map<T, String> get reverse {
             reverseMap = map.map((k, v) => new MapEntry(v, k));
+            return reverseMap;
         }
-        return reverseMap;
-    }
-}`);
+    }`);
+        } else {
+            this.emitMultiline(`class EnumValues<T> {
+        Map<String, T> map;
+        Map<T, String> reverseMap;
+    
+        EnumValues(this.map);
+    
+        Map<T, String> get reverse {
+            if (reverseMap == null) {
+                reverseMap = map.map((k, v) => new MapEntry(v, k));
+            }
+            return reverseMap;
+        }
+    }`);
+        }
     }
 
     protected emitSourceStructure(): void {
@@ -714,7 +773,9 @@ export class DartRenderer extends ConvenienceRenderer {
             "leading-and-interposing",
             (c: ClassType, n: Name) =>
                 this._options.useFreezed ? this.emitFreezedClassDefinition(c, n) : this.emitClassDefinition(c, n),
-            (e, n) => this.emitEnumDefinition(e, n),
+            (e, n) => {
+                if (this._options.detectEnum) this.emitEnumDefinition(e, n);
+            },
             (_e, _n) => {
                 // We don't support this yet.
             }
