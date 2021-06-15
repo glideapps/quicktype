@@ -49,7 +49,7 @@ export const dartOptions = {
     useHive: new BooleanOption("use-hive", "Generate annotations for Hive type adapters", false),
     partName: new StringOption("part-name", "Use this name in `part` directive", "NAME", ""),
     detectEnum: new BooleanOption("enum-detect", "Detects the enum", false),
-    nullSafty: new BooleanOption("null-safty", "Null safty and dart 2.0 friendly", false),
+    nullsafety: new BooleanOption("null-safety", "Null safety and dart 2.0 friendly", false),
     allPropertyNullable: new BooleanOption("all-nullable", "Makes properties nullable ", false),
     sameAsKey: new BooleanOption(
         "name-same-as-key",
@@ -76,7 +76,7 @@ export class DartTargetLanguage extends TargetLanguage {
             dartOptions.partName,
             dartOptions.sameAsKey,
             dartOptions.detectEnum,
-            dartOptions.nullSafty,
+            dartOptions.nullsafety,
             dartOptions.allPropertyNullable
         ];
     }
@@ -347,7 +347,7 @@ export class DartRenderer extends ConvenienceRenderer {
         });
 
         this.ensureBlankLine();
-        if (this._options.requiredProperties && !this._options.nullSafty) {
+        if (this._options.requiredProperties && !this._options.nullsafety) {
             this.emitLine("import 'package:meta/meta.dart';");
         }
         if (this._options.useFreezed) {
@@ -526,7 +526,7 @@ export class DartRenderer extends ConvenienceRenderer {
                     this.forEachClassProperty(c, "none", (name, _, _p) => {
                         this.emitLine(
                             this._options.requiredProperties
-                                ? this._options.nullSafty
+                                ? this._options.nullsafety
                                     ? "required "
                                     : "@required "
                                 : " ",
@@ -653,7 +653,7 @@ export class DartRenderer extends ConvenienceRenderer {
                     this.forEachClassProperty(c, "none", (name, _, _p) => {
                         this.emitLine(
                             this._options.requiredProperties
-                                ? this._options.nullSafty
+                                ? this._options.nullsafety
                                     ? "required "
                                     : "@required "
                                 : " ",
@@ -706,7 +706,7 @@ export class DartRenderer extends ConvenienceRenderer {
     protected emitEnumValues(): void {
         this.ensureBlankLine();
 
-        if (this._options.nullSafty) {
+        if (this._options.nullsafety) {
             this.emitMultiline(`class EnumValues<T> {
         Map<String, T> map;
         late Map<T, String> reverseMap;
