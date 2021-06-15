@@ -331,22 +331,22 @@ export class KotlinRenderer extends ConvenienceRenderer {
     protected kotlinImport(t: Type): string[] {
         return matchType<string[]>(
             t,
-            _anyType => [],
-            _nullType => [],
-            _boolType => [],
-            _integerType => [],
-            _doubleType => [],
-            _stringType => [],
-            arrayType => [...this.kotlinImport(arrayType.items)],
-            _classType => [],
-            mapType => [...this.kotlinImport(mapType.values)],
-            _enumType => [],
-            unionType => {
+            (_anyType) => [],
+            (_nullType) => [],
+            (_boolType) => [],
+            (_integerType) => [],
+            (_doubleType) => [],
+            (_stringType) => [],
+            (arrayType) => [...this.kotlinImport(arrayType.items)],
+            (_classType) => [],
+            (mapType) => [...this.kotlinImport(mapType.values)],
+            (_enumType) => [],
+            (unionType) => {
                 const imports: string[] = [];
                 unionType.members.forEach(type => this.kotlinImport(type).forEach(imp => imports.push(imp)));
                 return imports;
             },
-            transformedStringType => {
+            (transformedStringType) => {
                 if (transformedStringType.kind === "time") {
                     return this._dateTimeProvider.timeImports;
                 }
@@ -366,15 +366,13 @@ export class KotlinRenderer extends ConvenienceRenderer {
 
     protected emitImports(): void {
         const imports: string[] = this._dateTimeProvider.imports;
-        this.forEachNamedType(
+        this.forEachObject(
             "leading-and-interposing",
             (c: ClassType) => {
                 this.forEachClassProperty(c, "none", (_name, _jsonName, p) => {
                     this.kotlinImport(p.type).forEach(imp => imports.push(imp));
                 });
-            },
-            () => {},
-            () => {}
+            }
         );
         imports.sort();
         for (const pkg of [...new Set(imports)]) {
@@ -1233,7 +1231,7 @@ export class KotlinXRenderer extends KotlinRenderer {
                         " = when (val value = decoder.decodeString())"
                     ],
                     () => {
-                        let table: Sourcelike[][] = [];
+                        const table: Sourcelike[][] = [];
                         this.forEachEnumCase(e, "none", (name, json) => {
                             table.push([[`"${stringEscape(json)}"`], [" -> ", name]]);
                         });
