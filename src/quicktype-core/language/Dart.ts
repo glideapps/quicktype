@@ -48,12 +48,12 @@ export const dartOptions = {
     useFreezed: new BooleanOption("use-freezed", "Generate class definitions with @freezed compatibility", false),
     useHive: new BooleanOption("use-hive", "Generate annotations for Hive type adapters", false),
     partName: new StringOption("part-name", "Use this name in `part` directive", "NAME", ""),
-    detectEnum: new BooleanOption("enum-detect", "this detects the enum", false),
-    nullSafty: new BooleanOption("null-safty", "this uses the null safty and dart 2.0 friendly", false),
-    allPropertyNullable: new BooleanOption("all-nullable", "this makes the the properties nullable ", false),
+    detectEnum: new BooleanOption("enum-detect", "Detects the enum", false),
+    nullSafty: new BooleanOption("null-safty", "Null safty and dart 2.0 friendly", false),
+    allPropertyNullable: new BooleanOption("all-nullable", "Makes properties nullable ", false),
     sameAsKey: new BooleanOption(
         "name-same-as-key",
-        "use this to name the properties name and enum name same as the key in json",
+        "Keep properties name and enum name same as the key name in json",
         false
     )
 };
