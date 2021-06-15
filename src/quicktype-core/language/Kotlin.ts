@@ -331,16 +331,16 @@ export class KotlinRenderer extends ConvenienceRenderer {
     protected kotlinImport(t: Type): string[] {
         return matchType<string[]>(
             t,
-            (_anyType) => [],
-            (_nullType) => [],
-            (_boolType) => [],
-            (_integerType) => [],
-            (_doubleType) => [],
-            (_stringType) => [],
+            () => [],
+            () => [],
+            () => [],
+            () => [],
+            () => [],
+            () => [],
             (arrayType) => [...this.kotlinImport(arrayType.items)],
-            (_classType) => [],
+            () => [],
             (mapType) => [...this.kotlinImport(mapType.values)],
-            (_enumType) => [],
+            () => [],
             (unionType) => {
                 const imports: string[] = [];
                 unionType.members.forEach(type => this.kotlinImport(type).forEach(imp => imports.push(imp)));
