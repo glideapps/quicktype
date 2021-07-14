@@ -605,7 +605,7 @@ export class DartRenderer extends ConvenienceRenderer {
         this.emitDescription(this.descriptionForType(c));
 
         this.emitLine("@freezed");
-        this.emitBlock(["abstract class ", className, " with _$", className], () => {
+        this.emitBlock(["class ", className, " with _$", className], () => {
             if (c.getProperties().size === 0) {
                 this.emitLine("const factory ", className, "() = _", className, ";");
             } else {
@@ -613,8 +613,9 @@ export class DartRenderer extends ConvenienceRenderer {
                 this.indent(() => {
                     this.forEachClassProperty(c, "none", (name, _, _p) => {
                         this.emitLine(
-                            this._options.requiredProperties ? "@required " : "",
+                            this._options.requiredProperties ? "required " : "",
                             this.dartType(_p.type, true),
+                            this._options.requiredProperties ? "" : "?",
                             " ",
                             name,
                             ","
