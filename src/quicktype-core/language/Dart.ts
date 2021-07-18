@@ -366,18 +366,18 @@ export class DartRenderer extends ConvenienceRenderer {
         this.emitLine("}");
     }
 
-    protected dartType(t: Type, withIssues: boolean = false): Sourcelike {
+    protected dartType(t: Type, withIssues: boolean = false, nullable: boolean = false,): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "dynamic"),
             _nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "dynamic"),
-            _boolType => "bool",
-            _integerType => "int",
-            _doubleType => "double",
-            _stringType => "String",
-            arrayType => ["List<", this.dartType(arrayType.items, withIssues), ">"],
+            _boolType => nullable ? "bool?" : "bool",
+            _integerType => nullable ? "int?" : "int" ,
+            _doubleType => nullable ? "double?" : "double",
+            _stringType => nullable ? "String?" : "String",
+            arrayType => nullable ? ["List<", this.dartType(arrayType.items, withIssues), ">?"] : ["List<", this.dartType(arrayType.items, withIssues), ">"],
             classType => this.nameForNamedType(classType),
-            mapType => ["Map<String, ", this.dartType(mapType.values, withIssues), ">"],
+            mapType => nullable ? ["Map<String, ", this.dartType(mapType.values, withIssues), ">?"] ? ["Map<String, ", this.dartType(mapType.values, withIssues), ">"],
             enumType => this.nameForNamedType(enumType),
             unionType => {
                 const maybeNullable = nullableFromUnion(unionType);
@@ -390,9 +390,9 @@ export class DartRenderer extends ConvenienceRenderer {
                 switch (transformedStringType.kind) {
                     case "date-time":
                     case "date":
-                        return "DateTime";
+                        return nullable ? "DateTime?" : "DateTime";
                     default:
-                        return "String";
+                        return nullable ? "String?" : "String";
                 }
             }
         );
@@ -528,7 +528,7 @@ export class DartRenderer extends ConvenienceRenderer {
                 this.emitLine(className, " copyWith({");
                 this.indent(() => {
                     this.forEachClassProperty(c, "none", (name, _, _p) => {
-                        this.emitLine(this.dartType(_p.type, true), " ", name, ",");
+                        this.emitLine(this.dartType(_p.type, true, true), " ", name, ",");
                     });
                 });
                 this.emitLine("}) => ");
