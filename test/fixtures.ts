@@ -809,6 +809,7 @@ export const allFixtures: Fixture[] = [
   new JSONFixture(languages.DartLanguage),
   new JSONFixture(languages.PikeLanguage),
   new JSONFixture(languages.HaskellLanguage),
+  new JSONFixture(languages.TypeScriptZodLanguage),
   new JSONSchemaJSONFixture(languages.CSharpLanguage),
   new JSONTypeScriptFixture(languages.CSharpLanguage),
   // new JSONSchemaFixture(languages.CrystalLanguage),
