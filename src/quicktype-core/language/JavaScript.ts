@@ -380,17 +380,17 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
                 return transform(val, typ, getProps);
             } catch (_) {}
         }
-        return invalidValue(typs, val);
+        return invalidValue(typs, val, key);
     }
 
     function transformEnum(cases${stringArrayAnnotation}, val${anyAnnotation})${anyAnnotation} {
         if (cases.indexOf(val) !== -1) return val;
-        return invalidValue(cases, val);
+        return invalidValue(cases, val, key);
     }
 
     function transformArray(typ${anyAnnotation}, val${anyAnnotation})${anyAnnotation} {
         // val must be an array with no invalid elements
-        if (!Array.isArray(val)) return invalidValue("array", val);
+        if (!Array.isArray(val)) return invalidValue("array", val, key);
         return val.map(el => transform(el, typ, getProps));
     }
 
@@ -400,14 +400,14 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
         }
         const d = new Date(val);
         if (isNaN(d.valueOf())) {
-            return invalidValue("Date", val);
+            return invalidValue("Date", val, key);
         }
         return d;
     }
 
     function transformObject(props${anyMapAnnotation}, additional${anyAnnotation}, val${anyAnnotation})${anyAnnotation} {
         if (val === null || typeof val !== "object" || Array.isArray(val)) {
-            return invalidValue("object", val);
+            return invalidValue("object", val, key);
         }
         const result${anyAnnotation} = {};
         Object.getOwnPropertyNames(props).forEach(key => {
@@ -430,9 +430,9 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
     if (typ === "any") return val;
     if (typ === null) {
         if (val === null) return val;
-        return invalidValue(typ, val);
+        return invalidValue(typ, val, key);
     }
-    if (typ === false) return invalidValue(typ, val);
+    if (typ === false) return invalidValue(typ, val, key);
     while (typeof typ === "object" && typ.ref !== undefined) {
         typ = typeMap[typ.ref];
     }
@@ -441,7 +441,7 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
         return typ.hasOwnProperty("unionMembers") ? transformUnion(typ.unionMembers, val)
             : typ.hasOwnProperty("arrayItems")    ? transformArray(typ.arrayItems, val)
             : typ.hasOwnProperty("props")         ? transformObject(getProps(typ), typ.additional, val)
-            : invalidValue(typ, val);
+            : invalidValue(typ, val, key);
     }
     // Numbers can be parsed by Date but shouldn't be.
     if (typ === Date && typeof val !== "number") return transformDate(val);
