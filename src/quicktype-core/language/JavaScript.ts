@@ -341,11 +341,24 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
             this.ensureBlankLine();
             this
                 .emitMultiline(`function invalidValue(typ${anyAnnotation}, val${anyAnnotation}, key${anyAnnotation}, parent${anyAnnotation} = '')${neverAnnotation} {
-    const parentText = parent ? \` on \${parent}\` : ''
-    if (key) {
-        throw Error(\`Invalid value for key \"\${key}\"\${parentText}. Expected type \${JSON.stringify(typ)} but got \${JSON.stringify(val)}\`);
+    const prettyTyp = prettyTypeName(typ);
+    const parentText = parent ? \` on \${parent}\` : '';
+    const keyText = key ? \` for key "\${key}"\` : '';
+    throw Error(\`Invalid value\${keyText}\${parentText}. Expected \${prettyTyp} but got \${JSON.stringify(val)}\`);
+}
+
+function prettyTypeName(typ${anyAnnotation})${stringAnnotation} {
+    if (Array.isArray(typ)) {
+        if (typ.length === 2 && typ[0] === undefined) {
+            return \`an optional \${prettyTypeName(typ[1])}\`;
+        } else {
+            return \`one of [\${typ.map(a => { return prettyTypeName(a); }).join(", ")}]\`;
+        }
+    } else if (typeof typ === "object" && typ.literal !== undefined) {
+        return typ.literal;
+    } else {
+        return typeof typ;
     }
-    throw Error(\`Invalid value \${JSON.stringify(val)} for type \${JSON.stringify(typ)}\${parentText}\`, );
 }
 
 function jsonToJSProps(typ${anyAnnotation})${anyAnnotation} {
@@ -401,14 +414,14 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
         }
         const d = new Date(val);
         if (isNaN(d.valueOf())) {
-            return invalidValue("Date", val, key, parent);
+            return invalidValue(l("Date"), val, key, parent);
         }
         return d;
     }
 
     function transformObject(props${anyMapAnnotation}, additional${anyAnnotation}, val${anyAnnotation})${anyAnnotation} {
         if (val === null || typeof val !== "object" || Array.isArray(val)) {
-            return invalidValue(ref || "object", val, key, parent);
+            return invalidValue(l(ref || "object"), val, key, parent);
         }
         const result${anyAnnotation} = {};
         Object.getOwnPropertyNames(props).forEach(key => {
@@ -457,6 +470,10 @@ ${this.castFunctionLines[0]} {
 
 ${this.castFunctionLines[1]} {
     return transform(val, typ, jsToJSONProps);
+}
+
+function l(typ${anyAnnotation}) {
+    return { literal: typ };
 }
 
 function a(typ${anyAnnotation}) {
