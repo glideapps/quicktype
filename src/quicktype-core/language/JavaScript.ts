@@ -404,7 +404,7 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
 
     function transformArray(typ${anyAnnotation}, val${anyAnnotation})${anyAnnotation} {
         // val must be an array with no invalid elements
-        if (!Array.isArray(val)) return invalidValue("array", val, key, parent);
+        if (!Array.isArray(val)) return invalidValue(l("array"), val, key, parent);
         return val.map(el => transform(el, typ, getProps));
     }
 
