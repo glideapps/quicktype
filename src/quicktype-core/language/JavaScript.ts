@@ -399,7 +399,7 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
 
     function transformEnum(cases${stringArrayAnnotation}, val${anyAnnotation})${anyAnnotation} {
         if (cases.indexOf(val) !== -1) return val;
-        return invalidValue(cases, val, key, parent);
+        return invalidValue(cases.map(a => { return l(a); }), val, key, parent);
     }
 
     function transformArray(typ${anyAnnotation}, val${anyAnnotation})${anyAnnotation} {
