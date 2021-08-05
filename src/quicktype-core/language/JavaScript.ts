@@ -413,7 +413,7 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
         Object.getOwnPropertyNames(props).forEach(key => {
             const prop = props[key];
             const v = Object.prototype.hasOwnProperty.call(val, key) ? val[key] : undefined;
-            result[prop.key] = transform(v, prop.typ, getProps, prop.key);
+            result[prop.key] = transform(v, prop.typ, getProps, key);
         });
         Object.getOwnPropertyNames(val).forEach(key => {
             if (!Object.prototype.hasOwnProperty.call(props, key)) {
