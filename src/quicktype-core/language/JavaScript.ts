@@ -340,11 +340,12 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
             } = this.typeAnnotations;
             this.ensureBlankLine();
             this
-                .emitMultiline(`function invalidValue(typ${anyAnnotation}, val${anyAnnotation}, key${anyAnnotation} = '')${neverAnnotation} {
+                .emitMultiline(`function invalidValue(typ${anyAnnotation}, val${anyAnnotation}, key${anyAnnotation}, parent${anyAnnotation})${neverAnnotation} {
+    const parentText = parent ? \` on \${parent}\` : ''
     if (key) {
-        throw Error(\`Invalid value for key \"\${key}\". Expected type \${JSON.stringify(typ)} but got \${JSON.stringify(val)}\`);
+        throw Error(\`Invalid value for key \"\${key}\"\${parentText}. Expected type \${JSON.stringify(typ)} but got \${JSON.stringify(val)}\`);
     }
-    throw Error(\`Invalid value \${JSON.stringify(val)} for type \${JSON.stringify(typ)}\`, );
+    throw Error(\`Invalid value \${JSON.stringify(val)} for type \${JSON.stringify(typ)}\${parentText}\`, );
 }
 
 function jsonToJSProps(typ${anyAnnotation})${anyAnnotation} {
@@ -365,10 +366,10 @@ function jsToJSONProps(typ${anyAnnotation})${anyAnnotation} {
     return typ.jsToJSON;
 }
 
-function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnotation}, key${anyAnnotation} = '')${anyAnnotation} {
+function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnotation}, key${anyAnnotation} = '', parent${anyAnnotation} = '')${anyAnnotation} {
     function transformPrimitive(typ${stringAnnotation}, val${anyAnnotation})${anyAnnotation} {
         if (typeof typ === typeof val) return val;
-        return invalidValue(typ, val, key);
+        return invalidValue(typ, val, key, parent);
     }
 
     function transformUnion(typs${anyArrayAnnotation}, val${anyAnnotation})${anyAnnotation} {
@@ -380,17 +381,17 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
                 return transform(val, typ, getProps);
             } catch (_) {}
         }
-        return invalidValue(typs, val, key);
+        return invalidValue(typs, val, key, parent);
     }
 
     function transformEnum(cases${stringArrayAnnotation}, val${anyAnnotation})${anyAnnotation} {
         if (cases.indexOf(val) !== -1) return val;
-        return invalidValue(cases, val, key);
+        return invalidValue(cases, val, key, parent);
     }
 
     function transformArray(typ${anyAnnotation}, val${anyAnnotation})${anyAnnotation} {
         // val must be an array with no invalid elements
-        if (!Array.isArray(val)) return invalidValue("array", val, key);
+        if (!Array.isArray(val)) return invalidValue("array", val, key, parent);
         return val.map(el => transform(el, typ, getProps));
     }
 
@@ -400,27 +401,27 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
         }
         const d = new Date(val);
         if (isNaN(d.valueOf())) {
-            return invalidValue("Date", val, key);
+            return invalidValue("Date", val, key, parent);
         }
         return d;
     }
 
     function transformObject(props${anyMapAnnotation}, additional${anyAnnotation}, val${anyAnnotation})${anyAnnotation} {
         if (val === null || typeof val !== "object" || Array.isArray(val)) {
-            return invalidValue("object", val, key);
+            return invalidValue("object", val, key, parent);
         }
         const result${anyAnnotation} = {};
         Object.getOwnPropertyNames(props).forEach(key => {
             const prop = props[key];
             const v = Object.prototype.hasOwnProperty.call(val, key) ? val[key] : undefined;
-            result[prop.key] = transform(v, prop.typ, getProps, key);
+            result[prop.key] = transform(v, prop.typ, getProps, key, ref);
         });
         Object.getOwnPropertyNames(val).forEach(key => {
             if (!Object.prototype.hasOwnProperty.call(props, key)) {
                 result[key] = ${
                     this._jsOptions.runtimeTypecheckIgnoreUnknownProperties
                         ? `val[key]`
-                        : `transform(val[key], additional, getProps, key)`
+                        : `transform(val[key], additional, getProps, key, ref)`
                 };
             }
         });
@@ -430,10 +431,12 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
     if (typ === "any") return val;
     if (typ === null) {
         if (val === null) return val;
-        return invalidValue(typ, val, key);
+        return invalidValue(typ, val, key, parent);
     }
-    if (typ === false) return invalidValue(typ, val, key);
+    if (typ === false) return invalidValue(typ, val, key, parent);
+    let ref = undefined;
     while (typeof typ === "object" && typ.ref !== undefined) {
+        ref = typ.ref;
         typ = typeMap[typ.ref];
     }
     if (Array.isArray(typ)) return transformEnum(typ, val);
@@ -441,7 +444,7 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
         return typ.hasOwnProperty("unionMembers") ? transformUnion(typ.unionMembers, val)
             : typ.hasOwnProperty("arrayItems")    ? transformArray(typ.arrayItems, val)
             : typ.hasOwnProperty("props")         ? transformObject(getProps(typ), typ.additional, val)
-            : invalidValue(typ, val, key);
+            : invalidValue(typ, val, key, parent);
     }
     // Numbers can be parsed by Date but shouldn't be.
     if (typ === Date && typeof val !== "number") return transformDate(val);
