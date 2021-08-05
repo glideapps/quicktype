@@ -340,7 +340,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
             } = this.typeAnnotations;
             this.ensureBlankLine();
             this
-                .emitMultiline(`function invalidValue(typ${anyAnnotation}, val${anyAnnotation}, key${anyAnnotation}, parent${anyAnnotation})${neverAnnotation} {
+                .emitMultiline(`function invalidValue(typ${anyAnnotation}, val${anyAnnotation}, key${anyAnnotation}, parent${anyAnnotation} = '')${neverAnnotation} {
     const parentText = parent ? \` on \${parent}\` : ''
     if (key) {
         throw Error(\`Invalid value for key \"\${key}\"\${parentText}. Expected type \${JSON.stringify(typ)} but got \${JSON.stringify(val)}\`);
@@ -408,7 +408,7 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
 
     function transformObject(props${anyMapAnnotation}, additional${anyAnnotation}, val${anyAnnotation})${anyAnnotation} {
         if (val === null || typeof val !== "object" || Array.isArray(val)) {
-            return invalidValue("object", val, key, parent);
+            return invalidValue(ref || "object", val, key, parent);
         }
         const result${anyAnnotation} = {};
         Object.getOwnPropertyNames(props).forEach(key => {
