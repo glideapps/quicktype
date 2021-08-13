@@ -7,6 +7,10 @@ export interface JSONTypeSource extends JSONSourceData<Readable> {
     kind: "json";
 }
 
+export interface JSON5TypeSource extends JSONSourceData<Readable> {
+    kind: "json5";
+}
+
 export interface SchemaTypeSource extends JSONSchemaSourceData {
     kind: "schema";
 }
@@ -15,4 +19,4 @@ export interface GraphQLTypeSource extends GraphQLSourceData {
     kind: "graphql";
 }
 
-export type TypeSource = GraphQLTypeSource | JSONTypeSource | SchemaTypeSource;
+export type TypeSource = GraphQLTypeSource | JSONTypeSource | JSON5TypeSource | SchemaTypeSource;

@@ -15,7 +15,14 @@ export {
     RunContext
 } from "./Run";
 export { CompressedJSON } from "./input/CompressedJSON";
-export { Input, InputData, JSONInput, JSONSourceData, jsonInputForTargetLanguage } from "./input/Inputs";
+export {
+    Input,
+    InputData,
+    JSONInput,
+    JSONSourceData,
+    jsonInputForTargetLanguage,
+    json5InputForTargetLanguage
+} from "./input/Inputs";
 export { JSONSchemaInput, JSONSchemaSourceData } from "./input/JSONSchemaInput";
 export { Ref, JSONSchemaType, JSONSchemaAttributes } from "./input/JSONSchemaInput";
 export { RenderContext } from "./Renderer";

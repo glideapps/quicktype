@@ -42,8 +42,8 @@ import { GraphQLInput } from "../quicktype-graphql-input";
 
 import { urlsFromURLGrammar } from "./URLGrammar";
 import { introspectServer } from "./GraphQLIntrospection";
-import { JSONTypeSource, TypeSource, GraphQLTypeSource, SchemaTypeSource } from "./TypeSource";
-import { CompressedJSONFromStream } from "./CompressedJSONFromStream";
+import { JSONTypeSource, TypeSource, GraphQLTypeSource, SchemaTypeSource, JSON5TypeSource } from "./TypeSource";
+import { CompressedJSON5FromStream, CompressedJSONFromStream } from "./CompressedJSONFromStream";
 
 const stringToStream = require("string-to-stream");
 
@@ -89,9 +89,13 @@ const defaultDefaultTargetLanguageName: string = "go";
 async function sourceFromFileOrUrlArray(
     name: string,
     filesOrUrls: string[],
-    httpHeaders?: string[]
-): Promise<JSONTypeSource> {
+    httpHeaders?: string[],
+    isJSON5: boolean = false
+): Promise<JSONTypeSource | JSON5TypeSource> {
     const samples = await Promise.all(filesOrUrls.map(file => readableFromFileOrURL(file, httpHeaders)));
+    if (isJSON5) {
+        return { kind: "json5", name, samples };
+    }
     return { kind: "json", name, samples };
 }
 
@@ -125,6 +129,12 @@ async function samplesFromDirectory(dataDir: string, httpHeaders?: string[]): Pr
             if (file.endsWith(".url") || file.endsWith(".json")) {
                 sourcesInDir.push({
                     kind: "json",
+                    name,
+                    samples: [await readableFromFileOrURL(fileOrUrl, httpHeaders)]
+                });
+            } else if (file.endsWith(".json5")) {
+                sourcesInDir.push({
+                    kind: "json5",
                     name,
                     samples: [await readableFromFileOrURL(fileOrUrl, httpHeaders)]
                 });
@@ -171,6 +181,7 @@ async function samplesFromDirectory(dataDir: string, httpHeaders?: string[]): Pr
 
     for (const dir of directories) {
         let jsonSamples: Readable[] = [];
+        let json5Samples: Readable[] = [];
         const schemaSources: SchemaTypeSource[] = [];
         const graphQLSources: GraphQLTypeSource[] = [];
 
@@ -178,6 +189,9 @@ async function samplesFromDirectory(dataDir: string, httpHeaders?: string[]): Pr
             switch (source.kind) {
                 case "json":
                     jsonSamples = jsonSamples.concat(source.samples);
+                    break;
+                case "json5":
+                    json5Samples = json5Samples.concat(source.samples);
                     break;
                 case "schema":
                     schemaSources.push(source);
@@ -190,7 +204,7 @@ async function samplesFromDirectory(dataDir: string, httpHeaders?: string[]): Pr
             }
         }
 
-        if (jsonSamples.length > 0 && schemaSources.length + graphQLSources.length > 0) {
+        if (jsonSamples.length + json5Samples.length > 0 && schemaSources.length + graphQLSources.length > 0) {
             return messageError("DriverCannotMixJSONWithOtherSamples", { dir: dir });
         }
 
@@ -204,6 +218,13 @@ async function samplesFromDirectory(dataDir: string, httpHeaders?: string[]): Pr
                 kind: "json",
                 name: path.basename(dir),
                 samples: jsonSamples
+            });
+        }
+        if (json5Samples.length > 0) {
+            sources.push({
+                kind: "json5",
+                name: path.basename(dir),
+                samples: json5Samples
             });
         }
         sources = sources.concat(schemaSources);
@@ -654,6 +675,8 @@ async function typeSourcesForURIs(name: string, uris: string[], options: CLIOpti
     switch (options.srcLang) {
         case "json":
             return [await sourceFromFileOrUrlArray(name, uris, options.httpHeader)];
+        case "json5":
+            return [await sourceFromFileOrUrlArray(name, uris, options.httpHeader, true)];
         case "schema":
             return uris.map(uri => ({ kind: "schema", name, uris: [uri] } as SchemaTypeSource));
         default:
@@ -698,12 +721,15 @@ function makeTypeScriptSource(fileNames: string[]): SchemaTypeSource {
 export function jsonInputForTargetLanguage(
     targetLanguage: string | TargetLanguage,
     languages?: TargetLanguage[],
-    handleJSONRefs: boolean = false
+    handleJSONRefs: boolean = false,
+    isJSON5: boolean = false
 ): JSONInput<Readable> {
     if (typeof targetLanguage === "string") {
         targetLanguage = defined(languageNamed(targetLanguage, languages));
     }
-    const compressedJSON = new CompressedJSONFromStream(targetLanguage.dateTimeRecognizer, handleJSONRefs);
+    const compressedJSON = isJSON5
+        ? new CompressedJSON5FromStream(targetLanguage.dateTimeRecognizer, handleJSONRefs)
+        : new CompressedJSONFromStream(targetLanguage.dateTimeRecognizer, handleJSONRefs);
     return new JSONInput(compressedJSON);
 }
 
@@ -724,6 +750,11 @@ async function makeInputData(
             case "json":
                 await inputData.addSource("json", source, () =>
                     jsonInputForTargetLanguage(targetLanguage, undefined, handleJSONRefs)
+                );
+                break;
+            case "json5":
+                await inputData.addSource("json5", source, () =>
+                    jsonInputForTargetLanguage(targetLanguage, undefined, handleJSONRefs, true)
                 );
                 break;
             case "schema":
@@ -814,6 +845,9 @@ export async function makeQuicktypeOptions(
             break;
         case "json":
         case "schema":
+            sources = await getSources(options);
+            break;
+        case "json5":
             sources = await getSources(options);
             break;
         case "typescript":

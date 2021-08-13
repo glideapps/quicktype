@@ -1,4 +1,5 @@
 import { addHashCode, hashCodeInit, hashString } from "collection-utils";
+import { parse as JSON5parse } from "json5";
 
 import { defined, panic, assert } from "../support/Support";
 import { TransformedStringTypeKind, isPrimitiveStringTypeKind, transformedStringTypeTargetTypeKindsMap } from "../Type";
@@ -55,7 +56,11 @@ export abstract class CompressedJSON<T> {
     private _objects: Value[][] = [];
     private _arrays: Value[][] = [];
 
-    constructor(readonly dateTimeRecognizer: DateTimeRecognizer, readonly handleRefs: boolean) {}
+    constructor(
+        readonly dateTimeRecognizer: DateTimeRecognizer,
+        readonly handleRefs: boolean,
+        readonly isJSON5: boolean = false
+    ) {}
 
     abstract parse(input: T): Promise<Value>;
 
@@ -272,12 +277,12 @@ export class CompressedJSONFromString extends CompressedJSON<string> {
     }
 
     parseSync(input: string): Value {
-        const json = JSON.parse(input);
+        const json = this.isJSON5 ? JSON5parse(input) : JSON.parse(input);
         this.process(json);
         return this.finish();
     }
 
-    private process(json: unknown): void {
+    protected process(json: unknown): void {
         if (json === null) {
             this.commitNull();
         } else if (typeof json === "boolean") {
@@ -304,5 +309,13 @@ export class CompressedJSONFromString extends CompressedJSON<string> {
         } else {
             return panic("Invalid JSON object");
         }
+    }
+}
+
+export class CompressedJSON5FromString extends CompressedJSONFromString {
+    parseSync(input: string): Value {
+        const json = JSON5parse(input);
+        this.process(json);
+        return this.finish();
     }
 }

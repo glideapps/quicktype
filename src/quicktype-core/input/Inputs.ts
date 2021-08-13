@@ -1,6 +1,6 @@
 import { iterableFirst, iterableFind, iterableSome, setFilterMap, withDefault, arrayMapSync } from "collection-utils";
 
-import { Value, CompressedJSON, CompressedJSONFromString } from "./CompressedJSON";
+import { Value, CompressedJSON, CompressedJSONFromString, CompressedJSON5FromString } from "./CompressedJSON";
 import { panic, errorMessage, defined } from "../support/Support";
 import { messageError } from "../Messages";
 import { TypeBuilder } from "../TypeBuilder";
@@ -143,6 +143,10 @@ export class JSONInput<T> implements Input<JSONSourceData<T>> {
     }
 }
 
+export class JSON5Input<T> extends JSONInput<T> {
+    readonly kind: string = "json5";
+}
+
 export function jsonInputForTargetLanguage(
     targetLanguage: string | TargetLanguage,
     languages?: TargetLanguage[],
@@ -153,6 +157,18 @@ export function jsonInputForTargetLanguage(
     }
     const compressedJSON = new CompressedJSONFromString(targetLanguage.dateTimeRecognizer, handleJSONRefs);
     return new JSONInput(compressedJSON);
+}
+
+export function json5InputForTargetLanguage(
+    targetLanguage: string | TargetLanguage,
+    languages?: TargetLanguage[],
+    handleJSONRefs: boolean = false
+): JSON5Input<string> {
+    if (typeof targetLanguage === "string") {
+        targetLanguage = defined(languageNamed(targetLanguage, languages));
+    }
+    const compressedJSON5 = new CompressedJSON5FromString(targetLanguage.dateTimeRecognizer, handleJSONRefs, true);
+    return new JSON5Input(compressedJSON5);
 }
 
 export class InputData {
