@@ -359,6 +359,41 @@ class JSONFixture extends LanguageFixture {
   }
 }
 
+class JSON5Fixture extends JSONFixture {
+  constructor(language: languages.Language, public name: string = language.name) {
+    super(language);
+  }
+
+  runForName(name: string): boolean {
+    return this.name === name || name === "json5";
+  }
+
+  async runQuicktype(sample: string, additionalRendererOptions: RendererOptions): Promise<void> {
+    // FIXME: add options
+    await quicktypeForLanguage(this.language, sample, "json5", true, additionalRendererOptions);
+  }
+
+  async test(
+    filename: string,
+    additionalRendererOptions: RendererOptions,
+    _additionalFiles: string[]
+  ): Promise<number> {
+    if (this.language.compileCommand) {
+      await execAsync(this.language.compileCommand);
+    }
+    if (this.language.runCommand === undefined) return 0;
+
+    compareJsonFileToJson(comparisonArgs(this.language, filename, filename, additionalRendererOptions));
+
+    return 1;
+  }
+
+  getSamples(sources: string[]): { priority: Sample[]; others: Sample[] } {
+    const prioritySamples = testsInDir("test/inputs/json5/", "json5");
+    return samplesFromSources(sources, prioritySamples, [], "json5");
+  }
+}
+
 // This fixture tests generating code for language X from JSON,
 // then generating code for Y from the code for X, making sure
 // that the resulting code for Y accepts the JSON by running it
@@ -809,6 +844,26 @@ export const allFixtures: Fixture[] = [
   new JSONFixture(languages.DartLanguage),
   new JSONFixture(languages.PikeLanguage),
   new JSONFixture(languages.HaskellLanguage),
+  new JSON5Fixture(languages.CSharpLanguage),
+  new JSON5Fixture(languages.JavaLanguage),
+  new JSON5Fixture(languages.JavaLanguageWithLegacyDateTime, "java-datetime-legacy"),
+  new JSON5Fixture(languages.JavaLanguageWithLombok, "java-lombok"),
+  new JSON5Fixture(languages.GoLanguage),
+  new JSON5Fixture(languages.CPlusPlusLanguage),
+  new JSON5Fixture(languages.RustLanguage),
+  new JSON5Fixture(languages.RubyLanguage),
+  new JSON5Fixture(languages.PythonLanguage),
+  new JSON5Fixture(languages.ElmLanguage),
+  new JSON5Fixture(languages.SwiftLanguage),
+  new JSON5Fixture(languages.ObjectiveCLanguage),
+  new JSON5Fixture(languages.TypeScriptLanguage),
+  new JSON5Fixture(languages.FlowLanguage),
+  new JSON5Fixture(languages.JavaScriptLanguage),
+  new JSON5Fixture(languages.KotlinLanguage),
+  new JSON5Fixture(languages.KotlinJacksonLanguage, "kotlin-jackson"),
+  new JSON5Fixture(languages.DartLanguage),
+  new JSON5Fixture(languages.PikeLanguage),
+  new JSON5Fixture(languages.HaskellLanguage),
   new JSONSchemaJSONFixture(languages.CSharpLanguage),
   new JSONTypeScriptFixture(languages.CSharpLanguage),
   // new JSONSchemaFixture(languages.CrystalLanguage),
