@@ -1,0 +1,24 @@
+{
+    "name": "quicktype-json5-input",
+    "version": "0.0.1",
+    "license": "Apache-2.0",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "repository": "https://github.com/quicktype/quicktype",
+    "scripts": {
+        "clean": "rm -rf dist node_modules *~",
+        "prepare": "npm run build",
+        "build": "tsc",
+        "tslint": "tslint --project ."
+    },
+    "dependencies": {
+        "quicktype-core": "the build script replaces this",
+        "json5": "^2.2.0"
+    },
+    "devDependencies": {
+        "@types/node": "^8.10.10",
+        "typescript": "~3.2.1",
+        "tslint": "^5.11.0"
+    },
+    "files": ["dist/**"]
+}

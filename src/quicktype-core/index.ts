@@ -14,7 +14,7 @@ export {
     InferenceFlagName,
     RunContext
 } from "./Run";
-export { CompressedJSON } from "./input/CompressedJSON";
+export { CompressedJSON, CompressedJSONFromString } from "./input/CompressedJSON";
 export {
     Input,
     InputData,

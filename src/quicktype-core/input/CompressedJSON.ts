@@ -56,11 +56,7 @@ export abstract class CompressedJSON<T> {
     private _objects: Value[][] = [];
     private _arrays: Value[][] = [];
 
-    constructor(
-        readonly dateTimeRecognizer: DateTimeRecognizer,
-        readonly handleRefs: boolean,
-        readonly isJSON5: boolean = false
-    ) {}
+    constructor(readonly dateTimeRecognizer: DateTimeRecognizer, readonly handleRefs: boolean) {}
 
     abstract parse(input: T): Promise<Value>;
 
@@ -277,7 +273,7 @@ export class CompressedJSONFromString extends CompressedJSON<string> {
     }
 
     parseSync(input: string): Value {
-        const json = this.isJSON5 ? JSON5parse(input) : JSON.parse(input);
+        const json = JSON.parse(input);
         this.process(json);
         return this.finish();
     }

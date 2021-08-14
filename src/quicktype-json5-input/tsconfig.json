@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "target": "es6",
+        "module": "commonjs",
+        "lib": ["es6", "esnext.asynciterable"],
+        "allowJs": false,
+        "declaration": true,
+        "strict": true,
+        "outDir": "dist",
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noFallthroughCasesInSwitch": true
+    }
+}
