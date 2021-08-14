@@ -167,7 +167,7 @@ export function json5InputForTargetLanguage(
     if (typeof targetLanguage === "string") {
         targetLanguage = defined(languageNamed(targetLanguage, languages));
     }
-    const compressedJSON5 = new CompressedJSON5FromString(targetLanguage.dateTimeRecognizer, handleJSONRefs, true);
+    const compressedJSON5 = new CompressedJSON5FromString(targetLanguage.dateTimeRecognizer, handleJSONRefs);
     return new JSON5Input(compressedJSON5);
 }
 
