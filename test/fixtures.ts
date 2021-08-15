@@ -366,7 +366,7 @@ class JSON5Fixture extends JSONFixture {
   }
 
   runForName(name: string): boolean {
-    return this.name === name || name === "json5";
+    return this.name === `json5-${name}` || name === "json5";
   }
 
   async runQuicktype(sample: string, additionalRendererOptions: RendererOptions): Promise<void> {
