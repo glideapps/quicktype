@@ -375,23 +375,29 @@ class JSON5Fixture extends JSONFixture {
   }
 
   async test(
-    filename: string,
+    _filename: string,
     additionalRendererOptions: RendererOptions,
-    _additionalFiles: string[]
+    additionalFiles: string[]
   ): Promise<number> {
     if (this.language.compileCommand) {
       await execAsync(this.language.compileCommand);
     }
     if (this.language.runCommand === undefined) return 0;
 
-    compareJsonFileToJson(comparisonArgs(this.language, filename, filename, additionalRendererOptions));
-
-    return 1;
+    for (const fn of additionalFiles) {
+      compareJsonFileToJson(comparisonArgs(this.language, fn, fn, additionalRendererOptions));
+    }
+    return additionalFiles.length;
   }
 
   getSamples(sources: string[]): { priority: Sample[]; others: Sample[] } {
     const prioritySamples = testsInDir("test/inputs/json5/", "json5");
     return samplesFromSources(sources, prioritySamples, [], "json5");
+  }
+
+  additionalFiles(sample: Sample): string[] {
+    const baseName = pathWithoutExtension(sample.path, ".json5");
+    return additionalTestFiles(baseName, "json");
   }
 }
 
