@@ -360,8 +360,11 @@ class JSONFixture extends LanguageFixture {
 }
 
 class JSON5Fixture extends JSONFixture {
-  constructor(language: languages.Language, public name: string = language.name) {
+  public name: string;
+
+  constructor(language: languages.Language) {
     super(language);
+    this.name = `json5-${language.name}`;
   }
 
   runForName(name: string): boolean {
