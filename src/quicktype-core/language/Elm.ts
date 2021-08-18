@@ -146,8 +146,7 @@ export class ElmRenderer extends ConvenienceRenderer {
 
     constructor(
         targetLanguage: TargetLanguage,
-        renderContext: RenderContext,
-        _options: OptionValues<typeof elmOptions>
+        renderContext: RenderContext
     ) {
         super(targetLanguage, renderContext);
     }
