@@ -4,7 +4,7 @@ import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { Namer, Name, DependencyName, funPrefixNamer } from "../Naming";
 import { RenderContext } from "../Renderer";
-import { EnumOption, StringOption, BooleanOption, Option, getOptionValues } from "../RendererOptions";
+import { EnumOption, StringOption, BooleanOption, Option, getOptionValues, OptionValues } from "../RendererOptions";
 import { Sourcelike, annotated, MultiWord, singleWord, multiWord, parenIfNeeded } from "../Source";
 import { TargetLanguage } from "../TargetLanguage";
 import { Type, ClassType, UnionType, EnumType, ClassProperty } from "../Type";
@@ -143,6 +143,14 @@ function requiredOrOptional(p: ClassProperty): RequiredOrOptional {
 export class ElmRenderer extends ConvenienceRenderer {
     private readonly _topLevelDependents = new Map<Name, TopLevelDependent>();
     private readonly _namedTypeDependents = new Map<Name, NamedTypeDependent>();
+
+    constructor(
+        targetLanguage: TargetLanguage,
+        renderContext: RenderContext,
+        private readonly _options: OptionValues<typeof elmOptions>
+    ) {
+        super(targetLanguage, renderContext);
+    }
 
     // NAMES
     // -----
