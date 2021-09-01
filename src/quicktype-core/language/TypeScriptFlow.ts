@@ -89,12 +89,15 @@ function quotePropertyName(original: string): string {
 }
 
 export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
+    protected _tsFlowOptions: OptionValues<typeof tsFlowOptions>;
+
     constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        protected readonly _tsFlowOptions: OptionValues<typeof tsFlowOptions>
+        _tsFlowOptions: OptionValues<typeof tsFlowOptions>
     ) {
         super(targetLanguage, renderContext, _tsFlowOptions);
+        this._tsFlowOptions = _tsFlowOptions;
     }
 
     protected namerForObjectProperty(): Namer {
