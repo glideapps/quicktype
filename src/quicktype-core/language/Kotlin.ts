@@ -1120,7 +1120,7 @@ export class KotlinGsonRenderer extends KotlinRenderer {
     ) {
         super(targetLanguage, renderContext, _kotlinOptions);
     }
-    
+
     protected emitHeader(): void {
         super.emitHeader();
 
@@ -1146,5 +1146,4 @@ export class KotlinGsonRenderer extends KotlinRenderer {
             this.emitLine("// val ", modifySource(camelCase, name), " = ", "gson.fromJson(jsonString, ", name, "::class.java)");
         });
     }
-
 }
