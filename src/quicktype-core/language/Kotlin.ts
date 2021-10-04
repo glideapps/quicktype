@@ -1112,7 +1112,6 @@ export class KotlinXRenderer extends KotlinRenderer {
     }
 }
 
-
 export class KotlinGsonRenderer extends KotlinRenderer {
     constructor(
         targetLanguage: TargetLanguage,
@@ -1121,7 +1120,7 @@ export class KotlinGsonRenderer extends KotlinRenderer {
     ) {
         super(targetLanguage, renderContext, _kotlinOptions);
     }
-
+    
     protected emitHeader(): void {
         super.emitHeader();
 
@@ -1131,12 +1130,10 @@ export class KotlinGsonRenderer extends KotlinRenderer {
     
     protected renameAttribute(name: Name, jsonName: string, _required: boolean, meta: Array<() => void>) {
         const rename = this._rename(name, jsonName);
-        if (rename !== undefined) {
-            meta.push(() => this.emitLine(rename));
-        }
+        meta.push(() => this.emitLine(rename));
     }
 
-    private _rename(_: Name, jsonName: string): Sourcelike | undefined {
+    private _rename(_: Name, jsonName: string): Sourcelike {
         const escapedName = stringEscape(jsonName);     
         return ["@SerializedName(\"", escapedName, "\")"];
     }
