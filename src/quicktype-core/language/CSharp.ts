@@ -139,11 +139,6 @@ export const cSharpOptions = {
         "6",
         "secondary"
     ),
-    virtual: new BooleanOption(
-        "virtual",
-        "Generate virtual properties",
-        false
-    ),
     typeForAny: new EnumOption<CSharpTypeForAny>(
         "any-type",
         'Type to use for "any"',
@@ -175,7 +170,6 @@ export class CSharpTargetLanguage extends TargetLanguage {
             cSharpOptions.useList,
             cSharpOptions.useDecimal,
             cSharpOptions.typeForAny,
-            cSharpOptions.virtual,
         ];
     }
 
@@ -411,13 +405,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
         const csType = property.isOptional
             ? this.nullableCSType(t, followTargetType, true)
             : this.csType(t, followTargetType, true);
-
-        const propertyArray = ["public "];
-
-        if (this._csOptions.virtual)
-            propertyArray.push("virtual ");
-        
-        return [...propertyArray, csType, " ", name, " { get; set; }"];
+        return ["public ", csType, " ", name, " { get; set; }"];
     }
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
@@ -650,7 +638,6 @@ export class NewtonsoftCSharpTargetLanguage extends CSharpTargetLanguage {
             newtonsoftCSharpOptions.checkRequired,
             newtonsoftCSharpOptions.typeForAny,
             newtonsoftCSharpOptions.baseclass,
-            newtonsoftCSharpOptions.virtual,
         ];
     }
 
