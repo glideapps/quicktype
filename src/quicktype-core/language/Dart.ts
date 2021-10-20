@@ -413,7 +413,7 @@ export class DartRenderer extends ConvenienceRenderer {
             _nullType => dynamic, // FIXME: check null
             _boolType => dynamic,
             _integerType => dynamic,
-            _doubleType => ["parse.double(", dynamic, ")"],
+            _doubleType => ["double.parse(", dynamic, ")"],
             _stringType => dynamic,
             arrayType =>
                 this.mapList(this.dartType(arrayType.items), dynamic, this.fromDynamicExpression(arrayType.items, "x")),
