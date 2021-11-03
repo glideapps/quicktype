@@ -164,6 +164,7 @@ export const cSharpOptions = {
         "double",
         "secondary"
     ),
+    keepNaming: new BooleanOption("keep-naming", "Keep original JSON property names", false)
 };
 
 export class CSharpTargetLanguage extends TargetLanguage {
@@ -176,6 +177,7 @@ export class CSharpTargetLanguage extends TargetLanguage {
             cSharpOptions.useDecimal,
             cSharpOptions.typeForAny,
             cSharpOptions.virtual,
+            cSharpOptions.keepNaming
         ];
     }
 
@@ -210,6 +212,7 @@ export class CSharpTargetLanguage extends TargetLanguage {
 }
 
 const namingFunction = funPrefixNamer("namer", csNameStyle);
+const keepJsonNamingFunction = funPrefixNamer("namer", name => name);
 
 // FIXME: Make a Named?
 const denseJsonPropertyName = "J";
@@ -292,7 +295,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
     }
 
     protected namerForObjectProperty(): Namer {
-        return namingFunction;
+        return this._csOptions.keepNaming ? keepJsonNamingFunction : namingFunction;
     }
 
     protected makeUnionMemberNamer(): Namer {
@@ -651,6 +654,7 @@ export class NewtonsoftCSharpTargetLanguage extends CSharpTargetLanguage {
             newtonsoftCSharpOptions.typeForAny,
             newtonsoftCSharpOptions.baseclass,
             newtonsoftCSharpOptions.virtual,
+            newtonsoftCSharpOptions.keepNaming
         ];
     }
 
