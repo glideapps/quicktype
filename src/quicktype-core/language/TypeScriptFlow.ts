@@ -308,6 +308,8 @@ export class FlowRenderer extends TypeScriptFlowBaseRenderer {
     }
 
     protected emitEnum(e: EnumType, enumName: Name): void {
+        // this function would need to be updated to output something like
+        // "enumVal1" | "enumVal2" | "enumVal3"
         this.emitDescription(this.descriptionForType(e));
         const lines: string[][] = [];
         this.forEachEnumCase(e, "none", (_, jsonName) => {
