@@ -218,6 +218,7 @@ export class Ref {
     resolveAgainst(base: Ref | undefined): Ref {
         let addressURI = this.addressURI;
         if (base !== undefined && base.addressURI !== undefined) {
+	    debugger;
             addressURI = addressURI === undefined ? base.addressURI : addressURI.absoluteTo(base.addressURI);
         }
         return new Ref(addressURI, this.path);
