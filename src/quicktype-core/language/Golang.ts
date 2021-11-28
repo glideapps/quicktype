@@ -10,7 +10,7 @@ import {
     combineWords,
     firstUpperWordStyle,
     allUpperWordStyle,
-    camelCase,
+    camelCase
 } from "../support/Strings";
 import { assert, defined } from "../support/Support";
 import { StringOption, BooleanOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
@@ -18,13 +18,13 @@ import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { TargetLanguage } from "../TargetLanguage";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { RenderContext } from "../Renderer";
+import { ForEachPosition, RenderContext } from "../Renderer";
 
 export const goOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     justTypesAndPackage: new BooleanOption("just-types-and-package", "Plain types with package only", false),
     packageName: new StringOption("package", "Generated package name", "NAME", "main"),
-    multiFileOutput: new BooleanOption("multi-file-output", "Renders each top-level object in its own Go file", false),
+    multiFileOutput: new BooleanOption("multi-file-output", "Renders each top-level object in its own Go file", false)
 };
 
 export class GoTargetLanguage extends TargetLanguage {
@@ -90,8 +90,13 @@ function canOmitEmpty(cp: ClassProperty): boolean {
     return ["union", "null", "any"].indexOf(t.kind) < 0;
 }
 
+interface Functions {
+    unMarschal: Name;
+    fromDict: Name;
+}
+
 export class GoRenderer extends ConvenienceRenderer {
-    private readonly _topLevelUnmarshalNames = new Map<Name, Name>();
+    private readonly _topLevelFunctions = new Map<Name, Functions>();
     private _currentFilename: string | undefined;
 
     constructor(
@@ -126,10 +131,18 @@ export class GoRenderer extends ConvenienceRenderer {
         const unmarshalName = new DependencyName(
             namingFunction,
             topLevelName.order,
-            (lookup) => `unmarshal_${lookup(topLevelName)}`
+            lookup => `unmarshal_${lookup(topLevelName)}`
         );
-        this._topLevelUnmarshalNames.set(topLevelName, unmarshalName);
-        return [unmarshalName];
+        const fromDictName = new DependencyName(
+            namingFunction,
+            topLevelName.order,
+            lookup => `from_dict_${lookup(topLevelName)}`
+        );
+        this._topLevelFunctions.set(topLevelName, {
+            unMarschal: unmarshalName,
+            fromDict: fromDictName
+        });
+        return [unmarshalName, fromDictName];
     }
 
     /// startFile takes a file name, lowercases it, appends ".go" to it, and sets it as the current filename.
@@ -155,7 +168,11 @@ export class GoRenderer extends ConvenienceRenderer {
     }
 
     private emitBlock(line: Sourcelike, f: () => void): void {
-        this.emitLine(line, " {");
+        let space = " ";
+        if (Array.isArray(line) && line.length === 0) {
+            space = "";
+        }
+        this.emitLine(line, `${space}{`);
         this.indent(f);
         this.emitLine("}");
     }
@@ -191,15 +208,15 @@ export class GoRenderer extends ConvenienceRenderer {
     private goType(t: Type, withIssues: boolean = false): Sourcelike {
         return matchType<Sourcelike>(
             t,
-            (_anyType) => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "interface{}"),
-            (_nullType) => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "interface{}"),
-            (_boolType) => "bool",
-            (_integerType) => "int64",
-            (_doubleType) => "float64",
-            (_stringType) => "string",
-            (arrayType) => ["[]", this.goType(arrayType.items, withIssues)],
-            (classType) => this.nameForNamedType(classType),
-            (mapType) => {
+            _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "interface{}"),
+            _nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "interface{}"),
+            _boolType => "bool",
+            _integerType => "int64",
+            _doubleType => "float64",
+            _stringType => "string",
+            arrayType => ["[]", this.goType(arrayType.items, withIssues)],
+            classType => this.nameForNamedType(classType),
+            mapType => {
                 let valueSource: Sourcelike;
                 const v = mapType.values;
                 if (v instanceof UnionType && nullableFromUnion(v) === null) {
@@ -209,8 +226,8 @@ export class GoRenderer extends ConvenienceRenderer {
                 }
                 return ["map[string]", valueSource];
             },
-            (enumType) => this.nameForNamedType(enumType),
-            (unionType) => {
+            enumType => this.nameForNamedType(enumType),
+            unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) return this.nullableGoType(nullable, withIssues);
                 return this.nameForNamedType(unionType);
@@ -233,35 +250,188 @@ export class GoRenderer extends ConvenienceRenderer {
             this.emitLineOnce("// To parse and unparse this JSON data, add this code to your project and do:");
             this.emitLineOnce("//");
             const ref = modifySource(camelCase, name);
-            this.emitLineOnce("//    ", ref, ", err := ", defined(this._topLevelUnmarshalNames.get(name)), "(bytes)");
+            this.emitLineOnce(
+                "//    ",
+                ref,
+                ", err := ",
+                defined(this._topLevelFunctions.get(name)!.unMarschal),
+                "(bytes)"
+            );
             this.emitLineOnce("//    bytes, err = ", ref, ".Marshal()");
         }
 
         this.emitPackageDefinitons(true);
 
-        const unmarshalName = defined(this._topLevelUnmarshalNames.get(name));
+        if (this._options.justTypes || this._options.justTypesAndPackage) return;
+
         if (this.namedTypeToNameForTopLevel(t) === undefined) {
             this.emitLine("type ", name, " ", this.goType(t));
         }
 
-        if (this._options.justTypes || this._options.justTypesAndPackage) return;
-
-        this.ensureBlankLine();
-        this.emitFunc([unmarshalName, "(data []byte) (", name, ", error)"], () => {
-            this.emitLine("var r ", name);
-            this.emitLine("err := json.Unmarshal(data, &r)");
-            this.emitLine("return r, err");
-        });
-        this.ensureBlankLine();
-        this.emitFunc(["(r *", name, ") Marshal() ([]byte, error)"], () => {
-            this.emitLine("return json.Marshal(r)");
-        });
         this.endFile();
+    }
+
+    private emitAssignFrom(
+        rhs: Sourcelike[],
+        lhs: Sourcelike[],
+        p: Type,
+        _position?: ForEachPosition,
+        ignoreCast: boolean = false
+    ) {
+        const withIssues = false;
+        matchType<unknown>(
+            p,
+            _anyType =>
+                this.emitLine(
+                    ...rhs,
+                    " = ",
+                    ...lhs,
+                    ".(",
+                    maybeAnnotated(withIssues, anyTypeIssueAnnotation, "interface{}"),
+                    ")"
+                ),
+            _nullType =>
+                this.emitLine(
+                    ...rhs,
+                    " = ",
+                    ...lhs,
+                    ".(",
+                    maybeAnnotated(withIssues, nullTypeIssueAnnotation, "interface{}"),
+                    ")"
+                ),
+            _boolType => this.emitLine(...rhs, " = ", ...lhs, ignoreCast ? "" : ".(bool)"),
+            _integerType => this.emitLine(...rhs, " = ", ...lhs, ignoreCast ? "" : ".(int64)"),
+            _doubleType => this.emitLine(...rhs, " = ", ...lhs, ignoreCast ? "" : ".(float64)"),
+            _stringType => this.emitLine(...rhs, " = ", ...lhs, ignoreCast ? "" : ".(string)"),
+            arrayType => {
+                this.emitLine(
+                    ...rhs,
+                    " = make([]",
+                    this.goType(arrayType.items, withIssues),
+                    ", len(",
+                    ...lhs,
+                    ".([]",
+                    this.goType(arrayType.items, withIssues),
+                    ")))"
+                );
+                this.emitBlock(
+                    [`for idx, i := range `, ...lhs, ".([]", this.goType(arrayType.items, withIssues), ")"],
+                    () => {
+                        this.emitAssignFrom([...rhs, "[idx]"], ["i"], arrayType.items, "only", true);
+                    }
+                );
+            },
+            classType => {
+                this.emitBlock([], () => {
+                    this.emitLine(
+                        "err := FromDict",
+                        this.nameForNamedType(classType),
+                        "(",
+                        ...lhs,
+                        ".(map[string]interface{}), &",
+                        ...rhs,
+                        ")"
+                    );
+                    this.emitBlock("if err != nil", () => {
+                        this.emitLine("return err");
+                    });
+                });
+            },
+            mapType => {
+                let valueSource: Sourcelike;
+                const v = mapType.values;
+                if (v instanceof UnionType && nullableFromUnion(v) === null) {
+                    valueSource = ["*", this.nameForNamedType(v)];
+                } else {
+                    valueSource = this.goType(v, withIssues);
+                }
+                this.emitLine(...rhs, " = map[string]", valueSource, "{}");
+                this.emitBlock([`for key, i := range `, ...lhs, ".(map[string]interface{})"], () => {
+                    this.emitAssignFrom([...rhs, "[key]"], ["i"], v);
+                });
+            },
+            enumType => {
+                this.emitBlock([], () => {
+                    this.emitLine("var err error");
+                    this.emitLine(...rhs, ", err = From", this.nameForNamedType(enumType), "(", ...lhs, ".(string))");
+                    this.emitBlock("if err != nil", () => {
+                        this.emitLine("return err;");
+                    });
+                });
+            },
+            unionType => {
+                const nullable = nullableFromUnion(unionType);
+                if (nullable !== null) return this.nullableGoType(nullable, withIssues);
+                return this.nameForNamedType(unionType);
+            }
+        );
+    }
+
+    private emitAssignTo(rhs: Sourcelike[], lhs: Sourcelike[], p: Type, _position?: ForEachPosition) {
+        const withIssues = false;
+        matchType<unknown>(
+            p,
+            _anyType =>
+                this.emitLine(
+                    ...rhs,
+                    " = ",
+                    ...lhs,
+                    ".(",
+                    maybeAnnotated(withIssues, anyTypeIssueAnnotation, "interface{}"),
+                    ")"
+                ),
+            _nullType =>
+                this.emitLine(
+                    ...rhs,
+                    " = ",
+                    ...lhs,
+                    ".(",
+                    maybeAnnotated(withIssues, nullTypeIssueAnnotation, "interface{}"),
+                    ")"
+                ),
+            _boolType => this.emitLine(...rhs, " = ", ...lhs),
+            _integerType => this.emitLine(...rhs, " = ", ...lhs),
+            _doubleType => this.emitLine(...rhs, " = ", ...lhs),
+            _stringType => this.emitLine(...rhs, " = ", ...lhs),
+            arrayType => {
+                this.emitBlock([], () => {
+                    this.emitLine("tmp := make([]", this.goType(arrayType.items, withIssues), ", len(", ...lhs, "))");
+                    this.emitBlock([`for idx, i := range `, ...lhs], () => {
+                        this.emitAssignTo(["tmp[idx]"], ["i"], arrayType.items);
+                    });
+                    this.emitLine(...rhs, " = tmp");
+                });
+            },
+            _classType => this.emitLine(...rhs, " = ", ...lhs, ".ToDict()"),
+            mapType => {
+                let valueSource: Sourcelike;
+                const v = mapType.values;
+                if (v instanceof UnionType && nullableFromUnion(v) === null) {
+                    valueSource = ["*", this.nameForNamedType(v)];
+                } else {
+                    valueSource = this.goType(v, withIssues);
+                }
+                this.emitBlock([], () => {
+                    this.emitLine("tmp := map[string]", valueSource, "{}");
+                    this.emitBlock([`for key, i := range `, ...lhs], () => {
+                        this.emitAssignFrom(["tmp[key]"], ["i"], v);
+                    });
+                    this.emitLine(...rhs, " = tmp");
+                });
+            },
+            enumType => this.emitLine(...rhs, " = To", this.nameForNamedType(enumType), "(", ...lhs, ")"),
+            unionType => {
+                const nullable = nullableFromUnion(unionType);
+                if (nullable !== null) return this.nullableGoType(nullable, withIssues);
+                return this.nameForNamedType(unionType);
+            }
+        );
     }
 
     private emitClass(c: ClassType, className: Name): void {
         this.startFile(className);
         this.emitPackageDefinitons(false);
+
         let columns: Sourcelike[][] = [];
         this.forEachClassProperty(c, "none", (name, jsonName, p) => {
             const goType = this.propertyGoType(p);
@@ -271,10 +441,64 @@ export class GoRenderer extends ConvenienceRenderer {
         });
         this.emitDescription(this.descriptionForType(c));
         this.emitStruct(className, columns);
+
+        this.ensureBlankLine();
+        this.emitFunc(["(r *", className, ") Marshal() ([]byte, error)"], () => {
+            this.emitLine("return json.Marshal(r)");
+        });
+
+        this.ensureBlankLine();
+        const unmarshalName = defined(this._topLevelFunctions.get(className)!.unMarschal);
+        this.emitFunc([unmarshalName, "(data []byte) (*", className, ", error)"], () => {
+            this.emitLine("dict := map[string]interface{}{}");
+            this.emitLine("err := json.Unmarshal(data, &dict)");
+            this.emitBlock("if err != nil", () => {
+                this.emitLine("return nil, err");
+            });
+            this.emitLine("ins := ", className, "{}");
+            this.emitLine("return &ins, FromDict", className, "(dict, &ins)");
+        });
+
+        // this.ensureBlankLine();
+        // this.emitLineOnce(
+        //     "//    ",
+        //     className,
+        //     ", err := ",
+        //     defined(this._topLevelFunctions.get(className)!.fromDict),
+        //     "(dict: *map[string]interface{})"
+        // );
+        this.ensureBlankLine();
+        // this.emitLineOnce("//    map[string]interface{}, err = ", className, ".ToDict()");
+        this.emitFunc(["(r *", className, ") ToDict() map[string]interface{}"], () => {
+            this.emitLine("dict := map[string]interface{}{}");
+            this.forEachClassProperty(c, "none", (attr, jsonName, p) => {
+                this.emitAssignTo(['dict["', jsonName, '"]'], ["r.", attr], p.type);
+            });
+            this.emitLine("return dict");
+        });
+
+        this.ensureBlankLine();
+        const fromDictName = defined(this._topLevelFunctions.get(className)!.fromDict);
+
+        this.emitFunc([fromDictName, "(data map[string]interface{}, r *", className, ") error"], () => {
+            // this.emitLine("r := ", className, "{}");
+            this.forEachClassProperty(c, "none", (attr, jsonName, p) => {
+                this.emitAssignFrom([`r.`, attr], ['data["', jsonName, '"]'], p.type);
+            });
+            this.emitLine("return nil");
+        });
+
         this.endFile();
     }
 
     private emitEnum(e: EnumType, enumName: Name): void {
+        let cnt = 0;
+        this.forEachEnumCase(e, "none", () => {
+            ++cnt;
+        });
+        if (cnt === 0) {
+            return;
+        }
         this.startFile(enumName);
         this.emitPackageDefinitons(false);
         this.emitDescription(this.descriptionForType(e));
@@ -282,10 +506,45 @@ export class GoRenderer extends ConvenienceRenderer {
         this.emitLine("const (");
         this.indent(() =>
             this.forEachEnumCase(e, "none", (name, jsonName) => {
-                this.emitLine(name, " ", enumName, ' = "', stringEscape(jsonName), '"');
+                this.emitLine(enumName, "_", name, " ", enumName, ' = "', stringEscape(jsonName), '"');
             })
         );
         this.emitLine(")");
+        this.emitFunc(["From", enumName, "(v string) (", enumName, ", error)"], () => {
+            this.emitBlock("switch v", () => {
+                let anyJsonName: string = "EMPTY";
+                this.forEachEnumCase(e, "none", (name, jsonName) => {
+                    anyJsonName = jsonName;
+                    this.emitLine('case "', stringEscape(jsonName), '":');
+                    this.indent(() => {
+                        this.emitLine("return ", enumName, "_", name, ", nil");
+                    });
+                });
+                this.emitLine("default:");
+                this.indent(() => {
+                    this.emitLine(
+                        "return ",
+                        enumName,
+                        "_",
+                        anyJsonName,
+                        ', errors.New(fmt.Sprintf("Enum not found for:%s", v))'
+                    );
+                });
+            });
+        });
+
+        this.emitFunc(["To", enumName, "(v ", enumName, ") string"], () => {
+            this.emitBlock("switch v", () => {
+                this.forEachEnumCase(e, "none", (name, jsonName) => {
+                    this.emitLine("case ", enumName, "_", name, ":");
+                    this.indent(() => {
+                        this.emitLine('return "', jsonName, '"');
+                    });
+                });
+            });
+            this.emitLine('panic("enum with a unkown value")');
+        });
+
         this.endFile();
     }
 
@@ -350,7 +609,7 @@ export class GoRenderer extends ConvenienceRenderer {
                 this.emitLine("var c ", goType);
             });
             const args = makeArgs(
-                (fn) => ["&x.", fn],
+                fn => ["&x.", fn],
                 (isClass, fn) => {
                     if (isClass) {
                         return "true, &c";
@@ -373,7 +632,7 @@ export class GoRenderer extends ConvenienceRenderer {
         this.ensureBlankLine();
         this.emitFunc(["(x *", unionName, ") MarshalJSON() ([]byte, error)"], () => {
             const args = makeArgs(
-                (fn) => ["x.", fn],
+                fn => ["x.", fn],
                 (_, fn) => ["x.", fn, " != nil, x.", fn]
             );
             this.emitLine("return marshalUnion(", args, ")");
@@ -387,8 +646,22 @@ export class GoRenderer extends ConvenienceRenderer {
         this.forEachTopLevel("none", (_: Type, name: Name) => {
             this.emitLine("//");
             const ref = modifySource(camelCase, name);
-            this.emitLine("//    ", ref, ", err := ", defined(this._topLevelUnmarshalNames.get(name)), "(bytes)");
+            this.emitLine(
+                "//    ",
+                ref,
+                ", err := ",
+                defined(this._topLevelFunctions.get(name)!.unMarschal),
+                "(bytes)"
+            );
+            this.emitLine(
+                "//    ",
+                ref,
+                ", err := ",
+                defined(this._topLevelFunctions.get(name)!.fromDict),
+                "(map[string]interface{})"
+            );
             this.emitLine("//    bytes, err = ", ref, ".Marshal()");
+            this.emitLine("//    map[string]interface{}, err = ", ref, ".ToDict()");
         });
     }
 
@@ -404,6 +677,10 @@ export class GoRenderer extends ConvenienceRenderer {
             this.ensureBlankLine();
             if (this.haveNamedUnions && this._options.multiFileOutput === false) {
                 this.emitLineOnce('import "bytes"');
+                this.emitLineOnce('import "errors"');
+            }
+            if (this.haveEnums) {
+                this.emitLineOnce('import "fmt"');
                 this.emitLineOnce('import "errors"');
             }
 
@@ -554,7 +831,7 @@ func marshalUnion(pi *int64, pf *float64, pb *bool, ps *string, haveArray bool, 
         this.forEachTopLevel(
             "leading-and-interposing",
             (t, name) => this.emitTopLevel(t, name),
-            (t) =>
+            t =>
                 !(this._options.justTypes || this._options.justTypesAndPackage) ||
                 this.namedTypeToNameForTopLevel(t) === undefined
         );
