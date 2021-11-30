@@ -271,6 +271,19 @@ export class GoRenderer extends ConvenienceRenderer {
         this.endFile();
     }
 
+    private emitNumberCoerce(lhs: Sourcelike[], rhs: Sourcelike[]) {
+        this.emitBlock(["switch v := ", ...lhs, ".(type)"], () => {
+            ["int", "int32", "int64", "uint", "uint32", "uint64", "float32", "float64"].forEach(typ => {
+                this.emitBlock(`case ${typ}:`, () => {
+                    this.emitLine(...rhs, " = float64(v)");
+                });
+            });
+            this.emitBlock(`default:`, () => {
+                this.emitLine('return errors.New("unknown number coerces")');
+            });
+        });
+    }
+
     private emitAssignFrom(
         rhs: Sourcelike[],
         lhs: Sourcelike[],
@@ -300,26 +313,31 @@ export class GoRenderer extends ConvenienceRenderer {
                     ")"
                 ),
             _boolType => this.emitLine(...rhs, " = ", ...lhs, ignoreCast ? "" : ".(bool)"),
-            _integerType => this.emitLine(...rhs, " = ", ...lhs, ignoreCast ? "" : ".(int64)"),
-            _doubleType => this.emitLine(...rhs, " = ", ...lhs, ignoreCast ? "" : ".(float64)"),
+
+            _integerType => this.emitNumberCoerce(lhs, rhs),
+            _doubleType => this.emitNumberCoerce(lhs, rhs),
+
             _stringType => this.emitLine(...rhs, " = ", ...lhs, ignoreCast ? "" : ".(string)"),
             arrayType => {
-                this.emitLine(
-                    ...rhs,
-                    " = make([]",
-                    this.goType(arrayType.items, withIssues),
-                    ", len(",
-                    ...lhs,
-                    ".([]",
-                    this.goType(arrayType.items, withIssues),
-                    ")))"
-                );
-                this.emitBlock(
-                    [`for idx, i := range `, ...lhs, ".([]", this.goType(arrayType.items, withIssues), ")"],
-                    () => {
-                        this.emitAssignFrom([...rhs, "[idx]"], ["i"], arrayType.items, "only", true);
+                this.emitBlock(["switch v := ", ...lhs, ".(type)"], () => {
+                    this.emitBlock(["case []interface{}:"], () => {
+                        this.emitLine(...rhs, "= make([]", this.goType(arrayType.items, withIssues), ", len(v))");
+                        this.emitBlock("for idx, i := range v", () => {
+                            this.emitLine(...rhs, "[idx] = i.(", this.goType(arrayType.items, withIssues), ")");
+                        });
+                    });
+                    if ("[]interface{}" === this.goType(arrayType.items, withIssues)) {
+                        this.emitBlock(["case []", this.goType(arrayType.items, withIssues), ":"], () => {
+                            this.emitLine(...rhs, "= make([]", this.goType(arrayType.items, withIssues), ", len(v))");
+                            this.emitBlock("for idx, i := range v", () => {
+                                this.emitLine(...rhs, "[idx] = i");
+                            });
+                        });
                     }
-                );
+                    this.emitBlock(`default:`, () => {
+                        this.emitLine('return errors.New("unknown array type")');
+                    });
+                });
             },
             classType => {
                 this.emitBlock([], () => {
