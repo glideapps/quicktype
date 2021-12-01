@@ -279,7 +279,7 @@ export class GoRenderer extends ConvenienceRenderer {
                 });
             });
             this.emitBlock(`default:`, () => {
-                this.emitLine('return errors.New("unknown number coerces")');
+                this.emitLine('return errors.New(fmt.Sprintf("unable to coerce number:%T", v))');
             });
         });
     }
@@ -326,7 +326,7 @@ export class GoRenderer extends ConvenienceRenderer {
                             this.emitLine(...rhs, "[idx] = i.(", this.goType(arrayType.items, withIssues), ")");
                         });
                     });
-                    if ("[]interface{}" === this.goType(arrayType.items, withIssues)) {
+                    if ("[]interface{}" !== this.goType(arrayType.items, withIssues)) {
                         this.emitBlock(["case []", this.goType(arrayType.items, withIssues), ":"], () => {
                             this.emitLine(...rhs, "= make([]", this.goType(arrayType.items, withIssues), ", len(v))");
                             this.emitBlock("for idx, i := range v", () => {
@@ -335,7 +335,7 @@ export class GoRenderer extends ConvenienceRenderer {
                         });
                     }
                     this.emitBlock(`default:`, () => {
-                        this.emitLine('return errors.New("unknown array type")');
+                        this.emitLine('return errors.New(fmt.Sprintf("unknown array type:%T", v))');
                     });
                 });
             },
