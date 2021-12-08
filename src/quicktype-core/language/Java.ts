@@ -706,7 +706,7 @@ export class JavaRenderer extends ConvenienceRenderer {
     protected javaTypeWithoutGenerics(reference: boolean, t: Type): Sourcelike {
         if (t instanceof ArrayType) {
             if (this._options.useList) {
-                return ["List<", this.javaTypeWithoutGenerics(true, t.items), ">"];
+                return ["List"];
             } else {
                 return [this.javaTypeWithoutGenerics(false, t.items), "[]"];
             }
