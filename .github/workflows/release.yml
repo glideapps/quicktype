@@ -1,0 +1,109 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      packageVersion:
+        description: "The version to publish (e.g. 1.2.3, prerelease, patch, minor, major)"
+        required: true
+      distTag:
+        description: "The dist-tag to publish (e.g. latest, beta)"
+        required: true
+        default: "latest"
+      dryRun:
+        description: "Do a dry run to preview instead of a real release (true/false)"
+        required: true
+        default: "true"
+
+jobs:
+  authorize:
+    name: Authorize
+    runs-on: ubuntu-latest
+    steps:
+    - name: ${{ github.actor }} permission check to do a release
+      uses: "lannonbr/repo-permission-check-action@2.0.2"
+      with:
+        permission: "write"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs: [authorize]
+    env:
+      PACKAGE_VERSION: ${{ github.event.inputs.packageVersion }}
+      DIST_TAG: ${{ github.event.inputs.distTag }}
+      DRY_RUN: ${{ github.event.inputs.dryRun }}
+    strategy:
+      matrix:
+        node-version: [ 14.x ]
+
+    steps:
+      - name: Checkout for ${{ env.DRY_RUN != 'false' && 'dry run' || 'PRODUCTION RELEASE' }}
+        uses: actions/checkout@v2
+        with:
+          ssh-key: ${{ secrets.QUICKTYPE_DEPLOY_KEY }}
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Copy quicktype-core files to a temp directory
+        run: |
+          cp -r ./src/quicktype-core ${{ runner.temp }}/quicktype-core
+          cp ./build/quicktype-core/package.in.json ${{ runner.temp }}/quicktype-core/package.json
+
+      - name: Patch package.json
+        working-directory: ${{ runner.temp }}/quicktype-core
+        run: |
+          sed -i -E 's/"name": "quicktype-core",/"name": "@amplitude\/quicktype-core",/' package.json
+          sed -i -E 's/"repository": "https:\/\/github.com\/quicktype\/quicktype",/"repository": "https:\/\/github.com\/amplitude\/quicktype",/' package.json
+
+      - name: Install dependencies
+        working-directory: ${{ runner.temp }}/quicktype-core
+        run: npm install --ignore-scripts
+
+      - name: Configure NPM User
+        working-directory: ${{ runner.temp }}/quicktype-core
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_PUBLISH_TOKEN }}" > ~/.npmrc
+          npm whoami
+
+      - name: Release (Dry Run)
+        working-directory: ${{ runner.temp }}/quicktype-core
+        if: ${{ env.DRY_RUN == 'true' }}
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
+        run: |
+          npm version ${{ env.PACKAGE_VERSION }}
+          npm publish --tag ${{ env.DIST_TAG }} --access public --dry-run
+
+      - name: Release (NPM)
+        working-directory: ${{ runner.temp }}/quicktype-core
+        if: ${{ env.DRY_RUN == 'false' }}
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
+        run: |
+          npm version ${{ env.PACKAGE_VERSION }}
+          npm publish --tag ${{ env.DIST_TAG }} --access public
+
+      # https://github.com/martinbeentjes/npm-get-version-action/blob/master/entrypoint.sh
+      - name: Get published version
+        id: package-version
+        if: ${{ env.DRY_RUN == 'false' }}
+        working-directory: ${{ runner.temp }}/quicktype-core
+        run: |
+          echo "::set-output name=current-version::$(cat package.json | grep version | head -1 | awk -F: '{ print $2 }' | sed 's/[",]//g' | tr -d '[[:space:]]')"
+
+      - name: Push Git changes (updated version)
+        if: ${{ env.DRY_RUN == 'false' }}
+        run: |
+          sed -i -E 's/"version": "[^"]+",/"version": "${{ steps.package-version.outputs.current-version }}",/' build/quicktype-core/package.in.json
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          git commit -a -m "v${{ steps.package-version.outputs.current-version }}"
+          git tag "v${{ steps.package-version.outputs.current-version }}"
+          git push
+          git push --tags
