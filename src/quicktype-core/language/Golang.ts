@@ -279,7 +279,7 @@ export class GoRenderer extends ConvenienceRenderer {
                 });
             });
             this.emitBlock(`default:`, () => {
-                this.emitLine('return errors.New(fmt.Sprintf("unable to coerce number:%T", v))');
+                this.emitLine('return fmt.Errorf("unable to coerce number:%T", v)');
             });
         });
     }
@@ -335,7 +335,7 @@ export class GoRenderer extends ConvenienceRenderer {
                         });
                     }
                     this.emitBlock(`default:`, () => {
-                        this.emitLine('return errors.New(fmt.Sprintf("unknown array type:%T", v))');
+                        this.emitLine('return fmt.Errorf("unknown array type:%T", v)');
                     });
                 });
             },
@@ -540,13 +540,7 @@ export class GoRenderer extends ConvenienceRenderer {
                 });
                 this.emitLine("default:");
                 this.indent(() => {
-                    this.emitLine(
-                        "return ",
-                        enumName,
-                        "_",
-                        anyJsonName,
-                        ', errors.New(fmt.Sprintf("Enum not found for:%s", v))'
-                    );
+                    this.emitLine("return ", enumName, "_", anyJsonName, ', fmt.Errorf("Enum not found for:%s", v)');
                 });
             });
         });
@@ -695,11 +689,11 @@ export class GoRenderer extends ConvenienceRenderer {
             this.ensureBlankLine();
             if (this.haveNamedUnions && this._options.multiFileOutput === false) {
                 this.emitLineOnce('import "bytes"');
-                this.emitLineOnce('import "errors"');
+                // this.emitLineOnce('import "errors"');
             }
             if (this.haveEnums) {
                 this.emitLineOnce('import "fmt"');
-                this.emitLineOnce('import "errors"');
+                // this.emitLineOnce('import "errors"');
             }
 
             if (includeJSONEncodingImport) {
@@ -715,7 +709,7 @@ export class GoRenderer extends ConvenienceRenderer {
             this.emitPackageDefinitons(true);
             if (this._options.multiFileOutput) {
                 this.emitLineOnce('import "bytes"');
-                this.emitLineOnce('import "errors"');
+                // this.emitLineOnce('import "errors"');
             }
             this.ensureBlankLine();
             this
@@ -755,17 +749,17 @@ export class GoRenderer extends ConvenienceRenderer {
                 *pf = &f
                 return false, nil
             }
-            return false, errors.New("Unparsable number")
+            return false, fmt.Errorf("Unparsable number")
         }
-        return false, errors.New("Union does not contain number")
+        return false, fmt.Errorf("Union does not contain number")
     case float64:
-        return false, errors.New("Decoder should not return float64")
+        return false, fmt.Errorf("Decoder should not return float64")
     case bool:
         if pb != nil {
             *pb = &v
             return false, nil
         }
-        return false, errors.New("Union does not contain bool")
+        return false, fmt.Errorf("Union does not contain bool")
     case string:
         if haveEnum {
             return false, json.Unmarshal(data, pe)
@@ -774,12 +768,12 @@ export class GoRenderer extends ConvenienceRenderer {
             *ps = &v
             return false, nil
         }
-        return false, errors.New("Union does not contain string")
+        return false, fmt.Errorf("Union does not contain string")
     case nil:
         if nullable {
             return false, nil
         }
-        return false, errors.New("Union does not contain null")
+        return false, fmt.Errorf("Union does not contain null")
     case json.Delim:
         if v == '{' {
             if haveObject {
@@ -788,17 +782,17 @@ export class GoRenderer extends ConvenienceRenderer {
             if haveMap {
                 return false, json.Unmarshal(data, pm)
             }
-            return false, errors.New("Union does not contain object")
+            return false, fmt.Errorf("Union does not contain object")
         }
         if v == '[' {
             if haveArray {
                 return false, json.Unmarshal(data, pa)
             }
-            return false, errors.New("Union does not contain array")
+            return false, fmt.Errorf("Union does not contain array")
         }
-        return false, errors.New("Cannot handle delimiter")
+        return false, fmt.Errorf("Cannot handle delimiter")
     }
-    return false, errors.New("Cannot unmarshal union")
+    return false, fmt.Errorf("Cannot unmarshal union")
 
 }
 
@@ -830,7 +824,7 @@ func marshalUnion(pi *int64, pf *float64, pb *bool, ps *string, haveArray bool, 
     if nullable {
         return json.Marshal(nil)
     }
-    return nil, errors.New("Union must not be null")
+    return nil, fmt.Errorf("Union must not be null")
 }`);
             this.endFile();
         }
