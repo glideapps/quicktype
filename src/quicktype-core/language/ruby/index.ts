@@ -4,7 +4,7 @@ import { Sourcelike, modifySource } from "../../Source";
 import { Namer, Name } from "../../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../../ConvenienceRenderer";
 import { TargetLanguage } from "../../TargetLanguage";
-import { Option, BooleanOption, EnumOption, OptionValues, getOptionValues } from "../../RendererOptions";
+import { Option, BooleanOption, EnumOption, OptionValues, getOptionValues, StringOption } from "../../RendererOptions";
 
 import * as keywords from "./keywords";
 
@@ -44,7 +44,8 @@ export const rubyOptions = {
         ["strict", Strictness.Strict],
         ["coercible", Strictness.Coercible],
         ["none", Strictness.None]
-    ])
+    ]),
+    namespace: new StringOption("namespace", "Specify a wrapping Namespace", "NAME", "", "secondary")
 };
 
 export class RubyTargetLanguage extends TargetLanguage {
@@ -53,7 +54,10 @@ export class RubyTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [rubyOptions.justTypes, rubyOptions.strictness];
+        return [
+            rubyOptions.justTypes,
+            rubyOptions.strictness,
+            rubyOptions.namespace];
     }
 
     get supportsOptionalClassProperties(): boolean {
@@ -380,6 +384,10 @@ export class RubyRenderer extends ConvenienceRenderer {
         this.emitLine("end");
     }
 
+    private emitModule(moduleName: string, emit: () => void) {
+        this.emitBlock(["module ", moduleName], emit)
+    }
+
     private emitClass(c: ClassType, className: Name) {
         this.emitDescription(this.descriptionForType(c));
         this.emitBlock(["class ", className, " < Dry::Struct"], () => {
@@ -424,9 +432,9 @@ export class RubyRenderer extends ConvenienceRenderer {
                     this.forEachClassProperty(c, "none", (name, jsonName, p) => {
                         const dynamic = p.isOptional
                             ? // If key is not found in hash, this will be nil
-                              `d["${stringEscape(jsonName)}"]`
+                            `d["${stringEscape(jsonName)}"]`
                             : // This will raise a runtime error if the key is not found in the hash
-                              `d.fetch("${stringEscape(jsonName)}")`;
+                            `d.fetch("${stringEscape(jsonName)}")`;
 
                         if (this.propertyTypeMarshalsImplicitlyFromDynamic(p.type)) {
                             inits.push([
@@ -629,13 +637,28 @@ export class RubyRenderer extends ConvenienceRenderer {
         this.forEachDeclaration("leading-and-interposing", decl => {
             if (decl.kind === "forward") {
                 this.emitCommentLines(["(forward declaration)"]);
-                this.emitLine("class ", this.nameForNamedType(decl.type), " < Dry::Struct; end");
+
+                if (this._options.namespace) {
+                    this.emitModule(this._options.namespace, () => {
+                        this.emitLine("class ", this.nameForNamedType(decl.type), " < Dry::Struct; end");
+                    })
+                } else {
+                    this.emitLine("class ", this.nameForNamedType(decl.type), " < Dry::Struct; end");
+                }
             }
         });
 
         this.forEachNamedType(
             "leading-and-interposing",
-            (c: ClassType, n: Name) => this.emitClass(c, n),
+            (c: ClassType, n: Name) => {
+                if (this._options.namespace) {
+                    this.emitModule(this._options.namespace, () => {
+                        this.emitClass(c, n)
+                    })
+                } else {
+
+                }
+            },
             (e, n) => this.emitEnum(e, n),
             (u, n) => this.emitUnion(u, n)
         );
@@ -650,23 +673,33 @@ export class RubyRenderer extends ConvenienceRenderer {
                     // it for arrays.
                     const needsToJsonDefined = "array" === topLevel.kind;
 
-                    this.emitBlock(["class ", name], () => {
-                        this.emitBlock(["def self.from_json!(json)"], () => {
-                            if (needsToJsonDefined) {
-                                this.emitLine(
-                                    self,
-                                    " = ",
-                                    this.fromDynamic(topLevel, "JSON.parse(json, quirks_mode: true)")
-                                );
-                                this.emitBlock([self, ".define_singleton_method(:to_json) do"], () => {
-                                    this.emitLine("JSON.generate(", this.toDynamic(topLevel, "self"), ")");
-                                });
-                                this.emitLine(self);
-                            } else {
-                                this.emitLine(this.fromDynamic(topLevel, "JSON.parse(json, quirks_mode: true)"));
-                            }
+                    const classDeclaration = () => {
+                        this.emitBlock(["class ", name], () => {
+                            this.emitBlock(["def self.from_json!(json)"], () => {
+                                if (needsToJsonDefined) {
+                                    this.emitLine(
+                                        self,
+                                        " = ",
+                                        this.fromDynamic(topLevel, "JSON.parse(json, quirks_mode: true)")
+                                    );
+                                    this.emitBlock([self, ".define_singleton_method(:to_json) do"], () => {
+                                        this.emitLine("JSON.generate(", this.toDynamic(topLevel, "self"), ")");
+                                    });
+                                    this.emitLine(self);
+                                } else {
+                                    this.emitLine(this.fromDynamic(topLevel, "JSON.parse(json, quirks_mode: true)"));
+                                }
+                            });
                         });
-                    });
+                    }
+
+                    if (this._options.namespace) {
+                        this.emitModule(this._options.namespace, () => {
+                            classDeclaration()
+                        })
+                    } else {
+                        classDeclaration()
+                    }
                 },
                 t => this.namedTypeToNameForTopLevel(t) === undefined
             );
