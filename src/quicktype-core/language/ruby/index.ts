@@ -638,7 +638,7 @@ export class RubyRenderer extends ConvenienceRenderer {
             if (decl.kind === "forward") {
                 this.emitCommentLines(["(forward declaration)"]);
 
-                if (this._options.namespace) {
+                if (this._options.namespace != "") {
                     this.emitModule(this._options.namespace, () => {
                         this.emitLine("class ", this.nameForNamedType(decl.type), " < Dry::Struct; end");
                     })
@@ -656,7 +656,7 @@ export class RubyRenderer extends ConvenienceRenderer {
                         this.emitClass(c, n)
                     })
                 } else {
-
+                    this.emitClass(c, n)
                 }
             },
             (e, n) => this.emitEnum(e, n),
@@ -693,7 +693,7 @@ export class RubyRenderer extends ConvenienceRenderer {
                         });
                     }
 
-                    if (this._options.namespace) {
+                    if (this._options.namespace != "") {
                         this.emitModule(this._options.namespace, () => {
                             classDeclaration()
                         })
