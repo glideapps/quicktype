@@ -385,7 +385,15 @@ export class RubyRenderer extends ConvenienceRenderer {
     }
 
     private emitModule(moduleName: string, emit: () => void) {
-        this.emitBlock(["module ", moduleName], emit)
+        const [firstModule, ...subModules] = moduleName.split("::")
+
+        if (subModules.length > 0) {
+            this.emitBlock(["module ", firstModule], () => {
+                this.emitModule(subModules.join("::"), emit)
+            })
+        } else {
+            this.emitBlock(["module ", moduleName], emit)
+        }
     }
 
     private emitClass(c: ClassType, className: Name) {
