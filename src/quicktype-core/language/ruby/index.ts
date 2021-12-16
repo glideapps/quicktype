@@ -57,7 +57,8 @@ export class RubyTargetLanguage extends TargetLanguage {
         return [
             rubyOptions.justTypes,
             rubyOptions.strictness,
-            rubyOptions.namespace];
+            rubyOptions.namespace,
+        ];
     }
 
     get supportsOptionalClassProperties(): boolean {
