@@ -1368,6 +1368,7 @@ export class JacksonRenderer extends JavaRenderer {
                         const renderedForClass = this.javaTypeWithoutGenerics(false, topLevelType);
                         this.emitLine("ObjectMapper mapper = new ObjectMapper();");
                         this.emitLine("mapper.findAndRegisterModules();");
+                        this.emitLine("mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);");
                         this.emitLine("mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);");
                         this.emitOffsetDateTimeConverterModule();
                         this.emitLine(readerName, " = mapper.readerFor(", renderedForClass, ".class);");
