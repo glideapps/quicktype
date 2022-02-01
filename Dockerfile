@@ -26,6 +26,7 @@ RUN apt-get -y update
 RUN apt-get -y install nodejs maven default-jdk clang binutils golang-go --assume-yes
 
 # Install .NET core
+# https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu
 RUN curl https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb -o packages-microsoft-prod.deb
 RUN dpkg -i packages-microsoft-prod.deb
 RUN rm packages-microsoft-prod.deb
@@ -55,7 +56,8 @@ RUN cd libsysconfcpus && ./configure && make && make install
 
 # Ruby
 RUN apt-get -y install ruby --assume-yes
-RUN gem install bundler
+# This must be the same version as what's in `Gemfile.lock`
+RUN gem install bundler -v 1.16.1
 
 # Kotlin
 RUN echo | openssl s_client -showcerts -servername get.sdkman.io -connect get.sdkman.io:443 2>/dev/null | awk '/-----BEGIN CERTIFICATE-----/, /-----END CERTIFICATE-----/' >> /usr/local/share/ca-certificates/ca-certificates.crt  && update-ca-certificates
