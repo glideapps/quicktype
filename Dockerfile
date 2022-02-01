@@ -66,7 +66,7 @@ RUN add-apt-repository ppa:deadsnakes/ppa -y
 RUN apt-get -y update
 RUN apt-get -y install python3.6 --assume-yes
 RUN curl https://bootstrap.pypa.io/get-pip.py | python3.6
-RUN pip3.6 install mypy python-dateutil
+RUN pip3.6 install mypy python-dateutil types-python-dateutil
 
 # Dart
 
