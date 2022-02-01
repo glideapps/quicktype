@@ -13,7 +13,7 @@ RUN apt-get -y update --fix-missing
 RUN apt-get -y install curl git apt-transport-https --assume-yes
 
 # Install Swift
-RUN curl -o swift.tar.gz https://swift.org/builds/swift-4.1.3-release/ubuntu1604/swift-4.1.3-RELEASE/swift-4.1.3-RELEASE-ubuntu16.04.tar.gz
+RUN curl -o swift.tar.gz https://download.swift.org/swift-4.2.4-release/ubuntu1604/swift-4.2.4-RELEASE/swift-4.2.4-RELEASE-ubuntu16.04.tar.gz
 RUN tar -zxf swift.tar.gz
 RUN rm swift.tar.gz
 ENV PATH="${workdir}/swift-4.1.3-RELEASE-ubuntu16.04/usr/bin:${PATH}"
