@@ -2,7 +2,7 @@
 #   docker tag IMAGE-ID schani/quicktype
 #   docker push schani/quicktype
 
-FROM ubuntu:xenial-20180525
+FROM ubuntu:bionic-20220105
 
 ENV workdir /app
 
@@ -13,26 +13,29 @@ RUN apt-get -y update --fix-missing
 RUN apt-get -y install curl git apt-transport-https --assume-yes
 
 # Install Swift
-RUN curl -o swift.tar.gz https://download.swift.org/swift-5.5.1-release/ubuntu1604/swift-5.5.1-RELEASE/swift-5.5.1-RELEASE-ubuntu16.04.tar.gz
+RUN curl -o swift.tar.gz https://download.swift.org/swift-4.2.4-release/ubuntu1804/swift-4.2.4-RELEASE/swift-4.2.4-RELEASE-ubuntu18.04.tar.gz
 RUN tar -zxf swift.tar.gz
 RUN rm swift.tar.gz
-ENV PATH="${workdir}/swift-4.1.3-RELEASE-ubuntu16.04/usr/bin:${PATH}"
+ENV PATH="${workdir}/swift-4.2.4-RELEASE-ubuntu18.04/usr/bin:${PATH}"
 
 # Add nodejs package source
 RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
-
-# Add .NET core package sources
-RUN curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
-RUN mv microsoft.gpg /etc/apt/trusted.gpg.d/microsoft.gpg
-RUN sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-ubuntu-xenial-prod xenial main" > /etc/apt/sources.list.d/dotnetdev.list'
-
 RUN apt-get -y update
+
+# Install stuff
 RUN apt-get -y install nodejs maven default-jdk clang binutils golang-go --assume-yes
-RUN apt-get -y install dotnet-sdk-2.0.0 --assume-yes
+
+# Install .NET core
+# https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu
+RUN curl https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb -o packages-microsoft-prod.deb
+RUN dpkg -i packages-microsoft-prod.deb
+RUN rm packages-microsoft-prod.deb
+RUN apt-get -y update
+RUN apt-get -y install dotnet-sdk-2.1 --assume-yes
 
 # Install Boost for C++
 RUN apt-get -y install libboost-all-dev --assume-yes
-RUN apt-get -y update && apt-get -y install software-properties-common python-software-properties --assume-yes
+RUN apt-get -y update && apt-get -y install software-properties-common --assume-yes
 RUN add-apt-repository ppa:jonathonf/gcc -y
 RUN apt-get -y update
 RUN apt-get -y install g++-7 --assume-yes
@@ -53,7 +56,8 @@ RUN cd libsysconfcpus && ./configure && make && make install
 
 # Ruby
 RUN apt-get -y install ruby --assume-yes
-RUN gem install bundler
+# This must be the same version as what's in `Gemfile.lock`
+RUN gem install bundler -v 1.16.1
 
 # Kotlin
 RUN echo | openssl s_client -showcerts -servername get.sdkman.io -connect get.sdkman.io:443 2>/dev/null | awk '/-----BEGIN CERTIFICATE-----/, /-----END CERTIFICATE-----/' >> /usr/local/share/ca-certificates/ca-certificates.crt  && update-ca-certificates
@@ -64,9 +68,9 @@ ENV PATH="/root/.sdkman/candidates/kotlin/current/bin:${PATH}"
 # Python
 RUN add-apt-repository ppa:deadsnakes/ppa -y
 RUN apt-get -y update
-RUN apt-get -y install python3.6 --assume-yes
-RUN curl https://bootstrap.pypa.io/get-pip.py | python3.6
-RUN pip3.6 install mypy python-dateutil
+RUN apt-get -y install python3.7 --assume-yes
+RUN curl https://bootstrap.pypa.io/get-pip.py | python3.7
+RUN pip3.7 install mypy python-dateutil types-python-dateutil
 
 # Dart
 
