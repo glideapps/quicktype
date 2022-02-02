@@ -401,7 +401,10 @@ export const CPlusPlusLanguage: Language = {
     "combinations4.json",
   ],
   skipMiscJSON: false,
-  skipSchema: [],
+  skipSchema: [
+    // uses too much memory
+    "keyword-unions.schema"
+  ],
   rendererOptions: {},
   quickTestRendererOptions: [
     { unions: "indirection" },
