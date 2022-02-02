@@ -127,7 +127,7 @@ export const PythonLanguage: Language = {
   name: "python",
   base: "test/fixtures/python",
   compileCommand: "mypy quicktype.py",
-  runCommand(sample: String) {
+  runCommand(sample: string) {
     return `./run.sh main.py "${sample}"`;
   },
   diffViaSchema: true,
