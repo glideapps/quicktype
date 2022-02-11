@@ -73,6 +73,7 @@ export { StringTypes } from "./attributes/StringTypes";
 export { removeNullFromUnion, matchType, nullableFromUnion } from "./TypeUtils";
 export { ConvenienceRenderer } from "./ConvenienceRenderer";
 export { uriTypeAttributeKind } from "./attributes/URIAttributes";
+export { OptionValues } from "./RendererOptions";
 
 export { CPlusPlusTargetLanguage, CPlusPlusRenderer, cPlusPlusOptions } from "./language/CPlusPlus";
 export {
