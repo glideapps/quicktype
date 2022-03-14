@@ -96,7 +96,6 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
         protected readonly _tsFlowOptions: OptionValues<typeof tsFlowOptions>
     ) {
         super(targetLanguage, renderContext, _tsFlowOptions);
-        this._tsFlowOptions = _tsFlowOptions;
     }
 
     protected namerForObjectProperty(): Namer {
