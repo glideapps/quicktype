@@ -55,143 +55,15 @@ export const kotlinOptions = {
     packageName: new StringOption("package", "Package", "PACKAGE", "quicktype")
 };
 
-export class KotlinTargetLanguage extends TargetLanguage {
-    constructor() {
-        super("Kotlin", ["kotlin"], "kt");
-    }
-
-    protected getOptions(): Option<any>[] {
-        return [kotlinOptions.framework, kotlinOptions.packageName];
-    }
-
-    get supportsOptionalClassProperties(): boolean {
-        return true;
-    }
-
-    get supportsUnionsWithBothNumberTypes(): boolean {
-        return true;
-    }
-
-    protected makeRenderer(
-        renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
-    ): ConvenienceRenderer {
-        const options = getOptionValues(kotlinOptions, untypedOptionValues);
-
-        switch (options.framework) {
-            case Framework.None:
-                return new KotlinRenderer(this, renderContext, options);
-            case Framework.Jackson:
-                return new KotlinJacksonRenderer(this, renderContext, options);
-            case Framework.Klaxon:
-                return new KotlinKlaxonRenderer(this, renderContext, options);
-            case Framework.KotlinX:
-                return new KotlinXRenderer(this, renderContext, options);
-            case Framework.Gson:
-                return new KotlinGsonRenderer(this, renderContext, options);
-            default:
-                return assertNever(options.framework);
-        }
-    }
-}
-
-const keywords = [
-    "package",
-    "as",
-    "typealias",
-    "class",
-    "this",
-    "super",
-    "val",
-    "var",
-    "fun",
-    "for",
-    "null",
-    "true",
-    "false",
-    "is",
-    "in",
-    "throw",
-    "return",
-    "break",
-    "continue",
-    "object",
-    "if",
-    "try",
-    "else",
-    "while",
-    "do",
-    "when",
-    "interface",
-    "typeof",
-    "klaxon",
-    "toJson",
-    "Any",
-    "Boolean",
-    "Double",
-    "Float",
-    "Long",
-    "Int",
-    "Short",
-    "System",
-    "Byte",
-    "String",
-    "Array",
-    "List",
-    "Map",
-    "Enum",
-    "Class",
-    "JsonObject",
-    "JsonValue",
-    "Converter",
-    "Klaxon"
-];
-
-function isPartCharacter(codePoint: number): boolean {
-    return isLetterOrUnderscore(codePoint) || isNumeric(codePoint);
-}
-
-function isStartCharacter(codePoint: number): boolean {
-    return isPartCharacter(codePoint) && !isDigit(codePoint);
-}
-
-const legalizeName = legalizeCharacters(isPartCharacter);
-
-function kotlinNameStyle(isUpper: boolean, original: string): string {
-    const words = splitIntoWords(original);
-    return combineWords(
-        words,
-        legalizeName,
-        isUpper ? firstUpperWordStyle : allLowerWordStyle,
-        firstUpperWordStyle,
-        isUpper ? allUpperWordStyle : allLowerWordStyle,
-        allUpperWordStyle,
-        "",
-        isStartCharacter
-    );
-}
-
-function unicodeEscape(codePoint: number): string {
-    return "\\u" + intToHex(codePoint, 4);
-}
-
-const _stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
-
-function stringEscape(s: string): string {
-    // "$this" is a template string in Kotlin so we have to escape $
-    return _stringEscape(s).replace(/\$/g, "\\$");
-}
-
-const upperNamingFunction = funPrefixNamer("upper", s => kotlinNameStyle(true, s));
-const lowerNamingFunction = funPrefixNamer("lower", s => kotlinNameStyle(false, s));
-
 export class KotlinRenderer extends ConvenienceRenderer {
+    protected _kotlinOptions: OptionValues<typeof kotlinOptions>
     constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        protected readonly _kotlinOptions: OptionValues<typeof kotlinOptions>
+        _kotlinOptions: OptionValues<typeof kotlinOptions>
     ) {
         super(targetLanguage, renderContext);
+        this._kotlinOptions = _kotlinOptions
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
@@ -488,6 +360,136 @@ export class KotlinGsonRenderer extends KotlinRenderer {
         });
     }
 }
+
+export class KotlinTargetLanguage extends TargetLanguage {
+    constructor() {
+        super("Kotlin", ["kotlin"], "kt");
+    }
+
+    protected getOptions(): Option<any>[] {
+        return [kotlinOptions.framework, kotlinOptions.packageName];
+    }
+
+    get supportsOptionalClassProperties(): boolean {
+        return true;
+    }
+
+    get supportsUnionsWithBothNumberTypes(): boolean {
+        return true;
+    }
+
+    protected makeRenderer(
+        renderContext: RenderContext,
+        untypedOptionValues: { [name: string]: any }
+    ): ConvenienceRenderer {
+        const options = getOptionValues(kotlinOptions, untypedOptionValues);
+
+        switch (options.framework) {
+            case Framework.None:
+                return new KotlinRenderer(this, renderContext, options);
+            case Framework.Jackson:
+                return new KotlinJacksonRenderer(this, renderContext, options);
+            case Framework.Klaxon:
+                return new KotlinKlaxonRenderer(this, renderContext, options);
+            case Framework.KotlinX:
+                return new KotlinXRenderer(this, renderContext, options);
+            case Framework.Gson:
+                return new KotlinGsonRenderer(this, renderContext, options);
+            default:
+                return assertNever(options.framework);
+        }
+    }
+}
+
+const keywords = [
+    "package",
+    "as",
+    "typealias",
+    "class",
+    "this",
+    "super",
+    "val",
+    "var",
+    "fun",
+    "for",
+    "null",
+    "true",
+    "false",
+    "is",
+    "in",
+    "throw",
+    "return",
+    "break",
+    "continue",
+    "object",
+    "if",
+    "try",
+    "else",
+    "while",
+    "do",
+    "when",
+    "interface",
+    "typeof",
+    "klaxon",
+    "toJson",
+    "Any",
+    "Boolean",
+    "Double",
+    "Float",
+    "Long",
+    "Int",
+    "Short",
+    "System",
+    "Byte",
+    "String",
+    "Array",
+    "List",
+    "Map",
+    "Enum",
+    "Class",
+    "JsonObject",
+    "JsonValue",
+    "Converter",
+    "Klaxon"
+];
+
+function isPartCharacter(codePoint: number): boolean {
+    return isLetterOrUnderscore(codePoint) || isNumeric(codePoint);
+}
+
+function isStartCharacter(codePoint: number): boolean {
+    return isPartCharacter(codePoint) && !isDigit(codePoint);
+}
+
+const legalizeName = legalizeCharacters(isPartCharacter);
+
+function kotlinNameStyle(isUpper: boolean, original: string): string {
+    const words = splitIntoWords(original);
+    return combineWords(
+        words,
+        legalizeName,
+        isUpper ? firstUpperWordStyle : allLowerWordStyle,
+        firstUpperWordStyle,
+        isUpper ? allUpperWordStyle : allLowerWordStyle,
+        allUpperWordStyle,
+        "",
+        isStartCharacter
+    );
+}
+
+function unicodeEscape(codePoint: number): string {
+    return "\\u" + intToHex(codePoint, 4);
+}
+
+const _stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
+
+function stringEscape(s: string): string {
+    // "$this" is a template string in Kotlin so we have to escape $
+    return _stringEscape(s).replace(/\$/g, "\\$");
+}
+
+const upperNamingFunction = funPrefixNamer("upper", s => kotlinNameStyle(true, s));
+const lowerNamingFunction = funPrefixNamer("lower", s => kotlinNameStyle(false, s));
 
 export class KotlinKlaxonRenderer extends KotlinRenderer {
     constructor(
