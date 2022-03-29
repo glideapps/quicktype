@@ -42,13 +42,14 @@ export enum Framework {
     Jackson,
     Klaxon,
     KotlinX,
+    Gson
 }
 
 export const kotlinOptions = {
     framework: new EnumOption(
         "framework",
         "Serialization framework",
-        [["just-types", Framework.None], ["jackson", Framework.Jackson], ["klaxon", Framework.Klaxon], ["kotlinx", Framework.KotlinX]],
+        [["just-types", Framework.None], ["jackson", Framework.Jackson], ["klaxon", Framework.Klaxon], ["kotlinx", Framework.KotlinX], ["gson", Framework.Gson]],
         "klaxon"
     ),
     packageName: new StringOption("package", "Package", "PACKAGE", "quicktype")
@@ -86,6 +87,8 @@ export class KotlinTargetLanguage extends TargetLanguage {
                 return new KotlinKlaxonRenderer(this, renderContext, options);
             case Framework.KotlinX:
                 return new KotlinXRenderer(this, renderContext, options);
+            case Framework.Gson:
+                return new KotlinGsonRenderer(this, renderContext, options);
             default:
                 return assertNever(options.framework);
         }
@@ -1105,6 +1108,51 @@ export class KotlinXRenderer extends KotlinRenderer {
                     this.emitLine(["return encoder.encodeString(value.value)"]);
                 });
             });
+        });
+    }
+}
+
+export class KotlinGsonRenderer extends KotlinRenderer {
+    constructor(targetLanguage: TargetLanguage, renderContext: RenderContext, _kotlinOptions: OptionValues<typeof kotlinOptions>) {
+        super(targetLanguage, renderContext, _kotlinOptions)
+    }
+
+    protected emitHeader(): void {
+        super.emitHeader();
+
+        this.emitLine("import com.google.gson.*");
+        this.emitLine("import com.google.gson.annotations.*");
+    }
+
+    protected renameAttribute(name: Name, jsonName: string, _required: boolean, meta: Array<() => void>) {
+        const rename = this._rename(name, jsonName);
+        meta.push(() => this.emitLine(rename));
+    }
+
+    private _rename(_: Name, jsonName: string): Sourcelike {
+        const escapedName = stringEscape(jsonName);
+        return ["@SerializedName(\"", escapedName, "\")"];
+    }
+
+    protected emitUsageHeader(): void {
+        this.emitLine("// To parse the JSON, install Gson and do:");
+        this.emitLine("//");
+        this.emitLine("// val gson = Gson()");
+        this.forEachTopLevel("none", (_, name) => {
+            this.emitLine("// val ", modifySource(camelCase, name), " = ", "gson.fromJson(jsonString, ", name, "::class.java)");
+        });
+    }
+
+    protected emitEnumDefinition(e: EnumType, enumName: Name): void {
+        this.emitDescription(this.descriptionForType(e));
+
+        this.emitBlock(["enum class ", enumName], () => {
+            let count = e.cases.size;
+            this.forEachEnumCase(e, "none", (name, json) => {
+                this.emitLine("@SerializedName(\"", json, "\")");
+                this.emitLine(name, --count === 0 ? ";" : ",");
+            });
+            this.ensureBlankLine();
         });
     }
 }
