@@ -20,7 +20,7 @@ import {
 } from "../support/Strings";
 import { assertNever, panic, defined } from "../support/Support";
 import { Sourcelike, MultiWord, multiWord, singleWord, parenIfNeeded } from "../Source";
-import { matchType, nullableFromUnion } from "../TypeUtils";
+import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 import {
     followTargetType,
     transformationForType,
@@ -34,7 +34,7 @@ import {
     StringifyTransformer,
     EncodingTransformer
 } from "../Transformers";
-import { arrayIntercalate, setUnionInto, mapUpdateInto, iterableSome, mapSortBy } from "collection-utils";
+import { arrayIntercalate, setUnionInto, mapUpdateInto, iterableSome, mapSortBy, iterableFirst } from "collection-utils";
 
 const unicode = require("@mark.probst/unicode-properties");
 
@@ -345,14 +345,21 @@ export class PythonRenderer extends ConvenienceRenderer {
             mapType => [this.withTyping("Dict"), "[str, ", this.pythonType(mapType.values), "]"],
             enumType => this.namedType(enumType),
             unionType => {
-                const maybeNullable = nullableFromUnion(unionType);
-                if (maybeNullable !== null) {
+                const [hasNull, nonNulls] = removeNullFromUnion(unionType);
+                const memberTypes = Array.from(nonNulls).map(m => this.pythonType(m));
+                    
+                if (hasNull !== null) {
                     let rest: string[] = [];
                     if (!this.getAlphabetizeProperties() && this.pyOptions.features.dataClasses) rest.push(" = None");
-                    return [this.withTyping("Optional"), "[", this.pythonType(maybeNullable), "]", ...rest];
+                    
+                    if (nonNulls.size > 1) {                  
+                        return [this.withTyping("Optional"), "[Union[", arrayIntercalate(", ", memberTypes), "]]", ...rest];
+                    } else {
+                        return [this.withTyping("Optional"), "[", defined(iterableFirst(memberTypes)), "]", ...rest];
+                    }
+                } else {
+                    return [this.withTyping("Union"), "[", arrayIntercalate(", ", memberTypes), "]"];
                 }
-                const memberTypes = Array.from(unionType.sortedMembers).map(m => this.pythonType(m));
-                return [this.withTyping("Union"), "[", arrayIntercalate(", ", memberTypes), "]"];
             },
             transformedStringType => {
                 if (transformedStringType.kind === "date-time") {
