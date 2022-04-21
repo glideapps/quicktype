@@ -215,7 +215,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return upperNamingFunction;
+        return funPrefixNamer("upper", s => s); // TODO - add backticks where appropriate
     }
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
@@ -236,11 +236,11 @@ export class Scala3Renderer extends ConvenienceRenderer {
     // (asarazan): I've broken out the following two functions
     // because some renderers, such as kotlinx, can cope with `any`, while some get mad.
     protected arrayType(arrayType: ArrayType, withIssues: boolean = false, _noOptional: boolean = false): Sourcelike {
-        return ["List<", this.kotlinType(arrayType.items, withIssues), ">"];
+        return ["Vector[", this.kotlinType(arrayType.items, withIssues), "]"];
     }
 
     protected mapType(mapType: MapType, withIssues: boolean = false, _noOptional: boolean = false): Sourcelike {
-        return ["Map<String, ", this.kotlinType(mapType.values, withIssues), ">"];
+        return ["Map[String, ", this.kotlinType(mapType.values, withIssues), "]"];
     }
 
     protected kotlinType(t: Type, withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
@@ -287,12 +287,12 @@ export class Scala3Renderer extends ConvenienceRenderer {
 
     protected emitTopLevelArray(t: ArrayType, name: Name): void {
         const elementType = this.kotlinType(t.items);
-        this.emitLine(["typealias ", name, " = ArrayList<", elementType, ">"]);
+        this.emitLine(["typealias ", name, " = List[", elementType, "]"]);
     }
 
     protected emitTopLevelMap(t: MapType, name: Name): void {
         const elementType = this.kotlinType(t.values);
-        this.emitLine(["typealias ", name, " = HashMap<String, ", elementType, ">"]);
+        this.emitLine(["typealias ", name, " = Map[String, ", elementType, "]"]);
     }
 
     protected emitEmptyClassDefinition(c: ClassType, className: Name): void {
@@ -317,7 +317,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
 
         this.emitDescription(this.descriptionForType(c));
         this.emitClassAnnotations(c, className);
-        this.emitLine("data class ", className, " (");
+        this.emitLine("case class ", className, " (");
         this.indent(() => {
             let count = c.getProperties().size;
             let first = true;
@@ -370,7 +370,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
 
-        this.emitBlock(["enum class ", enumName], () => {
+        this.emitBlock(["enum ", enumName, " : \n case "], () => {
             let count = e.cases.size;
             this.forEachEnumCase(e, "none", name => {
                 this.emitLine(name, --count === 0 ? "" : ",");
