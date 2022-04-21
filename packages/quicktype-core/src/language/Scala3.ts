@@ -162,6 +162,15 @@ const keywords = [
     "Enum"
 ];
 
+
+/**
+ * Check if given parameter name should be wrapped in a backtick
+ * @param paramName
+ */
+ const shouldAddBacktick = (paramName: string): boolean => {
+    return keywords.some(s => paramName === s) || invalidSymbols.some(s => paramName.includes(s)) || !isNaN(+paramName) ;
+  };
+
 const wrapOption = (s: string, optional: boolean): string => {
     if (optional) {
         return "Option[" + s + "]";
@@ -212,7 +221,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
     constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        protected readonly _kotlinOptions: OptionValues<typeof scala3Options>
+        protected readonly _scalaOptions: OptionValues<typeof scala3Options>
     ) {
         super(targetLanguage, renderContext);
     }
@@ -250,7 +259,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return funPrefixNamer("upper", s => s); // TODO - add backticks where appropriate
+        return funPrefixNamer("upper", s => s ); // TODO - add backticks where appropriate
     }
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
@@ -282,7 +291,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
     // (asarazan): I've broken out the following two functions
     // because some renderers, such as kotlinx, can cope with `any`, while some get mad.
     protected arrayType(arrayType: ArrayType, withIssues: boolean = false, _noOptional: boolean = false): Sourcelike {
-        return ["Vector[", this.scalaType(arrayType.items, withIssues), "]"];
+        return ["Array[", this.scalaType(arrayType.items, withIssues), "]"];
     }
 
     protected mapType(mapType: MapType, withIssues: boolean = false, _noOptional: boolean = false): Sourcelike {
@@ -314,7 +323,6 @@ export class Scala3Renderer extends ConvenienceRenderer {
             }
         );
     }
-
     protected emitUsageHeader(): void {
         // To be overridden
     }
@@ -327,7 +335,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
         }
 
         this.ensureBlankLine();
-        this.emitLine("package ", this._kotlinOptions.packageName);
+        this.emitLine("package ", this._scalaOptions.packageName);
         this.ensureBlankLine();
     }
 
@@ -424,11 +432,16 @@ export class Scala3Renderer extends ConvenienceRenderer {
         this.emitDescription(this.descriptionForType(e));
 
         this.emitBlock(
-            ["enum ", enumName, " : \n case "],
+            ["enum ", enumName, " : "],
             () => {
                 let count = e.cases.size;
-                this.forEachEnumCase(e, "none", name => {
-                    this.emitLine(name, --count === 0 ? "" : ",");
+                if (count > 0) {this.emitItem("\t case ")};
+                this.forEachEnumCase(e, "none", (name, jsonName, position) => {
+                    const backticks = shouldAddBacktick(jsonName) 
+                    if (backticks) {this.emitItem("`")}
+                    this.emitItemOnce([ name ]);
+                    if (backticks) {this.emitItem("`")}
+                    if (--count > 0) this.emitItem([ "," ]);
                 });
             },
             "none"
@@ -443,29 +456,24 @@ export class Scala3Renderer extends ConvenienceRenderer {
         }
 
         this.emitDescription(this.descriptionForType(u));
-
+        
         const [maybeNull, nonNulls] = removeNullFromUnion(u, sortBy);
         this.emitClassAnnotations(u, unionName);
-        this.emitBlock(["sealed class ", unionName], () => {
-            {
-                let table: Sourcelike[][] = [];
-                this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
-                    table.push([
-                        ["class ", name, "(val value: ", this.scalaType(t), ")"],
-                        [" : ", unionName, "()"]
-                    ]);
-                });
-                if (maybeNull !== null) {
-                    table.push([
-                        ["class ", this.nameForUnionMember(u, maybeNull), "()"],
-                        [" : ", unionName, "()"]
-                    ]);
-                }
-                this.emitTable(table);
-            }
-
-            this.emitUnionDefinitionMethods(u, nonNulls, maybeNull, unionName);
+        let theTypes : Array<Sourcelike> = []
+        this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
+            theTypes.push(this.scalaType(t));
         });
+        if (maybeNull !== null) {
+            theTypes.push(this.nameForUnionMember(u, maybeNull));
+        }    
+    
+        this.emitItem(["type ", unionName, " = "]);
+        theTypes.forEach((t, i) => {
+            this.emitItem(i === 0 ? t : [" | ", t]);
+        });
+        this.emitLine();
+
+        this.emitUnionDefinitionMethods(u, nonNulls, maybeNull, unionName);
     }
 
     protected emitUnionDefinitionMethods(
