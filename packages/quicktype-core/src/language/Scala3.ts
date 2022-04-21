@@ -257,8 +257,19 @@ export class Scala3Renderer extends ConvenienceRenderer {
         this.emitCommentLines(lines, " * ", "/**", " */");
     }
 
-    protected emitBlock(line: Sourcelike, f: () => void, delimiter: "curly" | "paren" | "lambda" = "curly"): void {
-        const [open, close] = delimiter === "curly" ? ["{", "}"] : delimiter === "paren" ? ["(", ")"] : ["{", "})"];
+    protected emitBlock(
+        line: Sourcelike,
+        f: () => void,
+        delimiter: "curly" | "paren" | "lambda" | "none" = "curly"
+    ): void {
+        const [open, close] =
+            delimiter === "curly"
+                ? ["{", "}"]
+                : delimiter === "paren"
+                ? ["(", ")"]
+                : delimiter === "none"
+                ? ["", ""]
+                : ["{", "})"];
         this.emitLine(line, " ", open);
         this.indent(f);
         this.emitLine(close);
@@ -412,12 +423,16 @@ export class Scala3Renderer extends ConvenienceRenderer {
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
 
-        this.emitBlock(["enum ", enumName, " : \n case "], () => {
-            let count = e.cases.size;
-            this.forEachEnumCase(e, "none", name => {
-                this.emitLine(name, --count === 0 ? "" : ",");
-            });
-        });
+        this.emitBlock(
+            ["enum ", enumName, " : \n case "],
+            () => {
+                let count = e.cases.size;
+                this.forEachEnumCase(e, "none", name => {
+                    this.emitLine(name, --count === 0 ? "" : ",");
+                });
+            },
+            "none"
+        );
     }
 
     protected emitUnionDefinition(u: UnionType, unionName: Name): void {
