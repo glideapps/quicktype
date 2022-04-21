@@ -42,12 +42,7 @@ export enum Framework {
 }
 
 export const scala3Options = {
-    framework: new EnumOption(
-        "framework",
-        "Serialization framework",
-        [["just-types", Framework.None]],
-        "klaxon"
-    ),
+    framework: new EnumOption("framework", "Serialization framework", [["just-types", Framework.None]], undefined),
     packageName: new StringOption("package", "Package", "PACKAGE", "quicktype")
 };
 
@@ -83,37 +78,74 @@ export class Scala3TargetLanguage extends TargetLanguage {
     }
 }
 
+// Use backticks for param names with symbols
+const invalidSymbols = [
+    ":",
+    "-",
+    "+",
+    "!",
+    "@",
+    "#",
+    "$",
+    "%",
+    "^",
+    "&",
+    "*",
+    "(",
+    ")",
+    ">",
+    "<",
+    "/",
+    ";",
+    "'",
+    '"',
+    "{",
+    "}",
+    ":",
+    "~",
+    "`"
+];
+
 const keywords = [
-    "package",
-    "as",
-    "typealias",
+    "abstract",
+    "case",
+    "catch",
     "class",
-    "this",
+    "def",
+    "do",
+    "else",
+    "extends",
+    "false",
+    "final",
+    "finally",
+    "for",
+    "forSome",
+    "if",
+    "implicit",
+    "import",
+    "lazy",
+    "match",
+    "new",
+    "null",
+    "object",
+    "override",
+    "package",
+    "private",
+    "protected",
+    "return",
+    "sealed",
     "super",
+    "this",
+    "throw",
+    "trait",
+    "try",
+    "true",
+    "type",
     "val",
     "var",
-    "fun",
-    "for",
-    "null",
-    "true",
-    "false",
-    "is",
-    "in",
-    "throw",
-    "return",
-    "break",
-    "continue",
-    "object",
-    "if",
-    "try",
-    "else",
     "while",
-    "do",
-    "when",
-    "interface",
-    "typeof",
-    "klaxon",
-    "toJson",
+    "with",
+    "yield",
     "Any",
     "Boolean",
     "Double",
@@ -127,13 +159,16 @@ const keywords = [
     "Array",
     "List",
     "Map",
-    "Enum",
-    "Class",
-    "JsonObject",
-    "JsonValue",
-    "Converter",
-    "Klaxon"
+    "Enum"
 ];
+
+const wrapOption = (s: string, optional: boolean): string => {
+    if (optional) {
+        return "Option[" + s + "]";
+    } else {
+        return s;
+    }
+};
 
 function isPartCharacter(codePoint: number): boolean {
     return isLetterOrUnderscore(codePoint) || isNumeric(codePoint);
@@ -229,29 +264,29 @@ export class Scala3Renderer extends ConvenienceRenderer {
         this.emitLine(close);
     }
 
-    protected anySourceType(optional: string): Sourcelike {
-        return ["Any", optional];
+    protected anySourceType(optional: boolean): Sourcelike {
+        return [wrapOption("Any", optional)];
     }
 
     // (asarazan): I've broken out the following two functions
     // because some renderers, such as kotlinx, can cope with `any`, while some get mad.
     protected arrayType(arrayType: ArrayType, withIssues: boolean = false, _noOptional: boolean = false): Sourcelike {
-        return ["Vector[", this.kotlinType(arrayType.items, withIssues), "]"];
+        return ["Vector[", this.scalaType(arrayType.items, withIssues), "]"];
     }
 
     protected mapType(mapType: MapType, withIssues: boolean = false, _noOptional: boolean = false): Sourcelike {
-        return ["Map[String, ", this.kotlinType(mapType.values, withIssues), "]"];
+        return ["Map[String, ", this.scalaType(mapType.values, withIssues), "]"];
     }
 
-    protected kotlinType(t: Type, withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
+    protected scalaType(t: Type, withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
         const optional = noOptional ? "" : "?";
         return matchType<Sourcelike>(
             t,
             _anyType => {
-                return maybeAnnotated(withIssues, anyTypeIssueAnnotation, this.anySourceType(optional));
+                return maybeAnnotated(withIssues, anyTypeIssueAnnotation, this.anySourceType(!noOptional));
             },
             _nullType => {
-                return maybeAnnotated(withIssues, nullTypeIssueAnnotation, this.anySourceType(optional));
+                return maybeAnnotated(withIssues, nullTypeIssueAnnotation, this.anySourceType(!noOptional));
             },
             _boolType => "Boolean",
             _integerType => "Long",
@@ -263,7 +298,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
             enumType => this.nameForNamedType(enumType),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
-                if (nullable !== null) return [this.kotlinType(nullable, withIssues), optional];
+                if (nullable !== null) return [this.scalaType(nullable, withIssues), optional];
                 return this.nameForNamedType(unionType);
             }
         );
@@ -286,12 +321,12 @@ export class Scala3Renderer extends ConvenienceRenderer {
     }
 
     protected emitTopLevelArray(t: ArrayType, name: Name): void {
-        const elementType = this.kotlinType(t.items);
+        const elementType = this.scalaType(t.items);
         this.emitLine(["typealias ", name, " = List[", elementType, "]"]);
     }
 
     protected emitTopLevelMap(t: MapType, name: Name): void {
-        const elementType = this.kotlinType(t.values);
+        const elementType = this.scalaType(t.values);
         this.emitLine(["typealias ", name, " = Map[String, ", elementType, "]"]);
     }
 
@@ -307,11 +342,11 @@ export class Scala3Renderer extends ConvenienceRenderer {
             return;
         }
 
-        const kotlinType = (p: ClassProperty) => {
+        const scalaType = (p: ClassProperty) => {
             if (p.isOptional) {
-                return [this.kotlinType(p.type, true, true), "?"];
+                return ["Option[", this.scalaType(p.type, true, true), "]"];
             } else {
-                return this.kotlinType(p.type, true);
+                return this.scalaType(p.type, true);
             }
         };
 
@@ -342,7 +377,14 @@ export class Scala3Renderer extends ConvenienceRenderer {
                     emit();
                 }
 
-                this.emitLine("val ", name, ": ", kotlinType(p), nullableOrOptional ? " = null" : "", last ? "" : ",");
+                this.emitLine(
+                    "val ",
+                    name,
+                    ": ",
+                    scalaType(p),
+                    p.isOptional ? " = None" : nullableOrOptional ? " null " : "",
+                    last ? "" : ","
+                );
 
                 if (meta.length > 0 && !last) {
                     this.ensureBlankLine();
@@ -393,10 +435,16 @@ export class Scala3Renderer extends ConvenienceRenderer {
             {
                 let table: Sourcelike[][] = [];
                 this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
-                    table.push([["class ", name, "(val value: ", this.kotlinType(t), ")"], [" : ", unionName, "()"]]);
+                    table.push([
+                        ["class ", name, "(val value: ", this.scalaType(t), ")"],
+                        [" : ", unionName, "()"]
+                    ]);
                 });
                 if (maybeNull !== null) {
-                    table.push([["class ", this.nameForUnionMember(u, maybeNull), "()"], [" : ", unionName, "()"]]);
+                    table.push([
+                        ["class ", this.nameForUnionMember(u, maybeNull), "()"],
+                        [" : ", unionName, "()"]
+                    ]);
                 }
                 this.emitTable(table);
             }
@@ -433,5 +481,4 @@ export class Scala3Renderer extends ConvenienceRenderer {
             (u, n) => this.emitUnionDefinition(u, n)
         );
     }
-
 }
