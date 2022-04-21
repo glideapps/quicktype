@@ -790,6 +790,33 @@ export const FlowLanguage: Language = {
     sourceFiles: ["src/language/Flow.ts"]
 };
 
+export const Scala3Language: Language = {
+  name: "scala3",
+  base: "test/fixtures/scala3",
+  compileCommand: "./build.sh",
+  runCommand(sample: string) {
+    return `cp "${sample}" sample.json && ./run.sh`;
+  },
+  diffViaSchema: true,
+  skipDiffViaSchema: [
+
+  ],
+  allowMissingNull: true,
+  features: ["enum", "union", "no-defaults"],
+  output: "TopLevel.scala",
+  topLevel: "TopLevel",
+  skipJSON: [
+
+  ],
+  skipSchema: [
+
+  ],
+  skipMiscJSON: false,
+  rendererOptions: {},
+  quickTestRendererOptions: [],
+  sourceFiles: ["src/Language/Scala3.ts"],
+};
+
 export const KotlinLanguage: Language = {
     name: "kotlin",
     base: "test/fixtures/kotlin",
