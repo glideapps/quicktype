@@ -61,7 +61,13 @@ export class RustTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [rustOptions.density, rustOptions.visibility, rustOptions.deriveDebug];
+        return [
+            rustOptions.density,
+            rustOptions.visibility,
+            rustOptions.deriveDebug,
+            rustOptions.edition2018,
+            rustOptions.leadingComments
+        ];
     }
 }
 
