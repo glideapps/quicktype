@@ -338,7 +338,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
                 const nullable = p.type.kind === "union" && nullableFromUnion(p.type as UnionType) !== null;
                 const nullableOrOptional = p.isOptional || p.type.kind === "null" || nullable;
                 const last = --count === 0;
-                let meta: Array<() => void> = [];
+                const meta: Array<() => void> = [];
 
                 const description = this.descriptionForClassProperty(c, jsonName);
                 if (description !== undefined) {
@@ -413,7 +413,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
         this.emitDescription(this.descriptionForType(u));
         
         const [maybeNull, nonNulls] = removeNullFromUnion(u, sortBy);        
-        let theTypes : Array<Sourcelike> = []
+        const theTypes : Array<Sourcelike> = []
         this.forEachUnionMember(u, nonNulls, "none", null, (_, t) => {
             theTypes.push(this.scalaType(t));
         });
