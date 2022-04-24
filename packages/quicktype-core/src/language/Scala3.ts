@@ -150,7 +150,7 @@ function isStartCharacter(codePoint: number): boolean {
 
 const legalizeName = legalizeCharacters(isPartCharacter);
 
-function kotlinNameStyle(isUpper: boolean, original: string): string {
+function scalaNameStyle(isUpper: boolean, original: string): string {
     const words = splitIntoWords(original);
     return combineWords(
         words,
@@ -175,8 +175,8 @@ function kotlinNameStyle(isUpper: boolean, original: string): string {
     return _stringEscape(s).replace(/\$/g, "\\$");
 } */
 
-const upperNamingFunction = funPrefixNamer("upper", s => kotlinNameStyle(true, s));
-const lowerNamingFunction = funPrefixNamer("lower", s => kotlinNameStyle(false, s));
+const upperNamingFunction = funPrefixNamer("upper", s => scalaNameStyle(true, s));
+const lowerNamingFunction = funPrefixNamer("lower", s => scalaNameStyle(false, s));
 
 export class Scala3Renderer extends ConvenienceRenderer {
     constructor(
@@ -204,7 +204,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
     }
 
     protected topLevelNameStyle(rawName: string): string {
-        return kotlinNameStyle(true, rawName);
+        return scalaNameStyle(true, rawName);
     }
 
     protected makeNamedTypeNamer(): Namer {
@@ -216,7 +216,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
     }
 
     protected makeUnionMemberNamer(): Namer {
-        return funPrefixNamer("upper", s => kotlinNameStyle(true, s) + "Value");
+        return funPrefixNamer("upper", s => scalaNameStyle(true, s) + "Value");
     }
 
     protected makeEnumCaseNamer(): Namer {
@@ -251,11 +251,11 @@ export class Scala3Renderer extends ConvenienceRenderer {
 
     // (asarazan): I've broken out the following two functions
     // because some renderers, such as kotlinx, can cope with `any`, while some get mad.
-    protected arrayType(arrayType: ArrayType, withIssues: boolean = false, _noOptional: boolean = false): Sourcelike {
+    protected arrayType(arrayType: ArrayType, withIssues: boolean = false): Sourcelike {
         return ["Array[", this.scalaType(arrayType.items, withIssues), "]"];
     }
 
-    protected mapType(mapType: MapType, withIssues: boolean = false, _noOptional: boolean = false): Sourcelike {
+    protected mapType(mapType: MapType, withIssues: boolean = false): Sourcelike {
         return ["Map[String, ", this.scalaType(mapType.values, withIssues), "]"];
     }
 
@@ -343,9 +343,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
                 const description = this.descriptionForClassProperty(c, jsonName);
                 if (description !== undefined) {
                     meta.push(() => this.emitDescription(description));
-                }
-
-                this.renameAttribute(name, jsonName, !nullableOrOptional, meta);
+                }                
 
                 if (meta.length > 0 && !first) {
                     this.ensureBlankLine();
@@ -372,15 +370,11 @@ export class Scala3Renderer extends ConvenienceRenderer {
             });
         });
 
-        this.emitClassDefinitionMethods(c, className);
+        this.emitClassDefinitionMethods();
     }
 
-    protected emitClassDefinitionMethods(_c: ClassType, _className: Name) {
+    protected emitClassDefinitionMethods() {
         this.emitLine(")");
-    }
-
-    protected renameAttribute(_name: Name, _jsonName: string, _required: boolean, _meta: Array<() => void>) {
-        // to be overridden
     }
 
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
@@ -391,7 +385,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
             () => {
                 let count = e.cases.size;
                 if (count > 0) {this.emitItem("\t case ")};
-                this.forEachEnumCase(e, "none", (name, jsonName, _) => {
+                this.forEachEnumCase(e, "none", (name, jsonName) => {
                     const backticks = shouldAddBacktick(jsonName) 
                     if (backticks) {this.emitItem("`")}
                     this.emitItemOnce([ name ]);
