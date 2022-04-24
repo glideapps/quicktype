@@ -1,27 +1,21 @@
-import { iterableSome, arrayIntercalate } from "collection-utils";
-
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { Name, Namer, funPrefixNamer } from "../Naming";
 import { EnumOption, Option, StringOption, OptionValues, getOptionValues } from "../RendererOptions";
-import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
+import { Sourcelike, maybeAnnotated } from "../Source";
 import {
     allLowerWordStyle,
-    allUpperWordStyle,
-    camelCase,
-    combineWords,
-    escapeNonPrintableMapper,
+    allUpperWordStyle,    
+    combineWords,    
     firstUpperWordStyle,
-    intToHex,
     isDigit,
     isLetterOrUnderscore,
-    isNumeric,
-    isPrintable,
+    isNumeric,    
     legalizeCharacters,
-    splitIntoWords,
-    utf32ConcatMap
+    splitIntoWords
+    
 } from "../support/Strings";
-import { assertNever, mustNotHappen } from "../support/Support";
+import { assertNever} from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
 import {
     ArrayType,
@@ -29,8 +23,7 @@ import {
     ClassType,
     EnumType,
     MapType,
-    ObjectType,
-    PrimitiveType,
+    ObjectType,    
     Type,
     UnionType
 } from "../Type";
@@ -45,38 +38,6 @@ export const scala3Options = {
     framework: new EnumOption("framework", "Serialization framework", [["just-types", Framework.None]], undefined),
     packageName: new StringOption("package", "Package", "PACKAGE", "quicktype")
 };
-
-export class Scala3TargetLanguage extends TargetLanguage {
-    constructor() {
-        super("Scala3", ["scala3"], "scala");
-    }
-
-    protected getOptions(): Option<any>[] {
-        return [scala3Options.framework, scala3Options.packageName];
-    }
-
-    get supportsOptionalClassProperties(): boolean {
-        return true;
-    }
-
-    get supportsUnionsWithBothNumberTypes(): boolean {
-        return true;
-    }
-
-    protected makeRenderer(
-        renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
-    ): ConvenienceRenderer {
-        const options = getOptionValues(scala3Options, untypedOptionValues);
-
-        switch (options.framework) {
-            case Framework.None:
-                return new Scala3Renderer(this, renderContext, options);
-            default:
-                return assertNever(options.framework);
-        }
-    }
-}
 
 // Use backticks for param names with symbols
 const invalidSymbols = [
@@ -203,16 +164,16 @@ function kotlinNameStyle(isUpper: boolean, original: string): string {
     );
 }
 
-function unicodeEscape(codePoint: number): string {
+/* function unicodeEscape(codePoint: number): string {
     return "\\u" + intToHex(codePoint, 4);
-}
+} */
 
-const _stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
+//const _stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
 
-function stringEscape(s: string): string {
+/* function stringEscape(s: string): string {
     // "$this" is a template string in Kotlin so we have to escape $
     return _stringEscape(s).replace(/\$/g, "\\$");
-}
+} */
 
 const upperNamingFunction = funPrefixNamer("upper", s => kotlinNameStyle(true, s));
 const lowerNamingFunction = funPrefixNamer("lower", s => kotlinNameStyle(false, s));
@@ -230,11 +191,11 @@ export class Scala3Renderer extends ConvenienceRenderer {
         return keywords;
     }
 
-    protected forbiddenForObjectProperties(_o: ObjectType, _classNamed: Name): ForbiddenWordsInfo {
+    protected forbiddenForObjectProperties(_: ObjectType, _classNamed: Name): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: true };
     }
 
-    protected forbiddenForEnumCases(_e: EnumType, _enumName: Name): ForbiddenWordsInfo {
+    protected forbiddenForEnumCases(_: EnumType, _enumName: Name): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: true };
     }
 
@@ -350,8 +311,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
     }
 
     protected emitEmptyClassDefinition(c: ClassType, className: Name): void {
-        this.emitDescription(this.descriptionForType(c));
-        this.emitClassAnnotations(c, className);
+        this.emitDescription(this.descriptionForType(c));        
         this.emitLine("class ", className, "()");
     }
 
@@ -369,8 +329,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
             }
         };
 
-        this.emitDescription(this.descriptionForType(c));
-        this.emitClassAnnotations(c, className);
+        this.emitDescription(this.descriptionForType(c));        
         this.emitLine("case class ", className, " (");
         this.indent(() => {
             let count = c.getProperties().size;
@@ -420,10 +379,6 @@ export class Scala3Renderer extends ConvenienceRenderer {
         this.emitLine(")");
     }
 
-    protected emitClassAnnotations(_c: Type, _className: Name) {
-        // to be overridden
-    }
-
     protected renameAttribute(_name: Name, _jsonName: string, _required: boolean, _meta: Array<() => void>) {
         // to be overridden
     }
@@ -436,7 +391,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
             () => {
                 let count = e.cases.size;
                 if (count > 0) {this.emitItem("\t case ")};
-                this.forEachEnumCase(e, "none", (name, jsonName, position) => {
+                this.forEachEnumCase(e, "none", (name, jsonName, _) => {
                     const backticks = shouldAddBacktick(jsonName) 
                     if (backticks) {this.emitItem("`")}
                     this.emitItemOnce([ name ]);
@@ -457,10 +412,9 @@ export class Scala3Renderer extends ConvenienceRenderer {
 
         this.emitDescription(this.descriptionForType(u));
         
-        const [maybeNull, nonNulls] = removeNullFromUnion(u, sortBy);
-        this.emitClassAnnotations(u, unionName);
+        const [maybeNull, nonNulls] = removeNullFromUnion(u, sortBy);        
         let theTypes : Array<Sourcelike> = []
-        this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
+        this.forEachUnionMember(u, nonNulls, "none", null, (_, t) => {
             theTypes.push(this.scalaType(t));
         });
         if (maybeNull !== null) {
@@ -472,17 +426,6 @@ export class Scala3Renderer extends ConvenienceRenderer {
             this.emitItem(i === 0 ? t : [" | ", t]);
         });
         this.emitLine();
-
-        this.emitUnionDefinitionMethods(u, nonNulls, maybeNull, unionName);
-    }
-
-    protected emitUnionDefinitionMethods(
-        _u: UnionType,
-        _nonNulls: ReadonlySet<Type>,
-        _maybeNull: PrimitiveType | null,
-        _unionName: Name
-    ) {
-        // to be overridden
     }
 
     protected emitSourceStructure(): void {
@@ -505,3 +448,37 @@ export class Scala3Renderer extends ConvenienceRenderer {
         );
     }
 }
+
+
+export class Scala3TargetLanguage extends TargetLanguage {
+    constructor() {
+        super("Scala3", ["scala3"], "scala");
+    }
+
+    protected getOptions(): Option<any>[] {
+        return [scala3Options.framework, scala3Options.packageName];
+    }
+
+    get supportsOptionalClassProperties(): boolean {
+        return true;
+    }
+
+    get supportsUnionsWithBothNumberTypes(): boolean {
+        return true;
+    }
+
+    protected makeRenderer(
+        renderContext: RenderContext,
+        untypedOptionValues: { [name: string]: any }
+    ): ConvenienceRenderer {
+        const options = getOptionValues(scala3Options, untypedOptionValues);
+
+        switch (options.framework) {
+            case Framework.None:
+                return new Scala3Renderer(this, renderContext, options);
+            default:
+                return assertNever(options.framework);
+        }
+    }
+}
+
