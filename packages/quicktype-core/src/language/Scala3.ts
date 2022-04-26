@@ -31,7 +31,9 @@ import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils"
 import { RenderContext } from "../Renderer";
 
 export enum Framework {
-    None
+    None,
+    Upickle,
+    Circe
 }
 
 export const scala3Options = {
@@ -64,7 +66,8 @@ const invalidSymbols = [
     "}",
     ":",
     "~",
-    "`"
+    "`",
+    "."
 ];
 
 const keywords = [
@@ -75,7 +78,9 @@ const keywords = [
     "def",
     "do",
     "else",
+    "enum",
     "extends",
+    "export",
     "false",
     "final",
     "finally",
@@ -97,6 +102,7 @@ const keywords = [
     "sealed",
     "super",
     "this",
+    "then",
     "throw",
     "trait",
     "try",
@@ -129,7 +135,7 @@ const keywords = [
  * @param paramName
  */
  const shouldAddBacktick = (paramName: string): boolean => {
-    return keywords.some(s => paramName === s) || invalidSymbols.some(s => paramName.includes(s)) || !isNaN(+paramName) ;
+    return keywords.some(s => paramName === s) || invalidSymbols.some(s => paramName.includes(s)) || !isNaN(+paramName)  ;
   };
 
 const wrapOption = (s: string, optional: boolean): string => {
@@ -220,7 +226,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return funPrefixNamer("upper", s => s ); // TODO - add backticks where appropriate
+        return funPrefixNamer("upper", s => s.replace(" ","") ); // TODO - add backticks where appropriate
     }
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
@@ -260,7 +266,6 @@ export class Scala3Renderer extends ConvenienceRenderer {
     }
 
     protected scalaType(t: Type, withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
-        const optional = noOptional ? "" : "?";
         return matchType<Sourcelike>(
             t,
             _anyType => {
@@ -279,7 +284,13 @@ export class Scala3Renderer extends ConvenienceRenderer {
             enumType => this.nameForNamedType(enumType),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
-                if (nullable !== null) return [this.scalaType(nullable, withIssues), optional];
+                if (nullable !== null) {
+                    if (noOptional) {
+                        return [this.scalaType(nullable, withIssues)];
+                    } else {
+                        return ["Option[", this.scalaType(nullable, withIssues), "]"];
+                    }
+                } 
                 return this.nameForNamedType(unionType);
             }
         );
@@ -302,12 +313,12 @@ export class Scala3Renderer extends ConvenienceRenderer {
 
     protected emitTopLevelArray(t: ArrayType, name: Name): void {
         const elementType = this.scalaType(t.items);
-        this.emitLine(["typealias ", name, " = List[", elementType, "]"]);
+        this.emitLine(["type ", name, " = List[", elementType, "]"]);
     }
 
     protected emitTopLevelMap(t: MapType, name: Name): void {
         const elementType = this.scalaType(t.values);
-        this.emitLine(["typealias ", name, " = Map[String, ", elementType, "]"]);
+        this.emitLine(["type ", name, " = Map[String, ", elementType, "]"]);
     }
 
     protected emitEmptyClassDefinition(c: ClassType, className: Name): void {
@@ -351,14 +362,15 @@ export class Scala3Renderer extends ConvenienceRenderer {
 
                 for (const emit of meta) {
                     emit();
-                }
-
+                }                
+                const nameNeedsBackticks = jsonName.endsWith("_") || shouldAddBacktick(jsonName);
+                const nameWithBackticks = nameNeedsBackticks ? "`" + jsonName + "`" : jsonName;
                 this.emitLine(
                     "val ",
-                    name,
-                    ": ",
+                    nameWithBackticks,
+                    " : ",
                     scalaType(p),
-                    p.isOptional ? " = None" : nullableOrOptional ? " null " : "",
+                    p.isOptional ? " = None" : nullableOrOptional ? " = None" : "",
                     last ? "" : ","
                 );
 
@@ -386,11 +398,16 @@ export class Scala3Renderer extends ConvenienceRenderer {
                 let count = e.cases.size;
                 if (count > 0) {this.emitItem("\t case ")};
                 this.forEachEnumCase(e, "none", (name, jsonName) => {
-                    const backticks = shouldAddBacktick(jsonName) 
-                    if (backticks) {this.emitItem("`")}
-                    this.emitItemOnce([ name ]);
-                    if (backticks) {this.emitItem("`")}
-                    if (--count > 0) this.emitItem([ "," ]);
+                    if (!(jsonName == "")) {
+                        const backticks = 
+                            shouldAddBacktick(jsonName) || 
+                            jsonName.includes(" ") || 
+                            !isNaN(parseInt(jsonName.charAt(0)))
+                        if (backticks) {this.emitItem("`")}
+                        this.emitItemOnce([ name ]);
+                        if (backticks) {this.emitItem("`")}
+                        if (--count > 0) this.emitItem([ "," ]);
+                    }
                 });
             },
             "none"
@@ -443,6 +460,21 @@ export class Scala3Renderer extends ConvenienceRenderer {
     }
 }
 
+export class UpickleRenderer extends Scala3Renderer {
+    
+    protected emitClassDefinitionMethods() {
+        this.emitLine(") derives ReadWriter");
+    }
+
+    protected emitHeader(): void {
+        super.emitHeader();
+
+        this.emitLine("import upickle.default.*");
+        this.ensureBlankLine();
+    }
+
+}
+
 
 export class Scala3TargetLanguage extends TargetLanguage {
     constructor() {
@@ -470,6 +502,10 @@ export class Scala3TargetLanguage extends TargetLanguage {
         switch (options.framework) {
             case Framework.None:
                 return new Scala3Renderer(this, renderContext, options);
+            case Framework.Upickle:
+                return new UpickleRenderer(this, renderContext, options);
+            case Framework.Circe:
+                return new UpickleRenderer(this, renderContext, options);
             default:
                 return assertNever(options.framework);
         }
