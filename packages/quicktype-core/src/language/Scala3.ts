@@ -140,8 +140,8 @@ const keywords = [
  * Check if given parameter name should be wrapped in a backtick
  * @param paramName
  */
- const shouldAddBacktick = (paramName: string): boolean => {
-    return keywords.some(s => paramName === s) || invalidSymbols.some(s => paramName.includes(s)) || !isNaN(+paramName)  ;
+ const shouldAddBacktick = (paramName: string): boolean => {    
+    return keywords.some(s => paramName === s) || invalidSymbols.some(s => paramName.includes(s)) || !isNaN(+paramName) || !isNaN(parseInt(paramName.charAt(0))) ;
   };
 
 const wrapOption = (s: string, optional: boolean): string => {
