@@ -514,8 +514,9 @@ export class CirceRenderer extends Scala3Renderer {
     }
 
     protected emitEmptyClassDefinition(c: ClassType, className: Name): void {
-        this.emitDescription(this.descriptionForType(c));        
-        this.emitLine("case class ", className, "() derives Encoder.AsObject, Decoder");
+        this.emitDescription(this.descriptionForType(c));
+        this.ensureBlankLine();        
+        this.emitLine("case class ", className, "()  derives Encoder.AsObject, Decoder");
     }
 
     protected anySourceType(optional: boolean): Sourcelike {

@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-scala-cli upickle.scala
+scala-cli circe.scala TopLevel.scala
