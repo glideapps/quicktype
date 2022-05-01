@@ -329,7 +329,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
 
     protected emitEmptyClassDefinition(c: ClassType, className: Name): void {
         this.emitDescription(this.descriptionForType(c));        
-        this.emitLine("class ", className, "()");
+        this.emitLine("case class ", className, "()");
     }
 
     protected emitClassDefinition(c: ClassType, className: Name): void {
@@ -498,7 +498,7 @@ export class CirceRenderer extends Scala3Renderer {
             arrayType => ["Encoder.encodeSeq[",  this.nameForNamedType(arrayType.items) , "].apply(" , paramName , ")"],
             classType => ["Encoder.AsObject[" ,  this.nameForNamedType(classType) , "].apply(" , paramName , ")"],
             mapType => ["Encoder.encodeMap[String,",   this.nameForNamedType(mapType.values) , "].apply(" , paramName , ")"],
-            enumType => ["Encoder.AsObject[" , this.nameForNamedType(enumType) , "]"] ,
+            enumType => ["Encoder.encodeString(" , paramName , ")"] ,
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
@@ -511,6 +511,11 @@ export class CirceRenderer extends Scala3Renderer {
                 return ["Encoder.AsObject[",this.nameForNamedType(unionType), "]" ];
             }
         );
+    }
+
+    protected emitEmptyClassDefinition(c: ClassType, className: Name): void {
+        this.emitDescription(this.descriptionForType(c));        
+        this.emitLine("case class ", className, "() derives Encoder.AsObject, Decoder");
     }
 
     protected anySourceType(optional: boolean): Sourcelike {
