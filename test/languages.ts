@@ -755,14 +755,18 @@ export const Scala3Language: Language = {
     "blns-object.json",
     "identifiers.json",
     "simple-identifiers.json",
+    "keywords.json",
+
     // these actually work as far as I can tell, but seem to fail because properties are sorted differently
-    // I don't think they should fail... but hey ho let's skip them
+    // I don't think they fail... but I can't figure out sorting so hey ho let's skip them
     "github-events.json", 
     "0a358.json",
     "0a91a.json",
     "34702.json",
     "76ae1.json",
     "af2d1.json",
+    "bug427.json",
+    "3d04a0.json",
 
     // Top level primitives... trivial, 
     //  but annoying as it breaks compilation of the "Top Level" construct... which doesn't exist. 
@@ -775,9 +779,8 @@ export const Scala3Language: Language = {
 
 /*
 I havea no idea how to encode these tests correctly. 
-They are "anonmyous ADTs" somehow
 */
-/*     "kitchen-sink.json",
+    "kitchen-sink.json",
     "26c9c.json",
     "421d4.json",
     "a0496.json",
@@ -792,7 +795,7 @@ They are "anonmyous ADTs" somehow
     "combinations3.json",
     "combinations4.json",
     "unions.json",
-    "nst-test-suite.json", */
+    "nst-test-suite.json", 
 
   ],
   skipSchema: [

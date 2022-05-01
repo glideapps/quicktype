@@ -2,7 +2,7 @@
 //> using lib "io.circe::circe-core:0.15.0-M1"
 //> using lib "io.circe::circe-parser:0.15.0-M1"
 //> using options "-Xmax-inlines", "2000"
-
+//> using lib "com.lihaoyi::os-lib:0.8.0"
 
 package quicktype
 
@@ -24,7 +24,9 @@ case class TopLevel (
 		val arg = x.as[TopLevel]
 		arg match {
 			case Right(y) => 
-				val arr : Array[Byte] = y.asJson.toString.getBytes("UTF-8")
+				val jsonString = y.asJson
+				val arr : Array[Byte] = jsonString.toString.getBytes("UTF-8")
+				//os.write.over(os.pwd / "out.json", jsonString.noSpaces.toString)
 				System.out.write(arr, 0, arr.length)
 			case Left(y) => println(y); println("-----");println(y.getMessage)
 		} 			
