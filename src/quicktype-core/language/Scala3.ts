@@ -37,7 +37,13 @@ export enum Framework {
 }
 
 export const scala3Options = {
-    framework: new EnumOption("framework", "Serialization framework", [["just-types", Framework.None]], undefined),
+    framework: new EnumOption("framework", "Serialization framework", 
+        [
+            ["just-types", Framework.None],
+            ["circe", Framework.Circe],
+            ["upickle", Framework.Upickle],
+        ]
+        , undefined),
     packageName: new StringOption("package", "Package", "PACKAGE", "quicktype")
 };
 
@@ -258,7 +264,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
     // (asarazan): I've broken out the following two functions
     // because some renderers, such as kotlinx, can cope with `any`, while some get mad.
     protected arrayType(arrayType: ArrayType, withIssues: boolean = false): Sourcelike {
-        return ["Array[", this.scalaType(arrayType.items, withIssues), "]"];
+        return ["Seq[", this.scalaType(arrayType.items, withIssues), "]"];
     }
 
     protected mapType(mapType: MapType, withIssues: boolean = false): Sourcelike {
@@ -407,6 +413,8 @@ export class Scala3Renderer extends ConvenienceRenderer {
                         this.emitItemOnce([ name ]);
                         if (backticks) {this.emitItem("`")}
                         if (--count > 0) this.emitItem([ "," ]);
+                    } else {
+                        --count
                     }
                 });
             },
@@ -436,7 +444,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
         theTypes.forEach((t, i) => {
             this.emitItem(i === 0 ? t : [" | ", t]);
         });
-        this.emitLine();
+        this.ensureBlankLine();
     }
 
     protected emitSourceStructure(): void {
@@ -463,7 +471,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
 export class UpickleRenderer extends Scala3Renderer {
     
     protected emitClassDefinitionMethods() {
-        this.emitLine(") derives ReadWriter");
+        this.emitLine(") derives ReadWriter ");
     }
 
     protected emitHeader(): void {
@@ -475,6 +483,178 @@ export class UpickleRenderer extends Scala3Renderer {
 
 }
 
+
+export class CirceRenderer extends Scala3Renderer {
+
+    protected circeEncoderForType(t: Type, withIssues: boolean = false, noOptional: boolean = false, paramName: string): Sourcelike {
+        return matchType<Sourcelike>(
+            t,
+            _anyType => ["Encoder.encodeJson(", paramName, ")"],
+            _nullType => ["Encoder.encodeJson(", paramName, ")"],
+            _boolType => ["Encoder.encodeBoolean(", paramName ,")"],
+            _integerType => ["Encoder.encodeLong(" , paramName ,")"],
+            _doubleType => ["Encoder.encodeDouble(" , paramName , ")"],
+            _stringType => ["Encoder.encodeString(" , paramName , ")"],
+            arrayType => ["Encoder.encodeSeq[",  this.nameForNamedType(arrayType.items) , "].apply(" , paramName , ")"],
+            classType => ["Encoder.AsObject[" ,  this.nameForNamedType(classType) , "].apply(" , paramName , ")"],
+            mapType => ["Encoder.encodeMap[String,",   this.nameForNamedType(mapType.values) , "].apply(" , paramName , ")"],
+            enumType => ["Encoder.AsObject[" , this.nameForNamedType(enumType) , "]"] ,
+            unionType => {
+                const nullable = nullableFromUnion(unionType);
+                if (nullable !== null) {
+                    if (noOptional) {
+                        return ["Encoder.AsObject[" ,this.nameForNamedType(nullable) , "]" ];
+                    } else {
+                        return ["Encoder.AsObject[Option[", this.nameForNamedType(nullable), "]]"];
+                    }
+                } 
+                return ["Encoder.AsObject[",this.nameForNamedType(unionType), "]" ];
+            }
+        );
+    }
+
+    protected anySourceType(optional: boolean): Sourcelike {
+        return [wrapOption("Json", optional)];
+    }
+    
+    protected emitClassDefinitionMethods() {
+        this.emitLine(") derives Encoder.AsObject, Decoder");
+    }
+
+    protected emitEnumDefinition(e: EnumType, enumName: Name): void {
+        this.emitDescription(this.descriptionForType(e));
+
+        this.ensureBlankLine();
+        this.emitItem(["type ", enumName, " = "]);
+        let count = e.cases.size;                
+        this.forEachEnumCase(e, "none", (name, jsonName) => {
+           // if (!(jsonName == "")) {
+/*                 const backticks = 
+                    shouldAddBacktick(jsonName) || 
+                    jsonName.includes(" ") || 
+                    !isNaN(parseInt(jsonName.charAt(0)))
+                if (backticks) {this.emitItem("`")} else  */
+                this.emitItemOnce(["\"", name, "\"" ]);
+//                if (backticks) {this.emitItem("`")}
+                if (--count > 0) this.emitItem([ " | " ]);
+             //} else {
+                //--count
+            //} 
+        });
+        this.ensureBlankLine();
+        
+    }
+
+    protected emitHeader(): void {
+        super.emitHeader();
+
+        this.emitLine("import scala.util.Try");
+        this.emitLine("import io.circe.syntax._");
+        this.emitLine("import io.circe._");
+        this.emitLine("import cats.syntax.functor._");
+        this.ensureBlankLine();
+
+        this.emitLine("// For serialising string unions")
+        this.emitLine("given [A <: Singleton](using A <:< String): Decoder[A] = Decoder.decodeString.emapTry(x => Try(x.asInstanceOf[A])) ");
+        this.emitLine("given [A <: Singleton](using ev: A <:< String): Encoder[A] = Encoder.encodeString.contramap(ev) ");
+
+    }
+
+    protected emitTopLevelArray(t: ArrayType, name: Name): void {
+        super.emitTopLevelArray(t, name);
+        const elementType = this.scalaType(t.items);
+        this.emitLine(["given (using ev : ", elementType, "): Encoder[Map[String,", elementType, "]] = Encoder.encodeMap[String, ",elementType,"]"]);
+    }
+
+    protected emitTopLevelMap(t: MapType, name: Name): void {        
+        super.emitTopLevelMap(t, name);
+        const elementType = this.scalaType(t.values);
+        this.ensureBlankLine();
+        this.emitLine(["given (using ev : ", elementType, "): Encoder[Map[String, ", elementType ,"]] = Encoder.encodeMap[String, ",elementType,"]"]);
+    }
+
+    protected emitUnionDefinition(u: UnionType, unionName: Name): void {
+        super.emitUnionDefinition(u, unionName);
+        this.ensureBlankLine();
+        function sortBy(t: Type): string {
+            const kind = t.kind;
+            if (kind === "class") return kind;
+            return "_" + kind;
+        }
+
+        const [maybeNull, nonNulls] = removeNullFromUnion(u, sortBy);        
+        const sourceLikeTypes : Array<[Sourcelike, Type]> = []        
+        this.forEachUnionMember(u, nonNulls, "none", null, (_, t) => {
+            sourceLikeTypes.push([this.scalaType(t), t]);
+            
+        });
+        if (maybeNull !== null) {
+            sourceLikeTypes.push([this.nameForUnionMember(u, maybeNull), maybeNull]);
+        }                
+
+        this.emitLine(["given Decoder[",unionName,"] = {"])
+        this.emitLine(["List[Decoder[",unionName,"]]("])
+        sourceLikeTypes.forEach((t) => {
+            this.emitLine(["Decoder[", t[0], "].widen," ]);            
+        });
+        this.emitLine(").reduceLeft(_ or _)")
+        this.emitLine(["}"])
+        
+        this.ensureBlankLine();
+
+        this.emitLine(["given Encoder[",unionName,"] = Encoder.instance {"])
+        sourceLikeTypes.forEach((t, i) => {
+            const paramTemp = "enc"+i.toString();
+            this.emitLine(["case ", paramTemp , " : ", t[0], " => ", this.circeEncoderForType(t[1], false, false, paramTemp ) ]);
+        });
+        this.emitLine("}")
+
+        
+    }
+
+/*     protected emitUnionDefinition(u: UnionType, unionName: Name): void {
+        function sortBy(t: Type): string {
+            const kind = t.kind;
+            if (kind === "class") return kind;
+            return "_" + kind;
+        }
+
+        this.emitDescription(this.descriptionForType(u));
+
+        const [maybeNull, nonNulls] = removeNullFromUnion(u, sortBy);
+        
+        this.emitLine(["sealed trait ", unionName])
+            
+        let table: Sourcelike[][] = [];
+        this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
+            table.push([["case class ", name, "_", unionName, "(val value: ", this.scalaType(t), ")"], [" extends ", unionName, " derives Encoder.AsObject, Decoder"]]);
+        });
+        if (maybeNull !== null) {
+            table.push([["case class ", this.nameForUnionMember(u, maybeNull), "()"], [" extends ", unionName, " derives Encoder.AsObject, Decoder"]]);
+        }
+        this.emitTable(table);
+        this.ensureBlankLine();
+        this.emitLine(["implicit val encode", unionName, ": Encoder[", unionName, "] = Encoder.instance {"])
+        let count = 1
+        this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
+            this.emitLine(["case enc", count.toString(), " : ", name, "_", unionName, " => enc", count.toString(),  ".asJson"]);
+
+            count++
+        })
+        this.emitLine("}")
+        
+        this.emitLine(["implicit val decode", unionName, ": Decoder[", unionName, "] = "])
+        this.emitLine("List[Decoder[", unionName ,"]](")
+        this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
+            this.emitLine(["Decoder[", name, "_", unionName, "].widen,"]);
+            count++
+        })
+        this.emitLine(").reduceLeft(_ or _)")
+        
+
+    } */
+
+}
 
 export class Scala3TargetLanguage extends TargetLanguage {
     constructor() {
@@ -505,7 +685,7 @@ export class Scala3TargetLanguage extends TargetLanguage {
             case Framework.Upickle:
                 return new UpickleRenderer(this, renderContext, options);
             case Framework.Circe:
-                return new UpickleRenderer(this, renderContext, options);
+                return new CirceRenderer(this, renderContext, options);
             default:
                 return assertNever(options.framework);
         }
