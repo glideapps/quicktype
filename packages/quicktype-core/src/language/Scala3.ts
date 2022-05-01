@@ -540,7 +540,7 @@ export class CirceRenderer extends Scala3Renderer {
                     jsonName.includes(" ") || 
                     !isNaN(parseInt(jsonName.charAt(0)))
                 if (backticks) {this.emitItem("`")} else  */
-                this.emitItemOnce(["\"", name, "\"" ]);
+                this.emitItem(["\"", jsonName, "\"" ]);
 //                if (backticks) {this.emitItem("`")}
                 if (--count > 0) this.emitItem([ " | " ]);
              //} else {
