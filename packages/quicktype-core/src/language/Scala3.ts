@@ -278,6 +278,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
                 return maybeAnnotated(withIssues, anyTypeIssueAnnotation, this.anySourceType(!noOptional));
             },
             _nullType => {
+                //return "None.type"
                 return maybeAnnotated(withIssues, nullTypeIssueAnnotation, this.anySourceType(!noOptional));
             },
             _boolType => "Boolean",
@@ -490,7 +491,7 @@ export class CirceRenderer extends Scala3Renderer {
         return matchType<Sourcelike>(
             t,
             _anyType => ["Encoder.encodeJson(", paramName, ")"],
-            _nullType => ["Encoder.encodeJson(", paramName, ")"],
+            _nullType => ["Encoder.encodeNone(", paramName, ")"],
             _boolType => ["Encoder.encodeBoolean(", paramName ,")"],
             _integerType => ["Encoder.encodeLong(" , paramName ,")"],
             _doubleType => ["Encoder.encodeDouble(" , paramName , ")"],
