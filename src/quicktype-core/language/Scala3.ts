@@ -439,7 +439,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
         if (maybeNull !== null) {
             theTypes.push(this.nameForUnionMember(u, maybeNull));
         }    
-    
+        
         this.emitItem(["type ", unionName, " = "]);
         theTypes.forEach((t, i) => {
             this.emitItem(i === 0 ? t : [" | ", t]);
@@ -495,12 +495,12 @@ export class CirceRenderer extends Scala3Renderer {
             _integerType => ["Encoder.encodeLong(" , paramName ,")"],
             _doubleType => ["Encoder.encodeDouble(" , paramName , ")"],
             _stringType => ["Encoder.encodeString(" , paramName , ")"],
-            arrayType => ["Encoder.encodeSeq[",  this.nameForNamedType(arrayType.items) , "].apply(" , paramName , ")"],
-            classType => ["Encoder.AsObject[" ,  this.nameForNamedType(classType) , "].apply(" , paramName , ")"],
-            mapType => ["Encoder.encodeMap[String,",   this.nameForNamedType(mapType.values) , "].apply(" , paramName , ")"],
-            enumType => ["Encoder.encodeString(" , paramName , ")"] ,
+            arrayType => ["Encoder.encodeSeq[", this.scalaType(arrayType.items) , "].apply(" , paramName , ")"],
+            classType => ["Encoder.AsObject[" ,  this.scalaType(classType) , "].apply(" , paramName , ")"],
+            mapType => ["Encoder.encodeMap[String,",   this.scalaType(mapType.values) , "].apply(" , paramName , ")"],
+            enumType =>  ["Encoder.encodeString(" , paramName , ")"] ,
             unionType => {
-                const nullable = nullableFromUnion(unionType);
+                const nullable = nullableFromUnion(unionType);                
                 if (nullable !== null) {
                     if (noOptional) {
                         return ["Encoder.AsObject[" ,this.nameForNamedType(nullable) , "]" ];
@@ -579,7 +579,7 @@ export class CirceRenderer extends Scala3Renderer {
         this.emitLine(["given (using ev : ", elementType, "): Encoder[Map[String, ", elementType ,"]] = Encoder.encodeMap[String, ",elementType,"]"]);
     }
 
-    protected emitUnionDefinition(u: UnionType, unionName: Name): void {
+     protected emitUnionDefinition(u: UnionType, unionName: Name): void {
         super.emitUnionDefinition(u, unionName);
         this.ensureBlankLine();
         function sortBy(t: Type): string {
@@ -599,67 +599,31 @@ export class CirceRenderer extends Scala3Renderer {
         }                
 
         this.emitLine(["given Decoder[",unionName,"] = {"])
-        this.emitLine(["List[Decoder[",unionName,"]]("])
-        sourceLikeTypes.forEach((t) => {
-            this.emitLine(["Decoder[", t[0], "].widen," ]);            
-        });
-        this.emitLine(").reduceLeft(_ or _)")
+        this.indent(() => {
+                this.emitLine(["List[Decoder[",unionName,"]]("])
+                this.indent( () => {
+                    sourceLikeTypes.forEach((t) => {
+                        this.emitLine(["Decoder[", t[0], "].widen," ]);            
+                    });
+                })
+                this.emitLine(").reduceLeft(_ or _)")
+            }
+        )
         this.emitLine(["}"])
         
         this.ensureBlankLine();
 
         this.emitLine(["given Encoder[",unionName,"] = Encoder.instance {"])
-        sourceLikeTypes.forEach((t, i) => {
-            const paramTemp = "enc"+i.toString();
-            this.emitLine(["case ", paramTemp , " : ", t[0], " => ", this.circeEncoderForType(t[1], false, false, paramTemp ) ]);
-        });
-        this.emitLine("}")
-
-        
-    }
-
-/*     protected emitUnionDefinition(u: UnionType, unionName: Name): void {
-        function sortBy(t: Type): string {
-            const kind = t.kind;
-            if (kind === "class") return kind;
-            return "_" + kind;
-        }
-
-        this.emitDescription(this.descriptionForType(u));
-
-        const [maybeNull, nonNulls] = removeNullFromUnion(u, sortBy);
-        
-        this.emitLine(["sealed trait ", unionName])
-            
-        let table: Sourcelike[][] = [];
-        this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
-            table.push([["case class ", name, "_", unionName, "(val value: ", this.scalaType(t), ")"], [" extends ", unionName, " derives Encoder.AsObject, Decoder"]]);
-        });
-        if (maybeNull !== null) {
-            table.push([["case class ", this.nameForUnionMember(u, maybeNull), "()"], [" extends ", unionName, " derives Encoder.AsObject, Decoder"]]);
-        }
-        this.emitTable(table);
-        this.ensureBlankLine();
-        this.emitLine(["implicit val encode", unionName, ": Encoder[", unionName, "] = Encoder.instance {"])
-        let count = 1
-        this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
-            this.emitLine(["case enc", count.toString(), " : ", name, "_", unionName, " => enc", count.toString(),  ".asJson"]);
-
-            count++
+        this.indent(() => {
+            sourceLikeTypes.forEach((t, i) => {
+                const paramTemp = "enc"+i.toString();
+                this.emitLine(["case ", paramTemp , " : ", t[0], " => ", this.circeEncoderForType(t[1], false, false, paramTemp ) ]);
+            });
         })
         this.emitLine("}")
-        
-        this.emitLine(["implicit val decode", unionName, ": Decoder[", unionName, "] = "])
-        this.emitLine("List[Decoder[", unionName ,"]](")
-        this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
-            this.emitLine(["Decoder[", name, "_", unionName, "].widen,"]);
-            count++
-        })
-        this.emitLine(").reduceLeft(_ or _)")
-        
 
-    } */
-
+        
+    } 
 }
 
 export class Scala3TargetLanguage extends TargetLanguage {
