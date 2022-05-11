@@ -502,11 +502,7 @@ export class TypeSpecRenderer extends ConvenienceRenderer {
         });
     }
 
-    protected emitImports(): void {
-        this.imports.forEach((names, module) => {
-            this.emitLine("from ", module, " import ", Array.from(names).join(", "));
-        });
-    }
+    protected emitImports(): void {}
 
     protected emitDefaultLeadingComments(): void {
         if (this.pyOptions.features.version === 2) {
