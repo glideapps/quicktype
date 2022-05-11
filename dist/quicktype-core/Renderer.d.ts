@@ -1,0 +1,50 @@
+import { TypeGraph } from "./TypeGraph";
+import { Name, Namespace } from "./Naming";
+import { Source, Sourcelike } from "./Source";
+import { AnnotationData } from "./Annotation";
+import { TargetLanguage } from "./TargetLanguage";
+export declare type RenderResult = {
+    sources: ReadonlyMap<string, Source>;
+    names: ReadonlyMap<Name, string>;
+};
+export declare type BlankLinePosition = "none" | "interposing" | "leading" | "leading-and-interposing";
+export declare type BlankLineConfig = BlankLinePosition | [BlankLinePosition, number];
+export declare type RenderContext = {
+    typeGraph: TypeGraph;
+    leadingComments: string[] | undefined;
+};
+export declare type ForEachPosition = "first" | "last" | "middle" | "only";
+export declare abstract class Renderer {
+    protected readonly targetLanguage: TargetLanguage;
+    protected readonly typeGraph: TypeGraph;
+    protected readonly leadingComments: string[] | undefined;
+    private _names;
+    private _finishedFiles;
+    private _finishedEmitContexts;
+    private _emitContext;
+    constructor(targetLanguage: TargetLanguage, renderContext: RenderContext);
+    ensureBlankLine(numBlankLines?: number): void;
+    preventBlankLine(): void;
+    emitItem(item: Sourcelike): void;
+    emitItemOnce(item: Sourcelike): boolean;
+    emitLineOnce(...lineParts: Sourcelike[]): void;
+    emitLine(...lineParts: Sourcelike[]): void;
+    emitMultiline(linesString: string): void;
+    gatherSource(emitter: () => void): Sourcelike[];
+    emitGatheredSource(items: Sourcelike[]): void;
+    emitAnnotated(annotation: AnnotationData, emitter: () => void): void;
+    emitIssue(message: string, emitter: () => void): void;
+    protected emitTable: (tableArray: Sourcelike[][]) => void;
+    changeIndent(offset: number): void;
+    iterableForEach<T>(iterable: Iterable<T>, emitter: (v: T, position: ForEachPosition) => void): void;
+    forEach<K, V>(iterable: Iterable<[K, V]>, interposedBlankLines: number, leadingBlankLines: number, emitter: (v: V, k: K, position: ForEachPosition) => void): boolean;
+    forEachWithBlankLines<K, V>(iterable: Iterable<[K, V]>, blankLineConfig: BlankLineConfig, emitter: (v: V, k: K, position: ForEachPosition) => void): boolean;
+    indent(fn: () => void): void;
+    protected abstract setUpNaming(): Iterable<Namespace>;
+    protected abstract emitSource(givenOutputFilename: string): void;
+    private assignNames;
+    protected initializeEmitContextForFilename(filename: string): void;
+    protected finishFile(filename: string): void;
+    render(givenOutputFilename: string): RenderResult;
+    readonly names: ReadonlyMap<Name, string>;
+}

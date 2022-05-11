@@ -1,0 +1,33 @@
+import { TypeAttributes, CombinationKind } from "./attributes/TypeAttributes";
+import { Type, PrimitiveType, ArrayType, EnumType, ObjectType, MapType, ClassType, ClassProperty, SetOperationType, UnionType } from "./Type";
+import { StringTypes } from "./attributes/StringTypes";
+export declare function assertIsObject(t: Type): ObjectType;
+export declare function assertIsClass(t: Type): ClassType;
+export declare function setOperationMembersRecursively<T extends SetOperationType>(setOperation: T, combinationKind: CombinationKind | undefined): [ReadonlySet<Type>, TypeAttributes];
+export declare function setOperationMembersRecursively<T extends SetOperationType>(setOperations: T[], combinationKind: CombinationKind | undefined): [ReadonlySet<Type>, TypeAttributes];
+export declare function makeGroupsToFlatten<T extends SetOperationType>(setOperations: Iterable<T>, include: ((members: ReadonlySet<Type>) => boolean) | undefined): Type[][];
+export declare function combineTypeAttributesOfTypes(combinationKind: CombinationKind, types: Iterable<Type>): TypeAttributes;
+export declare function isAnyOrNull(t: Type): boolean;
+export declare function removeNullFromUnion(t: UnionType, sortBy?: boolean | ((t: Type) => any)): [PrimitiveType | null, ReadonlySet<Type>];
+export declare function removeNullFromType(t: Type): [PrimitiveType | null, ReadonlySet<Type>];
+export declare function nullableFromUnion(t: UnionType): Type | null;
+export declare function nonNullTypeCases(t: Type): ReadonlySet<Type>;
+export declare function getNullAsOptional(cp: ClassProperty): [boolean, ReadonlySet<Type>];
+export declare function isNamedType(t: Type): boolean;
+export declare type SeparatedNamedTypes = {
+    objects: ReadonlySet<ObjectType>;
+    enums: ReadonlySet<EnumType>;
+    unions: ReadonlySet<UnionType>;
+};
+export declare function separateNamedTypes(types: Iterable<Type>): SeparatedNamedTypes;
+export declare function directlyReachableTypes<T>(t: Type, setForType: (t: Type) => ReadonlySet<T> | null): ReadonlySet<T>;
+export declare function directlyReachableSingleNamedType(type: Type): Type | undefined;
+export declare function stringTypesForType(t: PrimitiveType): StringTypes;
+export declare type StringTypeMatchers<U> = {
+    dateType?: (dateType: PrimitiveType) => U;
+    timeType?: (timeType: PrimitiveType) => U;
+    dateTimeType?: (dateTimeType: PrimitiveType) => U;
+};
+export declare function matchTypeExhaustive<U>(t: Type, noneType: (noneType: PrimitiveType) => U, anyType: (anyType: PrimitiveType) => U, nullType: (nullType: PrimitiveType) => U, boolType: (boolType: PrimitiveType) => U, integerType: (integerType: PrimitiveType) => U, doubleType: (doubleType: PrimitiveType) => U, stringType: (stringType: PrimitiveType) => U, arrayType: (arrayType: ArrayType) => U, classType: (classType: ClassType) => U, mapType: (mapType: MapType) => U, objectType: (objectType: ObjectType) => U, enumType: (enumType: EnumType) => U, unionType: (unionType: UnionType) => U, transformedStringType: (transformedStringType: PrimitiveType) => U): U;
+export declare function matchType<U>(type: Type, anyType: (anyType: PrimitiveType) => U, nullType: (nullType: PrimitiveType) => U, boolType: (boolType: PrimitiveType) => U, integerType: (integerType: PrimitiveType) => U, doubleType: (doubleType: PrimitiveType) => U, stringType: (stringType: PrimitiveType) => U, arrayType: (arrayType: ArrayType) => U, classType: (classType: ClassType) => U, mapType: (mapType: MapType) => U, enumType: (enumType: EnumType) => U, unionType: (unionType: UnionType) => U, transformedStringType?: (transformedStringType: PrimitiveType) => U): U;
+export declare function matchCompoundType(t: Type, arrayType: (arrayType: ArrayType) => void, classType: (classType: ClassType) => void, mapType: (mapType: MapType) => void, objectType: (objectType: ObjectType) => void, unionType: (unionType: UnionType) => void): void;

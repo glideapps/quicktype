@@ -1,0 +1,75 @@
+import { Type } from "./Type";
+import { SeparatedNamedTypes } from "./TypeUtils";
+import { TypeBuilder, StringTypeMapping } from "./TypeBuilder";
+import { GraphRewriteBuilder, BaseGraphRewriteBuilder } from "./GraphRewriting";
+import { Graph } from "./Graph";
+import { TypeAttributeKind, TypeAttributes } from "./attributes/TypeAttributes";
+export declare type TypeRef = number;
+export declare function isTypeRef(x: any): x is TypeRef;
+export declare function makeTypeRef(graph: TypeGraph, index: number): TypeRef;
+export declare function typeRefIndex(tref: TypeRef): number;
+export declare function assertTypeRefGraph(tref: TypeRef, graph: TypeGraph): void;
+export declare function derefTypeRef(tref: TypeRef, graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder): Type;
+export declare function attributesForTypeRef(tref: TypeRef, graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder): TypeAttributes;
+export declare function typeAndAttributesForTypeRef(tref: TypeRef, graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder): [Type, TypeAttributes];
+export declare class TypeAttributeStore {
+    private readonly _typeGraph;
+    private _values;
+    private readonly _topLevelValues;
+    constructor(_typeGraph: TypeGraph, _values: (TypeAttributes | undefined)[]);
+    private getTypeIndex;
+    attributesForType(t: Type): TypeAttributes;
+    attributesForTopLevel(name: string): TypeAttributes;
+    private setInMap;
+    set<T>(kind: TypeAttributeKind<T>, t: Type, value: T): void;
+    setForTopLevel<T>(kind: TypeAttributeKind<T>, topLevelName: string, value: T): void;
+    private tryGetInMap;
+    tryGet<T>(kind: TypeAttributeKind<T>, t: Type): T | undefined;
+    tryGetForTopLevel<T>(kind: TypeAttributeKind<T>, topLevelName: string): T | undefined;
+}
+export declare class TypeAttributeStoreView<T> {
+    private readonly _attributeStore;
+    private readonly _definition;
+    constructor(_attributeStore: TypeAttributeStore, _definition: TypeAttributeKind<T>);
+    set(t: Type, value: T): void;
+    setForTopLevel(name: string, value: T): void;
+    tryGet(t: Type): T | undefined;
+    get(t: Type): T;
+    tryGetForTopLevel(name: string): T | undefined;
+    getForTopLevel(name: string): T;
+}
+export declare class TypeGraph {
+    readonly serial: number;
+    private readonly _haveProvenanceAttributes;
+    private _typeBuilder?;
+    private _attributeStore;
+    private _topLevels;
+    private _types?;
+    private _parents;
+    private _printOnRewrite;
+    constructor(typeBuilder: TypeBuilder, serial: number, _haveProvenanceAttributes: boolean);
+    private readonly isFrozen;
+    readonly attributeStore: TypeAttributeStore;
+    freeze(topLevels: ReadonlyMap<string, TypeRef>, types: Type[], typeAttributes: (TypeAttributes | undefined)[]): void;
+    readonly topLevels: ReadonlyMap<string, Type>;
+    typeAtIndex(index: number): Type;
+    atIndex(index: number): [Type, TypeAttributes];
+    private filterTypes;
+    allNamedTypes(): ReadonlySet<Type>;
+    allNamedTypesSeparated(): SeparatedNamedTypes;
+    private allProvenance;
+    setPrintOnRewrite(): void;
+    private checkLostTypeAttributes;
+    private printRewrite;
+    rewrite<T extends Type>(title: string, stringTypeMapping: StringTypeMapping, alphabetizeProperties: boolean, replacementGroups: T[][], debugPrintReconstitution: boolean, replacer: (typesToReplace: ReadonlySet<T>, builder: GraphRewriteBuilder<T>, forwardingRef: TypeRef) => TypeRef, force?: boolean): TypeGraph;
+    remap(title: string, stringTypeMapping: StringTypeMapping, alphabetizeProperties: boolean, map: ReadonlyMap<Type, Type>, debugPrintRemapping: boolean, force?: boolean): TypeGraph;
+    garbageCollect(alphabetizeProperties: boolean, debugPrintReconstitution: boolean): TypeGraph;
+    rewriteFixedPoint(alphabetizeProperties: boolean, debugPrintReconstitution: boolean): TypeGraph;
+    allTypesUnordered(): ReadonlySet<Type>;
+    makeGraph(invertDirection: boolean, childrenOfType: (t: Type) => ReadonlySet<Type>): Graph<Type>;
+    getParentsOfType(t: Type): Set<Type>;
+    printGraph(): void;
+}
+export declare function noneToAny(graph: TypeGraph, stringTypeMapping: StringTypeMapping, debugPrintReconstitution: boolean): TypeGraph;
+export declare function optionalToNullable(graph: TypeGraph, stringTypeMapping: StringTypeMapping, debugPrintReconstitution: boolean): TypeGraph;
+export declare function removeIndirectionIntersections(graph: TypeGraph, stringTypeMapping: StringTypeMapping, debugPrintRemapping: boolean): TypeGraph;
