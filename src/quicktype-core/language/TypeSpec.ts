@@ -122,7 +122,7 @@ export const typespecOptions = {
             ["3.6", { version: 3, typeHints: true, dataClasses: false }],
             ["3.7", { version: 3, typeHints: true, dataClasses: true }]
         ],
-        "3.6"
+        "3.7"
     ),
     justTypes: new BooleanOption("just-types", "Classes only", false),
     nicePropertyNames: new BooleanOption("nice-property-names", "Transform property names to be TypeSpecionic", true)
@@ -136,7 +136,7 @@ export class TypeSpecTargetLanguage extends TargetLanguage {
     get stringTypeMapping(): StringTypeMapping {
         const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
         const dateTimeType = "date-time";
-        mapping.set("date", dateTimeType);
+        mapping.set("date", "date");
         mapping.set("time", dateTimeType);
         mapping.set("date-time", dateTimeType);
         mapping.set("uuid", "uuid");
@@ -354,32 +354,38 @@ export class TypeSpecRenderer extends ConvenienceRenderer {
         const actualType = followTargetType(t);
         return matchType<Sourcelike>(
             actualType,
-            _anyType => this.withTyping("Any"),
+            _anyType => "JsonValue",
             _nullType => "None",
-            _boolType => "bool",
-            _integerType => "int",
-            _doubletype => "float",
-            _stringType => "str",
-            arrayType => [this.withTyping("List"), "[", this.typespecType(arrayType.items), "]"],
+            _boolType => "Boolean",
+            _integerType => "Integer",
+            _doubletype => "Decimal",
+            _stringType => "String",
+            arrayType => [this.withTyping("List"), "<", this.typespecType(arrayType.items), ">"],
             classType => this.namedType(classType),
-            mapType => [this.withTyping("Dict"), "[str, ", this.typespecType(mapType.values), "]"],
+            mapType => [this.withTyping("Dict"), "<str, ", this.typespecType(mapType.values), ">"],
             enumType => this.namedType(enumType),
             unionType => {
                 const maybeNullable = nullableFromUnion(unionType);
                 if (maybeNullable !== null) {
                     let rest: string[] = [];
-                    if (!this.getAlphabetizeProperties() && this.pyOptions.features.dataClasses) rest.push(" = None");
-                    return [this.withTyping("Optional"), "[", this.typespecType(maybeNullable), "]", ...rest];
+                    // if (!this.getAlphabetizeProperties() && this.pyOptions.features.dataClasses) rest.push(" = None");
+                    return [this.withTyping("Optional"), "<", this.typespecType(maybeNullable), ">", ...rest];
                 }
                 const memberTypes = Array.from(unionType.sortedMembers).map(m => this.typespecType(m));
-                return [this.withTyping("Union"), "[", arrayIntercalate(", ", memberTypes), "]"];
+                return [this.withTyping("Union"), "<", arrayIntercalate(", ", memberTypes), ">"];
             },
             transformedStringType => {
-                if (transformedStringType.kind === "date-time") {
-                    return this.withImport("datetime", "datetime");
+                if (transformedStringType.kind === "date-time" || transformedStringType.kind === "time") {
+                    return "DateTime";
+                }
+                if (transformedStringType.kind === "date") {
+                    return "Date";
                 }
                 if (transformedStringType.kind === "uuid") {
-                    return this.withImport("uuid", "UUID");
+                    return "String";
+                }
+                if (transformedStringType.kind === "integer-string" || transformedStringType.kind === "number-string") {
+                    return "LossyDecimal";
                 }
                 return panic(`Transformed type ${transformedStringType.kind} not supported`);
             }
@@ -388,10 +394,10 @@ export class TypeSpecRenderer extends ConvenienceRenderer {
 
     protected declarationLine(t: Type): Sourcelike {
         if (t instanceof ClassType) {
-            return ["class ", this.nameForNamedType(t), ":"];
+            return [this.nameForNamedType(t), ":"];
         }
         if (t instanceof EnumType) {
-            return ["class ", this.nameForNamedType(t), "(", this.withImport("enum", "Enum"), "):"];
+            return [this.nameForNamedType(t), ":"];
         }
         return panic(`Can't declare type ${t.kind}`);
     }
@@ -399,7 +405,17 @@ export class TypeSpecRenderer extends ConvenienceRenderer {
     protected declareType<T extends Type>(t: T, emitter: () => void): void {
         this.emitBlock(this.declarationLine(t), () => {
             this.emitDescription(this.descriptionForType(t));
+            if (t instanceof EnumType) {
+                this.emitLine(["type:", " ", "StringEnum"]);
+                this.emitLine("values:");
+            } else {
+                this.emitLine(["type:", " ", "Object"]);
+                this.emitLine("properties:");
+            }
+
+            this.changeIndent(1);
             emitter();
+            this.changeIndent(-1);
         });
         this.declaredTypes.add(t);
     }
@@ -455,7 +471,7 @@ export class TypeSpecRenderer extends ConvenienceRenderer {
 
     protected emitClass(t: ClassType): void {
         if (this.pyOptions.features.dataClasses) {
-            this.emitLine("@", this.withImport("dataclasses", "dataclass"));
+            //this.emitLine("@", this.withImport("dataclasses", "dataclass"));
         }
         this.declareType(t, () => {
             if (this.pyOptions.features.typeHints) {
@@ -464,7 +480,10 @@ export class TypeSpecRenderer extends ConvenienceRenderer {
                 } else {
                     this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
                         this.emitDescription(this.descriptionForClassProperty(t, jsonName));
-                        this.emitLine(name, this.typeHint(": ", this.typespecType(cp.type)));
+                        this.emitLine(name, ":");
+                        this.changeIndent(1);
+                        this.emitLine(["type:", " ", this.typespecType(cp.type)]);
+                        this.changeIndent(-1);
                     });
                 }
                 this.ensureBlankLine();
@@ -476,7 +495,9 @@ export class TypeSpecRenderer extends ConvenienceRenderer {
     protected emitEnum(t: EnumType): void {
         this.declareType(t, () => {
             this.forEachEnumCase(t, "none", (name, jsonName) => {
-                this.emitLine([name, " = ", this.string(jsonName)]);
+                this.changeIndent(1);
+                this.emitLine([name.isFixed() ? name.fixedName.toLowerCase() : name, ": ", jsonName]);
+                this.changeIndent(-1);
             });
         });
     }
