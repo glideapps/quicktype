@@ -362,9 +362,10 @@ class TypeSpecRenderer extends ConvenienceRenderer_1.ConvenienceRenderer {
     }
     emitEnum(t) {
         this.declareType(t, () => {
-            this.forEachEnumCase(t, "none", (name, jsonName) => {
+            this.forEachEnumCase(t, "none", (_name, jsonName) => {
                 this.changeIndent(1);
-                this.emitLine([name.isFixed() ? name.fixedName.toLowerCase() : name, ": ", jsonName]);
+                // Not ideal for the enum name but better default for now
+                this.emitLine([Strings_1.snakeCase(jsonName).toLowerCase(), ": ", jsonName]);
                 this.changeIndent(-1);
             });
         });

@@ -24,7 +24,8 @@ import {
     originalWord,
     isAscii,
     isLetterOrUnderscoreOrDigit,
-    isLetter
+    isLetter,
+    snakeCase
 } from "../support/Strings";
 import { assertNever, panic, defined } from "../support/Support";
 import { Sourcelike, MultiWord, multiWord, singleWord, parenIfNeeded } from "../Source";
@@ -494,9 +495,10 @@ export class TypeSpecRenderer extends ConvenienceRenderer {
 
     protected emitEnum(t: EnumType): void {
         this.declareType(t, () => {
-            this.forEachEnumCase(t, "none", (name, jsonName) => {
+            this.forEachEnumCase(t, "none", (_name, jsonName) => {
                 this.changeIndent(1);
-                this.emitLine([name.isFixed() ? name.fixedName.toLowerCase() : name, ": ", jsonName]);
+                // Not ideal for the enum name but better default for now
+                this.emitLine([snakeCase(jsonName).toLowerCase(), ": ", jsonName]);
                 this.changeIndent(-1);
             });
         });
