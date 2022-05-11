@@ -487,6 +487,8 @@ export class UpickleRenderer extends Scala3Renderer {
 
 export class CirceRenderer extends Scala3Renderer {
 
+    seenUnionTypes : Array<string> = [];
+
     protected circeEncoderForType(t: Type, withIssues: boolean = false, noOptional: boolean = false, paramName: string): Sourcelike {
         return matchType<Sourcelike>(
             t,
@@ -564,7 +566,9 @@ export class CirceRenderer extends Scala3Renderer {
         this.emitLine("// For serialising string unions")
         this.emitLine("given [A <: Singleton](using A <:< String): Decoder[A] = Decoder.decodeString.emapTry(x => Try(x.asInstanceOf[A])) ");
         this.emitLine("given [A <: Singleton](using ev: A <:< String): Encoder[A] = Encoder.encodeString.contramap(ev) ");
-
+        this.ensureBlankLine();
+        this.emitLine("// If a union has a null in, then we'll need this too... ")
+        this.emitLine("type NullValue = None.type");
     }
 
     protected emitTopLevelArray(t: ArrayType, name: Name): void {
@@ -580,50 +584,67 @@ export class CirceRenderer extends Scala3Renderer {
         this.emitLine(["given (using ev : ", elementType, "): Encoder[Map[String, ", elementType ,"]] = Encoder.encodeMap[String, ",elementType,"]"]);
     }
 
-     protected emitUnionDefinition(u: UnionType, unionName: Name): void {
-        super.emitUnionDefinition(u, unionName);
-        this.ensureBlankLine();
+     protected emitUnionDefinition(u: UnionType, unionName: Name): void {        
         function sortBy(t: Type): string {
             const kind = t.kind;
             if (kind === "class") return kind;
             return "_" + kind;
         }
 
-        const [maybeNull, nonNulls] = removeNullFromUnion(u, sortBy);        
-        const sourceLikeTypes : Array<[Sourcelike, Type]> = []        
+        this.emitDescription(this.descriptionForType(u));
+        
+        const [maybeNull, nonNulls] = removeNullFromUnion(u, sortBy);
+        const theTypes : Array<Sourcelike> = []
         this.forEachUnionMember(u, nonNulls, "none", null, (_, t) => {
-            sourceLikeTypes.push([this.scalaType(t), t]);
-            
+            theTypes.push(this.scalaType(t));
         });
         if (maybeNull !== null) {
-            sourceLikeTypes.push([this.nameForUnionMember(u, maybeNull), maybeNull]);
-        }                
-
-        this.emitLine(["given Decoder[",unionName,"] = {"])
-        this.indent(() => {
-                this.emitLine(["List[Decoder[",unionName,"]]("])
-                this.indent( () => {
-                    sourceLikeTypes.forEach((t) => {
-                        this.emitLine(["Decoder[", t[0], "].widen," ]);            
-                    });
-                })
-                this.emitLine(").reduceLeft(_ or _)")
-            }
-        )
-        this.emitLine(["}"])
+            theTypes.push(this.nameForUnionMember(u, maybeNull));
+        }    
         
+        this.emitItem(["type ", unionName, " = "]);
+        theTypes.forEach((t, i) => {
+            this.emitItem(i === 0 ? t : [" | ", t]);
+        });
+        const thisUnionType = theTypes.map(x => this.sourcelikeToString(x) ).join(" | ");
+
         this.ensureBlankLine();
-
-        this.emitLine(["given Encoder[",unionName,"] = Encoder.instance {"])
-        this.indent(() => {
-            sourceLikeTypes.forEach((t, i) => {
-                const paramTemp = "enc"+i.toString();
-                this.emitLine(["case ", paramTemp , " : ", t[0], " => ", this.circeEncoderForType(t[1], false, false, paramTemp ) ]);
+        //console.log(this.seenUnionTypes)
+        if(!this.seenUnionTypes.some(y => y === thisUnionType)) {
+            this.seenUnionTypes.push(thisUnionType);
+            const sourceLikeTypes : Array<[Sourcelike, Type]> = []        
+            this.forEachUnionMember(u, nonNulls, "none", null, (_, t) => {
+                sourceLikeTypes.push([this.scalaType(t), t]);
+                
             });
-        })
-        this.emitLine("}")
+            if (maybeNull !== null) {
+                sourceLikeTypes.push([this.nameForUnionMember(u, maybeNull), maybeNull]);
+            }                
 
-        
+            this.emitLine(["given Decoder[",unionName,"] = {"])
+            this.indent(() => {
+                    this.emitLine(["List[Decoder[",unionName,"]]("])
+                    this.indent( () => {
+                        sourceLikeTypes.forEach((t) => {
+                            this.emitLine(["Decoder[", t[0], "].widen," ]);            
+                        });
+                    })
+                    this.emitLine(").reduceLeft(_ or _)")
+                }
+            )
+            this.emitLine(["}"])
+            
+            this.ensureBlankLine();
+
+            this.emitLine(["given Encoder[",unionName,"] = Encoder.instance {"])
+            this.indent(() => {
+                sourceLikeTypes.forEach((t, i) => {
+                    const paramTemp = "enc"+i.toString();
+                    this.emitLine(["case ", paramTemp , " : ", t[0], " => ", this.circeEncoderForType(t[1], false, false, paramTemp ) ]);
+                });
+            })
+            this.emitLine("}")        
+        }
     } 
 }
 
