@@ -56,12 +56,15 @@ const transformedStringTypeTargetTypeKinds = {
     uuid: { jsonSchema: "uuid", primitive: undefined },
     uri: { jsonSchema: "uri", primitive: undefined, attributesProducer: uriInferenceAttributesProducer },
     "integer-string": { jsonSchema: "integer", primitive: "integer" } as TransformedStringTypeTargets,
+    "number-string": { jsonSchema: "number", primitive: "double" } as TransformedStringTypeTargets,
     "bool-string": { jsonSchema: "boolean", primitive: "bool" } as TransformedStringTypeTargets
 };
 
-export const transformedStringTypeTargetTypeKindsMap = mapFromObject(transformedStringTypeTargetTypeKinds as {
-    [kind: string]: TransformedStringTypeTargets;
-});
+export const transformedStringTypeTargetTypeKindsMap = mapFromObject(
+    transformedStringTypeTargetTypeKinds as {
+        [kind: string]: TransformedStringTypeTargets;
+    }
+);
 
 export type TransformedStringTypeKind = keyof typeof transformedStringTypeTargetTypeKinds;
 export type PrimitiveStringTypeKind = "string" | TransformedStringTypeKind;
@@ -642,7 +645,14 @@ export class MapType extends ObjectType {
     readonly kind: "map";
 
     constructor(typeRef: TypeRef, graph: TypeGraph, valuesRef: TypeRef | undefined) {
-        super(typeRef, graph, "map", false, definedMap(valuesRef, () => new Map()), valuesRef);
+        super(
+            typeRef,
+            graph,
+            "map",
+            false,
+            definedMap(valuesRef, () => new Map()),
+            valuesRef
+        );
     }
 
     // FIXME: Remove and use `getAdditionalProperties()` instead.

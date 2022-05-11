@@ -800,7 +800,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected get commentLineStart(): string {
-        return "// ";
+        return "# ";
     }
 
     protected emitCommentLines(

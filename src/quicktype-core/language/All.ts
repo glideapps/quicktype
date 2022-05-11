@@ -19,6 +19,7 @@ import { CrystalTargetLanguage } from "./Crystal";
 import { RubyTargetLanguage } from "./ruby";
 import { DartTargetLanguage } from "./Dart";
 import { PythonTargetLanguage } from "./Python";
+import { TypeSpecTargetLanguage } from "./TypeSpec";
 import { PikeTargetLanguage } from "./Pike";
 import { HaskellTargetLanguage } from "./Haskell";
 
@@ -41,8 +42,9 @@ export const all: TargetLanguage[] = [
     new RubyTargetLanguage(),
     new DartTargetLanguage(),
     new PythonTargetLanguage("Python", ["python", "py"], "py"),
+    new TypeSpecTargetLanguage("TypeSpec", ["typespec", "tsyaml"], "tsyaml"),
     new PikeTargetLanguage(),
-    new HaskellTargetLanguage(),
+    new HaskellTargetLanguage()
 ];
 
 export function languageNamed(name: string, targetLanguages?: TargetLanguage[]): TargetLanguage | undefined {
