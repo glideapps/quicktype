@@ -1,0 +1,125 @@
+import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { Name, Namer } from "../Naming";
+import { RenderContext } from "../Renderer";
+import { BooleanOption, EnumOption, Option, OptionValues, StringOption } from "../RendererOptions";
+import { Sourcelike } from "../Source";
+import { AcronymStyleOptions } from "../support/Acronyms";
+import { TargetLanguage } from "../TargetLanguage";
+import { ClassProperty, ClassType, EnumType, Type, UnionType } from "../Type";
+import { StringTypeMapping } from "..";
+export declare const javaOptions: {
+    useList: EnumOption<boolean>;
+    justTypes: BooleanOption;
+    dateTimeProvider: EnumOption<string>;
+    acronymStyle: EnumOption<AcronymStyleOptions>;
+    packageName: StringOption;
+    lombok: BooleanOption;
+    lombokCopyAnnotations: BooleanOption;
+};
+export declare class JavaTargetLanguage extends TargetLanguage {
+    constructor();
+    protected getOptions(): Option<any>[];
+    readonly supportsUnionsWithBothNumberTypes: boolean;
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: {
+        [name: string]: any;
+    }): JavaRenderer;
+    readonly stringTypeMapping: StringTypeMapping;
+}
+export declare const stringEscape: (s: string) => string;
+export declare function javaNameStyle(startWithUpper: boolean, upperUnderscore: boolean, original: string, acronymsStyle?: (s: string) => string): string;
+declare abstract class JavaDateTimeProvider {
+    protected readonly _renderer: JavaRenderer;
+    protected readonly _className: string;
+    constructor(_renderer: JavaRenderer, _className: string);
+    abstract keywords: string[];
+    abstract dateTimeImports: string[];
+    abstract dateImports: string[];
+    abstract timeImports: string[];
+    abstract converterImports: string[];
+    abstract dateTimeType: string;
+    abstract dateType: string;
+    abstract timeType: string;
+    abstract dateTimeJacksonAnnotations: string[];
+    abstract dateJacksonAnnotations: string[];
+    abstract timeJacksonAnnotations: string[];
+    abstract emitDateTimeConverters(): void;
+    shouldEmitDateTimeConverter: boolean;
+    shouldEmitTimeConverter: boolean;
+    shouldEmitDateConverter: boolean;
+    abstract convertStringToDateTime(variable: Sourcelike): Sourcelike;
+    abstract convertStringToTime(variable: Sourcelike): Sourcelike;
+    abstract convertStringToDate(variable: Sourcelike): Sourcelike;
+    abstract convertDateTimeToString(variable: Sourcelike): Sourcelike;
+    abstract convertTimeToString(variable: Sourcelike): Sourcelike;
+    abstract convertDateToString(variable: Sourcelike): Sourcelike;
+}
+export declare class JavaRenderer extends ConvenienceRenderer {
+    protected readonly _options: OptionValues<typeof javaOptions>;
+    private _currentFilename;
+    private readonly _gettersAndSettersForPropertyName;
+    private _haveEmittedLeadingComments;
+    protected readonly _dateTimeProvider: JavaDateTimeProvider;
+    protected readonly _converterClassname: string;
+    protected readonly _converterKeywords: string[];
+    constructor(targetLanguage: TargetLanguage, renderContext: RenderContext, _options: OptionValues<typeof javaOptions>);
+    protected forbiddenNamesForGlobalNamespace(): string[];
+    protected forbiddenForObjectProperties(_c: ClassType, _className: Name): ForbiddenWordsInfo;
+    protected makeNamedTypeNamer(): Namer;
+    protected namerForObjectProperty(): Namer;
+    protected makeUnionMemberNamer(): Namer;
+    protected makeEnumCaseNamer(): Namer;
+    protected unionNeedsName(u: UnionType): boolean;
+    protected namedTypeToNameForTopLevel(type: Type): Type | undefined;
+    protected makeNamesForPropertyGetterAndSetter(_c: ClassType, _className: Name, _p: ClassProperty, _jsonName: string, name: Name): [Name, Name];
+    protected makePropertyDependencyNames(c: ClassType, className: Name, p: ClassProperty, jsonName: string, name: Name): Name[];
+    private getNameStyling;
+    protected fieldOrMethodName(methodName: string, topLevelName: Name): Sourcelike;
+    protected methodName(prefix: string, suffix: string, topLevelName: Name): Sourcelike;
+    protected decoderName(topLevelName: Name): Sourcelike;
+    protected encoderName(topLevelName: Name): Sourcelike;
+    protected readerGetterName(topLevelName: Name): Sourcelike;
+    protected writerGetterName(topLevelName: Name): Sourcelike;
+    protected startFile(basename: Sourcelike): void;
+    protected finishFile(): void;
+    protected emitPackageAndImports(imports: string[]): void;
+    protected emitFileHeader(fileName: Sourcelike, imports: string[]): void;
+    emitDescriptionBlock(lines: Sourcelike[]): void;
+    emitBlock(line: Sourcelike, f: () => void): void;
+    emitTryCatch(main: () => void, handler: () => void, exception?: string): void;
+    emitIgnoredTryCatchBlock(f: () => void): void;
+    protected javaType(reference: boolean, t: Type, withIssues?: boolean): Sourcelike;
+    protected javaImport(t: Type): string[];
+    protected javaTypeWithoutGenerics(reference: boolean, t: Type): Sourcelike;
+    protected emitClassAttributes(_c: ClassType, _className: Name): void;
+    protected annotationsForAccessor(_c: ClassType, _className: Name, _propertyName: Name, _jsonName: string, _p: ClassProperty, _isSetter: boolean): string[];
+    protected importsForType(t: ClassType | UnionType | EnumType): string[];
+    protected importsForClass(c: ClassType): string[];
+    protected importsForUnionMembers(u: UnionType): string[];
+    protected emitClassDefinition(c: ClassType, className: Name): void;
+    protected unionField(u: UnionType, t: Type, withIssues?: boolean): {
+        fieldType: Sourcelike;
+        fieldName: Sourcelike;
+    };
+    protected emitUnionAttributes(_u: UnionType, _unionName: Name): void;
+    protected emitUnionSerializer(_u: UnionType, _unionName: Name): void;
+    protected emitUnionDefinition(u: UnionType, unionName: Name): void;
+    protected emitEnumSerializationAttributes(_e: EnumType): void;
+    protected emitEnumDeserializationAttributes(_e: EnumType): void;
+    protected emitEnumDefinition(e: EnumType, enumName: Name): void;
+    protected emitSourceStructure(): void;
+}
+export declare class JacksonRenderer extends JavaRenderer {
+    constructor(targetLanguage: TargetLanguage, renderContext: RenderContext, options: OptionValues<typeof javaOptions>);
+    protected readonly _converterKeywords: string[];
+    protected emitClassAttributes(c: ClassType, _className: Name): void;
+    protected annotationsForAccessor(_c: ClassType, _className: Name, _propertyName: Name, jsonName: string, p: ClassProperty, _isSetter: boolean): string[];
+    protected importsForType(t: ClassType | UnionType | EnumType): string[];
+    protected emitUnionAttributes(_u: UnionType, unionName: Name): void;
+    protected emitUnionSerializer(u: UnionType, unionName: Name): void;
+    protected emitEnumSerializationAttributes(_e: EnumType): void;
+    protected emitEnumDeserializationAttributes(_e: EnumType): void;
+    protected emitOffsetDateTimeConverterModule(): void;
+    protected emitConverterClass(): void;
+    protected emitSourceStructure(): void;
+}
+export {};
