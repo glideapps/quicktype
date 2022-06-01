@@ -1002,13 +1002,13 @@ export class KotlinXRenderer extends KotlinRenderer {
     }
 
     protected anySourceType(optional: string): Sourcelike {
-        return ["JsonObject", optional];
+        return ["JsonElement", optional];
     }
 
     protected arrayType(arrayType: ArrayType, withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
         const valType = this.kotlinType(arrayType.items, withIssues, true);
         const name = this.sourcelikeToString(valType);
-        if (name === "JsonObject") {
+        if (name === "JsonObject" || name === "JsonElement") {
             return "JsonArray";
         }
         return super.arrayType(arrayType, withIssues, noOptional);
@@ -1017,7 +1017,7 @@ export class KotlinXRenderer extends KotlinRenderer {
     protected mapType(mapType: MapType, withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
         const valType = this.kotlinType(mapType.values, withIssues, true);
         const name = this.sourcelikeToString(valType);
-        if (name === "JsonObject") {
+        if (name === "JsonObject" || name === "JsonElement") {
             return "JsonObject";
         }
         return super.mapType(mapType, withIssues, noOptional);
