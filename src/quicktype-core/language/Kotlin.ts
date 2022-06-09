@@ -1080,30 +1080,12 @@ export class KotlinXRenderer extends KotlinRenderer {
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
 
-        this.emitLine(["@Serializable(with = ", enumName, ".Companion::class)"]);
+        this.emitLine(["@Serializable"]);
         this.emitBlock(["enum class ", enumName, "(val value: String)"], () => {
             let count = e.cases.size;
             this.forEachEnumCase(e, "none", (name, json) => {
-                this.emitLine(name, `("${stringEscape(json)}")`, --count === 0 ? ";" : ",");
-            });
-            this.ensureBlankLine();
-            this.emitBlock(["companion object : KSerializer<", enumName, ">"], () => {
-                this.emitBlock("override val descriptor: SerialDescriptor get()", () => {
-                    this.emitLine("return PrimitiveSerialDescriptor(\"", this._kotlinOptions.packageName, ".", enumName, "\", PrimitiveKind.STRING)");
-                });
-
-                this.emitBlock(["override fun deserialize(decoder: Decoder): ", enumName, " = when (val value = decoder.decodeString())"], () => {
-                    let table: Sourcelike[][] = [];
-                    this.forEachEnumCase(e, "none", (name, json) => {
-                        table.push([[`"${stringEscape(json)}"`], [" -> ", name]]);
-                    });
-                    table.push([["else"], [" -> throw IllegalArgumentException(\"", enumName, " could not parse: $value\")"]]);
-                    this.emitTable(table);
-                });
-
-                this.emitBlock(["override fun serialize(encoder: Encoder, value: ", enumName, ")"], () => {
-                    this.emitLine(["return encoder.encodeString(value.value)"]);
-                });
+                const jsonEnum = stringEscape(json);
+                this.emitLine(`@SerialName("${jsonEnum}") `, name, `("${jsonEnum}")`, --count === 0 ? ";" : ",");
             });
         });
     }
