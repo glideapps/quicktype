@@ -1430,10 +1430,13 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
                 `@propertyWrapper public struct NilOnFail${this._options.namedTypePrefix}<T: Codable>: Codable`,
                 () => {
                     this.emitMultiline(`
-                    public let wrappedValue: T?
-                    public init(from decoder: Decoder) throws {
-                        wrappedValue = try? T(from: decoder)
-                    }`);
+public let wrappedValue: T?
+public init(from decoder: Decoder) throws {
+    wrappedValue = try? T(from: decoder)
+}
+public init(_ wrappedValue: T?) {
+    self.wrappedValue = wrappedValue
+}`);
                 }
             );
         }
