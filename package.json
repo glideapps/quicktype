@@ -52,7 +52,7 @@
     "@types/yaml": "^1.0.2",
     "ajv": "^5.5.2",
     "deep-equal": "^1.0.1",
-    "elm": "0.18.0-exp5",
+    "elm": "0.19.1-5",
     "exit": "^0.1.2",
     "flow-bin": "^0.66.0",
     "flow-remove-types": "^1.2.3",
