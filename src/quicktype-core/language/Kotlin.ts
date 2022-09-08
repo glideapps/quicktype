@@ -36,6 +36,7 @@ import {
 } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 import { RenderContext } from "../Renderer";
+import { acronymOption, acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
 
 export enum Framework {
     None,
@@ -51,6 +52,7 @@ export const kotlinOptions = {
         [["just-types", Framework.None], ["jackson", Framework.Jackson], ["klaxon", Framework.Klaxon], ["kotlinx", Framework.KotlinX]],
         "klaxon"
     ),
+    acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
     packageName: new StringOption("package", "Package", "PACKAGE", "quicktype")
 };
 
@@ -60,7 +62,7 @@ export class KotlinTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [kotlinOptions.framework, kotlinOptions.packageName];
+        return [kotlinOptions.framework, kotlinOptions.acronymStyle, kotlinOptions.packageName];
     }
 
     get supportsOptionalClassProperties(): boolean {
@@ -154,7 +156,7 @@ function isStartCharacter(codePoint: number): boolean {
 
 const legalizeName = legalizeCharacters(isPartCharacter);
 
-function kotlinNameStyle(isUpper: boolean, original: string): string {
+function kotlinNameStyle(isUpper: boolean, original: string, acronymsStyle: (s: string) => string = allUpperWordStyle): string {
     const words = splitIntoWords(original);
     return combineWords(
         words,
@@ -162,7 +164,7 @@ function kotlinNameStyle(isUpper: boolean, original: string): string {
         isUpper ? firstUpperWordStyle : allLowerWordStyle,
         firstUpperWordStyle,
         isUpper ? allUpperWordStyle : allLowerWordStyle,
-        allUpperWordStyle,
+        acronymsStyle,
         "",
         isStartCharacter
     );
@@ -178,9 +180,6 @@ function stringEscape(s: string): string {
     // "$this" is a template string in Kotlin so we have to escape $
     return _stringEscape(s).replace(/\$/g, "\\$");
 }
-
-const upperNamingFunction = funPrefixNamer("upper", s => kotlinNameStyle(true, s));
-const lowerNamingFunction = funPrefixNamer("lower", s => kotlinNameStyle(false, s));
 
 export class KotlinRenderer extends ConvenienceRenderer {
     constructor(
@@ -212,11 +211,11 @@ export class KotlinRenderer extends ConvenienceRenderer {
     }
 
     protected makeNamedTypeNamer(): Namer {
-        return upperNamingFunction;
+        return funPrefixNamer("upper", s => kotlinNameStyle(true, s, acronymStyle(this._kotlinOptions.acronymStyle)));
     }
 
     protected namerForObjectProperty(): Namer {
-        return lowerNamingFunction;
+        return funPrefixNamer("lower", s => kotlinNameStyle(false, s, acronymStyle(this._kotlinOptions.acronymStyle)));
     }
 
     protected makeUnionMemberNamer(): Namer {
@@ -224,7 +223,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return upperNamingFunction;
+        return funPrefixNamer("upper", s => kotlinNameStyle(true, s, acronymStyle(this._kotlinOptions.acronymStyle)));
     }
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
