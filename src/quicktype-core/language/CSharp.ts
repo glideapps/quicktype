@@ -21,7 +21,7 @@ import {
     firstUpperWordStyle,
     camelCase,
 } from "../support/Strings";
-import { defined, assert, panic } from "../support/Support";
+import { defined, assert, panic, assertNever } from "../support/Support";
 import { Name, DependencyName, Namer, funPrefixNamer, SimpleName } from "../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo, inferredNameOrder } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
@@ -50,6 +50,11 @@ import {
 } from "../Transformers";
 import { RenderContext } from "../Renderer";
 import { minMaxLengthForType, minMaxValueForType } from "../attributes/Constraints";
+
+export enum Framework {
+    Newtonsoft,
+    SystemDotText
+}
 
 const unicode = require("@mark.probst/unicode-properties");
 
@@ -113,6 +118,12 @@ function csTypeForTransformedStringType(t: PrimitiveType): Sourcelike {
 }
 
 export const cSharpOptions = {
+    framework: new EnumOption(
+        "framework",
+        "Serialization framework",
+        [["NewtonSoft", Framework.Newtonsoft], ["System.Text", Framework.SystemDotText]],
+        "System.Text"
+    ),
     useList: new EnumOption("array-type", "Use T[] or List<T>", [
         ["array", false],
         ["list", true],
@@ -169,6 +180,7 @@ export const cSharpOptions = {
 export class CSharpTargetLanguage extends TargetLanguage {
     protected getOptions(): Option<any>[] {
         return [
+            cSharpOptions.framework,
             cSharpOptions.namespace,
             cSharpOptions.version,
             cSharpOptions.dense,
@@ -204,8 +216,24 @@ export class CSharpTargetLanguage extends TargetLanguage {
         return need !== "none" && need !== "nullable";
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): CSharpRenderer {
-        return new CSharpRenderer(this, renderContext, getOptionValues(cSharpOptions, untypedOptionValues));
+    protected makeRenderer(
+        renderContext: RenderContext, 
+        untypedOptionValues: { [name: string]: any }
+    ): ConvenienceRenderer {
+        const options = getOptionValues(cSharpOptions, untypedOptionValues);
+
+        switch (options.framework) {
+            case Framework.Newtonsoft:
+                //return new KotlinRenderer(this, renderContext, options);
+                return new CSharpRenderer(this, renderContext, options);
+            case Framework.SystemDotText:
+                return new KotlinJacksonRenderer(this, renderContext, options);
+            default:
+                return assertNever(options.framework);
+        }
+        
+        
+        
     }
 }
 
