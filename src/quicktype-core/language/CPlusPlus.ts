@@ -348,7 +348,6 @@ export type IncludeMap = Map<string, IncludeRecord>;
 export type TypeContext = {
     needsForwardIndirection: boolean;
     needsOptionalIndirection: boolean;
-    inJsonNamespace: boolean;
 };
 
 interface StringType {
@@ -794,8 +793,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     t,
                     {
                         needsForwardIndirection: true,
-                        needsOptionalIndirection: false,
-                        inJsonNamespace: ctx.inJsonNamespace
+                        needsOptionalIndirection: false
                     },
                     withIssues,
                     false,
@@ -806,13 +804,13 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         return [this._variantType, "<", typeList, ">"];
     }
 
-    protected variantType(u: UnionType, inJsonNamespace: boolean): Sourcelike {
+    protected variantType(u: UnionType): Sourcelike {
         const [maybeNull, nonNulls] = removeNullFromUnion(u, true);
         assert(nonNulls.size >= 2, "Variant not needed for less than two types.");
         const indirection = maybeNull !== null;
         const variant = this.cppTypeInOptional(
             nonNulls,
-            { needsForwardIndirection: !indirection, needsOptionalIndirection: !indirection, inJsonNamespace },
+            { needsForwardIndirection: !indirection, needsOptionalIndirection: !indirection },
             true,
             false
         );
@@ -822,12 +820,12 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         return [optionalType, "<", variant, ">"];
     }
 
-    protected ourQualifier(inJsonNamespace: boolean): Sourcelike {
-        return (inJsonNamespace || this._options.msbuildPermissive) ? [arrayIntercalate("::", this._namespaceNames), "::"] : [];
+    protected ourQualifier(): Sourcelike {
+        return [];
     }
 
-    protected jsonQualifier(inJsonNamespace: boolean): Sourcelike {
-        return (inJsonNamespace || this._options.msbuildPermissive) ? [] : "nlohmann::";
+    protected jsonQualifier(): Sourcelike {
+        return "nlohmann::";
     }
 
     protected variantIndirection(needIndirection: boolean, typeSrc: Sourcelike): Sourcelike {
@@ -836,7 +834,6 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected cppType(t: Type, ctx: TypeContext, withIssues: boolean, forceNarrowString: boolean, isOptional: boolean): Sourcelike {
-        const inJsonNamespace = ctx.inJsonNamespace;
         if (isOptional && t instanceof UnionType) { // avoid have optionalType<optionalType<Type>>
             for (const tChild of t.getChildren()) {
                 if (tChild.isNullable) {
@@ -849,11 +846,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             t,
             _anyType => {
                 isOptional = false;
-                return maybeAnnotated(withIssues, anyTypeIssueAnnotation, [this.jsonQualifier(inJsonNamespace), "json"]);
+                return maybeAnnotated(withIssues, anyTypeIssueAnnotation, [this.jsonQualifier(), "json"]);
             },
             _nullType => {
                 isOptional = false;
-                return maybeAnnotated(withIssues, nullTypeIssueAnnotation, [this.jsonQualifier(inJsonNamespace), "json"]);
+                return maybeAnnotated(withIssues, nullTypeIssueAnnotation, [this.jsonQualifier(), "json"]);
             },
             _boolType => "bool",
             _integerType => "int64_t",
@@ -869,7 +866,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 "std::vector<",
                 this.cppType(
                     arrayType.items,
-                    { needsForwardIndirection: false, needsOptionalIndirection: true, inJsonNamespace },
+                    { needsForwardIndirection: false, needsOptionalIndirection: true },
                     withIssues,
                     forceNarrowString,
                     false
@@ -878,7 +875,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             ],
             classType =>
                 this.variantIndirection(ctx.needsForwardIndirection && this.isForwardDeclaredType(classType) && !isOptional, [
-                    this.ourQualifier(inJsonNamespace),
+                    this.ourQualifier(),
                     this.nameForNamedType(classType)
                 ]),
             mapType => {
@@ -892,7 +889,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     ", ",
                     this.cppType(
                         mapType.values,
-                        { needsForwardIndirection: false, needsOptionalIndirection: true, inJsonNamespace },
+                        { needsForwardIndirection: false, needsOptionalIndirection: true },
                         withIssues,
                         forceNarrowString,
                         false
@@ -900,14 +897,14 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     ">"
                 ];
             },
-            enumType => [this.ourQualifier(inJsonNamespace), this.nameForNamedType(enumType)],
+            enumType => [this.ourQualifier(), this.nameForNamedType(enumType)],
             unionType => {
                 const nullable = nullableFromUnion(unionType);
-                if (nullable === null) return [this.ourQualifier(inJsonNamespace), this.nameForNamedType(unionType)];
+                if (nullable === null) return [this.ourQualifier(), this.nameForNamedType(unionType)];
                 isOptional = true;
                 return this.cppType(
                         nullable,
-                        { needsForwardIndirection: false, needsOptionalIndirection: false, inJsonNamespace },
+                        { needsForwardIndirection: false, needsOptionalIndirection: false },
                         withIssues,
                         forceNarrowString,
                         false
@@ -1006,7 +1003,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.emitMember(
                     this.cppType(
                         property.type,
-                        { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false },
+                        { needsForwardIndirection: true, needsOptionalIndirection: true },
                         true,
                         false,
                         property.isOptional
@@ -1030,7 +1027,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.emitMember(
                     this.cppType(
                         property.type,
-                        { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false },
+                        { needsForwardIndirection: true, needsOptionalIndirection: true },
                         true,
                         false,
                         property.isOptional
@@ -1043,7 +1040,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 );
                 const rendered = this.cppType(
                     property.type,
-                    { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false },
+                    { needsForwardIndirection: true, needsOptionalIndirection: true },
                     true,
                     false,
                     property.isOptional
@@ -1199,14 +1196,14 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 false, () => {
                 cppType = this.cppType(
                     t,
-                    { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+                    { needsForwardIndirection: true, needsOptionalIndirection: true },
                     false,
                     true,
                     false
                 );
                 toType = this.cppType(
                     t,
-                    { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+                    { needsForwardIndirection: true, needsOptionalIndirection: true },
                     false,
                     false,
                     false
@@ -1224,14 +1221,14 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 false, () => {
                 cppType = this.cppType(
                     t,
-                    { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+                    { needsForwardIndirection: true, needsOptionalIndirection: true },
                     false,
                     false,
                     false
                 );
                 toType = this.cppType(
                     t,
-                    { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+                    { needsForwardIndirection: true, needsOptionalIndirection: true },
                     false,
                     true,
                     false
@@ -1301,8 +1298,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             typeSet,
                             {
                                 needsForwardIndirection: false,
-                                needsOptionalIndirection: false,
-                                inJsonNamespace: true
+                                needsOptionalIndirection: false
                             },
                             false,
                             true
@@ -1311,8 +1307,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             typeSet,
                             {
                                 needsForwardIndirection: false,
-                                needsOptionalIndirection: false,
-                                inJsonNamespace: true
+                                needsOptionalIndirection: false
                             },
                             false,
                             false
@@ -1348,14 +1343,14 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 }
                 cppType = this.cppType(
                     t,
-                    { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+                    { needsForwardIndirection: true, needsOptionalIndirection: true },
                     false,
                     true,
                     p.isOptional
                 );
                 toType = this.cppType(
                     t,
-                    { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+                    { needsForwardIndirection: true, needsOptionalIndirection: true },
                     false,
                     false,
                     p.isOptional
@@ -1390,14 +1385,14 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 const t = p.type;
                 cppType = this.cppType(
                     t,
-                    { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+                    { needsForwardIndirection: true, needsOptionalIndirection: true },
                     false,
                     false,
                     p.isOptional
                 );
                 toType = this.cppType(
                     t,
-                    { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+                    { needsForwardIndirection: true, needsOptionalIndirection: true },
                     false,
                     true,
                     p.isOptional
@@ -1455,14 +1450,14 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected emitUnionTypedefs(u: UnionType, unionName: Name): void {
-        this.emitLine("using ", unionName, " = ", this.variantType(u, false), ";");
+        this.emitLine("using ", unionName, " = ", this.variantType(u), ";");
     }
 
     protected emitUnionHeaders(u: UnionType): void {
         const nonNulls = removeNullFromUnion(u, true)[1];
         const variantType = this.cppTypeInOptional(
             nonNulls,
-            { needsForwardIndirection: false, needsOptionalIndirection: false, inJsonNamespace: true },
+            { needsForwardIndirection: false, needsOptionalIndirection: false },
             false,
             false
         );
@@ -1487,7 +1482,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         const nonNulls = removeNullFromUnion(u, true)[1];
         const variantType = this.cppTypeInOptional(
             nonNulls,
-            { needsForwardIndirection: false, needsOptionalIndirection: false, inJsonNamespace: true },
+            { needsForwardIndirection: false, needsOptionalIndirection: false },
             false,
             false
         );
@@ -1503,14 +1498,14 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.indent(() => {
                     const cppType = this.cppType(
                         typeForKind,
-                        { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+                        { needsForwardIndirection: true, needsOptionalIndirection: true },
                         false,
                         true,
                         false
                     );
                     let toType = this.cppType(
                         typeForKind,
-                        { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+                        { needsForwardIndirection: true, needsOptionalIndirection: true },
                         false,
                         false,
                         false
@@ -1543,8 +1538,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             t,
                             {
                                 needsForwardIndirection: true,
-                                needsOptionalIndirection: true,
-                                inJsonNamespace: true
+                                needsOptionalIndirection: true
                             },
                             false,
                             false,
@@ -1554,8 +1548,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             t,
                             {
                                 needsForwardIndirection: true,
-                                needsOptionalIndirection: true,
-                                inJsonNamespace: true
+                                needsOptionalIndirection: true
                             },
                             false,
                             true,
@@ -1683,7 +1676,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             " = ",
             this.cppType(
                 t,
-                { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false },
+                { needsForwardIndirection: true, needsOptionalIndirection: true },
                 true,
                 false,
                 false
@@ -1699,7 +1692,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.sourcelikeToString(
                     this.cppTypeInOptional(
                         removeNullFromUnion(u, true)[1],
-                        { needsForwardIndirection: false, needsOptionalIndirection: false, inJsonNamespace: true },
+                        { needsForwardIndirection: false, needsOptionalIndirection: false },
                         false,
                         false
                     )
@@ -1715,7 +1708,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.sourcelikeToString(
                     this.cppTypeInOptional(
                         removeNullFromUnion(u, true)[1],
-                        { needsForwardIndirection: false, needsOptionalIndirection: false, inJsonNamespace: true },
+                        { needsForwardIndirection: false, needsOptionalIndirection: false },
                         false,
                         false
                     )
@@ -2424,8 +2417,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                                 t,
                                 {
                                     needsForwardIndirection: false,
-                                    needsOptionalIndirection: false,
-                                    inJsonNamespace: false
+                                    needsOptionalIndirection: false
                                 },
                                 true,
                                 false,
@@ -2451,7 +2443,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     protected isConversionRequired(t: Type) {
         let originalType = this.cppType(
             t,
-            { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+            { needsForwardIndirection: true, needsOptionalIndirection: true },
             false,
             false,
             false
@@ -2459,7 +2451,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
         let newType = this.cppType(
             t,
-            { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+            { needsForwardIndirection: true, needsOptionalIndirection: true },
             false,
             true,
             false
