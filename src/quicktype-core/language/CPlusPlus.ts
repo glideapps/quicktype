@@ -2145,7 +2145,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
 
         if (!this._options.justTypes) {
-            let namespaces = ["nlohmann"];
+            let namespaces = this._namespaceNames;
             if (this._options.msbuildPermissive) {
                 namespaces = ["nlohmann", "detail"];
             }
