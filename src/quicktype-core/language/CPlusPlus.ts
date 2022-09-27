@@ -2130,8 +2130,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
 
         if (!this._options.justTypes) {
-            let namespaces = this._namespaceNames;
-            this.emitNamespaces(namespaces, () => {
+            this.emitNamespaces(this._namespaceNames, () => {
                 this.forEachObject("leading-and-interposing", (_: any, className: Name) =>
                     this.emitClassHeaders(className)
                 );
