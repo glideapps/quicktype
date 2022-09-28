@@ -79,7 +79,7 @@ export {
     CSharpTargetLanguage,
     cSharpOptions,
     CSharpRenderer,
-    //NewtonsoftCSharpTargetLanguage,
+    // NewtonsoftCSharpTargetLanguage,
     newtonsoftCSharpOptions,
     NewtonsoftCSharpRenderer
 } from "./language/CSharp";

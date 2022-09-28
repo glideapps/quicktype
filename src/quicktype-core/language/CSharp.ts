@@ -50,7 +50,7 @@ import {
 } from "../Transformers";
 import { RenderContext } from "../Renderer";
 import { minMaxLengthForType, minMaxValueForType } from "../attributes/Constraints";
-//import { systemtextjsonCSharpOptions } from "./CSharpSystemTextJson";
+// import { systemtextjsonCSharpOptions } from "./CSharpSystemTextJson";
 
 export enum Framework {
     Newtonsoft,
@@ -123,7 +123,7 @@ export const cSharpOptions = {
         "framework",
         "Serialization framework",
         [["NewtonSoft", Framework.Newtonsoft], ["SystemTextJson", Framework.SystemTextJson]],
-        "System.Text"
+        "NewtonSoft"
     ),
     useList: new EnumOption("array-type", "Use T[] or List<T>", [
         ["array", false],
@@ -230,15 +230,12 @@ export class CSharpTargetLanguage extends TargetLanguage {
         switch (options.framework) {
             case Framework.Newtonsoft:
                 return new NewtonsoftCSharpRenderer(this, renderContext, getOptionValues(newtonsoftCSharpOptions, untypedOptionValues));
-                //return new CSharpRenderer(this, renderContext, options);
+                // return new CSharpRenderer(this, renderContext, options);
                 case Framework.SystemTextJson:
                 return new SystemTextJsonCSharpRenderer(this, renderContext, getOptionValues(systemTextJsonCSharpOptions, untypedOptionValues));
             default:
                 return assertNever(options.framework);
         }
-        
-        
-        
     }
 }
 
@@ -666,37 +663,7 @@ export const newtonsoftCSharpOptions = Object.assign({}, cSharpOptions, {
     ),
     checkRequired: new BooleanOption("check-required", "Fail if required properties are missing", false),
 });
-/*
-export class NewtonsoftCSharpTargetLanguage extends CSharpTargetLanguage {
-    
 
-    protected getOptions(): Option<any>[] {
-        return [
-            newtonsoftCSharpOptions.namespace,
-            newtonsoftCSharpOptions.version,
-            newtonsoftCSharpOptions.dense,
-            newtonsoftCSharpOptions.useList,
-            newtonsoftCSharpOptions.useDecimal,
-            newtonsoftCSharpOptions.features,
-            newtonsoftCSharpOptions.checkRequired,
-            newtonsoftCSharpOptions.typeForAny,
-            newtonsoftCSharpOptions.baseclass,
-            newtonsoftCSharpOptions.virtual,
-        ];
-    }
-
-    protected makeRenderer(
-        renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
-    ): NewtonsoftCSharpRenderer {
-        return new NewtonsoftCSharpRenderer(
-            this,
-            renderContext,
-            getOptionValues(newtonsoftCSharpOptions, untypedOptionValues)
-        );
-    }
-}
-*/
 export class NewtonsoftCSharpRenderer extends CSharpRenderer {
     private readonly _enumExtensionsNames = new Map<Name, Name>();
 
@@ -1443,35 +1410,7 @@ export const systemTextJsonCSharpOptions = Object.assign({}, cSharpOptions, {
     ),
     checkRequired: new BooleanOption("check-required", "Fail if required properties are missing", false),
 });
-/*
-export class SystemTextJsonCSharpTargetLanguage extends CSharpTargetLanguage {
-    protected getOptions(): Option<any>[] {
-        return [
-            systemTextJsonCSharpOptions.namespace,
-            systemTextJsonCSharpOptions.version,
-            systemTextJsonCSharpOptions.dense,
-            systemTextJsonCSharpOptions.useList,
-            systemTextJsonCSharpOptions.useDecimal,
-            systemTextJsonCSharpOptions.features,
-            systemTextJsonCSharpOptions.checkRequired,
-            systemTextJsonCSharpOptions.typeForAny,
-            systemTextJsonCSharpOptions.baseclass,
-            systemTextJsonCSharpOptions.virtual
-        ];
-    }
 
-    protected makeRenderer(
-        renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
-    ): SystemTextJsonCSharpRenderer {
-        return new SystemTextJsonCSharpRenderer(
-            this,
-            renderContext,
-            getOptionValues(systemTextJsonCSharpOptions, untypedOptionValues)
-        );
-    }
-}
-*/
 export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
     private readonly _enumExtensionsNames = new Map<Name, Name>();
 
