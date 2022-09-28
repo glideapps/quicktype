@@ -54,7 +54,7 @@ import { minMaxLengthForType, minMaxValueForType } from "../attributes/Constrain
 
 export enum Framework {
     Newtonsoft,
-    SystemDotText
+    SystemTextJson
 }
 
 const unicode = require("@mark.probst/unicode-properties");
@@ -122,7 +122,7 @@ export const cSharpOptions = {
     framework: new EnumOption(
         "framework",
         "Serialization framework",
-        [["NewtonSoft", Framework.Newtonsoft], ["System.Text", Framework.SystemDotText]],
+        [["NewtonSoft", Framework.Newtonsoft], ["SystemTextJson", Framework.SystemTextJson]],
         "System.Text"
     ),
     useList: new EnumOption("array-type", "Use T[] or List<T>", [
@@ -231,7 +231,7 @@ export class CSharpTargetLanguage extends TargetLanguage {
             case Framework.Newtonsoft:
                 return new NewtonsoftCSharpRenderer(this, renderContext, getOptionValues(newtonsoftCSharpOptions, untypedOptionValues));
                 //return new CSharpRenderer(this, renderContext, options);
-                case Framework.SystemDotText:
+                case Framework.SystemTextJson:
                 return new SystemTextJsonCSharpRenderer(this, renderContext, getOptionValues(systemTextJsonCSharpOptions, untypedOptionValues));
             default:
                 return assertNever(options.framework);
@@ -666,7 +666,7 @@ export const newtonsoftCSharpOptions = Object.assign({}, cSharpOptions, {
     ),
     checkRequired: new BooleanOption("check-required", "Fail if required properties are missing", false),
 });
-
+/*
 export class NewtonsoftCSharpTargetLanguage extends CSharpTargetLanguage {
     
 
@@ -696,7 +696,7 @@ export class NewtonsoftCSharpTargetLanguage extends CSharpTargetLanguage {
         );
     }
 }
-
+*/
 export class NewtonsoftCSharpRenderer extends CSharpRenderer {
     private readonly _enumExtensionsNames = new Map<Name, Name>();
 
@@ -1443,7 +1443,7 @@ export const systemTextJsonCSharpOptions = Object.assign({}, cSharpOptions, {
     ),
     checkRequired: new BooleanOption("check-required", "Fail if required properties are missing", false),
 });
-
+/*
 export class SystemTextJsonCSharpTargetLanguage extends CSharpTargetLanguage {
     protected getOptions(): Option<any>[] {
         return [
@@ -1471,7 +1471,7 @@ export class SystemTextJsonCSharpTargetLanguage extends CSharpTargetLanguage {
         );
     }
 }
-
+*/
 export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
     private readonly _enumExtensionsNames = new Map<Name, Name>();
 
