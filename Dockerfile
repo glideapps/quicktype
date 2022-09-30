@@ -31,7 +31,9 @@ RUN curl https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-p
 RUN dpkg -i packages-microsoft-prod.deb
 RUN rm packages-microsoft-prod.deb
 RUN apt-get -y update
-RUN apt-get -y install dotnet-sdk-2.1 --assume-yes
+# RUN apt-get -y install dotnet-sdk-2.1 --assume-yes
+RUN apt-get -y install dotnet-runtime-2.1 --assume-yes
+RUN apt-get -y install dotnet-sdk-6.0 --assume-yes
 
 # Install Boost for C++
 RUN apt-get -y install libboost-all-dev --assume-yes
