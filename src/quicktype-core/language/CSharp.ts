@@ -222,7 +222,7 @@ export class CSharpTargetLanguage extends TargetLanguage {
     }
 
     protected makeRenderer(
-        renderContext: RenderContext, 
+        renderContext: RenderContext,
         untypedOptionValues: { [name: string]: any }
     ): ConvenienceRenderer {
         const options = getOptionValues(cSharpOptions, untypedOptionValues);
@@ -230,8 +230,8 @@ export class CSharpTargetLanguage extends TargetLanguage {
         switch (options.framework) {
             case Framework.Newtonsoft:
                 return new NewtonsoftCSharpRenderer(this, renderContext, getOptionValues(newtonsoftCSharpOptions, untypedOptionValues));
-                // return new CSharpRenderer(this, renderContext, options);
-                case Framework.SystemTextJson:
+            // return new CSharpRenderer(this, renderContext, options);
+            case Framework.SystemTextJson:
                 return new SystemTextJsonCSharpRenderer(this, renderContext, getOptionValues(systemTextJsonCSharpOptions, untypedOptionValues));
             default:
                 return assertNever(options.framework);
@@ -446,7 +446,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
 
         if (this._csOptions.virtual)
             propertyArray.push("virtual ");
-        
+
         return [...propertyArray, csType, " ", name, " { get; set; }"];
     }
 
@@ -1653,7 +1653,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
     }
 
     private serializeValueCode(value: Sourcelike): Sourcelike {
-        return ["JsonSerializer.Serialize(writer, ", value, ")"];
+        return ["JsonSerializer.Serialize(writer, ", value, ", options)"];
     }
 
     private emitSerializeClass(): void {
@@ -1837,7 +1837,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
                     targetType,
                     emitFinish
                 );
-                this.emitDecoderTransformerCase(["Boolean"], "boolValue", xfer.boolTransformer, targetType, emitFinish);
+                this.emitDecoderTransformerCase(["True", "False"], "boolValue", xfer.boolTransformer, targetType, emitFinish);
                 this.emitDecoderTransformerCase(
                     // ["String", "Date"],
                     ["String"],
