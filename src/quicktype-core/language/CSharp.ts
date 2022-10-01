@@ -619,6 +619,10 @@ export class CSharpRenderer extends ConvenienceRenderer {
         return;
     }
 
+    protected emitDefaultFollowingComments(): void {
+        return;
+    }
+
     protected needNamespace(): boolean {
         return true;
     }
@@ -641,6 +645,8 @@ export class CSharpRenderer extends ConvenienceRenderer {
             this.emitUsings();
             this.emitTypesAndSupport();
         }
+
+        this.emitDefaultFollowingComments();
     }
 }
 
@@ -1502,9 +1508,19 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
             this.emitUsing("Microsoft.Azure.Mobile.Server");
         }
     }
+
     protected baseclassForType(_t: Type): Sourcelike | undefined {
         return this._options.baseclass;
     }
+
+    protected emitDefaultFollowingComments(): void {
+        if (!this._needHelpers) return;
+
+        this.emitLine("#pragma warning restore CS8618");
+        this.emitLine("#pragma warning restore CS8601");
+        this.emitLine("#pragma warning restore CS8603");
+    }
+
     protected emitDefaultLeadingComments(): void {
         if (!this._needHelpers) return;
 
@@ -1527,6 +1543,12 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
             }
             this.emitLine("//    var ", modifySource(camelCase, topLevelName), " = ", rhs, ";");
         });
+
+        // fix: should this be an option? Or respond to an existing option?
+        this.emitLine("#nullable enable");
+        this.emitLine("#pragma warning disable CS8618");
+        this.emitLine("#pragma warning disable CS8601");
+        this.emitLine("#pragma warning disable CS8603");
     }
 
     private converterForType(t: Type): Name | undefined {
@@ -1653,7 +1675,10 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
     }
 
     private serializeValueCode(value: Sourcelike): Sourcelike {
-        return ["JsonSerializer.Serialize(writer, ", value, ", options)"];
+        if (value !== "null")
+            return ["JsonSerializer.Serialize(writer, ", value, ", options)"];
+        else
+            return ["writer.WriteNullValue()"];
     }
 
     private emitSerializeClass(): void {
