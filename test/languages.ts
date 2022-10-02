@@ -102,28 +102,10 @@ export const CSharpLanguageSystemTextJson: Language = {
   output: "QuickType.cs",
   topLevel: "TopLevel",
   skipJSON: [
-    "nbl-stats.json", // See issue #823
-    "empty-enum.json", // https://github.com/JamesNK/Newtonsoft.Json/issues/1687
-    "31189.json", // JSON.NET doesn't accept year 0000 as 1BC, though it should
+    "31189.json", // .NET doesn't accept year 0000 as 1BC, though it should
     "blns-object.json", // Investigate below here. Works on newtonsoft but not system.text.json
-    "bug863.json",
     "keywords.json",
-    "00c36.json",
-    "0cffa.json",
-    "127a1.json",
-    "26b49.json",
-    "29f47.json",
-    "2df80.json",
-    "437e7.json",
-    "7681c.json",
-    "7fbfb.json",
-    "c3303.json", // Datetimeoffset value error like several others. Might fix many at once.
-    "c8c7e.json",
-    "cda6c.json",
-    "e0ac7.json",
-    "e53b5.json",
-    "a0496.json",
-    "f6a65.json",
+    //"29f47.json"
   ],
   skipMiscJSON: false,
   skipSchema: [
