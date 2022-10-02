@@ -1670,7 +1670,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
             case "string":
                 return ["reader.GetString()"];
             default:
-                return ["JsonSerializer.Deserialize<", typeName, ">(ref reader)"];
+                return ["JsonSerializer.Deserialize<", typeName, ">(ref reader, options)"];
         }
     }
 
