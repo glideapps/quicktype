@@ -103,9 +103,6 @@ export const CSharpLanguageSystemTextJson: Language = {
   topLevel: "TopLevel",
   skipJSON: [
     "31189.json", // .NET doesn't accept year 0000 as 1BC, though it should
-    "blns-object.json", // Investigate below here. Works on newtonsoft but not system.text.json
-    "keywords.json",
-    //"29f47.json"
   ],
   skipMiscJSON: false,
   skipSchema: [
@@ -115,7 +112,6 @@ export const CSharpLanguageSystemTextJson: Language = {
   quickTestRendererOptions: [
     { "array-type": "list" },
     { "csharp-version": "6" },
-    //  { "framework": "SystemTextJson" },
     { density: "dense" },
     { "number-type": "decimal" },
     { "any-type": "dynamic" },

@@ -1729,7 +1729,8 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
         // FIXME: Make Converter a Named
         const converterName: Sourcelike = ["Converter"];
         this.emitType(undefined, AccessModifier.Internal, "static class", converterName, undefined, () => {
-            this.emitLine("public static readonly JsonSerializerOptions Settings = new(JsonSerializerDefaults.Web)");
+            // Do not use .Web as defaults. That turns on caseInsensitive property names and will fail the keywords test.
+            this.emitLine("public static readonly JsonSerializerOptions Settings = new(JsonSerializerDefaults.General)");
             this.emitBlock(() => {
                 // this.emitLine("MetadataPropertyHandling = MetadataPropertyHandling.Ignore,");
                 // this.emitLine("DateParseHandling = DateParseHandling.None,");
