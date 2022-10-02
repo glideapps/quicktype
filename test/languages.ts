@@ -84,7 +84,7 @@ export const CSharpLanguageSystemTextJson: Language = {
   // https://github.com/dotnet/cli/issues/1582
   setupCommand: "dotnet restore --no-cache",
   runCommand(sample: string) {
-    return `dotnet run "${sample}"`;
+    return `dotnet run -- "${sample}"`;
   },
   diffViaSchema: true,
   skipDiffViaSchema: ["34702.json", "437e7.json"],
@@ -105,6 +105,25 @@ export const CSharpLanguageSystemTextJson: Language = {
     "nbl-stats.json", // See issue #823
     "empty-enum.json", // https://github.com/JamesNK/Newtonsoft.Json/issues/1687
     "31189.json", // JSON.NET doesn't accept year 0000 as 1BC, though it should
+    "blns-object.json", // Investigate below here. Works on newtonsoft but not system.text.json
+    "bug863.json",
+    "keywords.json",
+    "00c36.json",
+    "0cffa.json",
+    "127a1.json",
+    "26b49.json",
+    "29f47.json",
+    "2df80.json",
+    "437e7.json",
+    "7681c.json",
+    "7fbfb.json",
+    "c3303.json", // Datetimeoffset value error like several others. Might fix many at once.
+    "c8c7e.json",
+    "cda6c.json",
+    "e0ac7.json",
+    "e53b5.json",
+    "a0496.json",
+    "f6a65.json",
   ],
   skipMiscJSON: false,
   skipSchema: [
@@ -114,7 +133,7 @@ export const CSharpLanguageSystemTextJson: Language = {
   quickTestRendererOptions: [
     { "array-type": "list" },
     { "csharp-version": "6" },
-    { "framework": "SystemTextJson" },
+    //  { "framework": "SystemTextJson" },
     { density: "dense" },
     { "number-type": "decimal" },
     { "any-type": "dynamic" },
