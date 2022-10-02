@@ -2245,7 +2245,7 @@ internal class IsoDateTimeOffsetConverter : JsonConverter<DateTimeOffset>
     public string? DateTimeFormat
     {
         get => _dateTimeFormat ?? string.Empty;
-        set => _dateTimeFormat = (String.IsNullOrEmpty(value)) ? null : value;
+        set => _dateTimeFormat = (string.IsNullOrEmpty(value)) ? null : value;
     }
 
     public CultureInfo Culture
@@ -2276,7 +2276,7 @@ internal class IsoDateTimeOffsetConverter : JsonConverter<DateTimeOffset>
         
         if (string.IsNullOrEmpty(dateText) == false)
         {
-            if (!String.IsNullOrEmpty(_dateTimeFormat))
+            if (!string.IsNullOrEmpty(_dateTimeFormat))
             {
                 return DateTimeOffset.ParseExact(dateText, _dateTimeFormat, Culture, _dateTimeStyles);
             }
