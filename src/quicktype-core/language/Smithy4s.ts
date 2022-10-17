@@ -91,8 +91,7 @@ const keywords = [
     "if",
     "implicit",
     "import",
-    "new",
-    "null",    
+    "new",     
     "override",
     "package",
     "private",
@@ -300,8 +299,10 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
         }
 
         this.ensureBlankLine();
+        this.emitLine("$version: \"2\"");
         this.emitLine("namespace ", this._scalaOptions.packageName);        
         this.ensureBlankLine();
+        
         this.emitLine("document NullValue");        
         this.ensureBlankLine();
     }
@@ -404,7 +405,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
                     rr => console.log("HERE"),
                     mt =>{ 
                         console.log("emit map")
-                        this.emitLine([ "map ",  this.scalaType(mt, true) , "{ key: string , value: ", this.scalaType(mt.values, true), "}" ])
+                        this.emitLine([ "map ",  this.scalaType(mt, true) , "{ key: String , value: ", this.scalaType(mt.values, true), "}" ])
                     },
                     ignore, 
                     ignore)
@@ -420,21 +421,26 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
         this.ensureBlankLine();
         this.emitItem(["enum ", enumName, " { "]);
         let count = e.cases.size;
-        this.forEachEnumCase(e, "none", (name, jsonName) => {
-            // if (!(jsonName == "")) { 
-            /*                 const backticks = 
-                                shouldAddBacktick(jsonName) || 
-                                jsonName.includes(" ") || 
-                                !isNaN(parseInt(jsonName.charAt(0)))
-                            if (backticks) {this.emitItem("`")} else  */
-            this.emitLine();
-            this.emitItem([name, " = \"", jsonName, "\""]);
-            //                if (backticks) {this.emitItem("`")}
-            if (--count > 0) this.emitItem([","]);
-            //} else {
-            //--count
-            //} 
-        });
+
+        
+            this.forEachEnumCase(e, "none", (name, jsonName) => {
+                // if (!(jsonName == "")) { 
+                /*                 const backticks = 
+                                    shouldAddBacktick(jsonName) || 
+                                    jsonName.includes(" ") || 
+                                    !isNaN(parseInt(jsonName.charAt(0)))
+                                if (backticks) {this.emitItem("`")} else  */
+                this.emitLine();
+                
+                    this.emitItem([name, " = \"", jsonName, "\""]);
+                
+                //                if (backticks) {this.emitItem("`")}
+                if (--count > 0) this.emitItem([","]);
+                //} else {
+                //--count
+                //} 
+            });
+        
         this.ensureBlankLine();
         this.emitItem(["}"]);
 
