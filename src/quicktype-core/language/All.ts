@@ -13,6 +13,7 @@ import { TypeScriptTargetLanguage, FlowTargetLanguage } from "./TypeScriptFlow";
 import { SwiftTargetLanguage } from "./Swift";
 import { KotlinTargetLanguage } from "./Kotlin";
 import { Scala3TargetLanguage } from "./Scala3";
+import { SmithyTargetLanguage } from "./Smithy4s";
 import { ElmTargetLanguage } from "./Elm";
 import { JSONSchemaTargetLanguage } from "./JSONSchema";
 import { RustTargetLanguage } from "./Rust";
@@ -38,6 +39,7 @@ export const all: TargetLanguage[] = [
     new FlowTargetLanguage(),
     new SwiftTargetLanguage(),
     new Scala3TargetLanguage(),
+    new SmithyTargetLanguage(),
     new KotlinTargetLanguage(),
     new ElmTargetLanguage(),
     new JSONSchemaTargetLanguage(),
