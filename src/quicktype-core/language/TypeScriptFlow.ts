@@ -161,6 +161,7 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
                 [this.sourceFor(t).source, ";"]
             ];
         });
+        // this.emitClassBlock()
     }
 
     private emitClass(c: ClassType, className: Name) {
