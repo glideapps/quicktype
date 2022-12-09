@@ -1,11 +1,10 @@
-import { readFile } from "fs";
-import { promisify } from "util";
+import { readFileSync } from "fs";
 import { InputData, JSONSchemaInput, quicktype } from "../../../quicktype-core";
 import { resolve } from "path";
 
 describe("jsonSchema to ts", () => {
     const setupAndRunConvert = async (file: string) => {
-        const schema = await promisify(readFile)(resolve(file), "utf8");
+        const schema: string = readFileSync(resolve(file), "utf8");
         const schemaInput = new JSONSchemaInput(undefined, []);
         await schemaInput.addSource({ name: "Test", schema});
 
