@@ -1,33 +1,27 @@
-import { readFileSync } from "fs";
+import { readFile } from "fs";
+import { promisify } from "util";
 import { InputData, JSONSchemaInput, quicktype } from "../../../quicktype-core";
 import { resolve } from "path";
 
-const setupAndRunConvert = async (file: string) => {
-    const schema = readFileSync(resolve(file), "utf8");
-    const schemaInput = new JSONSchemaInput(undefined, []);
-    await schemaInput.addSource({ name: "Test", schema});
-
-    const inputData = new InputData();
-    inputData.addInput(schemaInput);
-
-    return (await quicktype({
-        inputData,
-        lang: "typescript",
-        checkProvenance: false,
-        inferDateTimes: true,
-        inferBooleanStrings: true,
-        inferIntegerStrings: true,
-        inferMaps: true,
-        inferUuids: true,
-        alphabetizeProperties: true,
-        inferEnums: true,
-        rendererOptions: {
-            "just-types": "true",
-            "runtime-check": "true",
-        },
-    })).lines.join("\n");
-};
 describe("jsonSchema to ts", () => {
+    const setupAndRunConvert = async (file: string) => {
+        const schema = await promisify(readFile)(resolve(file), "utf8");
+        const schemaInput = new JSONSchemaInput(undefined, []);
+        await schemaInput.addSource({ name: "Test", schema});
+
+        const inputData = new InputData();
+        inputData.addInput(schemaInput);
+
+        return (await quicktype({
+            inputData,
+            lang: "typescript",
+            alphabetizeProperties: true,
+            rendererOptions: {
+                "just-types": "true",
+                "runtime-check": "true",
+            },
+        })).lines.join("\n");
+    };
 
     it("should convert with additionalProperties and specific type", async () => {
         const output = await setupAndRunConvert(`${__dirname}/../../../../test/inputs/schema/class-with-additional.schema`);
@@ -38,7 +32,7 @@ describe("jsonSchema to ts", () => {
 
 export interface Map {
     foo?: number;
-    [k: string]: bool;
+    [property: string]: boolean;
 }
 `);
     });
@@ -53,7 +47,7 @@ export interface Map {
 export interface Intersection {
     bar?: string;
     foo:  number;
-    [k: string]: any;
+    [property: string]: any;
 }
 `);
     });
