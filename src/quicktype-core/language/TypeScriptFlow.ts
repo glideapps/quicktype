@@ -161,6 +161,11 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
                 [this.sourceFor(t).source, ";"]
             ];
         });
+
+        const additionalProperties = c.getAdditionalProperties();
+        if (additionalProperties) {
+            this.emitTable([["[property: string]", ": ", this.sourceFor(additionalProperties).source, ";"]]);
+        }
     }
 
     private emitClass(c: ClassType, className: Name) {
