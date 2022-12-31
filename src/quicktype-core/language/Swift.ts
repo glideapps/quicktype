@@ -49,13 +49,24 @@ export const swiftOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     convenienceInitializers: new BooleanOption("initializers", "Generate initializers and mutators", true),
     explicitCodingKeys: new BooleanOption("coding-keys", "Explicit CodingKey values in Codable types", true),
-    urlSession: new BooleanOption("url-session", "URLSession task extensions", false),
     alamofire: new BooleanOption("alamofire", "Alamofire extensions", false),
     namedTypePrefix: new StringOption("type-prefix", "Prefix for type names", "PREFIX", "", "secondary"),
-    useClasses: new EnumOption("struct-or-class", "Structs or classes", [["struct", false], ["class", true]]),
+    useClasses: new EnumOption("struct-or-class", "Structs or classes", [
+        ["struct", false],
+        ["class", true]
+    ]),
     mutableProperties: new BooleanOption("mutable-properties", "Use var instead of let for object properties", false),
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
-    dense: new EnumOption("density", "Code density", [["dense", true], ["normal", false]], "dense", "secondary"),
+    dense: new EnumOption(
+        "density",
+        "Code density",
+        [
+            ["dense", true],
+            ["normal", false]
+        ],
+        "dense",
+        "secondary"
+    ),
     linux: new BooleanOption("support-linux", "Support Linux", false, "secondary"),
     objcSupport: new BooleanOption(
         "objective-c-support",
@@ -72,7 +83,10 @@ export const swiftOptions = {
     accessLevel: new EnumOption(
         "access-level",
         "Access level",
-        [["internal", "internal"], ["public", "public"]],
+        [
+            ["internal", "internal"],
+            ["public", "public"]
+        ],
         "internal",
         "secondary"
     ),
@@ -128,7 +142,6 @@ export class SwiftTargetLanguage extends TargetLanguage {
             swiftOptions.convenienceInitializers,
             swiftOptions.explicitCodingKeys,
             swiftOptions.accessLevel,
-            swiftOptions.urlSession,
             swiftOptions.alamofire,
             swiftOptions.linux,
             swiftOptions.namedTypePrefix,
@@ -166,6 +179,7 @@ export class SwiftTargetLanguage extends TargetLanguage {
 }
 
 const keywords = [
+    "await",
     "associatedtype",
     "class",
     "deinit",
@@ -492,25 +506,6 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 }
             }
 
-            if (this._options.urlSession) {
-                this.emitLine("//");
-                this.emitLine("// To read values from URLs:");
-                const lowerName = modifySource(camelCase, name);
-                this.emitLine("//");
-                this.emitLine(
-                    "//   let task = URLSession.shared.",
-                    lowerName,
-                    "Task(with: url) { ",
-                    lowerName,
-                    ", response, error in"
-                );
-                this.emitLine("//     if let ", lowerName, " = ", lowerName, " {");
-                this.emitLine("//       ...");
-                this.emitLine("//     }");
-                this.emitLine("//   }");
-                this.emitLine("//   task.resume()");
-            }
-
             if (this._options.alamofire) {
                 this.emitLine("//");
                 this.emitLine("// To parse values from Alamofire responses:");
@@ -640,7 +635,13 @@ export class SwiftRenderer extends ConvenienceRenderer {
 
     protected propertyLinesDefinition(name: Name, parameter: ClassProperty): Sourcelike {
         const useMutableProperties = this._options.mutableProperties;
-        return [this.accessLevel, useMutableProperties ? "var " : "let ", name, ": ", this.swiftPropertyType(parameter)];
+        return [
+            this.accessLevel,
+            useMutableProperties ? "var " : "let ",
+            name,
+            ": ",
+            this.swiftPropertyType(parameter)
+        ];
     }
 
     private renderClassDefinition(c: ClassType, className: Name): void {
@@ -733,7 +734,10 @@ export class SwiftRenderer extends ConvenienceRenderer {
                             if (this._options.explicitCodingKeys && label !== undefined) {
                                 this.emitLine("case ", name, ' = "', label, '"');
                             } else {
-                                const names = arrayIntercalate<Sourcelike>(", ", group.map(p => p.name));
+                                const names = arrayIntercalate<Sourcelike>(
+                                    ", ",
+                                    group.map(p => p.name)
+                                );
                                 this.emitLine("case ", names);
                             }
                         }
@@ -759,7 +763,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 }
                 if (this.propertyCount(c) === 0 && this._options.objcSupport) {
                     this.emitBlockWithAccess(["override init()"], () => {
-                        "";
+                        return "";
                     });
                 } else {
                     this.emitBlockWithAccess(["init(", ...propertiesLines, ")"], () => {
@@ -1072,22 +1076,11 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             );
         }
 
-        if (
-            (!this._options.justTypes && this._options.convenienceInitializers) ||
-            this._options.urlSession ||
-            this._options.alamofire
-        ) {
+        if ((!this._options.justTypes && this._options.convenienceInitializers) || this._options.alamofire) {
             this.ensureBlankLine();
             this.emitMark("Helper functions for creating encoders and decoders", true);
             this.ensureBlankLine();
             this.emitNewEncoderDecoder();
-        }
-
-        if (this._options.urlSession) {
-            this.ensureBlankLine();
-            this.emitMark("URLSession response handlers", true);
-            this.ensureBlankLine();
-            this.emitURLSessionExtension();
         }
 
         if (this._options.alamofire) {
@@ -1440,37 +1433,6 @@ public init(_ wrappedValue: T?) {
                 }
             );
         }
-    }
-
-    private emitURLSessionExtension() {
-        this.ensureBlankLine();
-        this.emitBlockWithAccess("extension URLSession", () => {
-            this
-                .emitMultiline(`fileprivate func codableTask<T: Codable>(with url: URL, completionHandler: @escaping (T?, URLResponse?, Error?) -> Void) -> URLSessionDataTask {
-    return self.dataTask(with: url) { data, response, error in
-        guard let data = data, error == nil else {
-            completionHandler(nil, response, error)
-            return
-        }
-        completionHandler(try? newJSONDecoder().decode(T.self, from: data), response, nil)
-    }
-}`);
-            this.ensureBlankLine();
-            this.forEachTopLevel("leading-and-interposing", (_, name) => {
-                this.emitBlock(
-                    [
-                        "func ",
-                        modifySource(camelCase, name),
-                        "Task(with url: URL, completionHandler: @escaping (",
-                        name,
-                        "?, URLResponse?, Error?) -> Void) -> URLSessionDataTask"
-                    ],
-                    () => {
-                        this.emitLine(`return self.codableTask(with: url, completionHandler: completionHandler)`);
-                    }
-                );
-            });
-        });
     }
 
     private emitAlamofireExtension() {
