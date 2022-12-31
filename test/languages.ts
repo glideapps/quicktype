@@ -594,6 +594,8 @@ export const ObjectiveCLanguage: Language = {
     "nst-test-suite.json",
     // Could not convert JSON to model: Error Domain=JSONSerialization Code=-1 "(null)" UserInfo={exception=-[NSNull countByEnumeratingWithState:objects:count:]: unrecognized selector sent to instance 0x7fff807b6ea0}
     "combinations2.json",
+    "combinations3.json",
+    "combinations4.json",
   ],
   skipMiscJSON: false,
   skipSchema: [],
