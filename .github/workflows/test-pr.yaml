@@ -7,8 +7,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         fixture:
+          # Working
           # - typescript,schema-typescript
           # - javascript,schema-javascript,javascript-prop-types
           # - golang,schema-golang
@@ -19,7 +21,19 @@ jobs:
           # - python,schema-python
           # - haskell,schema-haskell
           # - rust,schema-rust
-          - csharp
+
+          # Partially working
+          - csharp,schema-csharp
+
+          # Not yet started
+          # - graphql
+          # - json-ts-csharp
+          # - schema-json-csharp
+          # - dart,schema-dart
+          # - elm,schema-elm
+          # - swift,schema-swift
+          # - ruby,schema-ruby
+          # - pike,schema-pike
 
     name: ${{ matrix.fixture }}
     steps:
