@@ -21,7 +21,7 @@ jobs:
           cache: npm
 
       - run: npm ci
-      - run: CPUs=1 FIXTURE=${{ matrix.fixture }} npm test
+      - run: FIXTURE=${{ matrix.fixture }} npm test
 
   test:
     runs-on: ubuntu-latest
@@ -29,7 +29,9 @@ jobs:
       fail-fast: false
       matrix:
         fixture:
-          - typescript,schema-typescript
+          - typescript
+          - schema-typescript # TODO Unify with typescript once fixed
+
           - javascript,schema-javascript
           - golang,schema-golang
           - cplusplus,schema-cplusplus
@@ -43,12 +45,14 @@ jobs:
           - python,schema-python
           - haskell,schema-haskell
           - rust,schema-rust
-          - csharp,schema-csharp,schema-json-csharp,json-ts-csharp
+          - csharp,schema-csharp,schema-json-csharp,graphql-csharp
+          - json-ts-csharp
           - dart,schema-dart
           - swift,schema-swift
           - javascript-prop-types
 
           # Partially working
+          # (None)
 
           # Implementation is too outdated to test in GitHub Actions
           # - ruby,schema-ruby
@@ -61,9 +65,6 @@ jobs:
           # @schani can you help me understand this fixture?
           # It looks like it tests 13+ languages?
           # - graphql
-          #
-          # For now let's just run one GraphQL fixture
-          - graphql-csharp
 
           # Never tested?
           # - crystal
