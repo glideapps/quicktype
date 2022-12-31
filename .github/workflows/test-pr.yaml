@@ -147,14 +147,14 @@ jobs:
           npm install -g flow-bin@0.66.0 flow-remove-types@1.2.3
 
       - name: Install Java
-        if: ${{ contains(matrix.fixture, 'java') || contains(matrix.fixture, 'kotlin') }}
+        if: ${{ matrix.fixture == 'java,schema-java' || contains(matrix.fixture, 'kotlin') }}
         uses: actions/setup-java@v3
         with:
           java-version: "11"
           distribution: "adopt"
 
       - name: Install Maven
-        if: ${{ contains(matrix.fixture, 'java') }}
+        if: ${{ matrix.fixture == 'java,schema-java' }}
         uses: stCarolas/setup-maven@v4.5
         with:
           maven-version: 3.8.2

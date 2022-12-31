@@ -700,7 +700,7 @@ export const JavaScriptPropTypesLanguage: Language = {
   ],
   skipSchema: [],
   skipMiscJSON: false,
-  rendererOptions: { "module-system": "common-js" },
+  rendererOptions: { "module-system": "es6" },
   quickTestRendererOptions: [
     { "runtime-typecheck": "false" },
     { "runtime-typecheck-ignore-unknown-properties": "true" },

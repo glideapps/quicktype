@@ -1,6 +1,6 @@
 import { readFileSync } from "fs";
 import { argv } from "process";
-const { TopLevel } = require("./toplevel.js");
+import { TopLevel } from "./toplevel.js";
 import checkPropTypes from "check-prop-types";
 
 const sample = argv[2];
