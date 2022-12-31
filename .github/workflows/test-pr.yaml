@@ -37,6 +37,12 @@ jobs:
 
     name: ${{ matrix.fixture }}
     steps:
+      - name: Setup .NET Core SDK
+        if: ${{ contains(matrix.fixture, 'csharp') }}
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 6
+
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
@@ -44,12 +50,6 @@ jobs:
           cache: npm
 
       - run: npm ci
-
-      - name: Setup .NET Core SDK
-        if: ${{ contains(matrix.fixture, 'csharp') }}
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 2.1
 
       - name: Install Rust
         if: ${{ contains(matrix.fixture, 'rust') }}
