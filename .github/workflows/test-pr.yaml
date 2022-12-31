@@ -18,7 +18,8 @@ jobs:
           # - java,schema-java
           # - python,schema-python
           # - haskell,schema-haskell
-          - rust,schema-rust
+          # - rust,schema-rust
+          - csharp
 
     name: ${{ matrix.fixture }}
     steps:
@@ -29,6 +30,12 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      - name: Setup .NET Core SDK
+        if: ${{ contains(matrix.fixture, 'csharp') }}
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 2.1
 
       - name: Install Rust
         if: ${{ contains(matrix.fixture, 'rust') }}
