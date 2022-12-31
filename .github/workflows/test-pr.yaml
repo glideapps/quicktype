@@ -22,17 +22,19 @@ jobs:
           # - haskell,schema-haskell
           # - rust,schema-rust
           # - csharp,schema-csharp
+          # - dart,schema-dart
 
           # Partially working
+
+          # Outdated so difficult to test
+          # - ruby,schema-ruby
 
           # Not yet started
           # - graphql
           # - json-ts-csharp
           # - schema-json-csharp
-          - dart,schema-dart
-          # - elm,schema-elm
+          - elm,schema-elm
           # - swift,schema-swift
-          # - ruby,schema-ruby
           # - pike,schema-pike
 
     name: ${{ matrix.fixture }}
@@ -51,6 +53,12 @@ jobs:
         with:
           sdk: 2.10.5
 
+      - name: Install Ruby
+        uses: ruby/setup-ruby@v1
+        if: ${{ contains(matrix.fixture, 'ruby') }}
+        with:
+          ruby-version: "3.0"
+
       - name: Setup .NET Core SDK
         if: ${{ contains(matrix.fixture, 'csharp') }}
         uses: actions/setup-dotnet@v3
@@ -62,6 +70,14 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+
+      - name: Install Elm
+        if: ${{ contains(matrix.fixture, 'elm') }}
+        run: |
+          curl -L -o elm.gz https://github.com/elm/compiler/releases/download/0.19.1/binary-for-linux-64-bit.gz
+          gunzip elm.gz
+          chmod +x elm
+          sudo mv elm /usr/local/bin/
 
       - name: Install Haskell
         if: ${{ contains(matrix.fixture, 'haskell') }}
