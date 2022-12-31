@@ -223,6 +223,7 @@ Clone this repo and do:
 #### macOS / Linux
 
 ```bash
+nvm use
 npm install
 script/quicktype # rebuild (slow) and run (fast)
 ```
