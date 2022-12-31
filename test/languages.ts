@@ -161,10 +161,8 @@ export const PythonLanguage: Language = {
 export const RustLanguage: Language = {
   name: "rust",
   base: "test/fixtures/rust",
-  setupCommand: "cargo build || true",
-  compileCommand: "cargo build --jobs 1",
   runCommand(sample: string) {
-    return `RUST_THREADS=1 ./target/debug/quick_type_test "${sample}"`;
+    return `RUST_THREADS=1 cargo run --jobs 1 -- "${sample}"`;
   },
   diffViaSchema: true,
   skipDiffViaSchema: [
