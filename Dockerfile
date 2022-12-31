@@ -25,14 +25,6 @@ RUN apt-get -y update
 # Install stuff
 RUN apt-get -y install nodejs maven default-jdk clang binutils golang-go --assume-yes
 
-# Install .NET core
-# https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu
-RUN curl https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb -o packages-microsoft-prod.deb
-RUN dpkg -i packages-microsoft-prod.deb
-RUN rm packages-microsoft-prod.deb
-RUN apt-get -y update
-RUN apt-get -y install dotnet-sdk-2.1 --assume-yes
-
 
 # Install Rust
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
@@ -50,12 +42,6 @@ RUN cd libsysconfcpus && ./configure && make && make install
 RUN apt-get -y install ruby --assume-yes
 # This must be the same version as what's in `Gemfile.lock`
 RUN gem install bundler -v 1.16.1
-
-# Python
-RUN add-apt-repository ppa:deadsnakes/ppa -y
-RUN apt-get -y update
-RUN apt-get -y install python3.7 --assume-yes
-RUN curl https://bootstrap.pypa.io/get-pip.py | python3.7
 
 # Dart
 RUN apt-get -y install apt-transport-https
