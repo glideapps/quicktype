@@ -16,7 +16,8 @@ jobs:
           # - flow,schema-flow
           # - kotlin,schema-kotlin,kotlin-jackson,schema-kotlin-jackson
           # - java,schema-java
-          - python,schema-python
+          # - python,schema-python
+          - haskell,schema-haskell
 
     name: ${{ matrix.fixture }}
     steps:
@@ -27,6 +28,11 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      - name: Install Haskell
+        if: ${{ contains(matrix.fixture, 'haskell') }}
+        run: |
+          curl -sL "https://get.haskellstack.org/" | sh
 
       - name: Install Python 3.7
         if: ${{ contains(matrix.fixture, 'python') }}
