@@ -1,0 +1,182 @@
+name: Test PR
+on:
+  pull_request:
+    branches:
+      - master
+jobs:
+  test-macos:
+    runs-on: macos-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        fixture:
+          - objective-c
+
+    name: ${{ matrix.fixture }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18.12.1
+          cache: npm
+
+      - run: npm ci
+      - run: FIXTURE=${{ matrix.fixture }} npm test
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+
+      matrix:
+        fixture:
+          - typescript
+
+          - javascript,schema-javascript
+          - golang,schema-golang
+          - cplusplus,schema-cplusplus
+          - flow,schema-flow
+
+          # Break Kotlin up because it takes so long
+          - kotlin,schema-kotlin
+          - kotlin-jackson,schema-kotlin-jackson
+
+          - java,schema-java
+          - python,schema-python
+          - haskell,schema-haskell
+          - rust,schema-rust
+          - csharp,schema-csharp,schema-json-csharp,graphql-csharp
+          - json-ts-csharp
+          - dart,schema-dart
+          - swift,schema-swift
+          - javascript-prop-types
+
+          # Partially working
+          # - schema-typescript # TODO Unify with typescript once fixed
+
+          # Implementation is too outdated to test in GitHub Actions
+          # - ruby,schema-ruby
+          # - elm,schema-elm
+
+          # Language is too niche / obscure to test easily on ubuntu-latest
+          # - pike,schema-pike
+
+          # Not yet started
+          # @schani can you help me understand this fixture?
+          # It looks like it tests 13+ languages?
+          # - graphql
+
+          # Never tested?
+          # - crystal
+
+    name: ${{ matrix.fixture }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18.12.1
+          cache: npm
+
+      - run: npm ci
+
+      - name: Setup Clang (Objective-C)
+        if: ${{ contains(matrix.fixture, 'objective-c') }}
+        uses: egor-tensin/setup-clang@v1
+
+      - name: Setup Dart
+        if: ${{ contains(matrix.fixture, 'dart') }}
+        uses: dart-lang/setup-dart@v1.3
+        with:
+          sdk: 2.10.5
+
+      - name: Setup Swift
+        if: ${{ contains(matrix.fixture, 'swift') }}
+        uses: swift-actions/setup-swift@v1
+        with:
+          swift-version: "5.7.2"
+
+      - name: Install Ruby
+        uses: ruby/setup-ruby@v1
+        if: ${{ contains(matrix.fixture, 'ruby') }}
+        with:
+          ruby-version: "3.0"
+
+      - name: Setup .NET Core SDK
+        if: ${{ contains(matrix.fixture, 'csharp') }}
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 6
+
+      - name: Install Rust
+        if: ${{ contains(matrix.fixture, 'rust') }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Install Elm
+        if: ${{ contains(matrix.fixture, 'elm') }}
+        run: |
+          curl -L -o elm.gz https://github.com/elm/compiler/releases/download/0.19.1/binary-for-linux-64-bit.gz
+          gunzip elm.gz
+          chmod +x elm
+          sudo mv elm /usr/local/bin/
+
+      - name: Install Haskell
+        if: ${{ contains(matrix.fixture, 'haskell') }}
+        run: |
+          if ! command -v stack > /dev/null 2>&1; then
+            curl -sL "https://get.haskellstack.org/" | sh
+          fi
+
+      - name: Install Python 3.7
+        if: ${{ contains(matrix.fixture, 'python') }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.7
+
+      - name: Install Python 2.7
+        if: ${{ contains(matrix.fixture, 'python') }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: 2.7
+
+      - name: Install Python Dependencies
+        if: ${{ contains(matrix.fixture, 'python') }}
+        run: |
+          pip3.7 install mypy python-dateutil types-python-dateutil
+
+      - name: Install flow
+        if: ${{ contains(matrix.fixture, 'flow') }}
+        run: |
+          npm install -g flow-bin@0.66.0 flow-remove-types@1.2.3
+
+      - name: Install Java
+        if: ${{ matrix.fixture == 'java,schema-java' || contains(matrix.fixture, 'kotlin') }}
+        uses: actions/setup-java@v3
+        with:
+          java-version: "11"
+          distribution: "adopt"
+
+      - name: Install Maven
+        if: ${{ matrix.fixture == 'java,schema-java' }}
+        uses: stCarolas/setup-maven@v4.5
+        with:
+          maven-version: 3.8.2
+
+      - name: Install Kotlin
+        if: ${{ contains(matrix.fixture, 'kotlin') }}
+        uses: fwilhe2/setup-kotlin@main
+
+      - name: Install go
+        if: ${{ contains(matrix.fixture, 'golang') }}
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.15
+
+      - name: Install C++
+        if: ${{ contains(matrix.fixture, 'cplusplus') }}
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install libboost-all-dev software-properties-common g++ --assume-yes
+
+      - run: QUICKTEST=true FIXTURE=${{ matrix.fixture }} npm test
