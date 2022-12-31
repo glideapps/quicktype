@@ -175,4 +175,4 @@ jobs:
           sudo apt-get update
           sudo apt-get -y install libboost-all-dev software-properties-common g++ --assume-yes
 
-      - run: CPUs=1 FIXTURE=${{ matrix.fixture }} npm test
+      - run: QUICKTEST=true CPUs=1 FIXTURE=${{ matrix.fixture }} npm test

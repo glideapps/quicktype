@@ -124,7 +124,7 @@ function timeEnd(message: string, suffix: string): void {
 export abstract class Fixture {
   abstract name: string;
 
-  constructor(public language: languages.Language) { }
+  constructor(public language: languages.Language) {}
 
   runForName(name: string): boolean {
     return this.name === name;
@@ -315,7 +315,8 @@ class JSONFixture extends LanguageFixture {
       testsInDir("test/inputs/json/samples", "json")
     );
 
-    const miscSamples = this.language.skipMiscJSON ? [] : testsInDir("test/inputs/json/misc", "json");
+    const skipMiscJSON = process.env.QUICKTEST !== undefined || this.language.skipMiscJSON;
+    const miscSamples = skipMiscJSON ? [] : testsInDir("test/inputs/json/misc", "json");
 
     let { priority, others } = samplesFromSources(sources, prioritySamples, miscSamples, "json");
 
