@@ -23,19 +23,23 @@ jobs:
           # - rust,schema-rust
           # - csharp,schema-csharp
           # - dart,schema-dart
+          - swift,schema-swift
 
           # Partially working
 
-          # Outdated so difficult to test
+          # Tests fail because implementation is very outdated
           # - ruby,schema-ruby
+          # - elm,schema-elm
 
           # Not yet started
           # - graphql
           # - json-ts-csharp
           # - schema-json-csharp
-          - elm,schema-elm
-          # - swift,schema-swift
           # - pike,schema-pike
+
+          # Never tested?
+          # Objective-C
+          # Crystal
 
     name: ${{ matrix.fixture }}
     steps:
@@ -52,6 +56,12 @@ jobs:
         uses: dart-lang/setup-dart@v1.3
         with:
           sdk: 2.10.5
+
+      - name: Setup Swift
+        if: ${{ contains(matrix.fixture, 'swift') }}
+        uses: swift-actions/setup-swift@v1
+        with:
+          swift-version: "5.7.2"
 
       - name: Install Ruby
         uses: ruby/setup-ruby@v1
