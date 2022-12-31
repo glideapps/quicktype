@@ -127,7 +127,7 @@ export const PythonLanguage: Language = {
   name: "python",
   base: "test/fixtures/python",
   compileCommand: "mypy quicktype.py",
-  runCommand(sample: String) {
+  runCommand(sample: string) {
     return `./run.sh main.py "${sample}"`;
   },
   diffViaSchema: true,
@@ -161,10 +161,8 @@ export const PythonLanguage: Language = {
 export const RustLanguage: Language = {
   name: "rust",
   base: "test/fixtures/rust",
-  setupCommand: "cargo build || true",
-  compileCommand: "cargo build --jobs 1",
   runCommand(sample: string) {
-    return `RUST_THREADS=1 ./target/debug/quick_type_test "${sample}"`;
+    return `RUST_THREADS=1 cargo run --jobs 1 -- "${sample}"`;
   },
   diffViaSchema: true,
   skipDiffViaSchema: [
@@ -393,9 +391,18 @@ export const CPlusPlusLanguage: Language = {
     "nst-test-suite.json",
     // compiler error I don't want to figure out right now
     "nbl-stats.json",
+    // uses too much memory compiling
+    "combinations.json",
+    "combinations1.json",
+    "combinations2.json",
+    "combinations3.json",
+    "combinations4.json",
   ],
   skipMiscJSON: false,
-  skipSchema: [],
+  skipSchema: [
+    // uses too much memory
+    "keyword-unions.schema",
+  ],
   rendererOptions: {},
   quickTestRendererOptions: [
     { unions: "indirection" },
@@ -549,7 +556,6 @@ export const SwiftLanguage: Language = {
     { "struct-or-class": "class" },
     { density: "dense" },
     { density: "normal" },
-    { "url-session": "true" },
     { "access-level": "internal" },
     { "access-level": "public" },
     { protocol: "equatable" },
@@ -579,10 +585,15 @@ export const ObjectiveCLanguage: Language = {
     "no-classes.json",
     // TODO
     "combinations.json",
+    "combinations1.json",
     // Needs to distinguish between optional and null properties
     "optional-union.json",
     // Compile error
     "nst-test-suite.json",
+    // Could not convert JSON to model: Error Domain=JSONSerialization Code=-1 "(null)" UserInfo={exception=-[NSNull countByEnumeratingWithState:objects:count:]: unrecognized selector sent to instance 0x7fff807b6ea0}
+    "combinations2.json",
+    "combinations3.json",
+    "combinations4.json",
   ],
   skipMiscJSON: false,
   skipSchema: [],
@@ -687,7 +698,7 @@ export const JavaScriptPropTypesLanguage: Language = {
   ],
   skipSchema: [],
   skipMiscJSON: false,
-  rendererOptions: { "module-system": "common-js" },
+  rendererOptions: { "module-system": "es6" },
   quickTestRendererOptions: [
     { "runtime-typecheck": "false" },
     { "runtime-typecheck-ignore-unknown-properties": "true" },

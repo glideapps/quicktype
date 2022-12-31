@@ -45,7 +45,7 @@ export const javaScriptOptions = {
     converters: convertersOption(),
     rawType: new EnumOption<"json" | "any">(
         "raw-type",
-        "Type to raw input (json by default)",
+        "Type of raw input (json by default)",
         [
             ["json", "json"],
             ["any", "any"]

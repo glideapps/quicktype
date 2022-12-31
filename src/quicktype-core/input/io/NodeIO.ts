@@ -40,17 +40,21 @@ function parseHeaders(httpHeaders?: string[]): HttpHeaders {
 
 export async function readableFromFileOrURL(fileOrURL: string, httpHeaders?: string[]): Promise<Readable> {
     try {
-        if (isNode && fileOrURL === "-") {
-            // Cast node readable to isomorphic readable from readable-stream
-            return process.stdin as unknown as Readable;
-        } else if (isURL(fileOrURL)) {
+        if (isURL(fileOrURL)) {
             const response = await fetch(fileOrURL, {
                 headers: parseHeaders(httpHeaders)
             });
             return response.body;
-        } else if (isNode && fs.existsSync(fileOrURL)) {
+        } else if (isNode) {
+            if (fileOrURL === "-") {
             // Cast node readable to isomorphic readable from readable-stream
-            return fs.createReadStream(fileOrURL, "utf8") as unknown as Readable;
+                return process.stdin as unknown as Readable;
+            }
+            const filePath = fs.lstatSync(fileOrURL).isSymbolicLink() ? fs.readlinkSync(fileOrURL) : fileOrURL;
+            if (fs.existsSync(filePath)) {
+                // Cast node readable to isomorphic readable from readable-stream
+                return fs.createReadStream(filePath, "utf8") as unknown as Readable;
+            }
         }
     } catch (e) {
         const message = typeof e.message === "string" ? e.message : "Unknown error";

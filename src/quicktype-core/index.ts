@@ -19,8 +19,8 @@ export { Input, InputData, JSONInput, JSONSourceData, jsonInputForTargetLanguage
 export { JSONSchemaInput, JSONSchemaSourceData } from "./input/JSONSchemaInput";
 export { Ref, JSONSchemaType, JSONSchemaAttributes } from "./input/JSONSchemaInput";
 export { RenderContext } from "./Renderer";
-export { Option, OptionDefinition, getOptionValues } from "./RendererOptions";
-export { TargetLanguage } from "./TargetLanguage";
+export { Option, OptionDefinition, getOptionValues, OptionValues } from "./RendererOptions";
+export { TargetLanguage, MultiFileRenderResult } from "./TargetLanguage";
 export { all as defaultTargetLanguages, languageNamed } from "./language/All";
 export { MultiWord, Sourcelike, SerializedRenderResult, Annotation, modifySource, singleWord, parenIfNeeded } from "./Source";
 export { Name, funPrefixNamer, Namer } from "./Naming";
@@ -74,7 +74,7 @@ export { removeNullFromUnion, matchType, nullableFromUnion } from "./TypeUtils";
 export { ConvenienceRenderer } from "./ConvenienceRenderer";
 export { uriTypeAttributeKind } from "./attributes/URIAttributes";
 
-export { CPlusPlusTargetLanguage, CPlusPlusRenderer } from "./language/CPlusPlus";
+export { CPlusPlusTargetLanguage, CPlusPlusRenderer, cPlusPlusOptions } from "./language/CPlusPlus";
 export {
     CSharpTargetLanguage,
     cSharpOptions,
@@ -103,3 +103,4 @@ export { RustTargetLanguage, RustRenderer, rustOptions } from "./language/Rust";
 export { RubyTargetLanguage, RubyRenderer, rubyOptions } from "./language/ruby";
 export { CrystalTargetLanguage, CrystalRenderer } from "./language/Crystal";
 export { HaskellTargetLanguage, HaskellRenderer, haskellOptions } from "./language/Haskell";
+export { DartTargetLanguage, DartRenderer, dartOptions } from "./language/Dart";
