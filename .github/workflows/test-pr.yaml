@@ -32,12 +32,18 @@ jobs:
         if: ${{ contains(matrix.fixture, 'python') }}
         uses: actions/setup-python@v4
         with:
-          python-version: 3.7
+          python-version: 3.5
+
+      - name: Install Python
+        if: ${{ contains(matrix.fixture, 'python') }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: 2.7
 
       - name: Install Python Dependencies
         if: ${{ contains(matrix.fixture, 'python') }}
         run: |
-          pip3.7 install mypy python-dateutil types-python-dateutil
+          pip3.5 install mypy python-dateutil types-python-dateutil
 
       - name: Install flow
         if: ${{ contains(matrix.fixture, 'flow') }}
