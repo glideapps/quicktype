@@ -16,17 +16,12 @@ jobs:
 
   test:
     needs: [build]
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runs-on }}
+
     strategy:
       fail-fast: true
 
       matrix:
-        runs-on: ${{ matrix.runs-on }}
-
-        include:
-          - fixture: objective-c
-            runs-on: macos-latest
-
         fixture:
           - typescript
 
@@ -66,6 +61,12 @@ jobs:
 
           # Never tested?
           # - crystal
+
+        runs-on: [ubuntu-latest]
+
+        include:
+          - fixture: objective-c
+            runs-on: macos-latest
 
     name: ${{ matrix.fixture }}
     steps:
