@@ -18,6 +18,7 @@ jobs:
           # - java,schema-java
           # - python,schema-python
           - haskell,schema-haskell
+          # - rust,schema-rust
 
     name: ${{ matrix.fixture }}
     steps:
@@ -32,7 +33,9 @@ jobs:
       - name: Install Haskell
         if: ${{ contains(matrix.fixture, 'haskell') }}
         run: |
-          curl -sL "https://get.haskellstack.org/" | sh
+          if ! command -v stack > /dev/null 2>&1; then
+            curl -sL "https://get.haskellstack.org/" | sh
+          fi
 
       - name: Install Python 3.7
         if: ${{ contains(matrix.fixture, 'python') }}

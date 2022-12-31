@@ -8,11 +8,8 @@ steps:
   - command: "FIXTURE=json-ts-csharp .buildkite/build-pr.sh"
     label: "json-ts-csharp"
 
-  - command: "FIXTURE=swift,schema-swift,rust,schema-rust,elm,schema-elm,dart,schema-dart .buildkite/build-pr.sh"
+  - command: "FIXTURE=swift,schema-swift,elm,schema-elm,dart,schema-dart .buildkite/build-pr.sh"
     label: "swift rust elm dart"
 
   - command: "FIXTURE=csharp,schema-csharp,ruby,schema-ruby,pike,schema-pike .buildkite/build-pr.sh"
     label: "csharp ruby pike"
-
-  - command: "FIXTURE=haskell,schema-haskell, .buildkite/build-pr.sh"
-    label: "haskell"

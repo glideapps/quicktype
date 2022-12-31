@@ -67,8 +67,6 @@ RUN echo "deb https://dist.crystal-lang.org/apt crystal main" | tee /etc/apt/sou
 RUN apt-get -y update
 RUN apt-get -y install crystal --assume-yes
 
-# Haskell
-RUN curl -sL "https://get.haskellstack.org/" | sh
 
 ENV PATH="${workdir}/node_modules/.bin:${PATH}"
 
