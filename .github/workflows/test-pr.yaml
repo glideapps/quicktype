@@ -12,11 +12,14 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
+          persist-credentials: false
+
       - name: Prettify
         uses: creyD/prettier_action@v4.2
         with:
           prettier_options: --write **/*.{js,md,json,ts}
           only_changed: true
+          github_token: ${{ secrets.PERSONAL_GITHUB_TOKEN }}
 
   build:
     needs: prettier
