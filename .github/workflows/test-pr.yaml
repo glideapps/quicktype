@@ -4,7 +4,22 @@ on:
     branches:
       - master
 jobs:
+  prettier:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Prettify
+        uses: creyD/prettier_action@v4.2
+        with:
+          prettier_options: --write **/*.{js,md,json,ts}
+          only_changed: true
+
   build:
+    needs: prettier
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
