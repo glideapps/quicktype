@@ -31,7 +31,7 @@ jobs:
       matrix:
         fixture:
           - typescript,schema-typescript
-          - javascript,schema-javascript,javascript-prop-types
+          - javascript,schema-javascript
           - golang,schema-golang
           - cplusplus,schema-cplusplus
           - flow,schema-flow
@@ -43,6 +43,9 @@ jobs:
           - csharp,schema-csharp,schema-json-csharp,json-ts-csharp
           - dart,schema-dart
           - swift,schema-swift
+
+          # Partially working
+          - javascript-prop-types
 
           # Implementation is too outdated to test in GitHub Actions
           # - ruby,schema-ruby
