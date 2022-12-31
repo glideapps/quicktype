@@ -13,7 +13,8 @@ jobs:
           # - javascript
           # - golang
           # - cplusplus,schema-cplusplus
-          - flow,schema-flow
+          # - flow,schema-flow
+          - kotlin,schema-kotlin,kotlin-jackson,schema-kotlin-jackson
 
     name: ${{ matrix.fixture }}
     steps:
@@ -27,6 +28,17 @@ jobs:
         if: ${{ contains(matrix.fixture, 'flow') }}
         run: |
           npm install -g flow-bin@0.66.0 flow-remove-types@1.2.3
+
+      - name: Install Java
+        if: ${{ contains(matrix.fixture, 'kotlin') }}
+        uses: actions/setup-java@v3
+        with:
+          java-version: "11"
+          distribution: "adopt"
+
+      - name: Install Kotlin
+        if: ${{ contains(matrix.fixture, 'kotlin') }}
+        uses: fwilhe2/setup-kotlin@main
 
       - name: Install go
         if: ${{ contains(matrix.fixture, 'golang') }}
