@@ -13,6 +13,7 @@ jobs:
           # - javascript
           # - golang
           - cplusplus
+          - schema-cplusplus
 
     name: ${{ matrix.fixture }}
     steps:
