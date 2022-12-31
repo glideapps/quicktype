@@ -12,24 +12,6 @@ WORKDIR ${workdir}
 RUN apt-get -y update --fix-missing
 RUN apt-get -y install curl git apt-transport-https --assume-yes
 
-# Install Swift
-RUN curl -o swift.tar.gz https://download.swift.org/swift-4.2.4-release/ubuntu1804/swift-4.2.4-RELEASE/swift-4.2.4-RELEASE-ubuntu18.04.tar.gz
-RUN tar -zxf swift.tar.gz
-RUN rm swift.tar.gz
-ENV PATH="${workdir}/swift-4.2.4-RELEASE-ubuntu18.04/usr/bin:${PATH}"
-
-# Add nodejs package source
-RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
-RUN apt-get -y update
-
-# Install stuff
-RUN apt-get -y install nodejs maven default-jdk clang binutils golang-go --assume-yes
-
-
-# Install Rust
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
-ENV PATH="/root/.cargo/bin:${PATH}"
-
 # Install Pike
 RUN apt-get -y update
 RUN apt-get -y install pike8.0-full --assume-yes

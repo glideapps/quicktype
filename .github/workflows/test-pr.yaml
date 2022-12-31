@@ -4,7 +4,26 @@ on:
     branches:
       - master
 jobs:
-  build:
+  test-macos:
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+    matrix:
+      fixture:
+        - objective-c
+
+    name: ${{ matrix.fixture }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18.12.1
+          cache: npm
+
+      - run: npm ci
+      - run: CPUs=1 FIXTURE=${{ matrix.fixture }} npm test
+
+  test:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -21,25 +40,28 @@ jobs:
           # - python,schema-python
           # - haskell,schema-haskell
           # - rust,schema-rust
-          # - csharp,schema-csharp
+          # - csharp,schema-csharp,schema-json-csharp,json-ts-csharp
           # - dart,schema-dart
-          - swift,schema-swift
+          # - swift,schema-swift
 
-          # Partially working
-
-          # Tests fail because implementation is very outdated
+          # Implementation is too outdated to test in GitHub Actions
           # - ruby,schema-ruby
           # - elm,schema-elm
 
-          # Not yet started
-          # - graphql
-          # - json-ts-csharp
-          # - schema-json-csharp
+          # Language is too niche / obscure to test easily on ubuntu-latest
           # - pike,schema-pike
 
+          # Not yet started
+          # @schani can you help me understand this fixture?
+          # It looks like it tests 13+ languages?
+          # - graphql
+          #
+          # For now let's just run one GraphQL fixture
+          # - graphql-csharp
+
           # Never tested?
-          # Objective-C
-          # Crystal
+          # - objective-c
+          # - crystal
 
     name: ${{ matrix.fixture }}
     steps:
@@ -50,6 +72,10 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      - name: Setup Clang (Objective-C)
+        if: ${{ contains(matrix.fixture, 'objective-c') }}
+        uses: egor-tensin/setup-clang@v1
 
       - name: Setup Dart
         if: ${{ contains(matrix.fixture, 'dart') }}
