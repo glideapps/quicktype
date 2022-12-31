@@ -17,6 +17,7 @@ jobs:
 
     name: ${{ matrix.fixture }}
     steps:
+      - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
           node-version: 18.12.1
@@ -39,7 +40,6 @@ jobs:
           sudo apt-get update
           sudo apt-get -y install libboost-all-dev software-properties-common g++ --assume-yes
 
-      - uses: actions/checkout@v3
       - run: npm ci
 
       - run: FIXTURE=${{ matrix.fixture }} npm test
