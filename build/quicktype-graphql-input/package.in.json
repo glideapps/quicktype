@@ -1,6 +1,7 @@
 {
     "name": "quicktype-graphql-input",
     "version": "0.0.4",
+    "package": "Package for using GraphQL as an input language to quicktype",
     "license": "Apache-2.0",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
