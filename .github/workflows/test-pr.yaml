@@ -25,16 +25,12 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    # TODO remove this once schema-typescript is fixed
-    continue-on-error: ${{ matrix.fixture == 'schema-typescript' }}
-
     strategy:
       fail-fast: true
 
       matrix:
         fixture:
           - typescript
-          - schema-typescript # TODO Unify with typescript once fixed
 
           - javascript,schema-javascript
           - golang,schema-golang
@@ -56,7 +52,7 @@ jobs:
           - javascript-prop-types
 
           # Partially working
-          # (None)
+          # - schema-typescript # TODO Unify with typescript once fixed
 
           # Implementation is too outdated to test in GitHub Actions
           # - ruby,schema-ruby
