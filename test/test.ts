@@ -26,6 +26,7 @@ async function main(sources: string[]) {
   if (allFixtures.length !== fixtures.length) {
     console.error(`* Running a subset of fixtures: ${fixtures.map((f) => f.name).join(", ")}`);
   }
+
   // Get an array of all { sample, fixtureName } objects we'll run.
   // We can't just put the fixture in there because these WorkItems
   // will be sent in a message, removing all code.
@@ -47,8 +48,6 @@ async function main(sources: string[]) {
     workers: CPUs,
 
     setup: async () => {
-      testCLI();
-
       console.error(`* Running ${tests.length} tests between ${fixtures.length} fixtures`);
 
       for (const fixture of fixtures) {
@@ -69,14 +68,6 @@ async function main(sources: string[]) {
       }
     },
   });
-}
-
-function testCLI() {
-  console.log(`* CLI sanity check`);
-  //const qt = (args: string) => exec(`node dist/cli/index.js ${args}`);
-
-  //console.log("* Ensure we can quicktype a URL");
-  //qt(`https://blockchain.info/latestblock`);
 }
 
 // skip 2 `node` args
