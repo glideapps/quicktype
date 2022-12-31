@@ -70,7 +70,7 @@ RUN add-apt-repository ppa:deadsnakes/ppa -y
 RUN apt-get -y update
 RUN apt-get -y install python3.7 --assume-yes
 RUN curl https://bootstrap.pypa.io/get-pip.py | python3.7
-RUN pip3.7 install mypy python-dateutil types-python-dateutil
+RUN 
 
 # Dart
 

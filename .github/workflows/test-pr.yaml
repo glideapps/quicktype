@@ -14,8 +14,9 @@ jobs:
           # - golang,schema-golang
           # - cplusplus,schema-cplusplus
           # - flow,schema-flow
-          - kotlin,schema-kotlin,kotlin-jackson,schema-kotlin-jackson
-          - java,schema-java
+          # - kotlin,schema-kotlin,kotlin-jackson,schema-kotlin-jackson
+          # - java,schema-java
+          - python,schema-python
 
     name: ${{ matrix.fixture }}
     steps:
@@ -26,6 +27,18 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      - name: Install Python
+        if: ${{ contains(matrix.fixture, 'python') }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.7
+          cache: pip
+
+      - name: Install Python Dependencies
+        if: ${{ contains(matrix.fixture, 'python') }}
+        run: |
+          pip3.7 install mypy python-dateutil types-python-dateutil
 
       - name: Install flow
         if: ${{ contains(matrix.fixture, 'flow') }}
