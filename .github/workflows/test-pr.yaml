@@ -30,20 +30,19 @@ jobs:
       fail-fast: false
       matrix:
         fixture:
-          # Working
-          # - typescript,schema-typescript
-          # - javascript,schema-javascript,javascript-prop-types
-          # - golang,schema-golang
-          # - cplusplus,schema-cplusplus
-          # - flow,schema-flow
-          # - kotlin,schema-kotlin,kotlin-jackson,schema-kotlin-jackson
-          # - java,schema-java
-          # - python,schema-python
-          # - haskell,schema-haskell
-          # - rust,schema-rust
-          # - csharp,schema-csharp,schema-json-csharp,json-ts-csharp
+          - typescript,schema-typescript
+          - javascript,schema-javascript,javascript-prop-types
+          - golang,schema-golang
+          - cplusplus,schema-cplusplus
+          - flow,schema-flow
+          - kotlin,schema-kotlin,kotlin-jackson,schema-kotlin-jackson
+          - java,schema-java
+          - python,schema-python
+          - haskell,schema-haskell
+          - rust,schema-rust
+          - csharp,schema-csharp,schema-json-csharp,json-ts-csharp
           - dart,schema-dart
-          # - swift,schema-swift
+          - swift,schema-swift
 
           # Implementation is too outdated to test in GitHub Actions
           # - ruby,schema-ruby
@@ -61,7 +60,6 @@ jobs:
           # - graphql-csharp
 
           # Never tested?
-          # - objective-c
           # - crystal
 
     name: ${{ matrix.fixture }}
