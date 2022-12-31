@@ -31,7 +31,7 @@
     "pluralize": "^7.0.0",
     "stream-json": "1.1.3",
     "string-to-stream": "^1.1.0",
-    "typescript": "~3.2.1",
+    "typescript": "~4.9.4",
     "@mark.probst/typescript-json-schema": "~0.32.0",
     "@mark.probst/unicode-properties": "~1.1.0",
     "urijs": "^1.19.11",
