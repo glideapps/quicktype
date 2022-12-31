@@ -588,6 +588,7 @@ export const ObjectiveCLanguage: Language = {
     "no-classes.json",
     // TODO
     "combinations.json",
+    "combinations1.json",
     // Needs to distinguish between optional and null properties
     "optional-union.json",
     // Compile error
