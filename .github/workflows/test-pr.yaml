@@ -94,4 +94,4 @@ jobs:
           sudo apt-get update
           sudo apt-get -y install libboost-all-dev software-properties-common g++ --assume-yes
 
-      - run: FIXTURE=${{ matrix.fixture }} npm test
+      - run: CPUs=1 FIXTURE=${{ matrix.fixture }} npm test
