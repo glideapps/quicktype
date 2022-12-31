@@ -177,6 +177,7 @@ export class SwiftTargetLanguage extends TargetLanguage {
 }
 
 const keywords = [
+    "await",
     "associatedtype",
     "class",
     "deinit",
