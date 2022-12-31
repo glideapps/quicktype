@@ -558,7 +558,6 @@ export const SwiftLanguage: Language = {
     { "struct-or-class": "class" },
     { density: "dense" },
     { density: "normal" },
-    { "url-session": "true" },
     { "access-level": "internal" },
     { "access-level": "public" },
     { protocol: "equatable" },
