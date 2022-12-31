@@ -44,7 +44,7 @@
   },
   "devDependencies": {
     "@types/urijs": "^1.19.8",
-    "@types/is-url": "^1.2.28",
+    "@types/is-url": "^1.2.30",
     "@types/jest": "^23.1.6",
     "@types/lodash": "^4.14.108",
     "@types/node": "8.10.10",
