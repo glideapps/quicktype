@@ -25,10 +25,11 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    # TODO remove this once schema-typescript is fixed
+    continue-on-error: ${{ matrix.fixture == 'schema-typescript' }}
+
     strategy:
       fail-fast: true
-      # TODO remove this once schema-typescript is fixed
-      continue-on-error: ${{ matrix.fixture == 'schema-typescript' }}
 
       matrix:
         fixture:
