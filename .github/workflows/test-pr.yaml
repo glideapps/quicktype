@@ -9,29 +9,37 @@ jobs:
     strategy:
       matrix:
         fixture:
-          # - typescript
+          # - typescript,schema-typescript
           # - javascript
           # - golang
-          - cplusplus
-          - schema-cplusplus
+          # - cplusplus,schema-cplusplus
+          - flow,schema-flow
 
     name: ${{ matrix.fixture }}
     steps:
-      - if: ${{ contains(matrix.fixture, 'golang') }}
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18.12.1
+          cache: npm
+
+      - name: Install flow
+        if: ${{ contains(matrix.fixture, 'flow') }}
+        run: |
+          npm install -g flow-bin@0.66.0 flow-remove-types@1.2.3
+
+      - name: Install go
+        if: ${{ contains(matrix.fixture, 'golang') }}
         uses: actions/setup-go@v3
         with:
           go-version: 1.15
 
-      - if: ${{ contains(matrix.fixture, 'cplusplus') }}
+      - name: Install C++
+        if: ${{ contains(matrix.fixture, 'cplusplus') }}
         run: |
           sudo apt-get update
           sudo apt-get -y install libboost-all-dev software-properties-common g++ --assume-yes
 
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18.12.1
-          cache: npm
       - run: npm ci
 
       - run: FIXTURE=${{ matrix.fixture }} npm test
