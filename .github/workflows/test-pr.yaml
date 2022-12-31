@@ -17,8 +17,8 @@ jobs:
           # - kotlin,schema-kotlin,kotlin-jackson,schema-kotlin-jackson
           # - java,schema-java
           # - python,schema-python
-          - haskell,schema-haskell
-          # - rust,schema-rust
+          # - haskell,schema-haskell
+          - rust,schema-rust
 
     name: ${{ matrix.fixture }}
     steps:
@@ -29,6 +29,12 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      - name: Install Rust
+        if: ${{ contains(matrix.fixture, 'rust') }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
 
       - name: Install Haskell
         if: ${{ contains(matrix.fixture, 'haskell') }}

@@ -9,7 +9,7 @@ steps:
     label: "json-ts-csharp"
 
   - command: "FIXTURE=swift,schema-swift,elm,schema-elm,dart,schema-dart .buildkite/build-pr.sh"
-    label: "swift rust elm dart"
+    label: "swift elm dart"
 
   - command: "FIXTURE=csharp,schema-csharp,ruby,schema-ruby,pike,schema-pike .buildkite/build-pr.sh"
     label: "csharp ruby pike"
