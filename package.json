@@ -43,7 +43,7 @@
     "browser-or-node": "^1.2.1"
   },
   "devDependencies": {
-    "@types/urijs": "^1.19.8",
+    "@types/urijs": "^1.19.19",
     "@types/is-url": "^1.2.28",
     "@types/jest": "^23.1.6",
     "@types/lodash": "^4.14.108",
