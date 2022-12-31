@@ -8,9 +8,9 @@ jobs:
     runs-on: macos-latest
     strategy:
       fail-fast: false
-    matrix:
-      fixture:
-        - objective-c
+      matrix:
+        fixture:
+          - objective-c
 
     name: ${{ matrix.fixture }}
     steps:
