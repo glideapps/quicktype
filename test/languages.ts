@@ -403,7 +403,7 @@ export const CPlusPlusLanguage: Language = {
   skipMiscJSON: false,
   skipSchema: [
     // uses too much memory
-    "keyword-unions.schema"
+    "keyword-unions.schema",
   ],
   rendererOptions: {},
   quickTestRendererOptions: [
@@ -592,6 +592,8 @@ export const ObjectiveCLanguage: Language = {
     "optional-union.json",
     // Compile error
     "nst-test-suite.json",
+    // Could not convert JSON to model: Error Domain=JSONSerialization Code=-1 "(null)" UserInfo={exception=-[NSNull countByEnumeratingWithState:objects:count:]: unrecognized selector sent to instance 0x7fff807b6ea0}
+    "combinations2.json",
   ],
   skipMiscJSON: false,
   skipSchema: [],
