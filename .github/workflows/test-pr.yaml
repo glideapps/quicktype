@@ -41,7 +41,7 @@ jobs:
           # - haskell,schema-haskell
           # - rust,schema-rust
           # - csharp,schema-csharp,schema-json-csharp,json-ts-csharp
-          # - dart,schema-dart
+          - dart,schema-dart
           # - swift,schema-swift
 
           # Implementation is too outdated to test in GitHub Actions
