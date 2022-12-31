@@ -907,7 +907,7 @@ export const DartLanguage: Language = {
   name: "dart",
   base: "test/fixtures/dart",
   runCommand(sample: string) {
-    return `dart parser.dart \"${sample}\"`;
+    return `dart --enable-experiment=non-nullable parser.dart \"${sample}\"`;
   },
   diffViaSchema: false,
   skipDiffViaSchema: [],
