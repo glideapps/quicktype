@@ -1,4 +1,4 @@
-name: Test Pull Request
+name: Test
 on:
   pull_request:
     branches:
@@ -8,8 +8,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        fixture: [typescript, javascript]
-    name: Test ${{ matrix.fixture }}
+        fixture:
+          - typescript
+          - javascript
+          - golang
+
+    name: ${{ matrix.fixture }}
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -17,4 +21,10 @@ jobs:
           node-version: 18.12.1
           cache: npm
       - run: npm ci
+
+      - if: ${{ matrix.fixture }} == 'golang'
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.15
+
       - run: FIXTURE=${{ matrix.fixture }} npm test
