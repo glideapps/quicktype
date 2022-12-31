@@ -273,7 +273,7 @@ export function trimEnd(str: string): string {
         firstWS = i;
     }
     if (firstWS === l) return str;
-    return str.substr(0, firstWS);
+    return str.slice(0, firstWS);
 }
 
 function modifyFirstChar(f: (c: string) => string, s: string): string {
