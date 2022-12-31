@@ -4,7 +4,17 @@ on:
     branches:
       - master
 jobs:
+  build:
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18.12.1
+          cache: npm
+      - run: npm ci
+
   test-macos:
+    needs: [build]
     runs-on: macos-latest
     strategy:
       fail-fast: true
@@ -24,6 +34,7 @@ jobs:
       - run: FIXTURE=${{ matrix.fixture }} npm test
 
   test:
+    needs: [build]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: true
