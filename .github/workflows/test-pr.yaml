@@ -1,4 +1,4 @@
-name: Test
+name: Test PR
 on:
   pull_request:
     branches:
@@ -9,22 +9,28 @@ jobs:
     strategy:
       matrix:
         fixture:
-          - typescript
-          - javascript
-          - golang
+          # - typescript
+          # - javascript
+          # - golang
+          - cplusplus
 
     name: ${{ matrix.fixture }}
     steps:
+      - if: ${{ contains(matrix.fixture, 'golang') }}
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.15
+
+      - if: ${{ contains(matrix.fixture, 'cplusplus') }}
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install libboost-all-dev software-properties-common g++ --assume-yes
+
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
           node-version: 18.12.1
           cache: npm
       - run: npm ci
-
-      - if: ${{ matrix.fixture }} == 'golang'
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.15
 
       - run: FIXTURE=${{ matrix.fixture }} npm test
