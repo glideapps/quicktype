@@ -69,8 +69,8 @@ function combineNames(names: ReadonlySet<string>): string {
             }
         }
     }
-    const prefix = prefixLength > 2 ? first.substr(0, prefixLength) : "";
-    const suffix = suffixLength > 2 ? first.substr(first.length - suffixLength) : "";
+    const prefix = prefixLength > 2 ? first.slice(0, prefixLength) : "";
+    const suffix = suffixLength > 2 ? first.slice(first.length - suffixLength) : "";
     const combined = prefix + suffix;
     if (combined.length > 2) {
         return combined;
@@ -78,7 +78,7 @@ function combineNames(names: ReadonlySet<string>): string {
     return first;
 }
 
-export const tooManyNamesThreshold = 20;
+export const tooManyNamesThreshold = 1000;
 
 export abstract class TypeNames {
     static makeWithDistance(

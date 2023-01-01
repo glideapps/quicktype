@@ -38,7 +38,7 @@ function precomputedCodePointPredicate(p: CodePointPredicate): CodePointPredicat
     for (let cp = 0; cp < 128; cp++) {
         asciiResults.push(p(cp));
     }
-    return function(cp: number) {
+    return function (cp: number) {
         return cp < 128 ? asciiResults[cp] : p(cp);
     };
 }
@@ -273,7 +273,7 @@ export function trimEnd(str: string): string {
         firstWS = i;
     }
     if (firstWS === l) return str;
-    return str.substr(0, firstWS);
+    return str.slice(0, firstWS);
 }
 
 function modifyFirstChar(f: (c: string) => string, s: string): string {
@@ -298,6 +298,11 @@ export function pascalCase(str: string): string {
 
 export function camelCase(str: string): string {
     return decapitalize(pascalCase(str));
+}
+
+export function snakeCase(str: string): string {
+    const words = splitIntoWords(str).map(({ word }) => word.toLowerCase());
+    return words.join("_");
 }
 
 export function startWithLetter(

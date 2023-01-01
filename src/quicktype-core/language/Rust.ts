@@ -37,13 +37,18 @@ export enum Visibility {
 }
 
 export const rustOptions = {
-    density: new EnumOption("density", "Density", [["normal", Density.Normal], ["dense", Density.Dense]]),
+    density: new EnumOption("density", "Density", [
+        ["normal", Density.Normal],
+        ["dense", Density.Dense]
+    ]),
     visibility: new EnumOption("visibility", "Field visibility", [
         ["private", Visibility.Private],
         ["crate", Visibility.Crate],
         ["public", Visibility.Public]
     ]),
-    deriveDebug: new BooleanOption("derive-debug", "Derive Debug impl", false)
+    deriveDebug: new BooleanOption("derive-debug", "Derive Debug impl", false),
+    edition2018: new BooleanOption("edition-2018", "Edition 2018", false),
+    leadingComments: new BooleanOption("leading-comments", "Leading Comments", true)
 };
 
 export class RustTargetLanguage extends TargetLanguage {
@@ -56,7 +61,13 @@ export class RustTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [rustOptions.density, rustOptions.visibility, rustOptions.deriveDebug];
+        return [
+          rustOptions.density, 
+          rustOptions.visibility, 
+          rustOptions.deriveDebug, 
+          rustOptions.edition2018, 
+          rustOptions.leadingComments
+        ];
     }
 }
 
@@ -373,9 +384,15 @@ export class RustRenderer extends ConvenienceRenderer {
     }
 
     protected emitSourceStructure(): void {
-        this.emitLeadingComments();
+        if (this._options.leadingComments) {
+            this.emitLeadingComments();
+        }
         this.ensureBlankLine();
-        this.emitLine("extern crate serde_json;");
+        if (this._options.edition2018) {
+            this.emitLine("use serde::{Serialize, Deserialize};");
+        } else {
+            this.emitLine("extern crate serde_derive;");
+        }
 
         if (this.haveMaps) {
             this.emitLine("use std::collections::HashMap;");

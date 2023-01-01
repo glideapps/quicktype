@@ -42,9 +42,7 @@ const unionMemberNameOrder = 40;
 
 function splitDescription(descriptions: Iterable<string> | undefined): string[] | undefined {
     if (descriptions === undefined) return undefined;
-    const description = Array.from(descriptions)
-        .join("\n\n")
-        .trim();
+    const description = Array.from(descriptions).join("\n\n").trim();
     if (description === "") return undefined;
     return wordWrap(description)
         .split("\n")
@@ -644,32 +642,45 @@ export abstract class ConvenienceRenderer extends Renderer {
         this._alphabetizeProperties = value;
     }
 
+    protected getAlphabetizeProperties(): boolean {
+        return this._alphabetizeProperties;
+    }
+
+    // Returns the number of properties defined for the specified object type.
+    protected propertyCount(o: ObjectType): number {
+        const propertyNames = defined(this._propertyNamesStoreView).get(o);
+        return propertyNames.size;
+    }
+
+    protected sortClassProperties(
+        properties: ReadonlyMap<string, ClassProperty>,
+        propertyNames: ReadonlyMap<string, Name>
+    ): ReadonlyMap<string, ClassProperty> {
+        if (this._alphabetizeProperties) {
+            return mapSortBy(properties, (_p: ClassProperty, jsonName: string) => {
+                const name = defined(propertyNames.get(jsonName));
+                return defined(this.names.get(name));
+            });
+        } else {
+            return properties;
+        }
+    }
+
     protected forEachClassProperty(
         o: ObjectType,
         blankLocations: BlankLineConfig,
         f: (name: Name, jsonName: string, p: ClassProperty, position: ForEachPosition) => void
     ): void {
         const propertyNames = defined(this._propertyNamesStoreView).get(o);
-        if (this._alphabetizeProperties) {
-            const alphabetizedPropertyNames = mapSortBy(propertyNames, n => defined(this.names.get(n)));
-            this.forEachWithBlankLines(alphabetizedPropertyNames, blankLocations, (name, jsonName, pos) => {
-                const p = defined(o.getProperties().get(jsonName));
-                f(name, jsonName, p, pos);
-            });
-        } else {
-            this.forEachWithBlankLines(o.getProperties(), blankLocations, (p, jsonName, pos) => {
-                const name = defined(propertyNames.get(jsonName));
-                f(name, jsonName, p, pos);
-            });
-        }
+        const sortedProperties = this.sortClassProperties(o.getProperties(), propertyNames);
+        this.forEachWithBlankLines(sortedProperties, blankLocations, (p, jsonName, pos) => {
+            const name = defined(propertyNames.get(jsonName));
+            f(name, jsonName, p, pos);
+        });
     }
 
     protected nameForUnionMember(u: UnionType, t: Type): Name {
-        return defined(
-            defined(this._memberNamesStoreView)
-                .get(u)
-                .get(t)
-        );
+        return defined(defined(this._memberNamesStoreView).get(u).get(t));
     }
 
     protected nameForEnumCase(e: EnumType, caseName: string): Name {
@@ -885,8 +896,8 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected forEachType<TResult>(process: (t: Type) => TResult): Set<TResult> {
-        const visitedTypes = new Set();
-        const processed = new Set();
+        const visitedTypes = new Set<Type>();
+        const processed = new Set<TResult>();
         const queue = Array.from(this.typeGraph.topLevels.values());
 
         function visit(t: Type) {
@@ -898,7 +909,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             processed.add(process(t));
         }
 
-        for (; ;) {
+        for (;;) {
             const maybeType = queue.pop();
             if (maybeType === undefined) {
                 break;

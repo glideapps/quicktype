@@ -1,6 +1,6 @@
 import { TargetLanguage } from "../TargetLanguage";
 import { StringTypeMapping } from "../TypeBuilder";
-import { TransformedStringTypeKind, PrimitiveStringTypeKind, Type, EnumType, ClassType, UnionType } from "../Type";
+import { TransformedStringTypeKind, PrimitiveStringTypeKind, Type, EnumType, ClassType, UnionType, ClassProperty } from "../Type";
 import { RenderContext } from "../Renderer";
 import { Option, getOptionValues, OptionValues, EnumOption, BooleanOption } from "../RendererOptions";
 import { ConvenienceRenderer, ForbiddenWordsInfo, topLevelNameOrder } from "../ConvenienceRenderer";
@@ -13,6 +13,7 @@ import {
     allUpperWordStyle,
     allLowerWordStyle,
     stringEscape,
+    originalWord,
     isAscii,
     isLetterOrUnderscoreOrDigit,
     isLetter
@@ -33,7 +34,7 @@ import {
     StringifyTransformer,
     EncodingTransformer
 } from "../Transformers";
-import { arrayIntercalate, setUnionInto, mapUpdateInto, iterableSome } from "collection-utils";
+import { arrayIntercalate, setUnionInto, mapUpdateInto, iterableSome, mapSortBy } from "collection-utils";
 
 const unicode = require("@mark.probst/unicode-properties");
 
@@ -115,12 +116,13 @@ export const pythonOptions = {
         ],
         "3.6"
     ),
-    justTypes: new BooleanOption("just-types", "Classes only", false)
+    justTypes: new BooleanOption("just-types", "Classes only", false),
+    nicePropertyNames: new BooleanOption("nice-property-names", "Transform property names to be Pythonic", true),
 };
 
 export class PythonTargetLanguage extends TargetLanguage {
     protected getOptions(): Option<any>[] {
-        return [pythonOptions.features, pythonOptions.justTypes];
+        return [pythonOptions.features, pythonOptions.justTypes, pythonOptions.nicePropertyNames];
     }
 
     get stringTypeMapping(): StringTypeMapping {
@@ -217,8 +219,16 @@ function classNameStyle(version: PythonVersion, original: string): string {
     );
 }
 
-function snakeNameStyle(version: PythonVersion, original: string, uppercase: boolean): string {
-    const wordStyle = uppercase ? allUpperWordStyle : allLowerWordStyle;
+function getWordStyle(uppercase: boolean, forceSnakeNameStyle: boolean) {
+    if (!forceSnakeNameStyle) {
+        return originalWord;
+    }
+    return uppercase ? allUpperWordStyle : allLowerWordStyle;
+}
+
+function snakeNameStyle(version: PythonVersion, original: string, uppercase: boolean, forceSnakeNameStyle: boolean): string {
+    const wordStyle = getWordStyle(uppercase, forceSnakeNameStyle);
+    const separator = forceSnakeNameStyle ? "_" : "";
     const words = splitIntoWords(original);
     return combineWords(
         words,
@@ -227,7 +237,7 @@ function snakeNameStyle(version: PythonVersion, original: string, uppercase: boo
         wordStyle,
         wordStyle,
         wordStyle,
-        "_",
+        separator,
         isStartCharacter3
     );
 }
@@ -257,7 +267,7 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected namerForObjectProperty(): Namer {
-        return funPrefixNamer("property", s => snakeNameStyle(this.pyOptions.features.version, s, false));
+        return funPrefixNamer("property", s => snakeNameStyle(this.pyOptions.features.version, s, false, this.pyOptions.nicePropertyNames));
     }
 
     protected makeUnionMemberNamer(): null {
@@ -265,7 +275,7 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return funPrefixNamer("enum-case", s => snakeNameStyle(this.pyOptions.features.version, s, true));
+        return funPrefixNamer("enum-case", s => snakeNameStyle(this.pyOptions.features.version, s, true, this.pyOptions.nicePropertyNames));
     }
 
     protected get commentLineStart(): string {
@@ -337,7 +347,9 @@ export class PythonRenderer extends ConvenienceRenderer {
             unionType => {
                 const maybeNullable = nullableFromUnion(unionType);
                 if (maybeNullable !== null) {
-                    return [this.withTyping("Optional"), "[", this.pythonType(maybeNullable), "]"];
+                    let rest: string[] = [];
+                    if (!this.getAlphabetizeProperties() && this.pyOptions.features.dataClasses) rest.push(" = None");
+                    return [this.withTyping("Optional"), "[", this.pythonType(maybeNullable), "]", ...rest];
                 }
                 const memberTypes = Array.from(unionType.sortedMembers).map(m => this.pythonType(m));
                 return [this.withTyping("Union"), "[", arrayIntercalate(", ", memberTypes), "]"];
@@ -406,6 +418,16 @@ export class PythonRenderer extends ConvenienceRenderer {
 
     protected typingReturn(type: string): Sourcelike {
         return this.typeHint(" -> ", this.withTyping(type));
+    }
+
+    protected sortClassProperties(properties: ReadonlyMap<string, ClassProperty>, propertyNames: ReadonlyMap<string, Name>): ReadonlyMap<string, ClassProperty> {
+        if (this.pyOptions.features.dataClasses) {
+            return mapSortBy(properties, (p: ClassProperty,) => {
+                return p.type instanceof UnionType && nullableFromUnion(p.type) != null ? 1 : 0;
+            });
+        } else {
+            return super.sortClassProperties(properties, propertyNames);
+        }
     }
 
     protected emitClass(t: ClassType): void {
@@ -606,7 +628,7 @@ function makeValue(vol: ValueOrLambda): Sourcelike {
 export class JSONPythonRenderer extends PythonRenderer {
     private readonly _deserializerFunctions = new Set<ConverterFunction>();
     private readonly _converterNamer = funPrefixNamer("converter", s =>
-        snakeNameStyle(this.pyOptions.features.version, s, false)
+        snakeNameStyle(this.pyOptions.features.version, s, false, this.pyOptions.nicePropertyNames),
     );
     private readonly _topLevelConverterNames = new Map<Name, TopLevelConverterNames>();
     private _haveTypeVar = false;
@@ -1190,7 +1212,23 @@ export class JSONPythonRenderer extends PythonRenderer {
             this.emitLine("result", this.typeHint(": dict"), " = {}");
             this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
                 const property = { value: ["self.", name] };
-                this.emitLine("result[", this.string(jsonName), "] = ", makeValue(this.serializer(property, cp.type)));
+                if (cp.isOptional) {
+                    this.emitBlock(["if self.", name, " is not None:"], () => {
+                        this.emitLine(
+                            "result[",
+                            this.string(jsonName),
+                            "] = ",
+                            makeValue(this.serializer(property, cp.type))
+                        );
+                    });
+                } else {
+                    this.emitLine(
+                        "result[",
+                        this.string(jsonName),
+                        "] = ",
+                        makeValue(this.serializer(property, cp.type))
+                    );
+                }
             });
             this.emitLine("return result");
         });

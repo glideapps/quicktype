@@ -1,4 +1,5 @@
 import { arrayIntercalate } from "collection-utils";
+import { assert, defined } from "../support/Support";
 
 import { TargetLanguage } from "../TargetLanguage";
 import {
@@ -36,7 +37,7 @@ import {
     camelCase,
     addPrefixIfNecessary
 } from "../support/Strings";
-import { RenderContext } from "../Renderer";
+import { RenderContext, ForEachPosition } from "../Renderer";
 import { StringTypeMapping } from "../TypeBuilder";
 import { panic } from "../support/Support";
 import { DefaultDateTimeRecognizer, DateTimeRecognizer } from "../DateTime";
@@ -47,17 +48,44 @@ const MAX_SAMELINE_PROPERTIES = 4;
 export const swiftOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     convenienceInitializers: new BooleanOption("initializers", "Generate initializers and mutators", true),
-    urlSession: new BooleanOption("url-session", "URLSession task extensions", false),
+    explicitCodingKeys: new BooleanOption("coding-keys", "Explicit CodingKey values in Codable types", true),
     alamofire: new BooleanOption("alamofire", "Alamofire extensions", false),
     namedTypePrefix: new StringOption("type-prefix", "Prefix for type names", "PREFIX", "", "secondary"),
-    useClasses: new EnumOption("struct-or-class", "Structs or classes", [["struct", false], ["class", true]]),
+    useClasses: new EnumOption("struct-or-class", "Structs or classes", [
+        ["struct", false],
+        ["class", true]
+    ]),
+    mutableProperties: new BooleanOption("mutable-properties", "Use var instead of let for object properties", false),
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
-    dense: new EnumOption("density", "Code density", [["dense", true], ["normal", false]], "dense", "secondary"),
+    dense: new EnumOption(
+        "density",
+        "Code density",
+        [
+            ["dense", true],
+            ["normal", false]
+        ],
+        "dense",
+        "secondary"
+    ),
     linux: new BooleanOption("support-linux", "Support Linux", false, "secondary"),
+    objcSupport: new BooleanOption(
+        "objective-c-support",
+        "Objects inherit from NSObject and @objcMembers is added to classes",
+        false
+    ),
+    swift5Support: new BooleanOption("swift-5-support", "Renders output in a Swift 5 compatible mode", false),
+    multiFileOutput: new BooleanOption(
+        "multi-file-output",
+        "Renders each top-level object in its own Swift file",
+        false
+    ),
     accessLevel: new EnumOption(
         "access-level",
         "Access level",
-        [["internal", "internal"], ["public", "public"]],
+        [
+            ["internal", "internal"],
+            ["public", "public"]
+        ],
         "internal",
         "secondary"
     ),
@@ -93,6 +121,13 @@ class SwiftDateTimeRecognizer extends DefaultDateTimeRecognizer {
     }
 }
 
+export interface SwiftProperty {
+    name: Name;
+    jsonName: string;
+    parameter: ClassProperty;
+    position: ForEachPosition;
+}
+
 export class SwiftTargetLanguage extends TargetLanguage {
     constructor() {
         super("Swift", ["swift", "swift4"], "swift");
@@ -104,13 +139,17 @@ export class SwiftTargetLanguage extends TargetLanguage {
             swiftOptions.useClasses,
             swiftOptions.dense,
             swiftOptions.convenienceInitializers,
+            swiftOptions.explicitCodingKeys,
             swiftOptions.accessLevel,
-            swiftOptions.urlSession,
             swiftOptions.alamofire,
             swiftOptions.linux,
             swiftOptions.namedTypePrefix,
             swiftOptions.protocol,
-            swiftOptions.acronymStyle
+            swiftOptions.acronymStyle,
+            swiftOptions.objcSupport,
+            swiftOptions.swift5Support,
+            swiftOptions.multiFileOutput,
+            swiftOptions.mutableProperties
         ];
     }
 
@@ -138,6 +177,7 @@ export class SwiftTargetLanguage extends TargetLanguage {
 }
 
 const keywords = [
+    "await",
     "associatedtype",
     "class",
     "deinit",
@@ -165,6 +205,7 @@ const keywords = [
     "continue",
     "default",
     "defer",
+    "description",
     "do",
     "else",
     "fallthrough",
@@ -275,6 +316,7 @@ function unicodeEscape(codePoint: number): string {
 const stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
 
 export class SwiftRenderer extends ConvenienceRenderer {
+    private _currentFilename: string | undefined;
     private _needAny: boolean = false;
     private _needNull: boolean = false;
 
@@ -412,14 +454,43 @@ export class SwiftRenderer extends ConvenienceRenderer {
         return null;
     }
 
-    private renderHeader(): void {
+    private renderSingleFileHeaderComments(): void {
+        this.emitLineOnce("// This file was generated from JSON Schema using quicktype, do not modify it directly.");
+        this.emitLineOnce("// To parse the JSON, add this file to your project and do:");
+        this.emitLineOnce("//");
+        this.forEachTopLevel("none", (t, topLevelName) => {
+            if (this._options.convenienceInitializers && !(t instanceof EnumType)) {
+                this.emitLineOnce(
+                    "//   let ",
+                    modifySource(camelCase, topLevelName),
+                    " = try ",
+                    topLevelName,
+                    "(json)"
+                );
+            } else {
+                this.emitLineOnce(
+                    "//   let ",
+                    modifySource(camelCase, topLevelName),
+                    " = ",
+                    "try? JSONDecoder().decode(",
+                    topLevelName,
+                    ".self, from: jsonData)"
+                );
+            }
+        });
+    }
+
+    private renderHeader(type: Type, name: Name): void {
         if (this.leadingComments !== undefined) {
             this.emitCommentLines(this.leadingComments);
         } else if (!this._options.justTypes) {
-            this.emitLine("// To parse the JSON, add this file to your project and do:");
-            this.emitLine("//");
-            this.forEachTopLevel("none", (t, name) => {
-                if (this._options.convenienceInitializers && !(t instanceof EnumType)) {
+            if (this._options.multiFileOutput) {
+                this.emitLineOnce(
+                    "// This file was generated from JSON Schema using quicktype, do not modify it directly."
+                );
+                this.emitLineOnce("// To parse the JSON, add this file to your project and do:");
+                this.emitLineOnce("//");
+                if (this._options.convenienceInitializers && !(type instanceof EnumType)) {
                     this.emitLine("//   let ", modifySource(camelCase, name), " = try ", name, "(json)");
                 } else {
                     this.emitLine(
@@ -431,40 +502,17 @@ export class SwiftRenderer extends ConvenienceRenderer {
                         ".self, from: jsonData)"
                     );
                 }
-            });
-
-            if (this._options.urlSession) {
-                this.emitLine("//");
-                this.emitLine("// To read values from URLs:");
-                this.forEachTopLevel("none", (_, name) => {
-                    const lowerName = modifySource(camelCase, name);
-                    this.emitLine("//");
-                    this.emitLine(
-                        "//   let task = URLSession.shared.",
-                        lowerName,
-                        "Task(with: url) { ",
-                        lowerName,
-                        ", response, error in"
-                    );
-                    this.emitLine("//     if let ", lowerName, " = ", lowerName, " {");
-                    this.emitLine("//       ...");
-                    this.emitLine("//     }");
-                    this.emitLine("//   }");
-                    this.emitLine("//   task.resume()");
-                });
             }
 
             if (this._options.alamofire) {
                 this.emitLine("//");
                 this.emitLine("// To parse values from Alamofire responses:");
-                this.forEachTopLevel("none", (_, name) => {
-                    this.emitLine("//");
-                    this.emitLine("//   Alamofire.request(url).response", name, " { response in");
-                    this.emitLine("//     if let ", modifySource(camelCase, name), " = response.result.value {");
-                    this.emitLine("//       ...");
-                    this.emitLine("//     }");
-                    this.emitLine("//   }");
-                });
+                this.emitLine("//");
+                this.emitLine("//   Alamofire.request(url).response", name, " { response in");
+                this.emitLine("//     if let ", modifySource(camelCase, name), " = response.result.value {");
+                this.emitLine("//       ...");
+                this.emitLine("//     }");
+                this.emitLine("//   }");
             }
 
             if (this._options.protocol.hashable || this._options.protocol.equatable) {
@@ -480,18 +528,25 @@ export class SwiftRenderer extends ConvenienceRenderer {
             }
         }
         this.ensureBlankLine();
-        this.emitLine("import Foundation");
+        this.emitLineOnce("import Foundation");
         if (!this._options.justTypes && this._options.alamofire) {
-            this.emitLine("import Alamofire");
+            this.emitLineOnce("import Alamofire");
         }
+        this.ensureBlankLine();
     }
 
     private renderTopLevelAlias(t: Type, name: Name): void {
-        this.emitLine("typealias ", name, " = ", this.swiftType(t, true));
+        this.emitLine(this.accessLevel, "typealias ", name, " = ", this.swiftType(t, true));
     }
 
-    private getProtocolString(): Sourcelike {
+    protected getProtocolsArray(_t: Type, isClass: boolean): string[] {
         const protocols: string[] = [];
+
+        // [Michael Fey (@MrRooni), 2019-4-24] Technically NSObject isn't a "protocol" in this instance, but this felt like the best place to slot in this superclass declaration.
+        if (isClass && this._options.objcSupport) {
+            protocols.push("NSObject");
+        }
+
         if (!this._options.justTypes) {
             protocols.push("Codable");
         }
@@ -503,7 +558,11 @@ export class SwiftRenderer extends ConvenienceRenderer {
         if (this._options.protocol.equatable) {
             protocols.push("Equatable");
         }
+        return protocols;
+    }
 
+    private getProtocolString(_t: Type, isClass: boolean): Sourcelike {
+        const protocols = this.getProtocolsArray(_t, isClass);
         return protocols.length > 0 ? ": " + protocols.join(", ") : "";
     }
 
@@ -542,12 +601,64 @@ export class SwiftRenderer extends ConvenienceRenderer {
             : this._options.accessLevel + " ";
     }
 
+    private get objcMembersDeclaration(): string {
+        if (this._options.objcSupport) {
+            return "@objcMembers ";
+        }
+
+        return "";
+    }
+
+    /// startFile takes a file name, appends ".swift" to it and sets it as the current filename.
+    protected startFile(basename: Sourcelike): void {
+        if (this._options.multiFileOutput === false) {
+            return;
+        }
+
+        assert(this._currentFilename === undefined, "Previous file wasn't finished: " + this._currentFilename);
+        // FIXME: The filenames should actually be Sourcelikes, too
+        this._currentFilename = `${this.sourcelikeToString(basename)}.swift`;
+        this.initializeEmitContextForFilename(this._currentFilename);
+    }
+
+    /// endFile pushes the current file name onto the collection of finished files and then resets the current file name. These finished files are used in index.ts to write the output.
+    protected endFile(): void {
+        if (this._options.multiFileOutput === false) {
+            return;
+        }
+
+        this.finishFile(defined(this._currentFilename));
+        this._currentFilename = undefined;
+    }
+
+    protected propertyLinesDefinition(name: Name, parameter: ClassProperty): Sourcelike {
+        const useMutableProperties = this._options.mutableProperties;
+        return [
+            this.accessLevel,
+            useMutableProperties ? "var " : "let ",
+            name,
+            ": ",
+            this.swiftPropertyType(parameter)
+        ];
+    }
+
     private renderClassDefinition(c: ClassType, className: Name): void {
+        this.startFile(className);
+
+        this.renderHeader(c, className);
         this.emitDescription(this.descriptionForType(c));
+
+        this.emitMark(this.sourcelikeToString(className), true);
 
         const isClass = this._options.useClasses || this.isCycleBreakerType(c);
         const structOrClass = isClass ? "class" : "struct";
-        this.emitBlockWithAccess([structOrClass, " ", className, this.getProtocolString()], () => {
+
+        if (isClass && this._options.objcSupport) {
+            // [Michael Fey (@MrRooni), 2019-4-24] Swift 5 or greater, must come before the access declaration for the class.
+            this.emitItem(this.objcMembersDeclaration);
+        }
+
+        this.emitBlockWithAccess([structOrClass, " ", className, this.getProtocolString(c, isClass)], () => {
             if (this._options.dense) {
                 let lastProperty: ClassProperty | undefined = undefined;
                 let lastNames: Name[] = [];
@@ -555,7 +666,9 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 const emitLastProperty = () => {
                     if (lastProperty === undefined) return;
 
-                    let sources: Sourcelike[] = [[this.accessLevel, "let "]];
+                    const useMutableProperties = this._options.mutableProperties;
+
+                    let sources: Sourcelike[] = [[this.accessLevel, useMutableProperties ? "var " : "let "]];
                     lastNames.forEach((n, i) => {
                         if (i > 0) sources.push(", ");
                         sources.push(n);
@@ -590,8 +703,9 @@ export class SwiftRenderer extends ConvenienceRenderer {
             } else {
                 this.forEachClassProperty(c, "none", (name, jsonName, p) => {
                     const description = this.descriptionForClassProperty(c, jsonName);
+                    const propertyLines = this.propertyLinesDefinition(name, p);
                     this.emitDescription(description);
-                    this.emitLine(this.accessLevel, "let ", name, ": ", this.swiftPropertyType(p));
+                    this.emitLine(propertyLines);
                 });
             }
 
@@ -605,10 +719,13 @@ export class SwiftRenderer extends ConvenienceRenderer {
                     this.emitBlock("enum CodingKeys: String, CodingKey", () => {
                         for (const group of groups) {
                             const { name, label } = group[0];
-                            if (label !== undefined) {
+                            if (this._options.explicitCodingKeys && label !== undefined) {
                                 this.emitLine("case ", name, ' = "', label, '"');
                             } else {
-                                const names = arrayIntercalate<Sourcelike>(", ", group.map(p => p.name));
+                                const names = arrayIntercalate<Sourcelike>(
+                                    ", ",
+                                    group.map(p => p.name)
+                                );
                                 this.emitLine("case ", names);
                             }
                         }
@@ -626,22 +743,51 @@ export class SwiftRenderer extends ConvenienceRenderer {
             ) {
                 // Make an initializer that initalizes all fields
                 this.ensureBlankLine();
-                let properties: Sourcelike[] = [];
-                this.forEachClassProperty(c, "none", (name, _, p) => {
-                    if (properties.length > 0) properties.push(", ");
-                    properties.push(name, ": ", this.swiftPropertyType(p));
-                });
-                this.emitBlockWithAccess(["init(", ...properties, ")"], () => {
-                    this.forEachClassProperty(c, "none", name => {
-                        this.emitLine("self.", name, " = ", name);
+                let initProperties = this.initializableProperties(c);
+                let propertiesLines: Sourcelike[] = [];
+                for (let property of initProperties) {
+                    if (propertiesLines.length > 0) propertiesLines.push(", ");
+                    propertiesLines.push(property.name, ": ", this.swiftPropertyType(property.parameter));
+                }
+                if (this.propertyCount(c) === 0 && this._options.objcSupport) {
+                    this.emitBlockWithAccess(["override init()"], () => {
+                        return "";
                     });
-                });
+                } else {
+                    this.emitBlockWithAccess(["init(", ...propertiesLines, ")"], () => {
+                        for (let property of initProperties) {
+                            this.emitLine("self.", property.name, " = ", property.name);
+                        }
+                    });
+                }
             }
         });
+
+        if (!this._options.justTypes) {
+            // FIXME: We emit only the MARK line for top-level-enum.schema
+            if (this._options.convenienceInitializers) {
+                this.ensureBlankLine();
+                this.emitMark(this.sourcelikeToString(className) + " convenience initializers and mutators");
+                this.ensureBlankLine();
+                this.emitConvenienceInitializersExtension(c, className);
+                this.ensureBlankLine();
+            }
+        }
+
+        this.endFile();
+    }
+
+    protected initializableProperties(c: ClassType): SwiftProperty[] {
+        const properties: SwiftProperty[] = [];
+        this.forEachClassProperty(c, "none", (name, jsonName, parameter, position) => {
+            const property = { name, jsonName, parameter, position };
+            properties.push(property);
+        });
+        return properties;
     }
 
     private emitNewEncoderDecoder(): void {
-        this.emitBlock("fileprivate func newJSONDecoder() -> JSONDecoder", () => {
+        this.emitBlock("func newJSONDecoder() -> JSONDecoder", () => {
             this.emitLine("let decoder = JSONDecoder()");
             if (!this._options.linux) {
                 this.emitBlock("if #available(iOS 10.0, OSX 10.12, tvOS 10.0, watchOS 3.0, *)", () => {
@@ -670,7 +816,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
             this.emitLine("return decoder");
         });
         this.ensureBlankLine();
-        this.emitBlock("fileprivate func newJSONEncoder() -> JSONEncoder", () => {
+        this.emitBlock("func newJSONEncoder() -> JSONEncoder", () => {
             this.emitLine("let encoder = JSONEncoder()");
             if (!this._options.linux) {
                 this.emitBlock("if #available(iOS 10.0, OSX 10.12, tvOS 10.0, watchOS 3.0, *)", () => {
@@ -694,8 +840,12 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
 
         this.emitBlockWithAccess(["extension ", className], () => {
             if (isClass) {
-                this.emitBlockWithAccess("convenience init(data: Data) throws", () => {
-                    this.emitLine("let me = try newJSONDecoder().decode(", this.swiftType(c), ".self, from: data)");
+                this.emitBlock("convenience init(data: Data) throws", () => {
+                    if (this.propertyCount(c) > 0) {
+                        this.emitLine("let me = try newJSONDecoder().decode(", this.swiftType(c), ".self, from: data)");
+                    } else {
+                        this.emitLine("let _ = try newJSONDecoder().decode(", this.swiftType(c), ".self, from: data)");
+                    }
                     let args: Sourcelike[] = [];
                     this.forEachClassProperty(c, "none", name => {
                         if (args.length > 0) args.push(", ");
@@ -704,12 +854,12 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
                     this.emitLine("self.init(", ...args, ")");
                 });
             } else {
-                this.emitBlockWithAccess("init(data: Data) throws", () => {
+                this.emitBlock("init(data: Data) throws", () => {
                     this.emitLine("self = try newJSONDecoder().decode(", this.swiftType(c), ".self, from: data)");
                 });
             }
             this.ensureBlankLine();
-            this.emitBlockWithAccess(
+            this.emitBlock(
                 [convenience, "init(_ json: String, using encoding: String.Encoding = .utf8) throws"],
                 () => {
                     this.emitBlock("guard let data = json.data(using: encoding) else", () => {
@@ -719,7 +869,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
                 }
             );
             this.ensureBlankLine();
-            this.emitBlockWithAccess([convenience, `init(fromURL url: URL) throws`], () => {
+            this.emitBlock([convenience, `init(fromURL url: URL) throws`], () => {
                 this.emitLine("try self.init(data: try Data(contentsOf: url))");
             });
 
@@ -728,17 +878,22 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
 
             // Convenience serializers
             this.ensureBlankLine();
-            this.emitBlockWithAccess(`func jsonData() throws -> Data`, () => {
+            this.emitBlock(`func jsonData() throws -> Data`, () => {
                 this.emitLine("return try newJSONEncoder().encode(self)");
             });
             this.ensureBlankLine();
-            this.emitBlockWithAccess(`func jsonString(encoding: String.Encoding = .utf8) throws -> String?`, () => {
+            this.emitBlock(`func jsonString(encoding: String.Encoding = .utf8) throws -> String?`, () => {
                 this.emitLine("return String(data: try self.jsonData(), encoding: encoding)");
             });
         });
     }
 
     private renderEnumDefinition(e: EnumType, enumName: Name): void {
+        this.startFile(enumName);
+
+        this.emitLineOnce("import Foundation");
+        this.ensureBlankLine();
+
         this.emitDescription(this.descriptionForType(e));
 
         const protocols: string[] = [];
@@ -770,9 +925,16 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
                 });
             });
         }
+
+        this.endFile();
     }
 
     private renderUnionDefinition(u: UnionType, unionName: Name): void {
+        this.startFile(unionName);
+
+        this.emitLineOnce("import Foundation");
+        this.ensureBlankLine();
+
         function sortBy(t: Type): string {
             const kind = t.kind;
             if (kind === "class") return kind;
@@ -790,7 +952,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
 
         const indirect = this.isCycleBreakerType(u) ? "indirect " : "";
         const [maybeNull, nonNulls] = removeNullFromUnion(u, sortBy);
-        this.emitBlockWithAccess([indirect, "enum ", unionName, this.getProtocolString()], () => {
+        this.emitBlockWithAccess([indirect, "enum ", unionName, this.getProtocolString(u, false)], () => {
             this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
                 this.emitLine("case ", name, "(", this.swiftType(t), ")");
             });
@@ -834,6 +996,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
                 });
             }
         });
+        this.endFile();
     }
 
     private emitTopLevelMapAndArrayConvenienceInitializerExtensions(t: Type, name: Name): void {
@@ -852,22 +1015,22 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
                 this.emitLine("self = try newJSONDecoder().decode(", name, ".self, from: data)");
             });
             this.ensureBlankLine();
-            this.emitBlockWithAccess("init(_ json: String, using encoding: String.Encoding = .utf8) throws", () => {
+            this.emitBlock("init(_ json: String, using encoding: String.Encoding = .utf8) throws", () => {
                 this.emitBlock("guard let data = json.data(using: encoding) else", () => {
                     this.emitLine(`throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)`);
                 });
                 this.emitLine("try self.init(data: data)");
             });
             this.ensureBlankLine();
-            this.emitBlockWithAccess(`init(fromURL url: URL) throws`, () => {
+            this.emitBlock(`init(fromURL url: URL) throws`, () => {
                 this.emitLine("try self.init(data: try Data(contentsOf: url))");
             });
             this.ensureBlankLine();
-            this.emitBlockWithAccess("func jsonData() throws -> Data", () => {
+            this.emitBlock("func jsonData() throws -> Data", () => {
                 this.emitLine("return try newJSONEncoder().encode(self)");
             });
             this.ensureBlankLine();
-            this.emitBlockWithAccess("func jsonString(encoding: String.Encoding = .utf8) throws -> String?", () => {
+            this.emitBlock("func jsonString(encoding: String.Encoding = .utf8) throws -> String?", () => {
                 this.emitLine("return String(data: try self.jsonData(), encoding: encoding)");
             });
         });
@@ -884,22 +1047,74 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
     }
 
     private emitSupportFunctions4 = (): void => {
+        this.startFile("JSONSchemaSupport");
+
+        this.emitLineOnce("import Foundation");
+
+        this.forEachTopLevel(
+            "leading",
+            (t: Type, name: Name) => this.renderTopLevelAlias(t, name),
+            t => this.namedTypeToNameForTopLevel(t) === undefined
+        );
+
+        if (this._options.convenienceInitializers) {
+            this.ensureBlankLine();
+            this.forEachTopLevel("leading-and-interposing", (t: Type, name: Name) =>
+                this.emitTopLevelMapAndArrayConvenienceInitializerExtensions(t, name)
+            );
+        }
+
+        if ((!this._options.justTypes && this._options.convenienceInitializers) || this._options.alamofire) {
+            this.ensureBlankLine();
+            this.emitMark("Helper functions for creating encoders and decoders", true);
+            this.ensureBlankLine();
+            this.emitNewEncoderDecoder();
+        }
+
+        if (this._options.alamofire) {
+            this.ensureBlankLine();
+            this.emitMark("Alamofire response handlers", true);
+            this.ensureBlankLine();
+            this.emitAlamofireExtension();
+        }
+
         // This assumes that this method is called after declarations
         // are emitted.
         if (this._needAny || this._needNull) {
-            this.emitMark("Encode/decode helpers");
             this.ensureBlankLine();
-            this.emitMultiline(`${this.accessLevel}class JSONNull: Codable, Hashable {
-    
-    public static func == (lhs: JSONNull, rhs: JSONNull) -> Bool {
+            this.emitMark("Encode/decode helpers", true);
+            this.ensureBlankLine();
+            if (this._options.objcSupport) {
+                this.emitLine(this.objcMembersDeclaration, this.accessLevel, "class JSONNull: NSObject, Codable {");
+            } else {
+                this.emitLine(this.accessLevel, "class JSONNull: Codable, Hashable {");
+            }
+            this.ensureBlankLine();
+            this.emitMultiline(`    public static func == (lhs: JSONNull, rhs: JSONNull) -> Bool {
         return true
-    }
-                
-    public var hashValue: Int {
-        return 0
-    }
+    }`);
 
-    public init() {}
+            if (this._options.objcSupport === false) {
+                this.ensureBlankLine();
+                this.emitMultiline(`    public var hashValue: Int {
+        return 0
+    }`);
+
+                if (this._options.swift5Support) {
+                    this.ensureBlankLine();
+                    this.emitMultiline(`    public func hash(into hasher: inout Hasher) {
+        // No-op
+    }`);
+                }
+            }
+
+            this.ensureBlankLine();
+            if (this._options.objcSupport) {
+                this.emitItem("    override ");
+            } else {
+                this.emitItem("    ");
+            }
+            this.emitMultiline(`public init() {}
     
     public required init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
@@ -934,10 +1149,16 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
     var stringValue: String {
         return key
     }
-}
+}`);
 
-${this.accessLevel}class JSONAny: Codable {
-    ${this.accessLevel}let value: Any
+            this.ensureBlankLine();
+            if (this._options.objcSupport) {
+                this.emitLine(this.objcMembersDeclaration, this.accessLevel, "class JSONAny: NSObject, Codable {");
+            } else {
+                this.emitLine(this.accessLevel, "class JSONAny: Codable {");
+            }
+            this.ensureBlankLine();
+            this.emitMultiline(`    ${this.accessLevel}let value: Any
     
     static func decodingError(forCodingPath codingPath: [CodingKey]) -> DecodingError {
         let context = DecodingError.Context(codingPath: codingPath, debugDescription: "Cannot decode JSONAny")
@@ -1130,10 +1351,12 @@ ${this.accessLevel}class JSONAny: Codable {
     }
 }`);
         }
+
+        this.endFile();
     };
 
     private emitConvenienceMutator(c: ClassType, className: Name) {
-        this.emitLine(this.accessLevel, "func with(");
+        this.emitLine("func with(");
         this.indent(() => {
             this.forEachClassProperty(c, "none", (name, _, p, position) => {
                 this.emitLine(
@@ -1168,13 +1391,9 @@ ${this.accessLevel}class JSONAny: Codable {
     }
 
     protected emitSourceStructure(): void {
-        this.renderHeader();
-
-        this.forEachTopLevel(
-            "leading",
-            (t: Type, name: Name) => this.renderTopLevelAlias(t, name),
-            t => this.namedTypeToNameForTopLevel(t) === undefined
-        );
+        if (this._options.multiFileOutput === false) {
+            this.renderSingleFileHeaderComments();
+        }
 
         this.forEachNamedType(
             "leading-and-interposing",
@@ -1184,79 +1403,8 @@ ${this.accessLevel}class JSONAny: Codable {
         );
 
         if (!this._options.justTypes) {
-            // FIXME: We emit only the MARK line for top-level-enum.schema
-            if (this._options.convenienceInitializers) {
-                this.ensureBlankLine();
-                this.emitMark("Convenience initializers and mutators");
-                this.forEachNamedType(
-                    "leading-and-interposing",
-                    (c: ClassType, className: Name) => this.emitConvenienceInitializersExtension(c, className),
-                    () => undefined,
-                    () => undefined
-                );
-                this.ensureBlankLine();
-                this.forEachTopLevel("leading-and-interposing", (t: Type, name: Name) =>
-                    this.emitTopLevelMapAndArrayConvenienceInitializerExtensions(t, name)
-                );
-            }
-
-            this.ensureBlankLine();
             this.emitSupportFunctions4();
         }
-
-        if (
-            (!this._options.justTypes && this._options.convenienceInitializers) ||
-            this._options.urlSession ||
-            this._options.alamofire
-        ) {
-            this.ensureBlankLine();
-            this.emitNewEncoderDecoder();
-        }
-
-        if (this._options.urlSession) {
-            this.ensureBlankLine();
-            this.emitMark("URLSession response handlers", true);
-            this.ensureBlankLine();
-            this.emitURLSessionExtension();
-        }
-
-        if (this._options.alamofire) {
-            this.ensureBlankLine();
-            this.emitMark("Alamofire response handlers", true);
-            this.ensureBlankLine();
-            this.emitAlamofireExtension();
-        }
-    }
-
-    private emitURLSessionExtension() {
-        this.ensureBlankLine();
-        this.emitBlockWithAccess("extension URLSession", () => {
-            this
-                .emitMultiline(`fileprivate func codableTask<T: Codable>(with url: URL, completionHandler: @escaping (T?, URLResponse?, Error?) -> Void) -> URLSessionDataTask {
-    return self.dataTask(with: url) { data, response, error in
-        guard let data = data, error == nil else {
-            completionHandler(nil, response, error)
-            return
-        }
-        completionHandler(try? newJSONDecoder().decode(T.self, from: data), response, nil)
-    }
-}`);
-            this.ensureBlankLine();
-            this.forEachTopLevel("leading-and-interposing", (_, name) => {
-                this.emitBlockWithAccess(
-                    [
-                        "func ",
-                        modifySource(camelCase, name),
-                        "Task(with url: URL, completionHandler: @escaping (",
-                        name,
-                        "?, URLResponse?, Error?) -> Void) -> URLSessionDataTask"
-                    ],
-                    () => {
-                        this.emitLine(`return self.codableTask(with: url, completionHandler: completionHandler)`);
-                    }
-                );
-            });
-        });
     }
 
     private emitAlamofireExtension() {
@@ -1282,7 +1430,7 @@ fileprivate func responseDecodable<T: Decodable>(queue: DispatchQueue? = nil, co
             this.ensureBlankLine();
             this.forEachTopLevel("leading-and-interposing", (_, name) => {
                 this.emitLine("@discardableResult");
-                this.emitBlockWithAccess(
+                this.emitBlock(
                     [
                         "func response",
                         name,
