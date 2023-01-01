@@ -73,6 +73,7 @@ export const CSharpLanguage: Language = {
     { "csharp-version": "5" },
     { density: "dense" },
     { "number-type": "decimal" },
+    { "keep-naming": "true" },
     { "any-type": "dynamic" },
   ],
   sourceFiles: ["src/language/CSharp.ts"],
