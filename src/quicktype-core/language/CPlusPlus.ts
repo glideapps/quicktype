@@ -520,13 +520,13 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 name: MemberNames.MinValue,
                 getter: MemberNames.GetMinValue,
                 setter: MemberNames.SetMinValue,
-                cppType: "int"
+                cppType: "int64_t"
             },
             {
                 name: MemberNames.MaxValue,
                 getter: MemberNames.GetMaxValue,
                 setter: MemberNames.SetMaxValue,
-                cppType: "int"
+                cppType: "int64_t"
             },
             {
                 name: MemberNames.MinLength,
@@ -633,7 +633,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this._gettersAndSettersForPropertyName.set(name, getterAndSetterNames);
         return getterAndSetterNames;
     }
-    
+
     protected withConst(s: Sourcelike): Sourcelike {
         if (this._options.westConst) {
             return ["const ", s];
@@ -1174,7 +1174,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         // Maps need ecoding conversions, since they have a string in the key. Other types don't.
         if (t instanceof MapType && this._stringType !== this.NarrowString) {
             const ourQualifier = this.ourQualifier(true);
-            
+
             this.emitLine("void from_json(", this.withConst("json") ," & j, ", ourQualifier, className, " & x);");
             this.emitLine("void to_json(json & j, ", this.withConst([ourQualifier, className]), " & x);");
         }
@@ -1182,7 +1182,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
     protected emitClassHeaders(className: Name): void {
         const ourQualifier = this.ourQualifier(true);
-        
+
         this.emitLine("void from_json(", this.withConst("json")," & j, ", ourQualifier, className, " & x);");
         this.emitLine("void to_json(json & j, ", this.withConst([ourQualifier, className]), " & x);");
     }
@@ -1381,7 +1381,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             });
         });
         this.ensureBlankLine();
-        
+
         this.emitBlock(
             ["inline void to_json(json & j, ", this.withConst([ourQualifier, className]), " & x)"],
             false, () => {
@@ -1466,7 +1466,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             false,
             false
         );
-        
+
         this.emitLine("void from_json(", this.withConst("json")," & j, ", variantType, " & x);");
         this.emitLine("void to_json(json & j, ", this.withConst(variantType), " & x);");
     }
@@ -1530,7 +1530,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.emitLine('else throw "Could not deserialize";');
         });
         this.ensureBlankLine();
-        
+
         this.emitBlock(
             ["inline void to_json(json & j, ", this.withConst(variantType), " & x)"],
             false, () => {
@@ -1581,7 +1581,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
     protected emitEnumHeaders(enumName: Name): void {
         const ourQualifier = this.ourQualifier(true);
-        
+
         this.emitLine("void from_json(", this.withConst("json"), " & j, ", ourQualifier, enumName, " & x);");
         this.emitLine("void to_json(json & j, ", this.withConst([ourQualifier, enumName]), " & x);");
     }
@@ -1649,7 +1649,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 }
         });
         this.ensureBlankLine();
-        
+
         this.emitBlock(
             ["inline void to_json(json & j, ", this.withConst([ourQualifier, enumName]), " & x)"],
             false, () => {
@@ -1731,7 +1731,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitNamespaces(["nlohmann"], () => {
             this.emitLine("template <typename T>");
             this.emitBlock(["struct adl_serializer<", optionalType, "<T>>"], true, () => {
-                
+
                 this.emitBlock(["static void to_json(json & j, ", this.withConst([optionalType, "<T>"]), " & opt)"], false, () => {
                     this.emitLine("if (!opt) j = nullptr; else j = *opt;");
                 });
@@ -1862,7 +1862,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
         const checkConst = this.lookupGlobalName(GlobalNames.CheckConstraint);
         this.emitBlock(
-            ["inline void ", checkConst, "(", this._stringType.getConstType(), " name, ", this.withConst(classConstraint), " & c, int64_t value)"],            
+            ["inline void ", checkConst, "(", this._stringType.getConstType(), " name, ", this.withConst(classConstraint), " & c, int64_t value)"],
             false,
             () => {
                 this.emitBlock(
@@ -2038,7 +2038,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
         if (this.haveUnions || this.haveOptionalProperties) {
             this.emitLine("template <typename T>");
-            
+
             this.emitBlock(
                 ["inline ", optionalType, "<T> get_optional(", this.withConst("json"), " & j, ", this.withConst("char"), " * property)"],
                 false,
@@ -2053,7 +2053,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.ensureBlankLine();
 
             this.emitLine("template <typename T>");
-            
+
             this.emitBlock(
                 ["inline ", optionalType, "<T> get_optional(", this.withConst("json"), " & j, std::string property)"],
                 false,
