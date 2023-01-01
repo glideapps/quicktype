@@ -78,9 +78,7 @@ jobs:
 
             - run: npm ci
 
-            - name: Setup Clang (Objective-C)
-              if: ${{ contains(matrix.fixture, 'objective-c') }}
-              uses: egor-tensin/setup-clang@v1
+      
 
             - name: Setup Dart
               if: ${{ contains(matrix.fixture, 'dart') }}
