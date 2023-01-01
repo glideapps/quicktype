@@ -95,6 +95,11 @@ class EmitContext {
         this.pushItem(item);
     }
 
+    containsItem(item: Sourcelike): boolean {
+        const existingItem = this._currentEmitTarget.find((value: Sourcelike) => item === value);
+        return existingItem !== undefined;
+    }
+
     ensureBlankLine(numBlankLines: number): void {
         if (this._preventBlankLine) return;
         this._numBlankLinesNeeded = Math.max(this._numBlankLinesNeeded, numBlankLines);
@@ -119,6 +124,7 @@ export abstract class Renderer {
 
     private _names: ReadonlyMap<Name, string> | undefined;
     private _finishedFiles: Map<string, Source>;
+    private _finishedEmitContexts: Map<string, EmitContext>;
 
     private _emitContext: EmitContext;
 
@@ -127,6 +133,7 @@ export abstract class Renderer {
         this.leadingComments = renderContext.leadingComments;
 
         this._finishedFiles = new Map();
+        this._finishedEmitContexts = new Map();
         this._emitContext = new EmitContext();
     }
 
@@ -136,6 +143,32 @@ export abstract class Renderer {
 
     preventBlankLine(): void {
         this._emitContext.preventBlankLine();
+    }
+
+    emitItem(item: Sourcelike): void {
+        this._emitContext.emitItem(item);
+    }
+
+    emitItemOnce(item: Sourcelike): boolean {
+        if (this._emitContext.containsItem(item)) {
+            return false;
+        }
+
+        this.emitItem(item);
+        return true;
+    }
+
+    emitLineOnce(...lineParts: Sourcelike[]): void {
+        let lineEmitted: boolean = true;
+        if (lineParts.length === 1) {
+            lineEmitted = this.emitItemOnce(lineParts[0]);
+        } else if (lineParts.length > 1) {
+            lineEmitted = this.emitItemOnce(lineParts);
+        }
+
+        if (lineEmitted) {
+            this._emitContext.emitNewline();
+        }
     }
 
     emitLine(...lineParts: Sourcelike[]): void {
@@ -262,10 +295,27 @@ export abstract class Renderer {
         return assignNames(this.setUpNaming());
     }
 
+    protected initializeEmitContextForFilename(filename: string): void {
+        if (this._finishedEmitContexts.has(filename.toLowerCase())) {
+            const existingEmitContext = this._finishedEmitContexts.get(filename.toLowerCase());
+            if (existingEmitContext !== undefined) {
+                this._emitContext = existingEmitContext;
+            }
+        }
+    }
+
     protected finishFile(filename: string): void {
-        assert(!this._finishedFiles.has(filename), `Tried to emit file ${filename} more than once`);
+        if (this._finishedFiles.has(filename)) {
+            console.log(
+                `[WARNING] Tried to emit file ${filename} more than once. If performing multi-file output this warning can be safely ignored.`
+            );
+        }
+
         const source = sourcelikeToSource(this._emitContext.source);
         this._finishedFiles.set(filename, source);
+
+        // [Michael Fey (@MrRooni), 2019-5-9] We save the current EmitContext for possible reuse later. We put it into the map with a lowercased version of the key so we can do a case-insensitive lookup later. The reason we lowercase it is because some schema (looking at you keyword-unions.schema) define objects of the same name with different casing. BOOL vs. bool, for example.
+        this._finishedEmitContexts.set(filename.toLowerCase(), this._emitContext);
         this._emitContext = new EmitContext();
     }
 

@@ -10,6 +10,8 @@ import {
 } from "../Type";
 import { matchType, directlyReachableSingleNamedType } from "../TypeUtils";
 import { acronymOption, acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
+import { convertersOption, ConvertersOptions } from "../support/Converters";
+
 import {
     utf16LegalizeCharacters,
     utf16StringEscape,
@@ -27,13 +29,30 @@ import { Namer, Name, funPrefixNamer } from "../Naming";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
 import { StringTypeMapping } from "../TypeBuilder";
-import { BooleanOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
+import { BooleanOption, Option, OptionValues, getOptionValues, EnumOption } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
 import { isES3IdentifierPart, isES3IdentifierStart } from "./JavaScriptUnicodeMaps";
 
 export const javaScriptOptions = {
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
-    runtimeTypecheck: new BooleanOption("runtime-typecheck", "Verify JSON.parse results at runtime", true)
+    runtimeTypecheck: new BooleanOption("runtime-typecheck", "Verify JSON.parse results at runtime", true),
+    runtimeTypecheckIgnoreUnknownProperties: new BooleanOption(
+        "runtime-typecheck-ignore-unknown-properties",
+        "Ignore unknown properties when verifying at runtime",
+        false,
+        "secondary"
+    ),
+    converters: convertersOption(),
+    rawType: new EnumOption<"json" | "any">(
+        "raw-type",
+        "Type of raw input (json by default)",
+        [
+            ["json", "json"],
+            ["any", "any"]
+        ],
+        "json",
+        "secondary"
+    )
 };
 
 export type JavaScriptTypeAnnotations = {
@@ -56,7 +75,13 @@ export class JavaScriptTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [javaScriptOptions.runtimeTypecheck, javaScriptOptions.acronymStyle];
+        return [
+            javaScriptOptions.runtimeTypecheck,
+            javaScriptOptions.runtimeTypecheckIgnoreUnknownProperties,
+            javaScriptOptions.acronymStyle,
+            javaScriptOptions.converters,
+            javaScriptOptions.rawType
+        ];
     }
 
     get stringTypeMapping(): StringTypeMapping {
@@ -251,29 +276,56 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
     }
 
     protected get typeAnnotations(): JavaScriptTypeAnnotations {
-        return { any: "", anyArray: "", anyMap: "", string: "", stringArray: "", boolean: "", never: "" };
+        return {
+            any: "",
+            anyArray: "",
+            anyMap: "",
+            string: "",
+            stringArray: "",
+            boolean: "",
+            never: ""
+        };
     }
 
     protected emitConvertModuleBody(): void {
-        this.forEachTopLevel("interposing", (t, name) => {
+        const converter = (t: Type, name: Name) => {
             const typeMap = this.typeMapTypeFor(t);
             this.emitBlock([this.deserializerFunctionLine(t, name), " "], "", () => {
+                const parsedJson = this._jsOptions.rawType === "json" ? "JSON.parse(json)" : "json";
                 if (!this._jsOptions.runtimeTypecheck) {
-                    this.emitLine("return JSON.parse(json);");
+                    this.emitLine("return ", parsedJson, ";");
                 } else {
-                    this.emitLine("return cast(JSON.parse(json), ", typeMap, ");");
+                    this.emitLine("return cast(", parsedJson, ", ", typeMap, ");");
                 }
             });
             this.ensureBlankLine();
 
             this.emitBlock([this.serializerFunctionLine(t, name), " "], "", () => {
-                if (!this._jsOptions.runtimeTypecheck) {
-                    this.emitLine("return JSON.stringify(value);");
+                if (this._jsOptions.rawType === "json") {
+                    if (!this._jsOptions.runtimeTypecheck) {
+                        this.emitLine("return JSON.stringify(value);");
+                    } else {
+                        this.emitLine("return JSON.stringify(uncast(value, ", typeMap, "), null, 2);");
+                    }
                 } else {
-                    this.emitLine("return JSON.stringify(uncast(value, ", typeMap, "), null, 2);");
+                    if (!this._jsOptions.runtimeTypecheck) {
+                        this.emitLine("return value;");
+                    } else {
+                        this.emitLine("return uncast(value, ", typeMap, ");");
+                    }
                 }
             });
-        });
+        };
+
+        switch (this._jsOptions.converters) {
+            case ConvertersOptions.AllObjects:
+                this.forEachObject("interposing", converter);
+                break;
+
+            default:
+                this.forEachTopLevel("interposing", converter);
+                break;
+        }
     }
 
     protected emitConvertModuleHelpers(): void {
@@ -287,13 +339,17 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
                 never: neverAnnotation
             } = this.typeAnnotations;
             this.ensureBlankLine();
-            this.emitMultiline(`function invalidValue(typ${anyAnnotation}, val${anyAnnotation})${neverAnnotation} {
-    throw Error(\`Invalid value \${JSON.stringify(val)} for type \${JSON.stringify(typ)}\`);
+            this
+                .emitMultiline(`function invalidValue(typ${anyAnnotation}, val${anyAnnotation}, key${anyAnnotation} = '')${neverAnnotation} {
+    if (key) {
+        throw Error(\`Invalid value for key \"\${key}\". Expected type \${JSON.stringify(typ)} but got \${JSON.stringify(val)}\`);
+    }
+    throw Error(\`Invalid value \${JSON.stringify(val)} for type \${JSON.stringify(typ)}\`, );
 }
 
 function jsonToJSProps(typ${anyAnnotation})${anyAnnotation} {
     if (typ.jsonToJS === undefined) {
-        var map${anyAnnotation} = {};
+        const map${anyAnnotation} = {};
         typ.props.forEach((p${anyAnnotation}) => map[p.json] = { key: p.js, typ: p.typ });
         typ.jsonToJS = map;
     }
@@ -302,24 +358,24 @@ function jsonToJSProps(typ${anyAnnotation})${anyAnnotation} {
 
 function jsToJSONProps(typ${anyAnnotation})${anyAnnotation} {
     if (typ.jsToJSON === undefined) {
-        var map${anyAnnotation} = {};
+        const map${anyAnnotation} = {};
         typ.props.forEach((p${anyAnnotation}) => map[p.js] = { key: p.json, typ: p.typ });
         typ.jsToJSON = map;
     }
     return typ.jsToJSON;
 }
 
-function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnotation})${anyAnnotation} {
+function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnotation}, key${anyAnnotation} = '')${anyAnnotation} {
     function transformPrimitive(typ${stringAnnotation}, val${anyAnnotation})${anyAnnotation} {
         if (typeof typ === typeof val) return val;
-        return invalidValue(typ, val);
+        return invalidValue(typ, val, key);
     }
 
     function transformUnion(typs${anyArrayAnnotation}, val${anyAnnotation})${anyAnnotation} {
         // val must validate against one typ in typs
-        var l = typs.length;
-        for (var i = 0; i < l; i++) {
-            var typ = typs[i];
+        const l = typs.length;
+        for (let i = 0; i < l; i++) {
+            const typ = typs[i];
             try {
                 return transform(val, typ, getProps);
             } catch (_) {}
@@ -338,7 +394,7 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
         return val.map(el => transform(el, typ, getProps));
     }
 
-    function transformDate(typ${anyAnnotation}, val${anyAnnotation})${anyAnnotation} {
+    function transformDate(val${anyAnnotation})${anyAnnotation} {
         if (val === null) {
             return null;
         }
@@ -353,15 +409,19 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
         if (val === null || typeof val !== "object" || Array.isArray(val)) {
             return invalidValue("object", val);
         }
-        var result${anyAnnotation} = {};
+        const result${anyAnnotation} = {};
         Object.getOwnPropertyNames(props).forEach(key => {
             const prop = props[key];
             const v = Object.prototype.hasOwnProperty.call(val, key) ? val[key] : undefined;
-            result[prop.key] = transform(v, prop.typ, getProps);
+            result[prop.key] = transform(v, prop.typ, getProps, prop.key);
         });
         Object.getOwnPropertyNames(val).forEach(key => {
             if (!Object.prototype.hasOwnProperty.call(props, key)) {
-                result[key] = transform(val[key], additional, getProps);
+                result[key] = ${
+                    this._jsOptions.runtimeTypecheckIgnoreUnknownProperties
+                        ? `val[key]`
+                        : `transform(val[key], additional, getProps, key)`
+                };
             }
         });
         return result;
@@ -384,7 +444,7 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
             : invalidValue(typ, val);
     }
     // Numbers can be parsed by Date but shouldn't be.
-    if (typ === Date && typeof val !== "number") return transformDate(typ, val);
+    if (typ === Date && typeof val !== "number") return transformDate(val);
     return transformPrimitive(typ, val);
 }
 
@@ -422,9 +482,13 @@ function r(name${stringAnnotation}) {
 
     protected emitConvertModule(): void {
         this.ensureBlankLine();
-        this.emitMultiline(`// Converts JSON strings to/from your types`);
+        this.emitMultiline(
+            `// Converts JSON ${this._jsOptions.rawType === "json" ? "strings" : "types"} to/from your types`
+        );
         if (this._jsOptions.runtimeTypecheck) {
-            this.emitMultiline(`// and asserts the results of JSON.parse at runtime`);
+            this.emitMultiline(
+                `// and asserts the results${this._jsOptions.rawType === "json" ? " of JSON.parse" : ""} at runtime`
+            );
         }
         const moduleLine = this.moduleLine;
         if (moduleLine === undefined) {

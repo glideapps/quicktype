@@ -1,0 +1,15 @@
+{
+  "name": "javascript-prop-types",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Test builds.",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "check-prop-types": "^1.1.2"
+  }
+}

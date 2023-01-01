@@ -12,6 +12,7 @@ test/elm/elm.js
 test/elm/QuickType.elm
 test/fixtures/rust/target
 test/fixtures/java/target
+test/fixtures/java-lombok/target
 
 build/*/dist
 build/*/node_modules
@@ -27,3 +28,5 @@ test/fixtures/objective-c/quicktype
 /bin
 /.node-persist
 /.vs
+.idea
+.DS_Store

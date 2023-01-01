@@ -192,11 +192,12 @@ class GQLQuery {
         fieldType: GQLType,
         containingTypeName: string
     ): TypeRef => {
-        const optional = hasOptionalDirectives(fieldNode.directives);
+        let optional = hasOptionalDirectives(fieldNode.directives);
         let result: TypeRef;
         switch (fieldType.kind) {
             case TypeKind.SCALAR:
                 result = makeScalar(builder, fieldType);
+                optional = true;
                 break;
             case TypeKind.OBJECT:
             case TypeKind.INTERFACE:
@@ -231,6 +232,7 @@ class GQLQuery {
                     name = fieldNode.name.value;
                     fieldName = null;
                 }
+                optional = true;
                 result = builder.getEnumType(makeNames(name, fieldName, containingTypeName), new Set(values));
                 break;
             case TypeKind.INPUT_OBJECT:

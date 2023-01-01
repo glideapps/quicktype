@@ -216,7 +216,7 @@ const forbiddenForEnumCases = ["new", staticEnumValuesIdentifier];
 function splitExtension(filename: string): [string, string] {
     const i = filename.lastIndexOf(".");
     const extension = i !== -1 ? filename.split(".").pop() : "m";
-    filename = i !== -1 ? filename.substr(0, i) : filename;
+    filename = i !== -1 ? filename.slice(0, i) : filename;
     return [filename, extension === undefined ? "m" : extension];
 }
 
@@ -247,7 +247,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             firstNonUpper += 1;
         }
         if (firstNonUpper < 2) return DEFAULT_CLASS_PREFIX;
-        return name.substr(0, firstNonUpper - 1);
+        return name.slice(0, firstNonUpper - 1);
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
@@ -738,13 +738,20 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 this.emitLine("return self;");
             });
 
-            if (hasIrregularProperties) {
-                this.ensureBlankLine();
-                this.emitMethod("- (void)setValue:(nullable id)value forKey:(NSString *)key", () => {
-                    this.emitLine("id resolved = ", className, ".properties[key];");
-                    this.emitLine("if (resolved) [super setValue:value forKey:resolved];");
-                });
-            }
+            this.ensureBlankLine();
+            this.emitMethod("- (void)setValue:(nullable id)value forKey:(NSString *)key", () => {
+                this.emitLine("id resolved = ", className, ".properties[key];");
+                this.emitLine("if (resolved) [super setValue:value forKey:resolved];");
+            });
+
+            // setNilValueForKey: is automatically invoked by the NSObject setValue:forKey: when it is passed nil for a scalar (a.k.a. non-nullable) object
+            // The approach below sets the scalar to 0 in this case, and therefore assumes an initializer with incomplete data shouldn't be grounds for raising an exception.
+            // Put another way, if the initializer didn't have a key at all, there wouldn't be an exception raised, so sending nil for something probably shouldn't cause one.
+            this.ensureBlankLine();
+            this.emitMethod("- (void)setNilValueForKey:(NSString *)key", () => {
+                this.emitLine("id resolved = ", className, ".properties[key];");
+                this.emitLine("if (resolved) [super setValue:@(0) forKey:resolved];");
+            });
 
             this.ensureBlankLine();
             this.emitMethod("- (NSDictionary *)JSONDictionary", () => {
@@ -818,7 +825,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
     protected variableNameForTopLevel(name: Name): Sourcelike {
         const camelCaseName = modifySource(serialized => {
             // 1. remove class prefix
-            serialized = serialized.substr(this._classPrefix.length);
+            serialized = serialized.slice(this._classPrefix.length);
             // 2. camel case
             return camelCase(serialized);
         }, name);

@@ -54,7 +54,7 @@ export function schemaForTypeScriptSources(sourceFileNames: string[]): JSONSchem
             }
 
             const index = defined(matches.index);
-            definition.description = description.substr(0, index) + description.substr(index + matches[0].length);
+            definition.description = description.slice(0, index) + description.slice(index + matches[0].length);
 
             uris.push(`#/definitions/${name}`);
 
