@@ -142,7 +142,7 @@ export const PythonLanguage: Language = {
     "e8b04.json",
     "f6a65.json",
   ],
-  allowMissingNull: false,
+  allowMissingNull: true,
   features: ["enum", "union", "no-defaults", "date-time", "integer-string", "bool-string", "uuid"],
   output: "quicktype.py",
   topLevel: "TopLevel",

@@ -42,7 +42,7 @@ class DescriptionTypeAttributeKind extends TypeAttributeKind<ReadonlySet<string>
         let result = iterableFirst(descriptions);
         if (result === undefined) return undefined;
         if (result.length > 5 + 3) {
-            result = `${result.substr(0, 5)}...`;
+            result = `${result.slice(0, 5)}...`;
         }
         if (descriptions.size > 1) {
             result = `${result}, ...`;
