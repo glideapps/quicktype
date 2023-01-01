@@ -509,7 +509,12 @@ export class DartRenderer extends ConvenienceRenderer {
                 return [dynamic, ".", this.toJson, "()"];
             },
             mapType => this.mapMap("dynamic", dynamic, this.toDynamicExpression(mapType.values, "v")),
-            enumType => [defined(this._enumValues.get(enumType)), ".reverse[", dynamic, "]"],
+            enumType => {
+                if (this._options.nullSafety) {
+                    return [defined(this._enumValues.get(enumType)), ".reverse![", dynamic, "]"];
+                }
+                return [defined(this._enumValues.get(enumType)), ".reverse[", dynamic, "]"];
+            },
             unionType => {
                 const maybeNullable = nullableFromUnion(unionType);
                 if (maybeNullable === null) {
