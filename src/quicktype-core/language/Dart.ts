@@ -496,7 +496,7 @@ export class DartRenderer extends ConvenienceRenderer {
                 this.emitLine(className, "({");
                 this.indent(() => {
                     this.forEachClassProperty(c, "none", (name, _, _p) => {
-                        this.emitLine(this._options.requiredProperties ? "@required " : "", "this.", name, ",");
+                        this.emitLine(this._options.requiredProperties ? "required " : "", "this.", name, ",");
                     });
                 });
                 this.emitLine("});");
