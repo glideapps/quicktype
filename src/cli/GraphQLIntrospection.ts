@@ -1,7 +1,7 @@
 import { panic } from "../quicktype-core";
 import { introspectionQuery } from "graphql";
 
-const fetch = require("node-fetch");
+import fetch from "node-fetch";
 
 // https://github.com/apollographql/apollo-codegen/blob/master/src/downloadSchema.ts
 const defaultHeaders: { [name: string]: string } = {
@@ -25,7 +25,7 @@ export async function introspectServer(url: string, method: string, headerString
         headers[matches[1]] = matches[2];
     }
 
-    let result;
+    let result: any;
     try {
         const response = await fetch(url, {
             method,
@@ -34,7 +34,7 @@ export async function introspectServer(url: string, method: string, headerString
         });
 
         result = await response.json();
-    } catch (error) {
+    } catch (error: any) {
         return panic(`Error while fetching introspection query result: ${error.message}`);
     }
 
