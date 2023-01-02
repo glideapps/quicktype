@@ -685,14 +685,7 @@ async function getSources(options: CLIOptions): Promise<TypeSource[]> {
 }
 
 function makeTypeScriptSource(fileNames: string[]): SchemaTypeSource {
-    const sources: { [fileName: string]: string } = {};
-
-    for (const fileName of fileNames) {
-        const baseName = path.basename(fileName);
-        sources[baseName] = defined(fs.readFileSync(fileName, "utf8"));
-    }
-
-    return Object.assign({ kind: "schema" }, schemaForTypeScriptSources(sources)) as SchemaTypeSource;
+    return Object.assign({ kind: "schema" }, schemaForTypeScriptSources(fileNames)) as SchemaTypeSource;
 }
 
 export function jsonInputForTargetLanguage(

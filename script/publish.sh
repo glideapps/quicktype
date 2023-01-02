@@ -1,4 +1,4 @@
-#!/usr/bin/env bash -e
+#!/usr/bin/env bash
 
 OUTDIR=dist
 
@@ -6,6 +6,7 @@ OUTDIR=dist
 
 rm -rf $OUTDIR
 npm run build
+
 
 npm publish --ignore-scripts # Don't rebuild
 
