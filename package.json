@@ -68,7 +68,8 @@
     "@types/pako": "^1.0.0",
     "@types/pluralize": "0.0.28",
     "@types/readable-stream": "2.3.9",
-    "@types/browser-or-node": "^1.2.0"
+    "@types/browser-or-node": "^1.2.0",
+    "prettier": "^2.8.1"
   },
   "files": [
     "dist/**"
