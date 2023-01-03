@@ -315,7 +315,7 @@ export class PythonRenderer extends ConvenienceRenderer {
             // place, but right now we just make the type source and then throw it away.  It's
             // not a performance issue, so it's fine, I just bemoan this special case, and
             // potential others down the road.
-            mapUpdateInto(this.imports, module, s => (new Boolean(s) ? setUnionInto(s, [name]) : new Set([name])));
+            mapUpdateInto(this.imports, module, s => (s ? setUnionInto(s, [name]) : new Set([name])));
         }
         return name;
     }
