@@ -97,7 +97,7 @@ async function sourceFromFileOrUrlArray(
 
 function typeNameFromFilename(filename: string): string {
     const name = path.basename(filename);
-    return name.substr(0, name.lastIndexOf("."));
+    return name.substring(0, name.lastIndexOf("."));
 }
 
 async function samplesFromDirectory(dataDir: string, httpHeaders?: string[]): Promise<TypeSource[]> {
@@ -220,7 +220,7 @@ function inferLang(options: Partial<CLIOptions>, defaultLanguage: string): strin
         if (extension === "") {
             return messageError("DriverNoLanguageOrExtension", {});
         }
-        return extension.substr(1);
+        return extension.slice(1);
     }
 
     return defaultLanguage;
@@ -309,7 +309,7 @@ function makeLangTypeLabel(targetLanguages: TargetLanguage[]): string {
 function negatedInferenceFlagName(name: string): string {
     const prefix = "infer";
     if (name.startsWith(prefix)) {
-        name = name.substr(prefix.length);
+        name = name.slice(prefix.length);
     }
     return "no" + capitalize(name);
 }
@@ -685,14 +685,7 @@ async function getSources(options: CLIOptions): Promise<TypeSource[]> {
 }
 
 function makeTypeScriptSource(fileNames: string[]): SchemaTypeSource {
-    const sources: { [fileName: string]: string } = {};
-
-    for (const fileName of fileNames) {
-        const baseName = path.basename(fileName);
-        sources[baseName] = defined(fs.readFileSync(fileName, "utf8"));
-    }
-
-    return Object.assign({ kind: "schema" }, schemaForTypeScriptSources(sources)) as SchemaTypeSource;
+    return Object.assign({ kind: "schema" }, schemaForTypeScriptSources(fileNames)) as SchemaTypeSource;
 }
 
 export function jsonInputForTargetLanguage(

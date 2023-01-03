@@ -19,7 +19,7 @@ export { Input, InputData, JSONInput, JSONSourceData, jsonInputForTargetLanguage
 export { JSONSchemaInput, JSONSchemaSourceData } from "./input/JSONSchemaInput";
 export { Ref, JSONSchemaType, JSONSchemaAttributes } from "./input/JSONSchemaInput";
 export { RenderContext } from "./Renderer";
-export { Option, OptionDefinition, getOptionValues } from "./RendererOptions";
+export { Option, OptionDefinition, getOptionValues, OptionValues } from "./RendererOptions";
 export { TargetLanguage, MultiFileRenderResult } from "./TargetLanguage";
 export { all as defaultTargetLanguages, languageNamed } from "./language/All";
 export { MultiWord, Sourcelike, SerializedRenderResult, Annotation, modifySource, singleWord, parenIfNeeded } from "./Source";
@@ -74,7 +74,7 @@ export { removeNullFromUnion, matchType, nullableFromUnion } from "./TypeUtils";
 export { ConvenienceRenderer } from "./ConvenienceRenderer";
 export { uriTypeAttributeKind } from "./attributes/URIAttributes";
 
-export { CPlusPlusTargetLanguage, CPlusPlusRenderer } from "./language/CPlusPlus";
+export { CPlusPlusTargetLanguage, CPlusPlusRenderer, cPlusPlusOptions } from "./language/CPlusPlus";
 export {
     CSharpTargetLanguage,
     cSharpOptions,
