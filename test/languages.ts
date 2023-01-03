@@ -551,7 +551,8 @@ export const SwiftLanguage: Language = {
     { "access-level": "internal" },
     { "access-level": "public" },
     { protocol: "equatable" },
-    ["simple-object.json", { protocol: "hashable" }]
+    { "optional-enums": "true" },
+    ["simple-object.json", { protocol: "hashable" }],
   ],
   sourceFiles: ["src/language/Swift.ts"]
 };
