@@ -43,13 +43,13 @@ jobs:
                     - dart,schema-dart
                     - swift,schema-swift
                     - javascript-prop-types
+                    - elm,schema-elm
 
                     # Partially working
                     # - schema-typescript # TODO Unify with typescript once fixed
 
                     # Implementation is too outdated to test in GitHub Actions
                     # - ruby,schema-ruby
-                    # - elm,schema-elm
 
                     # Language is too niche / obscure to test easily on ubuntu-latest
                     # - pike,schema-pike
@@ -78,7 +78,10 @@ jobs:
 
             - run: npm ci
 
-      
+            - name: Install Elm
+              if: ${{ contains(matrix.fixture, 'elm') }}
+              run: |
+                  npm install -g elm
 
             - name: Setup Dart
               if: ${{ contains(matrix.fixture, 'dart') }}
