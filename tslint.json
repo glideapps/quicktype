@@ -46,6 +46,7 @@
     "no-unsafe-any": false,
     "no-unused-expression": true,
     "no-use-before-declare": false,
+    "no-unused-variable": true,
     "no-var-keyword": true,
     "no-void-expression": false,
     "strict-boolean-expressions": true,
