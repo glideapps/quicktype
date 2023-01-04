@@ -78,6 +78,40 @@ export const CSharpLanguage: Language = {
   sourceFiles: ["src/language/CSharp.ts"],
 };
 
+export const CSharpLanguageSystemTextJson: Language = {
+    name: "csharp-System.Text.Json",
+    base: "test/fixtures/csharp",
+    // https://github.com/dotnet/cli/issues/1582
+    setupCommand: "dotnet restore --no-cache",
+    runCommand(sample: string) {
+        return `dotnet run "${sample}"`;
+    },
+    diffViaSchema: true,
+    skipDiffViaSchema: ["34702.json", "437e7.json"],
+    allowMissingNull: false,
+    features: ["enum", "union", "no-defaults", "strict-optional", "date-time", "integer-string", "bool-string", "uuid"],
+    output: "QuickType.cs",
+    topLevel: "TopLevel",
+    skipJSON: [
+        "nbl-stats.json", // See issue #823
+        "empty-enum.json", // https://github.com/JamesNK/Newtonsoft.Json/issues/1687
+        "31189.json" // JSON.NET doesn't accept year 0000 as 1BC, though it should
+    ],
+    skipMiscJSON: false,
+    skipSchema: [
+        "top-level-enum.schema" // The code we generate for top-level enums is incompatible with the driver
+    ],
+    rendererOptions: { "check-required": "true" },
+    quickTestRendererOptions: [
+        { "array-type": "list" },
+        { "csharp-version": "5" },
+        { density: "dense" },
+        { "number-type": "decimal" },
+        { "any-type": "dynamic" }
+    ],
+    sourceFiles: ["src/language/CSharpSystemTextJson.ts"]
+};
+
 export const JavaLanguage: Language = {
   name: "java",
   base: "test/fixtures/java",

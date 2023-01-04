@@ -639,7 +639,7 @@ export const systemtextjsonCSharpOptions = Object.assign({}, cSharpOptions, {
 
 export class SystemTextJsonCSharpTargetLanguage extends CSharpTargetLanguage {
     constructor() {
-        super("C# (System.Text.Json)", ["cs", "csharp"], "cs");
+        super("C# (System.Text.Json)", ["cs6", "csharp-System.Text.Json"], "cs");
     }
 
     protected getOptions(): Option<any>[] {
@@ -939,14 +939,18 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
 
     private emitReadJson(emitBody: () => void, csType: Sourcelike): void {
         this.emitLine(
-            "public override ", csType, " Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)"
+            "public override ",
+            csType,
+            " Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)"
         );
         this.emitBlock(emitBody);
     }
 
     private emitWriteJson(variable: string, emitBody: () => void, csType: Sourcelike): void {
         this.emitLine(
-            "public override void Write(Utf8JsonWriter writer, ", csType, " ",
+            "public override void Write(Utf8JsonWriter writer, ",
+            csType,
+            " ",
             variable,
             ", JsonSerializerOptions options)"
         );
@@ -1358,46 +1362,60 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
         //     converterName = ['Nullable', converterName];
         //     csType = [csType, "?"];
         // }
-        this.emitType(undefined, AccessModifier.Internal, "class", converterName, ["JsonConverter<", csType, ">"], () => {
-            let canConvertExpr: Sourcelike = ["t == typeof(", csType, ")"];
-            this.emitCanConvert(canConvertExpr);
-            this.ensureBlankLine();
-            this.emitReadJson(() => {
-                // FIXME: It's unsatisfying that we need this.  The reason is that we not
-                // only match T, but also T?.  If we didn't, then the T in T? would not be
-                // deserialized with our converter but with the default one.  Can we check
-                // whether the type is a nullable?
-                // FIXME: This could duplicate one of the cases handled below in
-                // `emitDecodeTransformer`.
-                // if (haveNullable && !(targetType instanceof UnionType)) {
-                //     this.emitLine("if (reader.TokenType == JsonTokenType.Null) return null;");
-                // }
+        this.emitType(
+            undefined,
+            AccessModifier.Internal,
+            "class",
+            converterName,
+            ["JsonConverter<", csType, ">"],
+            () => {
+                let canConvertExpr: Sourcelike = ["t == typeof(", csType, ")"];
+                this.emitCanConvert(canConvertExpr);
+                this.ensureBlankLine();
+                this.emitReadJson(() => {
+                    // FIXME: It's unsatisfying that we need this.  The reason is that we not
+                    // only match T, but also T?.  If we didn't, then the T in T? would not be
+                    // deserialized with our converter but with the default one.  Can we check
+                    // whether the type is a nullable?
+                    // FIXME: This could duplicate one of the cases handled below in
+                    // `emitDecodeTransformer`.
+                    // if (haveNullable && !(targetType instanceof UnionType)) {
+                    //     this.emitLine("if (reader.TokenType == JsonTokenType.Null) return null;");
+                    // }
 
-                const allHandled = this.emitDecodeTransformer(xfer, targetType, v => this.emitLine("return ", v, ";"));
-                if (!allHandled) {
-                    this.emitThrow(['"Cannot unmarshal type ', csType, '"']);
-                }
-            }, csType);
-            this.ensureBlankLine();
-            this.emitWriteJson("value", () => {
-                // FIXME: See above.
-                // if (haveNullable && !(targetType instanceof UnionType)) {
-                //     this.emitLine("if (value == null)");
-                //     this.emitBlock(() => {
-                //         this.emitLine("writer.WriteNullValue();");
-                //         this.emitLine("return;");
-                //     });
-                // }
+                    const allHandled = this.emitDecodeTransformer(xfer, targetType, v =>
+                        this.emitLine("return ", v, ";")
+                    );
+                    if (!allHandled) {
+                        this.emitThrow(['"Cannot unmarshal type ', csType, '"']);
+                    }
+                }, csType);
+                this.ensureBlankLine();
+                this.emitWriteJson(
+                    "value",
+                    () => {
+                        // FIXME: See above.
+                        // if (haveNullable && !(targetType instanceof UnionType)) {
+                        //     this.emitLine("if (value == null)");
+                        //     this.emitBlock(() => {
+                        //         this.emitLine("writer.WriteNullValue();");
+                        //         this.emitLine("return;");
+                        //     });
+                        // }
 
-                const allHandled = this.emitTransformer("value", reverse.transformer, reverse.targetType, () => this.emitLine("return;")
+                        const allHandled = this.emitTransformer("value", reverse.transformer, reverse.targetType, () =>
+                            this.emitLine("return;")
+                        );
+                        if (!allHandled) {
+                            this.emitThrow(['"Cannot marshal type ', csType, '"']);
+                        }
+                    },
+                    csType
                 );
-                if (!allHandled) {
-                    this.emitThrow(['"Cannot marshal type ', csType, '"']);
-                }
-            }, csType);
-            this.ensureBlankLine();
-            this.emitLine("public static readonly ", converterName, " Singleton = new ", converterName, "();");
-        });
+                this.ensureBlankLine();
+                this.emitLine("public static readonly ", converterName, " Singleton = new ", converterName, "();");
+            }
+        );
     }
 
     protected emitRequiredHelpers(): void {
