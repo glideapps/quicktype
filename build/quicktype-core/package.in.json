@@ -23,8 +23,7 @@
         "pluralize": "^7.0.0",
         "readable-stream": "2.3.0",
         "urijs": "^1.19.1",
-        "wordwrap": "^1.0.0",
-        "yaml": "^1.5.0"
+        "wordwrap": "^1.0.0"
     },
     "devDependencies": {
         "@types/urijs": "^1.19.8",
@@ -32,7 +31,6 @@
         "@types/node": "8.10.10",
         "@types/pako": "^1.0.0",
         "@types/pluralize": "0.0.28",
-        "@types/yaml": "^1.0.2",
         "typescript": "~3.2.1",
         "tslint": "^5.11.0",
         "@types/readable-stream": "2.3.9",
