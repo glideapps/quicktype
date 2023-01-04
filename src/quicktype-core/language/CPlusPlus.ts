@@ -663,7 +663,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.forEachTopLevel("none", (_, topLevelName) => {
                     this.emitLine(
                         "//     ",
-                        this.ourQualifier(false),
+                        this.ourQualifier(),
                         topLevelName,
                         " data = nlohmann::json::parse(jsonString);"
                     );
@@ -671,7 +671,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             } else {
                 this.emitLine(
                     "//     ",
-                    this.ourQualifier(false),
+                    this.ourQualifier(),
                     basename,
                     " data = nlohmann::json::parse(jsonString);"
                 );
@@ -683,7 +683,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.forEachTopLevel("none", (_, topLevelName) => {
                     this.emitLine(
                         "//     std::wcout << ",
-                        this.ourQualifier(false),
+                        this.ourQualifier(),
                         "wdump((nlohmann::json) ",
                         topLevelName,
                         ");"
@@ -1162,7 +1162,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     protected emitTopLevelHeaders(t: Type, className: Name): void {
         // Maps need ecoding conversions, since they have a string in the key. Other types don't.
         if (t instanceof MapType && this._stringType !== this.NarrowString) {
-            const ourQualifier = this.ourQualifier(true);
+            const ourQualifier = this.ourQualifier();
 
             this.emitLine("void from_json(", this.withConst("json") ," & j, ", ourQualifier, className, " & x);");
             this.emitLine("void to_json(json & j, ", this.withConst([ourQualifier, className]), " & x);");
@@ -1170,7 +1170,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected emitClassHeaders(className: Name): void {
-        const ourQualifier = this.ourQualifier(true);
+        const ourQualifier = this.ourQualifier();
 
         this.emitLine("void from_json(", this.withConst("json")," & j, ", ourQualifier, className, " & x);");
         this.emitLine("void to_json(json & j, ", this.withConst([ourQualifier, className]), " & x);");
@@ -1179,7 +1179,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     protected emitTopLevelFunction(t: Type, className: Name): void {
         // Maps need ecoding conversions, since they have a string in the key. Other types don't.
         if (t instanceof MapType && this._stringType !== this.NarrowString) {
-            const ourQualifier = this.ourQualifier(true);
+            const ourQualifier = this.ourQualifier();
             let cppType: Sourcelike;
             let toType: Sourcelike;
 
@@ -1236,7 +1236,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected emitClassFunctions(c: ClassType, className: Name): void {
-        const ourQualifier = this.ourQualifier(true);
+        const ourQualifier = this.ourQualifier();
         let cppType: Sourcelike;
         let toType: Sourcelike;
 
@@ -1459,7 +1459,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected emitUnionFunctions(u: UnionType): void {
-        const ourQualifier = this.ourQualifier(true) as string;
+        const ourQualifier = this.ourQualifier() as string;
 
         const functionForKind: [string, string][] = [
             ["bool", "is_boolean"],
@@ -1565,7 +1565,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected emitEnumHeaders(enumName: Name): void {
-        const ourQualifier = this.ourQualifier(true);
+        const ourQualifier = this.ourQualifier();
 
         this.emitLine("void from_json(", this.withConst("json"), " & j, ", ourQualifier, enumName, " & x);");
         this.emitLine("void to_json(json & j, ", this.withConst([ourQualifier, enumName]), " & x);");
@@ -1578,7 +1578,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected emitEnumFunctions(e: EnumType, enumName: Name): void {
-        const ourQualifier = this.ourQualifier(true);
+        const ourQualifier = this.ourQualifier();
 
         this.emitBlock(
             ["inline void from_json(", this.withConst("json"), " & j, ", ourQualifier, enumName, " & x)"],
@@ -1764,7 +1764,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected emitConstraintClasses(): void {
-        const ourQualifier = this.ourQualifier(false) as string;
+        const ourQualifier = this.ourQualifier() as string;
 
         const getterMinValue = this.lookupMemberName(MemberNames.GetMinValue);
         const getterMaxValue = this.lookupMemberName(MemberNames.GetMaxValue);
@@ -2610,7 +2610,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 () => {
                     this.superThis.emitLine("std::ostringstream s;");
                     this.superThis.emitLine("s << j;");
-                    this.superThis.emitLine("return ", this.superThis.ourQualifier(false), "Utf16_Utf8<std::string, std::wstring>::convert(s.str()); ");
+                    this.superThis.emitLine("return ", this.superThis.ourQualifier(), "Utf16_Utf8<std::string, std::wstring>::convert(s.str()); ");
                 }
             );
             this.superThis.ensureBlankLine();
