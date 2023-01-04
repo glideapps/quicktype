@@ -100,6 +100,7 @@ const javaKeywords = [
     "Double",
     "Boolean",
     "String",
+    "List",
     "Map",
     "UUID",
     "Exception",

@@ -157,11 +157,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
     }
 
     typeMapTypeForProperty(p: ClassProperty): Sourcelike {
-        const typeMap = this.typeMapTypeFor(p.type);
-        if (!p.isOptional) {
-            return typeMap;
-        }
-        return ["PropType.any"];
+        return this.typeMapTypeFor(p.type);
     }
 
     private importStatement(lhs: Sourcelike, moduleName: Sourcelike): Sourcelike {
