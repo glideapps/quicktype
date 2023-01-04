@@ -416,75 +416,71 @@ export const CPlusPlusLanguage: Language = {
 };
 
 export const ElmLanguage: Language = {
-  name: "elm",
-  base: "test/fixtures/elm",
-  setupCommand: "rm -rf elm-stuff/build-artifacts && elm-make --yes",
-  compileCommand:
-    process.env.CI === "true"
-      ? "sysconfcpus -n 1 elm-make Main.elm QuickType.elm --output elm.js"
-      : "elm-make Main.elm QuickType.elm --output elm.js",
-  runCommand(sample: string) {
-    return `node ./runner.js "${sample}"`;
-  },
-  diffViaSchema: true,
-  skipDiffViaSchema: [
-    "bug863.json",
-    "reddit.json",
-    "github-events.json",
-    "nbl-stats.json",
-    "0a91a.json",
-    "0cffa.json",
-    "0e0c2.json",
-    "127a1.json",
-    "29f47.json",
-    "2df80.json",
-    "27332.json",
-    "32431.json",
-    "337ed.json",
-    "34702.json",
-    "4a455.json",
-    "6de06.json",
-    "76ae1.json",
-    "7eb30.json",
-    "7681c.json",
-    "ae9ca.json",
-    "af2d1.json",
-    "be234.json",
-    "c3303.json",
-    "e8b04.json",
-    "f6a65.json",
-  ],
-  allowMissingNull: false,
-  features: ["enum", "union", "no-defaults"],
-  output: "QuickType.elm",
-  topLevel: "QuickType",
-  skipJSON: [
-    "identifiers.json",
-    "simple-identifiers.json",
-    "blns-object.json",
-    "recursive.json",
-    "direct-recursive.json",
-    "bug427.json",
-    "bug790.json",
-    "list.json",
-    "nst-test-suite.json",
-    "keywords.json", // stack overflow
-  ],
-  skipMiscJSON: false,
-  skipSchema: [
-    "constructor.schema", // can't handle "constructor" property
-    "union-list.schema", // recursion
-    "list.schema", // recursion
-    "ref-remote.schema", // recursion
-    "mutually-recursive.schema", // recursion
-    "postman-collection.schema", // recursion
-    "vega-lite.schema", // recursion
-    "simple-ref.schema", // recursion
-    "keyword-unions.schema", // can't handle "hasOwnProperty" for some reason
-  ],
-  rendererOptions: {},
-  quickTestRendererOptions: [{ "array-type": "list" }],
-  sourceFiles: ["src/language/Elm.ts"],
+    name: "elm",
+    base: "test/fixtures/elm",
+    compileCommand: "elm make Main.elm --output elm.js +RTS -N1",
+    runCommand(sample: string) {
+        return `node ./runner.js "${sample}"`;
+    },
+    diffViaSchema: true,
+    skipDiffViaSchema: [
+        "bug863.json",
+        "reddit.json",
+        "github-events.json",
+        "nbl-stats.json",
+        "0a91a.json",
+        "0cffa.json",
+        "0e0c2.json",
+        "127a1.json",
+        "29f47.json",
+        "2df80.json",
+        "27332.json",
+        "32431.json",
+        "337ed.json",
+        "34702.json",
+        "4a455.json",
+        "6de06.json",
+        "76ae1.json",
+        "7eb30.json",
+        "7681c.json",
+        "ae9ca.json",
+        "af2d1.json",
+        "be234.json",
+        "c3303.json",
+        "e8b04.json",
+        "f6a65.json"
+    ],
+    allowMissingNull: false,
+    features: ["enum", "union", "no-defaults"],
+    output: "QuickType.elm",
+    topLevel: "QuickType",
+    skipJSON: [
+        "identifiers.json",
+        "simple-identifiers.json",
+        "blns-object.json",
+        "recursive.json",
+        "direct-recursive.json",
+        "bug427.json",
+        "bug790.json",
+        "list.json",
+        "nst-test-suite.json",
+        "keywords.json" // stack overflow
+    ],
+    skipMiscJSON: false,
+    skipSchema: [
+        "constructor.schema", // can't handle "constructor" property
+        "union-list.schema", // recursion
+        "list.schema", // recursion
+        "ref-remote.schema", // recursion
+        "mutually-recursive.schema", // recursion
+        "postman-collection.schema", // recursion
+        "vega-lite.schema", // recursion
+        "simple-ref.schema", // recursion
+        "keyword-unions.schema" // can't handle "hasOwnProperty" for some reason
+    ],
+    rendererOptions: {},
+    quickTestRendererOptions: [],
+    sourceFiles: ["src/language/Elm.ts"]
 };
 
 export const SwiftLanguage: Language = {
