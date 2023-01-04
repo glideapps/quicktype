@@ -796,6 +796,7 @@ class CommandSuccessfulLanguageFixture extends LanguageFixture {
 export const allFixtures: Fixture[] = [
   // new JSONFixture(languages.CrystalLanguage),
   new JSONFixture(languages.CSharpLanguage),
+  new JSONFixture(languages.CSharpLanguageSystemTextJson, "csharp-SystemTextJson"),
   new JSONFixture(languages.JavaLanguage),
   new JSONFixture(languages.JavaLanguageWithLegacyDateTime, "java-datetime-legacy"),
   new JSONFixture(languages.JavaLanguageWithLombok, "java-lombok"),
