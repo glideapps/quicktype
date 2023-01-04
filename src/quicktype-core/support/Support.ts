@@ -1,7 +1,6 @@
 import { Base64 } from "js-base64";
 import * as pako from "pako";
 import { messageError } from "../Messages";
-import * as YAML from "yaml";
 
 export type StringMap = { [name: string]: any };
 
@@ -111,7 +110,7 @@ export function parseJSON(text: string, description: string, address: string = "
         if (text.charCodeAt(0) === 0xfeff) {
             text = text.slice(1);
         }
-        return YAML.parse(text);
+        return JSON.parse(text);
     } catch (e) {
         let message: string;
 

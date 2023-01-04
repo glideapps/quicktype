@@ -37,7 +37,6 @@
     "urijs": "^1.19.11",
     "uuid": "^3.2.1",
     "wordwrap": "^1.0.0",
-    "yaml": "^1.5.0",
     "readable-stream": "2.3.0",
     "isomorphic-fetch": "^3.0.0",
     "browser-or-node": "^1.2.1"
@@ -50,7 +49,6 @@
     "@types/node": "8.10.10",
     "@types/shelljs": "^0.7.8",
     "@types/semver": "^5.5.0",
-    "@types/yaml": "^1.0.2",
     "ajv": "^5.5.2",
     "deep-equal": "^1.0.1",
     "exit": "^0.1.2",
