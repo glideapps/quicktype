@@ -62,11 +62,11 @@ export class RustTargetLanguage extends TargetLanguage {
 
     protected getOptions(): Option<any>[] {
         return [
-          rustOptions.density, 
-          rustOptions.visibility, 
-          rustOptions.deriveDebug, 
-          rustOptions.edition2018, 
-          rustOptions.leadingComments
+            rustOptions.density,
+            rustOptions.visibility,
+            rustOptions.deriveDebug,
+            rustOptions.edition2018,
+            rustOptions.leadingComments
         ];
     }
 }
@@ -366,7 +366,7 @@ export class RustRenderer extends ConvenienceRenderer {
             return;
         }
 
-        const topLevelName = defined(mapFirst(this.topLevels));
+        const topLevelName = defined(mapFirst(this.topLevels)).getCombinedName();
         this.emitMultiline(
             `// Example code that deserializes and serializes the model.
 // extern crate serde;
