@@ -69,8 +69,8 @@ function combineNames(names: ReadonlySet<string>): string {
             }
         }
     }
-    const prefix = prefixLength > 2 ? first.substr(0, prefixLength) : "";
-    const suffix = suffixLength > 2 ? first.substr(first.length - suffixLength) : "";
+    const prefix = prefixLength > 2 ? first.slice(0, prefixLength) : "";
+    const suffix = suffixLength > 2 ? first.slice(first.length - suffixLength) : "";
     const combined = prefix + suffix;
     if (combined.length > 2) {
         return combined;

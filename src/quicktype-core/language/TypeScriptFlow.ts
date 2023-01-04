@@ -20,7 +20,8 @@ import { isES3IdentifierStart } from "./JavaScriptUnicodeMaps";
 export const tsFlowOptions = Object.assign({}, javaScriptOptions, {
     justTypes: new BooleanOption("just-types", "Interfaces only", false),
     nicePropertyNames: new BooleanOption("nice-property-names", "Transform property names to be JavaScripty", false),
-    declareUnions: new BooleanOption("explicit-unions", "Explicitly name unions", false)
+    declareUnions: new BooleanOption("explicit-unions", "Explicitly name unions", false),
+    preferUnions: new BooleanOption("prefer-unions", "Use union type instead of enum", false)
 });
 
 const tsFlowTypeAnnotations = {
@@ -42,7 +43,8 @@ export abstract class TypeScriptFlowBaseTargetLanguage extends JavaScriptTargetL
             tsFlowOptions.runtimeTypecheckIgnoreUnknownProperties,
             tsFlowOptions.acronymStyle,
             tsFlowOptions.converters,
-            tsFlowOptions.rawType
+            tsFlowOptions.rawType,
+            tsFlowOptions.preferUnions
         ];
     }
 
@@ -87,6 +89,7 @@ function quotePropertyName(original: string): string {
 }
 
 export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
+
     constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
@@ -158,6 +161,11 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
                 [this.sourceFor(t).source, ";"]
             ];
         });
+
+        const additionalProperties = c.getAdditionalProperties();
+        if (additionalProperties) {
+            this.emitTable([["[property: string]", ": ", this.sourceFor(additionalProperties).source, ";"]]);
+        }
     }
 
     private emitClass(c: ClassType, className: Name) {
@@ -274,11 +282,24 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
 
     protected emitEnum(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
-        this.emitBlock(["export enum ", enumName, " "], "", () => {
-            this.forEachEnumCase(e, "none", (name, jsonName) => {
-                this.emitLine(name, ` = "${utf16StringEscape(jsonName)}",`);
+
+        if (this._tsFlowOptions.preferUnions) {
+            let items = "";
+            e.cases.forEach((item) => {
+                if (items === "") {
+                    items += `"${utf16StringEscape(item)}"`;
+                    return;
+                }
+                items += ` | "${utf16StringEscape(item)}"`;
             });
-        });
+            this.emitLine("export type ", enumName, " = ", items, ";");
+        } else {
+            this.emitBlock(["export enum ", enumName, " "], "", () => {
+                this.forEachEnumCase(e, "none", (name, jsonName) => {
+                    this.emitLine(name, ` = "${utf16StringEscape(jsonName)}",`);
+                });
+            });
+        }
     }
 
     protected emitClassBlock(c: ClassType, className: Name): void {
