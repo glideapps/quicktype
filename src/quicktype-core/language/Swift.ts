@@ -207,7 +207,6 @@ const keywords = [
     "continue",
     "default",
     "defer",
-    "description",
     "do",
     "else",
     "fallthrough",
