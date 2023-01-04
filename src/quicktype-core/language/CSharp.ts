@@ -50,7 +50,6 @@ import {
 } from "../Transformers";
 import { RenderContext } from "../Renderer";
 import { minMaxLengthForType, minMaxValueForType } from "../attributes/Constraints";
-// import { systemtextjsonCSharpOptions } from "./CSharpSystemTextJson";
 
 export enum Framework {
     Newtonsoft,
@@ -230,7 +229,6 @@ export class CSharpTargetLanguage extends TargetLanguage {
         switch (options.framework) {
             case Framework.Newtonsoft:
                 return new NewtonsoftCSharpRenderer(this, renderContext, getOptionValues(newtonsoftCSharpOptions, untypedOptionValues));
-            // return new CSharpRenderer(this, renderContext, options);
             case Framework.SystemTextJson:
                 return new SystemTextJsonCSharpRenderer(this, renderContext, getOptionValues(systemTextJsonCSharpOptions, untypedOptionValues));
             default:
