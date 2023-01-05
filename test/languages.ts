@@ -40,9 +40,9 @@ export const CSharpLanguage: Language = {
   name: "csharp",
   base: "test/fixtures/csharp",
   // https://github.com/dotnet/cli/issues/1582
-  setupCommand: "dotnet restore --no-cache",
+  setupCommand: "dotnet restore -p:CheckEolTargetFramework=false --no-cache",
   runCommand(sample: string) {
-    return `dotnet run "${sample}"`;
+    return `dotnet run -p:CheckEolTargetFramework=false -- "${sample}"`;
   },
   diffViaSchema: true,
   skipDiffViaSchema: ["34702.json", "437e7.json"],
@@ -68,6 +68,47 @@ export const CSharpLanguage: Language = {
     { "any-type": "dynamic" }
   ],
   sourceFiles: ["src/language/CSharp.ts"]
+};
+
+export const CSharpLanguageSystemTextJson: Language = {
+  name: "csharp",
+  base: "test/fixtures/csharp-SystemTextJson",
+  // https://github.com/dotnet/cli/issues/1582
+  setupCommand: "dotnet restore --no-cache",
+  runCommand(sample: string) {
+    return `dotnet run -- "${sample}"`;
+  },
+  diffViaSchema: true,
+  skipDiffViaSchema: ["34702.json", "437e7.json"],
+  allowMissingNull: false,
+  features: [
+    "enum",
+    "union",
+    "no-defaults",
+    "strict-optional",
+    "date-time",
+    "integer-string",
+    "bool-string",
+    "uuid",
+  ],
+  output: "QuickType.cs",
+  topLevel: "TopLevel",
+  skipJSON: [
+    "31189.json", // .NET doesn't accept year 0000 as 1BC, though it should
+  ],
+  skipMiscJSON: false,
+  skipSchema: [
+    "top-level-enum.schema", // The code we generate for top-level enums is incompatible with the driver
+  ],
+  rendererOptions: { "check-required": "true", "framework": "SystemTextJson" },
+  quickTestRendererOptions: [
+    { "array-type": "list" },
+    { "csharp-version": "6" },
+    { density: "dense" },
+    { "number-type": "decimal" },
+    { "any-type": "dynamic" },
+  ],
+  sourceFiles: ["src/language/CSharp.ts"],
 };
 
 export const JavaLanguage: Language = {

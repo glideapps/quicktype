@@ -38,7 +38,7 @@ jobs:
                     - python,schema-python
                     - haskell,schema-haskell
                     - rust,schema-rust
-                    - csharp,schema-csharp,schema-json-csharp,graphql-csharp
+                    - csharp,schema-csharp,schema-json-csharp,graphql-csharp,csharp-SystemTextJson
                     - json-ts-csharp
                     - dart,schema-dart
                     - swift,schema-swift
