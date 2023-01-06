@@ -62,9 +62,13 @@ jobs:
                     # Never tested?
                     # - crystal
 
-                runs-on: [ubuntu-latest-16-cores]
+                runs-on: [ubuntu-latest]
 
-                # include:
+                include:
+                    # Rust is very slow, so we use a larger runner
+                     - fixture: rust,schema-rust
+                       runs-on: ubuntu-latest-8-cores
+                    
                     # - fixture: objective-c
                     #   runs-on: macos-latest
 
