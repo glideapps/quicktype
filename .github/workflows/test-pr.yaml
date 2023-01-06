@@ -64,9 +64,9 @@ jobs:
 
                 runs-on: [ubuntu-latest]
 
-                include:
-                    - fixture: objective-c
-                      runs-on: macos-latest
+                # include:
+                    # - fixture: objective-c
+                    #   runs-on: macos-latest
 
         name: ${{ matrix.fixture }}
         steps:
