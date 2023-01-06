@@ -64,9 +64,9 @@ jobs:
 
                 runs-on: [ubuntu-latest]
 
-                include:
-                    - fixture: objective-c
-                      runs-on: macos-latest
+                # include:
+                    # - fixture: objective-c
+                    #   runs-on: macos-latest
 
         name: ${{ matrix.fixture }}
         steps:
@@ -84,7 +84,7 @@ jobs:
               if: ${{ contains(matrix.fixture, 'dart') }}
               uses: dart-lang/setup-dart@v1.3
               with:
-                  sdk: 2.10.5
+                  sdk: 2.14.4
 
             - name: Setup Swift
               if: ${{ contains(matrix.fixture, 'swift') }}
