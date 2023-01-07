@@ -352,7 +352,8 @@ export class PythonRenderer extends ConvenienceRenderer {
                     let rest: string[] = [];
                     if (!this.getAlphabetizeProperties() && this.pyOptions.features.dataClasses) rest.push(" = None");
                     
-                    if (nonNulls.size > 1) {                  
+                    if (nonNulls.size > 1) {      
+                        this.withImport("typing", "Union");            
                         return [this.withTyping("Optional"), "[Union[", arrayIntercalate(", ", memberTypes), "]]", ...rest];
                     } else {
                         return [this.withTyping("Optional"), "[", defined(iterableFirst(memberTypes)), "]", ...rest];
