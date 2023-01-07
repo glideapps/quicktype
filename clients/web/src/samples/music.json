@@ -1,0 +1,57 @@
+[
+  {
+    "name": "Artist",
+    "samples": [
+      {
+        "name": "nirvana.json",
+        "data": {
+          "name": "Nirvana",
+          "founded": 1987,
+          "members": ["Kurt Kobain", "Dave Grohl", "Krist Novoselic"]
+        }
+      },
+      {
+        "name": "radiohead.json",
+        "data": {
+          "name": "Radiohead",
+          "founded": 1988,
+          "members": ["Thome Yorke", "Johnny Greenwood"]
+        }
+      }
+    ]
+  },
+  {
+    "name": "Album",
+    "samples": [
+      {
+        "name": "sample.json",
+        "data": {
+          "name": "How To Live Forever",
+          "artist": {
+            "name": "Michael Forrest",
+            "founded": 1982,
+            "members": ["Michael Forrest"]
+          },
+          "tracks": [
+            {
+              "name": "Get Connected",
+              "duration": 208
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "name": "Track",
+    "samples": [
+      {
+        "name": "sample.json",
+        "data": {
+          "name": "Like a Virgin",
+          "duration": 221
+        }
+      }
+    ]
+  }
+]

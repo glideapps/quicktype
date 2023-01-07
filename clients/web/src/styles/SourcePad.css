@@ -1,0 +1,95 @@
+.sidebar {
+  background-color: #08212a;
+  padding: 10px;
+  width: 480px;
+}
+
+.sidebar .controls {
+  display: flex;
+  flex-direction: row;
+}
+
+.sidebar.bp3-dark label.bp3-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: small;
+  margin-bottom: 10px;
+}
+
+.sidebar .controls .top-level {
+  flex-grow: 1;
+}
+.sidebar .controls .top-level input {
+  background-color: #0d2b35;
+  width: 100%;
+}
+
+.sidebar .controls .source-type {
+  width: 150px;
+  margin: 0 4px;
+}
+
+.sidebar .controls .sample-button {
+  margin-top: 21px;
+}
+
+.safari .sidebar .controls .sample-button {
+  margin-top: 19px;
+}
+
+.sidebar .controls .language-button {
+  display: none;
+}
+
+.json-error-marker {
+  position: absolute;
+  background: rgba(255, 0, 0, 0.3);
+  font-family: "Icons16";
+  padding-left: 2px;
+  color: white;
+}
+
+.json-error-marker:before {
+  content: "\E648";
+}
+
+.tree-container {
+  height: 220px;
+  margin-bottom: 8px;
+  background-color: #0d2b35;
+  overflow: scroll;
+  border-radius: 3px;
+  display: none;
+}
+
+.multisource .tree-container {
+  display: inherit;
+}
+
+.tree-container .tree-controls {
+  float: right;
+  margin-bottom: -30px;
+}
+
+.tree-container .bp3-tree-node-content-1 {
+  padding-left: unset;
+}
+
+.bp3-tree-node.add {
+  opacity: 0.4;
+  transition: opacity 200ms;
+}
+
+.bp3-tree-node.add:hover {
+  opacity: unset;
+  cursor: pointer;
+}
+
+.bp3-dark .bp3-tree-node.bp3-tree-node-selected > .bp3-tree-node-content {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+@media (max-width: 1100px) {
+  .sidebar {
+    min-width: 380px;
+  }
+}

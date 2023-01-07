@@ -1,0 +1,9 @@
+node_modules
+/build
+*.log
+/functions/lib
+functions/.runtimeconfig.json
+.env
+stats.json
+.DS_Store
+report.*.json

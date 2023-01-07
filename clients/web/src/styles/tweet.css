@@ -1,0 +1,11 @@
+.bp3-toast.tweet p {
+  margin: 10px 0 14px 0;
+  font-size: 16px;
+  border-left: 2px solid rgba(255, 255, 255, 0.5);
+  padding-left: 8px;
+  line-height: 22px;
+}
+
+.bp3-toast.tweet #share-button {
+  color: #333 !important;
+}

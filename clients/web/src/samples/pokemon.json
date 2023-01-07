@@ -1,0 +1,79 @@
+[
+  {
+    "name": "Pokemon",
+    "samples": [
+      {
+        "name": "bulbasaur.json",
+        "data": {
+          "id": 1,
+          "name": "Bulbasaur",
+          "img": "http://www.serebii.net/pokemongo/pokemon/001.png",
+          "type": ["Grass", "Poison"],
+          "weaknesses": ["Fire", "Ice", "Flying", "Psychic"],
+          "next_evolution": [
+            {
+              "num": "002",
+              "name": "Ivysaur"
+            },
+            {
+              "num": "003",
+              "name": "Venusaur"
+            }
+          ]
+        }
+      },
+      {
+        "name": "squirtle.json",
+        "data": {
+          "id": 7,
+          "name": "Squirtle",
+          "img": "http://www.serebii.net/pokemongo/pokemon/007.png",
+          "type": ["Water"],
+          "weaknesses": ["Electric", "Grass"],
+          "next_evolution": [
+            {
+              "num": "008",
+              "name": "Wartortle"
+            },
+            {
+              "num": "009",
+              "name": "Blastoise"
+            }
+          ]
+        }
+      },
+      {
+        "name": "pikachu.json",
+        "data": {
+          "id": 25,
+          "name": "Pikachu",
+          "img": "http://www.serebii.net/pokemongo/pokemon/025.png",
+          "type": ["Electric"],
+          "weaknesses": ["Ground"],
+          "next_evolution": [
+            {
+              "num": "026",
+              "name": "Raichu"
+            }
+          ]
+        }
+      },
+      {
+        "name": "raichu.json",
+        "data": {
+          "id": 26,
+          "name": "Raichu",
+          "img": "http://www.serebii.net/pokemongo/pokemon/026.png",
+          "type": ["Electric"],
+          "weaknesses": ["Ground"],
+          "prev_evolution": [
+            {
+              "num": "025",
+              "name": "Pikachu"
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

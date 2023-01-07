@@ -1,0 +1,48 @@
+@import "./mobile.css";
+
+@import "~@blueprintjs/core/lib/css/blueprint.css";
+@import "~@blueprintjs/icons/lib/css/blueprint-icons.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+    -ms-overflow-style: -ms-autohiding-scrollbar;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.ace_editor .ace_scrollbar {
+    transition: opacity 150ms ease-in;
+    opacity: 0;
+}
+
+.ace_editor .ace_scrollbar:hover {
+    opacity: 1;
+}
+
+.bp3-control.bp3-switch:hover input:checked ~ .bp3-control-indicator,
+.bp3-control.bp3-switch input:checked ~ .bp3-control-indicator {
+    background-color: #00b3a4;
+}
+.bp3-control.bp3-switch input:checked ~ .bp3-control-indicator:hover {
+    background-color: #00a193;
+}
+
+.bg-gradient {
+    background: linear-gradient(to right, #00cb5e 0%, #7283ff 50%, #d239b6 100%);
+}
+
+.text-gradient {
+    background: linear-gradient(to right, #00cb5e 0%, #7283ff 50%, #d239b6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}

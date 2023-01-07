@@ -1,0 +1,20 @@
+.nav {
+  background-color: #00b3a4 !important;
+}
+
+.nav .bp3-icon {
+  color: rgba(255, 255, 255, 0.9) !important;
+  transition: color 300ms !important;
+}
+
+.nav .bp3-icon:hover {
+  color: white !important;
+}
+
+.bp3-navbar-heading {
+  margin-top: 4px;
+}
+
+.nav a {
+  color: #f5f8fa !important;
+}

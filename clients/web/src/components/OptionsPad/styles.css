@@ -1,0 +1,50 @@
+.instruments {
+  z-index: 1;
+  width: 270px;
+  position: absolute;
+  background: #f5f8fa;
+  margin: 20px;
+  padding: 8px 15px 5px 15px;
+  right: 0;
+  border-radius: 2px;
+  color: rgba(0, 0, 0, 0.7);
+  font-size: small;
+}
+
+.instruments.hidden {
+  display: none;
+}
+
+.instruments label .bp3-icon {
+  opacity: 0.2;
+  margin-left: 4px;
+}
+
+.instruments .bp3-button.share {
+  margin: 10px 0;
+}
+
+.instruments .bp3-button.copy {
+  margin: 10px 0;
+}
+
+.instruments .bp3-tab-panel {
+  margin-top: 14px;
+}
+
+.instruments .bp3-tab-list > *:not(:last-child) {
+  margin-right: 14px;
+}
+
+.instruments .bp3-tab-indicator {
+  background-color: #00b3a4 !important;
+}
+
+.instruments .bp3-tab[aria-selected="true"],
+.instruments .bp3-tab:hover {
+  color: #00b3a4 !important;
+}
+
+.instruments .bp3-control.bp3-switch input:checked ~ .bp3-control-indicator {
+  background-color: #00b3a4 !important;
+}
