@@ -1219,7 +1219,23 @@ export class JSONPythonRenderer extends PythonRenderer {
             this.emitLine("result", this.typeHint(": dict"), " = {}");
             this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
                 const property = { value: ["self.", name] };
-                this.emitLine("result[", this.string(jsonName), "] = ", makeValue(this.serializer(property, cp.type)));
+                if (cp.isOptional) {
+                    this.emitBlock(["if self.", name, " is not None:"], () => {
+                        this.emitLine(
+                            "result[",
+                            this.string(jsonName),
+                            "] = ",
+                            makeValue(this.serializer(property, cp.type))
+                        );
+                    });
+                } else {
+                    this.emitLine(
+                        "result[",
+                        this.string(jsonName),
+                        "] = ",
+                        makeValue(this.serializer(property, cp.type))
+                    );
+                }
             });
             this.emitLine("return result");
         });

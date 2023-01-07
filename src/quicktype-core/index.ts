@@ -19,7 +19,7 @@ export { Input, InputData, JSONInput, JSONSourceData, jsonInputForTargetLanguage
 export { JSONSchemaInput, JSONSchemaSourceData } from "./input/JSONSchemaInput";
 export { Ref, JSONSchemaType, JSONSchemaAttributes } from "./input/JSONSchemaInput";
 export { RenderContext } from "./Renderer";
-export { Option, OptionDefinition, getOptionValues } from "./RendererOptions";
+export { Option, OptionDefinition, getOptionValues, OptionValues } from "./RendererOptions";
 export { TargetLanguage, MultiFileRenderResult } from "./TargetLanguage";
 export { all as defaultTargetLanguages, languageNamed } from "./language/All";
 export { MultiWord, Sourcelike, SerializedRenderResult, Annotation, modifySource, singleWord, parenIfNeeded } from "./Source";
@@ -78,10 +78,7 @@ export { CPlusPlusTargetLanguage, CPlusPlusRenderer, cPlusPlusOptions } from "./
 export {
     CSharpTargetLanguage,
     cSharpOptions,
-    CSharpRenderer,
-    NewtonsoftCSharpTargetLanguage,
-    newtonsoftCSharpOptions,
-    NewtonsoftCSharpRenderer
+    CSharpRenderer
 } from "./language/CSharp";
 export { GoTargetLanguage, GoRenderer, goOptions } from "./language/Golang";
 export { ObjectiveCTargetLanguage, ObjectiveCRenderer, objcOptions } from "./language/Objective-C";

@@ -27,7 +27,7 @@ RUN gem install bundler -v 1.16.1
 
 # Dart
 RUN apt-get -y install apt-transport-https
-RUN curl -o /tmp/dart.deb "https://storage.googleapis.com/dart-archive/channels/stable/release/2.10.5/linux_packages/dart_2.10.5-1_amd64.deb" && dpkg -i /tmp/dart.deb && rm /tmp/dart.deb
+RUN curl -o /tmp/dart.deb "https://storage.googleapis.com/dart-archive/channels/stable/release/2.14.4/linux_packages/dart_2.14.4-1_amd64.deb" && dpkg -i /tmp/dart.deb && rm /tmp/dart.deb
 
 # Crystal
 RUN curl -sL "https://keybase.io/crystal/pgp_keys.asc" | apt-key add -

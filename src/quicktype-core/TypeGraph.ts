@@ -500,7 +500,7 @@ export function optionalToNullable(
                 );
                 ref = builder.getUnionType(attributes, members);
             }
-            return builder.makeClassProperty(ref, false);
+            return builder.makeClassProperty(ref, p.isOptional);
         });
         if (c.isFixed) {
             return builder.getUniqueClassType(c.getAttributes(), true, properties, forwardingRef);
