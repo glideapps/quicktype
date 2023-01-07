@@ -77,9 +77,8 @@ class PropertyDescriptionsTypeAttributeKind extends TypeAttributeKind<Map<string
     }
 }
 
-export const propertyDescriptionsTypeAttributeKind: TypeAttributeKind<
-    Map<string, ReadonlySet<string>>
-> = new PropertyDescriptionsTypeAttributeKind();
+export const propertyDescriptionsTypeAttributeKind: TypeAttributeKind<Map<string, ReadonlySet<string>>> =
+    new PropertyDescriptionsTypeAttributeKind();
 
 function isPropertiesKey(el: PathElement): boolean {
     return el.kind === PathElementKind.KeyOrIndex && el.key === "properties";

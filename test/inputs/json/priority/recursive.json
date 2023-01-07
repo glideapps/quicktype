@@ -1,133 +1,133 @@
 {
-  "product": [
-    {
-      "product": {
-        "thumbnail": {
-          "formats": [
-            {
-              "formats": {
-                "width": 100,
-                "url": "http://thumbs.buscape.com.br/shampoo-para-cabelo/shampoo-ox-proteins-reconstrucao-profunda-240-ml_100x100-PU8c5bb_1.jpg",
-                "height": 100
-              }
+    "product": [
+        {
+            "product": {
+                "thumbnail": {
+                    "formats": [
+                        {
+                            "formats": {
+                                "width": 100,
+                                "url": "http://thumbs.buscape.com.br/shampoo-para-cabelo/shampoo-ox-proteins-reconstrucao-profunda-240-ml_100x100-PU8c5bb_1.jpg",
+                                "height": 100
+                            }
+                        }
+                    ],
+                    "width": 200,
+                    "url": "http://thumbs.buscape.com.br/shampoo-para-cabelo/shampoo-ox-proteins-reconstrucao-profunda-240-ml_200x200-PU8c5bb_1.jpg",
+                    "height": 200
+                },
+                "pricemax": "10.99",
+                "quantity": 0,
+                "rating": {
+                    "useraveragerating": {
+                        "rating": "0.0",
+                        "links": [
+                            {
+                                "link": {
+                                    "type": "xml",
+                                    "url": "http://bws.buscape.com.br/service/viewUserRatings/6c576951474461767662453d/br/?productId=574907&keyword=7896916782221"
+                                }
+                            }
+                        ],
+                        "numcomments": 0
+                    }
+                },
+                "specification": {
+                    "links": [
+                        {
+                            "link": {
+                                "type": "xml",
+                                "url": "http://bws.buscape.com.br/service/viewProductDetails/6c576951474461767662453d/br/?productId=574907&keyword=7896916782221"
+                            }
+                        }
+                    ]
+                },
+                "hasmetasearch": false,
+                "pricemin": "10.99",
+                "eco": false,
+                "numoffers": 1,
+                "totalsellers": 1,
+                "productname": "Shampoo Ox Proteins ReconstruÃ§Ã£o Profunda 240 ml",
+                "links": [
+                    {
+                        "link": {
+                            "type": "product",
+                            "url": "http://www.buscape.com.br/prod_unico?idu=574907&mdapp=6793&mddtn=0"
+                        }
+                    },
+                    {
+                        "link": {
+                            "type": "xml",
+                            "url": "http://bws.buscape.com.br/service/findOfferList/6c576951474461767662453d/br/?productId=574907&keyword=7896916782221"
+                        }
+                    }
+                ],
+                "fulldescription": true,
+                "currency": {
+                    "abbreviation": "BRL"
+                },
+                "id": 574907,
+                "categoryid": 328
             }
-          ],
-          "width": 200,
-          "url": "http://thumbs.buscape.com.br/shampoo-para-cabelo/shampoo-ox-proteins-reconstrucao-profunda-240-ml_200x200-PU8c5bb_1.jpg",
-          "height": 200
-        },
-        "pricemax": "10.99",
-        "quantity": 0,
-        "rating": {
-          "useraveragerating": {
-            "rating": "0.0",
-            "links": [
-              {
-                "link": {
-                  "type": "xml",
-                  "url": "http://bws.buscape.com.br/service/viewUserRatings/6c576951474461767662453d/br/?productId=574907&keyword=7896916782221"
-                }
-              }
-            ],
-            "numcomments": 0
-          }
-        },
-        "specification": {
-          "links": [
-            {
-              "link": {
-                "type": "xml",
-                "url": "http://bws.buscape.com.br/service/viewProductDetails/6c576951474461767662453d/br/?productId=574907&keyword=7896916782221"
-              }
-            }
-          ]
-        },
-        "hasmetasearch": false,
-        "pricemin": "10.99",
-        "eco": false,
-        "numoffers": 1,
-        "totalsellers": 1,
-        "productname": "Shampoo Ox Proteins ReconstruÃ§Ã£o Profunda 240 ml",
-        "links": [
-          {
-            "link": {
-              "type": "product",
-              "url": "http://www.buscape.com.br/prod_unico?idu=574907&mdapp=6793&mddtn=0"
-            }
-          },
-          {
-            "link": {
-              "type": "xml",
-              "url": "http://bws.buscape.com.br/service/findOfferList/6c576951474461767662453d/br/?productId=574907&keyword=7896916782221"
-            }
-          }
-        ],
-        "fulldescription": true,
-        "currency": {
-          "abbreviation": "BRL"
-        },
-        "id": 574907,
-        "categoryid": 328
-      }
-    }
-  ],
-  "totallooseoffers": 0,
-  "schk": true,
-  "match": "all",
-  "details": {
-    "date": {
-      "valid": true,
-      "eonandyear": {
-        "lowestsetbit": 0
-      },
-      "hour": 0,
-      "month": 11,
-      "year": 2017,
-      "timezone": -120,
-      "millisecond": 872,
-      "xmlschematype": {
-        "prefix": "",
-        "localpart": "dateTime",
-        "namespaceuri": "http://www.w3.org/2001/XMLSchema"
-      },
-      "day": 14,
-      "minute": 31,
-      "second": 44
-    },
-    "code": 0,
-    "applicationversion": "v1",
-    "applicationid": "6c576951474461767662453d",
-    "elapsedtime": 8,
-    "message": "success",
-    "status": "success"
-  },
-  "page": 1,
-  "totalpages": 1,
-  "totalresultsreturned": 1,
-  "totalresultsavailable": 1,
-  "category": {
-    "hasoffer": false,
-    "thumbnail": {
-      "url": "https://imagembuscapebr-a.akamaihd.net/bp5/categorias/328.jpg"
-    },
-    "concatenatecategoryname": false,
-    "parentcategoryid": 288,
-    "isfinal": true,
-    "name": "Shampoo para Cabelo",
-    "links": [
-      {
-        "link": {
-          "type": "category",
-          "url": "http://www.buscape.com.br/shampoo-para-cabelo.html?mdapp=6793&mddtn=0"
         }
-      },
-      {
-        "link": {
-          "type": "xml",
-          "url": "http://bws.buscape.com.br/service/findProductList/6c576951474461767662453d/br/?categoryId=328&keyword=7896916782221"
-        }
-      }
     ],
-    "id": 328
-  }
+    "totallooseoffers": 0,
+    "schk": true,
+    "match": "all",
+    "details": {
+        "date": {
+            "valid": true,
+            "eonandyear": {
+                "lowestsetbit": 0
+            },
+            "hour": 0,
+            "month": 11,
+            "year": 2017,
+            "timezone": -120,
+            "millisecond": 872,
+            "xmlschematype": {
+                "prefix": "",
+                "localpart": "dateTime",
+                "namespaceuri": "http://www.w3.org/2001/XMLSchema"
+            },
+            "day": 14,
+            "minute": 31,
+            "second": 44
+        },
+        "code": 0,
+        "applicationversion": "v1",
+        "applicationid": "6c576951474461767662453d",
+        "elapsedtime": 8,
+        "message": "success",
+        "status": "success"
+    },
+    "page": 1,
+    "totalpages": 1,
+    "totalresultsreturned": 1,
+    "totalresultsavailable": 1,
+    "category": {
+        "hasoffer": false,
+        "thumbnail": {
+            "url": "https://imagembuscapebr-a.akamaihd.net/bp5/categorias/328.jpg"
+        },
+        "concatenatecategoryname": false,
+        "parentcategoryid": 288,
+        "isfinal": true,
+        "name": "Shampoo para Cabelo",
+        "links": [
+            {
+                "link": {
+                    "type": "category",
+                    "url": "http://www.buscape.com.br/shampoo-para-cabelo.html?mdapp=6793&mddtn=0"
+                }
+            },
+            {
+                "link": {
+                    "type": "xml",
+                    "url": "http://bws.buscape.com.br/service/findProductList/6c576951474461767662453d/br/?categoryId=328&keyword=7896916782221"
+                }
+            }
+        ],
+        "id": 328
+    }
 }

@@ -1,11 +1,11 @@
 {
-  "args": {}, 
-  "headers": {
-    "Accept-Encoding": "identity", 
-    "Connection": "close", 
-    "Host": "httpbin.org", 
-    "User-Agent": "Python-urllib/3.6"
-  }, 
-  "origin": "209.58.130.210", 
-  "url": "http://httpbin.org/cache/60"
+    "args": {},
+    "headers": {
+        "Accept-Encoding": "identity",
+        "Connection": "close",
+        "Host": "httpbin.org",
+        "User-Agent": "Python-urllib/3.6"
+    },
+    "origin": "209.58.130.210",
+    "url": "http://httpbin.org/cache/60"
 }

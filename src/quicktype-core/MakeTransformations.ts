@@ -166,7 +166,11 @@ function replaceUnion(
         transformerForString = new DecodingTransformer(
             graph,
             getStringType(),
-            new ChoiceTransformer(graph, getStringType(), stringTypes.map(t => defined(transformerForStringType(t))))
+            new ChoiceTransformer(
+                graph,
+                getStringType(),
+                stringTypes.map(t => defined(transformerForStringType(t)))
+            )
         );
     }
 

@@ -1,77 +1,81 @@
 {
-  "stringValue": "Anteater",
-  "dateValue": "Sat Aug 19 11:33:19 EDT 2017",
-  "uuidValue": "F5165FDB-F5AD-4F6E-8552-799B1C62B387",
-  "name with spaces": null,
-  "doubleValue": 3.14159,
-  "intValue": 3,
-  "booleanValue": false,
-  "nullValue": null,
-  "tuples": [[0, "zero"], [1, "one"], [2, "two"]],
-  "person": {
-    "name": "Bob",
-    "intOrString": 70
-  },
-  "people": [
-    {
-      "name": "Sue",
-      "intOrString": 50
+    "stringValue": "Anteater",
+    "dateValue": "Sat Aug 19 11:33:19 EDT 2017",
+    "uuidValue": "F5165FDB-F5AD-4F6E-8552-799B1C62B387",
+    "name with spaces": null,
+    "doubleValue": 3.14159,
+    "intValue": 3,
+    "booleanValue": false,
+    "nullValue": null,
+    "tuples": [
+        [0, "zero"],
+        [1, "one"],
+        [2, "two"]
+    ],
+    "person": {
+        "name": "Bob",
+        "intOrString": 70
     },
-    {
-      "name": "Dave",
-      "optionalValue": true,
-      "intOrString": "5"
+    "people": [
+        {
+            "name": "Sue",
+            "intOrString": 50
+        },
+        {
+            "name": "Dave",
+            "optionalValue": true,
+            "intOrString": "5"
+        }
+    ],
+    "differentThings": [
+        1,
+        "1",
+        {
+            "name": "Mork"
+        }
+    ],
+    "mapValue": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0,
+        "11": 0,
+        "12": 0,
+        "13": 0,
+        "14": 0,
+        "15": 0,
+        "16": 0,
+        "17": 0,
+        "18": 0,
+        "19": 0
+    },
+    "nullableMapValue": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0,
+        "11": 0,
+        "12": 0,
+        "13": 0,
+        "14": 0,
+        "15": 0,
+        "16": 0,
+        "17": 0,
+        "18": 0,
+        "19": null
     }
-  ],
-  "differentThings": [
-    1,
-    "1",
-    {
-      "name": "Mork"
-    }
-  ],
-  "mapValue": {
-    "0": 0,
-    "1": 0,
-    "2": 0,
-    "3": 0,
-    "4": 0,
-    "5": 0,
-    "6": 0,
-    "7": 0,
-    "8": 0,
-    "9": 0,
-    "10": 0,
-    "11": 0,
-    "12": 0,
-    "13": 0,
-    "14": 0,
-    "15": 0,
-    "16": 0,
-    "17": 0,
-    "18": 0,
-    "19": 0
-  },
-  "nullableMapValue": {
-    "0": 0,
-    "1": 0,
-    "2": 0,
-    "3": 0,
-    "4": 0,
-    "5": 0,
-    "6": 0,
-    "7": 0,
-    "8": 0,
-    "9": 0,
-    "10": 0,
-    "11": 0,
-    "12": 0,
-    "13": 0,
-    "14": 0,
-    "15": 0,
-    "16": 0,
-    "17": 0,
-    "18": 0,
-    "19": null
-  }
 }

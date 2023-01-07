@@ -1,6 +1,6 @@
 {
-  "one": "quux",
-  "nullable": null,
-  "unionWithBool": true,
-  "unionWithBoolAndEnum": false
+    "one": "quux",
+    "nullable": null,
+    "unionWithBool": true,
+    "unionWithBoolAndEnum": false
 }

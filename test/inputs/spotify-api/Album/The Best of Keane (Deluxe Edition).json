@@ -1,305 +1,298 @@
 {
-  "album_type": "album",
-  "artists": [
-    {
-      "external_urls": {
-        "spotify": "https://open.spotify.com/artist/53A0W3U0s8diEn9RhXQhVz"
-      },
-      "href": "https://api.spotify.com/v1/artists/53A0W3U0s8diEn9RhXQhVz",
-      "id": "53A0W3U0s8diEn9RhXQhVz",
-      "name": "Keane",
-      "type": "artist",
-      "uri": "spotify:artist:53A0W3U0s8diEn9RhXQhVz"
-    }
-  ],
-  "available_markets": [
-    "AD",
-    "AR",
-    "AT",
-    "AU",
-    "BE",
-    "BG",
-    "BO",
-    "BR",
-    "CH",
-    "CL",
-    "CO",
-    "CR",
-    "CY",
-    "CZ",
-    "DE",
-    "DK",
-    "DO",
-    "EC",
-    "EE",
-    "ES",
-    "FI",
-    "FR",
-    "GB",
-    "GR",
-    "GT",
-    "HK",
-    "HN",
-    "HU",
-    "IE",
-    "IS",
-    "IT",
-    "LI",
-    "LT",
-    "LU",
-    "LV",
-    "MC",
-    "MT",
-    "MY",
-    "NI",
-    "NL",
-    "NO",
-    "NZ",
-    "PA",
-    "PE",
-    "PH",
-    "PL",
-    "PT",
-    "PY",
-    "RO",
-    "SE",
-    "SG",
-    "SI",
-    "SK",
-    "SV",
-    "TR",
-    "TW",
-    "UY"
-  ],
-  "copyrights": [
-    {
-      "text":
-        "(C) 2013 Universal Island Records, a division of Universal Music Operations Limited",
-      "type": "C"
-    },
-    {
-      "text":
-        "(P) 2013 Universal Island Records, a division of Universal Music Operations Limited",
-      "type": "P"
-    }
-  ],
-  "external_ids": {
-    "upc": "00602537518357"
-  },
-  "external_urls": {
-    "spotify": "https://open.spotify.com/album/41MnTivkwTO3UUJ8DrqEJJ"
-  },
-  "genres": [],
-  "href": "https://api.spotify.com/v1/albums/41MnTivkwTO3UUJ8DrqEJJ",
-  "id": "41MnTivkwTO3UUJ8DrqEJJ",
-  "images": [
-    {
-      "height": 640,
-      "url": "https://i.scdn.co/image/89b92c6b59131776c0cd8e5df46301ffcf36ed69",
-      "width": 640
-    },
-    {
-      "height": 300,
-      "url": "https://i.scdn.co/image/eb6f0b2594d81f8d9dced193f3e9a3bc4318aedc",
-      "width": 300
-    },
-    {
-      "height": 64,
-      "url": "https://i.scdn.co/image/21e1ebcd7ebd3b679d9d5084bba1e163638b103a",
-      "width": 64
-    }
-  ],
-  "name": "The Best Of Keane (Deluxe Edition)",
-  "popularity": 65,
-  "release_date": "2013-11-08",
-  "release_date_precision": "day",
-  "tracks": {
-    "href":
-      "https://api.spotify.com/v1/albums/41MnTivkwTO3UUJ8DrqEJJ/tracks?offset=0&limit=50",
-    "items": [
-      {
-        "artists": [
-          {
+    "album_type": "album",
+    "artists": [
+        {
             "external_urls": {
-              "spotify":
-                "https://open.spotify.com/artist/53A0W3U0s8diEn9RhXQhVz"
+                "spotify": "https://open.spotify.com/artist/53A0W3U0s8diEn9RhXQhVz"
             },
             "href": "https://api.spotify.com/v1/artists/53A0W3U0s8diEn9RhXQhVz",
             "id": "53A0W3U0s8diEn9RhXQhVz",
             "name": "Keane",
             "type": "artist",
             "uri": "spotify:artist:53A0W3U0s8diEn9RhXQhVz"
-          }
-        ],
-        "available_markets": [
-          "AD",
-          "AR",
-          "AT",
-          "AU",
-          "BE",
-          "BG",
-          "BO",
-          "BR",
-          "CH",
-          "CL",
-          "CO",
-          "CR",
-          "CY",
-          "CZ",
-          "DE",
-          "DK",
-          "DO",
-          "EC",
-          "EE",
-          "ES",
-          "FI",
-          "FR",
-          "GB",
-          "GR",
-          "GT",
-          "HK",
-          "HN",
-          "HU",
-          "IE",
-          "IS",
-          "IT",
-          "LI",
-          "LT",
-          "LU",
-          "LV",
-          "MC",
-          "MT",
-          "MY",
-          "NI",
-          "NL",
-          "NO",
-          "NZ",
-          "PA",
-          "PE",
-          "PH",
-          "PL",
-          "PT",
-          "PY",
-          "RO",
-          "SE",
-          "SG",
-          "SI",
-          "SK",
-          "SV",
-          "TR",
-          "TW",
-          "UY"
-        ],
-        "disc_number": 1,
-        "duration_ms": 215986,
-        "explicit": false,
-        "external_urls": {
-          "spotify": "https://open.spotify.com/track/4r9PmSmbAOOWqaGWLf6M9Q"
-        },
-        "href": "https://api.spotify.com/v1/tracks/4r9PmSmbAOOWqaGWLf6M9Q",
-        "id": "4r9PmSmbAOOWqaGWLf6M9Q",
-        "name": "Everybody's Changing",
-        "preview_url":
-          "https://p.scdn.co/mp3-preview/641fd877ee0f42f3713d1649e20a9734cc64b8f9",
-        "track_number": 1,
-        "type": "track",
-        "uri": "spotify:track:4r9PmSmbAOOWqaGWLf6M9Q"
-      },
-      {
-        "artists": [
-          {
-            "external_urls": {
-              "spotify":
-                "https://open.spotify.com/artist/53A0W3U0s8diEn9RhXQhVz"
-            },
-            "href": "https://api.spotify.com/v1/artists/53A0W3U0s8diEn9RhXQhVz",
-            "id": "53A0W3U0s8diEn9RhXQhVz",
-            "name": "Keane",
-            "type": "artist",
-            "uri": "spotify:artist:53A0W3U0s8diEn9RhXQhVz"
-          }
-        ],
-        "available_markets": [
-          "AD",
-          "AR",
-          "AT",
-          "AU",
-          "BE",
-          "BG",
-          "BO",
-          "BR",
-          "CH",
-          "CL",
-          "CO",
-          "CR",
-          "CY",
-          "CZ",
-          "DE",
-          "DK",
-          "DO",
-          "EC",
-          "EE",
-          "ES",
-          "FI",
-          "FR",
-          "GB",
-          "GR",
-          "GT",
-          "HK",
-          "HN",
-          "HU",
-          "IE",
-          "IS",
-          "IT",
-          "LI",
-          "LT",
-          "LU",
-          "LV",
-          "MC",
-          "MT",
-          "MY",
-          "NI",
-          "NL",
-          "NO",
-          "NZ",
-          "PA",
-          "PE",
-          "PH",
-          "PL",
-          "PT",
-          "PY",
-          "RO",
-          "SE",
-          "SG",
-          "SI",
-          "SK",
-          "SV",
-          "TR",
-          "TW",
-          "UY"
-        ],
-        "disc_number": 1,
-        "duration_ms": 235880,
-        "explicit": false,
-        "external_urls": {
-          "spotify": "https://open.spotify.com/track/0HJQD8uqX2Bq5HVdLnd3ep"
-        },
-        "href": "https://api.spotify.com/v1/tracks/0HJQD8uqX2Bq5HVdLnd3ep",
-        "id": "0HJQD8uqX2Bq5HVdLnd3ep",
-        "name": "Somewhere Only We Know",
-        "preview_url":
-          "https://p.scdn.co/mp3-preview/e001676375ea2b4807cee2f98b51f2f3fe0d109b",
-        "track_number": 2,
-        "type": "track",
-        "uri": "spotify:track:0HJQD8uqX2Bq5HVdLnd3ep"
-      }
+        }
     ],
-    "limit": 50,
-    "next": null,
-    "offset": 0,
-    "previous": null,
-    "total": 9
-  },
-  "type": "album",
-  "uri": "spotify:album:6UXCm6bOO4gFlDQZV5yL37"
+    "available_markets": [
+        "AD",
+        "AR",
+        "AT",
+        "AU",
+        "BE",
+        "BG",
+        "BO",
+        "BR",
+        "CH",
+        "CL",
+        "CO",
+        "CR",
+        "CY",
+        "CZ",
+        "DE",
+        "DK",
+        "DO",
+        "EC",
+        "EE",
+        "ES",
+        "FI",
+        "FR",
+        "GB",
+        "GR",
+        "GT",
+        "HK",
+        "HN",
+        "HU",
+        "IE",
+        "IS",
+        "IT",
+        "LI",
+        "LT",
+        "LU",
+        "LV",
+        "MC",
+        "MT",
+        "MY",
+        "NI",
+        "NL",
+        "NO",
+        "NZ",
+        "PA",
+        "PE",
+        "PH",
+        "PL",
+        "PT",
+        "PY",
+        "RO",
+        "SE",
+        "SG",
+        "SI",
+        "SK",
+        "SV",
+        "TR",
+        "TW",
+        "UY"
+    ],
+    "copyrights": [
+        {
+            "text": "(C) 2013 Universal Island Records, a division of Universal Music Operations Limited",
+            "type": "C"
+        },
+        {
+            "text": "(P) 2013 Universal Island Records, a division of Universal Music Operations Limited",
+            "type": "P"
+        }
+    ],
+    "external_ids": {
+        "upc": "00602537518357"
+    },
+    "external_urls": {
+        "spotify": "https://open.spotify.com/album/41MnTivkwTO3UUJ8DrqEJJ"
+    },
+    "genres": [],
+    "href": "https://api.spotify.com/v1/albums/41MnTivkwTO3UUJ8DrqEJJ",
+    "id": "41MnTivkwTO3UUJ8DrqEJJ",
+    "images": [
+        {
+            "height": 640,
+            "url": "https://i.scdn.co/image/89b92c6b59131776c0cd8e5df46301ffcf36ed69",
+            "width": 640
+        },
+        {
+            "height": 300,
+            "url": "https://i.scdn.co/image/eb6f0b2594d81f8d9dced193f3e9a3bc4318aedc",
+            "width": 300
+        },
+        {
+            "height": 64,
+            "url": "https://i.scdn.co/image/21e1ebcd7ebd3b679d9d5084bba1e163638b103a",
+            "width": 64
+        }
+    ],
+    "name": "The Best Of Keane (Deluxe Edition)",
+    "popularity": 65,
+    "release_date": "2013-11-08",
+    "release_date_precision": "day",
+    "tracks": {
+        "href": "https://api.spotify.com/v1/albums/41MnTivkwTO3UUJ8DrqEJJ/tracks?offset=0&limit=50",
+        "items": [
+            {
+                "artists": [
+                    {
+                        "external_urls": {
+                            "spotify": "https://open.spotify.com/artist/53A0W3U0s8diEn9RhXQhVz"
+                        },
+                        "href": "https://api.spotify.com/v1/artists/53A0W3U0s8diEn9RhXQhVz",
+                        "id": "53A0W3U0s8diEn9RhXQhVz",
+                        "name": "Keane",
+                        "type": "artist",
+                        "uri": "spotify:artist:53A0W3U0s8diEn9RhXQhVz"
+                    }
+                ],
+                "available_markets": [
+                    "AD",
+                    "AR",
+                    "AT",
+                    "AU",
+                    "BE",
+                    "BG",
+                    "BO",
+                    "BR",
+                    "CH",
+                    "CL",
+                    "CO",
+                    "CR",
+                    "CY",
+                    "CZ",
+                    "DE",
+                    "DK",
+                    "DO",
+                    "EC",
+                    "EE",
+                    "ES",
+                    "FI",
+                    "FR",
+                    "GB",
+                    "GR",
+                    "GT",
+                    "HK",
+                    "HN",
+                    "HU",
+                    "IE",
+                    "IS",
+                    "IT",
+                    "LI",
+                    "LT",
+                    "LU",
+                    "LV",
+                    "MC",
+                    "MT",
+                    "MY",
+                    "NI",
+                    "NL",
+                    "NO",
+                    "NZ",
+                    "PA",
+                    "PE",
+                    "PH",
+                    "PL",
+                    "PT",
+                    "PY",
+                    "RO",
+                    "SE",
+                    "SG",
+                    "SI",
+                    "SK",
+                    "SV",
+                    "TR",
+                    "TW",
+                    "UY"
+                ],
+                "disc_number": 1,
+                "duration_ms": 215986,
+                "explicit": false,
+                "external_urls": {
+                    "spotify": "https://open.spotify.com/track/4r9PmSmbAOOWqaGWLf6M9Q"
+                },
+                "href": "https://api.spotify.com/v1/tracks/4r9PmSmbAOOWqaGWLf6M9Q",
+                "id": "4r9PmSmbAOOWqaGWLf6M9Q",
+                "name": "Everybody's Changing",
+                "preview_url": "https://p.scdn.co/mp3-preview/641fd877ee0f42f3713d1649e20a9734cc64b8f9",
+                "track_number": 1,
+                "type": "track",
+                "uri": "spotify:track:4r9PmSmbAOOWqaGWLf6M9Q"
+            },
+            {
+                "artists": [
+                    {
+                        "external_urls": {
+                            "spotify": "https://open.spotify.com/artist/53A0W3U0s8diEn9RhXQhVz"
+                        },
+                        "href": "https://api.spotify.com/v1/artists/53A0W3U0s8diEn9RhXQhVz",
+                        "id": "53A0W3U0s8diEn9RhXQhVz",
+                        "name": "Keane",
+                        "type": "artist",
+                        "uri": "spotify:artist:53A0W3U0s8diEn9RhXQhVz"
+                    }
+                ],
+                "available_markets": [
+                    "AD",
+                    "AR",
+                    "AT",
+                    "AU",
+                    "BE",
+                    "BG",
+                    "BO",
+                    "BR",
+                    "CH",
+                    "CL",
+                    "CO",
+                    "CR",
+                    "CY",
+                    "CZ",
+                    "DE",
+                    "DK",
+                    "DO",
+                    "EC",
+                    "EE",
+                    "ES",
+                    "FI",
+                    "FR",
+                    "GB",
+                    "GR",
+                    "GT",
+                    "HK",
+                    "HN",
+                    "HU",
+                    "IE",
+                    "IS",
+                    "IT",
+                    "LI",
+                    "LT",
+                    "LU",
+                    "LV",
+                    "MC",
+                    "MT",
+                    "MY",
+                    "NI",
+                    "NL",
+                    "NO",
+                    "NZ",
+                    "PA",
+                    "PE",
+                    "PH",
+                    "PL",
+                    "PT",
+                    "PY",
+                    "RO",
+                    "SE",
+                    "SG",
+                    "SI",
+                    "SK",
+                    "SV",
+                    "TR",
+                    "TW",
+                    "UY"
+                ],
+                "disc_number": 1,
+                "duration_ms": 235880,
+                "explicit": false,
+                "external_urls": {
+                    "spotify": "https://open.spotify.com/track/0HJQD8uqX2Bq5HVdLnd3ep"
+                },
+                "href": "https://api.spotify.com/v1/tracks/0HJQD8uqX2Bq5HVdLnd3ep",
+                "id": "0HJQD8uqX2Bq5HVdLnd3ep",
+                "name": "Somewhere Only We Know",
+                "preview_url": "https://p.scdn.co/mp3-preview/e001676375ea2b4807cee2f98b51f2f3fe0d109b",
+                "track_number": 2,
+                "type": "track",
+                "uri": "spotify:track:0HJQD8uqX2Bq5HVdLnd3ep"
+            }
+        ],
+        "limit": 50,
+        "next": null,
+        "offset": 0,
+        "previous": null,
+        "total": 9
+    },
+    "type": "album",
+    "uri": "spotify:album:6UXCm6bOO4gFlDQZV5yL37"
 }

@@ -1,17 +1,17 @@
 query {
-  viewer {
-    ... UserFragment
-    repository(name: "metapixel") {
-      pullRequests(first:10) {
-        nodes {
-          state
+    viewer {
+        ...UserFragment
+        repository(name: "metapixel") {
+            pullRequests(first: 10) {
+                nodes {
+                    state
+                }
+            }
         }
-      }
     }
-  }
 }
 
 fragment UserFragment on User {
-  login
-  name
+    login
+    name
 }

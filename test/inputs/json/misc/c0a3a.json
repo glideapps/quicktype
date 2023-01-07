@@ -1,1 +1,30 @@
-{"delay":"false","IATA":"MIA","state":"Florida","name":"Miami International","weather":{"visibility":10.00,"weather":"Partly Cloudy","meta":{"credit":"NOAA's National Weather Service","updated":"6:53 PM Local","url":"http://weather.gov/"},"temp":"87.0 F (30.6 C)","wind":"West at 8.1mph"},"ICAO":"KMIA","city":"Miami","status":{"reason":"No known delays for this airport.","closureBegin":"","endTime":"","minDelay":"","avgDelay":"","maxDelay":"","closureEnd":"","trend":"","type":""}} 
+{
+    "delay": "false",
+    "IATA": "MIA",
+    "state": "Florida",
+    "name": "Miami International",
+    "weather": {
+        "visibility": 10.0,
+        "weather": "Partly Cloudy",
+        "meta": {
+            "credit": "NOAA's National Weather Service",
+            "updated": "6:53 PM Local",
+            "url": "http://weather.gov/"
+        },
+        "temp": "87.0 F (30.6 C)",
+        "wind": "West at 8.1mph"
+    },
+    "ICAO": "KMIA",
+    "city": "Miami",
+    "status": {
+        "reason": "No known delays for this airport.",
+        "closureBegin": "",
+        "endTime": "",
+        "minDelay": "",
+        "avgDelay": "",
+        "maxDelay": "",
+        "closureEnd": "",
+        "trend": "",
+        "type": ""
+    }
+}

@@ -1,1 +1,126 @@
-{"query":{"count":1,"created":"2017-07-29T23:31:20Z","lang":"en-US","results":{"channel":{"units":{"distance":"mi","pressure":"in","speed":"mph","temperature":"F"},"title":"Yahoo! Weather - Moscow, Moscow Federal City, RU","link":"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-2122265/","description":"Yahoo! Weather for Moscow, Moscow Federal City, RU","language":"en-us","lastBuildDate":"Sun, 30 Jul 2017 02:31 AM MSK","ttl":"60","location":{"city":"Moscow","country":"Russia","region":" Moscow Federal City"},"wind":{"chill":"73","direction":"125","speed":"11"},"atmosphere":{"humidity":"70","pressure":"987.0","rising":"0","visibility":"16.1"},"astronomy":{"sunrise":"4:32 am","sunset":"8:39 pm"},"image":{"title":"Yahoo! Weather","width":"142","height":"18","link":"http://weather.yahoo.com","url":"http://l.yimg.com/a/i/brand/purplelogo//uh/us/news-wea.gif"},"item":{"title":"Conditions for Moscow, Moscow Federal City, RU at 01:00 AM MSK","lat":"55.741638","long":"37.605061","link":"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-2122265/","pubDate":"Sun, 30 Jul 2017 01:00 AM MSK","condition":{"code":"26","date":"Sun, 30 Jul 2017 01:00 AM MSK","temp":"74","text":"Cloudy"},"forecast":[{"code":"11","date":"30 Jul 2017","day":"Sun","high":"80","low":"71","text":"Showers"},{"code":"11","date":"31 Jul 2017","day":"Mon","high":"75","low":"63","text":"Showers"},{"code":"34","date":"01 Aug 2017","day":"Tue","high":"80","low":"60","text":"Mostly Sunny"},{"code":"30","date":"02 Aug 2017","day":"Wed","high":"78","low":"63","text":"Partly Cloudy"},{"code":"30","date":"03 Aug 2017","day":"Thu","high":"79","low":"67","text":"Partly Cloudy"},{"code":"30","date":"04 Aug 2017","day":"Fri","high":"74","low":"62","text":"Partly Cloudy"},{"code":"30","date":"05 Aug 2017","day":"Sat","high":"75","low":"61","text":"Partly Cloudy"},{"code":"30","date":"06 Aug 2017","day":"Sun","high":"72","low":"62","text":"Partly Cloudy"},{"code":"30","date":"07 Aug 2017","day":"Mon","high":"73","low":"60","text":"Partly Cloudy"},{"code":"30","date":"08 Aug 2017","day":"Tue","high":"72","low":"57","text":"Partly Cloudy"}],"description":"<![CDATA[<img src=\"http://l.yimg.com/a/i/us/we/52/26.gif\"/>\n<BR />\n<b>Current Conditions:</b>\n<BR />Cloudy\n<BR />\n<BR />\n<b>Forecast:</b>\n<BR /> Sun - Showers. High: 80Low: 71\n<BR /> Mon - Showers. High: 75Low: 63\n<BR /> Tue - Mostly Sunny. High: 80Low: 60\n<BR /> Wed - Partly Cloudy. High: 78Low: 63\n<BR /> Thu - Partly Cloudy. High: 79Low: 67\n<BR />\n<BR />\n<a href=\"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-2122265/\">Full Forecast at Yahoo! Weather</a>\n<BR />\n<BR />\n(provided by <a href=\"http://www.weather.com\" >The Weather Channel</a>)\n<BR />\n]]>","guid":{"isPermaLink":"false"}}}}}}
+{
+    "query": {
+        "count": 1,
+        "created": "2017-07-29T23:31:20Z",
+        "lang": "en-US",
+        "results": {
+            "channel": {
+                "units": { "distance": "mi", "pressure": "in", "speed": "mph", "temperature": "F" },
+                "title": "Yahoo! Weather - Moscow, Moscow Federal City, RU",
+                "link": "http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-2122265/",
+                "description": "Yahoo! Weather for Moscow, Moscow Federal City, RU",
+                "language": "en-us",
+                "lastBuildDate": "Sun, 30 Jul 2017 02:31 AM MSK",
+                "ttl": "60",
+                "location": { "city": "Moscow", "country": "Russia", "region": " Moscow Federal City" },
+                "wind": { "chill": "73", "direction": "125", "speed": "11" },
+                "atmosphere": { "humidity": "70", "pressure": "987.0", "rising": "0", "visibility": "16.1" },
+                "astronomy": { "sunrise": "4:32 am", "sunset": "8:39 pm" },
+                "image": {
+                    "title": "Yahoo! Weather",
+                    "width": "142",
+                    "height": "18",
+                    "link": "http://weather.yahoo.com",
+                    "url": "http://l.yimg.com/a/i/brand/purplelogo//uh/us/news-wea.gif"
+                },
+                "item": {
+                    "title": "Conditions for Moscow, Moscow Federal City, RU at 01:00 AM MSK",
+                    "lat": "55.741638",
+                    "long": "37.605061",
+                    "link": "http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-2122265/",
+                    "pubDate": "Sun, 30 Jul 2017 01:00 AM MSK",
+                    "condition": {
+                        "code": "26",
+                        "date": "Sun, 30 Jul 2017 01:00 AM MSK",
+                        "temp": "74",
+                        "text": "Cloudy"
+                    },
+                    "forecast": [
+                        {
+                            "code": "11",
+                            "date": "30 Jul 2017",
+                            "day": "Sun",
+                            "high": "80",
+                            "low": "71",
+                            "text": "Showers"
+                        },
+                        {
+                            "code": "11",
+                            "date": "31 Jul 2017",
+                            "day": "Mon",
+                            "high": "75",
+                            "low": "63",
+                            "text": "Showers"
+                        },
+                        {
+                            "code": "34",
+                            "date": "01 Aug 2017",
+                            "day": "Tue",
+                            "high": "80",
+                            "low": "60",
+                            "text": "Mostly Sunny"
+                        },
+                        {
+                            "code": "30",
+                            "date": "02 Aug 2017",
+                            "day": "Wed",
+                            "high": "78",
+                            "low": "63",
+                            "text": "Partly Cloudy"
+                        },
+                        {
+                            "code": "30",
+                            "date": "03 Aug 2017",
+                            "day": "Thu",
+                            "high": "79",
+                            "low": "67",
+                            "text": "Partly Cloudy"
+                        },
+                        {
+                            "code": "30",
+                            "date": "04 Aug 2017",
+                            "day": "Fri",
+                            "high": "74",
+                            "low": "62",
+                            "text": "Partly Cloudy"
+                        },
+                        {
+                            "code": "30",
+                            "date": "05 Aug 2017",
+                            "day": "Sat",
+                            "high": "75",
+                            "low": "61",
+                            "text": "Partly Cloudy"
+                        },
+                        {
+                            "code": "30",
+                            "date": "06 Aug 2017",
+                            "day": "Sun",
+                            "high": "72",
+                            "low": "62",
+                            "text": "Partly Cloudy"
+                        },
+                        {
+                            "code": "30",
+                            "date": "07 Aug 2017",
+                            "day": "Mon",
+                            "high": "73",
+                            "low": "60",
+                            "text": "Partly Cloudy"
+                        },
+                        {
+                            "code": "30",
+                            "date": "08 Aug 2017",
+                            "day": "Tue",
+                            "high": "72",
+                            "low": "57",
+                            "text": "Partly Cloudy"
+                        }
+                    ],
+                    "description": "<![CDATA[<img src=\"http://l.yimg.com/a/i/us/we/52/26.gif\"/>\n<BR />\n<b>Current Conditions:</b>\n<BR />Cloudy\n<BR />\n<BR />\n<b>Forecast:</b>\n<BR /> Sun - Showers. High: 80Low: 71\n<BR /> Mon - Showers. High: 75Low: 63\n<BR /> Tue - Mostly Sunny. High: 80Low: 60\n<BR /> Wed - Partly Cloudy. High: 78Low: 63\n<BR /> Thu - Partly Cloudy. High: 79Low: 67\n<BR />\n<BR />\n<a href=\"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-2122265/\">Full Forecast at Yahoo! Weather</a>\n<BR />\n<BR />\n(provided by <a href=\"http://www.weather.com\" >The Weather Channel</a>)\n<BR />\n]]>",
+                    "guid": { "isPermaLink": "false" }
+                }
+            }
+        }
+    }
+}

@@ -1106,7 +1106,7 @@ export enum AcronymStyleOptions {
     Lower = "lowerCase"
 }
 
-export const acronymOption = function(defaultOption: AcronymStyleOptions) {
+export const acronymOption = function (defaultOption: AcronymStyleOptions) {
     return new EnumOption(
         "acronym-style",
         "Acronym naming style",

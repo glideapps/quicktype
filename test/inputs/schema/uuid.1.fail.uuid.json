@@ -1,5 +1,5 @@
 {
-  "one": "foo",
-  "nullable": null,
-  "unionWithEnum": "foo"
+    "one": "foo",
+    "nullable": null,
+    "unionWithEnum": "foo"
 }

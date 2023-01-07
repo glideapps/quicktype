@@ -1,9 +1,9 @@
 {
-  "one": "true",
-  "optional": "false",
-  "nullable": "true",
-  "arrOne": ["true", "false"],
-  "arrNullable": ["true", null, "false"],
-  "unionWithBool": true,
-  "unionWithBoolAndEnum": false
+    "one": "true",
+    "optional": "false",
+    "nullable": "true",
+    "arrOne": ["true", "false"],
+    "arrNullable": ["true", null, "false"],
+    "unionWithBool": true,
+    "unionWithBoolAndEnum": false
 }

@@ -1,1 +1,30 @@
-{"delay":"true","IATA":"JFK","state":"New York","name":"John F Kennedy International","weather":{"visibility":10.00,"weather":"Mostly Cloudy","meta":{"credit":"NOAA's National Weather Service","updated":"6:51 PM Local","url":"http://weather.gov/"},"temp":"75.0 F (23.9 C)","wind":"North at 13.8mph"},"ICAO":"KJFK","city":"New York","status":{"reason":"WEATHER / WIND","closureBegin":"","endTime":"","minDelay":"","avgDelay":"51 minutes","maxDelay":"","closureEnd":"","trend":"","type":"Ground Delay"}} 
+{
+    "delay": "true",
+    "IATA": "JFK",
+    "state": "New York",
+    "name": "John F Kennedy International",
+    "weather": {
+        "visibility": 10.0,
+        "weather": "Mostly Cloudy",
+        "meta": {
+            "credit": "NOAA's National Weather Service",
+            "updated": "6:51 PM Local",
+            "url": "http://weather.gov/"
+        },
+        "temp": "75.0 F (23.9 C)",
+        "wind": "North at 13.8mph"
+    },
+    "ICAO": "KJFK",
+    "city": "New York",
+    "status": {
+        "reason": "WEATHER / WIND",
+        "closureBegin": "",
+        "endTime": "",
+        "minDelay": "",
+        "avgDelay": "51 minutes",
+        "maxDelay": "",
+        "closureEnd": "",
+        "trend": "",
+        "type": "Ground Delay"
+    }
+}

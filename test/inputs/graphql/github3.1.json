@@ -1,25 +1,25 @@
 {
-  "data": {
-    "viewer": {
-      "login": "schani",
-      "repository": {
-        "pullRequests": {
-          "nodes": [
-            {
-              "state": "MERGED"
-            },
-            {
-              "state": "MERGED"
-            },
-            {
-              "state": "MERGED"
-            },
-            {
-              "state": "OPEN"
+    "data": {
+        "viewer": {
+            "login": "schani",
+            "repository": {
+                "pullRequests": {
+                    "nodes": [
+                        {
+                            "state": "MERGED"
+                        },
+                        {
+                            "state": "MERGED"
+                        },
+                        {
+                            "state": "MERGED"
+                        },
+                        {
+                            "state": "OPEN"
+                        }
+                    ]
+                }
             }
-          ]
         }
-      }
     }
-  }
 }

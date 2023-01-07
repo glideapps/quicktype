@@ -10,7 +10,7 @@ import {
     combineWords,
     firstUpperWordStyle,
     allUpperWordStyle,
-    camelCase,
+    camelCase
 } from "../support/Strings";
 import { assert, defined } from "../support/Support";
 import { StringOption, BooleanOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
@@ -24,7 +24,7 @@ export const goOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     justTypesAndPackage: new BooleanOption("just-types-and-package", "Plain types with package only", false),
     packageName: new StringOption("package", "Generated package name", "NAME", "main"),
-    multiFileOutput: new BooleanOption("multi-file-output", "Renders each top-level object in its own Go file", false),
+    multiFileOutput: new BooleanOption("multi-file-output", "Renders each top-level object in its own Go file", false)
 };
 
 export class GoTargetLanguage extends TargetLanguage {
@@ -126,7 +126,7 @@ export class GoRenderer extends ConvenienceRenderer {
         const unmarshalName = new DependencyName(
             namingFunction,
             topLevelName.order,
-            (lookup) => `unmarshal_${lookup(topLevelName)}`
+            lookup => `unmarshal_${lookup(topLevelName)}`
         );
         this._topLevelUnmarshalNames.set(topLevelName, unmarshalName);
         return [unmarshalName];
@@ -191,15 +191,15 @@ export class GoRenderer extends ConvenienceRenderer {
     private goType(t: Type, withIssues: boolean = false): Sourcelike {
         return matchType<Sourcelike>(
             t,
-            (_anyType) => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "interface{}"),
-            (_nullType) => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "interface{}"),
-            (_boolType) => "bool",
-            (_integerType) => "int64",
-            (_doubleType) => "float64",
-            (_stringType) => "string",
-            (arrayType) => ["[]", this.goType(arrayType.items, withIssues)],
-            (classType) => this.nameForNamedType(classType),
-            (mapType) => {
+            _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "interface{}"),
+            _nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "interface{}"),
+            _boolType => "bool",
+            _integerType => "int64",
+            _doubleType => "float64",
+            _stringType => "string",
+            arrayType => ["[]", this.goType(arrayType.items, withIssues)],
+            classType => this.nameForNamedType(classType),
+            mapType => {
                 let valueSource: Sourcelike;
                 const v = mapType.values;
                 if (v instanceof UnionType && nullableFromUnion(v) === null) {
@@ -209,8 +209,8 @@ export class GoRenderer extends ConvenienceRenderer {
                 }
                 return ["map[string]", valueSource];
             },
-            (enumType) => this.nameForNamedType(enumType),
-            (unionType) => {
+            enumType => this.nameForNamedType(enumType),
+            unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) return this.nullableGoType(nullable, withIssues);
                 return this.nameForNamedType(unionType);
@@ -350,7 +350,7 @@ export class GoRenderer extends ConvenienceRenderer {
                 this.emitLine("var c ", goType);
             });
             const args = makeArgs(
-                (fn) => ["&x.", fn],
+                fn => ["&x.", fn],
                 (isClass, fn) => {
                     if (isClass) {
                         return "true, &c";
@@ -373,7 +373,7 @@ export class GoRenderer extends ConvenienceRenderer {
         this.ensureBlankLine();
         this.emitFunc(["(x *", unionName, ") MarshalJSON() ([]byte, error)"], () => {
             const args = makeArgs(
-                (fn) => ["x.", fn],
+                fn => ["x.", fn],
                 (_, fn) => ["x.", fn, " != nil, x.", fn]
             );
             this.emitLine("return marshalUnion(", args, ")");
@@ -554,7 +554,7 @@ func marshalUnion(pi *int64, pf *float64, pb *bool, ps *string, haveArray bool, 
         this.forEachTopLevel(
             "leading-and-interposing",
             (t, name) => this.emitTopLevel(t, name),
-            (t) =>
+            t =>
                 !(this._options.justTypes || this._options.justTypesAndPackage) ||
                 this.namedTypeToNameForTopLevel(t) === undefined
         );

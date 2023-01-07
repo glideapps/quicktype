@@ -1,65 +1,65 @@
 {
-  "data": {
-    "viewer": {
-      "login": "schani",
-      "starredRepositories": {
-        "totalCount": 58
-      },
-      "repositories": {
-        "edges": [
-          {
-            "node": {
-              "name": "flickr-clojure",
-              "stargazers": {
-                "totalCount": 18
-              },
-              "forks": {
-                "totalCount": 3
-              },
-              "watchers": {
-                "totalCount": 4
-              },
-              "issues": {
-                "totalCount": 1
-              }
+    "data": {
+        "viewer": {
+            "login": "schani",
+            "starredRepositories": {
+                "totalCount": 58
+            },
+            "repositories": {
+                "edges": [
+                    {
+                        "node": {
+                            "name": "flickr-clojure",
+                            "stargazers": {
+                                "totalCount": 18
+                            },
+                            "forks": {
+                                "totalCount": 3
+                            },
+                            "watchers": {
+                                "totalCount": 4
+                            },
+                            "issues": {
+                                "totalCount": 1
+                            }
+                        }
+                    },
+                    {
+                        "node": {
+                            "name": "rwimg",
+                            "stargazers": {
+                                "totalCount": 6
+                            },
+                            "forks": {
+                                "totalCount": 2
+                            },
+                            "watchers": {
+                                "totalCount": 4
+                            },
+                            "issues": {
+                                "totalCount": 1
+                            }
+                        }
+                    },
+                    {
+                        "node": {
+                            "name": "lispreader",
+                            "stargazers": {
+                                "totalCount": 2
+                            },
+                            "forks": {
+                                "totalCount": 0
+                            },
+                            "watchers": {
+                                "totalCount": 4
+                            },
+                            "issues": {
+                                "totalCount": 0
+                            }
+                        }
+                    }
+                ]
             }
-          },
-          {
-            "node": {
-              "name": "rwimg",
-              "stargazers": {
-                "totalCount": 6
-              },
-              "forks": {
-                "totalCount": 2
-              },
-              "watchers": {
-                "totalCount": 4
-              },
-              "issues": {
-                "totalCount": 1
-              }
-            }
-          },
-          {
-            "node": {
-              "name": "lispreader",
-              "stargazers": {
-                "totalCount": 2
-              },
-              "forks": {
-                "totalCount": 0
-              },
-              "watchers": {
-                "totalCount": 4
-              },
-              "issues": {
-                "totalCount": 0
-              }
-            }
-          }
-        ]
-      }
+        }
     }
-  }
 }

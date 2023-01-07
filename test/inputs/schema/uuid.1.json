@@ -1,8 +1,8 @@
 {
-  "one": "68ffea67-509e-482e-90ca-e80e5709cd78",
-  "optional": "891f6132-9749-4907-bd52-9d50ca47fe3a",
-  "nullable": "22dc9756-bb07-4bdd-b975-700b23e8d3ca",
-  "arrOne": ["a89b1ff1-2515-46ae-ae9b-bf2e278f63ea", "ac4095ec-1e94-4c2a-9180-8fd71bfcc0f6"],
-  "arrNullable": ["5cb0e36e-641e-4e12-bf75-dfc9d489ea49", null, "439ccde9-27a6-44b9-b195-cf155aeab732"],
-  "unionWithEnum": "a5004f81-17ea-4c2f-b652-262e4b103ad6"
+    "one": "68ffea67-509e-482e-90ca-e80e5709cd78",
+    "optional": "891f6132-9749-4907-bd52-9d50ca47fe3a",
+    "nullable": "22dc9756-bb07-4bdd-b975-700b23e8d3ca",
+    "arrOne": ["a89b1ff1-2515-46ae-ae9b-bf2e278f63ea", "ac4095ec-1e94-4c2a-9180-8fd71bfcc0f6"],
+    "arrNullable": ["5cb0e36e-641e-4e12-bf75-dfc9d489ea49", null, "439ccde9-27a6-44b9-b195-cf155aeab732"],
+    "unionWithEnum": "a5004f81-17ea-4c2f-b652-262e4b103ad6"
 }

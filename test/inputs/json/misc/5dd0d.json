@@ -1,1 +1,30 @@
-{"delay":"false","IATA":"AUS","state":"Texas","name":"Austin-Bergstrom International","weather":{"visibility":10.00,"weather":"Mostly Cloudy","meta":{"credit":"NOAA's National Weather Service","updated":"5:53 PM Local","url":"http://weather.gov/"},"temp":"105.0 F (40.6 C)","wind":""},"ICAO":"KAUS","city":"Austin","status":{"reason":"No known delays for this airport.","closureBegin":"","endTime":"","minDelay":"","avgDelay":"","maxDelay":"","closureEnd":"","trend":"","type":""}} 
+{
+    "delay": "false",
+    "IATA": "AUS",
+    "state": "Texas",
+    "name": "Austin-Bergstrom International",
+    "weather": {
+        "visibility": 10.0,
+        "weather": "Mostly Cloudy",
+        "meta": {
+            "credit": "NOAA's National Weather Service",
+            "updated": "5:53 PM Local",
+            "url": "http://weather.gov/"
+        },
+        "temp": "105.0 F (40.6 C)",
+        "wind": ""
+    },
+    "ICAO": "KAUS",
+    "city": "Austin",
+    "status": {
+        "reason": "No known delays for this airport.",
+        "closureBegin": "",
+        "endTime": "",
+        "minDelay": "",
+        "avgDelay": "",
+        "maxDelay": "",
+        "closureEnd": "",
+        "trend": "",
+        "type": ""
+    }
+}

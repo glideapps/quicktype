@@ -2,16 +2,10 @@
     "compilerOptions": {
         "target": "es6",
         "module": "commonjs",
-        "lib": [
-            "es6",
-            "dom",
-            "esnext.asynciterable"
-        ],
+        "lib": ["es6", "dom", "esnext.asynciterable"],
         "allowJs": false,
         "declaration": true,
-        "typeRoots": [
-            "../../node_modules/@types"
-        ],
+        "typeRoots": ["../../node_modules/@types"],
         "strict": true,
         "noUnusedLocals": true,
         "noUnusedParameters": true,
@@ -19,9 +13,7 @@
         "outDir": "../../dist",
         "baseUrl": ".",
         "paths": {
-            "quicktype-core": [
-                "../quicktype-core"
-            ]
+            "quicktype-core": ["../quicktype-core"]
         }
     }
 }

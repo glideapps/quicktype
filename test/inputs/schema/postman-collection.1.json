@@ -1,4 +1,4 @@
 {
-  "name": "foo",
-  "response": [{ "body": "true" }]
+    "name": "foo",
+    "response": [{ "body": "true" }]
 }

@@ -1,1 +1,12 @@
-{"message": "success", "people": [{"name": "Peggy Whitson", "craft": "ISS"}, {"name": "Fyodor Yurchikhin", "craft": "ISS"}, {"name": "Jack Fischer", "craft": "ISS"}, {"name": "Sergey Ryazanskiy", "craft": "ISS"}, {"name": "Randy Bresnik", "craft": "ISS"}, {"name": "Paolo Nespoli", "craft": "ISS"}], "number": 6}
+{
+    "message": "success",
+    "people": [
+        { "name": "Peggy Whitson", "craft": "ISS" },
+        { "name": "Fyodor Yurchikhin", "craft": "ISS" },
+        { "name": "Jack Fischer", "craft": "ISS" },
+        { "name": "Sergey Ryazanskiy", "craft": "ISS" },
+        { "name": "Randy Bresnik", "craft": "ISS" },
+        { "name": "Paolo Nespoli", "craft": "ISS" }
+    ],
+    "number": 6
+}

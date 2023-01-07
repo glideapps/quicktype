@@ -1,1 +1,126 @@
-{"query":{"count":1,"created":"2017-07-29T23:31:21Z","lang":"en-US","results":{"channel":{"units":{"distance":"mi","pressure":"in","speed":"mph","temperature":"F"},"title":"Yahoo! Weather - Tokyo, Tokyo Prefecture, JP","link":"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-1118370/","description":"Yahoo! Weather for Tokyo, Tokyo Prefecture, JP","language":"en-us","lastBuildDate":"Sun, 30 Jul 2017 08:31 AM JST","ttl":"60","location":{"city":"Tokyo","country":"Japan","region":" Tokyo Prefecture"},"wind":{"chill":"75","direction":"68","speed":"14"},"atmosphere":{"humidity":"90","pressure":"1007.0","rising":"0","visibility":"15.3"},"astronomy":{"sunrise":"4:48 am","sunset":"6:47 pm"},"image":{"title":"Yahoo! Weather","width":"142","height":"18","link":"http://weather.yahoo.com","url":"http://l.yimg.com/a/i/brand/purplelogo//uh/us/news-wea.gif"},"item":{"title":"Conditions for Tokyo, Tokyo Prefecture, JP at 07:00 AM JST","lat":"35.670479","long":"139.740921","link":"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-1118370/","pubDate":"Sun, 30 Jul 2017 07:00 AM JST","condition":{"code":"28","date":"Sun, 30 Jul 2017 07:00 AM JST","temp":"76","text":"Mostly Cloudy"},"forecast":[{"code":"39","date":"30 Jul 2017","day":"Sun","high":"85","low":"75","text":"Scattered Showers"},{"code":"30","date":"31 Jul 2017","day":"Mon","high":"86","low":"77","text":"Partly Cloudy"},{"code":"4","date":"01 Aug 2017","day":"Tue","high":"86","low":"74","text":"Thunderstorms"},{"code":"11","date":"02 Aug 2017","day":"Wed","high":"80","low":"70","text":"Showers"},{"code":"30","date":"03 Aug 2017","day":"Thu","high":"78","low":"69","text":"Partly Cloudy"},{"code":"28","date":"04 Aug 2017","day":"Fri","high":"79","low":"68","text":"Mostly Cloudy"},{"code":"28","date":"05 Aug 2017","day":"Sat","high":"81","low":"66","text":"Mostly Cloudy"},{"code":"4","date":"06 Aug 2017","day":"Sun","high":"79","low":"71","text":"Thunderstorms"},{"code":"4","date":"07 Aug 2017","day":"Mon","high":"83","low":"75","text":"Thunderstorms"},{"code":"47","date":"08 Aug 2017","day":"Tue","high":"80","low":"73","text":"Scattered Thunderstorms"}],"description":"<![CDATA[<img src=\"http://l.yimg.com/a/i/us/we/52/28.gif\"/>\n<BR />\n<b>Current Conditions:</b>\n<BR />Mostly Cloudy\n<BR />\n<BR />\n<b>Forecast:</b>\n<BR /> Sun - Scattered Showers. High: 85Low: 75\n<BR /> Mon - Partly Cloudy. High: 86Low: 77\n<BR /> Tue - Thunderstorms. High: 86Low: 74\n<BR /> Wed - Showers. High: 80Low: 70\n<BR /> Thu - Partly Cloudy. High: 78Low: 69\n<BR />\n<BR />\n<a href=\"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-1118370/\">Full Forecast at Yahoo! Weather</a>\n<BR />\n<BR />\n(provided by <a href=\"http://www.weather.com\" >The Weather Channel</a>)\n<BR />\n]]>","guid":{"isPermaLink":"false"}}}}}}
+{
+    "query": {
+        "count": 1,
+        "created": "2017-07-29T23:31:21Z",
+        "lang": "en-US",
+        "results": {
+            "channel": {
+                "units": { "distance": "mi", "pressure": "in", "speed": "mph", "temperature": "F" },
+                "title": "Yahoo! Weather - Tokyo, Tokyo Prefecture, JP",
+                "link": "http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-1118370/",
+                "description": "Yahoo! Weather for Tokyo, Tokyo Prefecture, JP",
+                "language": "en-us",
+                "lastBuildDate": "Sun, 30 Jul 2017 08:31 AM JST",
+                "ttl": "60",
+                "location": { "city": "Tokyo", "country": "Japan", "region": " Tokyo Prefecture" },
+                "wind": { "chill": "75", "direction": "68", "speed": "14" },
+                "atmosphere": { "humidity": "90", "pressure": "1007.0", "rising": "0", "visibility": "15.3" },
+                "astronomy": { "sunrise": "4:48 am", "sunset": "6:47 pm" },
+                "image": {
+                    "title": "Yahoo! Weather",
+                    "width": "142",
+                    "height": "18",
+                    "link": "http://weather.yahoo.com",
+                    "url": "http://l.yimg.com/a/i/brand/purplelogo//uh/us/news-wea.gif"
+                },
+                "item": {
+                    "title": "Conditions for Tokyo, Tokyo Prefecture, JP at 07:00 AM JST",
+                    "lat": "35.670479",
+                    "long": "139.740921",
+                    "link": "http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-1118370/",
+                    "pubDate": "Sun, 30 Jul 2017 07:00 AM JST",
+                    "condition": {
+                        "code": "28",
+                        "date": "Sun, 30 Jul 2017 07:00 AM JST",
+                        "temp": "76",
+                        "text": "Mostly Cloudy"
+                    },
+                    "forecast": [
+                        {
+                            "code": "39",
+                            "date": "30 Jul 2017",
+                            "day": "Sun",
+                            "high": "85",
+                            "low": "75",
+                            "text": "Scattered Showers"
+                        },
+                        {
+                            "code": "30",
+                            "date": "31 Jul 2017",
+                            "day": "Mon",
+                            "high": "86",
+                            "low": "77",
+                            "text": "Partly Cloudy"
+                        },
+                        {
+                            "code": "4",
+                            "date": "01 Aug 2017",
+                            "day": "Tue",
+                            "high": "86",
+                            "low": "74",
+                            "text": "Thunderstorms"
+                        },
+                        {
+                            "code": "11",
+                            "date": "02 Aug 2017",
+                            "day": "Wed",
+                            "high": "80",
+                            "low": "70",
+                            "text": "Showers"
+                        },
+                        {
+                            "code": "30",
+                            "date": "03 Aug 2017",
+                            "day": "Thu",
+                            "high": "78",
+                            "low": "69",
+                            "text": "Partly Cloudy"
+                        },
+                        {
+                            "code": "28",
+                            "date": "04 Aug 2017",
+                            "day": "Fri",
+                            "high": "79",
+                            "low": "68",
+                            "text": "Mostly Cloudy"
+                        },
+                        {
+                            "code": "28",
+                            "date": "05 Aug 2017",
+                            "day": "Sat",
+                            "high": "81",
+                            "low": "66",
+                            "text": "Mostly Cloudy"
+                        },
+                        {
+                            "code": "4",
+                            "date": "06 Aug 2017",
+                            "day": "Sun",
+                            "high": "79",
+                            "low": "71",
+                            "text": "Thunderstorms"
+                        },
+                        {
+                            "code": "4",
+                            "date": "07 Aug 2017",
+                            "day": "Mon",
+                            "high": "83",
+                            "low": "75",
+                            "text": "Thunderstorms"
+                        },
+                        {
+                            "code": "47",
+                            "date": "08 Aug 2017",
+                            "day": "Tue",
+                            "high": "80",
+                            "low": "73",
+                            "text": "Scattered Thunderstorms"
+                        }
+                    ],
+                    "description": "<![CDATA[<img src=\"http://l.yimg.com/a/i/us/we/52/28.gif\"/>\n<BR />\n<b>Current Conditions:</b>\n<BR />Mostly Cloudy\n<BR />\n<BR />\n<b>Forecast:</b>\n<BR /> Sun - Scattered Showers. High: 85Low: 75\n<BR /> Mon - Partly Cloudy. High: 86Low: 77\n<BR /> Tue - Thunderstorms. High: 86Low: 74\n<BR /> Wed - Showers. High: 80Low: 70\n<BR /> Thu - Partly Cloudy. High: 78Low: 69\n<BR />\n<BR />\n<a href=\"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-1118370/\">Full Forecast at Yahoo! Weather</a>\n<BR />\n<BR />\n(provided by <a href=\"http://www.weather.com\" >The Weather Channel</a>)\n<BR />\n]]>",
+                    "guid": { "isPermaLink": "false" }
+                }
+            }
+        }
+    }
+}

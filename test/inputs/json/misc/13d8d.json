@@ -1,1 +1,17 @@
-[{"category":"violent-crime","location_type":"Force","location":{"latitude":"52.629909","street":{"id":883345,"name":"On or near Marquis Street"},"longitude":"-1.132073"},"context":"","outcome_status":{"category":"Status update unavailable","date":"2015-06"},"persistent_id":"e1ef17934e37a490f0cb67ff6d1d0fa9cd40959081f05255127e99c6334d18d8","id":39352006,"location_subtype":"","month":"2015-02"}]
+[
+    {
+        "category": "violent-crime",
+        "location_type": "Force",
+        "location": {
+            "latitude": "52.629909",
+            "street": { "id": 883345, "name": "On or near Marquis Street" },
+            "longitude": "-1.132073"
+        },
+        "context": "",
+        "outcome_status": { "category": "Status update unavailable", "date": "2015-06" },
+        "persistent_id": "e1ef17934e37a490f0cb67ff6d1d0fa9cd40959081f05255127e99c6334d18d8",
+        "id": 39352006,
+        "location_subtype": "",
+        "month": "2015-02"
+    }
+]

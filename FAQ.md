@@ -14,7 +14,7 @@
 -   [Where can I learn more about JSON Schema?](#where-can-i-learn-more-about-json-schema)
 -   [I'd like to customize the output for my particular application.](#id-like-to-customize-the-output-for-my-particular-application)
 -   [quicktype is awesome, I'd like to support it!](#quicktype-is-awesome-id-like-to-support-it)
-- [How is this different from other JSON converters?](#how-is-quicktype-different-from-other-json-converters)
+-   [How is this different from other JSON converters?](#how-is-quicktype-different-from-other-json-converters)
 
 ## What is this?
 
@@ -28,16 +28,16 @@ You paste JSON on the left, and code appears on the right. [This video](https://
 
 `quicktype` is superior to other JSON converters in many important ways:
 
-- **Type inference**: quicktype infers optionals, dates, UUIDs, enums, integers, and unions. It also infers maps (versus objects) using a Markov chain.
-- **Careful naming**: quicktype’s naming system creates nice, legal, unique names for types and properties, handling reserved words and tricky corner cases (e.g. `{ “”: “this is legal”, “null”: “so is this”, "1;DROP TABLE users”: “and this" }`).
-- **Heterogeneous data**: JSON data is often heterogenous. quicktype infers this, and creates union types in languages that support them, or synthetic union types in languages that don’t (e.g. try quicktyping `[0, “zero”]` as Swift and Go).
-- **Type unification**. This works across multiple samples, so you can quicktype a directory of API data, for example, and unify types across all responses (e.g. you’ll get just one `Customer` type, even if customer data occurs in many samples). You can also provide multiple samples for the same type for better coverage.
-- **Marshalling code**: In addition to types, quicktype generates functions for marshalling your types to and from JSON.
-- Supports dynamic languages: quicktype can add dynamic typechecks for JavaScript, TypeScript, Flow, Python, and Ruby.
-- **Convenient CLI**: Run `quicktype https://blockchain.info/latestblock -o LatestBlock.ts` to quicktype a Bitcoin API in TypeScript.
-- **Client-side**: [The web version of quicktype](https://app.quicktype.io/) runs on the client, so servers never see your data (most JSON converters send your JSON to their server)
-- **Typed input**: Feed quicktype TypeScript or JSON Schema instead of JSON for better control over generated types.
-- **Code quality**: quicktype emits clean code
+-   **Type inference**: quicktype infers optionals, dates, UUIDs, enums, integers, and unions. It also infers maps (versus objects) using a Markov chain.
+-   **Careful naming**: quicktype’s naming system creates nice, legal, unique names for types and properties, handling reserved words and tricky corner cases (e.g. `{ “”: “this is legal”, “null”: “so is this”, "1;DROP TABLE users”: “and this" }`).
+-   **Heterogeneous data**: JSON data is often heterogenous. quicktype infers this, and creates union types in languages that support them, or synthetic union types in languages that don’t (e.g. try quicktyping `[0, “zero”]` as Swift and Go).
+-   **Type unification**. This works across multiple samples, so you can quicktype a directory of API data, for example, and unify types across all responses (e.g. you’ll get just one `Customer` type, even if customer data occurs in many samples). You can also provide multiple samples for the same type for better coverage.
+-   **Marshalling code**: In addition to types, quicktype generates functions for marshalling your types to and from JSON.
+-   Supports dynamic languages: quicktype can add dynamic typechecks for JavaScript, TypeScript, Flow, Python, and Ruby.
+-   **Convenient CLI**: Run `quicktype https://blockchain.info/latestblock -o LatestBlock.ts` to quicktype a Bitcoin API in TypeScript.
+-   **Client-side**: [The web version of quicktype](https://app.quicktype.io/) runs on the client, so servers never see your data (most JSON converters send your JSON to their server)
+-   **Typed input**: Feed quicktype TypeScript or JSON Schema instead of JSON for better control over generated types.
+-   **Code quality**: quicktype emits clean code
 
 ## How do I use this with my code?
 

@@ -42,14 +42,19 @@ export enum Framework {
     None,
     Jackson,
     Klaxon,
-    KotlinX,
+    KotlinX
 }
 
 export const kotlinOptions = {
     framework: new EnumOption(
         "framework",
         "Serialization framework",
-        [["just-types", Framework.None], ["jackson", Framework.Jackson], ["klaxon", Framework.Klaxon], ["kotlinx", Framework.KotlinX]],
+        [
+            ["just-types", Framework.None],
+            ["jackson", Framework.Jackson],
+            ["klaxon", Framework.Klaxon],
+            ["kotlinx", Framework.KotlinX]
+        ],
         "klaxon"
     ),
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
@@ -156,7 +161,11 @@ function isStartCharacter(codePoint: number): boolean {
 
 const legalizeName = legalizeCharacters(isPartCharacter);
 
-function kotlinNameStyle(isUpper: boolean, original: string, acronymsStyle: (s: string) => string = allUpperWordStyle): string {
+function kotlinNameStyle(
+    isUpper: boolean,
+    original: string,
+    acronymsStyle: (s: string) => string = allUpperWordStyle
+): string {
     const words = splitIntoWords(original);
     return combineWords(
         words,
@@ -401,10 +410,16 @@ export class KotlinRenderer extends ConvenienceRenderer {
             {
                 let table: Sourcelike[][] = [];
                 this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
-                    table.push([["class ", name, "(val value: ", this.kotlinType(t), ")"], [" : ", unionName, "()"]]);
+                    table.push([
+                        ["class ", name, "(val value: ", this.kotlinType(t), ")"],
+                        [" : ", unionName, "()"]
+                    ]);
                 });
                 if (maybeNull !== null) {
-                    table.push([["class ", this.nameForUnionMember(u, maybeNull), "()"], [" : ", unionName, "()"]]);
+                    table.push([
+                        ["class ", this.nameForUnionMember(u, maybeNull), "()"],
+                        [" : ", unionName, "()"]
+                    ]);
                 }
                 this.emitTable(table);
             }
@@ -1042,7 +1057,11 @@ export class KotlinXRenderer extends KotlinRenderer {
         const table: Sourcelike[][] = [];
         table.push(["// val ", "json", " = Json { allowStructuredMapKeys = true }"]);
         this.forEachTopLevel("none", (_, name) => {
-            table.push(["// val ", modifySource(camelCase, name), ` = json.parse(${this.sourcelikeToString(name)}.serializer(), jsonString)`]);
+            table.push([
+                "// val ",
+                modifySource(camelCase, name),
+                ` = json.parse(${this.sourcelikeToString(name)}.serializer(), jsonString)`
+            ]);
         });
         this.emitTable(table);
     }
@@ -1071,7 +1090,7 @@ export class KotlinXRenderer extends KotlinRenderer {
         const escapedName = stringEscape(jsonName);
         const namesDiffer = this.sourcelikeToString(propName) !== escapedName;
         if (namesDiffer) {
-            return ["@SerialName(\"", escapedName, "\")"];
+            return ['@SerialName("', escapedName, '")'];
         }
         return undefined;
     }

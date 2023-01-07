@@ -6,13 +6,9 @@
         "version": "2.0.0"
     },
     "host": "api.trade.gov",
-    "schemes": [
-        "https"
-    ],
+    "schemes": ["https"],
     "basePath": "/v2",
-    "produces": [
-        "application/json"
-    ],
+    "produces": ["application/json"],
     "paths": {
         "/ita_taxonomies/search": {
             "get": {
@@ -60,10 +56,7 @@
                         "format": "string"
                     }
                 ],
-                "tags": [
-                    "Trade",
-                    "ITA"
-                ],
+                "tags": ["Trade", "ITA"],
                 "responses": {
                     "200": {
                         "description": "",

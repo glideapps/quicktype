@@ -1,1 +1,126 @@
-{"query":{"count":1,"created":"2017-07-29T23:31:20Z","lang":"en-US","results":{"channel":{"units":{"distance":"mi","pressure":"in","speed":"mph","temperature":"F"},"title":"Yahoo! Weather - Berlin, BE, DE","link":"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-638242/","description":"Yahoo! Weather for Berlin, BE, DE","language":"en-us","lastBuildDate":"Sun, 30 Jul 2017 01:31 AM CEST","ttl":"60","location":{"city":"Berlin","country":"Germany","region":" BE"},"wind":{"chill":"70","direction":"205","speed":"4"},"atmosphere":{"humidity":"68","pressure":"1007.0","rising":"0","visibility":"16.1"},"astronomy":{"sunrise":"5:24 am","sunset":"9:1 pm"},"image":{"title":"Yahoo! Weather","width":"142","height":"18","link":"http://weather.yahoo.com","url":"http://l.yimg.com/a/i/brand/purplelogo//uh/us/news-wea.gif"},"item":{"title":"Conditions for Berlin, BE, DE at 12:00 AM CEST","lat":"52.516071","long":"13.37698","link":"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-638242/","pubDate":"Sun, 30 Jul 2017 12:00 AM CEST","condition":{"code":"27","date":"Sun, 30 Jul 2017 12:00 AM CEST","temp":"69","text":"Mostly Cloudy"},"forecast":[{"code":"39","date":"30 Jul 2017","day":"Sun","high":"87","low":"66","text":"Scattered Showers"},{"code":"28","date":"31 Jul 2017","day":"Mon","high":"77","low":"67","text":"Mostly Cloudy"},{"code":"4","date":"01 Aug 2017","day":"Tue","high":"83","low":"67","text":"Thunderstorms"},{"code":"4","date":"02 Aug 2017","day":"Wed","high":"74","low":"67","text":"Thunderstorms"},{"code":"28","date":"03 Aug 2017","day":"Thu","high":"77","low":"64","text":"Mostly Cloudy"},{"code":"30","date":"04 Aug 2017","day":"Fri","high":"73","low":"64","text":"Partly Cloudy"},{"code":"30","date":"05 Aug 2017","day":"Sat","high":"74","low":"62","text":"Partly Cloudy"},{"code":"30","date":"06 Aug 2017","day":"Sun","high":"73","low":"60","text":"Partly Cloudy"},{"code":"12","date":"07 Aug 2017","day":"Mon","high":"72","low":"60","text":"Rain"},{"code":"30","date":"08 Aug 2017","day":"Tue","high":"72","low":"59","text":"Partly Cloudy"}],"description":"<![CDATA[<img src=\"http://l.yimg.com/a/i/us/we/52/27.gif\"/>\n<BR />\n<b>Current Conditions:</b>\n<BR />Mostly Cloudy\n<BR />\n<BR />\n<b>Forecast:</b>\n<BR /> Sun - Scattered Showers. High: 87Low: 66\n<BR /> Mon - Mostly Cloudy. High: 77Low: 67\n<BR /> Tue - Thunderstorms. High: 83Low: 67\n<BR /> Wed - Thunderstorms. High: 74Low: 67\n<BR /> Thu - Mostly Cloudy. High: 77Low: 64\n<BR />\n<BR />\n<a href=\"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-638242/\">Full Forecast at Yahoo! Weather</a>\n<BR />\n<BR />\n(provided by <a href=\"http://www.weather.com\" >The Weather Channel</a>)\n<BR />\n]]>","guid":{"isPermaLink":"false"}}}}}}
+{
+    "query": {
+        "count": 1,
+        "created": "2017-07-29T23:31:20Z",
+        "lang": "en-US",
+        "results": {
+            "channel": {
+                "units": { "distance": "mi", "pressure": "in", "speed": "mph", "temperature": "F" },
+                "title": "Yahoo! Weather - Berlin, BE, DE",
+                "link": "http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-638242/",
+                "description": "Yahoo! Weather for Berlin, BE, DE",
+                "language": "en-us",
+                "lastBuildDate": "Sun, 30 Jul 2017 01:31 AM CEST",
+                "ttl": "60",
+                "location": { "city": "Berlin", "country": "Germany", "region": " BE" },
+                "wind": { "chill": "70", "direction": "205", "speed": "4" },
+                "atmosphere": { "humidity": "68", "pressure": "1007.0", "rising": "0", "visibility": "16.1" },
+                "astronomy": { "sunrise": "5:24 am", "sunset": "9:1 pm" },
+                "image": {
+                    "title": "Yahoo! Weather",
+                    "width": "142",
+                    "height": "18",
+                    "link": "http://weather.yahoo.com",
+                    "url": "http://l.yimg.com/a/i/brand/purplelogo//uh/us/news-wea.gif"
+                },
+                "item": {
+                    "title": "Conditions for Berlin, BE, DE at 12:00 AM CEST",
+                    "lat": "52.516071",
+                    "long": "13.37698",
+                    "link": "http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-638242/",
+                    "pubDate": "Sun, 30 Jul 2017 12:00 AM CEST",
+                    "condition": {
+                        "code": "27",
+                        "date": "Sun, 30 Jul 2017 12:00 AM CEST",
+                        "temp": "69",
+                        "text": "Mostly Cloudy"
+                    },
+                    "forecast": [
+                        {
+                            "code": "39",
+                            "date": "30 Jul 2017",
+                            "day": "Sun",
+                            "high": "87",
+                            "low": "66",
+                            "text": "Scattered Showers"
+                        },
+                        {
+                            "code": "28",
+                            "date": "31 Jul 2017",
+                            "day": "Mon",
+                            "high": "77",
+                            "low": "67",
+                            "text": "Mostly Cloudy"
+                        },
+                        {
+                            "code": "4",
+                            "date": "01 Aug 2017",
+                            "day": "Tue",
+                            "high": "83",
+                            "low": "67",
+                            "text": "Thunderstorms"
+                        },
+                        {
+                            "code": "4",
+                            "date": "02 Aug 2017",
+                            "day": "Wed",
+                            "high": "74",
+                            "low": "67",
+                            "text": "Thunderstorms"
+                        },
+                        {
+                            "code": "28",
+                            "date": "03 Aug 2017",
+                            "day": "Thu",
+                            "high": "77",
+                            "low": "64",
+                            "text": "Mostly Cloudy"
+                        },
+                        {
+                            "code": "30",
+                            "date": "04 Aug 2017",
+                            "day": "Fri",
+                            "high": "73",
+                            "low": "64",
+                            "text": "Partly Cloudy"
+                        },
+                        {
+                            "code": "30",
+                            "date": "05 Aug 2017",
+                            "day": "Sat",
+                            "high": "74",
+                            "low": "62",
+                            "text": "Partly Cloudy"
+                        },
+                        {
+                            "code": "30",
+                            "date": "06 Aug 2017",
+                            "day": "Sun",
+                            "high": "73",
+                            "low": "60",
+                            "text": "Partly Cloudy"
+                        },
+                        {
+                            "code": "12",
+                            "date": "07 Aug 2017",
+                            "day": "Mon",
+                            "high": "72",
+                            "low": "60",
+                            "text": "Rain"
+                        },
+                        {
+                            "code": "30",
+                            "date": "08 Aug 2017",
+                            "day": "Tue",
+                            "high": "72",
+                            "low": "59",
+                            "text": "Partly Cloudy"
+                        }
+                    ],
+                    "description": "<![CDATA[<img src=\"http://l.yimg.com/a/i/us/we/52/27.gif\"/>\n<BR />\n<b>Current Conditions:</b>\n<BR />Mostly Cloudy\n<BR />\n<BR />\n<b>Forecast:</b>\n<BR /> Sun - Scattered Showers. High: 87Low: 66\n<BR /> Mon - Mostly Cloudy. High: 77Low: 67\n<BR /> Tue - Thunderstorms. High: 83Low: 67\n<BR /> Wed - Thunderstorms. High: 74Low: 67\n<BR /> Thu - Mostly Cloudy. High: 77Low: 64\n<BR />\n<BR />\n<a href=\"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-638242/\">Full Forecast at Yahoo! Weather</a>\n<BR />\n<BR />\n(provided by <a href=\"http://www.weather.com\" >The Weather Channel</a>)\n<BR />\n]]>",
+                    "guid": { "isPermaLink": "false" }
+                }
+            }
+        }
+    }
+}

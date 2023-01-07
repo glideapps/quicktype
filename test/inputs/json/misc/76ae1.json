@@ -6,13 +6,9 @@
         "version": "2.0.0"
     },
     "host": "api.trade.gov",
-    "schemes": [
-        "https"
-    ],
+    "schemes": ["https"],
     "basePath": "/v2",
-    "produces": [
-        "application/json"
-    ],
+    "produces": ["application/json"],
     "paths": {
         "/market_research_library/search": {
             "get": {
@@ -68,14 +64,7 @@
                         "format": "string"
                     }
                 ],
-                "tags": [
-                    "Trade",
-                    "Exporting",
-                    "ITA",
-                    "International",
-                    "Market Research",
-                    "Market Intelligence"
-                ],
+                "tags": ["Trade", "Exporting", "ITA", "International", "Market Research", "Market Intelligence"],
                 "responses": {
                     "200": {
                         "description": "Successful Report Response",
@@ -307,16 +296,7 @@
                         "format": "string"
                     }
                 ],
-                "tags": [
-                    "Trade",
-                    "Exporting",
-                    "ITA",
-                    "International",
-                    "Events",
-                    "Webinars",
-                    "Seminars",
-                    "Training"
-                ],
+                "tags": ["Trade", "Exporting", "ITA", "International", "Events", "Webinars", "Seminars", "Training"],
                 "responses": {
                     "200": {
                         "description": "An array of products",
@@ -508,15 +488,7 @@
                         "format": "string"
                     }
                 ],
-                "tags": [
-                    "Trade",
-                    "Exporting",
-                    "ITA",
-                    "International",
-                    "Tariffs",
-                    "Duties",
-                    "Free Trade Agreements"
-                ],
+                "tags": ["Trade", "Exporting", "ITA", "International", "Tariffs", "Duties", "Free Trade Agreements"],
                 "responses": {
                     "200": {
                         "description": "Successful Rate Response",
@@ -616,13 +588,7 @@
                         "format": "string"
                     }
                 ],
-                "tags": [
-                    "Trade",
-                    "Exporting",
-                    "ITA",
-                    "International",
-                    "FAQs"
-                ],
+                "tags": ["Trade", "Exporting", "ITA", "International", "FAQs"],
                 "responses": {
                     "200": {
                         "description": "Successful Rate Response",
@@ -690,13 +656,7 @@
                         "format": "string"
                     }
                 ],
-                "tags": [
-                    "Trade",
-                    "Exporting",
-                    "ITA",
-                    "International",
-                    "Offices"
-                ],
+                "tags": ["Trade", "Exporting", "ITA", "International", "Offices"],
                 "responses": {
                     "200": {
                         "description": "Successful Office Response",
@@ -844,14 +804,7 @@
                         "format": "string"
                     }
                 ],
-                "tags": [
-                    "Trade",
-                    "Exporting",
-                    "ITA",
-                    "International",
-                    "News",
-                    "Articles"
-                ],
+                "tags": ["Trade", "Exporting", "ITA", "International", "News", "Articles"],
                 "responses": {
                     "200": {
                         "description": "Successful Article Response",
@@ -903,13 +856,7 @@
                         "format": "string"
                     }
                 ],
-                "tags": [
-                    "Trade",
-                    "Exporting",
-                    "ITA",
-                    "International",
-                    "Offices"
-                ],
+                "tags": ["Trade", "Exporting", "ITA", "International", "Offices"],
                 "responses": {
                     "200": {
                         "description": "History information for the given user",
@@ -966,13 +913,7 @@
                         "format": "string"
                     }
                 ],
-                "tags": [
-                    "Trade",
-                    "Exporting",
-                    "ITA",
-                    "International",
-                    "Service Providers"
-                ],
+                "tags": ["Trade", "Exporting", "ITA", "International", "Service Providers"],
                 "responses": {
                     "200": {
                         "description": "History information for the given user",
@@ -1029,10 +970,7 @@
                         "format": "string"
                     }
                 ],
-                "tags": [
-                    "Trade",
-                    "ITA"
-                ],
+                "tags": ["Trade", "ITA"],
                 "responses": {
                     "200": {
                         "description": "",
@@ -1081,12 +1019,7 @@
                         "format": "string"
                     }
                 ],
-                "tags": [
-                    "Trade",
-                    "Exporting",
-                    "ITA",
-                    "International"
-                ],
+                "tags": ["Trade", "Exporting", "ITA", "International"],
                 "responses": {
                     "200": {
                         "description": "Successful De Minimis Response",
@@ -1194,9 +1127,7 @@
                         "format": "string"
                     }
                 ],
-                "tags": [
-                    "ITA"
-                ],
+                "tags": ["ITA"],
                 "responses": {
                     "200": {
                         "description": "An array of products",
@@ -1234,7 +1165,7 @@
                     "description": "Industry categories assigned to the report.",
                     "type": "string"
                 },
-                 "ita_industries": {
+                "ita_industries": {
                     "description": "The ITA industries associated with the report.",
                     "type": "string"
                 },
@@ -2105,7 +2036,7 @@
                 "category": {
                     "type": "string",
                     "description": "Category of services that company provides."
-                }                
+                }
             }
         },
         "Taxonomy": {
@@ -2209,23 +2140,23 @@
                 "industries": {
                     "description": "The ITA industry terms associated with the article.",
                     "type": "string"
-                },    
+                },
                 "topics": {
                     "description": "The ITA topic terms associated with the article.",
                     "type": "string"
-                }, 
+                },
                 "countries": {
                     "description": "The countries relevant to the article.",
                     "type": "string"
-                }, 
+                },
                 "trade_regions": {
                     "description": "The trade regions relevant to the article.",
                     "type": "string"
-                },  
+                },
                 "world_regions": {
                     "description": "The world regions relevant to the article.",
                     "type": "string"
-                }         
+                }
             }
         }
     }

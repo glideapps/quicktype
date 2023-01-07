@@ -1,9 +1,9 @@
 {
-  "anEasyOne": 123,
-  "PrettyEasyToo": true,
-  "JSONString": "abc",
-  "isMNISTLetter": true,
-  "ZSR_HH_DEMO3_DELMATNR": true,
-  "should_know_that_id_is_an_initialism": "yup",
-  "   spaces are separators  too  ": true
+    "anEasyOne": 123,
+    "PrettyEasyToo": true,
+    "JSONString": "abc",
+    "isMNISTLetter": true,
+    "ZSR_HH_DEMO3_DELMATNR": true,
+    "should_know_that_id_is_an_initialism": "yup",
+    "   spaces are separators  too  ": true
 }

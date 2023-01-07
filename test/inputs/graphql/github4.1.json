@@ -1,26 +1,26 @@
 {
-  "data": {
-    "viewer": {
-      "repository": {
-        "pullRequests": {
-          "nodes": [
-            {
-              "state": "MERGED"
+    "data": {
+        "viewer": {
+            "repository": {
+                "pullRequests": {
+                    "nodes": [
+                        {
+                            "state": "MERGED"
+                        },
+                        {
+                            "state": "MERGED"
+                        },
+                        {
+                            "state": "MERGED"
+                        },
+                        {
+                            "state": "OPEN"
+                        }
+                    ]
+                }
             },
-            {
-              "state": "MERGED"
-            },
-            {
-              "state": "MERGED"
-            },
-            {
-              "state": "OPEN"
-            }
-          ]
+            "login": "schani",
+            "name": "Mark Probst"
         }
-      },
-      "login": "schani",
-      "name": "Mark Probst"
     }
-  }
 }

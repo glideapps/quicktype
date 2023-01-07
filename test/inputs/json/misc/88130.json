@@ -1,1 +1,126 @@
-{"query":{"count":1,"created":"2017-07-29T23:31:18Z","lang":"en-US","results":{"channel":{"units":{"distance":"mi","pressure":"in","speed":"mph","temperature":"F"},"title":"Yahoo! Weather - Chicago, IL, US","link":"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-2379574/","description":"Yahoo! Weather for Chicago, IL, US","language":"en-us","lastBuildDate":"Sat, 29 Jul 2017 06:31 PM CDT","ttl":"60","location":{"city":"Chicago","country":"United States","region":" IL"},"wind":{"chill":"75","direction":"15","speed":"25"},"atmosphere":{"humidity":"54","pressure":"999.0","rising":"0","visibility":"16.1"},"astronomy":{"sunrise":"5:41 am","sunset":"8:12 pm"},"image":{"title":"Yahoo! Weather","width":"142","height":"18","link":"http://weather.yahoo.com","url":"http://l.yimg.com/a/i/brand/purplelogo//uh/us/news-wea.gif"},"item":{"title":"Conditions for Chicago, IL, US at 05:00 PM CDT","lat":"41.884151","long":"-87.632408","link":"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-2379574/","pubDate":"Sat, 29 Jul 2017 05:00 PM CDT","condition":{"code":"23","date":"Sat, 29 Jul 2017 05:00 PM CDT","temp":"76","text":"Breezy"},"forecast":[{"code":"32","date":"29 Jul 2017","day":"Sat","high":"77","low":"65","text":"Sunny"},{"code":"32","date":"30 Jul 2017","day":"Sun","high":"79","low":"67","text":"Sunny"},{"code":"34","date":"31 Jul 2017","day":"Mon","high":"81","low":"68","text":"Mostly Sunny"},{"code":"30","date":"01 Aug 2017","day":"Tue","high":"84","low":"71","text":"Partly Cloudy"},{"code":"47","date":"02 Aug 2017","day":"Wed","high":"80","low":"72","text":"Scattered Thunderstorms"},{"code":"4","date":"03 Aug 2017","day":"Thu","high":"76","low":"69","text":"Thunderstorms"},{"code":"23","date":"04 Aug 2017","day":"Fri","high":"71","low":"66","text":"Breezy"},{"code":"30","date":"05 Aug 2017","day":"Sat","high":"72","low":"64","text":"Partly Cloudy"},{"code":"30","date":"06 Aug 2017","day":"Sun","high":"79","low":"66","text":"Partly Cloudy"},{"code":"30","date":"07 Aug 2017","day":"Mon","high":"80","low":"68","text":"Partly Cloudy"}],"description":"<![CDATA[<img src=\"http://l.yimg.com/a/i/us/we/52/23.gif\"/>\n<BR />\n<b>Current Conditions:</b>\n<BR />Breezy\n<BR />\n<BR />\n<b>Forecast:</b>\n<BR /> Sat - Sunny. High: 77Low: 65\n<BR /> Sun - Sunny. High: 79Low: 67\n<BR /> Mon - Mostly Sunny. High: 81Low: 68\n<BR /> Tue - Partly Cloudy. High: 84Low: 71\n<BR /> Wed - Scattered Thunderstorms. High: 80Low: 72\n<BR />\n<BR />\n<a href=\"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-2379574/\">Full Forecast at Yahoo! Weather</a>\n<BR />\n<BR />\n(provided by <a href=\"http://www.weather.com\" >The Weather Channel</a>)\n<BR />\n]]>","guid":{"isPermaLink":"false"}}}}}}
+{
+    "query": {
+        "count": 1,
+        "created": "2017-07-29T23:31:18Z",
+        "lang": "en-US",
+        "results": {
+            "channel": {
+                "units": { "distance": "mi", "pressure": "in", "speed": "mph", "temperature": "F" },
+                "title": "Yahoo! Weather - Chicago, IL, US",
+                "link": "http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-2379574/",
+                "description": "Yahoo! Weather for Chicago, IL, US",
+                "language": "en-us",
+                "lastBuildDate": "Sat, 29 Jul 2017 06:31 PM CDT",
+                "ttl": "60",
+                "location": { "city": "Chicago", "country": "United States", "region": " IL" },
+                "wind": { "chill": "75", "direction": "15", "speed": "25" },
+                "atmosphere": { "humidity": "54", "pressure": "999.0", "rising": "0", "visibility": "16.1" },
+                "astronomy": { "sunrise": "5:41 am", "sunset": "8:12 pm" },
+                "image": {
+                    "title": "Yahoo! Weather",
+                    "width": "142",
+                    "height": "18",
+                    "link": "http://weather.yahoo.com",
+                    "url": "http://l.yimg.com/a/i/brand/purplelogo//uh/us/news-wea.gif"
+                },
+                "item": {
+                    "title": "Conditions for Chicago, IL, US at 05:00 PM CDT",
+                    "lat": "41.884151",
+                    "long": "-87.632408",
+                    "link": "http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-2379574/",
+                    "pubDate": "Sat, 29 Jul 2017 05:00 PM CDT",
+                    "condition": {
+                        "code": "23",
+                        "date": "Sat, 29 Jul 2017 05:00 PM CDT",
+                        "temp": "76",
+                        "text": "Breezy"
+                    },
+                    "forecast": [
+                        {
+                            "code": "32",
+                            "date": "29 Jul 2017",
+                            "day": "Sat",
+                            "high": "77",
+                            "low": "65",
+                            "text": "Sunny"
+                        },
+                        {
+                            "code": "32",
+                            "date": "30 Jul 2017",
+                            "day": "Sun",
+                            "high": "79",
+                            "low": "67",
+                            "text": "Sunny"
+                        },
+                        {
+                            "code": "34",
+                            "date": "31 Jul 2017",
+                            "day": "Mon",
+                            "high": "81",
+                            "low": "68",
+                            "text": "Mostly Sunny"
+                        },
+                        {
+                            "code": "30",
+                            "date": "01 Aug 2017",
+                            "day": "Tue",
+                            "high": "84",
+                            "low": "71",
+                            "text": "Partly Cloudy"
+                        },
+                        {
+                            "code": "47",
+                            "date": "02 Aug 2017",
+                            "day": "Wed",
+                            "high": "80",
+                            "low": "72",
+                            "text": "Scattered Thunderstorms"
+                        },
+                        {
+                            "code": "4",
+                            "date": "03 Aug 2017",
+                            "day": "Thu",
+                            "high": "76",
+                            "low": "69",
+                            "text": "Thunderstorms"
+                        },
+                        {
+                            "code": "23",
+                            "date": "04 Aug 2017",
+                            "day": "Fri",
+                            "high": "71",
+                            "low": "66",
+                            "text": "Breezy"
+                        },
+                        {
+                            "code": "30",
+                            "date": "05 Aug 2017",
+                            "day": "Sat",
+                            "high": "72",
+                            "low": "64",
+                            "text": "Partly Cloudy"
+                        },
+                        {
+                            "code": "30",
+                            "date": "06 Aug 2017",
+                            "day": "Sun",
+                            "high": "79",
+                            "low": "66",
+                            "text": "Partly Cloudy"
+                        },
+                        {
+                            "code": "30",
+                            "date": "07 Aug 2017",
+                            "day": "Mon",
+                            "high": "80",
+                            "low": "68",
+                            "text": "Partly Cloudy"
+                        }
+                    ],
+                    "description": "<![CDATA[<img src=\"http://l.yimg.com/a/i/us/we/52/23.gif\"/>\n<BR />\n<b>Current Conditions:</b>\n<BR />Breezy\n<BR />\n<BR />\n<b>Forecast:</b>\n<BR /> Sat - Sunny. High: 77Low: 65\n<BR /> Sun - Sunny. High: 79Low: 67\n<BR /> Mon - Mostly Sunny. High: 81Low: 68\n<BR /> Tue - Partly Cloudy. High: 84Low: 71\n<BR /> Wed - Scattered Thunderstorms. High: 80Low: 72\n<BR />\n<BR />\n<a href=\"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-2379574/\">Full Forecast at Yahoo! Weather</a>\n<BR />\n<BR />\n(provided by <a href=\"http://www.weather.com\" >The Weather Channel</a>)\n<BR />\n]]>",
+                    "guid": { "isPermaLink": "false" }
+                }
+            }
+        }
+    }
+}

@@ -1,7 +1,7 @@
 {
-  "date": "In the year of the lord 1985 on April the 12th",
-  "time": "23:20:50.52Z",
-  "date-time": "On the 1985-04-12 at 23:20:50.52Z",
-  "union-array": ["1985-04-12", "23:20:50.52Z"],
-  "complex-union-array": ["1985-04-12T23:20:50.52Z", "foo", 123]
+    "date": "In the year of the lord 1985 on April the 12th",
+    "time": "23:20:50.52Z",
+    "date-time": "On the 1985-04-12 at 23:20:50.52Z",
+    "union-array": ["1985-04-12", "23:20:50.52Z"],
+    "complex-union-array": ["1985-04-12T23:20:50.52Z", "foo", 123]
 }
