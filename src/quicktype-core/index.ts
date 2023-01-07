@@ -19,10 +19,10 @@ export { Input, InputData, JSONInput, JSONSourceData, jsonInputForTargetLanguage
 export { JSONSchemaInput, JSONSchemaSourceData } from "./input/JSONSchemaInput";
 export { Ref, JSONSchemaType, JSONSchemaAttributes } from "./input/JSONSchemaInput";
 export { RenderContext } from "./Renderer";
-export { Option, OptionDefinition, getOptionValues } from "./RendererOptions";
-export { TargetLanguage } from "./TargetLanguage";
+export { Option, OptionDefinition, getOptionValues, OptionValues } from "./RendererOptions";
+export { TargetLanguage, MultiFileRenderResult } from "./TargetLanguage";
 export { all as defaultTargetLanguages, languageNamed } from "./language/All";
-export { Sourcelike, SerializedRenderResult, Annotation, modifySource } from "./Source";
+export { MultiWord, Sourcelike, SerializedRenderResult, Annotation, modifySource, singleWord, parenIfNeeded } from "./Source";
 export { Name, funPrefixNamer, Namer } from "./Naming";
 export { IssueAnnotationData } from "./Annotation";
 export {
@@ -52,6 +52,7 @@ export {
     ArrayType,
     ClassType,
     ClassProperty,
+    EnumType,
     MapType,
     UnionType,
     TypeKind,
@@ -59,6 +60,9 @@ export {
     TransformedStringTypeKind,
     PrimitiveStringTypeKind
 } from "./Type";
+export { getStream } from "./input/io/get-stream";
+export { readableFromFileOrURL, readFromFileOrURL } from "./input/io/NodeIO";
+export { FetchingJSONSchemaStore } from "./input/FetchingJSONSchemaStore";
 export { JSONSchemaStore, JSONSchema } from "./input/JSONSchemaStore";
 export { sourcesFromPostmanCollection } from "./input/PostmanCollection";
 export { TypeBuilder, StringTypeMapping } from "./TypeBuilder";
@@ -70,19 +74,17 @@ export { removeNullFromUnion, matchType, nullableFromUnion } from "./TypeUtils";
 export { ConvenienceRenderer } from "./ConvenienceRenderer";
 export { uriTypeAttributeKind } from "./attributes/URIAttributes";
 
-export { CPlusPlusTargetLanguage, CPlusPlusRenderer } from "./language/CPlusPlus";
+export { CPlusPlusTargetLanguage, CPlusPlusRenderer, cPlusPlusOptions } from "./language/CPlusPlus";
 export {
     CSharpTargetLanguage,
     cSharpOptions,
-    CSharpRenderer,
-    NewtonsoftCSharpTargetLanguage,
-    newtonsoftCSharpOptions,
-    NewtonsoftCSharpRenderer
+    CSharpRenderer
 } from "./language/CSharp";
 export { GoTargetLanguage, GoRenderer, goOptions } from "./language/Golang";
 export { ObjectiveCTargetLanguage, ObjectiveCRenderer, objcOptions } from "./language/Objective-C";
 export { JavaTargetLanguage, JavaRenderer, javaOptions } from "./language/Java";
 export { JavaScriptTargetLanguage, JavaScriptRenderer, javaScriptOptions } from "./language/JavaScript";
+export { JavaScriptPropTypesTargetLanguage, JavaScriptPropTypesRenderer, javaScriptPropTypesOptions } from "./language/JavaScriptPropTypes";
 export {
     TypeScriptTargetLanguage,
     TypeScriptRenderer,
@@ -97,3 +99,5 @@ export { JSONSchemaTargetLanguage, JSONSchemaRenderer } from "./language/JSONSch
 export { RustTargetLanguage, RustRenderer, rustOptions } from "./language/Rust";
 export { RubyTargetLanguage, RubyRenderer, rubyOptions } from "./language/ruby";
 export { CrystalTargetLanguage, CrystalRenderer } from "./language/Crystal";
+export { HaskellTargetLanguage, HaskellRenderer, haskellOptions } from "./language/Haskell";
+export { DartTargetLanguage, DartRenderer, dartOptions } from "./language/Dart";

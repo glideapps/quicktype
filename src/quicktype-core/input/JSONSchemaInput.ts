@@ -110,7 +110,7 @@ function checkJSONSchema(x: any, refOrLoc: Ref | (() => Ref)): JSONSchema {
 
 const numberRegexp = new RegExp("^[0-9]+$");
 
-function normalizeURI(uri: string | uri.URI): uri.URI {
+function normalizeURI(uri: string | URI): URI {
     // FIXME: This is overly complicated and a bit shady.  The problem is
     // that `normalize` will URL-escape, with the result that if we want to
     // open the URL as a file, escaped character will thwart us.  I think the
@@ -140,7 +140,7 @@ export class Ref {
 
         if (path.startsWith("/")) {
             elements.push({ kind: PathElementKind.Root });
-            path = path.substr(1);
+            path = path.slice(1);
         }
 
         if (path !== "") {
@@ -152,7 +152,7 @@ export class Ref {
         return elements;
     }
 
-    static parseURI(uri: uri.URI, destroyURI: boolean = false): Ref {
+    static parseURI(uri: URI, destroyURI: boolean = false): Ref {
         if (!destroyURI) {
             uri = uri.clone();
         }
@@ -170,9 +170,9 @@ export class Ref {
         return Ref.parseURI(new URI(ref), true);
     }
 
-    public addressURI: uri.URI | undefined;
+    public addressURI: URI | undefined;
 
-    constructor(addressURI: uri.URI | undefined, readonly path: ReadonlyArray<PathElement>) {
+    constructor(addressURI: URI | undefined, readonly path: ReadonlyArray<PathElement>) {
         if (addressURI !== undefined) {
             assert(addressURI.fragment() === "", `Ref URI with fragment is not allowed: ${addressURI.toString()}`);
             this.addressURI = normalizeURI(addressURI);
@@ -232,7 +232,7 @@ export class Ref {
                 let name = this.addressURI !== undefined ? this.addressURI.filename() : "";
                 const suffix = this.addressURI !== undefined ? this.addressURI.suffix() : "";
                 if (name.length > suffix.length + 1) {
-                    name = name.substr(0, name.length - suffix.length - 1);
+                    name = name.slice(0, name.length - suffix.length - 1);
                 }
                 if (name === "") {
                     return "Something";
@@ -634,10 +634,11 @@ async function addTypesInSchema(
         attributes: TypeAttributes,
         properties: StringMap,
         requiredArray: string[],
-        additionalProperties: any
+        additionalProperties: any,
+        sortKey: (k: string) => number | string = (k: string) => k.toLowerCase()
     ): Promise<TypeRef> {
         const required = new Set(requiredArray);
-        const propertiesMap = mapSortBy(mapFromObject(properties), (_, k) => k.toLowerCase());
+        const propertiesMap = mapSortBy(mapFromObject(properties), (_, k) => sortKey(k));
         const props = await mapMapSync(propertiesMap, async (propSchema, propName) => {
             const propLoc = loc.push("properties", propName);
             const t = await toType(
@@ -846,8 +847,15 @@ async function addTypesInSchema(
                 inferredAttributes,
                 combineProducedAttributes(({ forObject }) => forObject)
             );
+            const order = schema.quicktypePropertyOrder ? schema.quicktypePropertyOrder : [];
+            const orderKey = (propertyName: string) => {
+                // use the index of the order array
+                const index = order.indexOf(propertyName);
+                // if no index then use the property name
+                return index !== -1 ? index : propertyName.toLowerCase();
+            };
 
-            return await makeObject(loc, objectAttributes, properties, required, additionalProperties);
+            return await makeObject(loc, objectAttributes, properties, required, additionalProperties, orderKey);
         }
 
         async function makeTypesFromCases(cases: any, kind: string): Promise<TypeRef[]> {
@@ -1012,7 +1020,7 @@ function removeExtension(fn: string): string {
     const extensions = [".json", ".schema"];
     for (const ext of extensions) {
         if (lower.endsWith(ext)) {
-            const base = fn.substr(0, fn.length - ext.length);
+            const base = fn.slice(0, fn.length - ext.length);
             if (base.length > 0) {
                 return base;
             }
@@ -1021,7 +1029,7 @@ function removeExtension(fn: string): string {
     return fn;
 }
 
-function nameFromURI(uri: uri.URI): string | undefined {
+function nameFromURI(uri: URI): string | undefined {
     const fragment = uri.fragment();
     if (fragment !== "") {
         const components = fragment.split("/");
@@ -1042,13 +1050,13 @@ function nameFromURI(uri: uri.URI): string | undefined {
 
 async function refsInSchemaForURI(
     resolver: Resolver,
-    uri: uri.URI,
+    uri: URI,
     defaultName: string
 ): Promise<ReadonlyMap<string, Ref> | [string, Ref]> {
     const fragment = uri.fragment();
     let propertiesAreTypes = fragment.endsWith("/");
     if (propertiesAreTypes) {
-        uri = uri.clone().fragment(fragment.substr(0, fragment.length - 1));
+        uri = uri.clone().fragment(fragment.slice(0, -1));
     }
     const ref = Ref.parseURI(uri);
     if (ref.isRoot) {
@@ -1105,7 +1113,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
     private readonly _attributeProducers: JSONSchemaAttributeProducer[];
 
     private readonly _schemaInputs: Map<string, string> = new Map();
-    private _schemaSources: [uri.URI, JSONSchemaSourceData][] = [];
+    private _schemaSources: [URI, JSONSchemaSourceData][] = [];
 
     private readonly _topLevels: Map<string, Ref> = new Map();
 
@@ -1196,7 +1204,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
             this._needIR = true;
         }
 
-        let normalizedURIs: uri.URI[];
+        let normalizedURIs: URI[];
         if (uris === undefined) {
             normalizedURIs = [new URI(name)];
         } else {

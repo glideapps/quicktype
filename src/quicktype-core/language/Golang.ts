@@ -10,7 +10,7 @@ import {
     combineWords,
     firstUpperWordStyle,
     allUpperWordStyle,
-    camelCase
+    camelCase,
 } from "../support/Strings";
 import { assert, defined } from "../support/Support";
 import { StringOption, BooleanOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
@@ -22,8 +22,9 @@ import { RenderContext } from "../Renderer";
 
 export const goOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
+    justTypesAndPackage: new BooleanOption("just-types-and-package", "Plain types with package only", false),
     packageName: new StringOption("package", "Generated package name", "NAME", "main"),
-    multiFileOutput: new BooleanOption("multi-file-output", "Renders each top-level object in its own Go file", false)
+    multiFileOutput: new BooleanOption("multi-file-output", "Renders each top-level object in its own Go file", false),
 };
 
 export class GoTargetLanguage extends TargetLanguage {
@@ -32,7 +33,7 @@ export class GoTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [goOptions.justTypes, goOptions.packageName, goOptions.multiFileOutput];
+        return [goOptions.justTypes, goOptions.packageName, goOptions.multiFileOutput, goOptions.justTypesAndPackage];
     }
 
     get supportsUnionsWithBothNumberTypes(): boolean {
@@ -78,15 +79,10 @@ function isValueType(t: Type): boolean {
     return primitiveValueTypeKinds.indexOf(kind) >= 0 || kind === "class" || kind === "enum";
 }
 
-function singleDescriptionComment(description: string[] | undefined): string {
-    if (description === undefined) return "";
-    return "// " + description.join("; ");
-}
-
 function canOmitEmpty(cp: ClassProperty): boolean {
     if (!cp.isOptional) return false;
     const t = cp.type;
-    return ["union", "null", "any", "array"].indexOf(t.kind) < 0;
+    return ["union", "null", "any"].indexOf(t.kind) < 0;
 }
 
 export class GoRenderer extends ConvenienceRenderer {
@@ -125,7 +121,7 @@ export class GoRenderer extends ConvenienceRenderer {
         const unmarshalName = new DependencyName(
             namingFunction,
             topLevelName.order,
-            lookup => `unmarshal_${lookup(topLevelName)}`
+            (lookup) => `unmarshal_${lookup(topLevelName)}`
         );
         this._topLevelUnmarshalNames.set(topLevelName, unmarshalName);
         return [unmarshalName];
@@ -190,15 +186,15 @@ export class GoRenderer extends ConvenienceRenderer {
     private goType(t: Type, withIssues: boolean = false): Sourcelike {
         return matchType<Sourcelike>(
             t,
-            _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "interface{}"),
-            _nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "interface{}"),
-            _boolType => "bool",
-            _integerType => "int64",
-            _doubleType => "float64",
-            _stringType => "string",
-            arrayType => ["[]", this.goType(arrayType.items, withIssues)],
-            classType => this.nameForNamedType(classType),
-            mapType => {
+            (_anyType) => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "interface{}"),
+            (_nullType) => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "interface{}"),
+            (_boolType) => "bool",
+            (_integerType) => "int64",
+            (_doubleType) => "float64",
+            (_stringType) => "string",
+            (arrayType) => ["[]", this.goType(arrayType.items, withIssues)],
+            (classType) => this.nameForNamedType(classType),
+            (mapType) => {
                 let valueSource: Sourcelike;
                 const v = mapType.values;
                 if (v instanceof UnionType && nullableFromUnion(v) === null) {
@@ -208,8 +204,8 @@ export class GoRenderer extends ConvenienceRenderer {
                 }
                 return ["map[string]", valueSource];
             },
-            enumType => this.nameForNamedType(enumType),
-            unionType => {
+            (enumType) => this.nameForNamedType(enumType),
+            (unionType) => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) return this.nullableGoType(nullable, withIssues);
                 return this.nameForNamedType(unionType);
@@ -220,7 +216,12 @@ export class GoRenderer extends ConvenienceRenderer {
     private emitTopLevel(t: Type, name: Name): void {
         this.startFile(name);
 
-        if (this._options.multiFileOutput && this._options.justTypes === false && this.leadingComments === undefined) {
+        if (
+            this._options.multiFileOutput &&
+            this._options.justTypes === false &&
+            this._options.justTypesAndPackage === false &&
+            this.leadingComments === undefined
+        ) {
             this.emitLineOnce(
                 "// This file was generated from JSON Schema using quicktype, do not modify it directly."
             );
@@ -238,7 +239,7 @@ export class GoRenderer extends ConvenienceRenderer {
             this.emitLine("type ", name, " ", this.goType(t));
         }
 
-        if (this._options.justTypes) return;
+        if (this._options.justTypes || this._options.justTypesAndPackage) return;
 
         this.ensureBlankLine();
         this.emitFunc([unmarshalName, "(data []byte) (", name, ", error)"], () => {
@@ -258,10 +259,13 @@ export class GoRenderer extends ConvenienceRenderer {
         this.emitPackageDefinitons(false);
         let columns: Sourcelike[][] = [];
         this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+            const description = this.descriptionForClassProperty(c, jsonName);
+            const docStrings = description !== undefined && description.length > 0 ? description.map(d => "// " + d) : [];
             const goType = this.propertyGoType(p);
-            const comment = singleDescriptionComment(this.descriptionForClassProperty(c, jsonName));
             const omitEmpty = canOmitEmpty(p) ? ",omitempty" : [];
-            columns.push([[name, " "], [goType, " "], ['`json:"', stringEscape(jsonName), omitEmpty, '"`'], comment]);
+
+            docStrings.forEach(doc => columns.push([doc]));
+            columns.push([[name, " "], [goType, " "], ['`json:"', stringEscape(jsonName), omitEmpty, '"`']]);
         });
         this.emitDescription(this.descriptionForType(c));
         this.emitStruct(className, columns);
@@ -310,7 +314,10 @@ export class GoRenderer extends ConvenienceRenderer {
         ): Sourcelike => {
             const args: Sourcelike = [];
             for (const kind of primitiveValueTypeKinds) {
-                args.push(ifMember(kind, "nil", (_1, fieldName, _2) => primitiveArg(fieldName)), ", ");
+                args.push(
+                    ifMember(kind, "nil", (_1, fieldName, _2) => primitiveArg(fieldName)),
+                    ", "
+                );
             }
             for (const kind of compoundTypeKinds) {
                 args.push(
@@ -330,7 +337,7 @@ export class GoRenderer extends ConvenienceRenderer {
         this.emitDescription(this.descriptionForType(u));
         this.emitStruct(unionName, columns);
 
-        if (this._options.justTypes) return;
+        if (this._options.justTypes || this._options.justTypesAndPackage) return;
 
         this.ensureBlankLine();
         this.emitFunc(["(x *", unionName, ") UnmarshalJSON(data []byte) error"], () => {
@@ -341,7 +348,7 @@ export class GoRenderer extends ConvenienceRenderer {
                 this.emitLine("var c ", goType);
             });
             const args = makeArgs(
-                fn => ["&x.", fn],
+                (fn) => ["&x.", fn],
                 (isClass, fn) => {
                     if (isClass) {
                         return "true, &c";
@@ -363,7 +370,10 @@ export class GoRenderer extends ConvenienceRenderer {
         });
         this.ensureBlankLine();
         this.emitFunc(["(x *", unionName, ") MarshalJSON() ([]byte, error)"], () => {
-            const args = makeArgs(fn => ["x.", fn], (_, fn) => ["x.", fn, " != nil, x.", fn]);
+            const args = makeArgs(
+                (fn) => ["x.", fn],
+                (_, fn) => ["x.", fn, " != nil, x.", fn]
+            );
             this.emitLine("return marshalUnion(", args, ")");
         });
         this.endFile();
@@ -381,10 +391,14 @@ export class GoRenderer extends ConvenienceRenderer {
     }
 
     private emitPackageDefinitons(includeJSONEncodingImport: boolean): void {
-        if (!this._options.justTypes) {
+        if (!this._options.justTypes || this._options.justTypesAndPackage) {
             this.ensureBlankLine();
             const packageDeclaration = "package " + this._options.packageName;
             this.emitLineOnce(packageDeclaration);
+            this.ensureBlankLine();
+        }
+
+        if (!this._options.justTypes && !this._options.justTypesAndPackage) {
             this.ensureBlankLine();
             if (this.haveNamedUnions && this._options.multiFileOutput === false) {
                 this.emitLineOnce('import "bytes"');
@@ -529,6 +543,7 @@ func marshalUnion(pi *int64, pf *float64, pb *bool, ps *string, haveArray bool, 
         if (
             this._options.multiFileOutput === false &&
             this._options.justTypes === false &&
+            this._options.justTypesAndPackage === false &&
             this.leadingComments === undefined
         ) {
             this.emitSingleFileHeaderComments();
@@ -537,13 +552,15 @@ func marshalUnion(pi *int64, pf *float64, pb *bool, ps *string, haveArray bool, 
         this.forEachTopLevel(
             "leading-and-interposing",
             (t, name) => this.emitTopLevel(t, name),
-            t => !this._options.justTypes || this.namedTypeToNameForTopLevel(t) === undefined
+            (t) =>
+                !(this._options.justTypes || this._options.justTypesAndPackage) ||
+                this.namedTypeToNameForTopLevel(t) === undefined
         );
         this.forEachObject("leading-and-interposing", (c: ClassType, className: Name) => this.emitClass(c, className));
         this.forEachEnum("leading-and-interposing", (u: EnumType, enumName: Name) => this.emitEnum(u, enumName));
         this.forEachUnion("leading-and-interposing", (u: UnionType, unionName: Name) => this.emitUnion(u, unionName));
 
-        if (this._options.justTypes) {
+        if (this._options.justTypes || this._options.justTypesAndPackage) {
             return;
         }
 

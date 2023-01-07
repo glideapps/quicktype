@@ -18,19 +18,39 @@ import {
     splitIntoWords,
     standardUnicodeHexEscape,
     utf16ConcatMap,
-    utf16LegalizeCharacters
+    utf16LegalizeCharacters,
 } from "../support/Strings";
-import { assert, assertNever, defined } from "../support/Support";
+import { assert, assertNever, defined, panic } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
 import { ArrayType, ClassProperty, ClassType, EnumType, MapType, Type, TypeKind, UnionType } from "../Type";
 import { directlyReachableSingleNamedType, matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
+import { StringTypeMapping, TransformedStringTypeKind, PrimitiveStringTypeKind } from "..";
 
 export const javaOptions = {
-    useList: new EnumOption("array-type", "Use T[] or List<T>", [["array", false], ["list", true]], "array"),
+    useList: new EnumOption(
+        "array-type",
+        "Use T[] or List<T>",
+        [
+            ["array", false],
+            ["list", true],
+        ],
+        "array"
+    ),
     justTypes: new BooleanOption("just-types", "Plain types only", false),
+    dateTimeProvider: new EnumOption(
+        "datetime-provider",
+        "Date time provider type",
+        [
+            ["java8", "java8"],
+            ["legacy", "legacy"]
+        ],
+        "java8"
+    ),
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
     // FIXME: Do this via a configurable named eventually.
-    packageName: new StringOption("package", "Generated package name", "NAME", "io.quicktype")
+    packageName: new StringOption("package", "Generated package name", "NAME", "io.quicktype"),
+    lombok: new BooleanOption("lombok", "Use lombok", false, "primary"),
+    lombokCopyAnnotations: new BooleanOption("lombok-copy-annotations", "Copy accessor annotations", true, "secondary"),
 };
 
 export class JavaTargetLanguage extends TargetLanguage {
@@ -39,7 +59,15 @@ export class JavaTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [javaOptions.packageName, javaOptions.justTypes, javaOptions.acronymStyle, javaOptions.useList];
+        return [
+            javaOptions.useList,
+            javaOptions.justTypes,
+            javaOptions.dateTimeProvider,
+            javaOptions.acronymStyle,
+            javaOptions.packageName,
+            javaOptions.lombok,
+            javaOptions.lombokCopyAnnotations,
+        ];
     }
 
     get supportsUnionsWithBothNumberTypes(): boolean {
@@ -47,11 +75,24 @@ export class JavaTargetLanguage extends TargetLanguage {
     }
 
     protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): JavaRenderer {
-        return new JavaRenderer(this, renderContext, getOptionValues(javaOptions, untypedOptionValues));
+        const options = getOptionValues(javaOptions, untypedOptionValues);
+        if (options.justTypes) {
+            return new JavaRenderer(this, renderContext, options);
+        }
+        return new JacksonRenderer(this, renderContext, options);
+    }
+
+    get stringTypeMapping(): StringTypeMapping {
+        const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
+        mapping.set("date", "date");
+        mapping.set("time", "time");
+        mapping.set("date-time", "date-time");
+        mapping.set("uuid", "uuid");
+        return mapping;
     }
 }
 
-const keywords = [
+const javaKeywords = [
     "Object",
     "Class",
     "System",
@@ -59,19 +100,11 @@ const keywords = [
     "Double",
     "Boolean",
     "String",
+    "List",
     "Map",
+    "UUID",
     "Exception",
     "IOException",
-    "JsonProperty",
-    "JsonDeserialize",
-    "JsonDeserializer",
-    "JsonSerialize",
-    "JsonSerializer",
-    "JsonParser",
-    "JsonProcessingException",
-    "DeserializationContext",
-    "SerializerProvider",
-    "Converter",
     "Override",
     "abstract",
     "continue",
@@ -125,7 +158,7 @@ const keywords = [
     "while",
     "null",
     "false",
-    "true"
+    "true",
 ];
 
 export const stringEscape = utf16ConcatMap(escapeNonPrintableMapper(isAscii, standardUnicodeHexEscape));
@@ -160,20 +193,268 @@ export function javaNameStyle(
     );
 }
 
+abstract class JavaDateTimeProvider {
+    constructor(protected readonly _renderer: JavaRenderer, protected readonly _className: string) { }
+    abstract keywords: string[];
+
+    abstract dateTimeImports: string[];
+    abstract dateImports: string[];
+    abstract timeImports: string[];
+    abstract converterImports: string[];
+
+    abstract dateTimeType: string;
+    abstract dateType: string;
+    abstract timeType: string;
+
+    abstract dateTimeJacksonAnnotations: string[];
+    abstract dateJacksonAnnotations: string[];
+    abstract timeJacksonAnnotations: string[];
+
+    abstract emitDateTimeConverters(): void;
+
+    public shouldEmitDateTimeConverter: boolean = true;
+    public shouldEmitTimeConverter: boolean = true;
+    public shouldEmitDateConverter: boolean = true;
+
+    abstract convertStringToDateTime(variable: Sourcelike): Sourcelike;
+    abstract convertStringToTime(variable: Sourcelike): Sourcelike;
+    abstract convertStringToDate(variable: Sourcelike): Sourcelike;
+
+    abstract convertDateTimeToString(variable: Sourcelike): Sourcelike;
+    abstract convertTimeToString(variable: Sourcelike): Sourcelike;
+    abstract convertDateToString(variable: Sourcelike): Sourcelike;
+}
+
+class Java8DateTimeProvider extends JavaDateTimeProvider {
+    keywords = [
+        "LocalDate",
+        "OffsetDateTime",
+        "OffsetTime",
+        "ZoneOffset",
+        "ZonedDateTime",
+        "DateTimeFormatter",
+        "DateTimeFormatterBuilder",
+        "ChronoField"
+    ];
+
+    dateTimeImports: string[] = ["java.time.OffsetDateTime"];
+    dateImports: string[] = ["java.time.LocalDate"];
+    timeImports: string[] = ["java.time.OffsetTime"];
+    converterImports: string[] = [
+        "java.time.LocalDate",
+        "java.time.OffsetDateTime",
+        "java.time.OffsetTime",
+        "java.time.ZoneOffset",
+        "java.time.ZonedDateTime",
+        "java.time.format.DateTimeFormatter",
+        "java.time.format.DateTimeFormatterBuilder",
+        "java.time.temporal.ChronoField"
+    ];
+
+    dateTimeType: string = "OffsetDateTime";
+    dateType: string = "LocalDate";
+    timeType: string = "OffsetTime";
+
+    dateTimeJacksonAnnotations: string[] = [];
+    dateJacksonAnnotations: string[] = [];
+    timeJacksonAnnotations: string[] = [];
+
+    emitDateTimeConverters(): void {
+        this._renderer.ensureBlankLine();
+        this._renderer.emitLine("private static final DateTimeFormatter DATE_TIME_FORMATTER = new DateTimeFormatterBuilder()");
+        this._renderer.indent(() => this._renderer.indent(() => {
+            this._renderer.emitLine(".appendOptional(DateTimeFormatter.ISO_DATE_TIME)");
+            this._renderer.emitLine(".appendOptional(DateTimeFormatter.ISO_OFFSET_DATE_TIME)");
+            this._renderer.emitLine(".appendOptional(DateTimeFormatter.ISO_INSTANT)");
+            this._renderer.emitLine('.appendOptional(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SX"))');
+            this._renderer.emitLine('.appendOptional(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ssX"))');
+            this._renderer.emitLine('.appendOptional(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))');
+            this._renderer.emitLine(".toFormatter()");
+            this._renderer.emitLine(".withZone(ZoneOffset.UTC);");
+        }));
+        this._renderer.ensureBlankLine();
+        this._renderer.emitBlock("public static OffsetDateTime parseDateTimeString(String str)",
+            () => {
+                this._renderer.emitLine("return ZonedDateTime.from(Converter.DATE_TIME_FORMATTER.parse(str)).toOffsetDateTime();");
+            }
+        );
+
+        this._renderer.ensureBlankLine();
+        this._renderer.emitLine("private static final DateTimeFormatter TIME_FORMATTER = new DateTimeFormatterBuilder()");
+        this._renderer.indent(() => this._renderer.indent(() => {
+            this._renderer.emitLine(".appendOptional(DateTimeFormatter.ISO_TIME)");
+            this._renderer.emitLine(".appendOptional(DateTimeFormatter.ISO_OFFSET_TIME)");
+            this._renderer.emitLine(".parseDefaulting(ChronoField.YEAR, 2020)");
+            this._renderer.emitLine(".parseDefaulting(ChronoField.MONTH_OF_YEAR, 1)");
+            this._renderer.emitLine(".parseDefaulting(ChronoField.DAY_OF_MONTH, 1)");
+            this._renderer.emitLine(".toFormatter()");
+            this._renderer.emitLine(".withZone(ZoneOffset.UTC);");
+        }));
+        this._renderer.ensureBlankLine();
+        this._renderer.emitBlock("public static OffsetTime parseTimeString(String str)",
+            () => {
+                this._renderer.emitLine("return ZonedDateTime.from(Converter.TIME_FORMATTER.parse(str)).toOffsetDateTime().toOffsetTime();");
+            }
+        );
+    }
+
+    convertStringToDateTime(variable: Sourcelike): Sourcelike {
+        return [this._className, ".parseDateTimeString(", variable, ")"];
+    }
+
+    convertStringToTime(variable: Sourcelike): Sourcelike {
+        return [this._className, ".parseTimeString(", variable, ")"];
+    }
+
+    convertStringToDate(variable: Sourcelike): Sourcelike {
+        return ["LocalDate.parse(", variable, ")"];
+    }
+
+    convertDateTimeToString(variable: Sourcelike): Sourcelike {
+        return [variable, ".format(java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME)"];
+    }
+
+    convertTimeToString(variable: Sourcelike): Sourcelike {
+        return [variable, ".format(java.time.format.DateTimeFormatter.ISO_OFFSET_TIME)"];
+    }
+
+    convertDateToString(variable: Sourcelike): Sourcelike {
+        return [variable, ".format(java.time.format.DateTimeFormatter.ISO_DATE)"];
+    }
+
+}
+
+class JavaLegacyDateTimeProvider extends JavaDateTimeProvider {
+    keywords = [
+        "SimpleDateFormat",
+        "Date",
+    ];
+
+    dateTimeImports: string[] = ["java.util.Date"];
+    dateImports: string[] = ["java.util.Date"];
+    timeImports: string[] = ["java.util.Date"];
+    converterImports: string[] = [
+        "java.util.Date",
+        "java.text.SimpleDateFormat",
+    ];
+
+    dateTimeType: string = "Date";
+    dateType: string = "Date";
+    timeType: string = "Date";
+
+    dateTimeJacksonAnnotations: string[] = ['@JsonFormat(pattern = "yyyy-MM-dd\'T\'HH:mm:ssX", timezone = "UTC")'];
+    dateJacksonAnnotations: string[] = ['@JsonFormat(pattern = "yyyy-MM-dd")'];
+    timeJacksonAnnotations: string[] = ['@JsonFormat(pattern = "HH:mm:ssX", timezone = "UTC")'];
+
+    emitDateTimeConverters(): void {
+        this._renderer.ensureBlankLine();
+        this._renderer.emitLine("private static final String[] DATE_TIME_FORMATS = {");
+        this._renderer.indent(() => this._renderer.indent(() => {
+            this._renderer.emitLine('"yyyy-MM-dd\'T\'HH:mm:ss.SX",');
+            this._renderer.emitLine('"yyyy-MM-dd\'T\'HH:mm:ss.S",');
+            this._renderer.emitLine('"yyyy-MM-dd\'T\'HH:mm:ssX",');
+            this._renderer.emitLine('"yyyy-MM-dd\'T\'HH:mm:ss",');
+            this._renderer.emitLine('"yyyy-MM-dd HH:mm:ss.SX",');
+            this._renderer.emitLine('"yyyy-MM-dd HH:mm:ss.S",');
+            this._renderer.emitLine('"yyyy-MM-dd HH:mm:ssX",');
+            this._renderer.emitLine('"yyyy-MM-dd HH:mm:ss",');
+            this._renderer.emitLine('"HH:mm:ss.SZ",');
+            this._renderer.emitLine('"HH:mm:ss.S",');
+            this._renderer.emitLine('"HH:mm:ssZ",');
+            this._renderer.emitLine('"HH:mm:ss",');
+            this._renderer.emitLine('"yyyy-MM-dd",');
+        }));
+        this._renderer.emitLine("};");
+        this._renderer.ensureBlankLine();
+        this._renderer.emitBlock("public static Date parseAllDateTimeString(String str)",
+            () => {
+                this._renderer.emitBlock("for (String format : DATE_TIME_FORMATS)", () => {
+                    this._renderer.emitIgnoredTryCatchBlock(() => {
+                        this._renderer.emitLine("return new SimpleDateFormat(format).parse(str);");
+                    });
+                });
+                this._renderer.emitLine("return null;");
+            }
+        );
+
+        this._renderer.ensureBlankLine();
+        this._renderer.emitBlock("public static String serializeDateTime(Date datetime)",
+            () => {
+                this._renderer.emitLine('return new SimpleDateFormat("yyyy-MM-dd\'T\'hh:mm:ssZ").format(datetime);');
+            }
+        );
+
+        this._renderer.ensureBlankLine();
+        this._renderer.emitBlock("public static String serializeDate(Date datetime)",
+            () => {
+                this._renderer.emitLine('return new SimpleDateFormat("yyyy-MM-dd").format(datetime);');
+            }
+        );
+
+        this._renderer.ensureBlankLine();
+        this._renderer.emitBlock("public static String serializeTime(Date datetime)",
+            () => {
+                this._renderer.emitLine('return new SimpleDateFormat("hh:mm:ssZ").format(datetime);');
+            }
+        );
+    }
+
+    shouldEmitTimeConverter = false;
+    shouldEmitDateConverter = false;
+
+    convertStringToDateTime(variable: Sourcelike): Sourcelike {
+        return [this._className, ".parseAllDateTimeString(", variable, ")"];
+    }
+
+    convertStringToTime(variable: Sourcelike): Sourcelike {
+        return [this._className, ".parseAllDateTimeString(", variable, ")"];
+    }
+
+    convertStringToDate(variable: Sourcelike): Sourcelike {
+        return [this._className, ".parseAllDateTimeString(", variable, ")"];
+    }
+
+    convertDateTimeToString(variable: Sourcelike): Sourcelike {
+        return [this._className, ".serializeDateTime(", variable, ")"];
+    }
+
+    convertTimeToString(variable: Sourcelike): Sourcelike {
+        return [this._className, ".serializeTime(", variable, ")"];
+    }
+
+    convertDateToString(variable: Sourcelike): Sourcelike {
+        return [this._className, ".serializeDate(", variable, ")"];
+    }
+}
+
 export class JavaRenderer extends ConvenienceRenderer {
     private _currentFilename: string | undefined;
     private readonly _gettersAndSettersForPropertyName = new Map<Name, [Name, Name]>();
     private _haveEmittedLeadingComments = false;
+    protected readonly _dateTimeProvider: JavaDateTimeProvider;
+    protected readonly _converterClassname: string = "Converter";
+    protected readonly _converterKeywords: string[] = [];
 
     constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        private readonly _options: OptionValues<typeof javaOptions>
+        protected readonly _options: OptionValues<typeof javaOptions>,
     ) {
         super(targetLanguage, renderContext);
+
+        switch (_options.dateTimeProvider) {
+            default:
+            case "java8":
+                this._dateTimeProvider = new Java8DateTimeProvider(this, this._converterClassname);
+                break;
+            case "legacy":
+                this._dateTimeProvider = new JavaLegacyDateTimeProvider(this, this._converterClassname);
+                break;
+        }
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
+        const keywords = [...javaKeywords, ...this._converterKeywords, this._converterClassname, ...this._dateTimeProvider.keywords];
         return keywords;
     }
 
@@ -218,12 +499,12 @@ export class JavaRenderer extends ConvenienceRenderer {
         const getterName = new DependencyName(
             this.getNameStyling("propertyNamingFunction"),
             name.order,
-            lookup => `get_${lookup(name)}`
+            (lookup) => `get_${lookup(name)}`
         );
         const setterName = new DependencyName(
             this.getNameStyling("propertyNamingFunction"),
             name.order,
-            lookup => `set_${lookup(name)}`
+            (lookup) => `set_${lookup(name)}`
         );
         return [getterName, setterName];
     }
@@ -242,46 +523,46 @@ export class JavaRenderer extends ConvenienceRenderer {
 
     private getNameStyling(convention: string): Namer {
         const styling: { [key: string]: Namer } = {
-            typeNamingFunction: funPrefixNamer("types", n =>
+            typeNamingFunction: funPrefixNamer("types", (n) =>
                 javaNameStyle(true, false, n, acronymStyle(this._options.acronymStyle))
             ),
-            propertyNamingFunction: funPrefixNamer("properties", n =>
+            propertyNamingFunction: funPrefixNamer("properties", (n) =>
                 javaNameStyle(false, false, n, acronymStyle(this._options.acronymStyle))
             ),
-            enumCaseNamingFunction: funPrefixNamer("enum-cases", n =>
+            enumCaseNamingFunction: funPrefixNamer("enum-cases", (n) =>
                 javaNameStyle(true, true, n, acronymStyle(this._options.acronymStyle))
-            )
+            ),
         };
         return styling[convention];
     }
 
-    private fieldOrMethodName(methodName: string, topLevelName: Name): Sourcelike {
+    protected fieldOrMethodName(methodName: string, topLevelName: Name): Sourcelike {
         if (this.topLevels.size === 1) {
             return methodName;
         }
         return [topLevelName, capitalize(methodName)];
     }
 
-    private methodName(prefix: string, suffix: string, topLevelName: Name): Sourcelike {
+    protected methodName(prefix: string, suffix: string, topLevelName: Name): Sourcelike {
         if (this.topLevels.size === 1) {
             return [prefix, suffix];
         }
         return [prefix, topLevelName, suffix];
     }
 
-    private decoderName(topLevelName: Name): Sourcelike {
+    protected decoderName(topLevelName: Name): Sourcelike {
         return this.fieldOrMethodName("fromJsonString", topLevelName);
     }
 
-    private encoderName(topLevelName: Name): Sourcelike {
+    protected encoderName(topLevelName: Name): Sourcelike {
         return this.fieldOrMethodName("toJsonString", topLevelName);
     }
 
-    private readerGetterName(topLevelName: Name): Sourcelike {
+    protected readerGetterName(topLevelName: Name): Sourcelike {
         return this.methodName("get", "ObjectReader", topLevelName);
     }
 
-    private writerGetterName(topLevelName: Name): Sourcelike {
+    protected writerGetterName(topLevelName: Name): Sourcelike {
         return this.methodName("get", "ObjectWriter", topLevelName);
     }
 
@@ -304,10 +585,9 @@ export class JavaRenderer extends ConvenienceRenderer {
     }
 
     protected emitPackageAndImports(imports: string[]): void {
-        const allImports = ["java.util.*"].concat(imports);
         this.emitLine("package ", this._options.packageName, ";");
         this.ensureBlankLine();
-        for (const pkg of allImports) {
+        for (const pkg of imports) {
             this.emitLine("import ", pkg, ";");
         }
     }
@@ -318,39 +598,108 @@ export class JavaRenderer extends ConvenienceRenderer {
         this.ensureBlankLine();
     }
 
-    protected emitDescriptionBlock(lines: Sourcelike[]): void {
+    public emitDescriptionBlock(lines: Sourcelike[]): void {
         this.emitCommentLines(lines, " * ", "/**", " */");
     }
 
-    protected emitBlock(line: Sourcelike, f: () => void): void {
+    public emitBlock(line: Sourcelike, f: () => void): void {
         this.emitLine(line, " {");
         this.indent(f);
         this.emitLine("}");
     }
 
+    public emitTryCatch(main: () => void, handler: () => void, exception: string = "Exception") {
+        this.emitLine("try {");
+        this.indent(main);
+        this.emitLine("} catch (", exception, " ex) {");
+        this.indent(handler);
+        this.emitLine("}");
+    }
+
+    public emitIgnoredTryCatchBlock(f: () => void) {
+        this.emitTryCatch(f, () => this.emitLine("// Ignored"));
+    }
+
     protected javaType(reference: boolean, t: Type, withIssues: boolean = false): Sourcelike {
         return matchType<Sourcelike>(
             t,
-            _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "Object"),
-            _nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "Object"),
-            _boolType => (reference ? "Boolean" : "boolean"),
-            _integerType => (reference ? "Long" : "long"),
-            _doubleType => (reference ? "Double" : "double"),
-            _stringType => "String",
-            arrayType => {
+            (_anyType) => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "Object"),
+            (_nullType) => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "Object"),
+            (_boolType) => (reference ? "Boolean" : "boolean"),
+            (_integerType) => (reference ? "Long" : "long"),
+            (_doubleType) => (reference ? "Double" : "double"),
+            (_stringType) => "String",
+            (arrayType) => {
                 if (this._options.useList) {
                     return ["List<", this.javaType(true, arrayType.items, withIssues), ">"];
                 } else {
                     return [this.javaType(false, arrayType.items, withIssues), "[]"];
                 }
             },
-            classType => this.nameForNamedType(classType),
-            mapType => ["Map<String, ", this.javaType(true, mapType.values, withIssues), ">"],
-            enumType => this.nameForNamedType(enumType),
-            unionType => {
+            (classType) => this.nameForNamedType(classType),
+            (mapType) => ["Map<String, ", this.javaType(true, mapType.values, withIssues), ">"],
+            (enumType) => this.nameForNamedType(enumType),
+            (unionType) => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) return this.javaType(true, nullable, withIssues);
                 return this.nameForNamedType(unionType);
+            },
+            (transformedStringType) => {
+                if (transformedStringType.kind === "time") {
+                    return this._dateTimeProvider.timeType;
+                }
+                if (transformedStringType.kind === "date") {
+                    return this._dateTimeProvider.dateType;
+                }
+                if (transformedStringType.kind === "date-time") {
+                    return this._dateTimeProvider.dateTimeType;
+                }
+                if (transformedStringType.kind === "uuid") {
+                    return "UUID";
+                }
+                return "String";
+            }
+        );
+    }
+
+    protected javaImport(t: Type): string[] {
+        return matchType<string[]>(
+            t,
+            (_anyType) => [],
+            (_nullType) => [],
+            (_boolType) => [],
+            (_integerType) => [],
+            (_doubleType) => [],
+            (_stringType) => [],
+            (arrayType) => {
+                if (this._options.useList) {
+                    return [...this.javaImport(arrayType.items), "java.util.List"];
+                } else {
+                    return [...this.javaImport(arrayType.items)];
+                }
+            },
+            (_classType) => [],
+            (mapType) => [...this.javaImport(mapType.values), "java.util.Map"],
+            (_enumType) => [],
+            (unionType) => {
+                const imports: string[] = [];
+                unionType.members.forEach((type) => this.javaImport(type).forEach((imp) => imports.push(imp)));
+                return imports;
+            },
+            (transformedStringType) => {
+                if (transformedStringType.kind === "time") {
+                    return this._dateTimeProvider.timeImports;
+                }
+                if (transformedStringType.kind === "date") {
+                    return this._dateTimeProvider.dateImports;
+                }
+                if (transformedStringType.kind === "date-time") {
+                    return this._dateTimeProvider.dateTimeImports;
+                }
+                if (transformedStringType.kind === "uuid") {
+                    return ["java.util.UUID"];
+                }
+                return [];
             }
         );
     }
@@ -358,7 +707,7 @@ export class JavaRenderer extends ConvenienceRenderer {
     protected javaTypeWithoutGenerics(reference: boolean, t: Type): Sourcelike {
         if (t instanceof ArrayType) {
             if (this._options.useList) {
-                return ["List<", this.javaTypeWithoutGenerics(true, t.items), ">"];
+                return ["List"];
             } else {
                 return [this.javaTypeWithoutGenerics(false, t.items), "[]"];
             }
@@ -373,64 +722,88 @@ export class JavaRenderer extends ConvenienceRenderer {
         }
     }
 
-    protected emitClassAttributes(c: ClassType, _className: Name): void {
-        if (c.getProperties().size === 0 && !this._options.justTypes) {
-            this.emitLine("@JsonAutoDetect(fieldVisibility=JsonAutoDetect.Visibility.NONE)");
+    protected emitClassAttributes(_c: ClassType, _className: Name): void {
+        if (this._options.lombok) {
+            this.emitLine("@lombok.Data");
         }
     }
 
-    protected emitAccessorAttributes(
+    protected annotationsForAccessor(
         _c: ClassType,
         _className: Name,
         _propertyName: Name,
-        jsonName: string,
+        _jsonName: string,
         _p: ClassProperty,
         _isSetter: boolean
-    ): void {
-        if (!this._options.justTypes) {
-            this.emitLine('@JsonProperty("', stringEscape(jsonName), '")');
-        }
+    ): string[] {
+        return [];
     }
 
     protected importsForType(t: ClassType | UnionType | EnumType): string[] {
         if (t instanceof ClassType) {
-            return this._options.justTypes ? [] : ["com.fasterxml.jackson.annotation.*"];
+            return [];
         }
         if (t instanceof UnionType) {
-            if (this._options.justTypes) {
-                return ["java.io.IOException"];
-            }
-            return ["java.io.IOException", "com.fasterxml.jackson.core.*"]
-                .concat(this._options.useList ? ["com.fasterxml.jackson.core.type.*"] : [])
-                .concat(["com.fasterxml.jackson.databind.*", "com.fasterxml.jackson.databind.annotation.*"]);
+            return ["java.io.IOException"];
         }
         if (t instanceof EnumType) {
-            if (this._options.justTypes) {
-                return ["java.io.IOException"];
-            } else {
-                return ["java.io.IOException", "com.fasterxml.jackson.annotation.*"];
-            }
+            return ["java.io.IOException"];
         }
         return assertNever(t);
     }
 
+    protected importsForClass(c: ClassType): string[] {
+        const imports: string[] = [];
+        this.forEachClassProperty(c, "none", (_name, _jsonName, p) => {
+            this.javaImport(p.type).forEach((imp) => imports.push(imp));
+        });
+        imports.sort();
+        return [...new Set(imports)];
+    }
+
+    protected importsForUnionMembers(u: UnionType): string[] {
+        const imports: string[] = [];
+        const [, nonNulls] = removeNullFromUnion(u);
+        this.forEachUnionMember(u, nonNulls, "none", null, (_fieldName, t) => {
+            this.javaImport(t).forEach((imp) => imports.push(imp));
+        });
+        imports.sort();
+        return [...new Set(imports)];
+    }
+
     protected emitClassDefinition(c: ClassType, className: Name): void {
-        this.emitFileHeader(className, this.importsForType(c));
+        let imports = [...this.importsForType(c), ...this.importsForClass(c)];
+
+        this.emitFileHeader(className, imports);
         this.emitDescription(this.descriptionForType(c));
         this.emitClassAttributes(c, className);
         this.emitBlock(["public class ", className], () => {
-            this.forEachClassProperty(c, "none", (name, _, p) => {
+            this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+                if (this._options.lombok && this._options.lombokCopyAnnotations) {
+                    const getter = this.annotationsForAccessor(c, className, name, jsonName, p, false);
+                    const setter = this.annotationsForAccessor(c, className, name, jsonName, p, true);
+                    if (getter.length !== 0) {
+                        this.emitLine("@lombok.Getter(onMethod_ = {" + getter.join(", ") + "})");
+                    }
+                    if (setter.length !== 0) {
+                        this.emitLine("@lombok.Setter(onMethod_ = {" + setter.join(", ") + "})");
+                    }
+                }
                 this.emitLine("private ", this.javaType(false, p.type, true), " ", name, ";");
             });
-            this.forEachClassProperty(c, "leading-and-interposing", (name, jsonName, p) => {
-                this.emitDescription(this.descriptionForClassProperty(c, jsonName));
-                const [getterName, setterName] = defined(this._gettersAndSettersForPropertyName.get(name));
-                this.emitAccessorAttributes(c, className, name, jsonName, p, false);
-                const rendered = this.javaType(false, p.type);
-                this.emitLine("public ", rendered, " ", getterName, "() { return ", name, "; }");
-                this.emitAccessorAttributes(c, className, name, jsonName, p, true);
-                this.emitLine("public void ", setterName, "(", rendered, " value) { this.", name, " = value; }");
-            });
+            if (!this._options.lombok) {
+                this.forEachClassProperty(c, "leading-and-interposing", (name, jsonName, p) => {
+                    this.emitDescription(this.descriptionForClassProperty(c, jsonName));
+                    const [getterName, setterName] = defined(this._gettersAndSettersForPropertyName.get(name));
+                    const rendered = this.javaType(false, p.type);
+                    this.annotationsForAccessor(c, className, name, jsonName, p, false)
+                        .forEach(annotation => this.emitLine(annotation));
+                    this.emitLine("public ", rendered, " ", getterName, "() { return ", name, "; }");
+                    this.annotationsForAccessor(c, className, name, jsonName, p, true)
+                        .forEach(annotation => this.emitLine(annotation));
+                    this.emitLine("public void ", setterName, "(", rendered, " value) { this.", name, " = value; }");
+                });
+            }
         });
         this.finishFile();
     }
@@ -446,126 +819,45 @@ export class JavaRenderer extends ConvenienceRenderer {
         return { fieldType, fieldName };
     }
 
+    protected emitUnionAttributes(_u: UnionType, _unionName: Name): void {
+        // empty
+    }
+
+    protected emitUnionSerializer(_u: UnionType, _unionName: Name): void {
+        // empty
+    }
+
     protected emitUnionDefinition(u: UnionType, unionName: Name): void {
-        const tokenCase = (tokenType: string): void => {
-            this.emitLine("case ", tokenType, ":");
-        };
+        const imports = [...this.importsForType(u), ...this.importsForUnionMembers(u)];
 
-        const emitNullDeserializer = (): void => {
-            tokenCase("VALUE_NULL");
-            this.indent(() => this.emitLine("break;"));
-        };
-
-        const emitDeserializeType = (t: Type): void => {
-            const { fieldName } = this.unionField(u, t);
-            const rendered = this.javaTypeWithoutGenerics(true, t);
-            if (this._options.useList && t instanceof ArrayType) {
-                this.emitLine(
-                    "value.",
-                    fieldName,
-                    " = jsonParser.readValueAs(new TypeReference<",
-                    rendered,
-                    ">() {});"
-                );
-            } else {
-                this.emitLine("value.", fieldName, " = jsonParser.readValueAs(", rendered, ".class);");
-            }
-            this.emitLine("break;");
-        };
-
-        const emitDeserializer = (tokenTypes: string[], kind: TypeKind): void => {
-            const t = u.findMember(kind);
-            if (t === undefined) return;
-
-            for (const tokenType of tokenTypes) {
-                tokenCase(tokenType);
-            }
-            this.indent(() => emitDeserializeType(t));
-        };
-
-        const emitDoubleSerializer = (): void => {
-            const t = u.findMember("double");
-            if (t === undefined) return;
-
-            if (u.findMember("integer") === undefined) tokenCase("VALUE_NUMBER_INT");
-            tokenCase("VALUE_NUMBER_FLOAT");
-            this.indent(() => emitDeserializeType(t));
-        };
-
-        this.emitFileHeader(unionName, this.importsForType(u));
+        this.emitFileHeader(unionName, imports);
         this.emitDescription(this.descriptionForType(u));
-        if (!this._options.justTypes) {
-            this.emitLine("@JsonDeserialize(using = ", unionName, ".Deserializer.class)");
-            this.emitLine("@JsonSerialize(using = ", unionName, ".Serializer.class)");
-        }
-        const [maybeNull, nonNulls] = removeNullFromUnion(u);
+        const [, nonNulls] = removeNullFromUnion(u);
+
+        this.emitUnionAttributes(u, unionName);
         this.emitBlock(["public class ", unionName], () => {
             for (const t of nonNulls) {
                 const { fieldType, fieldName } = this.unionField(u, t, true);
                 this.emitLine("public ", fieldType, " ", fieldName, ";");
             }
-            if (this._options.justTypes) return;
-            this.ensureBlankLine();
-            this.emitBlock(["static class Deserializer extends JsonDeserializer<", unionName, ">"], () => {
-                this.emitLine("@Override");
-                this.emitBlock(
-                    [
-                        "public ",
-                        unionName,
-                        " deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JsonProcessingException"
-                    ],
-                    () => {
-                        this.emitLine(unionName, " value = new ", unionName, "();");
-                        this.emitLine("switch (jsonParser.getCurrentToken()) {");
-                        if (maybeNull !== null) emitNullDeserializer();
-                        emitDeserializer(["VALUE_NUMBER_INT"], "integer");
-                        emitDoubleSerializer();
-                        emitDeserializer(["VALUE_TRUE", "VALUE_FALSE"], "bool");
-                        emitDeserializer(["VALUE_STRING"], "string");
-                        emitDeserializer(["START_ARRAY"], "array");
-                        emitDeserializer(["START_OBJECT"], "class");
-                        emitDeserializer(["VALUE_STRING"], "enum");
-                        emitDeserializer(["START_OBJECT"], "map");
-                        this.emitLine('default: throw new IOException("Cannot deserialize ', unionName, '");');
-                        this.emitLine("}");
-                        this.emitLine("return value;");
-                    }
-                );
-            });
-            this.ensureBlankLine();
-            this.emitBlock(["static class Serializer extends JsonSerializer<", unionName, ">"], () => {
-                this.emitLine("@Override");
-                this.emitBlock(
-                    [
-                        "public void serialize(",
-                        unionName,
-                        " obj, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException"
-                    ],
-                    () => {
-                        for (const t of nonNulls) {
-                            const { fieldName } = this.unionField(u, t, true);
-                            this.emitBlock(["if (obj.", fieldName, " != null)"], () => {
-                                this.emitLine("jsonGenerator.writeObject(obj.", fieldName, ");");
-                                this.emitLine("return;");
-                            });
-                        }
-                        if (maybeNull !== null) {
-                            this.emitLine("jsonGenerator.writeNull();");
-                        } else {
-                            this.emitLine('throw new IOException("', unionName, ' must not be null");');
-                        }
-                    }
-                );
-            });
+            this.emitUnionSerializer(u, unionName);
         });
         this.finishFile();
+    }
+
+    protected emitEnumSerializationAttributes(_e: EnumType) {
+        // Empty
+    }
+
+    protected emitEnumDeserializationAttributes(_e: EnumType) {
+        // Empty
     }
 
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitFileHeader(enumName, this.importsForType(e));
         this.emitDescription(this.descriptionForType(e));
         const caseNames: Sourcelike[] = [];
-        this.forEachEnumCase(e, "none", name => {
+        this.forEachEnumCase(e, "none", (name) => {
             if (caseNames.length > 0) caseNames.push(", ");
             caseNames.push(name);
         });
@@ -574,22 +866,20 @@ export class JavaRenderer extends ConvenienceRenderer {
             this.emitLine(caseNames);
             this.ensureBlankLine();
 
-            if (!this._options.justTypes) {
-                this.emitLine("@JsonValue");
-            }
+            this.emitEnumSerializationAttributes(e);
             this.emitBlock("public String toValue()", () => {
                 this.emitLine("switch (this) {");
-                this.forEachEnumCase(e, "none", (name, jsonName) => {
-                    this.emitLine("case ", name, ': return "', stringEscape(jsonName), '";');
+                this.indent(() => {
+                    this.forEachEnumCase(e, "none", (name, jsonName) => {
+                        this.emitLine("case ", name, ': return "', stringEscape(jsonName), '";');
+                    });
                 });
                 this.emitLine("}");
                 this.emitLine("return null;");
             });
             this.ensureBlankLine();
 
-            if (!this._options.justTypes) {
-                this.emitLine("@JsonCreator");
-            }
+            this.emitEnumDeserializationAttributes(e);
             this.emitBlock(["public static ", enumName, " forValue(String value) throws IOException"], () => {
                 this.forEachEnumCase(e, "none", (name, jsonName) => {
                     this.emitLine('if (value.equals("', stringEscape(jsonName), '")) return ', name, ";");
@@ -600,15 +890,415 @@ export class JavaRenderer extends ConvenienceRenderer {
         this.finishFile();
     }
 
+    protected emitSourceStructure(): void {
+        this.forEachNamedType(
+            "leading-and-interposing",
+            (c: ClassType, n: Name) => this.emitClassDefinition(c, n),
+            (e, n) => this.emitEnumDefinition(e, n),
+            (u, n) => this.emitUnionDefinition(u, n)
+        );
+    }
+}
+
+export class JacksonRenderer extends JavaRenderer {
+
+    constructor(
+        targetLanguage: TargetLanguage,
+        renderContext: RenderContext,
+        options: OptionValues<typeof javaOptions>,
+    ) {
+        super(targetLanguage, renderContext, options);
+    }
+
+    protected readonly _converterKeywords: string[] = [
+        "JsonProperty",
+        "JsonDeserialize",
+        "JsonDeserializer",
+        "JsonSerialize",
+        "JsonSerializer",
+        "JsonParser",
+        "JsonProcessingException",
+        "DeserializationContext",
+        "SerializerProvider",
+    ];
+
+    protected emitClassAttributes(c: ClassType, _className: Name): void {
+        if (c.getProperties().size === 0)
+            this.emitLine("@JsonAutoDetect(fieldVisibility=JsonAutoDetect.Visibility.NONE)");
+
+        super.emitClassAttributes(c, _className);
+    }
+
+    protected annotationsForAccessor(
+        _c: ClassType,
+        _className: Name,
+        _propertyName: Name,
+        jsonName: string,
+        p: ClassProperty,
+        _isSetter: boolean
+    ): string[] {
+        const superAnnotations = super.annotationsForAccessor(_c, _className, _propertyName, jsonName, p, _isSetter);
+
+        const annotations: string[] = [
+            ('@JsonProperty("' + stringEscape(jsonName) + '")')
+        ];
+
+        switch (p.type.kind) {
+            case "date-time":
+                this._dateTimeProvider.dateTimeJacksonAnnotations.forEach(annotation => annotations.push(annotation));
+                break;
+            case "date":
+                this._dateTimeProvider.dateJacksonAnnotations.forEach(annotation => annotations.push(annotation));
+                break;
+            case "time":
+                this._dateTimeProvider.timeJacksonAnnotations.forEach(annotation => annotations.push(annotation));
+                break;
+            default:
+                break;
+        }
+
+        return [...superAnnotations, ...annotations];
+    }
+
+    protected importsForType(t: ClassType | UnionType | EnumType): string[] {
+        if (t instanceof ClassType) {
+            const imports = super.importsForType(t);
+            imports.push("com.fasterxml.jackson.annotation.*");
+            return imports;
+        }
+        if (t instanceof UnionType) {
+            const imports = super.importsForType(t);
+            imports.push("java.io.IOException",
+                "com.fasterxml.jackson.core.*",
+                "com.fasterxml.jackson.databind.*",
+                "com.fasterxml.jackson.databind.annotation.*"
+            );
+            if (this._options.useList) {
+                imports.push("com.fasterxml.jackson.core.type.*");
+            }
+            return imports;
+        }
+        if (t instanceof EnumType) {
+            const imports = super.importsForType(t);
+            imports.push("com.fasterxml.jackson.annotation.*");
+            return imports;
+        }
+        return assertNever(t);
+    }
+
+    protected emitUnionAttributes(_u: UnionType, unionName: Name): void {
+        this.emitLine("@JsonDeserialize(using = ", unionName, ".Deserializer.class)");
+        this.emitLine("@JsonSerialize(using = ", unionName, ".Serializer.class)");
+    }
+
+    protected emitUnionSerializer(u: UnionType, unionName: Name): void {
+        const stringBasedObjects: TypeKind[] = ["uuid", "time", "date", "date-time"];
+
+        const tokenCase = (tokenType: string): void => {
+            this.emitLine("case ", tokenType, ":");
+        };
+
+        const emitNullDeserializer = (): void => {
+            this.indent(() => {
+                tokenCase("VALUE_NULL");
+                this.indent(() => this.emitLine("break;"));
+            });
+        };
+
+        const emitDeserializerCodeForStringObjects = (
+            fieldName: Sourcelike,
+            kind: TypeKind,
+            parseFrom: string
+        ): void => {
+            switch (kind) {
+                case "date":
+                    this.emitLine("value.", fieldName, " = ", this._dateTimeProvider.convertStringToDate(parseFrom), ";");
+
+                    break;
+                case "time":
+                    this.emitLine("value.", fieldName, " = ", this._dateTimeProvider.convertStringToTime(parseFrom), ";");
+
+                    break;
+                case "date-time":
+                    this.emitLine("value.", fieldName, " = ", this._dateTimeProvider.convertStringToDateTime(parseFrom), ";");
+                    break;
+                case "uuid":
+                    this.emitLine("value.", fieldName, " = UUID.fromString(", parseFrom, ");");
+
+                    break;
+                default:
+                    return panic("Requested type isnt an object!");
+            }
+        };
+
+        const emitDeserializeType = (t: Type, variableFieldName: string = ""): void => {
+            const { fieldName } = this.unionField(u, t);
+            const rendered = this.javaTypeWithoutGenerics(true, t);
+            if (this._options.useList && t instanceof ArrayType) {
+                this.emitLine(
+                    "value.",
+                    fieldName,
+                    " = jsonParser.readValueAs(new TypeReference<",
+                    rendered,
+                    ">() {});"
+                );
+            } else if (stringBasedObjects.some((stringBasedTypeKind) => t.kind === stringBasedTypeKind)) {
+                emitDeserializerCodeForStringObjects(fieldName, t.kind, variableFieldName);
+            } else if (t.kind === "string") {
+                this.emitLine("value.", fieldName, " = ", variableFieldName, ";");
+            } else if (t.kind === "enum") {
+                const { fieldType } = this.unionField(u, t, true);
+                this.emitLine("value.", fieldName, " = ", fieldType, ".forValue(", variableFieldName, ");");
+            } else {
+                this.emitLine("value.", fieldName, " = jsonParser.readValueAs(", rendered, ".class);");
+            }
+        };
+
+        const emitDeserializer = (tokenTypes: string[], kind: TypeKind): void => {
+            const t = u.findMember(kind);
+            if (t === undefined) return;
+
+            this.indent(() => {
+                for (const tokenType of tokenTypes) {
+                    tokenCase(tokenType);
+                }
+                this.indent(() => {
+                    emitDeserializeType(t);
+                    this.emitLine("break;");
+                });
+            });
+        };
+
+        const emitStringDeserializer = () => {
+            const enumType = u.findMember("enum");
+            const stringType = u.findMember("string");
+
+            if (
+                stringBasedObjects.every((kind) => u.findMember(kind) === undefined) &&
+                stringType === undefined &&
+                enumType === undefined
+            )
+                return;
+
+            this.indent(() => {
+                tokenCase("VALUE_STRING");
+
+                this.indent(() => {
+                    const fromVariable = "string";
+                    this.emitLine("String " + fromVariable + " = jsonParser.readValueAs(String.class);");
+
+                    stringBasedObjects.forEach((kind) => {
+                        const type = u.findMember(kind);
+                        if (type !== undefined) {
+                            this.emitIgnoredTryCatchBlock(() => {
+                                emitDeserializeType(type, fromVariable);
+                            });
+                        }
+                    });
+
+                    if (enumType !== undefined) {
+                        this.emitIgnoredTryCatchBlock(() => {
+                            emitDeserializeType(enumType, fromVariable);
+                        });
+                    }
+
+                    // String should be the last one if exists, because it cannot fail, unlike the parsers.
+                    if (stringType !== undefined) {
+                        emitDeserializeType(stringType, fromVariable);
+                    }
+                    this.emitLine("break;");
+                });
+            });
+        };
+
+        const emitNumberDeserializer = (): void => {
+            const integerType = u.findMember("integer");
+            const doubleType = u.findMember("double");
+            if (doubleType === undefined && integerType === undefined) return;
+
+            this.indent(() => {
+                tokenCase("VALUE_NUMBER_INT");
+                if (integerType !== undefined) {
+                    this.indent(() => {
+                        emitDeserializeType(integerType);
+                        this.emitLine("break;");
+                    });
+                }
+                if (doubleType !== undefined) {
+                    tokenCase("VALUE_NUMBER_FLOAT");
+                    this.indent(() => {
+                        emitDeserializeType(doubleType);
+                        this.emitLine("break;");
+                    });
+                }
+            });
+        };
+
+        const customObjectSerializer: TypeKind[] = ["time", "date", "date-time"];
+
+        const serializerCodeForType = (type: Type, fieldName: Sourcelike): Sourcelike => {
+            switch (type.kind) {
+                case "date":
+                    return this._dateTimeProvider.convertDateToString(fieldName);
+                case "time":
+                    return this._dateTimeProvider.convertTimeToString(fieldName);
+                case "date-time":
+                    return this._dateTimeProvider.convertDateTimeToString(fieldName);
+                default:
+                    return panic("Requested type doesn't have custom serializer code!");
+            }
+        };
+
+        const emitSerializeType = (t: Type): void => {
+            let { fieldName } = this.unionField(u, t, true);
+
+            this.emitBlock(["if (obj.", fieldName, " != null)"], () => {
+                if (customObjectSerializer.some((customSerializerType) => t.kind === customSerializerType)) {
+                    this.emitLine("jsonGenerator.writeObject(", serializerCodeForType(t, ["obj.", fieldName]), ");");
+                } else {
+                    this.emitLine("jsonGenerator.writeObject(obj.", fieldName, ");");
+                }
+                this.emitLine("return;");
+            });
+        };
+
+        const [maybeNull, nonNulls] = removeNullFromUnion(u);
+
+        this.ensureBlankLine();
+        this.emitBlock(["static class Deserializer extends JsonDeserializer<", unionName, ">"], () => {
+            this.emitLine("@Override");
+            this.emitBlock(
+                [
+                    "public ",
+                    unionName,
+                    " deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JsonProcessingException",
+                ],
+                () => {
+                    this.emitLine(unionName, " value = new ", unionName, "();");
+                    this.emitLine("switch (jsonParser.currentToken()) {");
+                    if (maybeNull !== null) emitNullDeserializer();
+                    emitNumberDeserializer();
+                    emitDeserializer(["VALUE_TRUE", "VALUE_FALSE"], "bool");
+                    emitStringDeserializer();
+                    emitDeserializer(["START_ARRAY"], "array");
+                    emitDeserializer(["START_OBJECT"], "class");
+                    emitDeserializer(["START_OBJECT"], "map");
+                    this.indent(() =>
+                        this.emitLine('default: throw new IOException("Cannot deserialize ', unionName, '");')
+                    );
+                    this.emitLine("}");
+                    this.emitLine("return value;");
+                }
+            );
+        });
+        this.ensureBlankLine();
+        this.emitBlock(["static class Serializer extends JsonSerializer<", unionName, ">"], () => {
+            this.emitLine("@Override");
+            this.emitBlock(
+                [
+                    "public void serialize(",
+                    unionName,
+                    " obj, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException",
+                ],
+                () => {
+                    for (const t of nonNulls) {
+                        emitSerializeType(t);
+                    }
+                    if (maybeNull !== null) {
+                        this.emitLine("jsonGenerator.writeNull();");
+                    } else {
+                        this.emitLine('throw new IOException("', unionName, ' must not be null");');
+                    }
+                }
+            );
+        });
+    }
+
+    protected emitEnumSerializationAttributes(_e: EnumType) {
+        this.emitLine("@JsonValue");
+    }
+
+    protected emitEnumDeserializationAttributes(_e: EnumType) {
+        this.emitLine("@JsonCreator");
+    }
+
+    protected emitOffsetDateTimeConverterModule(): void {
+        this.emitLine("SimpleModule module = new SimpleModule();");
+
+        if (this._dateTimeProvider.shouldEmitDateTimeConverter) {
+            this.emitLine("module.addDeserializer(", this._dateTimeProvider.dateTimeType, ".class, new JsonDeserializer<", this._dateTimeProvider.dateTimeType, ">() {");
+            this.indent(() => {
+                this.emitLine("@Override");
+                this.emitBlock(
+                    [
+                        "public ",
+                        this._dateTimeProvider.dateTimeType,
+                        " deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) ",
+                        "throws IOException, JsonProcessingException"
+                    ],
+                    () => {
+                        this.emitLine("String value = jsonParser.getText();");
+                        this.emitLine("return ", this._dateTimeProvider.convertStringToDateTime("value"), ";");
+                    }
+                );
+            });
+            this.emitLine("});");
+        }
+
+        if (!this._dateTimeProvider.shouldEmitTimeConverter) {
+            this.emitLine("module.addDeserializer(", this._dateTimeProvider.timeType, ".class, new JsonDeserializer<", this._dateTimeProvider.timeType, ">() {");
+            this.indent(() => {
+                this.emitLine("@Override");
+                this.emitBlock(
+                    [
+                        "public ",
+                        this._dateTimeProvider.timeType,
+                        " deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) ",
+                        "throws IOException, JsonProcessingException"
+                    ],
+                    () => {
+                        this.emitLine("String value = jsonParser.getText();");
+                        this.emitLine("return ", this._dateTimeProvider.convertStringToTime("value"), ";");
+                    }
+                );
+            });
+            this.emitLine("});");
+        }
+
+        if (!this._dateTimeProvider.shouldEmitDateConverter) {
+            this.emitLine("module.addDeserializer(", this._dateTimeProvider.dateType, ".class, new JsonDeserializer<", this._dateTimeProvider.dateType, ">() {");
+            this.indent(() => {
+                this.emitLine("@Override");
+                this.emitBlock(
+                    [
+                        "public ",
+                        this._dateTimeProvider.dateType,
+                        " deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) ",
+                        "throws IOException, JsonProcessingException"
+                    ],
+                    () => {
+                        this.emitLine("String value = jsonParser.getText();");
+                        this.emitLine("return ", this._dateTimeProvider.convertStringToDate("value"), ";");
+                    }
+                );
+            });
+            this.emitLine("});");
+        }
+
+        this.emitLine("mapper.registerModule(module);");
+    }
+
     protected emitConverterClass(): void {
-        this.startFile("Converter");
+        this.startFile(this._converterClassname);
         this.emitCommentLines([
             "To use this code, add the following Maven dependency to your project:",
             "",
-            "    com.fasterxml.jackson.core : jackson-databind : 2.9.0",
+            this._options.lombok ? "    org.projectlombok : lombok : 1.18.2" : "",
+            "    com.fasterxml.jackson.core     : jackson-databind          : 2.9.0",
+            this._options.dateTimeProvider === "java8" ? "    com.fasterxml.jackson.datatype : jackson-datatype-jsr310   : 2.9.0" : "",
             "",
             "Import this package:",
-            ""
+            "",
         ]);
         this.emitLine("//     import ", this._options.packageName, ".Converter;");
         this.emitMultiline(`//
@@ -624,13 +1314,20 @@ export class JavaRenderer extends ConvenienceRenderer {
             );
         });
         this.ensureBlankLine();
-        this.emitPackageAndImports([
+        const imports = [
             "java.io.IOException",
             "com.fasterxml.jackson.databind.*",
-            "com.fasterxml.jackson.core.JsonProcessingException"
-        ]);
+            "com.fasterxml.jackson.databind.module.SimpleModule",
+            "com.fasterxml.jackson.core.JsonParser",
+            "com.fasterxml.jackson.core.JsonProcessingException",
+            "java.util.*",
+        ].concat(this._dateTimeProvider.converterImports);
+        this.emitPackageAndImports(imports);
         this.ensureBlankLine();
         this.emitBlock(["public class Converter"], () => {
+            this.emitLine("// Date-time helpers");
+            this._dateTimeProvider.emitDateTimeConverters();
+
             this.emitLine("// Serialize/deserialize helpers");
             this.forEachTopLevel("leading-and-interposing", (topLevelType, topLevelName) => {
                 const topLevelTypeRendered = this.javaType(false, topLevelType);
@@ -640,7 +1337,7 @@ export class JavaRenderer extends ConvenienceRenderer {
                         topLevelTypeRendered,
                         " ",
                         this.decoderName(topLevelName),
-                        "(String json) throws IOException"
+                        "(String json) throws IOException",
                     ],
                     () => {
                         this.emitLine("return ", this.readerGetterName(topLevelName), "().readValue(json);");
@@ -653,7 +1350,7 @@ export class JavaRenderer extends ConvenienceRenderer {
                         this.encoderName(topLevelName),
                         "(",
                         topLevelTypeRendered,
-                        " obj) throws JsonProcessingException"
+                        " obj) throws JsonProcessingException",
                     ],
                     () => {
                         this.emitLine("return ", this.writerGetterName(topLevelName), "().writeValueAsString(obj);");
@@ -671,7 +1368,11 @@ export class JavaRenderer extends ConvenienceRenderer {
                     () => {
                         const renderedForClass = this.javaTypeWithoutGenerics(false, topLevelType);
                         this.emitLine("ObjectMapper mapper = new ObjectMapper();");
-                        this.emitLine(readerName, " = mapper.reader(", renderedForClass, ".class);");
+                        this.emitLine("mapper.findAndRegisterModules();");
+                        this.emitLine("mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);");
+                        this.emitLine("mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);");
+                        this.emitOffsetDateTimeConverterModule();
+                        this.emitLine(readerName, " = mapper.readerFor(", renderedForClass, ".class);");
                         this.emitLine(writerName, " = mapper.writerFor(", renderedForClass, ".class);");
                     }
                 );
@@ -703,14 +1404,8 @@ export class JavaRenderer extends ConvenienceRenderer {
     }
 
     protected emitSourceStructure(): void {
-        if (!this._options.justTypes) {
-            this.emitConverterClass();
-        }
-        this.forEachNamedType(
-            "leading-and-interposing",
-            (c: ClassType, n: Name) => this.emitClassDefinition(c, n),
-            (e, n) => this.emitEnumDefinition(e, n),
-            (u, n) => this.emitUnionDefinition(u, n)
-        );
+        this.emitConverterClass();
+        super.emitSourceStructure();
     }
+
 }

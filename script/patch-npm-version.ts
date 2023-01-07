@@ -18,20 +18,16 @@ const PUBLISHED = (() => {
   return all[all.length - 1];
 })();
 
-const CURRENT = exec(`npm version`).match(/quicktype: '(.+)'/)[1];
+const CURRENT = exec(`npm version`).match(/quicktype: '(.+)'/)![1];
 
 switch (semver.compare(CURRENT, PUBLISHED)) {
   case -1:
-    console.error(
-      `* package.json version is ${CURRENT} but ${PUBLISHED} is published. Patching...`
-    );
+    console.error(`* package.json version is ${CURRENT} but ${PUBLISHED} is published. Patching...`);
     exec(`npm version ${PUBLISHED} --force --no-git-tag-version`);
     shell.exec(`npm version patch --no-git-tag-version`);
     break;
   case 0:
-    console.error(
-      `* package.json version is ${CURRENT} but ${PUBLISHED} is published. Patching...`
-    );
+    console.error(`* package.json version is ${CURRENT} but ${PUBLISHED} is published. Patching...`);
     shell.exec(`npm version patch --no-git-tag-version`);
     break;
   default:
