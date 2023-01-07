@@ -351,7 +351,7 @@ export const RubyLanguage: Language = {
     ],
     skipMiscJSON: false,
     rendererOptions: {},
-    quickTestRendererOptions: [],
+    quickTestRendererOptions: [["pokedex.json", { namespace: "QuickType" }]],
     sourceFiles: ["src/language/ruby/index.ts"]
 };
 

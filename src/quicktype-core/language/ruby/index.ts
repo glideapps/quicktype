@@ -4,7 +4,7 @@ import { Sourcelike, modifySource } from "../../Source";
 import { Namer, Name } from "../../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../../ConvenienceRenderer";
 import { TargetLanguage } from "../../TargetLanguage";
-import { Option, BooleanOption, EnumOption, OptionValues, getOptionValues } from "../../RendererOptions";
+import { Option, BooleanOption, EnumOption, OptionValues, getOptionValues, StringOption } from "../../RendererOptions";
 
 import * as keywords from "./keywords";
 
@@ -47,7 +47,8 @@ export const rubyOptions = {
         ["strict", Strictness.Strict],
         ["coercible", Strictness.Coercible],
         ["none", Strictness.None]
-    ])
+    ]),
+    namespace: new StringOption("namespace", "Specify a wrapping Namespace", "NAME", "", "secondary")
 };
 
 export class RubyTargetLanguage extends TargetLanguage {
@@ -56,7 +57,7 @@ export class RubyTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [rubyOptions.justTypes, rubyOptions.strictness];
+        return [rubyOptions.justTypes, rubyOptions.strictness, rubyOptions.namespace];
     }
 
     get supportsOptionalClassProperties(): boolean {
@@ -384,6 +385,24 @@ export class RubyRenderer extends ConvenienceRenderer {
         this.emitLine("end");
     }
 
+    private emitModule(emit: () => void) {
+        const emitModuleInner = (moduleName: string) => {
+            const [firstModule, ...subModules] = moduleName.split("::");
+            if (subModules.length > 0) {
+                this.emitBlock(["module ", firstModule], () => {
+                    emitModuleInner(subModules.join("::"));
+                });
+            } else {
+                this.emitBlock(["module ", moduleName], emit);
+            }
+        };
+        if (this._options.namespace !== undefined && this._options.namespace !== "") {
+            emitModuleInner(this._options.namespace);
+        } else {
+            emit();
+        }
+    }
+
     private emitClass(c: ClassType, className: Name) {
         this.emitDescription(this.descriptionForType(c));
         this.emitBlock(["class ", className, " < Dry::Struct"], () => {
@@ -628,52 +647,65 @@ export class RubyRenderer extends ConvenienceRenderer {
         this.emitLine("require 'dry-struct'");
 
         this.ensureBlankLine();
-        this.emitTypesModule();
 
-        this.forEachDeclaration("leading-and-interposing", decl => {
-            if (decl.kind === "forward") {
-                this.emitCommentLines(["(forward declaration)"]);
-                this.emitLine("class ", this.nameForNamedType(decl.type), " < Dry::Struct; end");
+        this.emitModule(() => {
+            this.emitTypesModule();
+
+            this.forEachDeclaration("leading-and-interposing", decl => {
+                if (decl.kind === "forward") {
+                    this.emitCommentLines(["(forward declaration)"]);
+                    this.emitModule(() => {
+                        this.emitLine("class ", this.nameForNamedType(decl.type), " < Dry::Struct; end");
+                    });
+                }
+            });
+
+            this.forEachNamedType(
+                "leading-and-interposing",
+                (c: ClassType, n: Name) => this.emitClass(c, n),
+                (e, n) => this.emitEnum(e, n),
+                (u, n) => this.emitUnion(u, n)
+            );
+
+            if (!this._options.justTypes) {
+                this.forEachTopLevel(
+                    "leading-and-interposing",
+                    (topLevel, name) => {
+                        const self = modifySource(snakeCase, name);
+
+                        // The json gem defines to_json on maps and primitives, so we only need to supply
+                        // it for arrays.
+                        const needsToJsonDefined = "array" === topLevel.kind;
+
+                        const classDeclaration = () => {
+                            this.emitBlock(["class ", name], () => {
+                                this.emitBlock(["def self.from_json!(json)"], () => {
+                                    if (needsToJsonDefined) {
+                                        this.emitLine(
+                                            self,
+                                            " = ",
+                                            this.fromDynamic(topLevel, "JSON.parse(json, quirks_mode: true)")
+                                        );
+                                        this.emitBlock([self, ".define_singleton_method(:to_json) do"], () => {
+                                            this.emitLine("JSON.generate(", this.toDynamic(topLevel, "self"), ")");
+                                        });
+                                        this.emitLine(self);
+                                    } else {
+                                        this.emitLine(
+                                            this.fromDynamic(topLevel, "JSON.parse(json, quirks_mode: true)")
+                                        );
+                                    }
+                                });
+                            });
+                        };
+
+                        this.emitModule(() => {
+                            classDeclaration();
+                        });
+                    },
+                    t => this.namedTypeToNameForTopLevel(t) === undefined
+                );
             }
         });
-
-        this.forEachNamedType(
-            "leading-and-interposing",
-            (c: ClassType, n: Name) => this.emitClass(c, n),
-            (e, n) => this.emitEnum(e, n),
-            (u, n) => this.emitUnion(u, n)
-        );
-
-        if (!this._options.justTypes) {
-            this.forEachTopLevel(
-                "leading-and-interposing",
-                (topLevel, name) => {
-                    const self = modifySource(snakeCase, name);
-
-                    // The json gem defines to_json on maps and primitives, so we only need to supply
-                    // it for arrays.
-                    const needsToJsonDefined = "array" === topLevel.kind;
-
-                    this.emitBlock(["class ", name], () => {
-                        this.emitBlock(["def self.from_json!(json)"], () => {
-                            if (needsToJsonDefined) {
-                                this.emitLine(
-                                    self,
-                                    " = ",
-                                    this.fromDynamic(topLevel, "JSON.parse(json, quirks_mode: true)")
-                                );
-                                this.emitBlock([self, ".define_singleton_method(:to_json) do"], () => {
-                                    this.emitLine("JSON.generate(", this.toDynamic(topLevel, "self"), ")");
-                                });
-                                this.emitLine(self);
-                            } else {
-                                this.emitLine(this.fromDynamic(topLevel, "JSON.parse(json, quirks_mode: true)"));
-                            }
-                        });
-                    });
-                },
-                t => this.namedTypeToNameForTopLevel(t) === undefined
-            );
-        }
     }
 }
