@@ -457,7 +457,7 @@ export class RubyRenderer extends ConvenienceRenderer {
                 this.indent(() => {
                     const inits: Sourcelike[][] = [];
                     this.forEachClassProperty(c, "none", (name, jsonName, p) => {
-                        const expression = this.toDynamic(p.type, ["@", name], p.isOptional);
+                        const expression = this.toDynamic(p.type, name, p.isOptional);
                         inits.push([[`"${stringEscape(jsonName)}"`], [" => ", expression, ","]]);
                     });
                     this.emitTable(inits);
@@ -531,9 +531,9 @@ export class RubyRenderer extends ConvenienceRenderer {
             this.emitBlock("def to_dynamic", () => {
                 let first = true;
                 this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
-                    this.emitLine(first ? "if" : "elsif", " @", name, " != nil");
+                    this.emitLine(first ? "if" : "elsif", " ", name, " != nil");
                     this.indent(() => {
-                        this.emitLine(this.toDynamic(t, ["@", name]));
+                        this.emitLine(this.toDynamic(t, name));
                     });
                     first = false;
                 });

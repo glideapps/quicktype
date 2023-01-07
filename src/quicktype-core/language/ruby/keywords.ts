@@ -347,6 +347,7 @@ export const reservedProperties = [
     "try",
     "type",
     "untaint",
+    "undef",
     "untrust",
     "with"
 ];
