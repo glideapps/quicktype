@@ -21,10 +21,7 @@ import {
     allUpperWordStyle,
     allLowerWordStyle,
     stringEscape,
-    originalWord,
-    isAscii,
-    isLetterOrUnderscoreOrDigit,
-    isLetter
+    originalWord
 } from "../support/Strings";
 import { assertNever, panic, defined } from "../support/Support";
 import { Sourcelike, MultiWord, multiWord, singleWord, parenIfNeeded } from "../Source";
@@ -112,9 +109,7 @@ const forbiddenPropertyNames = [
     "yield"
 ];
 
-export type PythonVersion = 2 | 3;
 export type PythonFeatures = {
-    version: 2 | 3;
     typeHints: boolean;
     dataClasses: boolean;
 };
@@ -124,9 +119,9 @@ export const pythonOptions = {
         "python-version",
         "Python version",
         [
-            ["3.5", { version: 3, typeHints: false, dataClasses: false }],
-            ["3.6", { version: 3, typeHints: true, dataClasses: false }],
-            ["3.7", { version: 3, typeHints: true, dataClasses: true }]
+            ["3.5", { typeHints: false, dataClasses: false }],
+            ["3.6", { typeHints: true, dataClasses: false }],
+            ["3.7", { typeHints: true, dataClasses: true }]
         ],
         "3.6"
     ),
@@ -210,7 +205,7 @@ function isPartCharacter3(utf16Unit: number): boolean {
 
 const legalizeName3 = utf16LegalizeCharacters(isPartCharacter3);
 
-function classNameStyle(version: PythonVersion, original: string): string {
+function classNameStyle(original: string): string {
     const words = splitIntoWords(original);
     return combineWords(
         words,
@@ -231,12 +226,7 @@ function getWordStyle(uppercase: boolean, forceSnakeNameStyle: boolean) {
     return uppercase ? allUpperWordStyle : allLowerWordStyle;
 }
 
-function snakeNameStyle(
-    version: PythonVersion,
-    original: string,
-    uppercase: boolean,
-    forceSnakeNameStyle: boolean
-): string {
+function snakeNameStyle(original: string, uppercase: boolean, forceSnakeNameStyle: boolean): string {
     const wordStyle = getWordStyle(uppercase, forceSnakeNameStyle);
     const separator = forceSnakeNameStyle ? "_" : "";
     const words = splitIntoWords(original);
@@ -264,13 +254,11 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected makeNamedTypeNamer(): Namer {
-        return funPrefixNamer("type", s => classNameStyle(this.pyOptions.features.version, s));
+        return funPrefixNamer("type", classNameStyle);
     }
 
     protected namerForObjectProperty(): Namer {
-        return funPrefixNamer("property", s =>
-            snakeNameStyle(this.pyOptions.features.version, s, false, this.pyOptions.nicePropertyNames)
-        );
+        return funPrefixNamer("property", s => snakeNameStyle(s, false, this.pyOptions.nicePropertyNames));
     }
 
     protected makeUnionMemberNamer(): null {
@@ -278,9 +266,7 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return funPrefixNamer("enum-case", s =>
-            snakeNameStyle(this.pyOptions.features.version, s, true, this.pyOptions.nicePropertyNames)
-        );
+        return funPrefixNamer("enum-case", s => snakeNameStyle(s, true, this.pyOptions.nicePropertyNames));
     }
 
     protected get commentLineStart(): string {
@@ -511,8 +497,6 @@ export class PythonRenderer extends ConvenienceRenderer {
 
         if (this.leadingComments !== undefined) {
             this.emitCommentLines(this.leadingComments);
-        } else {
-            this.emitDefaultLeadingComments();
         }
         this.ensureBlankLine();
         this.emitImports();
@@ -635,7 +619,7 @@ function makeValue(vol: ValueOrLambda): Sourcelike {
 export class JSONPythonRenderer extends PythonRenderer {
     private readonly _deserializerFunctions = new Set<ConverterFunction>();
     private readonly _converterNamer = funPrefixNamer("converter", s =>
-        snakeNameStyle(this.pyOptions.features.version, s, false, this.pyOptions.nicePropertyNames)
+        snakeNameStyle(s, false, this.pyOptions.nicePropertyNames)
     );
     private readonly _topLevelConverterNames = new Map<Name, TopLevelConverterNames>();
     private _haveTypeVar = false;
@@ -1233,7 +1217,6 @@ export class JSONPythonRenderer extends PythonRenderer {
     }
 
     protected emitDefaultLeadingComments(): void {
-        super.emitDefaultLeadingComments();
         this.ensureBlankLine();
         if (this._haveDateutil) {
             this.emitCommentLines([
