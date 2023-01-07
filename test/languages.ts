@@ -266,7 +266,7 @@ export const CrystalLanguage: Language = {
 export const RubyLanguage: Language = {
     name: "ruby",
     base: "test/fixtures/ruby",
-    setupCommand: "bundle install --path vendor/bundle",
+    setupCommand: "bundle install",
     compileCommand: "true",
     runCommand(sample: string) {
         return `bundle exec main.rb "${sample}"`;
@@ -328,14 +328,30 @@ export const RubyLanguage: Language = {
     features: ["enum", "union", "no-defaults"],
     output: "TopLevel.rb",
     topLevel: "TopLevel",
-    skipJSON: [],
+    skipJSON: [
+        // Chokes on { "1": "one" } because _[0-9]+ is reserved in ruby
+        "blns-object.json",
+        // Ruby union code does not work with new Dry
+        // can't convert Symbol into Hash (Dry::Types::CoercionError)
+        "bug863.json",
+        "combinations1.json",
+        "combinations2.json",
+        "combinations3.json",
+        "combinations4.json",
+        "nst-test-suite.json",
+        "optional-union.json",
+        "union-constructor-clash.json",
+        "unions.json",
+        "nbl-stats.json",
+        "kitchen-sink.json"
+    ],
     skipSchema: [
         // We don't generate a convenience method for top-level enums
         "top-level-enum.schema"
     ],
     skipMiscJSON: false,
     rendererOptions: {},
-    quickTestRendererOptions: [],
+    quickTestRendererOptions: [["pokedex.json", { namespace: "QuickType" }]],
     sourceFiles: ["src/language/ruby/index.ts"]
 };
 

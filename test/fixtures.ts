@@ -245,13 +245,6 @@ abstract class LanguageFixture extends Fixture {
       shell.cp(path.join(cwd, this.language.output), outputDir);
     }
 
-    // If we didn't generate files, don't clean up.
-    // This happens if something went wrong, so it's good to preserve
-    // the directory
-    if (numFiles !== -1) {
-      shell.rm("-rf", cwd);
-    }
-
     this.runMessageEnd(message, numFiles);
   }
 }
