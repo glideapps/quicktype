@@ -923,6 +923,64 @@ export class MinMaxLengthCheckTransformer extends ProducerTransformer {
     }
 }
 
+export class MinMaxValueTransformer extends ProducerTransformer {
+    constructor(
+        graph: TypeGraph,
+        sourceTypeRef: TypeRef,
+        consumer: Transformer | undefined,
+        readonly minimum: number | undefined,
+        readonly maximum: number | undefined
+    ) {
+        super("min-max-value-check", graph, sourceTypeRef, consumer);
+    }
+
+    get canFail(): boolean {
+        return true;
+    }
+
+    reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
+        if (this.consumer === undefined) {
+            return new MinMaxValueTransformer(
+                this.graph,
+                targetTypeRef,
+                continuationTransformer,
+                this.minimum,
+                this.maximum
+            );
+        } else {
+            return this.consumer.reverse(
+                targetTypeRef,
+                new MinMaxValueTransformer(
+                    this.graph,
+                    this.consumer.sourceTypeRef,
+                    continuationTransformer,
+                    this.minimum,
+                    this.maximum
+                )
+            );
+        }
+    }
+
+    reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
+        return new MinMaxValueTransformer(
+            builder.typeGraph,
+            builder.reconstituteTypeRef(this.sourceTypeRef),
+            definedMap(this.consumer, xfer => xfer.reconstitute(builder)),
+            this.minimum,
+            this.maximum
+        );
+    }
+
+    equals(other: any): boolean {
+        if (!super.equals(other)) return false;
+        return (
+            other instanceof MinMaxValueTransformer &&
+            this.minimum === other.minimum &&
+            this.maximum === other.maximum
+        );
+    }
+}
+
 export class Transformation {
     constructor(
         private readonly _graph: TypeGraph,

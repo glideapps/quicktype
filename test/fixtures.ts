@@ -20,7 +20,7 @@ import {
   testsInDir,
   ComparisonArgs,
   mkdirs,
-  callAndExpectFailure
+  callAndExpectFailure,
 } from "./utils";
 import * as languages from "./languages";
 import { RendererOptions } from "../dist/quicktype-core/Run";
@@ -96,11 +96,11 @@ function comparisonArgs(
     expectedFile: expectedFilename,
     given: {
       command: defined(language.runCommand)(inputFilename),
-      env: runEnvForLanguage(additionalRendererOptions)
+      env: runEnvForLanguage(additionalRendererOptions),
     },
     strict: false,
     allowMissingNull: language.allowMissingNull,
-    allowStringifiedIntegers: allowStringifiedIntegers(language, expectedFilename)
+    allowStringifiedIntegers: allowStringifiedIntegers(language, expectedFilename),
   };
 }
 
@@ -148,7 +148,7 @@ export abstract class Fixture {
       `*`,
       chalk.dim(`[${index + 1}/${total}]`),
       chalk.magenta(this.name) + chalk.dim(`(${rendererOptions})`),
-      path.join(cwd, chalk.cyan(path.basename(sample.path)))
+      path.join(cwd, chalk.cyan(path.basename(sample.path))),
     ];
     if (shouldSkip) {
       messageParts.push(chalk.red("SKIP"));
@@ -200,7 +200,7 @@ abstract class LanguageFixture extends Fixture {
     const cwd = this.getRunDirectory();
     const sampleFile = path.resolve(sample.path);
     const shouldSkip = this.shouldSkipTest(sample);
-    const additionalFiles = this.additionalFiles(sample).map(p => path.resolve(p));
+    const additionalFiles = this.additionalFiles(sample).map((p) => path.resolve(p));
 
     const message = this.runMessageStart(sample, index, total, cwd, shouldSkip);
 
@@ -209,6 +209,10 @@ abstract class LanguageFixture extends Fixture {
     }
 
     shell.cp("-R", this.language.base, cwd);
+
+    if (this.language.copyInput) {
+      shell.cp(sampleFile, cwd);
+    }
 
     let numFiles = -1;
     await inDir(cwd, async () => {
@@ -241,7 +245,12 @@ abstract class LanguageFixture extends Fixture {
       shell.cp(path.join(cwd, this.language.output), outputDir);
     }
 
-    shell.rm("-rf", cwd);
+    // If we didn't generate files, don't clean up.
+    // This happens if something went wrong, so it's good to preserve
+    // the directory
+    if (numFiles !== -1) {
+      shell.rm("-rf", cwd);
+    }
 
     this.runMessageEnd(message, numFiles);
   }
@@ -284,7 +293,7 @@ class JSONFixture extends LanguageFixture {
         lang: "schema",
         out: "schema.json",
         topLevel: this.language.topLevel,
-        rendererOptions: {}
+        rendererOptions: {},
       });
       // Quicktype from the schema and compare to expected code
       shell.mv(this.language.output, `${this.language.output}.expected`);
@@ -311,22 +320,23 @@ class JSONFixture extends LanguageFixture {
       testsInDir("test/inputs/json/samples", "json")
     );
 
-    const miscSamples = this.language.skipMiscJSON ? [] : testsInDir("test/inputs/json/misc", "json");
+    const skipMiscJSON = process.env.QUICKTEST !== undefined || this.language.skipMiscJSON;
+    const miscSamples = skipMiscJSON ? [] : testsInDir("test/inputs/json/misc", "json");
 
     let { priority, others } = samplesFromSources(sources, prioritySamples, miscSamples, "json");
 
-    const combinationInputs = _.map([1, 2, 3, 4], n =>
-      _.find(prioritySamples, p => p.endsWith(`/priority/combinations${n}.json`))
+    const combinationInputs = _.map([1, 2, 3, 4], (n) =>
+      _.find(prioritySamples, (p) => p.endsWith(`/priority/combinations${n}.json`))
     );
-    if (combinationInputs.some(p => p === undefined)) {
+    if (combinationInputs.some((p) => p === undefined)) {
       return failWith("priority/combinations[1234].json samples not found", prioritySamples);
     }
     if (sources.length === 0 && !ONLY_OUTPUT) {
       const quickTestSamples = _.chain(this.language.quickTestRendererOptions)
-        .flatMap(qt => {
+        .flatMap((qt) => {
           if (Array.isArray(qt)) {
             const [filename, ro] = qt;
-            const input = _.find(([] as string[]).concat(prioritySamples, miscSamples), p =>
+            const input = _.find(([] as string[]).concat(prioritySamples, miscSamples), (p) =>
               p.endsWith(`/${filename}`)
             );
             if (input === undefined) {
@@ -336,14 +346,14 @@ class JSONFixture extends LanguageFixture {
               {
                 path: input,
                 additionalRendererOptions: ro,
-                saveOutput: false
-              }
+                saveOutput: false,
+              },
             ];
           } else {
-            return _.map(combinationInputs, p => ({
+            return _.map(combinationInputs, (p) => ({
               path: defined(p),
               additionalRendererOptions: qt,
-              saveOutput: false
+              saveOutput: false,
             }));
           }
         })
@@ -386,7 +396,7 @@ class JSONToXToYFixture extends JSONFixture {
       skipSchema: [],
       rendererOptions,
       quickTestRendererOptions: [],
-      sourceFiles: language.sourceFiles
+      sourceFiles: language.sourceFiles,
     });
     this.runLanguage = language;
     this.name = `${this._fixturePrefix}-${language.name}`;
@@ -434,7 +444,7 @@ class JSONSchemaJSONFixture extends JSONToXToYFixture {
       "blns-object.json", // AJV refuses to even "compile" the schema we generate
       "31189.json", // same here
       "437e7.json", // uri/string confusion
-      "ed095.json" // same here on Travis
+      "ed095.json", // same here on Travis
     ];
     super("schema-json", "schema", "schema.json", {}, skipJSON, language);
   }
@@ -456,7 +466,7 @@ class JSONSchemaJSONFixture extends JSONToXToYFixture {
     let valid = ajv.validate(schema, input);
     if (!valid) {
       failWith("Generated schema does not validate input JSON.", {
-        filename
+        filename,
       });
     }
 
@@ -471,12 +481,12 @@ class JSONSchemaJSONFixture extends JSONToXToYFixture {
       lang: this.language.name,
       topLevel: this.language.topLevel,
       out: schemaSchema,
-      rendererOptions: {}
+      rendererOptions: {},
     });
     compareJsonFileToJson({
       expectedFile: this.language.output,
       given: { file: schemaSchema },
-      strict: true
+      strict: true,
     });
 
     return 1;
@@ -542,7 +552,7 @@ const skipTypeScriptTests = [
   "ed095.json", // top-level is a map
   "f3139.json",
   "f3edf.json",
-  "f466a.json"
+  "f466a.json",
 ];
 
 class JSONTypeScriptFixture extends JSONToXToYFixture {
@@ -594,10 +604,10 @@ class JSONSchemaFixture extends LanguageFixture {
     }
     if (this.language.runCommand === undefined) return 0;
 
-    const failExtensions = this.language.features.map(f => `.fail.${f}.json`).concat([".fail.json"]);
+    const failExtensions = this.language.features.map((f) => `.fail.${f}.json`).concat([".fail.json"]);
 
     for (const filename of additionalFiles) {
-      if (failExtensions.some(ext => filename.endsWith(ext))) {
+      if (failExtensions.some((ext) => filename.endsWith(ext))) {
         callAndExpectFailure(
           `Expected failure on input ${filename}`,
           () =>
@@ -688,10 +698,108 @@ class GraphQLFixture extends LanguageFixture {
   }
 }
 
+class CommandSuccessfulLanguageFixture extends LanguageFixture {
+  constructor(language: languages.Language, public name: string = language.name) {
+    super(language);
+  }
+
+  runForName(name: string): boolean {
+    return this.name === name || name === "json";
+  }
+
+  async runQuicktype(sample: string, additionalRendererOptions: RendererOptions): Promise<void> {
+    // FIXME: add options
+    await quicktypeForLanguage(this.language, sample, "json", true, additionalRendererOptions);
+  }
+
+  async test(
+    filename: string,
+    _additionalRendererOptions: RendererOptions,
+    _additionalFiles: string[]
+  ): Promise<number> {
+    if (this.language.compileCommand) {
+      await execAsync(this.language.compileCommand);
+    }
+
+    if (this.language.runCommand === undefined) {
+      throw new Error("Invalid run command.");
+    }
+
+    const command = this.language.runCommand(filename);
+    const results = await execAsync(command);
+
+    if (results.stdout.indexOf("Success") === -1) {
+      throw new Error(`Test failed:\n${results.stdout}`);
+    }
+
+    return 0;
+  }
+
+  shouldSkipTest(sample: Sample): boolean {
+    if (fs.statSync(sample.path).size > 32 * 1024 * 1024) {
+      return true;
+    }
+    return _.includes(this.language.skipJSON, path.basename(sample.path));
+  }
+
+  getSamples(sources: string[]): { priority: Sample[]; others: Sample[] } {
+    // FIXME: this should only run once
+    const prioritySamples = _.concat(
+      testsInDir("test/inputs/json/priority", "json"),
+      testsInDir("test/inputs/json/samples", "json")
+    );
+
+    const miscSamples = this.language.skipMiscJSON ? [] : testsInDir("test/inputs/json/misc", "json");
+
+    let { priority, others } = samplesFromSources(sources, prioritySamples, miscSamples, "json");
+
+    const combinationInputs = _.map([1, 2, 3, 4], (n) =>
+      _.find(prioritySamples, (p) => p.endsWith(`/priority/combinations${n}.json`))
+    );
+    if (combinationInputs.some((p) => p === undefined)) {
+      return failWith("priority/combinations[1234].json samples not found", prioritySamples);
+    }
+    if (sources.length === 0 && !ONLY_OUTPUT) {
+      const quickTestSamples = _.chain(this.language.quickTestRendererOptions)
+        .flatMap((qt) => {
+          if (Array.isArray(qt)) {
+            const [filename, ro] = qt;
+            const input = _.find(([] as string[]).concat(prioritySamples, miscSamples), (p) =>
+              p.endsWith(`/${filename}`)
+            );
+            if (input === undefined) {
+              return failWith(`quick-test sample ${filename} not found`, qt);
+            }
+            return [
+              {
+                path: input,
+                additionalRendererOptions: ro,
+                saveOutput: false,
+              },
+            ];
+          } else {
+            return _.map(combinationInputs, (p) => ({
+              path: defined(p),
+              additionalRendererOptions: qt,
+              saveOutput: false,
+            }));
+          }
+        })
+        .value();
+      priority = quickTestSamples.concat(priority);
+    }
+
+    return { priority, others };
+  }
+}
+
 export const allFixtures: Fixture[] = [
   // new JSONFixture(languages.CrystalLanguage),
   new JSONFixture(languages.CSharpLanguage),
+  new JSONFixture(languages.CSharpLanguageSystemTextJson, "csharp-SystemTextJson"),
   new JSONFixture(languages.JavaLanguage),
+  new JSONFixture(languages.JavaLanguageWithLegacyDateTime, "java-datetime-legacy"),
+  new JSONFixture(languages.JavaLanguageWithLombok, "java-lombok"),
   new JSONFixture(languages.GoLanguage),
   new JSONFixture(languages.CPlusPlusLanguage),
   new JSONFixture(languages.RustLanguage),
@@ -707,11 +815,14 @@ export const allFixtures: Fixture[] = [
   new JSONFixture(languages.KotlinJacksonLanguage, "kotlin-jackson"),
   new JSONFixture(languages.DartLanguage),
   new JSONFixture(languages.PikeLanguage),
+  new JSONFixture(languages.HaskellLanguage),
   new JSONSchemaJSONFixture(languages.CSharpLanguage),
   new JSONTypeScriptFixture(languages.CSharpLanguage),
   // new JSONSchemaFixture(languages.CrystalLanguage),
   new JSONSchemaFixture(languages.CSharpLanguage),
   new JSONSchemaFixture(languages.JavaLanguage),
+  new JSONSchemaFixture(languages.JavaLanguageWithLegacyDateTime, "schema-java-datetime-legacy"),
+  new JSONSchemaFixture(languages.JavaLanguageWithLombok, "schema-java-lombok"),
   new JSONSchemaFixture(languages.GoLanguage),
   new JSONSchemaFixture(languages.CPlusPlusLanguage),
   new JSONSchemaFixture(languages.RustLanguage),
@@ -726,9 +837,12 @@ export const allFixtures: Fixture[] = [
   new JSONSchemaFixture(languages.KotlinJacksonLanguage, "schema-kotlin-jackson"),
   new JSONSchemaFixture(languages.DartLanguage),
   new JSONSchemaFixture(languages.PikeLanguage),
+  new JSONSchemaFixture(languages.HaskellLanguage),
   // FIXME: Why are we missing so many language with GraphQL?
   new GraphQLFixture(languages.CSharpLanguage),
   new GraphQLFixture(languages.JavaLanguage),
+  new GraphQLFixture(languages.JavaLanguageWithLegacyDateTime, false, "graphql-java-datetime-legacy"),
+  new GraphQLFixture(languages.JavaLanguageWithLombok, false, "graphql-java-lombok"),
   new GraphQLFixture(languages.GoLanguage),
   new GraphQLFixture(languages.CPlusPlusLanguage),
   new GraphQLFixture(languages.PythonLanguage),
@@ -738,5 +852,7 @@ export const allFixtures: Fixture[] = [
   new GraphQLFixture(languages.FlowLanguage),
   new GraphQLFixture(languages.JavaScriptLanguage),
   new GraphQLFixture(languages.DartLanguage),
-  new GraphQLFixture(languages.PikeLanguage)
+  new GraphQLFixture(languages.PikeLanguage),
+  new GraphQLFixture(languages.HaskellLanguage),
+  new CommandSuccessfulLanguageFixture(languages.JavaScriptPropTypesLanguage),
 ];

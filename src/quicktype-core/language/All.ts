@@ -2,12 +2,13 @@ import { iterableFind } from "collection-utils";
 
 import { TargetLanguage } from "../TargetLanguage";
 
-import { NewtonsoftCSharpTargetLanguage } from "./CSharp";
+import { CSharpTargetLanguage } from "./CSharp";
 import { GoTargetLanguage } from "./Golang";
 import { CPlusPlusTargetLanguage } from "./CPlusPlus";
 import { ObjectiveCTargetLanguage } from "./Objective-C";
 import { JavaTargetLanguage } from "./Java";
 import { JavaScriptTargetLanguage } from "./JavaScript";
+import { JavaScriptPropTypesTargetLanguage } from "./JavaScriptPropTypes";
 import { TypeScriptTargetLanguage, FlowTargetLanguage } from "./TypeScriptFlow";
 import { SwiftTargetLanguage } from "./Swift";
 import { KotlinTargetLanguage } from "./Kotlin";
@@ -19,9 +20,10 @@ import { RubyTargetLanguage } from "./ruby";
 import { DartTargetLanguage } from "./Dart";
 import { PythonTargetLanguage } from "./Python";
 import { PikeTargetLanguage } from "./Pike";
+import { HaskellTargetLanguage } from "./Haskell";
 
 export const all: TargetLanguage[] = [
-    new NewtonsoftCSharpTargetLanguage(),
+    new CSharpTargetLanguage(),
     new GoTargetLanguage(),
     new RustTargetLanguage(),
     new CrystalTargetLanguage(),
@@ -30,6 +32,7 @@ export const all: TargetLanguage[] = [
     new JavaTargetLanguage(),
     new TypeScriptTargetLanguage(),
     new JavaScriptTargetLanguage(),
+    new JavaScriptPropTypesTargetLanguage(),
     new FlowTargetLanguage(),
     new SwiftTargetLanguage(),
     new KotlinTargetLanguage(),
@@ -38,7 +41,8 @@ export const all: TargetLanguage[] = [
     new RubyTargetLanguage(),
     new DartTargetLanguage(),
     new PythonTargetLanguage("Python", ["python", "py"], "py"),
-    new PikeTargetLanguage()
+    new PikeTargetLanguage(),
+    new HaskellTargetLanguage(),
 ];
 
 export function languageNamed(name: string, targetLanguages?: TargetLanguage[]): TargetLanguage | undefined {

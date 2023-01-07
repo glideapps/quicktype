@@ -1,5 +1,5 @@
 import { Options } from ".";
-import { PassThrough } from "stream";
+import { PassThrough } from "readable-stream";
 
 export default function bufferStream(opts: Options) {
     opts = Object.assign({}, opts);

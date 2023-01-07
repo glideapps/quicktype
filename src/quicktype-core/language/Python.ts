@@ -13,6 +13,7 @@ import {
     allUpperWordStyle,
     allLowerWordStyle,
     stringEscape,
+    originalWord,
     isAscii,
     isLetterOrUnderscoreOrDigit,
     isLetter
@@ -218,8 +219,16 @@ function classNameStyle(version: PythonVersion, original: string): string {
     );
 }
 
-function snakeNameStyle(version: PythonVersion, original: string, uppercase: boolean): string {
-    const wordStyle = uppercase ? allUpperWordStyle : allLowerWordStyle;
+function getWordStyle(uppercase: boolean, forceSnakeNameStyle: boolean) {
+    if (!forceSnakeNameStyle) {
+        return originalWord;
+    }
+    return uppercase ? allUpperWordStyle : allLowerWordStyle;
+}
+
+function snakeNameStyle(version: PythonVersion, original: string, uppercase: boolean, forceSnakeNameStyle: boolean): string {
+    const wordStyle = getWordStyle(uppercase, forceSnakeNameStyle);
+    const separator = forceSnakeNameStyle ? "_" : "";
     const words = splitIntoWords(original);
     return combineWords(
         words,
@@ -228,7 +237,7 @@ function snakeNameStyle(version: PythonVersion, original: string, uppercase: boo
         wordStyle,
         wordStyle,
         wordStyle,
-        "_",
+        separator,
         isStartCharacter3
     );
 }
@@ -258,11 +267,7 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected namerForObjectProperty(): Namer {
-        if (this.pyOptions.nicePropertyNames) {
-            return funPrefixNamer("property", s => snakeNameStyle(this.pyOptions.features.version, s, false));
-        } else {
-            return funPrefixNamer("properties", s => s);
-        }
+        return funPrefixNamer("property", s => snakeNameStyle(this.pyOptions.features.version, s, false, this.pyOptions.nicePropertyNames));
     }
 
     protected makeUnionMemberNamer(): null {
@@ -270,7 +275,7 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return funPrefixNamer("enum-case", s => snakeNameStyle(this.pyOptions.features.version, s, true));
+        return funPrefixNamer("enum-case", s => snakeNameStyle(this.pyOptions.features.version, s, true, this.pyOptions.nicePropertyNames));
     }
 
     protected get commentLineStart(): string {
@@ -623,7 +628,7 @@ function makeValue(vol: ValueOrLambda): Sourcelike {
 export class JSONPythonRenderer extends PythonRenderer {
     private readonly _deserializerFunctions = new Set<ConverterFunction>();
     private readonly _converterNamer = funPrefixNamer("converter", s =>
-        snakeNameStyle(this.pyOptions.features.version, s, false)
+        snakeNameStyle(this.pyOptions.features.version, s, false, this.pyOptions.nicePropertyNames),
     );
     private readonly _topLevelConverterNames = new Map<Name, TopLevelConverterNames>();
     private _haveTypeVar = false;
@@ -1207,7 +1212,23 @@ export class JSONPythonRenderer extends PythonRenderer {
             this.emitLine("result", this.typeHint(": dict"), " = {}");
             this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
                 const property = { value: ["self.", name] };
-                this.emitLine("result[", this.string(jsonName), "] = ", makeValue(this.serializer(property, cp.type)));
+                if (cp.isOptional) {
+                    this.emitBlock(["if self.", name, " is not None:"], () => {
+                        this.emitLine(
+                            "result[",
+                            this.string(jsonName),
+                            "] = ",
+                            makeValue(this.serializer(property, cp.type))
+                        );
+                    });
+                } else {
+                    this.emitLine(
+                        "result[",
+                        this.string(jsonName),
+                        "] = ",
+                        makeValue(this.serializer(property, cp.type))
+                    );
+                }
             });
             this.emitLine("return result");
         });

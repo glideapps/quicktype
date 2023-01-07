@@ -1,13 +1,13 @@
 import * as fs from "fs";
-import { Readable } from "stream";
+import {Readable} from "readable-stream";
+import {isNode} from "browser-or-node";
+import {getStream} from "./get-stream";
 
-import { getStream } from "./get-stream";
-
-import { messageError, JSONSchemaStore, JSONSchema, parseJSON, panic } from "../quicktype-core";
+import {messageError, panic} from "../../index";
 
 // The typings for this module are screwy
 const isURL = require("is-url");
-const fetch = require("node-fetch");
+const fetch = require("isomorphic-fetch");
 
 interface HttpHeaders {
     [key: string]: string;
@@ -40,15 +40,21 @@ function parseHeaders(httpHeaders?: string[]): HttpHeaders {
 
 export async function readableFromFileOrURL(fileOrURL: string, httpHeaders?: string[]): Promise<Readable> {
     try {
-        if (fileOrURL === "-") {
-            return process.stdin;
-        } else if (isURL(fileOrURL)) {
+        if (isURL(fileOrURL)) {
             const response = await fetch(fileOrURL, {
                 headers: parseHeaders(httpHeaders)
             });
             return response.body;
-        } else if (fs.existsSync(fileOrURL)) {
-            return fs.createReadStream(fileOrURL, "utf8");
+        } else if (isNode) {
+            if (fileOrURL === "-") {
+            // Cast node readable to isomorphic readable from readable-stream
+                return process.stdin as unknown as Readable;
+            }
+            const filePath = fs.lstatSync(fileOrURL).isSymbolicLink() ? fs.readlinkSync(fileOrURL) : fileOrURL;
+            if (fs.existsSync(filePath)) {
+                // Cast node readable to isomorphic readable from readable-stream
+                return fs.createReadStream(filePath, "utf8") as unknown as Readable;
+            }
         }
     } catch (e) {
         const message = typeof e.message === "string" ? e.message : "Unknown error";
@@ -64,16 +70,5 @@ export async function readFromFileOrURL(fileOrURL: string, httpHeaders?: string[
     } catch (e) {
         const message = typeof e.message === "string" ? e.message : "Unknown error";
         return messageError("MiscReadError", { fileOrURL, message });
-    }
-}
-
-export class FetchingJSONSchemaStore extends JSONSchemaStore {
-    constructor(private readonly _httpHeaders?: string[]) {
-        super();
-    }
-
-    async fetch(address: string): Promise<JSONSchema | undefined> {
-        // console.log(`Fetching ${address}`);
-        return parseJSON(await readFromFileOrURL(address, this._httpHeaders), "JSON Schema", address);
     }
 }

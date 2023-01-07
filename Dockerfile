@@ -2,7 +2,7 @@
 #   docker tag IMAGE-ID schani/quicktype
 #   docker push schani/quicktype
 
-FROM ubuntu:xenial-20180525
+FROM ubuntu:bionic-20220105
 
 ENV workdir /app
 
@@ -11,37 +11,6 @@ WORKDIR ${workdir}
 
 RUN apt-get -y update --fix-missing
 RUN apt-get -y install curl git apt-transport-https --assume-yes
-
-# Install Swift
-RUN curl -o swift.tar.gz https://swift.org/builds/swift-4.1.3-release/ubuntu1604/swift-4.1.3-RELEASE/swift-4.1.3-RELEASE-ubuntu16.04.tar.gz
-RUN tar -zxf swift.tar.gz
-RUN rm swift.tar.gz
-ENV PATH="${workdir}/swift-4.1.3-RELEASE-ubuntu16.04/usr/bin:${PATH}"
-
-# Add nodejs package source
-RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
-
-# Add .NET core package sources
-RUN curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
-RUN mv microsoft.gpg /etc/apt/trusted.gpg.d/microsoft.gpg
-RUN sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-ubuntu-xenial-prod xenial main" > /etc/apt/sources.list.d/dotnetdev.list'
-
-RUN apt-get -y update
-RUN apt-get -y install nodejs maven default-jdk clang binutils golang-go --assume-yes
-RUN apt-get -y install dotnet-sdk-2.0.0 --assume-yes
-
-# Install Boost for C++
-RUN apt-get -y install libboost-all-dev --assume-yes
-RUN apt-get -y update && apt-get -y install software-properties-common python-software-properties --assume-yes
-RUN add-apt-repository ppa:jonathonf/gcc-7.1
-RUN apt-get -y update
-RUN apt-get -y install g++-7 --assume-yes
-RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7
-RUN update-alternatives --config gcc
-
-# Install Rust
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
-ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Install Pike
 RUN apt-get -y update
@@ -52,37 +21,20 @@ RUN git clone https://github.com/obmarg/libsysconfcpus.git
 RUN cd libsysconfcpus && ./configure && make && make install
 
 # Ruby
-RUN apt-get -y install build-essential curl openssl libreadline6 libreadline6-dev zlib1g zlib1g-dev libssl-dev libyaml-dev libxml2-dev libxslt-dev autoconf libc6-dev ncurses-dev
-RUN curl -o ruby-2.7.0.tar.gz https://cache.ruby-lang.org/pub/ruby/2.7/ruby-2.7.0.tar.gz
-RUN tar -xvf ruby-2.7.0.tar.gz
-RUN cd ruby-2.7.0 && ./configure && make && make test && make install
-RUN gem install bundler -v 1.17.3
-
-# Kotlin
-RUN apt-get -y install unzip zip
-RUN curl -s https://get.sdkman.io | bash
-RUN /bin/bash -c "source /root/.sdkman/bin/sdkman-init.sh && sdk install kotlin"
-ENV PATH="/root/.sdkman/candidates/kotlin/current/bin:${PATH}"
-
-# Python
-RUN add-apt-repository ppa:deadsnakes/ppa
-RUN apt-get -y update
-RUN apt-get -y install python3.6 --assume-yes
-RUN curl https://bootstrap.pypa.io/get-pip.py | python3.6
-RUN pip3.6 install mypy python-dateutil
+RUN apt-get -y install ruby --assume-yes
+# This must be the same version as what's in `Gemfile.lock`
+RUN gem install bundler -v 1.16.1
 
 # Dart
 RUN apt-get -y install apt-transport-https
-RUN sh -c 'curl https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -'
-RUN sh -c 'curl https://storage.googleapis.com/download.dartlang.org/linux/debian/dart_stable.list > /etc/apt/sources.list.d/dart_stable.list'
-RUN apt-get -y update
-RUN apt-get -y --allow-unauthenticated install dart
+RUN curl -o /tmp/dart.deb "https://storage.googleapis.com/dart-archive/channels/stable/release/2.14.4/linux_packages/dart_2.14.4-1_amd64.deb" && dpkg -i /tmp/dart.deb && rm /tmp/dart.deb
 
 # Crystal
 RUN curl -sL "https://keybase.io/crystal/pgp_keys.asc" | apt-key add -
 RUN echo "deb https://dist.crystal-lang.org/apt crystal main" | tee /etc/apt/sources.list.d/crystal.list
 RUN apt-get -y update
 RUN apt-get -y install crystal --assume-yes
+
 
 ENV PATH="${workdir}/node_modules/.bin:${PATH}"
 
