@@ -36,12 +36,12 @@ jobs:
                     - dart,schema-dart
                     - swift,schema-swift
                     - javascript-prop-types
+                    - ruby
 
                     # Partially working
                     # - schema-typescript # TODO Unify with typescript once fixed
 
                     # Implementation is too outdated to test in GitHub Actions
-                    # - ruby,schema-ruby
                     # - elm,schema-elm
 
                     # Language is too niche / obscure to test easily on ubuntu-latest
@@ -96,7 +96,7 @@ jobs:
               uses: ruby/setup-ruby@v1
               if: ${{ contains(matrix.fixture, 'ruby') }}
               with:
-                  ruby-version: "3.0"
+                  ruby-version: "3.2.0"
 
             - name: Setup .NET Core SDK
               if: ${{ contains(matrix.fixture, 'csharp') }}
