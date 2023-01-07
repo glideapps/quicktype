@@ -12,6 +12,7 @@
         "test": "script/test",
         "start": "script/watch",
         "pkg": "script/make-pkgs.sh",
+        "format": "prettier --write **/*.ts",
         "tslint": "tslint --project src/cli --exclude 'src/__tests__/**' --exclude 'src/quicktype-core/input/io/get-stream/**'",
         "clean": "rm -rf dist node_modules *~",
         "publish": "script/publish.sh"
