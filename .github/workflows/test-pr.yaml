@@ -37,7 +37,6 @@ jobs:
                     - java,schema-java
                     - python,schema-python
                     - haskell,schema-haskell
-                    - rust,schema-rust
                     - csharp,schema-csharp,schema-json-csharp,graphql-csharp,csharp-SystemTextJson
                     - json-ts-csharp
                     - dart,schema-dart
@@ -64,7 +63,11 @@ jobs:
 
                 runs-on: [ubuntu-latest]
 
-                # include:
+                include:
+                    # Rust is very slow, so we use a larger runner
+                     - fixture: rust,schema-rust
+                       runs-on: ubuntu-latest-8-cores
+                    
                     # - fixture: objective-c
                     #   runs-on: macos-latest
 
