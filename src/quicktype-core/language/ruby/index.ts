@@ -8,6 +8,8 @@ import { Option, BooleanOption, EnumOption, OptionValues, getOptionValues } from
 
 import * as keywords from "./keywords";
 
+const forbiddenForObjectProperties = Array.from(new Set([...keywords.keywords, ...keywords.reservedProperties]));
+
 import { Type, EnumType, ClassType, UnionType, ArrayType, MapType, ClassProperty } from "../../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
 
@@ -132,11 +134,11 @@ export class RubyRenderer extends ConvenienceRenderer {
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
-        return keywords.globals.concat(["Types", "JSON", "Dry", "Constructor"]);
+        return keywords.globals.concat(["Types", "JSON", "Dry", "Constructor", "Self"]);
     }
 
     protected forbiddenForObjectProperties(_c: ClassType, _classNamed: Name): ForbiddenWordsInfo {
-        return { names: keywords.reservedProperties, includeGlobalForbidden: true };
+        return { names: forbiddenForObjectProperties, includeGlobalForbidden: true };
     }
 
     protected makeNamedTypeNamer(): Namer {

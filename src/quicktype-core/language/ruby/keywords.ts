@@ -223,6 +223,7 @@ const kernel = [
     "module_eval",
     "module_exec",
     "name",
+    "new",
     "nil?",
     "object_id",
     "open",
