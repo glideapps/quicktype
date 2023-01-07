@@ -1,4 +1,4 @@
-const unicode = require("@mark.probst/unicode-properties");
+const unicode = require("unicode-properties");
 
 import { Sourcelike, modifySource } from "../../Source";
 import { Namer, Name } from "../../Naming";
@@ -7,6 +7,8 @@ import { TargetLanguage } from "../../TargetLanguage";
 import { Option, BooleanOption, EnumOption, OptionValues, getOptionValues } from "../../RendererOptions";
 
 import * as keywords from "./keywords";
+
+const forbiddenForObjectProperties = Array.from(new Set([...keywords.keywords, ...keywords.reservedProperties]));
 
 import { Type, EnumType, ClassType, UnionType, ArrayType, MapType, ClassProperty } from "../../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
@@ -22,7 +24,8 @@ import {
     isPrintable,
     escapeNonPrintableMapper,
     intToHex,
-    snakeCase
+    snakeCase,
+    isLetterOrUnderscore
 } from "../../support/Strings";
 import { RenderContext } from "../../Renderer";
 
@@ -69,9 +72,7 @@ export class RubyTargetLanguage extends TargetLanguage {
     }
 }
 
-function isStartCharacter(utf16Unit: number): boolean {
-    return unicode.isAlphabetic(utf16Unit) || utf16Unit === 0x5f; // underscore
-}
+const isStartCharacter = isLetterOrUnderscore;
 
 function isPartCharacter(utf16Unit: number): boolean {
     const category: string = unicode.getCategory(utf16Unit);
@@ -81,6 +82,9 @@ function isPartCharacter(utf16Unit: number): boolean {
 const legalizeName = legalizeCharacters(isPartCharacter);
 
 function simpleNameStyle(original: string, uppercase: boolean): string {
+    if (/^[0-9]+$/.test(original)) {
+        original = original + "N";
+    }
     const words = splitIntoWords(original);
     return combineWords(
         words,
@@ -130,11 +134,11 @@ export class RubyRenderer extends ConvenienceRenderer {
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
-        return keywords.globals.concat(["Types", "JSON", "Dry", "Constructor"]);
+        return keywords.globals.concat(["Types", "JSON", "Dry", "Constructor", "Self"]);
     }
 
     protected forbiddenForObjectProperties(_c: ClassType, _classNamed: Name): ForbiddenWordsInfo {
-        return { names: keywords.reservedProperties, includeGlobalForbidden: true };
+        return { names: forbiddenForObjectProperties, includeGlobalForbidden: true };
     }
 
     protected makeNamedTypeNamer(): Namer {
@@ -160,7 +164,7 @@ export class RubyRenderer extends ConvenienceRenderer {
             _anyType => ["Types::Any", optional],
             _nullType => ["Types::Nil", optional],
             _boolType => ["Types::Bool", optional],
-            _integerType => ["Types::Int", optional],
+            _integerType => ["Types::Integer", optional],
             _doubleType => ["Types::Double", optional],
             _stringType => ["Types::String", optional],
             arrayType => ["Types.Array(", this.dryType(arrayType.items), ")", optional],
@@ -457,7 +461,7 @@ export class RubyRenderer extends ConvenienceRenderer {
                 this.indent(() => {
                     const inits: Sourcelike[][] = [];
                     this.forEachClassProperty(c, "none", (name, jsonName, p) => {
-                        const expression = this.toDynamic(p.type, ["@", name], p.isOptional);
+                        const expression = this.toDynamic(p.type, name, p.isOptional);
                         inits.push([[`"${stringEscape(jsonName)}"`], [" => ", expression, ","]]);
                     });
                     this.emitTable(inits);
@@ -531,9 +535,9 @@ export class RubyRenderer extends ConvenienceRenderer {
             this.emitBlock("def to_dynamic", () => {
                 let first = true;
                 this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
-                    this.emitLine(first ? "if" : "elsif", " @", name, " != nil");
+                    this.emitLine(first ? "if" : "elsif", " ", name, " != nil");
                     this.indent(() => {
-                        this.emitLine(this.toDynamic(t, ["@", name]));
+                        this.emitLine(this.toDynamic(t, name));
                     });
                     first = false;
                 });
@@ -555,7 +559,7 @@ export class RubyRenderer extends ConvenienceRenderer {
 
     private emitTypesModule() {
         this.emitBlock(["module Types"], () => {
-            this.emitLine("include Dry::Types.module");
+            this.emitLine("include Dry.Types(default: :nominal)");
 
             const declarations: Sourcelike[][] = [];
 
@@ -571,7 +575,7 @@ export class RubyRenderer extends ConvenienceRenderer {
                         double: has.double || t.kind === "double"
                     };
                 });
-                if (has.int) declarations.push([["Int"], [` = ${this._options.strictness}Int`]]);
+                if (has.int) declarations.push([["Integer"], [` = ${this._options.strictness}Integer`]]);
                 if (this._options.strictness === Strictness.Strict) {
                     if (has.nil) declarations.push([["Nil"], [` = ${this._options.strictness}Nil`]]);
                 }
@@ -581,7 +585,7 @@ export class RubyRenderer extends ConvenienceRenderer {
                 if (has.double)
                     declarations.push([
                         ["Double"],
-                        [` = ${this._options.strictness}Float | ${this._options.strictness}Int`]
+                        [` = ${this._options.strictness}Float | ${this._options.strictness}Integer`]
                     ]);
             }
 

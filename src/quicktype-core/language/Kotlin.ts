@@ -36,6 +36,7 @@ import {
 } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 import { RenderContext } from "../Renderer";
+import { acronymOption, acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
 
 export enum Framework {
     None,
@@ -51,6 +52,7 @@ export const kotlinOptions = {
         [["just-types", Framework.None], ["jackson", Framework.Jackson], ["klaxon", Framework.Klaxon], ["kotlinx", Framework.KotlinX]],
         "klaxon"
     ),
+    acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
     packageName: new StringOption("package", "Package", "PACKAGE", "quicktype")
 };
 
@@ -60,7 +62,7 @@ export class KotlinTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [kotlinOptions.framework, kotlinOptions.packageName];
+        return [kotlinOptions.framework, kotlinOptions.acronymStyle, kotlinOptions.packageName];
     }
 
     get supportsOptionalClassProperties(): boolean {
@@ -154,7 +156,7 @@ function isStartCharacter(codePoint: number): boolean {
 
 const legalizeName = legalizeCharacters(isPartCharacter);
 
-function kotlinNameStyle(isUpper: boolean, original: string): string {
+function kotlinNameStyle(isUpper: boolean, original: string, acronymsStyle: (s: string) => string = allUpperWordStyle): string {
     const words = splitIntoWords(original);
     return combineWords(
         words,
@@ -162,7 +164,7 @@ function kotlinNameStyle(isUpper: boolean, original: string): string {
         isUpper ? firstUpperWordStyle : allLowerWordStyle,
         firstUpperWordStyle,
         isUpper ? allUpperWordStyle : allLowerWordStyle,
-        allUpperWordStyle,
+        acronymsStyle,
         "",
         isStartCharacter
     );
@@ -178,9 +180,6 @@ function stringEscape(s: string): string {
     // "$this" is a template string in Kotlin so we have to escape $
     return _stringEscape(s).replace(/\$/g, "\\$");
 }
-
-const upperNamingFunction = funPrefixNamer("upper", s => kotlinNameStyle(true, s));
-const lowerNamingFunction = funPrefixNamer("lower", s => kotlinNameStyle(false, s));
 
 export class KotlinRenderer extends ConvenienceRenderer {
     constructor(
@@ -212,11 +211,11 @@ export class KotlinRenderer extends ConvenienceRenderer {
     }
 
     protected makeNamedTypeNamer(): Namer {
-        return upperNamingFunction;
+        return funPrefixNamer("upper", s => kotlinNameStyle(true, s, acronymStyle(this._kotlinOptions.acronymStyle)));
     }
 
     protected namerForObjectProperty(): Namer {
-        return lowerNamingFunction;
+        return funPrefixNamer("lower", s => kotlinNameStyle(false, s, acronymStyle(this._kotlinOptions.acronymStyle)));
     }
 
     protected makeUnionMemberNamer(): Namer {
@@ -224,7 +223,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return upperNamingFunction;
+        return funPrefixNamer("upper", s => kotlinNameStyle(true, s, acronymStyle(this._kotlinOptions.acronymStyle)));
     }
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
@@ -1002,13 +1001,13 @@ export class KotlinXRenderer extends KotlinRenderer {
     }
 
     protected anySourceType(optional: string): Sourcelike {
-        return ["JsonObject", optional];
+        return ["JsonElement", optional];
     }
 
     protected arrayType(arrayType: ArrayType, withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
         const valType = this.kotlinType(arrayType.items, withIssues, true);
         const name = this.sourcelikeToString(valType);
-        if (name === "JsonObject") {
+        if (name === "JsonObject" || name === "JsonElement") {
             return "JsonArray";
         }
         return super.arrayType(arrayType, withIssues, noOptional);
@@ -1017,7 +1016,7 @@ export class KotlinXRenderer extends KotlinRenderer {
     protected mapType(mapType: MapType, withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
         const valType = this.kotlinType(mapType.values, withIssues, true);
         const name = this.sourcelikeToString(valType);
-        if (name === "JsonObject") {
+        if (name === "JsonObject" || name === "JsonElement") {
             return "JsonObject";
         }
         return super.mapType(mapType, withIssues, noOptional);
@@ -1041,7 +1040,7 @@ export class KotlinXRenderer extends KotlinRenderer {
         this.emitLine("// To parse the JSON, install kotlin's serialization plugin and do:");
         this.emitLine("//");
         const table: Sourcelike[][] = [];
-        table.push(["// val ", "json", " = Json(JsonConfiguration.Stable)"]);
+        table.push(["// val ", "json", " = Json { allowStructuredMapKeys = true }"]);
         this.forEachTopLevel("none", (_, name) => {
             table.push(["// val ", modifySource(camelCase, name), ` = json.parse(${this.sourcelikeToString(name)}.serializer(), jsonString)`]);
         });
@@ -1084,26 +1083,8 @@ export class KotlinXRenderer extends KotlinRenderer {
         this.emitBlock(["enum class ", enumName, "(val value: String)"], () => {
             let count = e.cases.size;
             this.forEachEnumCase(e, "none", (name, json) => {
-                this.emitLine(name, `("${stringEscape(json)}")`, --count === 0 ? ";" : ",");
-            });
-            this.ensureBlankLine();
-            this.emitBlock(["companion object : KSerializer<", enumName, ">"], () => {
-                this.emitBlock("override val descriptor: SerialDescriptor get()", () => {
-                   this.emitLine("return PrimitiveSerialDescriptor(\"", this._kotlinOptions.packageName, ".", enumName, "\", PrimitiveKind.STRING)");
-                });
-
-                this.emitBlock(["override fun deserialize(decoder: Decoder): ", enumName, " = when (val value = decoder.decodeString())"], () => {
-                    let table: Sourcelike[][] = [];
-                    this.forEachEnumCase(e, "none", (name, json) => {
-                        table.push([[`"${stringEscape(json)}"`], [" -> ", name]]);
-                    });
-                    table.push([["else"], [" -> throw IllegalArgumentException(\"", enumName, " could not parse: $value\")"]]);
-                    this.emitTable(table);
-                });
-
-                this.emitBlock(["override fun serialize(encoder: Encoder, value: ", enumName, ")"], () => {
-                    this.emitLine(["return encoder.encodeString(value.value)"]);
-                });
+                const jsonEnum = stringEscape(json);
+                this.emitLine(`@SerialName("${jsonEnum}") `, name, `("${jsonEnum}")`, --count === 0 ? ";" : ",");
             });
         });
     }
