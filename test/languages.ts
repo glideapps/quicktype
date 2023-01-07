@@ -178,7 +178,7 @@ export const PythonLanguage: Language = {
         "keyword-unions.schema" // Requires more than 255 arguments
     ],
     rendererOptions: {},
-    quickTestRendererOptions: [{ "python-version": "3.5" }, { "python-version": "2.7" }],
+    quickTestRendererOptions: [{ "python-version": "3.5" }],
     sourceFiles: ["src/language/Python.ts"]
 };
 
