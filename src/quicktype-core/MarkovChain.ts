@@ -77,7 +77,7 @@ export function train(lines: string[], depth: number): MarkovChain {
     const trie = makeTrie();
     for (const l of lines) {
         for (let i = depth; i <= l.length; i++) {
-            increment(trie, l.substr(i - depth, depth), 0);
+            increment(trie, l.slice(i - depth, i), 0);
         }
     }
 
@@ -96,7 +96,7 @@ export function evaluateFull(mc: MarkovChain, word: string): [number, number[]] 
     let p = 1;
     const scores: number[] = [];
     for (let i = depth; i <= word.length; i++) {
-        let cp = lookup(trie, word.substr(i - depth, depth), 0);
+        let cp = lookup(trie, word.slice(i - depth, i), 0);
         if (typeof cp === "object") {
             return panic("Did we mess up the depth?");
         }
