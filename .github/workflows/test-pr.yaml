@@ -24,16 +24,10 @@ jobs:
             matrix:
                 fixture:
                     - typescript
-
                     - javascript,schema-javascript
                     - golang,schema-golang
                     - cplusplus,schema-cplusplus
                     - flow,schema-flow
-
-                    # Break Kotlin up because it takes so long
-                    - kotlin,schema-kotlin
-                    - kotlin-jackson,schema-kotlin-jackson
-
                     - java,schema-java
                     - python,schema-python
                     - haskell,schema-haskell
@@ -64,10 +58,13 @@ jobs:
                 runs-on: [ubuntu-latest]
 
                 include:
-                    # Rust is very slow, so we use a larger runner
-                     - fixture: rust,schema-rust
-                       runs-on: ubuntu-latest-8-cores
-                    
+                  # Rust is very slow, so we use a larger runner
+                  - fixture: rust,schema-rust
+                    runs-on: ubuntu-latest-8-cores
+                  # Kotlin is also slow
+                  - fixture: kotlin,schema-kotlin,kotlin-jackson,schema-kotlin-jackson
+                    runs-on: ubuntu-latest-8-cores
+
                     # - fixture: objective-c
                     #   runs-on: macos-latest
 
