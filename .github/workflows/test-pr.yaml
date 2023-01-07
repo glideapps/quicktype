@@ -24,20 +24,13 @@ jobs:
             matrix:
                 fixture:
                     - typescript
-
                     - javascript,schema-javascript
                     - golang,schema-golang
                     - cplusplus,schema-cplusplus
                     - flow,schema-flow
-
-                    # Break Kotlin up because it takes so long
-                    - kotlin,schema-kotlin
-                    - kotlin-jackson,schema-kotlin-jackson
-
                     - java,schema-java
                     - python,schema-python
                     - haskell,schema-haskell
-                    - rust,schema-rust
                     - csharp,schema-csharp,schema-json-csharp,graphql-csharp,csharp-SystemTextJson
                     - json-ts-csharp
                     - dart,schema-dart
@@ -65,8 +58,15 @@ jobs:
                 runs-on: [ubuntu-latest]
 
                 include:
-                    - fixture: objective-c
-                      runs-on: macos-latest
+                  # Rust is very slow, so we use a larger runner
+                  - fixture: rust,schema-rust
+                    runs-on: ubuntu-latest-8-cores
+                  # Kotlin is also slow
+                  - fixture: kotlin,schema-kotlin,kotlin-jackson,schema-kotlin-jackson
+                    runs-on: ubuntu-latest-8-cores
+
+                  - fixture: objective-c
+                    runs-on: macos-11
 
         name: ${{ matrix.fixture }}
         steps:
@@ -84,7 +84,7 @@ jobs:
               if: ${{ contains(matrix.fixture, 'dart') }}
               uses: dart-lang/setup-dart@v1.3
               with:
-                  sdk: 2.10.5
+                  sdk: 2.14.4
 
             - name: Setup Swift
               if: ${{ contains(matrix.fixture, 'swift') }}
@@ -130,12 +130,6 @@ jobs:
               uses: actions/setup-python@v4
               with:
                   python-version: 3.7
-
-            - name: Install Python 2.7
-              if: ${{ contains(matrix.fixture, 'python') }}
-              uses: actions/setup-python@v4
-              with:
-                  python-version: 2.7
 
             - name: Install Python Dependencies
               if: ${{ contains(matrix.fixture, 'python') }}
