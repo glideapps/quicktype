@@ -266,7 +266,7 @@ export const CrystalLanguage: Language = {
 export const RubyLanguage: Language = {
     name: "ruby",
     base: "test/fixtures/ruby",
-    setupCommand: "bundle install --path vendor/bundle",
+    setupCommand: "bundle install",
     compileCommand: "true",
     runCommand(sample: string) {
         return `bundle exec main.rb "${sample}"`;

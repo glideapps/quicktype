@@ -96,7 +96,7 @@ jobs:
               uses: ruby/setup-ruby@v1
               if: ${{ contains(matrix.fixture, 'ruby') }}
               with:
-                  ruby-version: "3.0"
+                  ruby-version: "3.2.0"
 
             - name: Setup .NET Core SDK
               if: ${{ contains(matrix.fixture, 'csharp') }}
