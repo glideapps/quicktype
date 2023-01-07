@@ -1,6 +1,0 @@
-steps:
-  - command: "FIXTURE=graphql .buildkite/build-pr.sh"
-    label: "GraphQL"
-
-    label: "json-ts-csharp"
-
