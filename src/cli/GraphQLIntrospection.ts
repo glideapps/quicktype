@@ -34,7 +34,7 @@ export async function introspectServer(url: string, method: string, headerString
         });
 
         result = await response.json();
-    } catch (error: any) {
+    } catch (error) {
         return panic(`Error while fetching introspection query result: ${error.message}`);
     }
 

@@ -56,7 +56,7 @@ export async function readableFromFileOrURL(fileOrURL: string, httpHeaders?: str
                 return fs.createReadStream(filePath, "utf8") as unknown as Readable;
             }
         }
-    } catch (e: any) {
+    } catch (e) {
         const message = typeof e.message === "string" ? e.message : "Unknown error";
         return messageError("MiscReadError", { fileOrURL, message });
     }
@@ -67,7 +67,7 @@ export async function readFromFileOrURL(fileOrURL: string, httpHeaders?: string[
     const readable = await readableFromFileOrURL(fileOrURL, httpHeaders);
     try {
         return await getStream(readable);
-    } catch (e: any) {
+    } catch (e) {
         const message = typeof e.message === "string" ? e.message : "Unknown error";
         return messageError("MiscReadError", { fileOrURL, message });
     }

@@ -195,7 +195,7 @@ export function messageError<N extends ErrorKinds>(kind: N, properties: ErrorPro
         userMessage = userMessage.replace("${" + name + "}", value);
     }
 
-    throw new QuickTypeError(message, kind, userMessage, properties as StringMap);
+    throw new QuickTypeError(message, kind, userMessage, properties);
 }
 
 export function messageAssert<N extends ErrorKinds>(

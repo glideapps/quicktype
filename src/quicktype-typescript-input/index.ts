@@ -1,5 +1,5 @@
 import * as ts from "typescript";
-import { PartialArgs, generateSchema } from "typescript-json-schema";
+import { PartialArgs, generateSchema } from "@mark.probst/typescript-json-schema";
 
 import { defined, JSONSchemaSourceData, messageError } from "../quicktype-core";
 
@@ -32,9 +32,7 @@ export function schemaForTypeScriptSources(sourceFileNames: string[]): JSONSchem
         });
     }
 
-    // FIXME any
-    const schema = generateSchema(program as any /* typescript and typescript-json-schema disagree */, "*", settings);
-    
+    const schema = generateSchema(program, "*", settings);
     const uris: string[] = [];
     let topLevelName: string | undefined = undefined;
     if (schema !== null && typeof schema === "object" && typeof schema.definitions === "object") {

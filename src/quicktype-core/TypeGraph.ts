@@ -267,9 +267,9 @@ export class TypeGraph {
         const sets = Array.from(this.allTypesUnordered()).map(t => {
             const maybeSet = view.tryGet(t);
             if (maybeSet !== undefined) return maybeSet;
-            return new Set<number>();
+            return new Set();
         });
-        const result = new Set<number>();
+        const result = new Set();
         setUnionManyInto(result, sets);
         return result;
     }
@@ -415,7 +415,7 @@ export class TypeGraph {
     getParentsOfType(t: Type): Set<Type> {
         assertTypeRefGraph(t.typeRef, this);
         if (this._parents === undefined) {
-            const parents = defined(this._types).map(_ => new Set<Type>());
+            const parents = defined(this._types).map(_ => new Set());
             for (const p of this.allTypesUnordered()) {
                 for (const c of p.getChildren()) {
                     const index = c.index;
