@@ -200,9 +200,6 @@ function stringEscape(s: string): string {
     return _stringEscape(s).replace(/\$/g, "\\$");
 }
 
-const upperNamingFunction = funPrefixNamer("upper", s => kotlinNameStyle(true, s));
-const lowerNamingFunction = funPrefixNamer("lower", s => kotlinNameStyle(false, s));
-
 class KotlinDateTimeProvider {
     dateTimeImports: string[] = ["java.time.OffsetDateTime"];
     dateImports: string[] = ["java.time.LocalDate"];
