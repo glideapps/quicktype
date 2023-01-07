@@ -57,11 +57,7 @@ export class RubyTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [
-            rubyOptions.justTypes,
-            rubyOptions.strictness,
-            rubyOptions.namespace,
-        ];
+        return [rubyOptions.justTypes, rubyOptions.strictness, rubyOptions.namespace];
     }
 
     get supportsOptionalClassProperties(): boolean {
@@ -390,14 +386,14 @@ export class RubyRenderer extends ConvenienceRenderer {
     }
 
     private emitModule(moduleName: string, emit: () => void) {
-        const [firstModule, ...subModules] = moduleName.split("::")
+        const [firstModule, ...subModules] = moduleName.split("::");
 
         if (subModules.length > 0) {
             this.emitBlock(["module ", firstModule], () => {
-                this.emitModule(subModules.join("::"), emit)
-            })
+                this.emitModule(subModules.join("::"), emit);
+            });
         } else {
-            this.emitBlock(["module ", moduleName], emit)
+            this.emitBlock(["module ", moduleName], emit);
         }
     }
 
@@ -445,9 +441,9 @@ export class RubyRenderer extends ConvenienceRenderer {
                     this.forEachClassProperty(c, "none", (name, jsonName, p) => {
                         const dynamic = p.isOptional
                             ? // If key is not found in hash, this will be nil
-                            `d["${stringEscape(jsonName)}"]`
+                              `d["${stringEscape(jsonName)}"]`
                             : // This will raise a runtime error if the key is not found in the hash
-                            `d.fetch("${stringEscape(jsonName)}")`;
+                              `d.fetch("${stringEscape(jsonName)}")`;
 
                         if (this.propertyTypeMarshalsImplicitlyFromDynamic(p.type)) {
                             inits.push([
@@ -654,7 +650,7 @@ export class RubyRenderer extends ConvenienceRenderer {
                 if (this._options.namespace != "") {
                     this.emitModule(this._options.namespace, () => {
                         this.emitLine("class ", this.nameForNamedType(decl.type), " < Dry::Struct; end");
-                    })
+                    });
                 } else {
                     this.emitLine("class ", this.nameForNamedType(decl.type), " < Dry::Struct; end");
                 }
@@ -666,10 +662,10 @@ export class RubyRenderer extends ConvenienceRenderer {
             (c: ClassType, n: Name) => {
                 if (this._options.namespace) {
                     this.emitModule(this._options.namespace, () => {
-                        this.emitClass(c, n)
-                    })
+                        this.emitClass(c, n);
+                    });
                 } else {
-                    this.emitClass(c, n)
+                    this.emitClass(c, n);
                 }
             },
             (e, n) => this.emitEnum(e, n),
@@ -704,14 +700,14 @@ export class RubyRenderer extends ConvenienceRenderer {
                                 }
                             });
                         });
-                    }
+                    };
 
                     if (this._options.namespace != "") {
                         this.emitModule(this._options.namespace, () => {
-                            classDeclaration()
-                        })
+                            classDeclaration();
+                        });
                     } else {
-                        classDeclaration()
+                        classDeclaration();
                     }
                 },
                 t => this.namedTypeToNameForTopLevel(t) === undefined
