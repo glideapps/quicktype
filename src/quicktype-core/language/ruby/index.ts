@@ -22,7 +22,8 @@ import {
     isPrintable,
     escapeNonPrintableMapper,
     intToHex,
-    snakeCase
+    snakeCase,
+    isLetterOrUnderscore
 } from "../../support/Strings";
 import { RenderContext } from "../../Renderer";
 
@@ -70,7 +71,7 @@ export class RubyTargetLanguage extends TargetLanguage {
 }
 
 function isStartCharacter(utf16Unit: number): boolean {
-    return unicode.isAlphabetic(utf16Unit) || utf16Unit === 0x5f; // underscore
+    return isLetterOrUnderscore(utf16Unit);
 }
 
 function isPartCharacter(utf16Unit: number): boolean {
@@ -81,6 +82,9 @@ function isPartCharacter(utf16Unit: number): boolean {
 const legalizeName = legalizeCharacters(isPartCharacter);
 
 function simpleNameStyle(original: string, uppercase: boolean): string {
+    if (/^[0-9]+$/.test(original)) {
+        original = original + "N";
+    }
     const words = splitIntoWords(original);
     return combineWords(
         words,

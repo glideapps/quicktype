@@ -328,7 +328,10 @@ export const RubyLanguage: Language = {
     features: ["enum", "union", "no-defaults"],
     output: "TopLevel.rb",
     topLevel: "TopLevel",
-    skipJSON: [],
+    skipJSON: [
+        // Chokes on { "1": "one" } because _[0-9]+ is reserved in ruby
+        "blns-object.json"
+    ],
     skipSchema: [
         // We don't generate a convenience method for top-level enums
         "top-level-enum.schema"
