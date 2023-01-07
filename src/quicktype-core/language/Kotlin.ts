@@ -37,6 +37,7 @@ import {
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 import { RenderContext } from "../Renderer";
 import { PrimitiveStringTypeKind, StringTypeMapping, TransformedStringTypeKind } from "..";
+import { acronymOption, acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
 
 export enum Framework {
     None,
@@ -57,6 +58,7 @@ export const kotlinOptions = {
         ],
         "klaxon"
     ),
+    acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
     packageName: new StringOption("package", "Package", "PACKAGE", "quicktype")
 };
 
@@ -66,7 +68,7 @@ export class KotlinTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [kotlinOptions.framework, kotlinOptions.packageName];
+        return [kotlinOptions.framework, kotlinOptions.acronymStyle, kotlinOptions.packageName];
     }
 
     get supportsOptionalClassProperties(): boolean {
@@ -169,7 +171,11 @@ function isStartCharacter(codePoint: number): boolean {
 
 const legalizeName = legalizeCharacters(isPartCharacter);
 
-function kotlinNameStyle(isUpper: boolean, original: string): string {
+function kotlinNameStyle(
+    isUpper: boolean,
+    original: string,
+    acronymsStyle: (s: string) => string = allUpperWordStyle
+): string {
     const words = splitIntoWords(original);
     return combineWords(
         words,
@@ -177,7 +183,7 @@ function kotlinNameStyle(isUpper: boolean, original: string): string {
         isUpper ? firstUpperWordStyle : allLowerWordStyle,
         firstUpperWordStyle,
         isUpper ? allUpperWordStyle : allLowerWordStyle,
-        allUpperWordStyle,
+        acronymsStyle,
         "",
         isStartCharacter
     );
@@ -247,11 +253,11 @@ export class KotlinRenderer extends ConvenienceRenderer {
     }
 
     protected makeNamedTypeNamer(): Namer {
-        return upperNamingFunction;
+        return funPrefixNamer("upper", s => kotlinNameStyle(true, s, acronymStyle(this._kotlinOptions.acronymStyle)));
     }
 
     protected namerForObjectProperty(): Namer {
-        return lowerNamingFunction;
+        return funPrefixNamer("lower", s => kotlinNameStyle(false, s, acronymStyle(this._kotlinOptions.acronymStyle)));
     }
 
     protected makeUnionMemberNamer(): Namer {
@@ -259,7 +265,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return upperNamingFunction;
+        return funPrefixNamer("upper", s => kotlinNameStyle(true, s, acronymStyle(this._kotlinOptions.acronymStyle)));
     }
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
@@ -337,16 +343,16 @@ export class KotlinRenderer extends ConvenienceRenderer {
             () => [],
             () => [],
             () => [],
-            (arrayType) => [...this.kotlinImport(arrayType.items)],
+            arrayType => [...this.kotlinImport(arrayType.items)],
             () => [],
-            (mapType) => [...this.kotlinImport(mapType.values)],
+            mapType => [...this.kotlinImport(mapType.values)],
             () => [],
-            (unionType) => {
+            unionType => {
                 const imports: string[] = [];
                 unionType.members.forEach(type => this.kotlinImport(type).forEach(imp => imports.push(imp)));
                 return imports;
             },
-            (transformedStringType) => {
+            transformedStringType => {
                 if (transformedStringType.kind === "time") {
                     return this._dateTimeProvider.timeImports;
                 }
@@ -366,14 +372,11 @@ export class KotlinRenderer extends ConvenienceRenderer {
 
     protected emitImports(): void {
         const imports: string[] = this._dateTimeProvider.imports;
-        this.forEachObject(
-            "leading-and-interposing",
-            (c: ClassType) => {
-                this.forEachClassProperty(c, "none", (_name, _jsonName, p) => {
-                    this.kotlinImport(p.type).forEach(imp => imports.push(imp));
-                });
-            }
-        );
+        this.forEachObject("leading-and-interposing", (c: ClassType) => {
+            this.forEachClassProperty(c, "none", (_name, _jsonName, p) => {
+                this.kotlinImport(p.type).forEach(imp => imports.push(imp));
+            });
+        });
         imports.sort();
         for (const pkg of [...new Set(imports)]) {
             this.emitLine("import ", pkg);
@@ -1124,13 +1127,13 @@ export class KotlinXRenderer extends KotlinRenderer {
     }
 
     protected anySourceType(optional: string): Sourcelike {
-        return ["JsonObject", optional];
+        return ["JsonElement", optional];
     }
 
     protected arrayType(arrayType: ArrayType, withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
         const valType = this.kotlinType(arrayType.items, withIssues, true);
         const name = this.sourcelikeToString(valType);
-        if (name === "JsonObject") {
+        if (name === "JsonObject" || name === "JsonElement") {
             return "JsonArray";
         }
         return super.arrayType(arrayType, withIssues, noOptional);
@@ -1139,7 +1142,7 @@ export class KotlinXRenderer extends KotlinRenderer {
     protected mapType(mapType: MapType, withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
         const valType = this.kotlinType(mapType.values, withIssues, true);
         const name = this.sourcelikeToString(valType);
-        if (name === "JsonObject") {
+        if (name === "JsonObject" || name === "JsonElement") {
             return "JsonObject";
         }
         return super.mapType(mapType, withIssues, noOptional);
@@ -1163,7 +1166,7 @@ export class KotlinXRenderer extends KotlinRenderer {
         this.emitLine("// To parse the JSON, install kotlin's serialization plugin and do:");
         this.emitLine("//");
         const table: Sourcelike[][] = [];
-        table.push(["// val ", "json", " = Json(JsonConfiguration.Stable)"]);
+        table.push(["// val ", "json", " = Json { allowStructuredMapKeys = true }"]);
         this.forEachTopLevel("none", (_, name) => {
             table.push([
                 "// val ",
@@ -1210,7 +1213,8 @@ export class KotlinXRenderer extends KotlinRenderer {
         this.emitBlock(["enum class ", enumName, "(val value: String)"], () => {
             let count = e.cases.size;
             this.forEachEnumCase(e, "none", (name, json) => {
-                this.emitLine(name, `("${stringEscape(json)}")`, --count === 0 ? ";" : ",");
+                const jsonEnum = stringEscape(json);
+                this.emitLine(`@SerialName("${jsonEnum}") `, name, `("${jsonEnum}")`, --count === 0 ? ";" : ",");
             });
             this.ensureBlankLine();
             this.emitBlock(["companion object : KSerializer<", enumName, ">"], () => {

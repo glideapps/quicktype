@@ -124,7 +124,7 @@ function timeEnd(message: string, suffix: string): void {
 export abstract class Fixture {
   abstract name: string;
 
-  constructor(public language: languages.Language) { }
+  constructor(public language: languages.Language) {}
 
   runForName(name: string): boolean {
     return this.name === name;
@@ -245,8 +245,6 @@ abstract class LanguageFixture extends Fixture {
       shell.cp(path.join(cwd, this.language.output), outputDir);
     }
 
-    shell.rm("-rf", cwd);
-
     this.runMessageEnd(message, numFiles);
   }
 }
@@ -315,7 +313,8 @@ class JSONFixture extends LanguageFixture {
       testsInDir("test/inputs/json/samples", "json")
     );
 
-    const miscSamples = this.language.skipMiscJSON ? [] : testsInDir("test/inputs/json/misc", "json");
+    const skipMiscJSON = process.env.QUICKTEST !== undefined || this.language.skipMiscJSON;
+    const miscSamples = skipMiscJSON ? [] : testsInDir("test/inputs/json/misc", "json");
 
     let { priority, others } = samplesFromSources(sources, prioritySamples, miscSamples, "json");
 
@@ -790,6 +789,7 @@ class CommandSuccessfulLanguageFixture extends LanguageFixture {
 export const allFixtures: Fixture[] = [
   // new JSONFixture(languages.CrystalLanguage),
   new JSONFixture(languages.CSharpLanguage),
+  new JSONFixture(languages.CSharpLanguageSystemTextJson, "csharp-SystemTextJson"),
   new JSONFixture(languages.JavaLanguage),
   new JSONFixture(languages.JavaLanguageWithLegacyDateTime, "java-datetime-legacy"),
   new JSONFixture(languages.JavaLanguageWithLombok, "java-lombok"),
