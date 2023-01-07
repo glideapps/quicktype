@@ -109,7 +109,6 @@ export const pythonOptions = {
         "python-version",
         "Python version",
         [
-            ["2.7", { version: 2, typeHints: false, dataClasses: false }],
             ["3.5", { version: 3, typeHints: false, dataClasses: false }],
             ["3.6", { version: 3, typeHints: true, dataClasses: false }],
             ["3.7", { version: 3, typeHints: true, dataClasses: true }]
@@ -209,13 +208,13 @@ function classNameStyle(version: PythonVersion, original: string): string {
     const words = splitIntoWords(original);
     return combineWords(
         words,
-        version === 2 ? legalizeName2 : legalizeName3,
+        legalizeName3,
         firstUpperWordStyle,
         firstUpperWordStyle,
         allUpperWordStyle,
         allUpperWordStyle,
         "",
-        version === 2 ? isStartCharacter2 : isStartCharacter3
+        isStartCharacter3
     );
 }
 
@@ -232,7 +231,7 @@ function snakeNameStyle(version: PythonVersion, original: string, uppercase: boo
     const words = splitIntoWords(original);
     return combineWords(
         words,
-        version === 2 ? legalizeName2 : legalizeName3,
+        legalizeName3,
         wordStyle,
         wordStyle,
         wordStyle,
@@ -305,7 +304,7 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected string(s: string): Sourcelike {
-        const openQuote = this.pyOptions.features.version === 2 ? 'u"' : '"';
+        const openQuote = '"';
         return [openQuote, stringEscape(s), '"'];
     }
 
@@ -470,21 +469,6 @@ export class PythonRenderer extends ConvenienceRenderer {
         this.imports.forEach((names, module) => {
             this.emitLine("from ", module, " import ", Array.from(names).join(", "));
         });
-    }
-
-    protected emitDefaultLeadingComments(): void {
-        if (this.pyOptions.features.version === 2) {
-            this.emitCommentLines(["coding: utf-8"]);
-            this.ensureBlankLine();
-            if (this.haveEnums) {
-                this.emitCommentLines([
-                    "",
-                    "To use this code in Python 2.7 you'll have to",
-                    "",
-                    "    pip install enum34"
-                ]);
-            }
-        }
     }
 
     protected emitSupportCode(): void {
@@ -719,7 +703,7 @@ export class JSONPythonRenderer extends PythonRenderer {
 
     protected emitStrConverter(): void {
         this.emitBlock(["def from_str(", this.typingDecl("x", "Any"), ")", this.typeHint(" -> str"), ":"], () => {
-            const strType = this.pyOptions.features.version === 2 ? "(str, unicode)" : "str";
+            const strType = "str";
             this.emitLine("assert isinstance(x, ", strType, ")");
             this.emitLine("return x");
         });
