@@ -250,27 +250,7 @@ files, URLs, or add other options.
 
 ### Test
 
-`quicktype` has many complex test dependencies:
-
--   `crystal` compiler
--   `dotnetcore` SDK
--   Java, Maven
--   `elm` tools
--   `g++` C++ compiler
--   `golang` stack
--   `swift` compiler
--   `clang` and Objective-C Foundation (must be tested separately on macOS)
--   `rust` tools
--   `pike` interpreter
--   [Bundler](https://bundler.io) for Ruby
--   `haskell` [stack](https://docs.haskellstack.org/)
-
-We've assembled all of these tools in a Docker container that you build and test within:
-
 ```bash
-# Build and attach to Docker container
-script/dev
-
 # Run full test suite
 npm run test
 
