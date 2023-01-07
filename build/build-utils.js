@@ -214,12 +214,14 @@ function copySources(buildDir, then) {
                 replaceAll(content, '} from "../quicktype-core', '} from "quicktype-core')
             );
             copyFile(path.join(srcDir, "tsconfig.json"), "./");
+            copyFile(path.join(srcDir, "../../LICENSE"), "./");
 
             then(packageName);
         } catch (e) {
             console.error(e);
             process.exit(1);
         } finally {
+            ignoreExceptions(() => fs.unlinkSync("LICENSE"));
             ignoreExceptions(() => fs.unlinkSync("tsconfig.json"));
             ignoreExceptions(() => run("rm", ["-rf", "src"]));
         }

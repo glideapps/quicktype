@@ -1,10 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as _ from "lodash";
-import { Readable } from "stream";
+import { Readable } from "readable-stream";
 import { hasOwnProperty, definedMap, withDefault, mapFromObject, mapMap } from "collection-utils";
-
-import { getStream } from "./get-stream";
 
 import {
     Options,
@@ -33,7 +31,11 @@ import {
     splitIntoWords,
     capitalize,
     JSONSourceData,
-    JSONInput
+    JSONInput,
+    getStream,
+    readableFromFileOrURL,
+    readFromFileOrURL,
+    FetchingJSONSchemaStore
 } from "../quicktype-core";
 import { schemaForTypeScriptSources } from "../quicktype-typescript-input";
 import { GraphQLInput } from "../quicktype-graphql-input";
@@ -41,7 +43,6 @@ import { GraphQLInput } from "../quicktype-graphql-input";
 import { urlsFromURLGrammar } from "./URLGrammar";
 import { introspectServer } from "./GraphQLIntrospection";
 import { JSONTypeSource, TypeSource, GraphQLTypeSource, SchemaTypeSource } from "./TypeSource";
-import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
 import { CompressedJSONFromStream } from "./CompressedJSONFromStream";
 
 const stringToStream = require("string-to-stream");
@@ -96,7 +97,7 @@ async function sourceFromFileOrUrlArray(
 
 function typeNameFromFilename(filename: string): string {
     const name = path.basename(filename);
-    return name.substr(0, name.lastIndexOf("."));
+    return name.substring(0, name.lastIndexOf("."));
 }
 
 async function samplesFromDirectory(dataDir: string, httpHeaders?: string[]): Promise<TypeSource[]> {
@@ -219,7 +220,7 @@ function inferLang(options: Partial<CLIOptions>, defaultLanguage: string): strin
         if (extension === "") {
             return messageError("DriverNoLanguageOrExtension", {});
         }
-        return extension.substr(1);
+        return extension.slice(1);
     }
 
     return defaultLanguage;
@@ -308,7 +309,7 @@ function makeLangTypeLabel(targetLanguages: TargetLanguage[]): string {
 function negatedInferenceFlagName(name: string): string {
     const prefix = "infer";
     if (name.startsWith(prefix)) {
-        name = name.substr(prefix.length);
+        name = name.slice(prefix.length);
     }
     return "no" + capitalize(name);
 }
@@ -684,14 +685,7 @@ async function getSources(options: CLIOptions): Promise<TypeSource[]> {
 }
 
 function makeTypeScriptSource(fileNames: string[]): SchemaTypeSource {
-    const sources: { [fileName: string]: string } = {};
-
-    for (const fileName of fileNames) {
-        const baseName = path.basename(fileName);
-        sources[baseName] = defined(fs.readFileSync(fileName, "utf8"));
-    }
-
-    return Object.assign({ kind: "schema" }, schemaForTypeScriptSources(sources)) as SchemaTypeSource;
+    return Object.assign({ kind: "schema" }, schemaForTypeScriptSources(fileNames)) as SchemaTypeSource;
 }
 
 export function jsonInputForTargetLanguage(

@@ -1,10 +1,10 @@
-import fs from "fs";
-import process from "process";
+import { readFileSync } from "fs";
+import { argv } from "process";
 import { TopLevel } from "./toplevel.js";
 import checkPropTypes from "check-prop-types";
 
-const sample = process.argv[2];
-const json = fs.readFileSync(sample);
+const sample = argv[2];
+const json = readFileSync(sample);
 const obj = JSON.parse(json);
 
 const results = checkPropTypes({ obj: TopLevel }, { obj }, "prop", "MyComponent");

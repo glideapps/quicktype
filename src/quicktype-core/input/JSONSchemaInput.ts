@@ -140,7 +140,7 @@ export class Ref {
 
         if (path.startsWith("/")) {
             elements.push({ kind: PathElementKind.Root });
-            path = path.substr(1);
+            path = path.slice(1);
         }
 
         if (path !== "") {
@@ -232,7 +232,7 @@ export class Ref {
                 let name = this.addressURI !== undefined ? this.addressURI.filename() : "";
                 const suffix = this.addressURI !== undefined ? this.addressURI.suffix() : "";
                 if (name.length > suffix.length + 1) {
-                    name = name.substr(0, name.length - suffix.length - 1);
+                    name = name.slice(0, name.length - suffix.length - 1);
                 }
                 if (name === "") {
                     return "Something";
@@ -634,10 +634,11 @@ async function addTypesInSchema(
         attributes: TypeAttributes,
         properties: StringMap,
         requiredArray: string[],
-        additionalProperties: any
+        additionalProperties: any,
+        sortKey: (k: string) => number | string = (k: string) => k.toLowerCase()
     ): Promise<TypeRef> {
         const required = new Set(requiredArray);
-        const propertiesMap = mapSortBy(mapFromObject(properties), (_, k) => k.toLowerCase());
+        const propertiesMap = mapSortBy(mapFromObject(properties), (_, k) => sortKey(k));
         const props = await mapMapSync(propertiesMap, async (propSchema, propName) => {
             const propLoc = loc.push("properties", propName);
             const t = await toType(
@@ -846,8 +847,15 @@ async function addTypesInSchema(
                 inferredAttributes,
                 combineProducedAttributes(({ forObject }) => forObject)
             );
+            const order = schema.quicktypePropertyOrder ? schema.quicktypePropertyOrder : [];
+            const orderKey = (propertyName: string) => {
+                // use the index of the order array
+                const index = order.indexOf(propertyName);
+                // if no index then use the property name
+                return index !== -1 ? index : propertyName.toLowerCase();
+            };
 
-            return await makeObject(loc, objectAttributes, properties, required, additionalProperties);
+            return await makeObject(loc, objectAttributes, properties, required, additionalProperties, orderKey);
         }
 
         async function makeTypesFromCases(cases: any, kind: string): Promise<TypeRef[]> {
@@ -1012,7 +1020,7 @@ function removeExtension(fn: string): string {
     const extensions = [".json", ".schema"];
     for (const ext of extensions) {
         if (lower.endsWith(ext)) {
-            const base = fn.substr(0, fn.length - ext.length);
+            const base = fn.slice(0, fn.length - ext.length);
             if (base.length > 0) {
                 return base;
             }
@@ -1048,7 +1056,7 @@ async function refsInSchemaForURI(
     const fragment = uri.fragment();
     let propertiesAreTypes = fragment.endsWith("/");
     if (propertiesAreTypes) {
-        uri = uri.clone().fragment(fragment.substr(0, fragment.length - 1));
+        uri = uri.clone().fragment(fragment.slice(0, -1));
     }
     const ref = Ref.parseURI(uri);
     if (ref.isRoot) {
