@@ -1,6 +1,14 @@
 import { TargetLanguage } from "../TargetLanguage";
 import { StringTypeMapping } from "../TypeBuilder";
-import { TransformedStringTypeKind, PrimitiveStringTypeKind, Type, EnumType, ClassType, UnionType, ClassProperty } from "../Type";
+import {
+    TransformedStringTypeKind,
+    PrimitiveStringTypeKind,
+    Type,
+    EnumType,
+    ClassType,
+    UnionType,
+    ClassProperty
+} from "../Type";
 import { RenderContext } from "../Renderer";
 import { Option, getOptionValues, OptionValues, EnumOption, BooleanOption } from "../RendererOptions";
 import { ConvenienceRenderer, ForbiddenWordsInfo, topLevelNameOrder } from "../ConvenienceRenderer";
@@ -34,7 +42,14 @@ import {
     StringifyTransformer,
     EncodingTransformer
 } from "../Transformers";
-import { arrayIntercalate, setUnionInto, mapUpdateInto, iterableSome, mapSortBy, iterableFirst } from "collection-utils";
+import {
+    arrayIntercalate,
+    setUnionInto,
+    mapUpdateInto,
+    iterableSome,
+    mapSortBy,
+    iterableFirst
+} from "collection-utils";
 
 const unicode = require("@mark.probst/unicode-properties");
 
@@ -116,7 +131,7 @@ export const pythonOptions = {
         "3.6"
     ),
     justTypes: new BooleanOption("just-types", "Classes only", false),
-    nicePropertyNames: new BooleanOption("nice-property-names", "Transform property names to be Pythonic", true),
+    nicePropertyNames: new BooleanOption("nice-property-names", "Transform property names to be Pythonic", true)
 };
 
 export class PythonTargetLanguage extends TargetLanguage {
@@ -161,14 +176,6 @@ export class PythonTargetLanguage extends TargetLanguage {
     }
 }
 
-function isStartCharacter2(utf16Unit: number): boolean {
-    return isAscii(utf16Unit) && isLetter(utf16Unit);
-}
-
-function isPartCharacter2(utf16Unit: number): boolean {
-    return isAscii(utf16Unit) && isLetterOrUnderscoreOrDigit(utf16Unit);
-}
-
 function isNormalizedStartCharacter3(utf16Unit: number): boolean {
     // FIXME: add Other_ID_Start - https://docs.python.org/3/reference/lexical_analysis.html#identifiers
     const category: string = unicode.getCategory(utf16Unit);
@@ -201,7 +208,6 @@ function isPartCharacter3(utf16Unit: number): boolean {
     return true;
 }
 
-const legalizeName2 = utf16LegalizeCharacters(isPartCharacter2);
 const legalizeName3 = utf16LegalizeCharacters(isPartCharacter3);
 
 function classNameStyle(version: PythonVersion, original: string): string {
@@ -225,20 +231,16 @@ function getWordStyle(uppercase: boolean, forceSnakeNameStyle: boolean) {
     return uppercase ? allUpperWordStyle : allLowerWordStyle;
 }
 
-function snakeNameStyle(version: PythonVersion, original: string, uppercase: boolean, forceSnakeNameStyle: boolean): string {
+function snakeNameStyle(
+    version: PythonVersion,
+    original: string,
+    uppercase: boolean,
+    forceSnakeNameStyle: boolean
+): string {
     const wordStyle = getWordStyle(uppercase, forceSnakeNameStyle);
     const separator = forceSnakeNameStyle ? "_" : "";
     const words = splitIntoWords(original);
-    return combineWords(
-        words,
-        legalizeName3,
-        wordStyle,
-        wordStyle,
-        wordStyle,
-        wordStyle,
-        separator,
-        isStartCharacter3
-    );
+    return combineWords(words, legalizeName3, wordStyle, wordStyle, wordStyle, wordStyle, separator, isStartCharacter3);
 }
 
 export class PythonRenderer extends ConvenienceRenderer {
@@ -266,7 +268,9 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected namerForObjectProperty(): Namer {
-        return funPrefixNamer("property", s => snakeNameStyle(this.pyOptions.features.version, s, false, this.pyOptions.nicePropertyNames));
+        return funPrefixNamer("property", s =>
+            snakeNameStyle(this.pyOptions.features.version, s, false, this.pyOptions.nicePropertyNames)
+        );
     }
 
     protected makeUnionMemberNamer(): null {
@@ -274,7 +278,9 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return funPrefixNamer("enum-case", s => snakeNameStyle(this.pyOptions.features.version, s, true, this.pyOptions.nicePropertyNames));
+        return funPrefixNamer("enum-case", s =>
+            snakeNameStyle(this.pyOptions.features.version, s, true, this.pyOptions.nicePropertyNames)
+        );
     }
 
     protected get commentLineStart(): string {
@@ -346,14 +352,20 @@ export class PythonRenderer extends ConvenienceRenderer {
             unionType => {
                 const [hasNull, nonNulls] = removeNullFromUnion(unionType);
                 const memberTypes = Array.from(nonNulls).map(m => this.pythonType(m));
-                    
+
                 if (hasNull !== null) {
                     let rest: string[] = [];
                     if (!this.getAlphabetizeProperties() && this.pyOptions.features.dataClasses) rest.push(" = None");
-                    
-                    if (nonNulls.size > 1) {      
-                        this.withImport("typing", "Union");            
-                        return [this.withTyping("Optional"), "[Union[", arrayIntercalate(", ", memberTypes), "]]", ...rest];
+
+                    if (nonNulls.size > 1) {
+                        this.withImport("typing", "Union");
+                        return [
+                            this.withTyping("Optional"),
+                            "[Union[",
+                            arrayIntercalate(", ", memberTypes),
+                            "]]",
+                            ...rest
+                        ];
                     } else {
                         return [this.withTyping("Optional"), "[", defined(iterableFirst(memberTypes)), "]", ...rest];
                     }
@@ -427,9 +439,12 @@ export class PythonRenderer extends ConvenienceRenderer {
         return this.typeHint(" -> ", this.withTyping(type));
     }
 
-    protected sortClassProperties(properties: ReadonlyMap<string, ClassProperty>, propertyNames: ReadonlyMap<string, Name>): ReadonlyMap<string, ClassProperty> {
+    protected sortClassProperties(
+        properties: ReadonlyMap<string, ClassProperty>,
+        propertyNames: ReadonlyMap<string, Name>
+    ): ReadonlyMap<string, ClassProperty> {
         if (this.pyOptions.features.dataClasses) {
-            return mapSortBy(properties, (p: ClassProperty,) => {
+            return mapSortBy(properties, (p: ClassProperty) => {
                 return p.type instanceof UnionType && nullableFromUnion(p.type) != null ? 1 : 0;
             });
         } else {
@@ -620,7 +635,7 @@ function makeValue(vol: ValueOrLambda): Sourcelike {
 export class JSONPythonRenderer extends PythonRenderer {
     private readonly _deserializerFunctions = new Set<ConverterFunction>();
     private readonly _converterNamer = funPrefixNamer("converter", s =>
-        snakeNameStyle(this.pyOptions.features.version, s, false, this.pyOptions.nicePropertyNames),
+        snakeNameStyle(this.pyOptions.features.version, s, false, this.pyOptions.nicePropertyNames)
     );
     private readonly _topLevelConverterNames = new Map<Name, TopLevelConverterNames>();
     private _haveTypeVar = false;
@@ -888,10 +903,7 @@ export class JSONPythonRenderer extends PythonRenderer {
 
     // Applies the converter function to `arg`
     protected convFn(cf: ConverterFunction, arg: ValueOrLambda): ValueOrLambda {
-        return compose(
-            arg,
-            { lambda: singleWord(this.conv(cf)), value: undefined }
-        );
+        return compose(arg, { lambda: singleWord(this.conv(cf)), value: undefined });
     }
 
     protected typeObject(t: Type): Sourcelike {
@@ -933,18 +945,19 @@ export class JSONPythonRenderer extends PythonRenderer {
         };
 
         const isType = (t: Type, valueToCheck: ValueOrLambda): ValueOrLambda => {
-            return compose(
-                valueToCheck,
-                v => [this.conv("is-type"), "(", this.typeObject(t), ", ", v, ")"]
-            );
+            return compose(valueToCheck, v => [this.conv("is-type"), "(", this.typeObject(t), ", ", v, ")"]);
         };
 
         if (xfer instanceof DecodingChoiceTransformer || xfer instanceof ChoiceTransformer) {
             const lambdas = xfer.transformers.map(x => makeLambda(this.transformer(identity, x, targetType)).source);
-            return compose(
-                inputTransformer,
-                v => [this.conv("union"), "([", arrayIntercalate(", ", lambdas), "], ", v, ")"]
-            );
+            return compose(inputTransformer, v => [
+                this.conv("union"),
+                "([",
+                arrayIntercalate(", ", lambdas),
+                "], ",
+                v,
+                ")"
+            ]);
         } else if (xfer instanceof DecodingTransformer) {
             const consumer = xfer.consumer;
             const vol = this.deserializer(inputTransformer, xfer.sourceType);
@@ -963,10 +976,7 @@ export class JSONPythonRenderer extends PythonRenderer {
             let vol: ValueOrLambda;
             switch (immediateTargetType.kind) {
                 case "integer":
-                    vol = compose(
-                        inputTransformer,
-                        v => ["int(", v, ")"]
-                    );
+                    vol = compose(inputTransformer, v => ["int(", v, ")"]);
                     break;
                 case "bool":
                     vol = this.convFn("from-stringified-bool", inputTransformer);
@@ -978,10 +988,7 @@ export class JSONPythonRenderer extends PythonRenderer {
                     vol = this.convFn("from-datetime", inputTransformer);
                     break;
                 case "uuid":
-                    vol = compose(
-                        inputTransformer,
-                        v => [this.withImport("uuid", "UUID"), "(", v, ")"]
-                    );
+                    vol = compose(inputTransformer, v => [this.withImport("uuid", "UUID"), "(", v, ")"]);
                     break;
                 default:
                     return panic(`Parsing of ${immediateTargetType.kind} in a transformer is not supported`);
@@ -992,31 +999,19 @@ export class JSONPythonRenderer extends PythonRenderer {
             let vol: ValueOrLambda;
             switch (xfer.sourceType.kind) {
                 case "integer":
-                    vol = compose(
-                        inputTransformer,
-                        v => ["str(", v, ")"]
-                    );
+                    vol = compose(inputTransformer, v => ["str(", v, ")"]);
                     break;
                 case "bool":
-                    vol = compose(
-                        inputTransformer,
-                        v => ["str(", v, ").lower()"]
-                    );
+                    vol = compose(inputTransformer, v => ["str(", v, ").lower()"]);
                     break;
                 case "enum":
                     vol = this.serializer(inputTransformer, xfer.sourceType);
                     break;
                 case "date-time":
-                    vol = compose(
-                        inputTransformer,
-                        v => [v, ".isoformat()"]
-                    );
+                    vol = compose(inputTransformer, v => [v, ".isoformat()"]);
                     break;
                 case "uuid":
-                    vol = compose(
-                        inputTransformer,
-                        v => ["str(", v, ")"]
-                    );
+                    vol = compose(inputTransformer, v => ["str(", v, ")"]);
                     break;
                 default:
                     return panic(`Parsing of ${xfer.sourceType.kind} in a transformer is not supported`);
@@ -1044,48 +1039,42 @@ export class JSONPythonRenderer extends PythonRenderer {
             _doubleType => this.convFn("from-float", value),
             _stringType => this.convFn("str", value),
             arrayType =>
-                compose(
-                    value,
-                    v => [
-                        this.conv("list"),
-                        "(",
-                        makeLambda(this.deserializer(identity, arrayType.items)).source,
-                        ", ",
-                        v,
-                        ")"
-                    ]
-                ),
+                compose(value, v => [
+                    this.conv("list"),
+                    "(",
+                    makeLambda(this.deserializer(identity, arrayType.items)).source,
+                    ", ",
+                    v,
+                    ")"
+                ]),
             classType =>
-                compose(
-                    value,
-                    { lambda: singleWord(this.nameForNamedType(classType), ".from_dict"), value: undefined }
-                ),
+                compose(value, {
+                    lambda: singleWord(this.nameForNamedType(classType), ".from_dict"),
+                    value: undefined
+                }),
             mapType =>
-                compose(
-                    value,
-                    v => [
-                        this.conv("dict"),
-                        "(",
-                        makeLambda(this.deserializer(identity, mapType.values)).source,
-                        ", ",
-                        v,
-                        ")"
-                    ]
-                ),
-            enumType =>
-                compose(
-                    value,
-                    { lambda: singleWord(this.nameForNamedType(enumType)), value: undefined }
-                ),
+                compose(value, v => [
+                    this.conv("dict"),
+                    "(",
+                    makeLambda(this.deserializer(identity, mapType.values)).source,
+                    ", ",
+                    v,
+                    ")"
+                ]),
+            enumType => compose(value, { lambda: singleWord(this.nameForNamedType(enumType)), value: undefined }),
             unionType => {
                 // FIXME: handle via transformers
                 const deserializers = Array.from(unionType.members).map(
                     m => makeLambda(this.deserializer(identity, m)).source
                 );
-                return compose(
-                    value,
-                    v => [this.conv("union"), "([", arrayIntercalate(", ", deserializers), "], ", v, ")"]
-                );
+                return compose(value, v => [
+                    this.conv("union"),
+                    "([",
+                    arrayIntercalate(", ", deserializers),
+                    "], ",
+                    v,
+                    ")"
+                ]);
             },
             transformedStringType => {
                 // FIXME: handle via transformers
@@ -1093,10 +1082,7 @@ export class JSONPythonRenderer extends PythonRenderer {
                     return this.convFn("from-datetime", value);
                 }
                 if (transformedStringType.kind === "uuid") {
-                    return compose(
-                        value,
-                        v => [this.withImport("uuid", "UUID"), "(", v, ")"]
-                    );
+                    return compose(value, v => [this.withImport("uuid", "UUID"), "(", v, ")"]);
                 }
                 return panic(`Transformed type ${transformedStringType.kind} not supported`);
             }
@@ -1118,60 +1104,45 @@ export class JSONPythonRenderer extends PythonRenderer {
             _doubleType => this.convFn("to-float", value),
             _stringType => this.convFn("str", value),
             arrayType =>
-                compose(
-                    value,
-                    v => [
-                        this.conv("list"),
-                        "(",
-                        makeLambda(this.serializer(identity, arrayType.items)).source,
-                        ", ",
-                        v,
-                        ")"
-                    ]
-                ),
+                compose(value, v => [
+                    this.conv("list"),
+                    "(",
+                    makeLambda(this.serializer(identity, arrayType.items)).source,
+                    ", ",
+                    v,
+                    ")"
+                ]),
             classType =>
-                compose(
-                    value,
-                    v => [this.conv("to-class"), "(", this.nameForNamedType(classType), ", ", v, ")"]
-                ),
+                compose(value, v => [this.conv("to-class"), "(", this.nameForNamedType(classType), ", ", v, ")"]),
             mapType =>
-                compose(
-                    value,
-                    v => [
-                        this.conv("dict"),
-                        "(",
-                        makeLambda(this.serializer(identity, mapType.values)).source,
-                        ", ",
-                        v,
-                        ")"
-                    ]
-                ),
-            enumType =>
-                compose(
-                    value,
-                    v => [this.conv("to-enum"), "(", this.nameForNamedType(enumType), ", ", v, ")"]
-                ),
+                compose(value, v => [
+                    this.conv("dict"),
+                    "(",
+                    makeLambda(this.serializer(identity, mapType.values)).source,
+                    ", ",
+                    v,
+                    ")"
+                ]),
+            enumType => compose(value, v => [this.conv("to-enum"), "(", this.nameForNamedType(enumType), ", ", v, ")"]),
             unionType => {
                 const serializers = Array.from(unionType.members).map(
                     m => makeLambda(this.serializer(identity, m)).source
                 );
-                return compose(
-                    value,
-                    v => [this.conv("union"), "([", arrayIntercalate(", ", serializers), "], ", v, ")"]
-                );
+                return compose(value, v => [
+                    this.conv("union"),
+                    "([",
+                    arrayIntercalate(", ", serializers),
+                    "], ",
+                    v,
+                    ")"
+                ]);
             },
             transformedStringType => {
                 if (transformedStringType.kind === "date-time") {
-                    return compose(
-                        value,
-                        v => [v, ".isoformat()"]
-                    );
+                    return compose(value, v => [v, ".isoformat()"]);
                 }
                 if (transformedStringType.kind === "uuid") {
-                    return compose(
-                        value,
-                        v => ["str(", v, ")"]
-                    );
+                    return compose(value, v => ["str(", v, ")"]);
                 }
                 return panic(`Transformed type ${transformedStringType.kind} not supported`);
             }
