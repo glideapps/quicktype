@@ -70,9 +70,7 @@ export class RubyTargetLanguage extends TargetLanguage {
     }
 }
 
-function isStartCharacter(utf16Unit: number): boolean {
-    return isLetterOrUnderscore(utf16Unit);
-}
+const isStartCharacter = isLetterOrUnderscore;
 
 function isPartCharacter(utf16Unit: number): boolean {
     const category: string = unicode.getCategory(utf16Unit);
