@@ -1,31 +1,37 @@
 name: Build and Release
 on:
-  push:
-    branches:
-      - master
+    push:
+        branches:
+            - master
 
 jobs:
-  publish:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18.12.1
-          cache: npm
-          registry-url: "https://registry.npmjs.org"
+    format:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Prettify code
+              uses: creyD/prettier_action@v4.2
+              with:
+                  prettier_options: --write .
+                  only_changed: true
 
-      - name: Format code
-        run: npm run format
-
-      - name: Commit formatting changes
-        uses: stefanzweifel/git-auto-commit-action@v4
-        with:
-            commit_message: Apply formatting changes
-            branch: ${{ github.head_ref }}
+            - name: Commit formatting changes
+              uses: stefanzweifel/git-auto-commit-action@v4
+              with:
+                  commit_message: Apply formatting changes
+                  branch: ${{ github.head_ref }}
+    publish:
+        needs: [format]
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+            - uses: actions/setup-node@v3
+              with:
+                  node-version: 18.12.1
+                  cache: npm
+                  registry-url: "https://registry.npmjs.org"
 
             - run: npm ci
 
-      - run: npm run pub
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+            - run: npm run pub
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
