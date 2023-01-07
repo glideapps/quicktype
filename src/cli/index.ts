@@ -583,7 +583,7 @@ function parseOptions(definitions: OptionDefinition[], argv: string[], partial: 
     let opts: { [key: string]: any };
     try {
         opts = commandLineArgs(definitions, { argv, partial });
-    } catch (e) {
+    } catch (e: any) {
         assert(!partial, "Partial option parsing should not have failed");
         return messageError("DriverCLIOptionParsingFailed", { message: e.message });
     }

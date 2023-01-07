@@ -169,8 +169,8 @@ export class RegularTypeNames extends TypeNames {
     }
 
     clearInferred(): TypeNames {
-        const newNames = this.areInferred ? new Set() : this.names;
-        return TypeNames.makeWithDistance(newNames, new Set(), this.distance);
+        const newNames = this.areInferred ? new Set<string>() : this.names;
+        return TypeNames.makeWithDistance(newNames, new Set<string>(), this.distance);
     }
 
     get combinedName(): string {
