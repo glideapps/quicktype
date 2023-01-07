@@ -520,13 +520,13 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 name: MemberNames.MinValue,
                 getter: MemberNames.GetMinValue,
                 setter: MemberNames.SetMinValue,
-                cppType: "int"
+                cppType: "int64_t"
             },
             {
                 name: MemberNames.MaxValue,
                 getter: MemberNames.GetMaxValue,
                 setter: MemberNames.SetMaxValue,
-                cppType: "int"
+                cppType: "int64_t"
             },
             {
                 name: MemberNames.MinLength,

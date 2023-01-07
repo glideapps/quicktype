@@ -23,7 +23,7 @@ import { StringOption, BooleanOption, EnumOption, Option, getOptionValues, Optio
 import { assert, defined } from "../support/Support";
 import { RenderContext } from "../Renderer";
 
-const unicode = require("@mark.probst/unicode-properties");
+const unicode = require("unicode-properties");
 
 export type MemoryAttribute = "assign" | "strong" | "copy";
 export type OutputFeatures = { interface: boolean; implementation: boolean };
@@ -216,7 +216,7 @@ const forbiddenForEnumCases = ["new", staticEnumValuesIdentifier];
 function splitExtension(filename: string): [string, string] {
     const i = filename.lastIndexOf(".");
     const extension = i !== -1 ? filename.split(".").pop() : "m";
-    filename = i !== -1 ? filename.substr(0, i) : filename;
+    filename = i !== -1 ? filename.slice(0, i) : filename;
     return [filename, extension === undefined ? "m" : extension];
 }
 
@@ -247,7 +247,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             firstNonUpper += 1;
         }
         if (firstNonUpper < 2) return DEFAULT_CLASS_PREFIX;
-        return name.substr(0, firstNonUpper - 1);
+        return name.slice(0, firstNonUpper - 1);
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
@@ -825,7 +825,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
     protected variableNameForTopLevel(name: Name): Sourcelike {
         const camelCaseName = modifySource(serialized => {
             // 1. remove class prefix
-            serialized = serialized.substr(this._classPrefix.length);
+            serialized = serialized.slice(this._classPrefix.length);
             // 2. camel case
             return camelCase(serialized);
         }, name);

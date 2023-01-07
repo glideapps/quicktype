@@ -73,6 +73,7 @@ export const swiftOptions = {
         "Objects inherit from NSObject and @objcMembers is added to classes",
         false
     ),
+    optionalEnums: new BooleanOption("optional-enums", "If no matching case is found enum value is set to null", false),
     swift5Support: new BooleanOption("swift-5-support", "Renders output in a Swift 5 compatible mode", false),
     multiFileOutput: new BooleanOption(
         "multi-file-output",
@@ -147,6 +148,7 @@ export class SwiftTargetLanguage extends TargetLanguage {
             swiftOptions.protocol,
             swiftOptions.acronymStyle,
             swiftOptions.objcSupport,
+            swiftOptions.optionalEnums,
             swiftOptions.swift5Support,
             swiftOptions.multiFileOutput,
             swiftOptions.mutableProperties
@@ -205,7 +207,6 @@ const keywords = [
     "continue",
     "default",
     "defer",
-    "description",
     "do",
     "else",
     "fallthrough",
@@ -394,7 +395,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
     }
 
     protected swiftPropertyType(p: ClassProperty): Sourcelike {
-        if (p.isOptional) {
+        if (p.isOptional || (this._options.optionalEnums && p.type.kind === "enum")) {
             return [this.swiftType(p.type, true, true), "?"];
         } else {
             return this.swiftType(p.type, true);
@@ -668,7 +669,17 @@ export class SwiftRenderer extends ConvenienceRenderer {
 
                     const useMutableProperties = this._options.mutableProperties;
 
-                    let sources: Sourcelike[] = [[this.accessLevel, useMutableProperties ? "var " : "let "]];
+                    let sources: Sourcelike[] = [
+                        [
+                            this._options.optionalEnums && lastProperty.type.kind === "enum"
+                                ? `@NilOnFail${this._options.namedTypePrefix} `
+                                : "",
+                            this.accessLevel,
+                            useMutableProperties || (this._options.optionalEnums && lastProperty.type.kind === "enum")
+                                ? "var "
+                                : "let "
+                        ]
+                    ];
                     lastNames.forEach((n, i) => {
                         if (i > 0) sources.push(", ");
                         sources.push(n);
@@ -1404,6 +1415,22 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
 
         if (!this._options.justTypes) {
             this.emitSupportFunctions4();
+        }
+
+        if (this._options.optionalEnums) {
+            this.emitBlockWithAccess(
+                `@propertyWrapper public struct NilOnFail${this._options.namedTypePrefix}<T: Codable>: Codable`,
+                () => {
+                    this.emitMultiline(`
+public let wrappedValue: T?
+public init(from decoder: Decoder) throws {
+    wrappedValue = try? T(from: decoder)
+}
+public init(_ wrappedValue: T?) {
+    self.wrappedValue = wrappedValue
+}`);
+                }
+            );
         }
     }
 

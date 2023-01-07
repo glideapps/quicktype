@@ -1,6 +1,6 @@
 {
     "name": "quicktype-core",
-    "version": "6.1.0",
+    "version": "7.0.0",
     "description": "The quicktype engine as a library",
     "license": "Apache-2.0",
     "main": "dist/index.js",
@@ -13,7 +13,7 @@
         "tslint": "tslint --project ."
     },
     "dependencies": {
-        "@mark.probst/unicode-properties": "~1.1.0",
+        "unicode-properties": "^1.4.1",
         "browser-or-node": "^1.2.1",
         "collection-utils": "^1.0.1",
         "is-url": "^1.2.4",
@@ -38,7 +38,9 @@
         "@types/readable-stream": "2.3.9",
         "@types/browser-or-node": "^1.2.0"
     },
-    "files": ["dist/**"],
+    "files": [
+        "dist/**"
+    ],
     "browser": {
         "fs": false
     }
