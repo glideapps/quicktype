@@ -36,12 +36,12 @@ jobs:
                     - dart,schema-dart
                     - swift,schema-swift
                     - javascript-prop-types
+                    - ruby,schema-ruby
 
                     # Partially working
                     # - schema-typescript # TODO Unify with typescript once fixed
 
                     # Implementation is too outdated to test in GitHub Actions
-                    # - ruby,schema-ruby
                     # - elm,schema-elm
 
                     # Language is too niche / obscure to test easily on ubuntu-latest
