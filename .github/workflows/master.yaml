@@ -15,7 +15,16 @@ jobs:
           cache: npm
           registry-url: "https://registry.npmjs.org"
 
-      - run: npm ci
+      - name: Format code
+        run: npm run format
+
+      - name: Commit formatting changes
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+            commit_message: Apply formatting changes
+            branch: ${{ github.head_ref }}
+
+            - run: npm ci
 
       - run: npm run pub
         env:
