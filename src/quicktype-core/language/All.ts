@@ -2,7 +2,7 @@ import { iterableFind } from "collection-utils";
 
 import { TargetLanguage } from "../TargetLanguage";
 
-import { NewtonsoftCSharpTargetLanguage } from "./CSharp";
+import { CSharpTargetLanguage } from "./CSharp";
 import { GoTargetLanguage } from "./Golang";
 import { CPlusPlusTargetLanguage } from "./CPlusPlus";
 import { ObjectiveCTargetLanguage } from "./Objective-C";
@@ -26,7 +26,7 @@ import { HaskellTargetLanguage } from "./Haskell";
 
 
 export const all: TargetLanguage[] = [
-    new NewtonsoftCSharpTargetLanguage(),
+    new CSharpTargetLanguage(),
     new GoTargetLanguage(),
     new RustTargetLanguage(),
     new CrystalTargetLanguage(),

@@ -223,6 +223,7 @@ const kernel = [
     "module_eval",
     "module_exec",
     "name",
+    "new",
     "nil?",
     "object_id",
     "open",
@@ -293,7 +294,9 @@ export const globals = kernel.concat(globalClasses);
 export const reservedProperties = [
     "__id__",
     "__send__",
+    "break",
     "call",
+    "case",
     "class",
     "clone",
     "constrained_type",
@@ -321,6 +324,7 @@ export const reservedProperties = [
     "meta",
     "method",
     "methods",
+    "next",
     "object_id",
     "optional",
     "options",
@@ -333,6 +337,7 @@ export const reservedProperties = [
     "remove_instance_variable",
     "rule",
     "safe",
+    "self",
     "send",
     "singleton_class",
     "singleton_method",
@@ -347,6 +352,8 @@ export const reservedProperties = [
     "try",
     "type",
     "untaint",
+    "undef",
     "untrust",
+    "while",
     "with"
 ];
