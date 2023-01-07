@@ -56,7 +56,7 @@ export enum Framework {
     SystemTextJson
 }
 
-const unicode = require("@mark.probst/unicode-properties");
+const unicode = require("unicode-properties");
 
 export type Version = 5 | 6;
 export type OutputFeatures = { helpers: boolean; attributes: boolean };
