@@ -270,7 +270,7 @@ export class PhpRenderer extends ConvenienceRenderer {
             _anyType => maybeAnnotated(isOptional, anyTypeIssueAnnotation, "Object"),
             _nullType => maybeAnnotated(isOptional, nullTypeIssueAnnotation, "Object"),
             _boolType => optionalize("bool"),
-            _integerType => optionalize("long"),
+            _integerType => optionalize("int"),
             _doubleType => optionalize("float"),
             _stringType => optionalize("string"),
             _arrayType => optionalize("array"),

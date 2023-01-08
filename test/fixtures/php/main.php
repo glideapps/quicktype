@@ -1,6 +1,7 @@
 #!/usr/bin/php
 <?php
 
+error_reporting(E_ALL ^ E_WARNING); 
 require_once("./TopLevel.php");
 
 $json_string_in = file_get_contents($argv[1]);

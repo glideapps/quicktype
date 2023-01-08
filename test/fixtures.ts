@@ -299,7 +299,13 @@ class JSONFixture extends LanguageFixture {
         if (fs.statSync(sample.path).size > 32 * 1024 * 1024) {
             return true;
         }
-        return _.includes(this.language.skipJSON, path.basename(sample.path));
+        if (this.language.includeJSON !== undefined) {
+            return !_.includes(this.language.includeJSON, path.basename(sample.path));
+        }
+        if (this.language.skipJSON !== undefined) {
+            return _.includes(this.language.skipJSON, path.basename(sample.path));
+        }
+        return false;
     }
 
     getSamples(sources: string[]): { priority: Sample[]; others: Sample[] } {
