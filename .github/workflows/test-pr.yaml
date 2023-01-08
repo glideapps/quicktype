@@ -37,6 +37,7 @@ jobs:
                     - swift,schema-swift
                     - javascript-prop-types
                     - ruby
+                    - php
 
                     # Partially working
                     # - schema-typescript # TODO Unify with typescript once fixed
@@ -58,15 +59,15 @@ jobs:
                 runs-on: [ubuntu-latest]
 
                 include:
-                  # Rust is very slow, so we use a larger runner
-                  - fixture: rust,schema-rust
-                    runs-on: ubuntu-latest-8-cores
-                  # Kotlin is also slow
-                  - fixture: kotlin,schema-kotlin,kotlin-jackson,schema-kotlin-jackson
-                    runs-on: ubuntu-latest-8-cores
+                    # Rust is very slow, so we use a larger runner
+                    - fixture: rust,schema-rust
+                      runs-on: ubuntu-latest-8-cores
+                    # Kotlin is also slow
+                    - fixture: kotlin,schema-kotlin,kotlin-jackson,schema-kotlin-jackson
+                      runs-on: ubuntu-latest-8-cores
 
-                  - fixture: objective-c
-                    runs-on: macos-11
+                    - fixture: objective-c
+                      runs-on: macos-11
 
         name: ${{ matrix.fixture }}
         steps:
@@ -78,7 +79,11 @@ jobs:
 
             - run: npm ci
 
-      
+            - name: Setup PHP
+              if: ${{ contains(matrix.fixture, 'php') }}
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: "8.2"
 
             - name: Setup Dart
               if: ${{ contains(matrix.fixture, 'dart') }}
