@@ -119,14 +119,7 @@ function normalizeURI(uri: string | URI): URI {
     if (typeof uri === "string") {
         uri = new URI(uri);
     }
-    return new URI(
-        URI.decode(
-            uri
-                .clone()
-                .normalize()
-                .toString()
-        )
-    );
+    return new URI(URI.decode(uri.clone().normalize().toString()));
 }
 
 export class Ref {
@@ -1210,12 +1203,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
         } else {
             normalizedURIs = uris.map(uri => {
                 const normalizedURI = normalizeURI(uri);
-                if (
-                    normalizedURI
-                        .clone()
-                        .hash("")
-                        .toString() === ""
-                ) {
+                if (normalizedURI.clone().hash("").toString() === "") {
                     normalizedURI.path(name);
                 }
                 return normalizedURI;

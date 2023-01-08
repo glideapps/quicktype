@@ -974,9 +974,7 @@ export class MinMaxValueTransformer extends ProducerTransformer {
     equals(other: any): boolean {
         if (!super.equals(other)) return false;
         return (
-            other instanceof MinMaxValueTransformer &&
-            this.minimum === other.minimum &&
-            this.maximum === other.maximum
+            other instanceof MinMaxValueTransformer && this.minimum === other.minimum && this.maximum === other.maximum
         );
     }
 }

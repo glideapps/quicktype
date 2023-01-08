@@ -226,7 +226,11 @@ export class Graph<T> {
     stronglyConnectedComponents(): Graph<ReadonlySet<T>> {
         const components = stronglyConnectedComponents(this._successors);
         const componentSuccessors = buildMetaSuccessors(this._successors, components);
-        return new Graph(components.map(ns => setMap(ns, n => this._nodes[n])), false, componentSuccessors);
+        return new Graph(
+            components.map(ns => setMap(ns, n => this._nodes[n])),
+            false,
+            componentSuccessors
+        );
     }
 
     makeDot(includeNode: (n: T) => boolean, nodeLabel: (n: T) => string): string {

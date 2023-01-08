@@ -15,7 +15,7 @@ import {
     panic,
     Sourcelike,
     splitIntoWords,
-    Type,
+    Type
 } from "..";
 import { allLowerWordStyle, utf16StringEscape } from "../support/Strings";
 import { isES3IdentifierStart } from "./JavaScriptUnicodeMaps";
@@ -33,10 +33,10 @@ export const javaScriptPropTypesOptions = {
         "Which module system to use",
         [
             ["common-js", false],
-            ["es6", true],
+            ["es6", true]
         ],
         "es6"
-    ),
+    )
 };
 
 export class JavaScriptPropTypesTargetLanguage extends TargetLanguage {
@@ -64,7 +64,7 @@ export class JavaScriptPropTypesTargetLanguage extends TargetLanguage {
     }
 }
 
-const identityNamingFunction = funPrefixNamer("properties", (s) => s);
+const identityNamingFunction = funPrefixNamer("properties", s => s);
 
 export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
     constructor(
@@ -83,7 +83,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
             legalizeName,
             upper ? firstUpperWordStyle : allLowerWordStyle,
             firstUpperWordStyle,
-            upper ? (s) => capitalize(acronyms(s)) : allLowerWordStyle,
+            upper ? s => capitalize(acronyms(s)) : allLowerWordStyle,
             acronyms,
             "",
             isES3IdentifierStart
@@ -91,7 +91,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
     }
 
     protected makeNamedTypeNamer(): Namer {
-        return funPrefixNamer("types", (s) => this.nameStyle(s, true));
+        return funPrefixNamer("types", s => this.nameStyle(s, true));
     }
 
     protected namerForObjectProperty(): Namer {
@@ -103,7 +103,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return funPrefixNamer("enum-cases", (s) => this.nameStyle(s, false));
+        return funPrefixNamer("enum-cases", s => this.nameStyle(s, false));
     }
 
     protected namedTypeToNameForTopLevel(type: Type): Type | undefined {
@@ -128,23 +128,23 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
 
         const match = matchType<Sourcelike>(
             t,
-            (_anyType) => "PropTypes.any",
-            (_nullType) => "PropTypes.any",
-            (_boolType) => "PropTypes.bool",
-            (_integerType) => "PropTypes.number",
-            (_doubleType) => "PropTypes.number",
-            (_stringType) => "PropTypes.string",
-            (arrayType) => ["PropTypes.arrayOf(", this.typeMapTypeFor(arrayType.items, false), ")"],
-            (_classType) => panic("Should already be handled."),
-            (_mapType) => "PropTypes.object",
-            (_enumType) => panic("Should already be handled."),
-            (unionType) => {
+            _anyType => "PropTypes.any",
+            _nullType => "PropTypes.any",
+            _boolType => "PropTypes.bool",
+            _integerType => "PropTypes.number",
+            _doubleType => "PropTypes.number",
+            _stringType => "PropTypes.string",
+            arrayType => ["PropTypes.arrayOf(", this.typeMapTypeFor(arrayType.items, false), ")"],
+            _classType => panic("Should already be handled."),
+            _mapType => "PropTypes.object",
+            _enumType => panic("Should already be handled."),
+            unionType => {
                 const children = Array.from(unionType.getChildren()).map((type: Type) =>
                     this.typeMapTypeFor(type, false)
                 );
                 return ["PropTypes.oneOfType([", ...arrayIntercalate(", ", children), "])"];
             },
-            (_transformedStringType) => {
+            _transformedStringType => {
                 return "PropTypes.string";
             }
         );
@@ -182,7 +182,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
                 "",
                 "MyComponent.propTypes = {",
                 "  input: MyShape",
-                "};",
+                "};"
             ],
             "// "
         );
@@ -242,7 +242,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
 
             // pull out all names
             const source = mapValue[index];
-            const names = source.filter((value) => value as Name);
+            const names = source.filter(value => value as Name);
 
             // must be behind all these names
             for (let i = 0; i < names.length; i++) {
@@ -263,7 +263,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         });
 
         // now emit ordered source
-        order.forEach((i) => this.emitGatheredSource(mapValue[i]));
+        order.forEach(i => this.emitGatheredSource(mapValue[i]));
 
         // now emit top levels
         this.forEachTopLevel("none", (type, name) => {

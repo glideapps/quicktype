@@ -261,7 +261,10 @@ function attributesForTypes(types: Iterable<Type>): [ReadonlyMap<Type, TypeAttri
 
     const resultAttributes = mapMap(unionsForType, (unionForType, t) => {
         const singleAncestors = Array.from(unionForType).filter(u => defined(typesForUnion.get(u)).size === 1);
-        assert(singleAncestors.every(u => defined(typesForUnion.get(u)).has(t)), "We messed up bookkeeping");
+        assert(
+            singleAncestors.every(u => defined(typesForUnion.get(u)).has(t)),
+            "We messed up bookkeeping"
+        );
         const inheritedAttributes = singleAncestors.map(u => u.getAttributes());
         return combineTypeAttributes("union", [t.getAttributes()].concat(inheritedAttributes));
     });
