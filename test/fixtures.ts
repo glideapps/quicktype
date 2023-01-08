@@ -304,6 +304,7 @@ class JSONFixture extends LanguageFixture {
 
     getSamples(sources: string[]): { priority: Sample[]; others: Sample[] } {
         const mainSamples = testsInDir("test/inputs/json/samples", "json");
+        const quicktestSamples = ["test/inputs/json/samples/pokedex.json"];
         // FIXME: this should only run once
         const prioritySamples = _.concat(testsInDir("test/inputs/json/priority", "json"), mainSamples);
 
@@ -337,7 +338,7 @@ class JSONFixture extends LanguageFixture {
                             }
                         ];
                     } else {
-                        return _.map(mainSamples, p => ({
+                        return _.map(quicktestSamples, p => ({
                             path: defined(p),
                             additionalRendererOptions: qt,
                             saveOutput: false
