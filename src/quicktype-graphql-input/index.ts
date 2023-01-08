@@ -115,7 +115,10 @@ function removeNull(builder: TypeBuilder, tref: TypeRef): TypeRef {
     const first = iterableFirst(nonNulls);
     if (first) {
         if (nonNulls.size === 1) return first.typeRef;
-        return builder.getUnionType(t.getAttributes(), setMap(nonNulls, nn => nn.typeRef));
+        return builder.getUnionType(
+            t.getAttributes(),
+            setMap(nonNulls, nn => nn.typeRef)
+        );
     }
     return panic("Trying to remove null results in empty union.");
 }

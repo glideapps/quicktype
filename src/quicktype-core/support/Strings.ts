@@ -10,11 +10,12 @@ export type NamingStyle =
     | "pascal-upper-acronyms"
     | "camel-upper-acronyms";
 
-const unicode = require("@mark.probst/unicode-properties");
+const unicode = require("unicode-properties");
 
-function computeAsciiMap(
-    mapper: (codePoint: number) => string
-): { charStringMap: string[]; charNoEscapeMap: number[] } {
+function computeAsciiMap(mapper: (codePoint: number) => string): {
+    charStringMap: string[];
+    charNoEscapeMap: number[];
+} {
     const charStringMap: string[] = [];
     const charNoEscapeMap: number[] = [];
 

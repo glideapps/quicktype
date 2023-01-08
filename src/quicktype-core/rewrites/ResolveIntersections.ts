@@ -50,7 +50,8 @@ function attributesForTypes<T extends TypeKind>(types: ReadonlySet<Type>): TypeA
 type PropertyMap = Map<string, GenericClassProperty<Set<Type>>>;
 
 class IntersectionAccumulator
-    implements UnionTypeProvider<ReadonlySet<Type>, [PropertyMap, ReadonlySet<Type> | undefined] | undefined> {
+    implements UnionTypeProvider<ReadonlySet<Type>, [PropertyMap, ReadonlySet<Type> | undefined] | undefined>
+{
     private _primitiveTypes: Set<PrimitiveTypeKind> | undefined;
     private readonly _primitiveAttributes: TypeAttributeMap<PrimitiveTypeKind> = new Map();
 
@@ -343,7 +344,10 @@ export function resolveIntersections(
 
         const accumulator = new IntersectionAccumulator();
         const extraAttributes = makeTypeAttributesInferred(
-            combineTypeAttributes("intersect", Array.from(members).map(t => accumulator.addType(t)))
+            combineTypeAttributes(
+                "intersect",
+                Array.from(members).map(t => accumulator.addType(t))
+            )
         );
         const attributes = combineTypeAttributes("intersect", intersectionAttributes, extraAttributes);
 
@@ -356,9 +360,10 @@ export function resolveIntersections(
     }
     // FIXME: We need to handle intersections that resolve to the same set of types.
     // See for example the intersections-nested.schema example.
-    const allIntersections = setFilter(graph.allTypesUnordered(), t => t instanceof IntersectionType) as Set<
-        IntersectionType
-    >;
+    const allIntersections = setFilter(
+        graph.allTypesUnordered(),
+        t => t instanceof IntersectionType
+    ) as Set<IntersectionType>;
     const resolvableIntersections = setFilter(allIntersections, canResolve);
     const groups = makeGroupsToFlatten(resolvableIntersections, undefined);
     graph = graph.rewrite("resolve intersections", stringTypeMapping, false, groups, debugPrintReconstitution, replace);

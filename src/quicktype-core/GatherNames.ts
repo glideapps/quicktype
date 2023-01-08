@@ -316,7 +316,10 @@ export function gatherNames(graph: TypeGraph, destructive: boolean, debugPrint: 
             alternatives = new Set();
         }
 
-        alternatives = setUnion(alternatives, setMap(names, name => `${name}_${t.kind}`));
+        alternatives = setUnion(
+            alternatives,
+            setMap(names, name => `${name}_${t.kind}`)
+        );
         directAlternativesForType.set(t, alternatives);
     }
 

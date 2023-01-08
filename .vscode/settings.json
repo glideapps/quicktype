@@ -19,6 +19,7 @@
     "elm-stuff": true,
     "dist": true
   },
+  "explorer.excludeGitIgnore": false,
   "spellright.documentTypes": [],
   "java.configuration.updateBuildConfiguration": "automatic"
 }

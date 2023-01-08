@@ -1,6 +1,6 @@
-import {JSONSchema, JSONSchemaStore} from "./JSONSchemaStore";
-import {parseJSON} from "..";
-import {readFromFileOrURL} from "./io/NodeIO";
+import { JSONSchema, JSONSchemaStore } from "./JSONSchemaStore";
+import { parseJSON } from "..";
+import { readFromFileOrURL } from "./io/NodeIO";
 
 export class FetchingJSONSchemaStore extends JSONSchemaStore {
     constructor(private readonly _httpHeaders?: string[]) {

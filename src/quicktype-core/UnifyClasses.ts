@@ -63,9 +63,11 @@ function getCliqueProperties(
     return [unifiedProperties, unifiedAdditionalProperties, lostTypeAttributes];
 }
 
-function countProperties(
-    clique: ObjectType[]
-): { hasProperties: boolean; hasAdditionalProperties: boolean; hasNonAnyAdditionalProperties: boolean } {
+function countProperties(clique: ObjectType[]): {
+    hasProperties: boolean;
+    hasAdditionalProperties: boolean;
+    hasNonAnyAdditionalProperties: boolean;
+} {
     let hasProperties = false;
     let hasAdditionalProperties = false;
     let hasNonAnyAdditionalProperties = false;
@@ -119,7 +121,10 @@ export class UnifyUnionBuilder extends UnionBuilder<BaseGraphRewriteBuilder, Typ
         if (!this._makeObjectTypes && (hasNonAnyAdditionalProperties || (!hasProperties && hasAdditionalProperties))) {
             const propertyTypes = new Set<TypeRef>();
             for (const o of objectTypes) {
-                setUnionInto(propertyTypes, Array.from(o.getProperties().values()).map(cp => cp.typeRef));
+                setUnionInto(
+                    propertyTypes,
+                    Array.from(o.getProperties().values()).map(cp => cp.typeRef)
+                );
             }
             const additionalPropertyTypes = new Set(
                 objectTypes

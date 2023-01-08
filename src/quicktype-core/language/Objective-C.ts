@@ -23,7 +23,7 @@ import { StringOption, BooleanOption, EnumOption, Option, getOptionValues, Optio
 import { assert, defined } from "../support/Support";
 import { RenderContext } from "../Renderer";
 
-const unicode = require("@mark.probst/unicode-properties");
+const unicode = require("unicode-properties");
 
 export type MemoryAttribute = "assign" | "strong" | "copy";
 export type OutputFeatures = { interface: boolean; implementation: boolean };
@@ -975,7 +975,12 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             }
 
             this.emitMark("Object interfaces");
-            this.forEachNamedType("leading-and-interposing", (c: ClassType, className: Name) => this.emitClassInterface(c, className), () => null, () => null);
+            this.forEachNamedType(
+                "leading-and-interposing",
+                (c: ClassType, className: Name) => this.emitClassInterface(c, className),
+                () => null,
+                () => null
+            );
 
             this.ensureBlankLine();
             this.emitLine("NS_ASSUME_NONNULL_END");
@@ -1034,7 +1039,12 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 this.forEachTopLevel("leading-and-interposing", (t, n) => this.emitTopLevelFunctions(t, n));
             }
 
-            this.forEachNamedType("leading-and-interposing", (c: ClassType, className: Name) => this.emitClassImplementation(c, className), () => null, () => null);
+            this.forEachNamedType(
+                "leading-and-interposing",
+                (c: ClassType, className: Name) => this.emitClassImplementation(c, className),
+                () => null,
+                () => null
+            );
 
             if (!this._options.justTypes) {
                 this.ensureBlankLine();

@@ -1,41 +1,35 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    concurrent-ruby (1.0.5)
-    dry-configurable (0.7.0)
+    concurrent-ruby (1.1.10)
+    dry-core (1.0.0)
       concurrent-ruby (~> 1.0)
-    dry-container (0.6.0)
+      zeitwerk (~> 2.6)
+    dry-inflector (1.0.0)
+    dry-logic (1.5.0)
       concurrent-ruby (~> 1.0)
-      dry-configurable (~> 0.1, >= 0.1.3)
-    dry-core (0.4.4)
-      concurrent-ruby (~> 1.0)
-    dry-equalizer (0.2.0)
-    dry-logic (0.4.2)
-      dry-container (~> 0.2, >= 0.2.6)
-      dry-core (~> 0.2)
-      dry-equalizer (~> 0.2)
-    dry-struct (0.4.0)
-      dry-core (~> 0.4, >= 0.4.1)
-      dry-equalizer (~> 0.2)
-      dry-types (~> 0.12, >= 0.12.2)
+      dry-core (~> 1.0, < 2)
+      zeitwerk (~> 2.6)
+    dry-struct (1.6.0)
+      dry-core (~> 1.0, < 2)
+      dry-types (>= 1.7, < 2)
       ice_nine (~> 0.11)
-    dry-types (0.12.2)
+      zeitwerk (~> 2.6)
+    dry-types (1.7.0)
       concurrent-ruby (~> 1.0)
-      dry-configurable (~> 0.1)
-      dry-container (~> 0.3)
-      dry-core (~> 0.2, >= 0.2.1)
-      dry-equalizer (~> 0.2)
-      dry-logic (~> 0.4, >= 0.4.2)
-      inflecto (~> 0.0.0, >= 0.0.2)
+      dry-core (~> 1.0, < 2)
+      dry-inflector (~> 1.0, < 2)
+      dry-logic (>= 1.4, < 2)
+      zeitwerk (~> 2.6)
     ice_nine (0.11.2)
-    inflecto (0.0.2)
+    zeitwerk (2.6.6)
 
 PLATFORMS
-  ruby
+  arm64-darwin-22
 
 DEPENDENCIES
   dry-struct
   dry-types
 
 BUNDLED WITH
-   1.16.1
+   2.4.2

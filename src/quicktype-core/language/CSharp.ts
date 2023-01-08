@@ -9,7 +9,7 @@ import {
     ArrayType,
     TransformedStringTypeKind,
     PrimitiveStringTypeKind,
-    PrimitiveType,
+    PrimitiveType
 } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion, directlyReachableSingleNamedType } from "../TypeUtils";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
@@ -19,7 +19,7 @@ import {
     splitIntoWords,
     combineWords,
     firstUpperWordStyle,
-    camelCase,
+    camelCase
 } from "../support/Strings";
 import { defined, assert, panic, assertNever } from "../support/Support";
 import { Name, DependencyName, Namer, funPrefixNamer, SimpleName } from "../Naming";
@@ -46,7 +46,7 @@ import {
     ArrayDecodingTransformer,
     ArrayEncodingTransformer,
     MinMaxLengthCheckTransformer,
-    MinMaxValueTransformer,
+    MinMaxValueTransformer
 } from "../Transformers";
 import { RenderContext } from "../Renderer";
 import { minMaxLengthForType, minMaxValueForType } from "../attributes/Constraints";
@@ -56,7 +56,7 @@ export enum Framework {
     SystemTextJson
 }
 
-const unicode = require("@mark.probst/unicode-properties");
+const unicode = require("unicode-properties");
 
 export type Version = 5 | 6;
 export type OutputFeatures = { helpers: boolean; attributes: boolean };
@@ -64,7 +64,7 @@ export type OutputFeatures = { helpers: boolean; attributes: boolean };
 export enum AccessModifier {
     None,
     Public,
-    Internal,
+    Internal
 }
 
 export type CSharpTypeForAny = "object" | "dynamic";
@@ -121,19 +121,22 @@ export const cSharpOptions = {
     framework: new EnumOption(
         "framework",
         "Serialization framework",
-        [["NewtonSoft", Framework.Newtonsoft], ["SystemTextJson", Framework.SystemTextJson]],
+        [
+            ["NewtonSoft", Framework.Newtonsoft],
+            ["SystemTextJson", Framework.SystemTextJson]
+        ],
         "NewtonSoft"
     ),
     useList: new EnumOption("array-type", "Use T[] or List<T>", [
         ["array", false],
-        ["list", true],
+        ["list", true]
     ]),
     dense: new EnumOption(
         "density",
         "Property density",
         [
             ["normal", false],
-            ["dense", true],
+            ["dense", true]
         ],
         "normal",
         "secondary"
@@ -145,22 +148,18 @@ export const cSharpOptions = {
         "C# version",
         [
             ["5", 5],
-            ["6", 6],
+            ["6", 6]
         ],
         "6",
         "secondary"
     ),
-    virtual: new BooleanOption(
-        "virtual",
-        "Generate virtual properties",
-        false
-    ),
+    virtual: new BooleanOption("virtual", "Generate virtual properties", false),
     typeForAny: new EnumOption<CSharpTypeForAny>(
         "any-type",
         'Type to use for "any"',
         [
             ["object", "object"],
-            ["dynamic", "dynamic"],
+            ["dynamic", "dynamic"]
         ],
         "object",
         "secondary"
@@ -170,11 +169,11 @@ export const cSharpOptions = {
         "Type to use for numbers",
         [
             ["double", false],
-            ["decimal", true],
+            ["decimal", true]
         ],
         "double",
         "secondary"
-    ),
+    )
 };
 
 export class CSharpTargetLanguage extends TargetLanguage {
@@ -191,7 +190,7 @@ export class CSharpTargetLanguage extends TargetLanguage {
             cSharpOptions.useList,
             cSharpOptions.useDecimal,
             cSharpOptions.typeForAny,
-            cSharpOptions.virtual,
+            cSharpOptions.virtual
         ];
     }
 
@@ -228,9 +227,17 @@ export class CSharpTargetLanguage extends TargetLanguage {
 
         switch (options.framework) {
             case Framework.Newtonsoft:
-                return new NewtonsoftCSharpRenderer(this, renderContext, getOptionValues(newtonsoftCSharpOptions, untypedOptionValues));
+                return new NewtonsoftCSharpRenderer(
+                    this,
+                    renderContext,
+                    getOptionValues(newtonsoftCSharpOptions, untypedOptionValues)
+                );
             case Framework.SystemTextJson:
-                return new SystemTextJsonCSharpRenderer(this, renderContext, getOptionValues(systemTextJsonCSharpOptions, untypedOptionValues));
+                return new SystemTextJsonCSharpRenderer(
+                    this,
+                    renderContext,
+                    getOptionValues(systemTextJsonCSharpOptions, untypedOptionValues)
+                );
             default:
                 return assertNever(options.framework);
         }
@@ -305,9 +312,9 @@ export class CSharpRenderer extends ConvenienceRenderer {
                 "Equals",
                 "GetType",
                 "MemberwiseClone",
-                "ReferenceEquals",
+                "ReferenceEquals"
             ],
-            includeGlobalForbidden: false,
+            includeGlobalForbidden: false
         };
     }
 
@@ -356,13 +363,13 @@ export class CSharpRenderer extends ConvenienceRenderer {
         const actualType = follow(t);
         return matchType<Sourcelike>(
             actualType,
-            (_anyType) => maybeAnnotated(withIssues, anyTypeIssueAnnotation, this._csOptions.typeForAny),
-            (_nullType) => maybeAnnotated(withIssues, nullTypeIssueAnnotation, this._csOptions.typeForAny),
-            (_boolType) => "bool",
-            (_integerType) => "long",
-            (_doubleType) => this.doubleType,
-            (_stringType) => "string",
-            (arrayType) => {
+            _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, this._csOptions.typeForAny),
+            _nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, this._csOptions.typeForAny),
+            _boolType => "bool",
+            _integerType => "long",
+            _doubleType => this.doubleType,
+            _stringType => "string",
+            arrayType => {
                 const itemsType = this.csType(arrayType.items, follow, withIssues);
                 if (this._csOptions.useList) {
                     return ["System.Collections.Generic.List<", itemsType, ">"];
@@ -370,15 +377,19 @@ export class CSharpRenderer extends ConvenienceRenderer {
                     return [itemsType, "[]"];
                 }
             },
-            (classType) => this.nameForNamedType(classType),
-            (mapType) => ["System.Collections.Generic.Dictionary<string, ", this.csType(mapType.values, follow, withIssues), ">"],
-            (enumType) => this.nameForNamedType(enumType),
-            (unionType) => {
+            classType => this.nameForNamedType(classType),
+            mapType => [
+                "System.Collections.Generic.Dictionary<string, ",
+                this.csType(mapType.values, follow, withIssues),
+                ">"
+            ],
+            enumType => this.nameForNamedType(enumType),
+            unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) return this.nullableCSType(nullable, noFollow);
                 return this.nameForNamedType(unionType);
             },
-            (transformedStringType) => csTypeForTransformedStringType(transformedStringType)
+            transformedStringType => csTypeForTransformedStringType(transformedStringType)
         );
     }
 
@@ -442,8 +453,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
 
         const propertyArray = ["public "];
 
-        if (this._csOptions.virtual)
-            propertyArray.push("virtual ");
+        if (this._csOptions.virtual) propertyArray.push("virtual ");
 
         return [...propertyArray, csType, " ", name, " { get; set; }"];
     }
@@ -524,9 +534,9 @@ export class CSharpRenderer extends ConvenienceRenderer {
                     this.emitLine("public ", csType, " ", fieldName, ";");
                 });
                 this.ensureBlankLine();
-                const nullTests: Sourcelike[] = Array.from(nonNulls).map((t) => [
+                const nullTests: Sourcelike[] = Array.from(nonNulls).map(t => [
                     this.nameForUnionMember(u, t),
-                    " == null",
+                    " == null"
                 ]);
                 this.ensureBlankLine();
                 this.forEachUnionMember(u, nonNulls, "none", null, (fieldName, t) => {
@@ -544,7 +554,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
 
     private emitEnumDefinition(e: EnumType, enumName: Name): void {
         const caseNames: Sourcelike[] = [];
-        this.forEachEnumCase(e, "none", (name) => {
+        this.forEachEnumCase(e, "none", name => {
             if (caseNames.length > 0) caseNames.push(", ");
             caseNames.push(name);
         });
@@ -653,19 +663,19 @@ export const newtonsoftCSharpOptions = Object.assign({}, cSharpOptions, {
         ["complete", { namespaces: true, helpers: true, attributes: true }],
         ["attributes-only", { namespaces: true, helpers: false, attributes: true }],
         ["just-types-and-namespace", { namespaces: true, helpers: false, attributes: false }],
-        ["just-types", { namespaces: true, helpers: false, attributes: false }],
+        ["just-types", { namespaces: true, helpers: false, attributes: false }]
     ]),
     baseclass: new EnumOption(
         "base-class",
         "Base class",
         [
             ["EntityData", "EntityData"],
-            ["Object", undefined],
+            ["Object", undefined]
         ],
         "Object",
         "secondary"
     ),
-    checkRequired: new BooleanOption("check-required", "Fail if required properties are missing", false),
+    checkRequired: new BooleanOption("check-required", "Fail if required properties are missing", false)
 });
 
 export class NewtonsoftCSharpRenderer extends CSharpRenderer {
@@ -698,7 +708,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             "MetadataPropertyHandling",
             "DateParseHandling",
             "FromJson",
-            "Required",
+            "Required"
         ];
         if (this._options.dense) {
             forbidden.push("J", "R", "N");
@@ -723,7 +733,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             }
             return new SimpleName([`${xfer.kind}_converter`], namingFunction, inferredNameOrder + 30);
         }
-        return new DependencyName(namingFunction, typeName.order + 30, (lookup) => `${lookup(typeName)}_converter`);
+        return new DependencyName(namingFunction, typeName.order + 30, lookup => `${lookup(typeName)}_converter`);
     }
 
     protected makeNamedTypeDependencyNames(t: Type, name: Name): DependencyName[] {
@@ -732,7 +742,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         const extensionsName = new DependencyName(
             namingFunction,
             name.order + 30,
-            (lookup) => `${lookup(name)}_extensions`
+            lookup => `${lookup(name)}_extensions`
         );
         this._enumExtensionsNames.set(name, extensionsName);
         return [extensionsName];
@@ -900,7 +910,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             // Sometimes multiple top-levels will resolve to the same type, so we have to take care
             // not to emit more than one extension method for the same type.
             const seenTypes = new Set<Type>();
-            this.forEachTopLevel("none", (t) => {
+            this.forEachTopLevel("none", t => {
                 // FIXME: Make ToJson a Named
                 if (!seenTypes.has(t)) {
                     seenTypes.add(t);
@@ -1034,7 +1044,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 this.emitDecodeTransformer(
                     xfer.itemTransformer,
                     xfer.itemTargetType,
-                    (v) => this.emitLine(variableName, ".Add(", v, ");"),
+                    v => this.emitLine(variableName, ".Add(", v, ");"),
                     "arrayItem"
                 );
                 // FIXME: handle EOF
@@ -1125,7 +1135,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
 
         if (xfer instanceof ChoiceTransformer) {
             const caseXfers = xfer.transformers;
-            if (caseXfers.length > 1 && caseXfers.every((caseXfer) => caseXfer instanceof StringMatchTransformer)) {
+            if (caseXfers.length > 1 && caseXfers.every(caseXfer => caseXfer instanceof StringMatchTransformer)) {
                 this.emitLine("switch (", variable, ")");
                 this.emitBlock(() => {
                     for (const caseXfer of caseXfers) {
@@ -1347,9 +1357,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                     this.emitLine("if (reader.TokenType == JsonToken.Null) return null;");
                 }
 
-                const allHandled = this.emitDecodeTransformer(xfer, targetType, (v) =>
-                    this.emitLine("return ", v, ";")
-                );
+                const allHandled = this.emitDecodeTransformer(xfer, targetType, v => this.emitLine("return ", v, ";"));
                 if (!allHandled) {
                     this.emitThrow(['"Cannot unmarshal type ', csType, '"']);
                 }
@@ -1400,19 +1408,19 @@ export const systemTextJsonCSharpOptions = Object.assign({}, cSharpOptions, {
         ["complete", { namespaces: true, helpers: true, attributes: true }],
         ["attributes-only", { namespaces: true, helpers: false, attributes: true }],
         ["just-types-and-namespace", { namespaces: true, helpers: false, attributes: false }],
-        ["just-types", { namespaces: true, helpers: false, attributes: false }],
+        ["just-types", { namespaces: true, helpers: false, attributes: false }]
     ]),
     baseclass: new EnumOption(
         "base-class",
         "Base class",
         [
             ["EntityData", "EntityData"],
-            ["Object", undefined],
+            ["Object", undefined]
         ],
         "Object",
         "secondary"
     ),
-    checkRequired: new BooleanOption("check-required", "Fail if required properties are missing", false),
+    checkRequired: new BooleanOption("check-required", "Fail if required properties are missing", false)
 });
 
 export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
@@ -1673,10 +1681,8 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
     }
 
     private serializeValueCode(value: Sourcelike): Sourcelike {
-        if (value !== "null")
-            return ["JsonSerializer.Serialize(writer, ", value, ", options)"];
-        else
-            return ["writer.WriteNullValue()"];
+        if (value !== "null") return ["JsonSerializer.Serialize(writer, ", value, ", options)"];
+        else return ["writer.WriteNullValue()"];
     }
 
     private emitSerializeClass(): void {
@@ -1704,14 +1710,18 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
 
     private emitReadJson(emitBody: () => void, csType: Sourcelike): void {
         this.emitLine(
-            "public override ", csType, " Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)"
+            "public override ",
+            csType,
+            " Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)"
         );
         this.emitBlock(emitBody);
     }
 
     private emitWriteJson(variable: string, emitBody: () => void, csType: Sourcelike): void {
         this.emitLine(
-            "public override void Write(Utf8JsonWriter writer, ", csType, " ",
+            "public override void Write(Utf8JsonWriter writer, ",
+            csType,
+            " ",
             variable,
             ", JsonSerializerOptions options)"
         );
@@ -1728,7 +1738,9 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
         const converterName: Sourcelike = ["Converter"];
         this.emitType(undefined, AccessModifier.Internal, "static class", converterName, undefined, () => {
             // Do not use .Web as defaults. That turns on caseInsensitive property names and will fail the keywords test.
-            this.emitLine("public static readonly JsonSerializerOptions Settings = new(JsonSerializerDefaults.General)");
+            this.emitLine(
+                "public static readonly JsonSerializerOptions Settings = new(JsonSerializerDefaults.General)"
+            );
             this.emitBlock(() => {
                 // this.emitLine("MetadataPropertyHandling = MetadataPropertyHandling.Ignore,");
                 // this.emitLine("DateParseHandling = DateParseHandling.None,");
@@ -1862,7 +1874,13 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
                     targetType,
                     emitFinish
                 );
-                this.emitDecoderTransformerCase(["True", "False"], "boolValue", xfer.boolTransformer, targetType, emitFinish);
+                this.emitDecoderTransformerCase(
+                    ["True", "False"],
+                    "boolValue",
+                    xfer.boolTransformer,
+                    targetType,
+                    emitFinish
+                );
                 this.emitDecoderTransformerCase(
                     // ["String", "Date"],
                     ["String"],
@@ -2016,7 +2034,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
                     this.emitBlock(() => {
                         // this.emitLine("var uri = new Uri(", variable, ");");
                         // The default value about:blank should never happen, but this way we avoid a null reference warning.
-                        this.emitLine("var uri = new Uri(\"about:blank\");");
+                        this.emitLine('var uri = new Uri("about:blank");');
                         this.emitLine("if (!string.IsNullOrEmpty(stringValue))");
                         this.emitBlock(() => {
                             this.emitLine("uri = new Uri(", variable, ");");
@@ -2131,46 +2149,60 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
         //     converterName = ['Nullable', converterName];
         //     csType = [csType, "?"];
         // }
-        this.emitType(undefined, AccessModifier.Internal, "class", converterName, ["JsonConverter<", csType, ">"], () => {
-            let canConvertExpr: Sourcelike = ["t == typeof(", csType, ")"];
-            this.emitCanConvert(canConvertExpr);
-            this.ensureBlankLine();
-            this.emitReadJson(() => {
-                // FIXME: It's unsatisfying that we need this.  The reason is that we not
-                // only match T, but also T?.  If we didn't, then the T in T? would not be
-                // deserialized with our converter but with the default one.  Can we check
-                // whether the type is a nullable?
-                // FIXME: This could duplicate one of the cases handled below in
-                // `emitDecodeTransformer`.
-                // if (haveNullable && !(targetType instanceof UnionType)) {
-                //     this.emitLine("if (reader.TokenType == JsonTokenType.Null) return null;");
-                // }
+        this.emitType(
+            undefined,
+            AccessModifier.Internal,
+            "class",
+            converterName,
+            ["JsonConverter<", csType, ">"],
+            () => {
+                let canConvertExpr: Sourcelike = ["t == typeof(", csType, ")"];
+                this.emitCanConvert(canConvertExpr);
+                this.ensureBlankLine();
+                this.emitReadJson(() => {
+                    // FIXME: It's unsatisfying that we need this.  The reason is that we not
+                    // only match T, but also T?.  If we didn't, then the T in T? would not be
+                    // deserialized with our converter but with the default one.  Can we check
+                    // whether the type is a nullable?
+                    // FIXME: This could duplicate one of the cases handled below in
+                    // `emitDecodeTransformer`.
+                    // if (haveNullable && !(targetType instanceof UnionType)) {
+                    //     this.emitLine("if (reader.TokenType == JsonTokenType.Null) return null;");
+                    // }
 
-                const allHandled = this.emitDecodeTransformer(xfer, targetType, v => this.emitLine("return ", v, ";"));
-                if (!allHandled) {
-                    this.emitThrow(['"Cannot unmarshal type ', csType, '"']);
-                }
-            }, csType);
-            this.ensureBlankLine();
-            this.emitWriteJson("value", () => {
-                // FIXME: See above.
-                // if (haveNullable && !(targetType instanceof UnionType)) {
-                //     this.emitLine("if (value == null)");
-                //     this.emitBlock(() => {
-                //         this.emitLine("writer.WriteNullValue();");
-                //         this.emitLine("return;");
-                //     });
-                // }
+                    const allHandled = this.emitDecodeTransformer(xfer, targetType, v =>
+                        this.emitLine("return ", v, ";")
+                    );
+                    if (!allHandled) {
+                        this.emitThrow(['"Cannot unmarshal type ', csType, '"']);
+                    }
+                }, csType);
+                this.ensureBlankLine();
+                this.emitWriteJson(
+                    "value",
+                    () => {
+                        // FIXME: See above.
+                        // if (haveNullable && !(targetType instanceof UnionType)) {
+                        //     this.emitLine("if (value == null)");
+                        //     this.emitBlock(() => {
+                        //         this.emitLine("writer.WriteNullValue();");
+                        //         this.emitLine("return;");
+                        //     });
+                        // }
 
-                const allHandled = this.emitTransformer("value", reverse.transformer, reverse.targetType, () => this.emitLine("return;")
+                        const allHandled = this.emitTransformer("value", reverse.transformer, reverse.targetType, () =>
+                            this.emitLine("return;")
+                        );
+                        if (!allHandled) {
+                            this.emitThrow(['"Cannot marshal type ', csType, '"']);
+                        }
+                    },
+                    csType
                 );
-                if (!allHandled) {
-                    this.emitThrow(['"Cannot marshal type ', csType, '"']);
-                }
-            }, csType);
-            this.ensureBlankLine();
-            this.emitLine("public static readonly ", converterName, " Singleton = new ", converterName, "();");
-        });
+                this.ensureBlankLine();
+                this.emitLine("public static readonly ", converterName, " Singleton = new ", converterName, "();");
+            }
+        );
     }
 
     protected emitRequiredHelpers(): void {

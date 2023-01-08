@@ -89,7 +89,6 @@ function quotePropertyName(original: string): string {
 }
 
 export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
-
     constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
@@ -285,7 +284,7 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
 
         if (this._tsFlowOptions.preferUnions) {
             let items = "";
-            e.cases.forEach((item) => {
+            e.cases.forEach(item => {
                 if (items === "") {
                     items += `"${utf16StringEscape(item)}"`;
                     return;

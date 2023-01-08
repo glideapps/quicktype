@@ -39,7 +39,12 @@ import {
     TypeKind
 } from "./Type";
 import { TypeGraph, TypeRef, makeTypeRef, derefTypeRef, typeRefIndex, assertTypeRefGraph } from "./TypeGraph";
-import { TypeAttributes, combineTypeAttributes, TypeAttributeKind, emptyTypeAttributes } from "./attributes/TypeAttributes";
+import {
+    TypeAttributes,
+    combineTypeAttributes,
+    TypeAttributeKind,
+    emptyTypeAttributes
+} from "./attributes/TypeAttributes";
 import { defined, assert, panic } from "./support/Support";
 import { stringTypesTypeAttributeKind, StringTypes } from "./attributes/StringTypes";
 
@@ -276,7 +281,10 @@ export class TypeBuilder {
                 // we found the type based on its identity, i.e. all the identity
                 // attributes must be in there already, and we have a check that
                 // asserts that no identity attributes are added later.
-                this.addAttributes(result, mapFilter(attributes, (_, k) => !k.inIdentity));
+                this.addAttributes(
+                    result,
+                    mapFilter(attributes, (_, k) => !k.inIdentity)
+                );
             }
             return result;
         }

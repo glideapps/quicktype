@@ -1,9 +1,9 @@
 import * as fs from "fs";
-import {Readable} from "readable-stream";
-import {isNode} from "browser-or-node";
-import {getStream} from "./get-stream";
+import { Readable } from "readable-stream";
+import { isNode } from "browser-or-node";
+import { getStream } from "./get-stream";
 
-import {messageError, panic} from "../../index";
+import { messageError, panic } from "../../index";
 
 // The typings for this module are screwy
 const isURL = require("is-url");
@@ -18,24 +18,21 @@ function parseHeaders(httpHeaders?: string[]): HttpHeaders {
         return {};
     }
 
-    return httpHeaders.reduce(
-        function(result: HttpHeaders, httpHeader: string) {
-            if (httpHeader !== undefined && httpHeader.length > 0) {
-                const split = httpHeader.indexOf(":");
+    return httpHeaders.reduce(function (result: HttpHeaders, httpHeader: string) {
+        if (httpHeader !== undefined && httpHeader.length > 0) {
+            const split = httpHeader.indexOf(":");
 
-                if (split < 0) {
-                    return panic(`Could not parse HTTP header "${httpHeader}".`);
-                }
-
-                const key = httpHeader.slice(0, split).trim();
-                const value = httpHeader.slice(split + 1).trim();
-                result[key] = value;
+            if (split < 0) {
+                return panic(`Could not parse HTTP header "${httpHeader}".`);
             }
 
-            return result;
-        },
-        {} as HttpHeaders
-    );
+            const key = httpHeader.slice(0, split).trim();
+            const value = httpHeader.slice(split + 1).trim();
+            result[key] = value;
+        }
+
+        return result;
+    }, {} as HttpHeaders);
 }
 
 export async function readableFromFileOrURL(fileOrURL: string, httpHeaders?: string[]): Promise<Readable> {
@@ -47,7 +44,7 @@ export async function readableFromFileOrURL(fileOrURL: string, httpHeaders?: str
             return response.body;
         } else if (isNode) {
             if (fileOrURL === "-") {
-            // Cast node readable to isomorphic readable from readable-stream
+                // Cast node readable to isomorphic readable from readable-stream
                 return process.stdin as unknown as Readable;
             }
             const filePath = fs.lstatSync(fileOrURL).isSymbolicLink() ? fs.readlinkSync(fileOrURL) : fileOrURL;
