@@ -1,7 +1,8 @@
 name: Test PR
 on:
   push:
-    branches: [ scala3 ]
+    branches: 
+      - scala3
   pull_request:
     branches:
       - master
@@ -63,8 +64,8 @@ jobs:
 
                 include:
                   # Rust is very slow, so we use a larger runner
-                  - fixture: rust,schema-rust
-                    runs-on: ubuntu-latest-8-cores
+                  #- fixture: rust,schema-rust
+                    #runs-on: ubuntu-latest-8-cores
                   # Kotlin is also slow
                   - fixture: kotlin,schema-kotlin,kotlin-jackson,schema-kotlin-jackson
                     runs-on: ubuntu-latest-8-cores
@@ -176,6 +177,8 @@ jobs:
             
             - name: Install scala
               if: ${{ contains(matrix.fixture, 'scala3') }}
-              uses: VirtusLab/scala-cli-setup@v0.1
+              uses: VirtusLab/scala-cli-setup@main
+              with: 
+                apps: "bloop"
 
             - run: QUICKTEST=true FIXTURE=${{ matrix.fixture }} npm test
