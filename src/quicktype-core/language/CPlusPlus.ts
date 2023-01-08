@@ -850,7 +850,6 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         forceNarrowString: boolean,
         isOptional: boolean
     ): Sourcelike {
-        const inJsonNamespace = ctx.inJsonNamespace;
         if (isOptional && t instanceof UnionType) {
             // avoid have optionalType<optionalType<Type>>
             for (const tChild of t.getChildren()) {
@@ -1422,14 +1421,14 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     const t = p.type;
                     cppType = this.cppType(
                         t,
-                        { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+                        { needsForwardIndirection: true, needsOptionalIndirection: true },
                         false,
                         false,
                         p.isOptional
                     );
                     toType = this.cppType(
                         t,
-                        { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+                        { needsForwardIndirection: true, needsOptionalIndirection: true },
                         false,
                         true,
                         p.isOptional
@@ -1542,14 +1541,14 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     this.indent(() => {
                         const cppType = this.cppType(
                             typeForKind,
-                            { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+                            { needsForwardIndirection: true, needsOptionalIndirection: true },
                             false,
                             true,
                             false
                         );
                         let toType = this.cppType(
                             typeForKind,
-                            { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
+                            { needsForwardIndirection: true, needsOptionalIndirection: true },
                             false,
                             false,
                             false
@@ -2103,9 +2102,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
         this.ensureBlankLine();
 
-        var untypedMacroName = new String("NLOHMANN_UNTYPED_");
-        var optionalMacroName = new String("NLOHMANN_OPTIONAL_");
-        this._namespaceNames.forEach(function (value) {
+        let untypedMacroName = "NLOHMANN_UNTYPED_";
+        let optionalMacroName = "NLOHMANN_OPTIONAL_";
+        this._namespaceNames.forEach(value => {
             // We can't use upper name, because namespaces are case sensitive
             untypedMacroName += value;
             untypedMacroName += "_";
