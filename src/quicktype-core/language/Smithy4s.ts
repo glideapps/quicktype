@@ -27,10 +27,8 @@ import {
     Type,
     UnionType
 } from "../Type";
-import { matchCompoundType, matchType, matchTypeExhaustive, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
+import { matchCompoundType, matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 import { RenderContext } from "../Renderer";
-import { array } from "../input/io/get-stream";
-import { Source } from "graphql";
 
 export enum Framework {
     None
@@ -52,8 +50,7 @@ const invalidSymbols = [
     "+",
     "!",
     "@",
-    "#",
-    "$",
+    "#",    
     "%",
     "^",
     "&",
@@ -79,9 +76,7 @@ const keywords = [
     "case",
     "catch",        
     "do",
-    "else",
-    "enum",
-    "extends",
+    "else",    
     "export",
     "false",
     "final",
@@ -133,14 +128,6 @@ const keywords = [
  */
 const shouldAddBacktick = (paramName: string): boolean => {
     return keywords.some(s => paramName === s) || invalidSymbols.some(s => paramName.includes(s)) || !isNaN(+paramName) || !isNaN(parseInt(paramName.charAt(0)));
-};
-
-const wrapOption = (s: string, optional: boolean): string => {
-    if (optional) {
-        return s;
-    } else {
-        return "@required \n " + s;
-    }
 };
 
 function isPartCharacter(codePoint: number): boolean {
@@ -237,22 +224,22 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
         this.emitLine(close);
     }
 
-    protected anySourceType(optional: boolean): Sourcelike {
+    protected anySourceType(_: boolean): Sourcelike {
         return ["Document"];
     }
 
     // (asarazan): I've broken out the following two functions
     // because some renderers, such as kotlinx, can cope with `any`, while some get mad.
-    protected arrayType(arrayType: ArrayType, withIssues: boolean = false): Sourcelike {
+    protected arrayType(arrayType: ArrayType, _: boolean = false): Sourcelike {
         //this.emitTopLevelArray(arrayType, new Name(arrayType.getCombinedName().toString() + "List"))
         return arrayType.getCombinedName().toString() + "List";
     }
 
-    protected emitArrayType(arrayType: ArrayType, smithyType: Sourcelike): void {
+    protected emitArrayType(_: ArrayType, smithyType: Sourcelike): void {
         this.emitLine([ "list " , smithyType , " { member : ",  "}"  ])
     }
 
-    protected mapType(mapType: MapType, withIssues: boolean = false): Sourcelike {
+    protected mapType(mapType: MapType, _: boolean = false): Sourcelike {
         return mapType.getCombinedName().toString() + "Map"
         //return [this.scalaType(mapType.values, withIssues), "Map"];
     }
@@ -402,7 +389,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
                     at => {
                         console.log("emit array")
                         this.emitLine([ "list ",  this.scalaType(at, true) , "{ member: ", this.scalaType(at.items, true), "}" ])},
-                    rr => console.log("HERE"),
+                    _ => console.log("HERE"),
                     mt =>{ 
                         console.log("emit map")
                         this.emitLine([ "map ",  this.scalaType(mt, true) , "{ key: String , value: ", this.scalaType(mt.values, true), "}" ])
@@ -489,7 +476,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
                 at => {
                     console.log("emit array")
                     this.emitLine([ "list ",  this.scalaType(at, true) , "{ member: ", this.scalaType(at.items, true), "}" ])},
-                rr => console.log("HERE"),
+                _ => console.log("HERE"),
                 mt =>{ 
                     console.log("emit map")
                     this.emitLine([ "map ",  this.scalaType(mt, true) , "{ key: String , value: ", this.scalaType(mt.values, true), "}" ])
