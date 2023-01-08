@@ -374,72 +374,34 @@ export class DartRenderer extends ConvenienceRenderer {
     }
 
     protected dartType(t: Type, withIssues: boolean = false): Sourcelike {
+        const nullable = this._options.nullSafety && t.isNullable;
+        const withNullable = (s: Sourcelike): Sourcelike => (nullable ? [s, "?"] : s);
         return matchType<Sourcelike>(
             t,
             _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "dynamic"),
             _nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "dynamic"),
-            _boolType => {
-                if (this._options.nullSafety) {
-                    return ["bool", "?"];
-                }
-                return "bool";
-            },
-            _integerType => {
-                if (this._options.nullSafety) {
-                    return ["int", "?"];
-                }
-                return "int";
-            },
-            _doubleType => {
-                if (this._options.nullSafety) {
-                    return ["double", "?"];
-                }
-                return "double";
-            },
-            _stringType => {
-                if (this._options.nullSafety) {
-                    return ["String", "?"];
-                }
-                return "String";
-            },
-            arrayType => {
-                if (this._options.nullSafety) {
-                    return ["List<", this.dartType(arrayType.items, withIssues), ">", "?"];
-                }
-                return ["List<", this.dartType(arrayType.items, withIssues), ">"];
-            },
-            classType => {
-                if (this._options.nullSafety) {
-                    return [this.nameForNamedType(classType), "?"];
-                }
-                return this.nameForNamedType(classType);
-            },
-            mapType => {
-                if (this._options.nullSafety) {
-                    return [["Map<String, ", this.dartType(mapType.values, withIssues), ">"], "?"];
-                }
-                return ["Map<String, ", this.dartType(mapType.values, withIssues), ">"];
-            },
-            enumType => {
-                if (this._options.nullSafety) {
-                    return [this.nameForNamedType(enumType), "?"];
-                }
-                return this.nameForNamedType(enumType);
-            },
+            _boolType => withNullable("bool"),
+            _integerType => withNullable("int"),
+            _doubleType => withNullable("double"),
+            _stringType => withNullable("String"),
+            arrayType => withNullable(["List<", this.dartType(arrayType.items, withIssues), ">"]),
+            classType => withNullable(this.nameForNamedType(classType)),
+            mapType => withNullable(["Map<String, ", this.dartType(mapType.values, withIssues), ">"]),
+            enumType => withNullable(this.nameForNamedType(enumType)),
             unionType => {
                 const maybeNullable = nullableFromUnion(unionType);
                 if (maybeNullable === null) {
                     return "dynamic";
                 }
-                return this.dartType(maybeNullable, withIssues);
+                return withNullable(this.dartType(maybeNullable, withIssues));
             },
             transformedStringType => {
                 switch (transformedStringType.kind) {
                     case "date-time":
                     case "date":
-                        return this._options.nullSafety ? ["DateTime", "?"] : "DateTime";
+                        return withNullable("DateTime");
                     default:
-                        return this._options.nullSafety ? ["String", "?"] : "String";
+                        return withNullable("String");
                 }
             }
         );
