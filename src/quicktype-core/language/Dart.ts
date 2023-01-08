@@ -58,6 +58,7 @@ export class DartTargetLanguage extends TargetLanguage {
 
     protected getOptions(): Option<any>[] {
         return [
+            dartOptions.nullSafety,
             dartOptions.justTypes,
             dartOptions.codersInClass,
             dartOptions.methodNamesWithMap,
