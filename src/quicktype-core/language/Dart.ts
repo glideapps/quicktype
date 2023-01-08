@@ -42,13 +42,18 @@ export const dartOptions = {
     nullSafety: new BooleanOption("null-safety", "Null Safety", true),
     justTypes: new BooleanOption("just-types", "Types only", false),
     codersInClass: new BooleanOption("coders-in-class", "Put encoder & decoder in Class", false),
-    methodNamesWithMap: new BooleanOption("from-map", "Use method names fromMap() & toMap()", false),
+    methodNamesWithMap: new BooleanOption("from-map", "Use method names fromMap() & toMap()", false, "secondary"),
     requiredProperties: new BooleanOption("required-props", "Make all properties required", false),
     finalProperties: new BooleanOption("final-props", "Make all properties final", false),
     generateCopyWith: new BooleanOption("copy-with", "Generate CopyWith method", false),
-    useFreezed: new BooleanOption("use-freezed", "Generate class definitions with @freezed compatibility", false),
-    useHive: new BooleanOption("use-hive", "Generate annotations for Hive type adapters", false),
-    partName: new StringOption("part-name", "Use this name in `part` directive", "NAME", "")
+    useFreezed: new BooleanOption(
+        "use-freezed",
+        "Generate class definitions with @freezed compatibility",
+        false,
+        "secondary"
+    ),
+    useHive: new BooleanOption("use-hive", "Generate annotations for Hive type adapters", false, "secondary"),
+    partName: new StringOption("part-name", "Use this name in `part` directive", "NAME", "", "secondary")
 };
 
 export class DartTargetLanguage extends TargetLanguage {
