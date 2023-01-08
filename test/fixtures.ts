@@ -303,11 +303,9 @@ class JSONFixture extends LanguageFixture {
     }
 
     getSamples(sources: string[]): { priority: Sample[]; others: Sample[] } {
+        const mainSamples = testsInDir("test/inputs/json/samples", "json");
         // FIXME: this should only run once
-        const prioritySamples = _.concat(
-            testsInDir("test/inputs/json/priority", "json"),
-            testsInDir("test/inputs/json/samples", "json")
-        );
+        const prioritySamples = _.concat(testsInDir("test/inputs/json/priority", "json"), mainSamples);
 
         const skipMiscJSON = process.env.QUICKTEST !== undefined || this.language.skipMiscJSON;
         const miscSamples = skipMiscJSON ? [] : testsInDir("test/inputs/json/misc", "json");
@@ -339,7 +337,7 @@ class JSONFixture extends LanguageFixture {
                             }
                         ];
                     } else {
-                        return _.map(combinationInputs, p => ({
+                        return _.map(mainSamples, p => ({
                             path: defined(p),
                             additionalRendererOptions: qt,
                             saveOutput: false
