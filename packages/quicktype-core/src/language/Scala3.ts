@@ -352,7 +352,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
         this.indent(() => {
             let count = c.getProperties().size;
             let first = true;
-            this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+            this.forEachClassProperty(c, "none", (_, jsonName, p) => {
                 const nullable = p.type.kind === "union" && nullableFromUnion(p.type as UnionType) !== null;
                 const nullableOrOptional = p.isOptional || p.type.kind === "null" || nullable;
                 const last = --count === 0;
@@ -548,7 +548,7 @@ export class CirceRenderer extends Scala3Renderer {
 
     seenUnionTypes: Array<string> = [];
 
-    protected circeEncoderForType(t: Type, withIssues: boolean = false, noOptional: boolean = false, paramName: string): Sourcelike {
+    protected circeEncoderForType(t: Type, _: boolean = false, noOptional: boolean = false, paramName: string): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => ["Encoder.encodeJson(", paramName, ")"],
@@ -560,7 +560,7 @@ export class CirceRenderer extends Scala3Renderer {
             arrayType => ["Encoder.encodeSeq[", this.scalaType(arrayType.items), "].apply(", paramName, ")"],
             classType => ["Encoder.AsObject[", this.scalaType(classType), "].apply(", paramName, ")"],
             mapType => ["Encoder.encodeMap[String,", this.scalaType(mapType.values), "].apply(", paramName, ")"],
-            enumType => ["Encoder.encodeString(", paramName, ")"],
+            _ => ["Encoder.encodeString(", paramName, ")"],
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
@@ -595,7 +595,7 @@ export class CirceRenderer extends Scala3Renderer {
         this.ensureBlankLine();
         this.emitItem(["type ", enumName, " = "]);
         let count = e.cases.size;
-        this.forEachEnumCase(e, "none", (name, jsonName) => {
+        this.forEachEnumCase(e, "none", (_, jsonName) => {
             // if (!(jsonName == "")) {
             /*                 const backticks = 
                                 shouldAddBacktick(jsonName) || 
