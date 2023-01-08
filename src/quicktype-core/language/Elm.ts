@@ -26,7 +26,10 @@ import { RenderContext } from "../Renderer";
 
 export const elmOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
-    useList: new EnumOption("array-type", "Use Array or List", [["array", false], ["list", true]]),
+    useList: new EnumOption("array-type", "Use Array or List", [
+        ["array", false],
+        ["list", true]
+    ]),
     // FIXME: Do this via a configurable named eventually.
     moduleName: new StringOption("module", "Generated module name", "NAME", "QuickType")
 };
@@ -639,7 +642,9 @@ import Dict exposing (Dict, map, toList)`);
 
         this.ensureBlankLine();
         this.emitLine("-- decoders and encoders");
-        this.forEachTopLevel("leading-and-interposing", (t: Type, topLevelName: Name) => this.emitTopLevelFunctions(t, topLevelName));
+        this.forEachTopLevel("leading-and-interposing", (t: Type, topLevelName: Name) =>
+            this.emitTopLevelFunctions(t, topLevelName)
+        );
         this.forEachNamedType(
             "leading-and-interposing",
             (c: ClassType, className: Name) => this.emitClassFunctions(c, className),

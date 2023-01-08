@@ -341,14 +341,14 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
         targetLanguages.length < 2
             ? []
             : [
-                {
-                    name: "lang",
-                    alias: "l",
-                    type: String,
-                    typeLabel: makeLangTypeLabel(targetLanguages),
-                    description: "The target language."
-                }
-            ];
+                  {
+                      name: "lang",
+                      alias: "l",
+                      type: String,
+                      typeLabel: makeLangTypeLabel(targetLanguages),
+                      description: "The target language."
+                  }
+              ];
     const afterLang: OptionDefinition[] = [
         {
             name: "src-lang",
@@ -595,18 +595,13 @@ function parseOptions(definitions: OptionDefinition[], argv: string[], partial: 
         }
     }
 
-    const options: { rendererOptions: RendererOptions;[key: string]: any } = { rendererOptions: {} };
+    const options: { rendererOptions: RendererOptions; [key: string]: any } = { rendererOptions: {} };
     for (const o of definitions) {
         if (!hasOwnProperty(opts, o.name)) continue;
         const v = opts[o.name] as string;
         if (o.renderer !== undefined) options.rendererOptions[o.name] = v;
         else {
-            const k = _.lowerFirst(
-                o.name
-                    .split("-")
-                    .map(_.upperFirst)
-                    .join("")
-            );
+            const k = _.lowerFirst(o.name.split("-").map(_.upperFirst).join(""));
             options[k] = v;
         }
     }
@@ -820,10 +815,9 @@ export async function makeQuicktypeOptions(
                     collectionFile
                 );
                 for (const src of postmanSources) {
-                    sources.push(Object.assign(
-                        { kind: "json" },
-                        stringSourceDataToStreamSourceData(src)
-                    ) as JSONTypeSource);
+                    sources.push(
+                        Object.assign({ kind: "json" }, stringSourceDataToStreamSourceData(src)) as JSONTypeSource
+                    );
                 }
                 if (postmanSources.length > 1) {
                     fixedTopLevels = true;

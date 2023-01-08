@@ -79,7 +79,10 @@ export function sourcelikeToSource(sl: Sourcelike): Source {
         }
         return {
             kind: "sequence",
-            sequence: arrayIntercalate(newline(), lines.map((l: string) => ({ kind: "text", text: l } as Source)))
+            sequence: arrayIntercalate(
+                newline(),
+                lines.map((l: string) => ({ kind: "text", text: l } as Source))
+            )
         };
     }
     if (sl instanceof Name) {

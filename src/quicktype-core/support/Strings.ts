@@ -12,9 +12,10 @@ export type NamingStyle =
 
 const unicode = require("unicode-properties");
 
-function computeAsciiMap(
-    mapper: (codePoint: number) => string
-): { charStringMap: string[]; charNoEscapeMap: number[] } {
+function computeAsciiMap(mapper: (codePoint: number) => string): {
+    charStringMap: string[];
+    charNoEscapeMap: number[];
+} {
     const charStringMap: string[] = [];
     const charNoEscapeMap: number[] = [];
 

@@ -22,7 +22,15 @@ export { RenderContext } from "./Renderer";
 export { Option, OptionDefinition, getOptionValues, OptionValues } from "./RendererOptions";
 export { TargetLanguage, MultiFileRenderResult } from "./TargetLanguage";
 export { all as defaultTargetLanguages, languageNamed } from "./language/All";
-export { MultiWord, Sourcelike, SerializedRenderResult, Annotation, modifySource, singleWord, parenIfNeeded } from "./Source";
+export {
+    MultiWord,
+    Sourcelike,
+    SerializedRenderResult,
+    Annotation,
+    modifySource,
+    singleWord,
+    parenIfNeeded
+} from "./Source";
 export { Name, funPrefixNamer, Namer } from "./Naming";
 export { IssueAnnotationData } from "./Annotation";
 export {
@@ -75,16 +83,16 @@ export { ConvenienceRenderer } from "./ConvenienceRenderer";
 export { uriTypeAttributeKind } from "./attributes/URIAttributes";
 
 export { CPlusPlusTargetLanguage, CPlusPlusRenderer, cPlusPlusOptions } from "./language/CPlusPlus";
-export {
-    CSharpTargetLanguage,
-    cSharpOptions,
-    CSharpRenderer
-} from "./language/CSharp";
+export { CSharpTargetLanguage, cSharpOptions, CSharpRenderer } from "./language/CSharp";
 export { GoTargetLanguage, GoRenderer, goOptions } from "./language/Golang";
 export { ObjectiveCTargetLanguage, ObjectiveCRenderer, objcOptions } from "./language/Objective-C";
 export { JavaTargetLanguage, JavaRenderer, javaOptions } from "./language/Java";
 export { JavaScriptTargetLanguage, JavaScriptRenderer, javaScriptOptions } from "./language/JavaScript";
-export { JavaScriptPropTypesTargetLanguage, JavaScriptPropTypesRenderer, javaScriptPropTypesOptions } from "./language/JavaScriptPropTypes";
+export {
+    JavaScriptPropTypesTargetLanguage,
+    JavaScriptPropTypesRenderer,
+    javaScriptPropTypesOptions
+} from "./language/JavaScriptPropTypes";
 export {
     TypeScriptTargetLanguage,
     TypeScriptRenderer,

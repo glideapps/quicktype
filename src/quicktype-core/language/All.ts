@@ -42,7 +42,7 @@ export const all: TargetLanguage[] = [
     new DartTargetLanguage(),
     new PythonTargetLanguage("Python", ["python", "py"], "py"),
     new PikeTargetLanguage(),
-    new HaskellTargetLanguage(),
+    new HaskellTargetLanguage()
 ];
 
 export function languageNamed(name: string, targetLanguages?: TargetLanguage[]): TargetLanguage | undefined {

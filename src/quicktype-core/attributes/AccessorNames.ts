@@ -92,9 +92,8 @@ class UnionIdentifierTypeAttributeKind extends TypeAttributeKind<ReadonlySet<num
     }
 }
 
-export const unionIdentifierTypeAttributeKind: TypeAttributeKind<
-    ReadonlySet<number>
-> = new UnionIdentifierTypeAttributeKind();
+export const unionIdentifierTypeAttributeKind: TypeAttributeKind<ReadonlySet<number>> =
+    new UnionIdentifierTypeAttributeKind();
 
 let nextUnionIdentifier: number = 0;
 
@@ -118,9 +117,8 @@ class UnionMemberNamesTypeAttributeKind extends TypeAttributeKind<Map<number, Ac
     }
 }
 
-export const unionMemberNamesTypeAttributeKind: TypeAttributeKind<
-    Map<number, AccessorEntry>
-> = new UnionMemberNamesTypeAttributeKind();
+export const unionMemberNamesTypeAttributeKind: TypeAttributeKind<Map<number, AccessorEntry>> =
+    new UnionMemberNamesTypeAttributeKind();
 
 export function makeUnionMemberNamesAttribute(unionAttributes: TypeAttributes, entry: AccessorEntry): TypeAttributes {
     const identifiers = defined(unionIdentifierTypeAttributeKind.tryGetInAttributes(unionAttributes));

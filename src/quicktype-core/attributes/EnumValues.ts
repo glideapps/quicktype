@@ -1,6 +1,4 @@
-import {
-    mapMap,
-} from "collection-utils";
+import { mapMap } from "collection-utils";
 
 import { lookupKey, AccessorNames, makeAccessorNames } from "./AccessorNames";
 import { EnumType } from "../Type";
@@ -30,7 +28,6 @@ export function enumValuesAttributeProducer(
     _canonicalRef: Ref | undefined,
     _types: Set<JSONSchemaType>
 ): JSONSchemaAttributes | undefined {
-
     if (typeof schema !== "object") return undefined;
 
     const maybeEnumValues = schema["qt-enum-values"];

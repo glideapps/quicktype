@@ -189,7 +189,10 @@ export class PikeRenderer extends ConvenienceRenderer {
         this.emitBlock([e.kind, " ", enumName], () => {
             let table: Sourcelike[][] = [];
             this.forEachEnumCase(e, "none", (name, jsonName) => {
-                table.push([[name, ' = "', stringEscape(jsonName), '", '], ['// json: "', jsonName, '"']]);
+                table.push([
+                    [name, ' = "', stringEscape(jsonName), '", '],
+                    ['// json: "', jsonName, '"']
+                ]);
             });
             this.emitTable(table);
         });
@@ -240,7 +243,11 @@ export class PikeRenderer extends ConvenienceRenderer {
         this.forEachClassProperty(c, "none", (name, jsonName, p) => {
             const pikeType = this.sourceFor(p.type).source;
 
-            table.push([[pikeType, " "], [name, "; "], ['// json: "', jsonName, '"']]);
+            table.push([
+                [pikeType, " "],
+                [name, "; "],
+                ['// json: "', jsonName, '"']
+            ]);
         });
         this.emitTable(table);
     }
@@ -275,10 +282,8 @@ export class PikeRenderer extends ConvenienceRenderer {
             if (t instanceof PrimitiveType) {
                 this.emitLine(["return json;"]);
             } else if (t instanceof ArrayType) {
-                if (t.items instanceof PrimitiveType)
-                    this.emitLine(["return json;"]);
-                else
-                    this.emitLine(["return map(json, ", this.sourceFor(t.items).source, "_from_JSON);"]);
+                if (t.items instanceof PrimitiveType) this.emitLine(["return json;"]);
+                else this.emitLine(["return map(json, ", this.sourceFor(t.items).source, "_from_JSON);"]);
             } else if (t instanceof MapType) {
                 const type = this.sourceFor(t.values).source;
                 this.emitLine(["mapping(string:", type, ") retval = ([]);"]);
