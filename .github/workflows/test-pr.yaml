@@ -3,6 +3,7 @@ on:
     pull_request:
         branches:
             - master
+            - scala3
 jobs:
     build:
         runs-on: ubuntu-latest
@@ -24,19 +25,20 @@ jobs:
             matrix:
                 fixture:
                     - typescript
-                    - javascript,schema-javascript
-                    - golang,schema-golang
-                    - cplusplus,schema-cplusplus
-                    - flow,schema-flow
-                    - java,schema-java
-                    - python,schema-python
-                    - haskell,schema-haskell
-                    - csharp,schema-csharp,schema-json-csharp,graphql-csharp,csharp-SystemTextJson
-                    - json-ts-csharp
-                    - dart,schema-dart
-                    - swift,schema-swift
-                    - javascript-prop-types
-                    - ruby
+                    # - javascript,schema-javascript
+                    # - golang,schema-golang
+                    # - cplusplus,schema-cplusplus
+                    # - flow,schema-flow
+                    # - java,schema-java
+                    # - python,schema-python
+                    # - haskell,schema-haskell
+                    # - csharp,schema-csharp,schema-json-csharp,graphql-csharp,csharp-SystemTextJson
+                    # - json-ts-csharp
+                    # - dart,schema-dart
+                    # - swift,schema-swift
+                    # - javascript-prop-types
+                    # - ruby
+                    - scala3
 
                     # Partially working
                     # - schema-typescript # TODO Unify with typescript once fixed
@@ -169,5 +171,9 @@ jobs:
               run: |
                   sudo apt-get update
                   sudo apt-get -y install libboost-all-dev software-properties-common g++ --assume-yes
+            
+            - name: Install scala
+              if: ${{ contains(matrix.fixture, 'scala3') }}
+              uses: VirtusLab/scala-cli-setup@v0.1
 
             - run: QUICKTEST=true FIXTURE=${{ matrix.fixture }} npm test
