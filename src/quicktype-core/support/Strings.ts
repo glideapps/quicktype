@@ -401,7 +401,7 @@ export function splitIntoWords(s: string): WordInName[] {
         return i - intervalStart;
     }
 
-    for (;;) {
+    for (; ;) {
         skipNonWord();
         if (atEnd()) break;
 

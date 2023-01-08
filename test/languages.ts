@@ -2,6 +2,8 @@ import * as process from "process";
 // @ts-ignore
 import { RendererOptions } from "../dist/quicktype-core/Run";
 
+const easySampleJSONs = ["bitcoin-block.json", "pokedex.json", "simple-object.json", "getting-started.json"];
+
 export type LanguageFeature =
     | "enum"
     | "union"
@@ -28,7 +30,8 @@ export interface Language {
     features: LanguageFeature[];
     output: string;
     topLevel: string;
-    skipJSON: string[];
+    skipJSON?: string[];
+    includeJSON?: string[];
     skipMiscJSON: boolean;
     skipSchema: string[];
     rendererOptions: RendererOptions;
@@ -132,7 +135,7 @@ export const JavaLanguageWithLegacyDateTime: Language = {
         "date-time.schema" // Expects less strict serialization.
     ],
     skipJSON: [
-        ...JavaLanguage.skipJSON,
+        ...(JavaLanguage.skipJSON !== undefined ? JavaLanguage.skipJSON : []),
         "0a358.json", // Expects less strict serialization (optional milliseconds).
         "337ed.json" // Expects less strict serialization (optional milliseconds).
     ],
@@ -1134,4 +1137,22 @@ export const HaskellLanguage: Language = {
     rendererOptions: {},
     quickTestRendererOptions: [{ "array-type": "list" }],
     sourceFiles: ["src/language/Haskell.ts"]
+};
+
+export const PHPLanguage: Language = {
+    name: "php",
+    base: "test/fixtures/php",
+    runCommand: sample => `php main.php \"${sample}\"`,
+    diffViaSchema: false,
+    skipDiffViaSchema: [],
+    allowMissingNull: true,
+    features: ["enum"],
+    output: "TopLevel.php",
+    topLevel: "TopLevel",
+    includeJSON: easySampleJSONs,
+    skipMiscJSON: true,
+    skipSchema: [],
+    rendererOptions: {},
+    quickTestRendererOptions: [],
+    sourceFiles: ["src/Language/Php.ts"]
 };

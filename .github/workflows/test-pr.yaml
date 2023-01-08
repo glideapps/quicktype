@@ -37,6 +37,7 @@ jobs:
                     - swift,schema-swift
                     - javascript-prop-types
                     - ruby
+                    - php
 
                     # Partially working
                     # - schema-typescript # TODO Unify with typescript once fixed
@@ -77,6 +78,12 @@ jobs:
                   cache: npm
 
             - run: npm ci
+
+            - name: Setup PHP
+              if: ${{ contains(matrix.fixture, 'php') }}
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: "8.2"
 
             - name: Setup Dart
               if: ${{ contains(matrix.fixture, 'dart') }}
