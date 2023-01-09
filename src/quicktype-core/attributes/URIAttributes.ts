@@ -1,4 +1,4 @@
-import URI from "urijs";
+import * as URI from "urijs";
 
 import { TypeAttributeKind, TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 import { setUnionManyInto } from "collection-utils";

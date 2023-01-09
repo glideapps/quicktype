@@ -9,7 +9,6 @@
         "alwaysStrict": true,
         "outDir": "dist",
         "noUnusedLocals": true,
-        "noUnusedParameters": true,
-        "esModuleInterop": true
+        "noUnusedParameters": true
     }
 }

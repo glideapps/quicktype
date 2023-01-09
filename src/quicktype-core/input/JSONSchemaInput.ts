@@ -1,4 +1,4 @@
-import URI from "urijs";
+import * as URI from "urijs";
 import {
     setFilter,
     EqualityMap,

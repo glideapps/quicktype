@@ -3,7 +3,6 @@ import * as path from "path";
 import * as _ from "lodash";
 import { Readable } from "readable-stream";
 import { hasOwnProperty, definedMap, withDefault, mapFromObject, mapMap } from "collection-utils";
-import { exceptionToString } from "@glideapps/ts-necessities";
 
 import {
     Options,
@@ -586,7 +585,7 @@ function parseOptions(definitions: OptionDefinition[], argv: string[], partial: 
         opts = commandLineArgs(definitions, { argv, partial });
     } catch (e) {
         assert(!partial, "Partial option parsing should not have failed");
-        return messageError("DriverCLIOptionParsingFailed", { message: exceptionToString(e) });
+        return messageError("DriverCLIOptionParsingFailed", { message: e.message });
     }
     for (const k of Object.keys(opts)) {
         if (opts[k] === null) {
