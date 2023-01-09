@@ -1,10 +1,11 @@
 {
-    "extends": "@tsconfig/node18/tsconfig.json",
-    "compilerOptions": {
-        "strict": true,
-        "alwaysStrict": true,
-        "noUnusedLocals": true,
-        "noUnusedParameters": true
-    },
-    "include": ["*.ts", "../dist/*.js", "../dist/*.d.ts"]
+  "compilerOptions": {
+    "target": "es5",
+    "lib": ["es2015"],
+    "strict": true,
+    "alwaysStrict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
+  },
+  "include": ["*.ts", "../dist/*.js", "../dist/*.d.ts"]
 }

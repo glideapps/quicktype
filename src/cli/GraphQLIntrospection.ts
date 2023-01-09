@@ -1,6 +1,5 @@
 import { panic } from "../quicktype-core";
 import { introspectionQuery } from "graphql";
-import { exceptionToString } from "@glideapps/ts-necessities";
 
 const fetch = require("node-fetch");
 
@@ -36,7 +35,7 @@ export async function introspectServer(url: string, method: string, headerString
 
         result = await response.json();
     } catch (error) {
-        return panic(`Error while fetching introspection query result: ${exceptionToString(error)}`);
+        return panic(`Error while fetching introspection query result: ${error.message}`);
     }
 
     if (result.errors) {

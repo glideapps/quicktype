@@ -137,9 +137,7 @@ export class TypeIdentity {
 export type MaybeTypeIdentity = TypeIdentity | undefined;
 
 export abstract class Type {
-    abstract readonly kind: TypeKind;
-
-    constructor(readonly typeRef: TypeRef, protected readonly graph: TypeGraph) {}
+    constructor(readonly typeRef: TypeRef, protected readonly graph: TypeGraph, readonly kind: TypeKind) {}
 
     get index(): number {
         return typeRefIndex(this.typeRef);
@@ -305,9 +303,8 @@ export function primitiveTypeIdentity(kind: PrimitiveTypeKind, attributes: TypeA
 }
 
 export class PrimitiveType extends Type {
-    constructor(typeRef: TypeRef, graph: TypeGraph, public readonly kind: PrimitiveTypeKind) {
-        super(typeRef, graph);
-    }
+    // @ts-ignore: This is initialized in the Type constructor
+    readonly kind: PrimitiveTypeKind;
 
     get isNullable(): boolean {
         return this.kind === "null" || this.kind === "any" || this.kind === "none";
@@ -344,10 +341,11 @@ export function arrayTypeIdentity(attributes: TypeAttributes, itemsRef: TypeRef)
 }
 
 export class ArrayType extends Type {
-    public readonly kind = "array";
+    // @ts-ignore: This is initialized in the Type constructor
+    readonly kind: "array";
 
     constructor(typeRef: TypeRef, graph: TypeGraph, private _itemsRef?: TypeRef) {
-        super(typeRef, graph);
+        super(typeRef, graph, "array");
     }
 
     setItems(itemsRef: TypeRef) {
@@ -458,15 +456,18 @@ export function mapTypeIdentify(
 }
 
 export class ObjectType extends Type {
+    // @ts-ignore: This is initialized in the Type constructor
+    readonly kind: ObjectTypeKind;
+
     constructor(
         typeRef: TypeRef,
         graph: TypeGraph,
-        public readonly kind: ObjectTypeKind,
+        kind: ObjectTypeKind,
         readonly isFixed: boolean,
         private _properties: ReadonlyMap<string, ClassProperty> | undefined,
         private _additionalPropertiesRef: TypeRef | undefined
     ) {
-        super(typeRef, graph);
+        super(typeRef, graph, kind);
 
         if (kind === "map") {
             if (_properties !== undefined) {
@@ -625,6 +626,9 @@ export class ObjectType extends Type {
 }
 
 export class ClassType extends ObjectType {
+    // @ts-ignore: This is initialized in the Type constructor
+    kind: "class";
+
     constructor(
         typeRef: TypeRef,
         graph: TypeGraph,
@@ -636,6 +640,9 @@ export class ClassType extends ObjectType {
 }
 
 export class MapType extends ObjectType {
+    // @ts-ignore: This is initialized in the Type constructor
+    readonly kind: "map";
+
     constructor(typeRef: TypeRef, graph: TypeGraph, valuesRef: TypeRef | undefined) {
         super(
             typeRef,
@@ -659,10 +666,11 @@ export function enumTypeIdentity(attributes: TypeAttributes, cases: ReadonlySet<
 }
 
 export class EnumType extends Type {
-    public readonly kind = "enum";
+    // @ts-ignore: This is initialized in the Type constructor
+    kind: "enum";
 
     constructor(typeRef: TypeRef, graph: TypeGraph, readonly cases: ReadonlySet<string>) {
-        super(typeRef, graph);
+        super(typeRef, graph, "enum");
     }
 
     get isNullable(): boolean {
@@ -737,13 +745,8 @@ export function intersectionTypeIdentity(
 }
 
 export abstract class SetOperationType extends Type {
-    constructor(
-        typeRef: TypeRef,
-        graph: TypeGraph,
-        public readonly kind: TypeKind,
-        private _memberRefs?: ReadonlySet<TypeRef>
-    ) {
-        super(typeRef, graph);
+    constructor(typeRef: TypeRef, graph: TypeGraph, kind: TypeKind, private _memberRefs?: ReadonlySet<TypeRef>) {
+        super(typeRef, graph, kind);
     }
 
     setMembers(memberRefs: ReadonlySet<TypeRef>): void {
@@ -808,6 +811,9 @@ export abstract class SetOperationType extends Type {
 }
 
 export class IntersectionType extends SetOperationType {
+    // @ts-ignore: This is initialized in the Type constructor
+    kind: "intersection";
+
     constructor(typeRef: TypeRef, graph: TypeGraph, memberRefs?: ReadonlySet<TypeRef>) {
         super(typeRef, graph, "intersection", memberRefs);
     }
@@ -828,6 +834,9 @@ export class IntersectionType extends SetOperationType {
 }
 
 export class UnionType extends SetOperationType {
+    // @ts-ignore: This is initialized in the Type constructor
+    kind: "union";
+
     constructor(typeRef: TypeRef, graph: TypeGraph, memberRefs?: ReadonlySet<TypeRef>) {
         super(typeRef, graph, "union", memberRefs);
         if (memberRefs !== undefined) {
