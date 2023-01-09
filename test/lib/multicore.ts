@@ -1,5 +1,5 @@
-import * as cluster from "cluster";
-import * as process from "process";
+import cluster from "cluster";
+import process from "process";
 import * as _ from "lodash";
 
 const exit = require("exit");
@@ -29,13 +29,14 @@ export async function inParallel<Item, Result, Acc>(args: ParallelArgs<Item, Res
         return { item, i };
     });
 
-    if (cluster.isMaster) {
+    if (cluster.isPrimary) {
         let { setup, workers, map } = args;
         await setup();
 
         cluster.on("message", worker => {
-            if (items.length) {
-                worker.send(items.shift());
+            const msg = items.pop();
+            if (msg !== undefined) {
+                worker.send(msg);
             } else {
                 worker.kill();
             }
@@ -44,11 +45,11 @@ export async function inParallel<Item, Result, Acc>(args: ParallelArgs<Item, Res
         cluster.on("exit", (_worker, code, _signal) => {
             if (code && code !== 0) {
                 // Kill workers and exit if any worker dies
-                _.forIn(cluster.workers, w => {
+                for (const w of Object.values(cluster.workers ?? {})) {
                     if (w) {
                         w.kill();
                     }
-                });
+                }
                 exit(code);
             }
         });

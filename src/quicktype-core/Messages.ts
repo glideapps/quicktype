@@ -182,9 +182,10 @@ export class QuickTypeError extends Error {
 export function messageError<N extends ErrorKinds>(kind: N, properties: ErrorPropertiesForName<N>): never {
     const message = errorMessages[kind];
     let userMessage: string = message;
+    const propertiesMap = properties as StringMap;
 
-    for (const name of Object.getOwnPropertyNames(properties)) {
-        let value = (properties as StringMap)[name];
+    for (const name of Object.getOwnPropertyNames(propertiesMap)) {
+        let value = propertiesMap[name];
         if (typeof value === "object" && typeof value.toString === "function") {
             value = value.toString();
         } else if (typeof value.message === "string") {
@@ -195,7 +196,7 @@ export function messageError<N extends ErrorKinds>(kind: N, properties: ErrorPro
         userMessage = userMessage.replace("${" + name + "}", value);
     }
 
-    throw new QuickTypeError(message, kind, userMessage, properties);
+    throw new QuickTypeError(message, kind, userMessage, propertiesMap);
 }
 
 export function messageAssert<N extends ErrorKinds>(
