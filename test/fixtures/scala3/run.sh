@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-scala-cli --server=false  -v -v -v circe.scala TopLevel.scala
+scala-cli --server=false circe.scala TopLevel.scala
