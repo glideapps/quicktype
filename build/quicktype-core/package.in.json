@@ -8,7 +8,7 @@
     "repository": "https://github.com/quicktype/quicktype",
     "scripts": {
         "clean": "rm -rf dist node_modules *~",
-        "prepare": "npm run build",
+        "postpack": "npm run build",
         "build": "tsc",
         "tslint": "tslint --project ."
     },
@@ -21,7 +21,7 @@
         "js-base64": "^2.4.3",
         "pako": "^1.0.6",
         "pluralize": "^7.0.0",
-        "readable-stream": "2.3.0",
+        "readable-stream": "2.3.7",
         "urijs": "^1.19.1",
         "wordwrap": "^1.0.0",
         "yaml": "^1.5.0"
@@ -29,18 +29,16 @@
     "devDependencies": {
         "@types/urijs": "^1.19.8",
         "@types/js-base64": "^2.3.1",
-        "@types/node": "8.10.10",
+        "@types/node": "18.11.18",
         "@types/pako": "^1.0.0",
         "@types/pluralize": "0.0.28",
         "@types/yaml": "^1.0.2",
-        "typescript": "~3.2.1",
+        "typescript": "4.9.4",
         "tslint": "^5.11.0",
-        "@types/readable-stream": "2.3.9",
+        "@types/readable-stream": "2.3.15",
         "@types/browser-or-node": "^1.2.0"
     },
-    "files": [
-        "dist/**"
-    ],
+    "files": ["dist/**"],
     "browser": {
         "fs": false
     }

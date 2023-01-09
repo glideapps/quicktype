@@ -184,8 +184,8 @@ abstract class LanguageFixture extends Fixture {
     }
 
     abstract shouldSkipTest(sample: Sample): boolean;
-    abstract async runQuicktype(filename: string, additionalRendererOptions: RendererOptions): Promise<void>;
-    abstract async test(
+    abstract runQuicktype(filename: string, additionalRendererOptions: RendererOptions): Promise<void>;
+    abstract test(
         filename: string,
         additionalRendererOptions: RendererOptions,
         additionalFiles: string[]
