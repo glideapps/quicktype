@@ -1194,12 +1194,15 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected emitTopLevelHeaders(t: Type, className: Name): void {
-        // Maps need ecoding conversions, since they have a string in the key. Other types don't.
+        // Forward declarations for std::map<std::wstring, Key> (need to convert UTF16 <-> UTF8)
         if (t instanceof MapType && this._stringType !== this.NarrowString) {
             const ourQualifier = this.ourQualifier(true);
 
-            this.emitLine("void from_json(", this.withConst("json"), " & j, ", ourQualifier, className, " & x);");
-            this.emitLine("void to_json(json & j, ", this.withConst([ourQualifier, className]), " & x);");
+            this.emitLine("template <>");
+            this.emitBlock(["struct adl_serializer<", ourQualifier, className, ">"], true, () => {
+                this.emitLine("static void from_json(", this.withConst("json"), " & j, ", ourQualifier, className, " & x);");
+                this.emitLine("static void to_json(json & j, ", this.withConst([ourQualifier, className]), " & x);");
+            });
         }
     }
 
@@ -1211,14 +1214,14 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected emitTopLevelFunction(t: Type, className: Name): void {
-        // Maps need ecoding conversions, since they have a string in the key. Other types don't.
+        // Function definitions for std::map<std::wstring, Key> (need to convert UTF16 <-> UTF8)
         if (t instanceof MapType && this._stringType !== this.NarrowString) {
             const ourQualifier = this.ourQualifier(true);
             let cppType: Sourcelike;
             let toType: Sourcelike;
 
             this.emitBlock(
-                ["inline void from_json(", this.withConst("json"), " & j, ", ourQualifier, className, "& x)"],
+                ["inline void adl_serializer<", ourQualifier, className, ">::from_json(", this.withConst("json"), " & j, ", ourQualifier, className, "& x)"],
                 false,
                 () => {
                     cppType = this.cppType(
@@ -1249,7 +1252,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             );
 
             this.emitBlock(
-                ["inline void to_json(json & j, ", this.withConst([ourQualifier, className]), " & x)"],
+                ["inline void adl_serializer<", ourQualifier, className, ">::to_json(json & j, ", this.withConst([ourQualifier, className]), " & x)"],
                 false,
                 () => {
                     cppType = this.cppType(
@@ -1499,6 +1502,12 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected emitUnionHeaders(u: UnionType): void {
+        // Forward declarations for boost::variant<Ts...>. If none of the Ts were defined by us (e.g. if we have
+        // boost::variant<int32_t, std::string>) then we need to specialize nlohmann::adl_serializer for our
+        // variant type. If at least one of the Ts is our type then we could get away with regular adl definitions,
+        // but it's nontrivial to detect that (consider variant<string, variant<map<string, string>, int>> which
+        // does need an adl_serializer specialization) so we'll just specialize every time.
+
         const nonNulls = removeNullFromUnion(u, true)[1];
         const variantType = this.cppTypeInOptional(
             nonNulls,
@@ -1515,6 +1524,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected emitUnionFunctions(u: UnionType): void {
+        // Function definitions for boost::variant<Ts...>.
+
         const ourQualifier = this.ourQualifier(true) as string;
 
         const functionForKind: [string, string][] = [
@@ -1746,7 +1757,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
     protected emitAllUnionFunctions(): void {
         this.forEachUniqueUnion(
-            "interposing",
+            "leading-and-interposing",
             u =>
                 this.sourcelikeToString(
                     this.cppTypeInOptional(
@@ -2259,77 +2270,94 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         );
     }
 
-    protected emitGenerators(): void {
-        let didEmit: boolean = false;
-        const gathered = this.gatherSource(() =>
-            this.emitNamespaces(this._namespaceNames, () => {
-                didEmit = this.forEachTopLevel(
-                    "none",
-                    (t: Type, name: Name) => this.emitTopLevelTypedef(t, name),
-                    t => this.namedTypeToNameForTopLevel(t) === undefined
-                );
-            })
-        );
-        if (didEmit) {
-            this.emitGatheredSource(gathered);
+    protected gatherUserNamespaceForwardDecls(): Sourcelike[] {
+        return this.gatherSource(() => {
+            this.forEachObject("leading-and-interposing", (_: any, className: Name) =>
+                this.emitClassHeaders(className)
+            );
+
+            this.forEachEnum("leading-and-interposing", (_: any, enumName: Name) =>
+                this.emitEnumHeaders(enumName)
+            );
+        });
+    }
+
+    protected gatherNlohmannNamespaceForwardDecls() : Sourcelike[] {
+        return this.gatherSource(() => {
+            this.forEachTopLevel("leading-and-interposing", (t: Type, className: Name) =>
+                this.emitTopLevelHeaders(t, className)
+            );
+
             this.ensureBlankLine();
-        }
 
-        if (!this._options.justTypes) {
-            let preUnions = () => {
-                this.forEachObject("leading-and-interposing", (_: any, className: Name) =>
-                    this.emitClassHeaders(className)
-                );
+            this.emitAllUnionHeaders();
+        });
+    }
 
-                this.forEachTopLevel("leading-and-interposing", (t: Type, className: Name) =>
-                    this.emitTopLevelHeaders(t, className)
-                );
+    protected emitUserNamespaceImpls(): void {
+        this.forEachObject("leading-and-interposing", (c: ClassType, className: Name) =>
+            this.emitClassFunctions(c, className)
+        );
 
-                this.forEachEnum("leading-and-interposing", (_: any, enumName: Name) => this.emitEnumHeaders(enumName));
-            };
-            let midUnions = () => {
+        this.forEachEnum("leading-and-interposing", (e: EnumType, enumName: Name) =>
+            this.emitEnumFunctions(e, enumName)
+        );
+    }
+
+    protected emitNlohmannNamespaceImpls(): void {
+        this.forEachTopLevel(
+            "leading-and-interposing",
+            (t: Type, name: Name) => this.emitTopLevelFunction(t, name),
+            t => this.namedTypeToNameForTopLevel(t) === undefined
+        );
+
+        this.ensureBlankLine();
+
+        this.emitAllUnionFunctions();
+    }
+
+    protected emitGenerators(): void {
+        if (this._options.justTypes) {
+            let didEmit: boolean = false;
+            const gathered = this.gatherSource(() =>
+                this.emitNamespaces(this._namespaceNames, () => {
+                    didEmit = this.forEachTopLevel(
+                        "none",
+                        (t: Type, name: Name) => this.emitTopLevelTypedef(t, name),
+                        t => this.namedTypeToNameForTopLevel(t) === undefined
+                    );
+                })
+            );
+            if (didEmit) {
+                this.emitGatheredSource(gathered);
                 this.ensureBlankLine();
-
-                this.forEachObject("leading-and-interposing", (c: ClassType, className: Name) =>
-                    this.emitClassFunctions(c, className)
-                );
-
-                this.forEachEnum("leading-and-interposing", (e: EnumType, enumName: Name) =>
-                    this.emitEnumFunctions(e, enumName)
-                );
-            };
-            let postUnions = () => {
-                this.forEachTopLevel(
-                    "leading-and-interposing",
-                    (t: Type, name: Name) => this.emitTopLevelFunction(t, name),
-                    t => this.namedTypeToNameForTopLevel(t) === undefined
-                );
-            };
-
-            if (this.haveUnions)
-            {
-                this.emitNamespaces(this._namespaceNames, () => {
-                    preUnions();
-                });
-                this.emitNamespaces(["nlohmann"], () => {
-                    this.emitAllUnionHeaders();
-                });
-                this.emitNamespaces(this._namespaceNames, () => {
-                    midUnions();
-                });
-                this.emitNamespaces(["nlohmann"], () => {
-                    this.emitAllUnionFunctions();
-                });
-                this.emitNamespaces(this._namespaceNames, () => {
-                    postUnions();
-                });
             }
-            else
-            {
+        } else {
+            let userNamespaceForwardDecls = this.gatherUserNamespaceForwardDecls();
+            let nlohmannNamespaceForwardDecls = this.gatherNlohmannNamespaceForwardDecls();
+
+            if (userNamespaceForwardDecls.length == 0 && nlohmannNamespaceForwardDecls.length > 0) {
+                this.emitNamespaces(["nlohmann"], () => {
+                    this.emitGatheredSource(nlohmannNamespaceForwardDecls);
+                    this.emitNlohmannNamespaceImpls();
+                });
+            } else if (userNamespaceForwardDecls.length > 0 && nlohmannNamespaceForwardDecls.length == 0) {
                 this.emitNamespaces(this._namespaceNames, () => {
-                    preUnions();
-                    midUnions();
-                    postUnions();
+                    this.emitGatheredSource(userNamespaceForwardDecls);
+                    this.emitUserNamespaceImpls();
+                });
+            } else if (userNamespaceForwardDecls.length > 0 && nlohmannNamespaceForwardDecls.length > 0) {
+                this.emitNamespaces(this._namespaceNames, () => {
+                    this.emitGatheredSource(userNamespaceForwardDecls);
+                });
+                this.emitNamespaces(["nlohmann"], () => {
+                    this.emitGatheredSource(nlohmannNamespaceForwardDecls);
+                });
+                this.emitNamespaces(this._namespaceNames, () => {
+                    this.emitUserNamespaceImpls();
+                });
+                this.emitNamespaces(["nlohmann"], () => {
+                    this.emitNlohmannNamespaceImpls();
                 });
             }
         }
