@@ -1504,8 +1504,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             false
         );
 
-        this.emitLine("void from_json(", this.withConst("json"), " & j, ", variantType, " & x);");
-        this.emitLine("void to_json(json & j, ", this.withConst(variantType), " & x);");
+        this.emitLine("template <>");
+        this.emitBlock(["struct adl_serializer<", variantType, ">"], true, () => {
+            this.emitLine("static void from_json(", this.withConst("json"), " & j, ", variantType, " & x);");
+            this.emitLine("static void to_json(json & j, ", this.withConst(variantType), " & x);");
+        });
     }
 
     protected emitUnionFunctions(u: UnionType): void {
@@ -1530,7 +1533,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         );
 
         this.emitBlock(
-            ["inline void from_json(", this.withConst("json"), " & j, ", variantType, " & x)"],
+            ["inline void adl_serializer<", variantType, ">::from_json(", this.withConst("json"), " & j, ", variantType, " & x)"],
             false,
             () => {
                 let onFirst = true;
@@ -1570,7 +1573,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         );
         this.ensureBlankLine();
 
-        this.emitBlock(["inline void to_json(json & j, ", this.withConst(variantType), " & x)"], false, () => {
+        this.emitBlock(["inline void adl_serializer<", variantType, ">::to_json(json & j, ", this.withConst(variantType), " & x)"], false, () => {
             this.emitBlock(["switch (x.", this._variantIndexMethodName, "())"], false, () => {
                 let i = 0;
                 for (const t of nonNulls) {
@@ -2268,7 +2271,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
 
         if (!this._options.justTypes) {
-            this.emitNamespaces(this._namespaceNames, () => {
+            let preUnions = () => {
                 this.forEachObject("leading-and-interposing", (_: any, className: Name) =>
                     this.emitClassHeaders(className)
                 );
@@ -2278,11 +2281,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 );
 
                 this.forEachEnum("leading-and-interposing", (_: any, enumName: Name) => this.emitEnumHeaders(enumName));
-
-                if (this.haveUnions) {
-                    this.emitAllUnionHeaders();
-                }
-
+            };
+            let midUnions = () => {
                 this.ensureBlankLine();
 
                 this.forEachObject("leading-and-interposing", (c: ClassType, className: Name) =>
@@ -2292,17 +2292,41 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.forEachEnum("leading-and-interposing", (e: EnumType, enumName: Name) =>
                     this.emitEnumFunctions(e, enumName)
                 );
-
-                if (this.haveUnions) {
-                    this.emitAllUnionFunctions();
-                }
-
+            };
+            let postUnions = () => {
                 this.forEachTopLevel(
                     "leading-and-interposing",
                     (t: Type, name: Name) => this.emitTopLevelFunction(t, name),
                     t => this.namedTypeToNameForTopLevel(t) === undefined
                 );
-            });
+            };
+
+            if (this.haveUnions)
+            {
+                this.emitNamespaces(this._namespaceNames, () => {
+                    preUnions();
+                });
+                this.emitNamespaces(["nlohmann"], () => {
+                    this.emitAllUnionHeaders();
+                });
+                this.emitNamespaces(this._namespaceNames, () => {
+                    midUnions();
+                });
+                this.emitNamespaces(["nlohmann"], () => {
+                    this.emitAllUnionFunctions();
+                });
+                this.emitNamespaces(this._namespaceNames, () => {
+                    postUnions();
+                });
+            }
+            else
+            {
+                this.emitNamespaces(this._namespaceNames, () => {
+                    preUnions();
+                    midUnions();
+                    postUnions();
+                });
+            }
         }
     }
 
