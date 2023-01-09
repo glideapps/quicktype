@@ -2,7 +2,7 @@ import * as fs from "fs";
 import { Readable } from "readable-stream";
 import { isNode } from "browser-or-node";
 import { getStream } from "./get-stream";
-
+import { exceptionToString } from "@glideapps/ts-necessities";
 import { messageError, panic } from "../../index";
 
 // The typings for this module are screwy
@@ -54,8 +54,7 @@ export async function readableFromFileOrURL(fileOrURL: string, httpHeaders?: str
             }
         }
     } catch (e) {
-        const message = typeof e.message === "string" ? e.message : "Unknown error";
-        return messageError("MiscReadError", { fileOrURL, message });
+        return messageError("MiscReadError", { fileOrURL, message: exceptionToString(e) });
     }
     return messageError("DriverInputFileDoesNotExist", { filename: fileOrURL });
 }
@@ -65,7 +64,6 @@ export async function readFromFileOrURL(fileOrURL: string, httpHeaders?: string[
     try {
         return await getStream(readable);
     } catch (e) {
-        const message = typeof e.message === "string" ? e.message : "Unknown error";
-        return messageError("MiscReadError", { fileOrURL, message });
+        return messageError("MiscReadError", { fileOrURL, message: exceptionToString(e) });
     }
 }
