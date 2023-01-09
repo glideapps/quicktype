@@ -1,8 +1,8 @@
-//> using scala "3.1.1"
+//> using scala "3.2.1"
 //> using lib "io.circe::circe-core:0.15.0-M1"
 //> using lib "io.circe::circe-parser:0.15.0-M1"
-//> using options "-Xmax-inlines", "2000"
-//> using lib "com.lihaoyi::os-lib:0.8.0"
+//> using options "-Xmax-inlines", "3000"
+//> using lib "com.lihaoyi::os-lib:0.9.0"
 
 package quicktype
 
