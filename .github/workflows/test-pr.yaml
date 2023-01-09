@@ -178,7 +178,5 @@ jobs:
             - name: Install scala
               if: ${{ contains(matrix.fixture, 'scala3') }}
               uses: VirtusLab/scala-cli-setup@main
-              with: 
-                apps: "bloop"
 
             - run: QUICKTEST=true FIXTURE=${{ matrix.fixture }} npm test
