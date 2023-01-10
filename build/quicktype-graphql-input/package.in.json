@@ -8,7 +8,6 @@
     "repository": "https://github.com/quicktype/quicktype",
     "scripts": {
         "clean": "rm -rf dist node_modules *~",
-        "postpack": "npm run build",
         "build": "tsc",
         "tslint": "tslint --project ."
     },
