@@ -11,7 +11,7 @@ export abstract class JSONSchemaStore {
     }
 
     // FIXME: Remove the undefined option
-    abstract async fetch(_address: string): Promise<JSONSchema | undefined>;
+    abstract fetch(_address: string): Promise<JSONSchema | undefined>;
 
     async get(address: string, debugPrint: boolean): Promise<JSONSchema | undefined> {
         let schema = this._schemas.get(address);

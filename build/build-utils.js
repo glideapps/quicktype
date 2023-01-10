@@ -238,6 +238,7 @@ function buildCore(buildDir, options) {
             pkg.version = latestPackageVersion(packageName);
         });
         runNPM(["install"]);
+        runNPM(["run", "build"]);
 
         if (!options.publish) return;
 
@@ -270,7 +271,10 @@ function buildPackage(buildDir, options) {
                 pkg.version = latestPackageVersion(packageName);
                 setQuicktypeCore(pkg, "file:../quicktype-core");
             },
-            () => runNPM(["install"])
+            () => {
+                runNPM(["install"]);
+                runNPM(["run", "build"]);
+            }
         );
 
         if (!options.publish) return;
