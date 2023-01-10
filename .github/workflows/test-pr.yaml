@@ -10,9 +10,10 @@ jobs:
             - uses: actions/checkout@v3
             - uses: actions/setup-node@v3
               with:
-                  node-version: 18.12.1
+                  node-version: 18.13.0
                   cache: npm
             - run: npm ci
+            - run: npm run build
 
     test:
         needs: [build]
@@ -74,10 +75,11 @@ jobs:
             - uses: actions/checkout@v3
             - uses: actions/setup-node@v3
               with:
-                  node-version: 18.12.1
+                  node-version: 18.13.0
                   cache: npm
 
             - run: npm ci
+            - run: npm run build
 
             - name: Setup PHP
               if: ${{ contains(matrix.fixture, 'php') }}

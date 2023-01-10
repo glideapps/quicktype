@@ -24,6 +24,14 @@ function buildTypeScript() {
     if (result.code !== 0) {
         process.exit(result.code);
     }
+
+    // Build subpackages
+    for (const project of ["quicktype-core", "quicktype-graphql-input", "quicktype-typescript-input"]) {
+        const { code } = shell.exec(`cd build/${project} && node build.js`);
+        if (code !== 0) {
+            process.exit(code);
+        }
+    }
 }
 
 const scriptPrefix = "#!/usr/bin/env node\n";
