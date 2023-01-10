@@ -447,7 +447,7 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
         return invalidValue(typ, val, key, parent);
     }
     if (typ === false) return invalidValue(typ, val, key, parent);
-    let ref = undefined;
+    let ref${anyAnnotation} = undefined;
     while (typeof typ === "object" && typ.ref !== undefined) {
         ref = typ.ref;
         typ = typeMap[typ.ref];
