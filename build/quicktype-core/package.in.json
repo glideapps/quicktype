@@ -13,6 +13,7 @@
     },
     "dependencies": {
         "@glideapps/ts-necessities": "2.1.2",
+        "@types/urijs": "^1.19.8",
         "unicode-properties": "^1.4.1",
         "browser-or-node": "^1.2.1",
         "collection-utils": "^1.0.1",
@@ -27,7 +28,6 @@
         "yaml": "^1.5.0"
     },
     "devDependencies": {
-        "@types/urijs": "^1.19.8",
         "@types/js-base64": "^2.3.1",
         "@types/node": "18.11.18",
         "@types/pako": "^1.0.0",
