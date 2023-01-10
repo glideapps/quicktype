@@ -13,6 +13,7 @@ jobs:
                   node-version: 18.13.0
                   cache: npm
             - run: npm ci
+            - run: npm run build
 
     test:
         needs: [build]
@@ -78,6 +79,7 @@ jobs:
                   cache: npm
 
             - run: npm ci
+            - run: npm run build
 
             - name: Setup PHP
               if: ${{ contains(matrix.fixture, 'php') }}

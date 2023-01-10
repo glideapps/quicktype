@@ -10,14 +10,12 @@
     },
     "scripts": {
         "pub": "script/publish.sh",
-        "prepare": "npm run build",
         "build": "script/build.ts",
         "test": "script/test",
         "start": "script/watch",
         "pkg": "script/make-pkgs.sh",
         "tslint": "tslint --project src/cli --exclude 'src/__tests__/**' --exclude 'src/quicktype-core/input/io/get-stream/**'",
         "clean": "rm -rf dist node_modules *~",
-        "publish": "script/publish.sh",
         "debug": "node --inspect-brk --max-old-space-size=4096 ./dist/cli/index.js"
     },
     "dependencies": {
