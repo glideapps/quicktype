@@ -299,7 +299,13 @@ class JSONFixture extends LanguageFixture {
         if (fs.statSync(sample.path).size > 32 * 1024 * 1024) {
             return true;
         }
-        return _.includes(this.language.skipJSON, path.basename(sample.path));
+        if (this.language.includeJSON !== undefined) {
+            return !_.includes(this.language.includeJSON, path.basename(sample.path));
+        }
+        if (this.language.skipJSON !== undefined) {
+            return _.includes(this.language.skipJSON, path.basename(sample.path));
+        }
+        return false;
     }
 
     getSamples(sources: string[]): { priority: Sample[]; others: Sample[] } {
@@ -805,6 +811,7 @@ export const allFixtures: Fixture[] = [
     new JSONFixture(languages.DartLanguage),
     new JSONFixture(languages.PikeLanguage),
     new JSONFixture(languages.HaskellLanguage),
+    new JSONFixture(languages.PHPLanguage),
     new JSONSchemaJSONFixture(languages.CSharpLanguage),
     new JSONTypeScriptFixture(languages.CSharpLanguage),
     // new JSONSchemaFixture(languages.CrystalLanguage),
@@ -843,5 +850,6 @@ export const allFixtures: Fixture[] = [
     new GraphQLFixture(languages.DartLanguage),
     new GraphQLFixture(languages.PikeLanguage),
     new GraphQLFixture(languages.HaskellLanguage),
+    new GraphQLFixture(languages.PHPLanguage),
     new CommandSuccessfulLanguageFixture(languages.JavaScriptPropTypesLanguage)
 ];
