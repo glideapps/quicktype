@@ -78,16 +78,6 @@ export const cPlusPlusOptions = {
         ],
         "use-string"
     ),
-    msbuildPermissive: new EnumOption(
-        "msbuildPermissive",
-        "Moves to_json and from_json types into the nlohmann::details namespace, so that msbuild can build it with conformance mode disabled",
-        [
-            ["not-permissive", false],
-            ["use-permissive", true]
-        ],
-        "not-permissive",
-        "secondary"
-    ),
     westConst: new EnumOption(
         "const-style",
         "Put const to the left/west (const T) or right/east (T const)",
