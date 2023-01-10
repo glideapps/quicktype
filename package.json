@@ -1,6 +1,6 @@
 {
     "name": "quicktype",
-    "version": "17.0.0",
+    "version": "18.0.0",
     "license": "Apache-2.0",
     "main": "dist/cli/index.js",
     "types": "dist/cli/index.d.ts",
