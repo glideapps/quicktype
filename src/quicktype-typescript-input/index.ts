@@ -6,7 +6,8 @@ import { defined, JSONSchemaSourceData, messageError } from "../quicktype-core";
 const settings: PartialArgs = {
     required: true,
     titles: true,
-    topRef: true
+    topRef: true,
+    noExtraProps: true
 };
 
 const compilerOptions: ts.CompilerOptions = {
