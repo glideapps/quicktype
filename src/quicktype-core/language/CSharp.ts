@@ -173,7 +173,24 @@ export const cSharpOptions = {
         ],
         "double",
         "secondary"
-    )
+    ),
+    features: new EnumOption("features", "Output features", [
+        ["complete", { namespaces: true, helpers: true, attributes: true }],
+        ["attributes-only", { namespaces: true, helpers: false, attributes: true }],
+        ["just-types-and-namespace", { namespaces: true, helpers: false, attributes: false }],
+        ["just-types", { namespaces: true, helpers: false, attributes: false }]
+    ]),
+    baseclass: new EnumOption(
+        "base-class",
+        "Base class",
+        [
+            ["EntityData", "EntityData"],
+            ["Object", undefined]
+        ],
+        "Object",
+        "secondary"
+    ),
+    checkRequired: new BooleanOption("check-required", "Fail if required properties are missing", false)
 };
 
 export class CSharpTargetLanguage extends TargetLanguage {
@@ -190,7 +207,10 @@ export class CSharpTargetLanguage extends TargetLanguage {
             cSharpOptions.useList,
             cSharpOptions.useDecimal,
             cSharpOptions.typeForAny,
-            cSharpOptions.virtual
+            cSharpOptions.virtual,
+            cSharpOptions.features,
+            cSharpOptions.baseclass,
+            cSharpOptions.checkRequired,
         ];
     }
 
@@ -659,23 +679,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
 }
 
 export const newtonsoftCSharpOptions = Object.assign({}, cSharpOptions, {
-    features: new EnumOption("features", "Output features", [
-        ["complete", { namespaces: true, helpers: true, attributes: true }],
-        ["attributes-only", { namespaces: true, helpers: false, attributes: true }],
-        ["just-types-and-namespace", { namespaces: true, helpers: false, attributes: false }],
-        ["just-types", { namespaces: true, helpers: false, attributes: false }]
-    ]),
-    baseclass: new EnumOption(
-        "base-class",
-        "Base class",
-        [
-            ["EntityData", "EntityData"],
-            ["Object", undefined]
-        ],
-        "Object",
-        "secondary"
-    ),
-    checkRequired: new BooleanOption("check-required", "Fail if required properties are missing", false)
+
 });
 
 export class NewtonsoftCSharpRenderer extends CSharpRenderer {
@@ -1404,23 +1408,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
 }
 
 export const systemTextJsonCSharpOptions = Object.assign({}, cSharpOptions, {
-    features: new EnumOption("features", "Output features", [
-        ["complete", { namespaces: true, helpers: true, attributes: true }],
-        ["attributes-only", { namespaces: true, helpers: false, attributes: true }],
-        ["just-types-and-namespace", { namespaces: true, helpers: false, attributes: false }],
-        ["just-types", { namespaces: true, helpers: false, attributes: false }]
-    ]),
-    baseclass: new EnumOption(
-        "base-class",
-        "Base class",
-        [
-            ["EntityData", "EntityData"],
-            ["Object", undefined]
-        ],
-        "Object",
-        "secondary"
-    ),
-    checkRequired: new BooleanOption("check-required", "Fail if required properties are missing", false)
+
 });
 
 export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
