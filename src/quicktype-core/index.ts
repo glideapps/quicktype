@@ -84,6 +84,7 @@ export { uriTypeAttributeKind } from "./attributes/URIAttributes";
 
 export { CPlusPlusTargetLanguage, CPlusPlusRenderer, cPlusPlusOptions } from "./language/CPlusPlus";
 export { CSharpTargetLanguage, cSharpOptions, CSharpRenderer } from "./language/CSharp";
+export { PythonTargetLanguage, PythonRenderer, pythonOptions } from "./language/Python";
 export { GoTargetLanguage, GoRenderer, goOptions } from "./language/Golang";
 export { ObjectiveCTargetLanguage, ObjectiveCRenderer, objcOptions } from "./language/Objective-C";
 export { JavaTargetLanguage, JavaRenderer, javaOptions } from "./language/Java";
