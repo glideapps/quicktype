@@ -15,8 +15,8 @@ runs:
               NODE_MODULES_KEY="$BASE_KEY-${{ hashFiles('package-lock.json', 'build/*/package-lock.json') }}"
               echo "node_modules_key=$NODE_MODULES_KEY" >> $GITHUB_ENV
 
-              PACKAGES_KEY="$NODE_MODULES_KEY-${{ hashFiles('dist/**') }}"
-              echo "packages_key=$PACKAGES_KEY" >> $GITHUB_ENV
+              SOURCE_KEY="$NODE_MODULES_KEY-${{ hashFiles('src/**') }}"
+              echo "source_key=$SOURCE_KEY" >> $GITHUB_ENV
 
         - name: Setup node
           uses: actions/setup-node@v3
@@ -38,12 +38,12 @@ runs:
 
         - name: Restore Packages
           uses: actions/cache@v3
-          id: cache-packages
+          id: cache-build
           with:
               path: dist
-              key: ${{ env.packages_key }}
+              key: ${{ env.source_key }}
 
         - name: Build Packages
-          if: steps.cache-packages.outputs.cache-hit != 'true'
+          if: steps.cache-build.outputs.cache-hit != 'true'
           run: npm run build
           shell: bash
