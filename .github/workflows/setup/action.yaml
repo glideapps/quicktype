@@ -23,6 +23,7 @@ runs:
           with:
               node-version: ${{ env.node_version }}
               cache: npm
+              registry-url: "https://registry.npmjs.org"
 
         - name: Restore Dependencies
           uses: actions/cache@v3
