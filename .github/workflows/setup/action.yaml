@@ -1,0 +1,51 @@
+name: Setup
+description: Setup common stuff for jobs
+runs:
+    using: "composite"
+    steps:
+        - name: Setup environment
+          shell: bash
+          run: |
+              NODE_VERSION=$(cat .nvmrc | xargs)
+              echo "node_version=$NODE_VERSION" >> $GITHUB_ENV
+
+              # Create keys to control caching
+              BASE_KEY="${{ runner.os }}"
+
+              NODE_MODULES_KEY="$BASE_KEY-${{ hashFiles('package-lock.json', 'build/*/package-lock.json') }}"
+              echo "node_modules_key=$NODE_MODULES_KEY" >> $GITHUB_ENV
+
+              SOURCE_KEY="$NODE_MODULES_KEY-${{ hashFiles('src/**') }}"
+              echo "source_key=$SOURCE_KEY" >> $GITHUB_ENV
+
+        - name: Setup node
+          uses: actions/setup-node@v3
+          with:
+              node-version: ${{ env.node_version }}
+              cache: npm
+
+        - name: Restore Dependencies
+          uses: actions/cache@v3
+          id: cache-dependencies
+          with:
+              path: |
+                  node_modules
+                  build/*/node_modules
+              key: ${{ env.node_modules_key }}
+
+        - name: Install Dependencies
+          if: steps.cache-dependencies.outputs.cache-hit != 'true'
+          run: npm ci
+          shell: bash
+
+        - name: Restore Packages
+          uses: actions/cache@v3
+          id: cache-build
+          with:
+              path: dist
+              key: ${{ env.source_key }}
+
+        - name: Build Packages
+          if: steps.cache-build.outputs.cache-hit != 'true'
+          run: npm run build
+          shell: bash
