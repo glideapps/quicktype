@@ -28,7 +28,9 @@ runs:
           uses: actions/cache@v3
           id: cache-dependencies
           with:
-              path: node_modules build/*/node_modules
+              path: |
+                  node_modules
+                  build/*/node_modules
               key: ${{ env.node_modules_key }}
 
         - name: Install Dependencies
