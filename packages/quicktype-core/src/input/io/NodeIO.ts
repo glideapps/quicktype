@@ -5,7 +5,7 @@ import { getStream } from "./get-stream";
 import { defined, exceptionToString } from "@glideapps/ts-necessities";
 import { messageError, panic } from "../../index";
 
-import isURL from "is-url-superb";
+const isURL = require("is-url");
 import fetch from "cross-fetch";
 
 interface HttpHeaders {

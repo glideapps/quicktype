@@ -16,7 +16,7 @@
         "@types/urijs": "^1.19.19",
         "browser-or-node": "^1.2.1",
         "collection-utils": "^1.0.1",
-        "is-url-superb": "^6.1.0",
+        "is-url": "^1.2.4",
         "cross-fetch": "^3.1.5",
         "js-base64": "^2.4.3",
         "lodash": "^4.17.21",
