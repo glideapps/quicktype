@@ -6,7 +6,7 @@
         "allowJs": false,
         "declaration": true,
         "strict": true,
-        "outDir": "../../dist/quicktype-core",
+        "outDir": "dist",
         "noUnusedLocals": true,
         "noUnusedParameters": true,
         "noFallthroughCasesInSwitch": true,

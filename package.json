@@ -1,9 +1,9 @@
 {
     "name": "quicktype",
-    "version": "18.0.0",
+    "version": "18.0.7",
     "license": "Apache-2.0",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
+    "main": "dist/quicktype/index.js",
+    "types": "dist/quicktype/index.d.ts",
     "repository": "https://github.com/quicktype/quicktype",
     "engines": {
         "node": ">=18.13.0"
@@ -57,7 +57,7 @@
         "watch": "^1.0.2"
     },
     "files": [
-        "dist/**"
+        "dist/quicktype"
     ],
-    "bin": "dist/cli/index.js"
+    "bin": "dist/quicktype/index.js"
 }
