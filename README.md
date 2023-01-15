@@ -1,4 +1,4 @@
-![](https://raw.githubusercontent.com/quicktype/quicktype/master/quicktype-logo.svg?sanitize=true)
+![](https://raw.githubusercontent.com/quicktype/quicktype/master/media/quicktype-logo.svg?sanitize=true)
 
 [![npm version](https://badge.fury.io/js/quicktype.svg)](https://badge.fury.io/js/quicktype)
 ![Build status](https://github.com/quicktype/quicktype/actions/workflows/master.yaml/badge.svg)
