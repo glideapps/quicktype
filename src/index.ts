@@ -49,8 +49,8 @@ import { CompressedJSONFromStream } from "./CompressedJSONFromStream";
 
 const stringToStream = require("string-to-stream");
 
-const commandLineArgs = require("command-line-args");
-const getUsage = require("command-line-usage");
+import commandLineArgs from "command-line-args";
+import getUsage from "command-line-usage";
 import chalk from "chalk";
 const wordWrap: (s: string) => string = require("wordwrap")(90);
 
