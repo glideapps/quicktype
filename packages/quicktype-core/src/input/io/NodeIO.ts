@@ -2,11 +2,11 @@ import * as fs from "fs";
 import { Readable } from "readable-stream";
 import { isNode } from "browser-or-node";
 import { getStream } from "./get-stream";
-import { exceptionToString } from "@glideapps/ts-necessities";
+import { defined, exceptionToString } from "@glideapps/ts-necessities";
 import { messageError, panic } from "../../index";
 
 import isURL from "is-url-superb";
-import fetch from "isomorphic-fetch";
+import fetch from "cross-fetch";
 
 interface HttpHeaders {
     [key: string]: string;
@@ -40,7 +40,7 @@ export async function readableFromFileOrURL(fileOrURL: string, httpHeaders?: str
             const response = await fetch(fileOrURL, {
                 headers: parseHeaders(httpHeaders)
             });
-            return response.body;
+            return defined(response.body) as unknown as Readable;
         } else if (isNode) {
             if (fileOrURL === "-") {
                 // Cast node readable to isomorphic readable from readable-stream
