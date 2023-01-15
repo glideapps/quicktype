@@ -14,8 +14,8 @@ test/fixtures/rust/target
 test/fixtures/java/target
 test/fixtures/java-lombok/target
 
-build/*/dist
-build/*/node_modules
+packages/*/dist
+packages/*/node_modules
 
 *.log
 /test/elm/libsysconfcpus/

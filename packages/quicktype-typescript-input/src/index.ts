@@ -1,7 +1,7 @@
 import * as ts from "typescript";
 import { PartialArgs, generateSchema } from "@mark.probst/typescript-json-schema";
 
-import { defined, JSONSchemaSourceData, messageError } from "../quicktype-core";
+import { defined, JSONSchemaSourceData, messageError } from "quicktype-core";
 
 const settings: PartialArgs = {
     required: true,

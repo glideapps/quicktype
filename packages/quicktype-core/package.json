@@ -1,6 +1,6 @@
 {
     "name": "quicktype-core",
-    "version": "7.0.0",
+    "version": "18.0.15",
     "description": "The quicktype engine as a library",
     "license": "Apache-2.0",
     "main": "dist/index.js",
@@ -25,6 +25,7 @@
         "readable-stream": "2.3.7",
         "urijs": "^1.19.1",
         "wordwrap": "^1.0.0",
+        "lodash": "^4.17.21",
         "yaml": "^1.5.0"
     },
     "devDependencies": {
@@ -38,7 +39,9 @@
         "@types/readable-stream": "2.3.15",
         "@types/browser-or-node": "^1.2.0"
     },
-    "files": ["dist/**"],
+    "files": [
+        "dist"
+    ],
     "browser": {
         "fs": false
     }

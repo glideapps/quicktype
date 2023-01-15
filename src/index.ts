@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import * as fs from "fs";
 import * as path from "path";
 import * as _ from "lodash";
@@ -37,9 +38,9 @@ import {
     readableFromFileOrURL,
     readFromFileOrURL,
     FetchingJSONSchemaStore
-} from "../quicktype-core";
-import { schemaForTypeScriptSources } from "../quicktype-typescript-input";
-import { GraphQLInput } from "../quicktype-graphql-input";
+} from "quicktype-core";
+import { schemaForTypeScriptSources } from "quicktype-typescript-input";
+import { GraphQLInput } from "quicktype-graphql-input";
 
 import { urlsFromURLGrammar } from "./URLGrammar";
 import { introspectServer } from "./GraphQLIntrospection";
@@ -53,7 +54,7 @@ const getUsage = require("command-line-usage");
 const chalk = require("chalk");
 const wordWrap: (s: string) => string = require("wordwrap")(90);
 
-const packageJSON = require("../../package.json");
+const packageJSON = require("../package.json");
 
 export interface CLIOptions {
     lang: string;

@@ -1,7 +1,7 @@
 {
-    "name": "quicktype-typescript-input",
-    "version": "0.0.6",
-    "description": "Package for using TypeScript as an input language to quicktype",
+    "name": "quicktype-graphql-input",
+    "version": "18.0.15",
+    "package": "Package for using GraphQL as an input language to quicktype",
     "license": "Apache-2.0",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -12,13 +12,17 @@
         "tslint": "tslint --project ."
     },
     "dependencies": {
-        "quicktype-core": "the build script replaces this",
-        "typescript": "4.9.4",
-        "@mark.probst/typescript-json-schema": "0.55.0"
+        "quicktype-core": "file:../quicktype-core",
+        "collection-utils": "^1.0.1",
+        "graphql": "^0.11.7"
     },
     "devDependencies": {
         "@types/node": "18.11.18",
+        "@types/graphql": "^0.11.7",
+        "typescript": "4.9.4",
         "tslint": "^5.11.0"
     },
-    "files": ["dist/**"]
+    "files": [
+        "dist"
+    ]
 }

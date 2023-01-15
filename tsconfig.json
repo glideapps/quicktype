@@ -1,15 +1,16 @@
 {
+    "extends": "@tsconfig/node18/tsconfig.json",
     "compilerOptions": {
-        "target": "es6",
-        "module": "commonjs",
-        "lib": ["es6", "esnext.asynciterable"],
+        "lib": ["ES2022", "dom"],
         "allowJs": false,
         "declaration": true,
+        "typeRoots": ["node_modules/@types"],
         "strict": true,
-        "outDir": "dist",
         "noUnusedLocals": true,
         "noUnusedParameters": true,
         "noFallthroughCasesInSwitch": true,
-        "esModuleInterop": true
-    }
+        "outDir": "dist",
+        "baseUrl": "src"
+    },
+    "include": ["src"]
 }
