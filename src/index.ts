@@ -53,7 +53,7 @@ const getUsage = require("command-line-usage");
 const chalk = require("chalk");
 const wordWrap: (s: string) => string = require("wordwrap")(90);
 
-const packageJSON = require("../../package.json");
+const packageJSON = require("../package.json");
 
 export interface CLIOptions {
     lang: string;
