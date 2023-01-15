@@ -5,9 +5,8 @@ import { getStream } from "./get-stream";
 import { exceptionToString } from "@glideapps/ts-necessities";
 import { messageError, panic } from "../../index";
 
-// The typings for this module are screwy
-const isURL = require("is-url");
-const fetch = require("isomorphic-fetch");
+import isURL from "is-url-superb";
+import fetch from "isomorphic-fetch";
 
 interface HttpHeaders {
     [key: string]: string;

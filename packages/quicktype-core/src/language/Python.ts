@@ -48,7 +48,7 @@ import {
     iterableFirst
 } from "collection-utils";
 
-const unicode = require("unicode-properties");
+import unicode from "unicode-properties";
 
 const forbiddenTypeNames = [
     "Any",

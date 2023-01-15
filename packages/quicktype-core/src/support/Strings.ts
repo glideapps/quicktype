@@ -10,7 +10,7 @@ export type NamingStyle =
     | "pascal-upper-acronyms"
     | "camel-upper-acronyms";
 
-const unicode = require("unicode-properties");
+import unicode from "unicode-properties";
 
 function computeAsciiMap(mapper: (codePoint: number) => string): {
     charStringMap: string[];
@@ -401,7 +401,7 @@ export function splitIntoWords(s: string): WordInName[] {
         return i - intervalStart;
     }
 
-    for (; ;) {
+    for (;;) {
         skipNonWord();
         if (atEnd()) break;
 
