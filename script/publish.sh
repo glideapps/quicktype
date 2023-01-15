@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-VERSION=$(npm version patch --no-git-tag-version --force)
+./patch-npm-version.ts
+
+VERSION=$(jq -r '.version' package.json )
 npm version $VERSION --workspaces --force
 
 # This is not great, but we need to get the dependencies to workspaces
