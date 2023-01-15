@@ -167,3 +167,9 @@ jobs:
                   sudo apt-get -y install libboost-all-dev software-properties-common g++ --assume-yes
 
             - run: QUICKTEST=true FIXTURE=${{ matrix.fixture }} npm test
+
+    test-complete:
+        needs: test
+        runs-on: ubuntu-latest
+        steps:
+            - run: echo 🎉
