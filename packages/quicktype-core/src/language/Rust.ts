@@ -72,6 +72,9 @@ export class RustTargetLanguage extends TargetLanguage {
 }
 
 const keywords = [
+    "Serialize",
+    "Deserialize",
+
     // Special reserved identifiers used internally for elided lifetimes,
     // unnamed method parameters, crate root module, error recovery etc.
     "{{root}}",
