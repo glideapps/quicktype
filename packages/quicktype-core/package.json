@@ -25,6 +25,7 @@
         "readable-stream": "2.3.7",
         "urijs": "^1.19.1",
         "wordwrap": "^1.0.0",
+        "lodash": "^4.17.21",
         "yaml": "^1.5.0"
     },
     "devDependencies": {
