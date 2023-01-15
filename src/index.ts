@@ -47,10 +47,10 @@ import { introspectServer } from "./GraphQLIntrospection";
 import { JSONTypeSource, TypeSource, GraphQLTypeSource, SchemaTypeSource } from "./TypeSource";
 import { CompressedJSONFromStream } from "./CompressedJSONFromStream";
 
-const stringToStream = require("string-to-stream");
+import stringToStream from "string-to-stream";
 
-const commandLineArgs = require("command-line-args");
-const getUsage = require("command-line-usage");
+import commandLineArgs from "command-line-args";
+import getUsage from "command-line-usage";
 import chalk from "chalk";
 const wordWrap: (s: string) => string = require("wordwrap")(90);
 
