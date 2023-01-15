@@ -7,10 +7,9 @@
         "declaration": true,
         "strict": true,
         "alwaysStrict": true,
-        "outDir": "dist",
+        "outDir": "../../dist/quicktype-graphql-input",
         "noUnusedLocals": true,
         "noUnusedParameters": true,
         "esModuleInterop": true
-    },
-    "exclude": ["dist"]
+    }
 }

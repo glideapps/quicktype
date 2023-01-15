@@ -6,11 +6,10 @@
         "allowJs": false,
         "declaration": true,
         "strict": true,
-        "outDir": "dist",
+        "outDir": "../../dist/quicktype-core",
         "noUnusedLocals": true,
         "noUnusedParameters": true,
         "noFallthroughCasesInSwitch": true,
         "esModuleInterop": true
-    },
-    "exclude": ["dist"]
+    }
 }

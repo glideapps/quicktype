@@ -9,8 +9,7 @@
         "noUnusedLocals": true,
         "noUnusedParameters": true,
         "noFallthroughCasesInSwitch": true,
-        "outDir": "../dist",
+        "outDir": "../dist/quicktype",
         "baseUrl": "."
-    },
-    "exclude": ["../packages/*/dist", "../dist"]
+    }
 }
