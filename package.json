@@ -2,19 +2,18 @@
     "name": "quicktype",
     "version": "18.0.7",
     "license": "Apache-2.0",
-    "main": "dist/quicktype/index.js",
-    "types": "dist/quicktype/index.d.ts",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
     "repository": "https://github.com/quicktype/quicktype",
     "engines": {
         "node": ">=18.13.0"
     },
     "scripts": {
         "pub": "script/publish.sh",
-        "build": "tsc",
-        "build:packages": "npm run build --workspaces --if-present",
+        "build": "npm run build --workspaces --if-present && tsc",
         "test": "script/test",
         "start": "script/watch",
-        "clean": "rm -rf dist node_modules *~",
+        "clean": "rm -rf dist node_modules *~ packages/*/{dist,node_modules}",
         "debug": "node --inspect-brk --max-old-space-size=4096 ./dist/index.js"
     },
     "workspaces": [
@@ -57,7 +56,7 @@
         "watch": "^1.0.2"
     },
     "files": [
-        "dist/quicktype"
+        "dist"
     ],
-    "bin": "dist/quicktype/index.js"
+    "bin": "dist/index.js"
 }
