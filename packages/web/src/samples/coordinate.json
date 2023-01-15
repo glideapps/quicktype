@@ -1,0 +1,10 @@
+{
+  "id": "http://json-schema.org/geo",
+  "$schema": "http://json-schema.org/draft-06/schema#",
+  "description": "A geographical coordinate",
+  "type": "object",
+  "properties": {
+    "latitude": { "type": "number" },
+    "longitude": { "type": "number" }
+  }
+}

@@ -1,0 +1,40 @@
+.app {
+  display: flex;
+  flex-direction: column;
+}
+
+.app .drop-target {
+  z-index: 99999;
+  opacity: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  transition: opacity 300ms ease-in-out;
+}
+.app.dragging .drop-target {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.main {
+  display: flex;
+  height: calc(100vh - 50px);
+}
+
+.output {
+  flex-grow: 1;
+}
+
+.progress-toast {
+  font-size: 86%;
+  color: #555;
+}
+.progress-toast .bp3-progress-bar {
+  margin-top: 7px;
+}
+
+.progress-toast .bp3-button {
+  display: none;
+}

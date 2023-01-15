@@ -1,65 +1,66 @@
 {
-  "name": "quicktype",
-  "version": "20.0.2",
-  "license": "Apache-2.0",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "repository": "https://github.com/quicktype/quicktype",
-  "engines": {
-    "node": ">=18.13.0"
-  },
-  "scripts": {
-    "pub": "script/publish.sh",
-    "build": "npm run build --workspaces --if-present && tsc",
-    "test": "script/test",
-    "start": "script/watch",
-    "clean": "rm -rf dist node_modules *~ packages/*/{dist,node_modules}",
-    "debug": "node --inspect-brk --max-old-space-size=4096 ./dist/index.js"
-  },
-  "workspaces": [
-    "./packages/quicktype-core",
-    "./packages/quicktype-graphql-input",
-    "./packages/quicktype-typescript-input"
-  ],
-  "dependencies": {
-    "@glideapps/ts-necessities": "^2.1.2",
-    "chalk": "^4.1.2",
-    "command-line-args": "^4.0.6",
-    "command-line-usage": "^5.0.5",
-    "graphql": "^0.11.7",
-    "lodash": "^4.17.21",
-    "moment": "^2.29.4",
-    "node-fetch": "^2.6.1",
-    "quicktype-core": "20.0.2",
-    "quicktype-graphql-input": "20.0.2",
-    "quicktype-typescript-input": "20.0.2",
-    "readable-stream": "^4.3.0",
-    "stream-json": "1.1.3",
-    "string-to-stream": "^3.0.1",
-    "typescript": "4.9.4"
-  },
-  "devDependencies": {
-    "@tsconfig/node18": "^1.0.1",
-    "@types/graphql": "^0.11.7",
-    "@types/is-url": "^1.2.28",
-    "@types/lodash": "^4.14.108",
-    "@types/semver": "^7.3.13",
-    "@types/shelljs": "^0.7.8",
-    "@types/urijs": "^1.19.19",
-    "ajv": "^5.5.2",
-    "deep-equal": "^2.2.0",
-    "exit": "^0.1.2",
-    "prettier": "^2.8.1",
-    "promise-timeout": "^1.3.0",
-    "semver": "^7.3.8",
-    "shelljs": "^0.8.5",
-    "ts-node": "^10.9.1",
-    "tslint": "^5.11.0",
-    "uglify-js": "^3.3.22",
-    "watch": "^1.0.2"
-  },
-  "files": [
-    "dist"
-  ],
-  "bin": "dist/index.js"
+    "name": "quicktype",
+    "version": "20.0.2",
+    "license": "Apache-2.0",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "repository": "https://github.com/quicktype/quicktype",
+    "engines": {
+        "node": ">=18.13.0"
+    },
+    "scripts": {
+        "pub": "script/publish.sh",
+        "build": "npm run build --workspaces --if-present && tsc",
+        "test": "script/test",
+        "start": "script/watch",
+        "clean": "rm -rf dist node_modules *~ packages/*/{dist,node_modules}",
+        "debug": "node --inspect-brk --max-old-space-size=4096 ./dist/index.js"
+    },
+    "workspaces": [
+        "./packages/quicktype-core",
+        "./packages/quicktype-graphql-input",
+        "./packages/quicktype-typescript-input",
+        "./packages/web"
+    ],
+    "dependencies": {
+        "@glideapps/ts-necessities": "^2.1.2",
+        "chalk": "^4.1.2",
+        "command-line-args": "^4.0.6",
+        "command-line-usage": "^5.0.5",
+        "graphql": "^0.11.7",
+        "lodash": "^4.17.21",
+        "moment": "^2.29.4",
+        "node-fetch": "^2.6.1",
+        "quicktype-core": "20.0.2",
+        "quicktype-graphql-input": "20.0.2",
+        "quicktype-typescript-input": "20.0.2",
+        "readable-stream": "^4.3.0",
+        "stream-json": "1.1.3",
+        "string-to-stream": "^3.0.1",
+        "typescript": "4.9.4"
+    },
+    "devDependencies": {
+        "@tsconfig/node18": "^1.0.1",
+        "@types/graphql": "^0.11.7",
+        "@types/is-url": "^1.2.28",
+        "@types/lodash": "^4.14.108",
+        "@types/semver": "^7.3.13",
+        "@types/shelljs": "^0.7.8",
+        "@types/urijs": "^1.19.19",
+        "ajv": "^5.5.2",
+        "deep-equal": "^2.2.0",
+        "exit": "^0.1.2",
+        "prettier": "^2.8.1",
+        "promise-timeout": "^1.3.0",
+        "semver": "^7.3.8",
+        "shelljs": "^0.8.5",
+        "ts-node": "^10.9.1",
+        "tslint": "^5.11.0",
+        "uglify-js": "^3.3.22",
+        "watch": "^1.0.2"
+    },
+    "files": [
+        "dist"
+    ],
+    "bin": "dist/index.js"
 }

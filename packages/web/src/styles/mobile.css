@@ -1,0 +1,40 @@
+@media (max-width: 800px) {
+  .no-mobile,
+  .sidebar .source-type,
+  .sidebar .top-level {
+    display: none !important;
+  }
+  #source,
+  #output {
+    font-size: 9px;
+  }
+  .sidebar {
+    width: 100% !important;
+    min-width: unset;
+    padding: 0;
+  }
+  .sidebar .controls .sample-button,
+  .sidebar .controls .language-button {
+    margin: 6px 0 6px 6px;
+  }
+  .sidebar .controls .language-button {
+    display: unset;
+  }
+  .safari .sidebar .controls .sample-button {
+    margin-top: 6px;
+  }
+  #source {
+    width: calc(100vw - 12px) !important;
+    height: calc(45vh - 100px) !important;
+    margin: 0 auto 6px auto;
+  }
+  .main {
+    flex-direction: column;
+  }
+  #output {
+    height: calc(55vh) !important;
+  }
+  .instruments {
+    margin-top: 54px;
+  }
+}

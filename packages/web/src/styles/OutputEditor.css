@@ -1,0 +1,21 @@
+#output {
+  height: 100% !important;
+  width: 100% !important;
+  font-family: Consolas, Menlo, monospace;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.output {
+  transition: opacity 150ms ease-in-out;
+}
+
+.output.blank {
+  opacity: 0;
+}
+
+@media (max-width: 1100px) {
+  #output {
+    font-size: 13px;
+  }
+}

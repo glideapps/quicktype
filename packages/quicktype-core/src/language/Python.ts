@@ -48,7 +48,7 @@ import {
     iterableFirst
 } from "collection-utils";
 
-const unicode = require("unicode-properties");
+import unicode from "unicode-properties";
 
 const forbiddenTypeNames = [
     "Any",
@@ -173,14 +173,14 @@ export class PythonTargetLanguage extends TargetLanguage {
 
 function isNormalizedStartCharacter3(utf16Unit: number): boolean {
     // FIXME: add Other_ID_Start - https://docs.python.org/3/reference/lexical_analysis.html#identifiers
-    const category: string = unicode.getCategory(utf16Unit);
+    const category = unicode.getCategory(utf16Unit);
     return ["Lu", "Ll", "Lt", "Lm", "Lo", "Nl"].indexOf(category) >= 0;
 }
 
 function isNormalizedPartCharacter3(utf16Unit: number): boolean {
     // FIXME: add Other_ID_Continue - https://docs.python.org/3/reference/lexical_analysis.html#identifiers
     if (isNormalizedStartCharacter3(utf16Unit)) return true;
-    const category: string = unicode.getCategory(utf16Unit);
+    const category = unicode.getCategory(utf16Unit);
     return ["Mn", "Mc", "Nd", "Pc"].indexOf(category) >= 0;
 }
 

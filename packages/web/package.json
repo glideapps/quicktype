@@ -1,0 +1,54 @@
+{
+    "name": "web",
+    "version": "0.1.0",
+    "private": true,
+    "dependencies": {
+        "@blueprintjs/core": "^4.14.1",
+        "@testing-library/jest-dom": "^5.16.5",
+        "@testing-library/react": "^13.4.0",
+        "@testing-library/user-event": "^13.5.0",
+        "@types/jest": "^27.5.2",
+        "@types/react": "^18.0.26",
+        "@types/react-dom": "^18.0.10",
+        "ace-builds": "^1.14.0",
+        "downloadjs": "^1.4.7",
+        "hashcode": "^1.0.3",
+        "json-lint": "^0.1.0",
+        "jszip": "^3.10.1",
+        "query-string": "^8.1.0",
+        "react": "^18.2.0",
+        "react-ace": "^10.1.0",
+        "react-dom": "^18.2.0",
+        "react-redux": "^8.0.5",
+        "react-router-dom": "^6.6.2",
+        "react-scripts": "5.0.1",
+        "redux": "^4.2.0",
+        "reselect": "^4.1.7",
+        "styled-components": "^5.3.6",
+        "web-vitals": "^2.1.4"
+    },
+    "scripts": {
+        "start": "react-scripts start",
+        "build": "react-scripts build",
+        "test": "react-scripts test",
+        "eject": "react-scripts eject"
+    },
+    "browserslist": {
+        "production": [
+            ">0.2%",
+            "not dead",
+            "not op_mini all"
+        ],
+        "development": [
+            "last 1 chrome version",
+            "last 1 firefox version",
+            "last 1 safari version"
+        ]
+    },
+    "devDependencies": {
+        "@types/downloadjs": "^1.4.3",
+        "@types/google.analytics": "^0.0.42",
+        "@types/styled-components": "^5.1.26",
+        "worker-loader": "^3.0.8"
+    }
+}

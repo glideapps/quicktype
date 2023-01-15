@@ -50,13 +50,12 @@ import {
 } from "../Transformers";
 import { RenderContext } from "../Renderer";
 import { minMaxLengthForType, minMaxValueForType } from "../attributes/Constraints";
+import unicode from "unicode-properties";
 
 export enum Framework {
     Newtonsoft,
     SystemTextJson
 }
-
-const unicode = require("unicode-properties");
 
 export type Version = 5 | 6;
 export type OutputFeatures = { helpers: boolean; attributes: boolean };
@@ -210,7 +209,7 @@ export class CSharpTargetLanguage extends TargetLanguage {
             cSharpOptions.virtual,
             cSharpOptions.features,
             cSharpOptions.baseclass,
-            cSharpOptions.checkRequired,
+            cSharpOptions.checkRequired
         ];
     }
 
@@ -279,7 +278,7 @@ function isStartCharacter(utf16Unit: number): boolean {
 }
 
 function isPartCharacter(utf16Unit: number): boolean {
-    const category: string = unicode.getCategory(utf16Unit);
+    const category = unicode.getCategory(utf16Unit);
     if (["Nd", "Pc", "Mn", "Mc"].indexOf(category) >= 0) {
         return true;
     }
@@ -678,9 +677,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
     }
 }
 
-export const newtonsoftCSharpOptions = Object.assign({}, cSharpOptions, {
-
-});
+export const newtonsoftCSharpOptions = Object.assign({}, cSharpOptions, {});
 
 export class NewtonsoftCSharpRenderer extends CSharpRenderer {
     private readonly _enumExtensionsNames = new Map<Name, Name>();
@@ -1407,9 +1404,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
     }
 }
 
-export const systemTextJsonCSharpOptions = Object.assign({}, cSharpOptions, {
-
-});
+export const systemTextJsonCSharpOptions = Object.assign({}, cSharpOptions, {});
 
 export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
     private readonly _enumExtensionsNames = new Map<Name, Name>();

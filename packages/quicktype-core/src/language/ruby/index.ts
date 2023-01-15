@@ -1,4 +1,4 @@
-const unicode = require("unicode-properties");
+import unicode from "unicode-properties";
 
 import { Sourcelike, modifySource } from "../../Source";
 import { Namer, Name } from "../../Naming";
@@ -76,7 +76,7 @@ export class RubyTargetLanguage extends TargetLanguage {
 const isStartCharacter = isLetterOrUnderscore;
 
 function isPartCharacter(utf16Unit: number): boolean {
-    const category: string = unicode.getCategory(utf16Unit);
+    const category = unicode.getCategory(utf16Unit);
     return ["Nd", "Pc", "Mn", "Mc"].indexOf(category) >= 0 || isStartCharacter(utf16Unit);
 }
 

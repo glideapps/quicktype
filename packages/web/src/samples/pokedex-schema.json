@@ -1,0 +1,166 @@
+{
+  "$ref": "#/definitions/Pokedex",
+  "definitions": {
+    "Pokedex": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "A collection of pokémon",
+      "properties": {
+        "pokemon": {
+          "type": "array",
+          "description": "All pokémon contained in the pokédex",
+          "items": {
+            "$ref": "#/definitions/Pokemon"
+          }
+        }
+      },
+      "required": ["pokemon"],
+      "title": "Pokedex"
+    },
+    "Pokemon": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "A 'pocket monster.' One must catch them all.",
+      "properties": {
+        "id": {
+          "description":
+            "A unique identifier for this pokémon.\nHigher ids generally imply rarer and more evolved pokémon.",
+          "type": "integer"
+        },
+        "num": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "img": {
+          "description": "Photographic evidence of this pokémon's existence",
+          "type": "string"
+        },
+        "type": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Type"
+          }
+        },
+        "height": {
+          "type": "string"
+        },
+        "weight": {
+          "type": "string"
+        },
+        "candy": {
+          "description": "The flavor of candy preferred by this pokémon",
+          "type": "string"
+        },
+        "candy_count": {
+          "type": "integer"
+        },
+        "egg": {
+          "type": "string",
+          "enum": ["2 km", "Not in Eggs", "5 km", "10 km", "Omanyte Candy"],
+          "title": "egg"
+        },
+        "spawn_chance": {
+          "type": "number"
+        },
+        "avg_spawns": {
+          "type": "number"
+        },
+        "spawn_time": {
+          "type": "string"
+        },
+        "multipliers": {
+          "oneOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "multipliers"
+        },
+        "weaknesses": {
+          "type": "array",
+          "description": "Types of pokémon that cause extra damage to this pokémon",
+          "items": {
+            "$ref": "#/definitions/Type"
+          }
+        },
+        "next_evolution": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Evolution"
+          }
+        },
+        "prev_evolution": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Evolution"
+          }
+        }
+      },
+      "required": [
+        "avg_spawns",
+        "candy",
+        "egg",
+        "height",
+        "id",
+        "img",
+        "multipliers",
+        "name",
+        "num",
+        "spawn_chance",
+        "spawn_time",
+        "type",
+        "weaknesses",
+        "weight"
+      ],
+      "title": "pokemon"
+    },
+    "Type": {
+      "type": "string",
+      "enum": [
+        "Fire",
+        "Ice",
+        "Flying",
+        "Psychic",
+        "Water",
+        "Ground",
+        "Rock",
+        "Electric",
+        "Grass",
+        "Fighting",
+        "Poison",
+        "Bug",
+        "Fairy",
+        "Ghost",
+        "Dark",
+        "Steel",
+        "Dragon"
+      ],
+      "title": "type"
+    },
+    "Evolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "A description of an evolutionary stage of a pokémon",
+      "properties": {
+        "num": {
+          "description": "The number of the pokémon to or from which the containing pokémon evolves",
+          "type": "string"
+        },
+        "name": {
+          "description": "The name of the Pokémon to or from which the containing Pokémon evolves",
+          "type": "string"
+        }
+      },
+      "required": ["name", "num"],
+      "title": "_evolution"
+    }
+  }
+}
