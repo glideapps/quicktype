@@ -1,6 +1,6 @@
 {
     "name": "quicktype-core",
-    "version": "7.0.0",
+    "version": "18.0.15",
     "description": "The quicktype engine as a library",
     "license": "Apache-2.0",
     "main": "dist/index.js",
