@@ -1,5 +1,5 @@
 import { Base64 } from "js-base64";
-import * as pako from "pako";
+import pako from "pako";
 import { messageError } from "../Messages";
 import * as YAML from "yaml";
 
@@ -102,7 +102,7 @@ export function errorMessage(e: any): string {
 
 export function inflateBase64(encoded: string): string {
     const bytes = Base64.atob(encoded);
-    return pako.inflate(bytes, { to: "string" });
+    return pako.inflate(new TextEncoder().encode(bytes), { to: "string" });
 }
 
 export function parseJSON(text: string, description: string, address: string = "<unknown>"): any {
