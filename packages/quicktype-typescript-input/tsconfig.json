@@ -11,5 +11,6 @@
         "noUnusedLocals": true,
         "noUnusedParameters": true,
         "esModuleInterop": true
-    }
+    },
+    "exclude": ["dist"]
 }
