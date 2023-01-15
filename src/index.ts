@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import * as fs from "fs";
 import * as path from "path";
 import * as _ from "lodash";
