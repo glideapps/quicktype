@@ -47,7 +47,7 @@ export const rustOptions = {
         ["public", Visibility.Public]
     ]),
     deriveDebug: new BooleanOption("derive-debug", "Derive Debug impl", false),
-    edition2018: new BooleanOption("edition-2018", "Edition 2018", false),
+    edition2018: new BooleanOption("edition-2018", "Edition 2018", true),
     leadingComments: new BooleanOption("leading-comments", "Leading Comments", true)
 };
 
@@ -72,6 +72,9 @@ export class RustTargetLanguage extends TargetLanguage {
 }
 
 const keywords = [
+    "Serialize",
+    "Deserialize",
+
     // Special reserved identifiers used internally for elided lifetimes,
     // unnamed method parameters, crate root module, error recovery etc.
     "{{root}}",
