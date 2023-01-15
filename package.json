@@ -45,7 +45,7 @@
     "@types/lodash": "^4.14.108",
     "@types/semver": "^7.3.13",
     "@types/shelljs": "^0.7.8",
-    "@types/urijs": "^1.19.8",
+    "@types/urijs": "^1.19.19",
     "ajv": "^5.5.2",
     "deep-equal": "^2.2.0",
     "exit": "^0.1.2",

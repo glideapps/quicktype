@@ -13,7 +13,7 @@
     },
     "dependencies": {
         "@glideapps/ts-necessities": "2.1.2",
-        "@types/urijs": "^1.19.8",
+        "@types/urijs": "^1.19.19",
         "unicode-properties": "^1.4.1",
         "browser-or-node": "^1.2.1",
         "collection-utils": "^1.0.1",
