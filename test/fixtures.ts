@@ -23,9 +23,9 @@ import {
     callAndExpectFailure
 } from "./utils";
 import * as languages from "./languages";
-import { RendererOptions } from "../dist/quicktype-core/Run";
-import { mustNotHappen, defined } from "../dist/quicktype-core/support/Support";
-import { DefaultDateTimeRecognizer } from "../dist/quicktype-core/DateTime";
+import { RendererOptions } from "quicktype-core";
+import { mustNotHappen, defined } from "../packages/quicktype-core/dist/support/Support";
+import { DefaultDateTimeRecognizer } from "../packages/quicktype-core/dist/DateTime";
 
 const chalk = require("chalk");
 const timeout = require("promise-timeout").timeout;
