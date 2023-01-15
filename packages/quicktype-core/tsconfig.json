@@ -2,7 +2,7 @@
     "compilerOptions": {
         "target": "es6",
         "module": "commonjs",
-        "lib": ["es6", "esnext.asynciterable"],
+        "lib": ["es6", "esnext.asynciterable", "DOM"],
         "allowJs": false,
         "declaration": true,
         "strict": true,
