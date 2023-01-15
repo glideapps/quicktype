@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-./patch-npm-version.ts
+./script/patch-npm-version.ts
 
 VERSION=$(jq -r '.version' package.json )
 npm version $VERSION --workspaces --force
