@@ -47,7 +47,7 @@ import { introspectServer } from "./GraphQLIntrospection";
 import { JSONTypeSource, TypeSource, GraphQLTypeSource, SchemaTypeSource } from "./TypeSource";
 import { CompressedJSONFromStream } from "./CompressedJSONFromStream";
 
-import stringToStream from "string-to-stream";
+const stringToStream = require("string-to-stream");
 
 import commandLineArgs from "command-line-args";
 import getUsage from "command-line-usage";
