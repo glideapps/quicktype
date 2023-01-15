@@ -23,7 +23,7 @@ import { StringOption, BooleanOption, EnumOption, Option, getOptionValues, Optio
 import { assert, defined } from "../support/Support";
 import { RenderContext } from "../Renderer";
 
-const unicode = require("unicode-properties");
+import unicode from "unicode-properties";
 
 export type MemoryAttribute = "assign" | "strong" | "copy";
 export type OutputFeatures = { interface: boolean; implementation: boolean };

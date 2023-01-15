@@ -1,4 +1,4 @@
-const unicode = require("unicode-properties");
+import unicode from "unicode-properties";
 
 import { Sourcelike, modifySource } from "../../Source";
 import { Namer, Name } from "../../Naming";
