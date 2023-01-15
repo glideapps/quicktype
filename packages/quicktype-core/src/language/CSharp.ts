@@ -210,7 +210,7 @@ export class CSharpTargetLanguage extends TargetLanguage {
             cSharpOptions.virtual,
             cSharpOptions.features,
             cSharpOptions.baseclass,
-            cSharpOptions.checkRequired,
+            cSharpOptions.checkRequired
         ];
     }
 
@@ -392,17 +392,13 @@ export class CSharpRenderer extends ConvenienceRenderer {
             arrayType => {
                 const itemsType = this.csType(arrayType.items, follow, withIssues);
                 if (this._csOptions.useList) {
-                    return ["System.Collections.Generic.List<", itemsType, ">"];
+                    return ["List<", itemsType, ">"];
                 } else {
                     return [itemsType, "[]"];
                 }
             },
             classType => this.nameForNamedType(classType),
-            mapType => [
-                "System.Collections.Generic.Dictionary<string, ",
-                this.csType(mapType.values, follow, withIssues),
-                ">"
-            ],
+            mapType => ["Dictionary<string, ", this.csType(mapType.values, follow, withIssues), ">"],
             enumType => this.nameForNamedType(enumType),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
@@ -678,9 +674,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
     }
 }
 
-export const newtonsoftCSharpOptions = Object.assign({}, cSharpOptions, {
-
-});
+export const newtonsoftCSharpOptions = Object.assign({}, cSharpOptions, {});
 
 export class NewtonsoftCSharpRenderer extends CSharpRenderer {
     private readonly _enumExtensionsNames = new Map<Name, Name>();
@@ -1407,9 +1401,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
     }
 }
 
-export const systemTextJsonCSharpOptions = Object.assign({}, cSharpOptions, {
-
-});
+export const systemTextJsonCSharpOptions = Object.assign({}, cSharpOptions, {});
 
 export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
     private readonly _enumExtensionsNames = new Map<Name, Name>();
