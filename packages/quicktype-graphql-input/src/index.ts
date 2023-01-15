@@ -30,7 +30,7 @@ import {
     Input,
     derefTypeRef,
     RunContext
-} from "../quicktype-core";
+} from "quicktype-core";
 
 import { TypeKind, GraphQLSchema } from "./GraphQLSchema";
 

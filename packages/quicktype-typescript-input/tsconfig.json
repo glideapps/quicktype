@@ -10,7 +10,8 @@
         "outDir": "dist",
         "noUnusedLocals": true,
         "noUnusedParameters": true,
-        "esModuleInterop": true
+        "esModuleInterop": true,
+        "baseUrl": "src"
     },
-    "exclude": ["dist"]
+    "include": ["src"]
 }

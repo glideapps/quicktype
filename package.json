@@ -10,7 +10,7 @@
     },
     "scripts": {
         "pub": "script/publish.sh",
-        "build": "tsc -p ./src",
+        "build": "tsc",
         "build:packages": "npm run build --workspaces --if-present",
         "test": "script/test",
         "start": "script/watch",
