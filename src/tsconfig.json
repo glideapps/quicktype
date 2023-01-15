@@ -4,12 +4,13 @@
         "lib": ["ES2022", "dom"],
         "allowJs": false,
         "declaration": true,
-        "typeRoots": ["../../node_modules/@types"],
+        "typeRoots": ["../node_modules/@types"],
         "strict": true,
         "noUnusedLocals": true,
         "noUnusedParameters": true,
         "noFallthroughCasesInSwitch": true,
         "outDir": "../dist",
         "baseUrl": "."
-    }
+    },
+    "exclude": ["../packages/*/dist", "../dist"]
 }
