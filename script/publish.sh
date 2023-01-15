@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-VERSION=$(npm version patch --force)
+VERSION=$(npm version patch --no-git-tag-version --force)
 npm version $VERSION --workspaces --force
 
 # This is not great, but we need to get the dependencies to workspaces
@@ -15,6 +15,7 @@ npm publish
 jq --arg version $VERSION \
     '.dependencies."quicktype-core" = $version' \
     packages/quicktype-typescript-input/package.json > package.1.json
+    
 mv package.1.json packages/quicktype-typescript-input/package.json
 
 npm publish --workspaces --if-present
