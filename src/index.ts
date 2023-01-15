@@ -51,7 +51,7 @@ const stringToStream = require("string-to-stream");
 
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");
-const chalk = require("chalk");
+import chalk from "chalk";
 const wordWrap: (s: string) => string = require("wordwrap")(90);
 
 const packageJSON = require("../package.json");
