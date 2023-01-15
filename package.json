@@ -34,7 +34,7 @@
         "quicktype-graphql-input": "20.0.2",
         "quicktype-typescript-input": "20.0.2",
         "readable-stream": "^4.3.0",
-        "stream-json": "1.1.3",
+        "stream-json": "1.7.5",
         "string-to-stream": "^3.0.1",
         "typescript": "4.9.4"
     },
@@ -45,6 +45,7 @@
         "@types/lodash": "^4.14.108",
         "@types/semver": "^7.3.13",
         "@types/shelljs": "^0.7.8",
+        "@types/stream-json": "^1.7.3",
         "@types/urijs": "^1.19.19",
         "ajv": "^5.5.2",
         "deep-equal": "^2.2.0",

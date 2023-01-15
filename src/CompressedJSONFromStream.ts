@@ -1,6 +1,6 @@
 import { Readable } from "readable-stream";
 import { CompressedJSON, Value } from "quicktype-core";
-const { Parser } = require("stream-json");
+import { Parser } from "stream-json";
 
 const methodMap: { [name: string]: string } = {
     startObject: "pushObjectContext",
