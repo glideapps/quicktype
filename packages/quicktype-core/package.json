@@ -31,7 +31,6 @@
     "devDependencies": {
         "@types/browser-or-node": "^1.2.0",
         "@types/js-base64": "^2.3.1",
-        "@types/node": "18.11.18",
         "@types/pako": "^1.0.0",
         "@types/pluralize": "0.0.28",
         "@types/readable-stream": "2.3.15",

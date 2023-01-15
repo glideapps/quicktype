@@ -17,7 +17,6 @@
         "@mark.probst/typescript-json-schema": "0.55.0"
     },
     "devDependencies": {
-        "@types/node": "18.11.18",
         "tslint": "^5.11.0"
     },
     "files": [
