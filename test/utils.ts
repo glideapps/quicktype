@@ -9,7 +9,7 @@ import { RendererOptions } from "quicktype-core";
 import * as languages from "./languages";
 import deepEquals from "./lib/deepEquals";
 
-const chalk = require("chalk");
+import chalk from "chalk";
 const strictDeepEquals: (x: any, y: any) => boolean = require("deep-equal");
 
 const DEBUG = process.env.DEBUG !== undefined;

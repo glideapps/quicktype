@@ -27,7 +27,7 @@ import { RendererOptions } from "quicktype-core";
 import { mustNotHappen, defined } from "../packages/quicktype-core/dist/support/Support";
 import { DefaultDateTimeRecognizer } from "../packages/quicktype-core/dist/DateTime";
 
-const chalk = require("chalk");
+import chalk from "chalk";
 const timeout = require("promise-timeout").timeout;
 
 const OUTPUT_DIR = process.env.OUTPUT_DIR;
