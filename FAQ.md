@@ -109,6 +109,29 @@ The [JSON Schema homepage](http://json-schema.org) contains many links and resou
 
 We have [a blog post](https://blog.quicktype.io/customizing-quicktype/) on that very topic.
 
+## How can I control the property order in JSON Schema
+
+There is a custom schema field `quicktypePropertyOrder` which can be used to specify the order of properties for quicktype.
+
+For example:
+```json
+  ...
+  "Location": {
+    "quicktypePropertyOrder": [ "latitude", "longitude" ],
+    "type": "object",
+    "properties": {
+      "latitude": {
+        "type": "number",
+        "description": "The latitude component of the location",
+        "example": -32.204754
+      },
+      ...
+    },
+    "required": [ "latitude", "longitude" ]
+  },
+  ...
+```
+
 ## quicktype is awesome, I'd like to support it!
 
 There are many ways you can support quicktype:
