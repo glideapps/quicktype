@@ -1,1 +1,30 @@
-{"delay":"false","IATA":"ORD","state":"Illinois","name":"Chicago OHare International","weather":{"visibility":10.00,"weather":"A Few Clouds","meta":{"credit":"NOAA's National Weather Service","updated":"5:51 PM Local","url":"http://weather.gov/"},"temp":"78.0 F (25.6 C)","wind":"East at 9.2mph"},"ICAO":"KORD","city":"Chicago","status":{"reason":"No known delays for this airport.","closureBegin":"","endTime":"","minDelay":"","avgDelay":"","maxDelay":"","closureEnd":"","trend":"","type":""}} 
+{
+    "delay": "false",
+    "IATA": "ORD",
+    "state": "Illinois",
+    "name": "Chicago OHare International",
+    "weather": {
+        "visibility": 10.0,
+        "weather": "A Few Clouds",
+        "meta": {
+            "credit": "NOAA's National Weather Service",
+            "updated": "5:51 PM Local",
+            "url": "http://weather.gov/"
+        },
+        "temp": "78.0 F (25.6 C)",
+        "wind": "East at 9.2mph"
+    },
+    "ICAO": "KORD",
+    "city": "Chicago",
+    "status": {
+        "reason": "No known delays for this airport.",
+        "closureBegin": "",
+        "endTime": "",
+        "minDelay": "",
+        "avgDelay": "",
+        "maxDelay": "",
+        "closureEnd": "",
+        "trend": "",
+        "type": ""
+    }
+}

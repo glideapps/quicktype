@@ -1,6 +1,6 @@
 query test($more: Boolean!) {
-  viewer {
-    login
-    name @include(if: $more)
-  }
+    viewer {
+        login
+        name @include(if: $more)
+    }
 }

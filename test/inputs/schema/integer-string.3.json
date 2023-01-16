@@ -1,6 +1,6 @@
 {
-  "one": "123",
-  "nullable": null,
-  "unionWithInt": 123,
-  "unionWithIntAndEnum": "foo"
+    "one": "123",
+    "nullable": null,
+    "unionWithInt": 123,
+    "unionWithIntAndEnum": "foo"
 }

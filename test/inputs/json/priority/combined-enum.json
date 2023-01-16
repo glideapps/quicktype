@@ -1,66 +1,66 @@
 {
-  "foo": [
-    {
-      "x": "one"
-    },
-    {
-      "x": "one"
-    },
-    {
-      "x": "one"
-    },
-    {
-      "x": "one"
-    },
-    {
-      "x": "one"
-    },
-    {
-      "x": "two"
-    },
-    {
-      "x": "two"
-    },
-    {
-      "x": "two"
-    },
-    {
-      "x": "two"
-    },
-    {
-      "x": "two"
-    }
-  ],
-  "bar": [
-    {
-      "x": "three"
-    },
-    {
-      "x": "three"
-    },
-    {
-      "x": "three"
-    },
-    {
-      "x": "three"
-    },
-    {
-      "x": "three"
-    },
-    {
-      "x": "three"
-    },
-    {
-      "x": "three"
-    },
-    {
-      "x": "three"
-    },
-    {
-      "x": "three"
-    },
-    {
-      "x": "three"
-    }
-  ]
+    "foo": [
+        {
+            "x": "one"
+        },
+        {
+            "x": "one"
+        },
+        {
+            "x": "one"
+        },
+        {
+            "x": "one"
+        },
+        {
+            "x": "one"
+        },
+        {
+            "x": "two"
+        },
+        {
+            "x": "two"
+        },
+        {
+            "x": "two"
+        },
+        {
+            "x": "two"
+        },
+        {
+            "x": "two"
+        }
+    ],
+    "bar": [
+        {
+            "x": "three"
+        },
+        {
+            "x": "three"
+        },
+        {
+            "x": "three"
+        },
+        {
+            "x": "three"
+        },
+        {
+            "x": "three"
+        },
+        {
+            "x": "three"
+        },
+        {
+            "x": "three"
+        },
+        {
+            "x": "three"
+        },
+        {
+            "x": "three"
+        },
+        {
+            "x": "three"
+        }
+    ]
 }

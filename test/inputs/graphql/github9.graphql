@@ -1,14 +1,14 @@
-mutation AddReaction($input: AddReactionInput!){
-  addReaction(input: $input){
-    clientMutationId
-    reaction {
-      content
+mutation AddReaction($input: AddReactionInput!) {
+    addReaction(input: $input) {
+        clientMutationId
+        reaction {
+            content
+        }
+        subject {
+            viewerCanReact
+            reactionGroups {
+                content
+            }
+        }
     }
-    subject {
-      viewerCanReact
-      reactionGroups {
-          content
-      }
-    }
-  }
 }

@@ -1,1 +1,126 @@
-{"query":{"count":1,"created":"2017-07-29T23:31:20Z","lang":"en-US","results":{"channel":{"units":{"distance":"mi","pressure":"in","speed":"mph","temperature":"F"},"title":"Yahoo! Weather - Jerusalem, Jerusalem, IL","link":"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-1968222/","description":"Yahoo! Weather for Jerusalem, Jerusalem, IL","language":"en-us","lastBuildDate":"Sun, 30 Jul 2017 02:31 AM IDT","ttl":"60","location":{"city":"Jerusalem","country":"Israel","region":" Jerusalem"},"wind":{"chill":"66","direction":"293","speed":"14"},"atmosphere":{"humidity":"88","pressure":"939.0","rising":"0","visibility":"14.9"},"astronomy":{"sunrise":"5:54 am","sunset":"7:37 pm"},"image":{"title":"Yahoo! Weather","width":"142","height":"18","link":"http://weather.yahoo.com","url":"http://l.yimg.com/a/i/brand/purplelogo//uh/us/news-wea.gif"},"item":{"title":"Conditions for Jerusalem, Jerusalem, IL at 01:00 AM IDT","lat":"31.7736","long":"35.224998","link":"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-1968222/","pubDate":"Sun, 30 Jul 2017 01:00 AM IDT","condition":{"code":"31","date":"Sun, 30 Jul 2017 01:00 AM IDT","temp":"66","text":"Clear"},"forecast":[{"code":"32","date":"30 Jul 2017","day":"Sun","high":"89","low":"63","text":"Sunny"},{"code":"32","date":"31 Jul 2017","day":"Mon","high":"96","low":"65","text":"Sunny"},{"code":"32","date":"01 Aug 2017","day":"Tue","high":"94","low":"71","text":"Sunny"},{"code":"32","date":"02 Aug 2017","day":"Wed","high":"93","low":"70","text":"Sunny"},{"code":"32","date":"03 Aug 2017","day":"Thu","high":"91","low":"67","text":"Sunny"},{"code":"32","date":"04 Aug 2017","day":"Fri","high":"91","low":"70","text":"Sunny"},{"code":"32","date":"05 Aug 2017","day":"Sat","high":"89","low":"68","text":"Sunny"},{"code":"32","date":"06 Aug 2017","day":"Sun","high":"90","low":"68","text":"Sunny"},{"code":"32","date":"07 Aug 2017","day":"Mon","high":"91","low":"68","text":"Sunny"},{"code":"32","date":"08 Aug 2017","day":"Tue","high":"95","low":"72","text":"Sunny"}],"description":"<![CDATA[<img src=\"http://l.yimg.com/a/i/us/we/52/31.gif\"/>\n<BR />\n<b>Current Conditions:</b>\n<BR />Clear\n<BR />\n<BR />\n<b>Forecast:</b>\n<BR /> Sun - Sunny. High: 89Low: 63\n<BR /> Mon - Sunny. High: 96Low: 65\n<BR /> Tue - Sunny. High: 94Low: 71\n<BR /> Wed - Sunny. High: 93Low: 70\n<BR /> Thu - Sunny. High: 91Low: 67\n<BR />\n<BR />\n<a href=\"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-1968222/\">Full Forecast at Yahoo! Weather</a>\n<BR />\n<BR />\n(provided by <a href=\"http://www.weather.com\" >The Weather Channel</a>)\n<BR />\n]]>","guid":{"isPermaLink":"false"}}}}}}
+{
+    "query": {
+        "count": 1,
+        "created": "2017-07-29T23:31:20Z",
+        "lang": "en-US",
+        "results": {
+            "channel": {
+                "units": { "distance": "mi", "pressure": "in", "speed": "mph", "temperature": "F" },
+                "title": "Yahoo! Weather - Jerusalem, Jerusalem, IL",
+                "link": "http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-1968222/",
+                "description": "Yahoo! Weather for Jerusalem, Jerusalem, IL",
+                "language": "en-us",
+                "lastBuildDate": "Sun, 30 Jul 2017 02:31 AM IDT",
+                "ttl": "60",
+                "location": { "city": "Jerusalem", "country": "Israel", "region": " Jerusalem" },
+                "wind": { "chill": "66", "direction": "293", "speed": "14" },
+                "atmosphere": { "humidity": "88", "pressure": "939.0", "rising": "0", "visibility": "14.9" },
+                "astronomy": { "sunrise": "5:54 am", "sunset": "7:37 pm" },
+                "image": {
+                    "title": "Yahoo! Weather",
+                    "width": "142",
+                    "height": "18",
+                    "link": "http://weather.yahoo.com",
+                    "url": "http://l.yimg.com/a/i/brand/purplelogo//uh/us/news-wea.gif"
+                },
+                "item": {
+                    "title": "Conditions for Jerusalem, Jerusalem, IL at 01:00 AM IDT",
+                    "lat": "31.7736",
+                    "long": "35.224998",
+                    "link": "http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-1968222/",
+                    "pubDate": "Sun, 30 Jul 2017 01:00 AM IDT",
+                    "condition": {
+                        "code": "31",
+                        "date": "Sun, 30 Jul 2017 01:00 AM IDT",
+                        "temp": "66",
+                        "text": "Clear"
+                    },
+                    "forecast": [
+                        {
+                            "code": "32",
+                            "date": "30 Jul 2017",
+                            "day": "Sun",
+                            "high": "89",
+                            "low": "63",
+                            "text": "Sunny"
+                        },
+                        {
+                            "code": "32",
+                            "date": "31 Jul 2017",
+                            "day": "Mon",
+                            "high": "96",
+                            "low": "65",
+                            "text": "Sunny"
+                        },
+                        {
+                            "code": "32",
+                            "date": "01 Aug 2017",
+                            "day": "Tue",
+                            "high": "94",
+                            "low": "71",
+                            "text": "Sunny"
+                        },
+                        {
+                            "code": "32",
+                            "date": "02 Aug 2017",
+                            "day": "Wed",
+                            "high": "93",
+                            "low": "70",
+                            "text": "Sunny"
+                        },
+                        {
+                            "code": "32",
+                            "date": "03 Aug 2017",
+                            "day": "Thu",
+                            "high": "91",
+                            "low": "67",
+                            "text": "Sunny"
+                        },
+                        {
+                            "code": "32",
+                            "date": "04 Aug 2017",
+                            "day": "Fri",
+                            "high": "91",
+                            "low": "70",
+                            "text": "Sunny"
+                        },
+                        {
+                            "code": "32",
+                            "date": "05 Aug 2017",
+                            "day": "Sat",
+                            "high": "89",
+                            "low": "68",
+                            "text": "Sunny"
+                        },
+                        {
+                            "code": "32",
+                            "date": "06 Aug 2017",
+                            "day": "Sun",
+                            "high": "90",
+                            "low": "68",
+                            "text": "Sunny"
+                        },
+                        {
+                            "code": "32",
+                            "date": "07 Aug 2017",
+                            "day": "Mon",
+                            "high": "91",
+                            "low": "68",
+                            "text": "Sunny"
+                        },
+                        {
+                            "code": "32",
+                            "date": "08 Aug 2017",
+                            "day": "Tue",
+                            "high": "95",
+                            "low": "72",
+                            "text": "Sunny"
+                        }
+                    ],
+                    "description": "<![CDATA[<img src=\"http://l.yimg.com/a/i/us/we/52/31.gif\"/>\n<BR />\n<b>Current Conditions:</b>\n<BR />Clear\n<BR />\n<BR />\n<b>Forecast:</b>\n<BR /> Sun - Sunny. High: 89Low: 63\n<BR /> Mon - Sunny. High: 96Low: 65\n<BR /> Tue - Sunny. High: 94Low: 71\n<BR /> Wed - Sunny. High: 93Low: 70\n<BR /> Thu - Sunny. High: 91Low: 67\n<BR />\n<BR />\n<a href=\"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-1968222/\">Full Forecast at Yahoo! Weather</a>\n<BR />\n<BR />\n(provided by <a href=\"http://www.weather.com\" >The Weather Channel</a>)\n<BR />\n]]>",
+                    "guid": { "isPermaLink": "false" }
+                }
+            }
+        }
+    }
+}

@@ -3,11 +3,15 @@ const fs = require("fs");
 
 let ports = Elm.Main.worker().ports;
 
-ports.toJS.subscribe(function(result) {
+ports.toJS.subscribe(function (result) {
     if (result.startsWith("Error: ")) {
-        process.stderr.write(result + "\n", function() { process.exit(1); });
+        process.stderr.write(result + "\n", function () {
+            process.exit(1);
+        });
     } else {
-        process.stdout.write(result + "\n", function() { process.exit(0); });
+        process.stdout.write(result + "\n", function () {
+            process.exit(0);
+        });
     }
 });
 

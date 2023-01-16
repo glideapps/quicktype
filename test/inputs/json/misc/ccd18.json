@@ -1,1 +1,30 @@
-{"delay":"false","IATA":"SJC","state":"California","name":"San Jose International","weather":{"visibility":10.00,"weather":"Fair","meta":{"credit":"NOAA's National Weather Service","updated":"3:53 PM Local","url":"http://weather.gov/"},"temp":"77.0 F (25.0 C)","wind":"Northwest at 13.8mph"},"ICAO":"KSJC","city":"San Jose","status":{"reason":"No known delays for this airport.","closureBegin":"","endTime":"","minDelay":"","avgDelay":"","maxDelay":"","closureEnd":"","trend":"","type":""}} 
+{
+    "delay": "false",
+    "IATA": "SJC",
+    "state": "California",
+    "name": "San Jose International",
+    "weather": {
+        "visibility": 10.0,
+        "weather": "Fair",
+        "meta": {
+            "credit": "NOAA's National Weather Service",
+            "updated": "3:53 PM Local",
+            "url": "http://weather.gov/"
+        },
+        "temp": "77.0 F (25.0 C)",
+        "wind": "Northwest at 13.8mph"
+    },
+    "ICAO": "KSJC",
+    "city": "San Jose",
+    "status": {
+        "reason": "No known delays for this airport.",
+        "closureBegin": "",
+        "endTime": "",
+        "minDelay": "",
+        "avgDelay": "",
+        "maxDelay": "",
+        "closureEnd": "",
+        "trend": "",
+        "type": ""
+    }
+}

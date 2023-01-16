@@ -1,1 +1,126 @@
-{"query":{"count":1,"created":"2017-07-29T23:31:18Z","lang":"en-US","results":{"channel":{"units":{"distance":"mi","pressure":"in","speed":"mph","temperature":"F"},"title":"Yahoo! Weather - Los Angeles, CA, US","link":"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-2442047/","description":"Yahoo! Weather for Los Angeles, CA, US","language":"en-us","lastBuildDate":"Sat, 29 Jul 2017 04:31 PM PDT","ttl":"60","location":{"city":"Los Angeles","country":"United States","region":" CA"},"wind":{"chill":"84","direction":"230","speed":"14"},"atmosphere":{"humidity":"47","pressure":"1004.0","rising":"0","visibility":"16.1"},"astronomy":{"sunrise":"6:2 am","sunset":"7:56 pm"},"image":{"title":"Yahoo! Weather","width":"142","height":"18","link":"http://weather.yahoo.com","url":"http://l.yimg.com/a/i/brand/purplelogo//uh/us/news-wea.gif"},"item":{"title":"Conditions for Los Angeles, CA, US at 03:00 PM PDT","lat":"34.053501","long":"-118.245003","link":"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-2442047/","pubDate":"Sat, 29 Jul 2017 03:00 PM PDT","condition":{"code":"32","date":"Sat, 29 Jul 2017 03:00 PM PDT","temp":"85","text":"Sunny"},"forecast":[{"code":"34","date":"29 Jul 2017","day":"Sat","high":"85","low":"66","text":"Mostly Sunny"},{"code":"34","date":"30 Jul 2017","day":"Sun","high":"82","low":"68","text":"Mostly Sunny"},{"code":"34","date":"31 Jul 2017","day":"Mon","high":"84","low":"67","text":"Mostly Sunny"},{"code":"34","date":"01 Aug 2017","day":"Tue","high":"87","low":"69","text":"Mostly Sunny"},{"code":"34","date":"02 Aug 2017","day":"Wed","high":"89","low":"72","text":"Mostly Sunny"},{"code":"32","date":"03 Aug 2017","day":"Thu","high":"91","low":"74","text":"Sunny"},{"code":"32","date":"04 Aug 2017","day":"Fri","high":"91","low":"74","text":"Sunny"},{"code":"32","date":"05 Aug 2017","day":"Sat","high":"89","low":"73","text":"Sunny"},{"code":"32","date":"06 Aug 2017","day":"Sun","high":"87","low":"71","text":"Sunny"},{"code":"32","date":"07 Aug 2017","day":"Mon","high":"86","low":"70","text":"Sunny"}],"description":"<![CDATA[<img src=\"http://l.yimg.com/a/i/us/we/52/32.gif\"/>\n<BR />\n<b>Current Conditions:</b>\n<BR />Sunny\n<BR />\n<BR />\n<b>Forecast:</b>\n<BR /> Sat - Mostly Sunny. High: 85Low: 66\n<BR /> Sun - Mostly Sunny. High: 82Low: 68\n<BR /> Mon - Mostly Sunny. High: 84Low: 67\n<BR /> Tue - Mostly Sunny. High: 87Low: 69\n<BR /> Wed - Mostly Sunny. High: 89Low: 72\n<BR />\n<BR />\n<a href=\"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-2442047/\">Full Forecast at Yahoo! Weather</a>\n<BR />\n<BR />\n(provided by <a href=\"http://www.weather.com\" >The Weather Channel</a>)\n<BR />\n]]>","guid":{"isPermaLink":"false"}}}}}}
+{
+    "query": {
+        "count": 1,
+        "created": "2017-07-29T23:31:18Z",
+        "lang": "en-US",
+        "results": {
+            "channel": {
+                "units": { "distance": "mi", "pressure": "in", "speed": "mph", "temperature": "F" },
+                "title": "Yahoo! Weather - Los Angeles, CA, US",
+                "link": "http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-2442047/",
+                "description": "Yahoo! Weather for Los Angeles, CA, US",
+                "language": "en-us",
+                "lastBuildDate": "Sat, 29 Jul 2017 04:31 PM PDT",
+                "ttl": "60",
+                "location": { "city": "Los Angeles", "country": "United States", "region": " CA" },
+                "wind": { "chill": "84", "direction": "230", "speed": "14" },
+                "atmosphere": { "humidity": "47", "pressure": "1004.0", "rising": "0", "visibility": "16.1" },
+                "astronomy": { "sunrise": "6:2 am", "sunset": "7:56 pm" },
+                "image": {
+                    "title": "Yahoo! Weather",
+                    "width": "142",
+                    "height": "18",
+                    "link": "http://weather.yahoo.com",
+                    "url": "http://l.yimg.com/a/i/brand/purplelogo//uh/us/news-wea.gif"
+                },
+                "item": {
+                    "title": "Conditions for Los Angeles, CA, US at 03:00 PM PDT",
+                    "lat": "34.053501",
+                    "long": "-118.245003",
+                    "link": "http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-2442047/",
+                    "pubDate": "Sat, 29 Jul 2017 03:00 PM PDT",
+                    "condition": {
+                        "code": "32",
+                        "date": "Sat, 29 Jul 2017 03:00 PM PDT",
+                        "temp": "85",
+                        "text": "Sunny"
+                    },
+                    "forecast": [
+                        {
+                            "code": "34",
+                            "date": "29 Jul 2017",
+                            "day": "Sat",
+                            "high": "85",
+                            "low": "66",
+                            "text": "Mostly Sunny"
+                        },
+                        {
+                            "code": "34",
+                            "date": "30 Jul 2017",
+                            "day": "Sun",
+                            "high": "82",
+                            "low": "68",
+                            "text": "Mostly Sunny"
+                        },
+                        {
+                            "code": "34",
+                            "date": "31 Jul 2017",
+                            "day": "Mon",
+                            "high": "84",
+                            "low": "67",
+                            "text": "Mostly Sunny"
+                        },
+                        {
+                            "code": "34",
+                            "date": "01 Aug 2017",
+                            "day": "Tue",
+                            "high": "87",
+                            "low": "69",
+                            "text": "Mostly Sunny"
+                        },
+                        {
+                            "code": "34",
+                            "date": "02 Aug 2017",
+                            "day": "Wed",
+                            "high": "89",
+                            "low": "72",
+                            "text": "Mostly Sunny"
+                        },
+                        {
+                            "code": "32",
+                            "date": "03 Aug 2017",
+                            "day": "Thu",
+                            "high": "91",
+                            "low": "74",
+                            "text": "Sunny"
+                        },
+                        {
+                            "code": "32",
+                            "date": "04 Aug 2017",
+                            "day": "Fri",
+                            "high": "91",
+                            "low": "74",
+                            "text": "Sunny"
+                        },
+                        {
+                            "code": "32",
+                            "date": "05 Aug 2017",
+                            "day": "Sat",
+                            "high": "89",
+                            "low": "73",
+                            "text": "Sunny"
+                        },
+                        {
+                            "code": "32",
+                            "date": "06 Aug 2017",
+                            "day": "Sun",
+                            "high": "87",
+                            "low": "71",
+                            "text": "Sunny"
+                        },
+                        {
+                            "code": "32",
+                            "date": "07 Aug 2017",
+                            "day": "Mon",
+                            "high": "86",
+                            "low": "70",
+                            "text": "Sunny"
+                        }
+                    ],
+                    "description": "<![CDATA[<img src=\"http://l.yimg.com/a/i/us/we/52/32.gif\"/>\n<BR />\n<b>Current Conditions:</b>\n<BR />Sunny\n<BR />\n<BR />\n<b>Forecast:</b>\n<BR /> Sat - Mostly Sunny. High: 85Low: 66\n<BR /> Sun - Mostly Sunny. High: 82Low: 68\n<BR /> Mon - Mostly Sunny. High: 84Low: 67\n<BR /> Tue - Mostly Sunny. High: 87Low: 69\n<BR /> Wed - Mostly Sunny. High: 89Low: 72\n<BR />\n<BR />\n<a href=\"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-2442047/\">Full Forecast at Yahoo! Weather</a>\n<BR />\n<BR />\n(provided by <a href=\"http://www.weather.com\" >The Weather Channel</a>)\n<BR />\n]]>",
+                    "guid": { "isPermaLink": "false" }
+                }
+            }
+        }
+    }
+}

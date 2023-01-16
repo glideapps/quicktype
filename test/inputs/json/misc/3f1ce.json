@@ -1,1 +1,126 @@
-{"query":{"count":1,"created":"2017-07-29T23:31:19Z","lang":"en-US","results":{"channel":{"units":{"distance":"mi","pressure":"in","speed":"mph","temperature":"F"},"title":"Yahoo! Weather - Miami, FL, US","link":"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-2450022/","description":"Yahoo! Weather for Miami, FL, US","language":"en-us","lastBuildDate":"Sat, 29 Jul 2017 07:31 PM EDT","ttl":"60","location":{"city":"Miami","country":"United States","region":" FL"},"wind":{"chill":"90","direction":"215","speed":"7"},"atmosphere":{"humidity":"65","pressure":"1012.0","rising":"0","visibility":"16.1"},"astronomy":{"sunrise":"6:46 am","sunset":"8:9 pm"},"image":{"title":"Yahoo! Weather","width":"142","height":"18","link":"http://weather.yahoo.com","url":"http://l.yimg.com/a/i/brand/purplelogo//uh/us/news-wea.gif"},"item":{"title":"Conditions for Miami, FL, US at 06:00 PM EDT","lat":"25.782551","long":"-80.221748","link":"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-2450022/","pubDate":"Sat, 29 Jul 2017 06:00 PM EDT","condition":{"code":"28","date":"Sat, 29 Jul 2017 06:00 PM EDT","temp":"89","text":"Mostly Cloudy"},"forecast":[{"code":"4","date":"29 Jul 2017","day":"Sat","high":"89","low":"80","text":"Thunderstorms"},{"code":"4","date":"30 Jul 2017","day":"Sun","high":"89","low":"79","text":"Thunderstorms"},{"code":"4","date":"31 Jul 2017","day":"Mon","high":"87","low":"79","text":"Thunderstorms"},{"code":"4","date":"01 Aug 2017","day":"Tue","high":"89","low":"79","text":"Thunderstorms"},{"code":"4","date":"02 Aug 2017","day":"Wed","high":"89","low":"79","text":"Thunderstorms"},{"code":"4","date":"03 Aug 2017","day":"Thu","high":"89","low":"82","text":"Thunderstorms"},{"code":"4","date":"04 Aug 2017","day":"Fri","high":"89","low":"82","text":"Thunderstorms"},{"code":"4","date":"05 Aug 2017","day":"Sat","high":"89","low":"82","text":"Thunderstorms"},{"code":"4","date":"06 Aug 2017","day":"Sun","high":"89","low":"82","text":"Thunderstorms"},{"code":"4","date":"07 Aug 2017","day":"Mon","high":"88","low":"83","text":"Thunderstorms"}],"description":"<![CDATA[<img src=\"http://l.yimg.com/a/i/us/we/52/28.gif\"/>\n<BR />\n<b>Current Conditions:</b>\n<BR />Mostly Cloudy\n<BR />\n<BR />\n<b>Forecast:</b>\n<BR /> Sat - Thunderstorms. High: 89Low: 80\n<BR /> Sun - Thunderstorms. High: 89Low: 79\n<BR /> Mon - Thunderstorms. High: 87Low: 79\n<BR /> Tue - Thunderstorms. High: 89Low: 79\n<BR /> Wed - Thunderstorms. High: 89Low: 79\n<BR />\n<BR />\n<a href=\"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-2450022/\">Full Forecast at Yahoo! Weather</a>\n<BR />\n<BR />\n(provided by <a href=\"http://www.weather.com\" >The Weather Channel</a>)\n<BR />\n]]>","guid":{"isPermaLink":"false"}}}}}}
+{
+    "query": {
+        "count": 1,
+        "created": "2017-07-29T23:31:19Z",
+        "lang": "en-US",
+        "results": {
+            "channel": {
+                "units": { "distance": "mi", "pressure": "in", "speed": "mph", "temperature": "F" },
+                "title": "Yahoo! Weather - Miami, FL, US",
+                "link": "http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-2450022/",
+                "description": "Yahoo! Weather for Miami, FL, US",
+                "language": "en-us",
+                "lastBuildDate": "Sat, 29 Jul 2017 07:31 PM EDT",
+                "ttl": "60",
+                "location": { "city": "Miami", "country": "United States", "region": " FL" },
+                "wind": { "chill": "90", "direction": "215", "speed": "7" },
+                "atmosphere": { "humidity": "65", "pressure": "1012.0", "rising": "0", "visibility": "16.1" },
+                "astronomy": { "sunrise": "6:46 am", "sunset": "8:9 pm" },
+                "image": {
+                    "title": "Yahoo! Weather",
+                    "width": "142",
+                    "height": "18",
+                    "link": "http://weather.yahoo.com",
+                    "url": "http://l.yimg.com/a/i/brand/purplelogo//uh/us/news-wea.gif"
+                },
+                "item": {
+                    "title": "Conditions for Miami, FL, US at 06:00 PM EDT",
+                    "lat": "25.782551",
+                    "long": "-80.221748",
+                    "link": "http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-2450022/",
+                    "pubDate": "Sat, 29 Jul 2017 06:00 PM EDT",
+                    "condition": {
+                        "code": "28",
+                        "date": "Sat, 29 Jul 2017 06:00 PM EDT",
+                        "temp": "89",
+                        "text": "Mostly Cloudy"
+                    },
+                    "forecast": [
+                        {
+                            "code": "4",
+                            "date": "29 Jul 2017",
+                            "day": "Sat",
+                            "high": "89",
+                            "low": "80",
+                            "text": "Thunderstorms"
+                        },
+                        {
+                            "code": "4",
+                            "date": "30 Jul 2017",
+                            "day": "Sun",
+                            "high": "89",
+                            "low": "79",
+                            "text": "Thunderstorms"
+                        },
+                        {
+                            "code": "4",
+                            "date": "31 Jul 2017",
+                            "day": "Mon",
+                            "high": "87",
+                            "low": "79",
+                            "text": "Thunderstorms"
+                        },
+                        {
+                            "code": "4",
+                            "date": "01 Aug 2017",
+                            "day": "Tue",
+                            "high": "89",
+                            "low": "79",
+                            "text": "Thunderstorms"
+                        },
+                        {
+                            "code": "4",
+                            "date": "02 Aug 2017",
+                            "day": "Wed",
+                            "high": "89",
+                            "low": "79",
+                            "text": "Thunderstorms"
+                        },
+                        {
+                            "code": "4",
+                            "date": "03 Aug 2017",
+                            "day": "Thu",
+                            "high": "89",
+                            "low": "82",
+                            "text": "Thunderstorms"
+                        },
+                        {
+                            "code": "4",
+                            "date": "04 Aug 2017",
+                            "day": "Fri",
+                            "high": "89",
+                            "low": "82",
+                            "text": "Thunderstorms"
+                        },
+                        {
+                            "code": "4",
+                            "date": "05 Aug 2017",
+                            "day": "Sat",
+                            "high": "89",
+                            "low": "82",
+                            "text": "Thunderstorms"
+                        },
+                        {
+                            "code": "4",
+                            "date": "06 Aug 2017",
+                            "day": "Sun",
+                            "high": "89",
+                            "low": "82",
+                            "text": "Thunderstorms"
+                        },
+                        {
+                            "code": "4",
+                            "date": "07 Aug 2017",
+                            "day": "Mon",
+                            "high": "88",
+                            "low": "83",
+                            "text": "Thunderstorms"
+                        }
+                    ],
+                    "description": "<![CDATA[<img src=\"http://l.yimg.com/a/i/us/we/52/28.gif\"/>\n<BR />\n<b>Current Conditions:</b>\n<BR />Mostly Cloudy\n<BR />\n<BR />\n<b>Forecast:</b>\n<BR /> Sat - Thunderstorms. High: 89Low: 80\n<BR /> Sun - Thunderstorms. High: 89Low: 79\n<BR /> Mon - Thunderstorms. High: 87Low: 79\n<BR /> Tue - Thunderstorms. High: 89Low: 79\n<BR /> Wed - Thunderstorms. High: 89Low: 79\n<BR />\n<BR />\n<a href=\"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-2450022/\">Full Forecast at Yahoo! Weather</a>\n<BR />\n<BR />\n(provided by <a href=\"http://www.weather.com\" >The Weather Channel</a>)\n<BR />\n]]>",
+                    "guid": { "isPermaLink": "false" }
+                }
+            }
+        }
+    }
+}

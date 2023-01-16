@@ -1,1 +1,6 @@
-{"movie":"http://showtimes.everyday.in.th/api/v2/movie/","movie-image":"http://showtimes.everyday.in.th/api/private/movie/image/","group":"http://showtimes.everyday.in.th/api/v2/group/","theater":"http://showtimes.everyday.in.th/api/v2/theater/"}
+{
+    "movie": "http://showtimes.everyday.in.th/api/v2/movie/",
+    "movie-image": "http://showtimes.everyday.in.th/api/private/movie/image/",
+    "group": "http://showtimes.everyday.in.th/api/v2/group/",
+    "theater": "http://showtimes.everyday.in.th/api/v2/theater/"
+}

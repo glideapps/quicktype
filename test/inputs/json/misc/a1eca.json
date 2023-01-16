@@ -1,1 +1,126 @@
-{"query":{"count":1,"created":"2017-07-29T23:31:21Z","lang":"en-US","results":{"channel":{"units":{"distance":"mi","pressure":"in","speed":"mph","temperature":"F"},"title":"Yahoo! Weather - Sydney, NSW, AU","link":"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-1105779/","description":"Yahoo! Weather for Sydney, NSW, AU","language":"en-us","lastBuildDate":"Sun, 30 Jul 2017 09:31 AM AEST","ttl":"60","location":{"city":"Sydney","country":"Australia","region":" NSW"},"wind":{"chill":"64","direction":"338","speed":"18"},"atmosphere":{"humidity":"30","pressure":"1009.0","rising":"0","visibility":"16.1"},"astronomy":{"sunrise":"6:50 am","sunset":"5:15 pm"},"image":{"title":"Yahoo! Weather","width":"142","height":"18","link":"http://weather.yahoo.com","url":"http://l.yimg.com/a/i/brand/purplelogo//uh/us/news-wea.gif"},"item":{"title":"Conditions for Sydney, NSW, AU at 09:00 AM AEST","lat":"-33.856281","long":"151.020966","link":"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-1105779/","pubDate":"Sun, 30 Jul 2017 09:00 AM AEST","condition":{"code":"32","date":"Sun, 30 Jul 2017 09:00 AM AEST","temp":"65","text":"Sunny"},"forecast":[{"code":"30","date":"30 Jul 2017","day":"Sun","high":"79","low":"49","text":"Partly Cloudy"},{"code":"39","date":"31 Jul 2017","day":"Mon","high":"61","low":"50","text":"Scattered Showers"},{"code":"32","date":"01 Aug 2017","day":"Tue","high":"63","low":"44","text":"Sunny"},{"code":"34","date":"02 Aug 2017","day":"Wed","high":"62","low":"41","text":"Mostly Sunny"},{"code":"11","date":"03 Aug 2017","day":"Thu","high":"62","low":"44","text":"Showers"},{"code":"34","date":"04 Aug 2017","day":"Fri","high":"62","low":"44","text":"Mostly Sunny"},{"code":"30","date":"05 Aug 2017","day":"Sat","high":"65","low":"42","text":"Partly Cloudy"},{"code":"32","date":"06 Aug 2017","day":"Sun","high":"65","low":"46","text":"Sunny"},{"code":"32","date":"07 Aug 2017","day":"Mon","high":"61","low":"45","text":"Sunny"},{"code":"30","date":"08 Aug 2017","day":"Tue","high":"66","low":"42","text":"Partly Cloudy"}],"description":"<![CDATA[<img src=\"http://l.yimg.com/a/i/us/we/52/32.gif\"/>\n<BR />\n<b>Current Conditions:</b>\n<BR />Sunny\n<BR />\n<BR />\n<b>Forecast:</b>\n<BR /> Sun - Partly Cloudy. High: 79Low: 49\n<BR /> Mon - Scattered Showers. High: 61Low: 50\n<BR /> Tue - Sunny. High: 63Low: 44\n<BR /> Wed - Mostly Sunny. High: 62Low: 41\n<BR /> Thu - Showers. High: 62Low: 44\n<BR />\n<BR />\n<a href=\"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-1105779/\">Full Forecast at Yahoo! Weather</a>\n<BR />\n<BR />\n(provided by <a href=\"http://www.weather.com\" >The Weather Channel</a>)\n<BR />\n]]>","guid":{"isPermaLink":"false"}}}}}}
+{
+    "query": {
+        "count": 1,
+        "created": "2017-07-29T23:31:21Z",
+        "lang": "en-US",
+        "results": {
+            "channel": {
+                "units": { "distance": "mi", "pressure": "in", "speed": "mph", "temperature": "F" },
+                "title": "Yahoo! Weather - Sydney, NSW, AU",
+                "link": "http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-1105779/",
+                "description": "Yahoo! Weather for Sydney, NSW, AU",
+                "language": "en-us",
+                "lastBuildDate": "Sun, 30 Jul 2017 09:31 AM AEST",
+                "ttl": "60",
+                "location": { "city": "Sydney", "country": "Australia", "region": " NSW" },
+                "wind": { "chill": "64", "direction": "338", "speed": "18" },
+                "atmosphere": { "humidity": "30", "pressure": "1009.0", "rising": "0", "visibility": "16.1" },
+                "astronomy": { "sunrise": "6:50 am", "sunset": "5:15 pm" },
+                "image": {
+                    "title": "Yahoo! Weather",
+                    "width": "142",
+                    "height": "18",
+                    "link": "http://weather.yahoo.com",
+                    "url": "http://l.yimg.com/a/i/brand/purplelogo//uh/us/news-wea.gif"
+                },
+                "item": {
+                    "title": "Conditions for Sydney, NSW, AU at 09:00 AM AEST",
+                    "lat": "-33.856281",
+                    "long": "151.020966",
+                    "link": "http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-1105779/",
+                    "pubDate": "Sun, 30 Jul 2017 09:00 AM AEST",
+                    "condition": {
+                        "code": "32",
+                        "date": "Sun, 30 Jul 2017 09:00 AM AEST",
+                        "temp": "65",
+                        "text": "Sunny"
+                    },
+                    "forecast": [
+                        {
+                            "code": "30",
+                            "date": "30 Jul 2017",
+                            "day": "Sun",
+                            "high": "79",
+                            "low": "49",
+                            "text": "Partly Cloudy"
+                        },
+                        {
+                            "code": "39",
+                            "date": "31 Jul 2017",
+                            "day": "Mon",
+                            "high": "61",
+                            "low": "50",
+                            "text": "Scattered Showers"
+                        },
+                        {
+                            "code": "32",
+                            "date": "01 Aug 2017",
+                            "day": "Tue",
+                            "high": "63",
+                            "low": "44",
+                            "text": "Sunny"
+                        },
+                        {
+                            "code": "34",
+                            "date": "02 Aug 2017",
+                            "day": "Wed",
+                            "high": "62",
+                            "low": "41",
+                            "text": "Mostly Sunny"
+                        },
+                        {
+                            "code": "11",
+                            "date": "03 Aug 2017",
+                            "day": "Thu",
+                            "high": "62",
+                            "low": "44",
+                            "text": "Showers"
+                        },
+                        {
+                            "code": "34",
+                            "date": "04 Aug 2017",
+                            "day": "Fri",
+                            "high": "62",
+                            "low": "44",
+                            "text": "Mostly Sunny"
+                        },
+                        {
+                            "code": "30",
+                            "date": "05 Aug 2017",
+                            "day": "Sat",
+                            "high": "65",
+                            "low": "42",
+                            "text": "Partly Cloudy"
+                        },
+                        {
+                            "code": "32",
+                            "date": "06 Aug 2017",
+                            "day": "Sun",
+                            "high": "65",
+                            "low": "46",
+                            "text": "Sunny"
+                        },
+                        {
+                            "code": "32",
+                            "date": "07 Aug 2017",
+                            "day": "Mon",
+                            "high": "61",
+                            "low": "45",
+                            "text": "Sunny"
+                        },
+                        {
+                            "code": "30",
+                            "date": "08 Aug 2017",
+                            "day": "Tue",
+                            "high": "66",
+                            "low": "42",
+                            "text": "Partly Cloudy"
+                        }
+                    ],
+                    "description": "<![CDATA[<img src=\"http://l.yimg.com/a/i/us/we/52/32.gif\"/>\n<BR />\n<b>Current Conditions:</b>\n<BR />Sunny\n<BR />\n<BR />\n<b>Forecast:</b>\n<BR /> Sun - Partly Cloudy. High: 79Low: 49\n<BR /> Mon - Scattered Showers. High: 61Low: 50\n<BR /> Tue - Sunny. High: 63Low: 44\n<BR /> Wed - Mostly Sunny. High: 62Low: 41\n<BR /> Thu - Showers. High: 62Low: 44\n<BR />\n<BR />\n<a href=\"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-1105779/\">Full Forecast at Yahoo! Weather</a>\n<BR />\n<BR />\n(provided by <a href=\"http://www.weather.com\" >The Weather Channel</a>)\n<BR />\n]]>",
+                    "guid": { "isPermaLink": "false" }
+                }
+            }
+        }
+    }
+}

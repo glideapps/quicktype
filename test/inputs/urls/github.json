@@ -1,14 +1,4 @@
 {
-    "repos":
-        [
-            "https://api.github.com/users/",
-            { "oneOf": [ "schani", "dvdsgl" ]},
-            "/repos"
-        ],
-    "issues":
-        [
-            "https://api.github.com/repos/schani/",
-            { "oneOf": [ "mathmap", "clickr", "clojurec" ]},
-            "/issues"
-        ]
+    "repos": ["https://api.github.com/users/", { "oneOf": ["schani", "dvdsgl"] }, "/repos"],
+    "issues": ["https://api.github.com/repos/schani/", { "oneOf": ["mathmap", "clickr", "clojurec"] }, "/issues"]
 }

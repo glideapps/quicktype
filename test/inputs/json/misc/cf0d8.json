@@ -1,1 +1,126 @@
-{"query":{"count":1,"created":"2017-07-29T23:31:18Z","lang":"en-US","results":{"channel":{"units":{"distance":"mi","pressure":"in","speed":"mph","temperature":"F"},"title":"Yahoo! Weather - New York, NY, US","link":"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-2459115/","description":"Yahoo! Weather for New York, NY, US","language":"en-us","lastBuildDate":"Sat, 29 Jul 2017 07:31 PM EDT","ttl":"60","location":{"city":"New York","country":"United States","region":" NY"},"wind":{"chill":"75","direction":"15","speed":"18"},"atmosphere":{"humidity":"51","pressure":"1008.0","rising":"0","visibility":"16.1"},"astronomy":{"sunrise":"5:50 am","sunset":"8:15 pm"},"image":{"title":"Yahoo! Weather","width":"142","height":"18","link":"http://weather.yahoo.com","url":"http://l.yimg.com/a/i/brand/purplelogo//uh/us/news-wea.gif"},"item":{"title":"Conditions for New York, NY, US at 06:00 PM EDT","lat":"40.71455","long":"-74.007118","link":"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-2459115/","pubDate":"Sat, 29 Jul 2017 06:00 PM EDT","condition":{"code":"28","date":"Sat, 29 Jul 2017 06:00 PM EDT","temp":"76","text":"Mostly Cloudy"},"forecast":[{"code":"39","date":"29 Jul 2017","day":"Sat","high":"76","low":"67","text":"Scattered Showers"},{"code":"30","date":"30 Jul 2017","day":"Sun","high":"79","low":"64","text":"Partly Cloudy"},{"code":"32","date":"31 Jul 2017","day":"Mon","high":"84","low":"66","text":"Sunny"},{"code":"4","date":"01 Aug 2017","day":"Tue","high":"85","low":"69","text":"Thunderstorms"},{"code":"4","date":"02 Aug 2017","day":"Wed","high":"86","low":"71","text":"Thunderstorms"},{"code":"4","date":"03 Aug 2017","day":"Thu","high":"83","low":"73","text":"Thunderstorms"},{"code":"4","date":"04 Aug 2017","day":"Fri","high":"80","low":"73","text":"Thunderstorms"},{"code":"4","date":"05 Aug 2017","day":"Sat","high":"80","low":"71","text":"Thunderstorms"},{"code":"30","date":"06 Aug 2017","day":"Sun","high":"79","low":"68","text":"Partly Cloudy"},{"code":"30","date":"07 Aug 2017","day":"Mon","high":"81","low":"69","text":"Partly Cloudy"}],"description":"<![CDATA[<img src=\"http://l.yimg.com/a/i/us/we/52/28.gif\"/>\n<BR />\n<b>Current Conditions:</b>\n<BR />Mostly Cloudy\n<BR />\n<BR />\n<b>Forecast:</b>\n<BR /> Sat - Scattered Showers. High: 76Low: 67\n<BR /> Sun - Partly Cloudy. High: 79Low: 64\n<BR /> Mon - Sunny. High: 84Low: 66\n<BR /> Tue - Thunderstorms. High: 85Low: 69\n<BR /> Wed - Thunderstorms. High: 86Low: 71\n<BR />\n<BR />\n<a href=\"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-2459115/\">Full Forecast at Yahoo! Weather</a>\n<BR />\n<BR />\n(provided by <a href=\"http://www.weather.com\" >The Weather Channel</a>)\n<BR />\n]]>","guid":{"isPermaLink":"false"}}}}}}
+{
+    "query": {
+        "count": 1,
+        "created": "2017-07-29T23:31:18Z",
+        "lang": "en-US",
+        "results": {
+            "channel": {
+                "units": { "distance": "mi", "pressure": "in", "speed": "mph", "temperature": "F" },
+                "title": "Yahoo! Weather - New York, NY, US",
+                "link": "http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-2459115/",
+                "description": "Yahoo! Weather for New York, NY, US",
+                "language": "en-us",
+                "lastBuildDate": "Sat, 29 Jul 2017 07:31 PM EDT",
+                "ttl": "60",
+                "location": { "city": "New York", "country": "United States", "region": " NY" },
+                "wind": { "chill": "75", "direction": "15", "speed": "18" },
+                "atmosphere": { "humidity": "51", "pressure": "1008.0", "rising": "0", "visibility": "16.1" },
+                "astronomy": { "sunrise": "5:50 am", "sunset": "8:15 pm" },
+                "image": {
+                    "title": "Yahoo! Weather",
+                    "width": "142",
+                    "height": "18",
+                    "link": "http://weather.yahoo.com",
+                    "url": "http://l.yimg.com/a/i/brand/purplelogo//uh/us/news-wea.gif"
+                },
+                "item": {
+                    "title": "Conditions for New York, NY, US at 06:00 PM EDT",
+                    "lat": "40.71455",
+                    "long": "-74.007118",
+                    "link": "http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-2459115/",
+                    "pubDate": "Sat, 29 Jul 2017 06:00 PM EDT",
+                    "condition": {
+                        "code": "28",
+                        "date": "Sat, 29 Jul 2017 06:00 PM EDT",
+                        "temp": "76",
+                        "text": "Mostly Cloudy"
+                    },
+                    "forecast": [
+                        {
+                            "code": "39",
+                            "date": "29 Jul 2017",
+                            "day": "Sat",
+                            "high": "76",
+                            "low": "67",
+                            "text": "Scattered Showers"
+                        },
+                        {
+                            "code": "30",
+                            "date": "30 Jul 2017",
+                            "day": "Sun",
+                            "high": "79",
+                            "low": "64",
+                            "text": "Partly Cloudy"
+                        },
+                        {
+                            "code": "32",
+                            "date": "31 Jul 2017",
+                            "day": "Mon",
+                            "high": "84",
+                            "low": "66",
+                            "text": "Sunny"
+                        },
+                        {
+                            "code": "4",
+                            "date": "01 Aug 2017",
+                            "day": "Tue",
+                            "high": "85",
+                            "low": "69",
+                            "text": "Thunderstorms"
+                        },
+                        {
+                            "code": "4",
+                            "date": "02 Aug 2017",
+                            "day": "Wed",
+                            "high": "86",
+                            "low": "71",
+                            "text": "Thunderstorms"
+                        },
+                        {
+                            "code": "4",
+                            "date": "03 Aug 2017",
+                            "day": "Thu",
+                            "high": "83",
+                            "low": "73",
+                            "text": "Thunderstorms"
+                        },
+                        {
+                            "code": "4",
+                            "date": "04 Aug 2017",
+                            "day": "Fri",
+                            "high": "80",
+                            "low": "73",
+                            "text": "Thunderstorms"
+                        },
+                        {
+                            "code": "4",
+                            "date": "05 Aug 2017",
+                            "day": "Sat",
+                            "high": "80",
+                            "low": "71",
+                            "text": "Thunderstorms"
+                        },
+                        {
+                            "code": "30",
+                            "date": "06 Aug 2017",
+                            "day": "Sun",
+                            "high": "79",
+                            "low": "68",
+                            "text": "Partly Cloudy"
+                        },
+                        {
+                            "code": "30",
+                            "date": "07 Aug 2017",
+                            "day": "Mon",
+                            "high": "81",
+                            "low": "69",
+                            "text": "Partly Cloudy"
+                        }
+                    ],
+                    "description": "<![CDATA[<img src=\"http://l.yimg.com/a/i/us/we/52/28.gif\"/>\n<BR />\n<b>Current Conditions:</b>\n<BR />Mostly Cloudy\n<BR />\n<BR />\n<b>Forecast:</b>\n<BR /> Sat - Scattered Showers. High: 76Low: 67\n<BR /> Sun - Partly Cloudy. High: 79Low: 64\n<BR /> Mon - Sunny. High: 84Low: 66\n<BR /> Tue - Thunderstorms. High: 85Low: 69\n<BR /> Wed - Thunderstorms. High: 86Low: 71\n<BR />\n<BR />\n<a href=\"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-2459115/\">Full Forecast at Yahoo! Weather</a>\n<BR />\n<BR />\n(provided by <a href=\"http://www.weather.com\" >The Weather Channel</a>)\n<BR />\n]]>",
+                    "guid": { "isPermaLink": "false" }
+                }
+            }
+        }
+    }
+}

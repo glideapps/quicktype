@@ -1,11 +1,11 @@
 {
-  "item": [
-    {
-      "name": "foo",
-      "response": [{ "body": "true" }]
-    },
-    {
-      "item": []
-    }
-  ]
+    "item": [
+        {
+            "name": "foo",
+            "response": [{ "body": "true" }]
+        },
+        {
+            "item": []
+        }
+    ]
 }

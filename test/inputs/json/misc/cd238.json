@@ -1,1 +1,30 @@
-{"delay":"false","IATA":"PDX","state":"Oregon","name":"Portland International","weather":{"visibility":10.00,"weather":"Fair","meta":{"credit":"NOAA's National Weather Service","updated":"3:53 PM Local","url":"http://weather.gov/"},"temp":"86.0 F (30.0 C)","wind":"Northwest at 10.4mph"},"ICAO":"KPDX","city":"Portland","status":{"reason":"No known delays for this airport.","closureBegin":"","endTime":"","minDelay":"","avgDelay":"","maxDelay":"","closureEnd":"","trend":"","type":""}} 
+{
+    "delay": "false",
+    "IATA": "PDX",
+    "state": "Oregon",
+    "name": "Portland International",
+    "weather": {
+        "visibility": 10.0,
+        "weather": "Fair",
+        "meta": {
+            "credit": "NOAA's National Weather Service",
+            "updated": "3:53 PM Local",
+            "url": "http://weather.gov/"
+        },
+        "temp": "86.0 F (30.0 C)",
+        "wind": "Northwest at 10.4mph"
+    },
+    "ICAO": "KPDX",
+    "city": "Portland",
+    "status": {
+        "reason": "No known delays for this airport.",
+        "closureBegin": "",
+        "endTime": "",
+        "minDelay": "",
+        "avgDelay": "",
+        "maxDelay": "",
+        "closureEnd": "",
+        "trend": "",
+        "type": ""
+    }
+}

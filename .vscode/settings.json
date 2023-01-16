@@ -1,25 +1,22 @@
 {
-  // Place your settings in this file to overwrite default and user settings.
-  "editor.formatOnSave": true,
-  "spellright.ignoreFiles": [
-    "**/.gitignore",
-    "**/.spellignore"
-  ],
-  "search.exclude": {
-    "**/.git": true,
-    "**/node_modules": true,
-    "**/bower_components": true,
-    "**/tmp": true,
-    "output": true,
-    "**/obj": true,
-    "**/bin": true,
-    "test/inputs": true,
-    "test/runs": true,
-    "app/build": true,
-    "elm-stuff": true,
-    "dist": true
-  },
-  "explorer.excludeGitIgnore": false,
-  "spellright.documentTypes": [],
-  "java.configuration.updateBuildConfiguration": "automatic"
+    // Place your settings in this file to overwrite default and user settings.
+    "editor.formatOnSave": true,
+    "spellright.ignoreFiles": ["**/.gitignore", "**/.spellignore"],
+    "search.exclude": {
+        "**/.git": true,
+        "**/node_modules": true,
+        "**/bower_components": true,
+        "**/tmp": true,
+        "output": true,
+        "**/obj": true,
+        "**/bin": true,
+        "test/inputs": true,
+        "test/runs": true,
+        "app/build": true,
+        "elm-stuff": true,
+        "dist": true
+    },
+    "explorer.excludeGitIgnore": false,
+    "spellright.documentTypes": [],
+    "java.configuration.updateBuildConfiguration": "automatic"
 }

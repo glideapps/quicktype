@@ -1,1 +1,126 @@
-{"query":{"count":1,"created":"2017-07-29T23:31:19Z","lang":"en-US","results":{"channel":{"units":{"distance":"mi","pressure":"in","speed":"mph","temperature":"F"},"title":"Yahoo! Weather - Paris, Ile-de-France, FR","link":"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-615702/","description":"Yahoo! Weather for Paris, Ile-de-France, FR","language":"en-us","lastBuildDate":"Sun, 30 Jul 2017 01:31 AM CEST","ttl":"60","location":{"city":"Paris","country":"France","region":" Ile-de-France"},"wind":{"chill":"77","direction":"225","speed":"14"},"atmosphere":{"humidity":"57","pressure":"1002.0","rising":"0","visibility":"16.1"},"astronomy":{"sunrise":"6:22 am","sunset":"9:31 pm"},"image":{"title":"Yahoo! Weather","width":"142","height":"18","link":"http://weather.yahoo.com","url":"http://l.yimg.com/a/i/brand/purplelogo//uh/us/news-wea.gif"},"item":{"title":"Conditions for Paris, Ile-de-France, FR at 12:00 AM CEST","lat":"48.85693","long":"2.3412","link":"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-615702/","pubDate":"Sun, 30 Jul 2017 12:00 AM CEST","condition":{"code":"27","date":"Sun, 30 Jul 2017 12:00 AM CEST","temp":"76","text":"Mostly Cloudy"},"forecast":[{"code":"28","date":"30 Jul 2017","day":"Sun","high":"78","low":"69","text":"Mostly Cloudy"},{"code":"28","date":"31 Jul 2017","day":"Mon","high":"75","low":"60","text":"Mostly Cloudy"},{"code":"28","date":"01 Aug 2017","day":"Tue","high":"75","low":"62","text":"Mostly Cloudy"},{"code":"28","date":"02 Aug 2017","day":"Wed","high":"77","low":"60","text":"Mostly Cloudy"},{"code":"12","date":"03 Aug 2017","day":"Thu","high":"76","low":"65","text":"Rain"},{"code":"30","date":"04 Aug 2017","day":"Fri","high":"74","low":"62","text":"Partly Cloudy"},{"code":"30","date":"05 Aug 2017","day":"Sat","high":"76","low":"60","text":"Partly Cloudy"},{"code":"30","date":"06 Aug 2017","day":"Sun","high":"75","low":"61","text":"Partly Cloudy"},{"code":"30","date":"07 Aug 2017","day":"Mon","high":"76","low":"60","text":"Partly Cloudy"},{"code":"30","date":"08 Aug 2017","day":"Tue","high":"76","low":"60","text":"Partly Cloudy"}],"description":"<![CDATA[<img src=\"http://l.yimg.com/a/i/us/we/52/27.gif\"/>\n<BR />\n<b>Current Conditions:</b>\n<BR />Mostly Cloudy\n<BR />\n<BR />\n<b>Forecast:</b>\n<BR /> Sun - Mostly Cloudy. High: 78Low: 69\n<BR /> Mon - Mostly Cloudy. High: 75Low: 60\n<BR /> Tue - Mostly Cloudy. High: 75Low: 62\n<BR /> Wed - Mostly Cloudy. High: 77Low: 60\n<BR /> Thu - Rain. High: 76Low: 65\n<BR />\n<BR />\n<a href=\"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-615702/\">Full Forecast at Yahoo! Weather</a>\n<BR />\n<BR />\n(provided by <a href=\"http://www.weather.com\" >The Weather Channel</a>)\n<BR />\n]]>","guid":{"isPermaLink":"false"}}}}}}
+{
+    "query": {
+        "count": 1,
+        "created": "2017-07-29T23:31:19Z",
+        "lang": "en-US",
+        "results": {
+            "channel": {
+                "units": { "distance": "mi", "pressure": "in", "speed": "mph", "temperature": "F" },
+                "title": "Yahoo! Weather - Paris, Ile-de-France, FR",
+                "link": "http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-615702/",
+                "description": "Yahoo! Weather for Paris, Ile-de-France, FR",
+                "language": "en-us",
+                "lastBuildDate": "Sun, 30 Jul 2017 01:31 AM CEST",
+                "ttl": "60",
+                "location": { "city": "Paris", "country": "France", "region": " Ile-de-France" },
+                "wind": { "chill": "77", "direction": "225", "speed": "14" },
+                "atmosphere": { "humidity": "57", "pressure": "1002.0", "rising": "0", "visibility": "16.1" },
+                "astronomy": { "sunrise": "6:22 am", "sunset": "9:31 pm" },
+                "image": {
+                    "title": "Yahoo! Weather",
+                    "width": "142",
+                    "height": "18",
+                    "link": "http://weather.yahoo.com",
+                    "url": "http://l.yimg.com/a/i/brand/purplelogo//uh/us/news-wea.gif"
+                },
+                "item": {
+                    "title": "Conditions for Paris, Ile-de-France, FR at 12:00 AM CEST",
+                    "lat": "48.85693",
+                    "long": "2.3412",
+                    "link": "http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-615702/",
+                    "pubDate": "Sun, 30 Jul 2017 12:00 AM CEST",
+                    "condition": {
+                        "code": "27",
+                        "date": "Sun, 30 Jul 2017 12:00 AM CEST",
+                        "temp": "76",
+                        "text": "Mostly Cloudy"
+                    },
+                    "forecast": [
+                        {
+                            "code": "28",
+                            "date": "30 Jul 2017",
+                            "day": "Sun",
+                            "high": "78",
+                            "low": "69",
+                            "text": "Mostly Cloudy"
+                        },
+                        {
+                            "code": "28",
+                            "date": "31 Jul 2017",
+                            "day": "Mon",
+                            "high": "75",
+                            "low": "60",
+                            "text": "Mostly Cloudy"
+                        },
+                        {
+                            "code": "28",
+                            "date": "01 Aug 2017",
+                            "day": "Tue",
+                            "high": "75",
+                            "low": "62",
+                            "text": "Mostly Cloudy"
+                        },
+                        {
+                            "code": "28",
+                            "date": "02 Aug 2017",
+                            "day": "Wed",
+                            "high": "77",
+                            "low": "60",
+                            "text": "Mostly Cloudy"
+                        },
+                        {
+                            "code": "12",
+                            "date": "03 Aug 2017",
+                            "day": "Thu",
+                            "high": "76",
+                            "low": "65",
+                            "text": "Rain"
+                        },
+                        {
+                            "code": "30",
+                            "date": "04 Aug 2017",
+                            "day": "Fri",
+                            "high": "74",
+                            "low": "62",
+                            "text": "Partly Cloudy"
+                        },
+                        {
+                            "code": "30",
+                            "date": "05 Aug 2017",
+                            "day": "Sat",
+                            "high": "76",
+                            "low": "60",
+                            "text": "Partly Cloudy"
+                        },
+                        {
+                            "code": "30",
+                            "date": "06 Aug 2017",
+                            "day": "Sun",
+                            "high": "75",
+                            "low": "61",
+                            "text": "Partly Cloudy"
+                        },
+                        {
+                            "code": "30",
+                            "date": "07 Aug 2017",
+                            "day": "Mon",
+                            "high": "76",
+                            "low": "60",
+                            "text": "Partly Cloudy"
+                        },
+                        {
+                            "code": "30",
+                            "date": "08 Aug 2017",
+                            "day": "Tue",
+                            "high": "76",
+                            "low": "60",
+                            "text": "Partly Cloudy"
+                        }
+                    ],
+                    "description": "<![CDATA[<img src=\"http://l.yimg.com/a/i/us/we/52/27.gif\"/>\n<BR />\n<b>Current Conditions:</b>\n<BR />Mostly Cloudy\n<BR />\n<BR />\n<b>Forecast:</b>\n<BR /> Sun - Mostly Cloudy. High: 78Low: 69\n<BR /> Mon - Mostly Cloudy. High: 75Low: 60\n<BR /> Tue - Mostly Cloudy. High: 75Low: 62\n<BR /> Wed - Mostly Cloudy. High: 77Low: 60\n<BR /> Thu - Rain. High: 76Low: 65\n<BR />\n<BR />\n<a href=\"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-615702/\">Full Forecast at Yahoo! Weather</a>\n<BR />\n<BR />\n(provided by <a href=\"http://www.weather.com\" >The Weather Channel</a>)\n<BR />\n]]>",
+                    "guid": { "isPermaLink": "false" }
+                }
+            }
+        }
+    }
+}

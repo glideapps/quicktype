@@ -1,6 +1,6 @@
 {
-  "intersection": {
-    "foo": 123,
-    "bar": "abc"
-  }
+    "intersection": {
+        "foo": 123,
+        "bar": "abc"
+    }
 }
