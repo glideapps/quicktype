@@ -278,19 +278,9 @@ const keywords = [
     "NULL"
 ];
 
-/**
- * We can't use boost/std optional. They MUST have the declaration of
- * the given structure available, meaning we can't forward declare anything.
- * Which is bad as we have circles in Json schema, which require at least
- * forward declarability.
- * The next question, why isn't unique_ptr is enough here?
- * That problem relates to getter/setter. If using getter/setters we
- * can't/mustn't return a unique_ptr out of the class -> as that is the
- * sole reason why we have declared that as unique_ptr, so that only
- * the class owns it. We COULD return unique_ptr references, which practically
- * kills the uniqueness of the smart pointer -> hence we use shared_ptrs.
- */
+/// Type to use as an optional if cycle breaking is required
 const optionalAsSharedType = "std::shared_ptr";
+/// Factory to use when creating an optional if cycle breaking is required
 const optionalFactoryAsSharedType = "std::make_shared";
 
 /**
@@ -475,6 +465,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     private _forbiddenGlobalNames: string[];
     private readonly _memberNamingFunction: Namer;
     private _stringType: StringType;
+    /// The type to use as an optional  (std::optional or std::shared)
     private _optionalType: string;
     private _optionalFactory: string;
     private _nulloptType: string;
@@ -531,33 +522,47 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.setupGlobalNames();
     }
 
+    // Returns true if the type can be stored in
+    // a stack based optional type. This requires
+    // that the type does not require forward declaration.
     isOptionalAsValuePossible(t: Type): boolean {
         if (t.isPrimitive()) return true;
         if (this.isForwardDeclaredType(t)) return false;
         return true;
     }
 
+    // Is likely to return std::optional or boost::optional
     optionalTypeStack(): string {
         return this._optionalType;
     }
+
+    // Is likely to return std::make_optional or boost::optional
     optionalFactoryStack(): string {
         return this._optionalFactory;
     }
 
+    // Is likely to return std::shared_ptr
     optionalTypeHeap(): string {
         return optionalAsSharedType;
     }
+
+    // Is likely to return std::make_shared
     optionalFactoryHeap(): string {
         return optionalFactoryAsSharedType;
     }
 
+    // Returns the optional type most suitable for the given type.
+    // Classes that don't require forward declarations can be stored
+    // in std::optional ( or boost::optional )
     optionalType(t: Type): string {
         if (this.isOptionalAsValuePossible(t)) return this.optionalTypeStack();
         else return this.optionalTypeHeap();
     }
 
-    optionalTypeLabel(t:Type):string{
-        if (this.isOptionalAsValuePossible(t)) return "stack"
+    // Returns a label that can be used to distinguish between
+    // heap and stack based optional handling methods
+    optionalTypeLabel(t: Type): string {
+        if (this.isOptionalAsValuePossible(t)) return "stack";
         else return "heap";
     }
 
