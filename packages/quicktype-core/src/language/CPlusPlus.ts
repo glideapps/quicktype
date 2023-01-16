@@ -119,7 +119,7 @@ export const cPlusPlusOptions = {
 };
 
 export class CPlusPlusTargetLanguage extends TargetLanguage {
-    constructor(displayName: string = "C++", names: string[] = ["c++", "cpp", "cplusplus"], extension: string = "cpp") {
+    constructor(displayName = "C++", names: string[] = ["c++", "cpp", "cplusplus"], extension = "cpp") {
         super(displayName, names, extension);
     }
 
@@ -653,7 +653,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitLine("#include ", global ? "<" : '"', name, global ? ">" : '"');
     }
 
-    protected startFile(basename: Sourcelike, includeHelper: boolean = true): void {
+    protected startFile(basename: Sourcelike, includeHelper = true): void {
         assert(this._currentFilename === undefined, "Previous file wasn't finished");
         if (basename !== undefined) {
             this._currentFilename = this.sourcelikeToString(basename);
@@ -742,7 +742,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitCommentLines(lines, " * ", "/**", " */");
     }
 
-    protected emitBlock(line: Sourcelike, withSemicolon: boolean, f: () => void, withIndent: boolean = true): void {
+    protected emitBlock(line: Sourcelike, withSemicolon: boolean, f: () => void, withIndent = true): void {
         this.emitLine(line, " {");
         this.preventBlankLine();
         if (withIndent) {
@@ -1161,7 +1161,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     this.emitLine(className, "() = default;");
                 } else {
                     this.emitLine(className, "() :");
-                    let numEmits: number = 0;
+                    let numEmits = 0;
                     constraints.forEach((initializer: Sourcelike, _propName: string) => {
                         numEmits++;
                         this.indent(() => {
@@ -2308,7 +2308,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
     protected emitGenerators(): void {
         if (this._options.justTypes) {
-            let didEmit: boolean = false;
+            let didEmit = false;
             const gathered = this.gatherSource(() =>
                 this.emitNamespaces(this._namespaceNames, () => {
                     didEmit = this.forEachTopLevel(
@@ -2445,8 +2445,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
 
         if (includes.size !== 0) {
-            let numForwards: number = 0;
-            let numIncludes: number = 0;
+            let numForwards = 0;
+            let numIncludes = 0;
             includes.forEach((rec: IncludeRecord, name: string) => {
                 /** Don't bother including the one we are defining */
                 if (name === defName) {

@@ -203,7 +203,7 @@ export abstract class Type {
         queue: (a: Type, b: Type) => boolean
     ): boolean;
 
-    structurallyCompatible(other: Type, conflateNumbers: boolean = false): boolean {
+    structurallyCompatible(other: Type, conflateNumbers = false): boolean {
         function kindsCompatible(kind1: TypeKind, kind2: TypeKind): boolean {
             if (kind1 === kind2) return true;
             if (!conflateNumbers) return false;

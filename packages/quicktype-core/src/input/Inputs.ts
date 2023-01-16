@@ -146,7 +146,7 @@ export class JSONInput<T> implements Input<JSONSourceData<T>> {
 export function jsonInputForTargetLanguage(
     targetLanguage: string | TargetLanguage,
     languages?: TargetLanguage[],
-    handleJSONRefs: boolean = false
+    handleJSONRefs = false
 ): JSONInput<string> {
     if (typeof targetLanguage === "string") {
         targetLanguage = defined(languageNamed(targetLanguage, languages));

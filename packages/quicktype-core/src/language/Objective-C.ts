@@ -81,7 +81,7 @@ function typeNameStyle(prefix: string, original: string): string {
     return addPrefixIfNecessary(prefix, result);
 }
 
-function propertyNameStyle(original: string, isBool: boolean = false): string {
+function propertyNameStyle(original: string, isBool = false): string {
     // Objective-C developers are uncomfortable with property "id"
     // so we use an alternate name in this special case.
     if (original === "id") {
@@ -344,7 +344,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         );
     }
 
-    protected objcType(t: Type, nullableOrBoxed: boolean = false): [Sourcelike, string] {
+    protected objcType(t: Type, nullableOrBoxed = false): [Sourcelike, string] {
         return matchType<[Sourcelike, string]>(
             t,
             _anyType => ["id", ""],
@@ -546,13 +546,13 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         return [name, " *_Nullable ", name, "FromJSON(NSString *json, NSStringEncoding encoding, NSError **error)"];
     }
 
-    private topLevelToDataPrototype(name: Name, pad: boolean = false): Sourcelike {
+    private topLevelToDataPrototype(name: Name, pad = false): Sourcelike {
         const parameter = this.variableNameForTopLevel(name);
         const padding = pad ? repeatString(" ", this.sourcelikeToString(name).length - "NSData".length) : "";
         return ["NSData", padding, " *_Nullable ", name, "ToData(", name, " *", parameter, ", NSError **error)"];
     }
 
-    private topLevelToJSONPrototype(name: Name, pad: boolean = false): Sourcelike {
+    private topLevelToJSONPrototype(name: Name, pad = false): Sourcelike {
         const parameter = this.variableNameForTopLevel(name);
         const padding = pad ? repeatString(" ", this.sourcelikeToString(name).length - "NSString".length) : "";
         return [

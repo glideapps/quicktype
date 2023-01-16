@@ -368,7 +368,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
         return directlyReachableSingleNamedType(type);
     }
 
-    protected emitBlock(f: () => void, semicolon: boolean = false): void {
+    protected emitBlock(f: () => void, semicolon = false): void {
         this.emitLine("{");
         this.indent(f);
         this.emitLine("}", semicolon ? ";" : "");
@@ -378,7 +378,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
         return this._csOptions.useDecimal ? "decimal" : "double";
     }
 
-    protected csType(t: Type, follow: (t: Type) => Type = followTargetType, withIssues: boolean = false): Sourcelike {
+    protected csType(t: Type, follow: (t: Type) => Type = followTargetType, withIssues = false): Sourcelike {
         const actualType = follow(t);
         return matchType<Sourcelike>(
             actualType,
@@ -411,7 +411,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
     protected nullableCSType(
         t: Type,
         follow: (t: Type) => Type = followTargetType,
-        withIssues: boolean = false
+        withIssues = false
     ): Sourcelike {
         t = followTargetType(t);
         const csType = this.csType(t, follow, withIssues);
@@ -577,7 +577,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
         this.emitLine("public enum ", enumName, " { ", caseNames, " };");
     }
 
-    protected emitExpressionMember(declare: Sourcelike, define: Sourcelike, isProperty: boolean = false): void {
+    protected emitExpressionMember(declare: Sourcelike, define: Sourcelike, isProperty = false): void {
         if (this._csOptions.version === 5) {
             this.emitLine(declare);
             this.emitBlock(() => {
@@ -1006,7 +1006,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         xfer: Transformer,
         targetType: Type,
         emitFinish: (value: Sourcelike) => void,
-        variableName: string = "value"
+        variableName = "value"
     ): boolean {
         if (xfer instanceof DecodingTransformer) {
             const source = xfer.sourceType;
@@ -1779,7 +1779,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
         xfer: Transformer,
         targetType: Type,
         emitFinish: (value: Sourcelike) => void,
-        variableName: string = "value"
+        variableName = "value"
     ): boolean {
         if (xfer instanceof DecodingTransformer) {
             const source = xfer.sourceType;
