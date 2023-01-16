@@ -13,6 +13,7 @@
 -   [This class should be a map/dictionary!](#this-class-should-be-a-mapdictionary)
 -   [Where can I learn more about JSON Schema?](#where-can-i-learn-more-about-json-schema)
 -   [I'd like to customize the output for my particular application.](#id-like-to-customize-the-output-for-my-particular-application)
+-   [How can I control the property order in JSON Schema?](#how-can-i-control-the-property-order-in-json-schema)
 -   [quicktype is awesome, I'd like to support it!](#quicktype-is-awesome-id-like-to-support-it)
 - [How is this different from other JSON converters?](#how-is-quicktype-different-from-other-json-converters)
 
@@ -109,7 +110,7 @@ The [JSON Schema homepage](http://json-schema.org) contains many links and resou
 
 We have [a blog post](https://blog.quicktype.io/customizing-quicktype/) on that very topic.
 
-## How can I control the property order in JSON Schema
+## How can I control the property order in JSON Schema?
 
 There is a custom schema field `quicktypePropertyOrder` which can be used to specify the order of properties for quicktype.
 

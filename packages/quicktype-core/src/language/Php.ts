@@ -255,13 +255,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         this.emitLine("}");
     }
 
-    protected phpType(
-        _reference: boolean,
-        t: Type,
-        isOptional: boolean = false,
-        prefix: string = "?",
-        suffix: string = ""
-    ): Sourcelike {
+    protected phpType(_reference: boolean, t: Type, isOptional = false, prefix = "?", suffix = ""): Sourcelike {
         function optionalize(s: Sourcelike) {
             return [isOptional ? prefix : "", s, isOptional ? suffix : ""];
         }

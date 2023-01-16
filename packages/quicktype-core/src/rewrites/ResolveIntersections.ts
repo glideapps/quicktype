@@ -73,7 +73,7 @@ class IntersectionAccumulator
     private _objectAttributes: TypeAttributes = emptyTypeAttributes;
     private _additionalPropertyTypes: Set<Type> | undefined = new Set();
 
-    private _lostTypeAttributes: boolean = false;
+    private _lostTypeAttributes = false;
 
     private updatePrimitiveTypes(members: Iterable<Type>): void {
         const types = setFilter(members, t => isPrimitiveTypeKind(t.kind));
@@ -270,7 +270,7 @@ class IntersectionUnionBuilder extends UnionBuilder<
     ReadonlySet<Type>,
     [PropertyMap, ReadonlySet<Type> | undefined] | undefined
 > {
-    private _createdNewIntersections: boolean = false;
+    private _createdNewIntersections = false;
 
     private makeIntersection(members: ReadonlySet<Type>, attributes: TypeAttributes): TypeRef {
         const reconstitutedMembers = setMap(members, t => this.typeBuilder.reconstituteTypeRef(t.typeRef));

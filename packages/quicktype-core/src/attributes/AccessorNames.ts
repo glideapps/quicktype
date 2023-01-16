@@ -95,7 +95,7 @@ class UnionIdentifierTypeAttributeKind extends TypeAttributeKind<ReadonlySet<num
 export const unionIdentifierTypeAttributeKind: TypeAttributeKind<ReadonlySet<number>> =
     new UnionIdentifierTypeAttributeKind();
 
-let nextUnionIdentifier: number = 0;
+let nextUnionIdentifier = 0;
 
 export function makeUnionIdentifierAttribute(): TypeAttributes {
     const attributes = unionIdentifierTypeAttributeKind.makeAttributes(new Set([nextUnionIdentifier]));

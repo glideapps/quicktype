@@ -373,7 +373,7 @@ export class DartRenderer extends ConvenienceRenderer {
         this.emitLine("}");
     }
 
-    protected dartType(t: Type, withIssues: boolean = false): Sourcelike {
+    protected dartType(t: Type, withIssues = false): Sourcelike {
         const nullable = this._options.nullSafety && t.isNullable;
         const withNullable = (s: Sourcelike): Sourcelike => (nullable ? [s, "?"] : s);
         return matchType<Sourcelike>(

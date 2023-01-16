@@ -83,7 +83,7 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
 
     private readonly _enumCases: Set<string> = new Set();
 
-    private _lostTypeAttributes: boolean = false;
+    private _lostTypeAttributes = false;
 
     constructor(private readonly _conflateNumbers: boolean) {}
 
