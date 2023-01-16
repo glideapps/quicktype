@@ -36,7 +36,7 @@ export const phpOptions = {
 
 export class PhpTargetLanguage extends TargetLanguage {
     constructor() {
-        super("Php", ["php"], "php");
+        super("PHP", ["php"], "php");
     }
 
     protected getOptions(): Option<any>[] {
