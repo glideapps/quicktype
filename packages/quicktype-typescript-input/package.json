@@ -1,0 +1,26 @@
+{
+    "name": "quicktype-typescript-input",
+    "version": "18.0.15",
+    "description": "Package for using TypeScript as an input language to quicktype",
+    "license": "Apache-2.0",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "repository": "https://github.com/quicktype/quicktype",
+    "scripts": {
+        "clean": "rm -rf dist node_modules *~",
+        "build": "tsc",
+        "tslint": "tslint --project ."
+    },
+    "dependencies": {
+        "quicktype-core": "file:../quicktype-core",
+        "typescript": "4.9.4",
+        "@mark.probst/typescript-json-schema": "0.55.0"
+    },
+    "devDependencies": {
+        "@types/node": "18.11.18",
+        "tslint": "^5.11.0"
+    },
+    "files": [
+        "dist"
+    ]
+}

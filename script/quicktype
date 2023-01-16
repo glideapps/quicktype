@@ -13,4 +13,4 @@ BASEDIR="$SCRIPTDIR/.."
 if [ x"$SKIP_BUILD" = x ] ; then
     ( cd "$BASEDIR" ; npm run build &>/dev/null )
 fi
-node --stack_trace_limit=100 --max-old-space-size=4096 "$BASEDIR/dist/cli/index.js" "$@"
+node --stack_trace_limit=100 --max-old-space-size=4096 "$BASEDIR/dist/index.js" "$@"

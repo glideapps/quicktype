@@ -1,0 +1,34 @@
+name: Setup
+description: Setup common stuff for jobs
+runs:
+    using: "composite"
+    steps:
+        - name: Setup environment
+          shell: bash
+          run: |
+              NODE_VERSION=$(cat .nvmrc | xargs)
+              echo "node_version=$NODE_VERSION" >> $GITHUB_ENV
+
+              # Create keys to control caching
+              BASE_KEY="${{ runner.os }}"
+
+              NODE_MODULES_KEY="$BASE_KEY-${{ hashFiles('package-lock.json') }}"
+              echo "node_modules_key=$NODE_MODULES_KEY" >> $GITHUB_ENV
+
+              SOURCE_KEY="$NODE_MODULES_KEY-${{ hashFiles('src/**') }}"
+              echo "source_key=$SOURCE_KEY" >> $GITHUB_ENV
+
+        - name: Setup node
+          uses: actions/setup-node@v3
+          with:
+              node-version: ${{ env.node_version }}
+              cache: npm
+              registry-url: "https://registry.npmjs.org"
+
+        - name: Install Dependencies
+          run: npm ci
+          shell: bash
+
+        - name: Build Packages
+          run: npm run build
+          shell: bash
