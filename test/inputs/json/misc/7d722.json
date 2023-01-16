@@ -1,1 +1,30 @@
-{"delay":"false","IATA":"SFO","state":"California","name":"San Francisco International","weather":{"visibility":10.00,"weather":"A Few Clouds and Breezy","meta":{"credit":"NOAA's National Weather Service","updated":"3:56 PM Local","url":"http://weather.gov/"},"temp":"65.0 F (18.3 C)","wind":"Northwest at 21.9mph"},"ICAO":"KSFO","city":"San Francisco","status":{"reason":"No known delays for this airport.","closureBegin":"","endTime":"","minDelay":"","avgDelay":"","maxDelay":"","closureEnd":"","trend":"","type":""}} 
+{
+    "delay": "false",
+    "IATA": "SFO",
+    "state": "California",
+    "name": "San Francisco International",
+    "weather": {
+        "visibility": 10.0,
+        "weather": "A Few Clouds and Breezy",
+        "meta": {
+            "credit": "NOAA's National Weather Service",
+            "updated": "3:56 PM Local",
+            "url": "http://weather.gov/"
+        },
+        "temp": "65.0 F (18.3 C)",
+        "wind": "Northwest at 21.9mph"
+    },
+    "ICAO": "KSFO",
+    "city": "San Francisco",
+    "status": {
+        "reason": "No known delays for this airport.",
+        "closureBegin": "",
+        "endTime": "",
+        "minDelay": "",
+        "avgDelay": "",
+        "maxDelay": "",
+        "closureEnd": "",
+        "trend": "",
+        "type": ""
+    }
+}

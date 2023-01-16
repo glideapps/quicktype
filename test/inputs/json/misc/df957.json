@@ -1,1 +1,130 @@
-{"query":{"count":1,"created":"2017-07-29T23:31:21Z","lang":"en-US","results":{"channel":{"units":{"distance":"mi","pressure":"in","speed":"mph","temperature":"F"},"title":"Yahoo! Weather - Buenos Aires, Autonomous City of Buenos Aires, AR","link":"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-468739/","description":"Yahoo! Weather for Buenos Aires, Autonomous City of Buenos Aires, AR","language":"en-us","lastBuildDate":"Sat, 29 Jul 2017 08:31 PM ART","ttl":"60","location":{"city":"Buenos Aires","country":"Argentina","region":" Autonomous City of Buenos Aires"},"wind":{"chill":"59","direction":"135","speed":"14"},"atmosphere":{"humidity":"93","pressure":"1017.0","rising":"0","visibility":"14.6"},"astronomy":{"sunrise":"7:50 am","sunset":"6:11 pm"},"image":{"title":"Yahoo! Weather","width":"142","height":"18","link":"http://weather.yahoo.com","url":"http://l.yimg.com/a/i/brand/purplelogo//uh/us/news-wea.gif"},"item":{"title":"Conditions for Buenos Aires, Autonomous City of Buenos Aires, AR at 08:00 PM ART","lat":"-34.614498","long":"-58.44619","link":"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-468739/","pubDate":"Sat, 29 Jul 2017 08:00 PM ART","condition":{"code":"27","date":"Sat, 29 Jul 2017 08:00 PM ART","temp":"60","text":"Mostly Cloudy"},"forecast":[{"code":"26","date":"29 Jul 2017","day":"Sat","high":"67","low":"57","text":"Cloudy"},{"code":"39","date":"30 Jul 2017","day":"Sun","high":"55","low":"49","text":"Scattered Showers"},{"code":"39","date":"31 Jul 2017","day":"Mon","high":"55","low":"52","text":"Scattered Showers"},{"code":"11","date":"01 Aug 2017","day":"Tue","high":"58","low":"55","text":"Showers"},{"code":"11","date":"02 Aug 2017","day":"Wed","high":"59","low":"55","text":"Showers"},{"code":"39","date":"03 Aug 2017","day":"Thu","high":"62","low":"51","text":"Scattered Showers"},{"code":"30","date":"04 Aug 2017","day":"Fri","high":"53","low":"44","text":"Partly Cloudy"},{"code":"30","date":"05 Aug 2017","day":"Sat","high":"58","low":"50","text":"Partly Cloudy"},{"code":"28","date":"06 Aug 2017","day":"Sun","high":"64","low":"56","text":"Mostly Cloudy"},{"code":"39","date":"07 Aug 2017","day":"Mon","high":"59","low":"54","text":"Scattered Showers"}],"description":"<![CDATA[<img src=\"http://l.yimg.com/a/i/us/we/52/27.gif\"/>\n<BR />\n<b>Current Conditions:</b>\n<BR />Mostly Cloudy\n<BR />\n<BR />\n<b>Forecast:</b>\n<BR /> Sat - Cloudy. High: 67Low: 57\n<BR /> Sun - Scattered Showers. High: 55Low: 49\n<BR /> Mon - Scattered Showers. High: 55Low: 52\n<BR /> Tue - Showers. High: 58Low: 55\n<BR /> Wed - Showers. High: 59Low: 55\n<BR />\n<BR />\n<a href=\"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-468739/\">Full Forecast at Yahoo! Weather</a>\n<BR />\n<BR />\n(provided by <a href=\"http://www.weather.com\" >The Weather Channel</a>)\n<BR />\n]]>","guid":{"isPermaLink":"false"}}}}}}
+{
+    "query": {
+        "count": 1,
+        "created": "2017-07-29T23:31:21Z",
+        "lang": "en-US",
+        "results": {
+            "channel": {
+                "units": { "distance": "mi", "pressure": "in", "speed": "mph", "temperature": "F" },
+                "title": "Yahoo! Weather - Buenos Aires, Autonomous City of Buenos Aires, AR",
+                "link": "http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-468739/",
+                "description": "Yahoo! Weather for Buenos Aires, Autonomous City of Buenos Aires, AR",
+                "language": "en-us",
+                "lastBuildDate": "Sat, 29 Jul 2017 08:31 PM ART",
+                "ttl": "60",
+                "location": {
+                    "city": "Buenos Aires",
+                    "country": "Argentina",
+                    "region": " Autonomous City of Buenos Aires"
+                },
+                "wind": { "chill": "59", "direction": "135", "speed": "14" },
+                "atmosphere": { "humidity": "93", "pressure": "1017.0", "rising": "0", "visibility": "14.6" },
+                "astronomy": { "sunrise": "7:50 am", "sunset": "6:11 pm" },
+                "image": {
+                    "title": "Yahoo! Weather",
+                    "width": "142",
+                    "height": "18",
+                    "link": "http://weather.yahoo.com",
+                    "url": "http://l.yimg.com/a/i/brand/purplelogo//uh/us/news-wea.gif"
+                },
+                "item": {
+                    "title": "Conditions for Buenos Aires, Autonomous City of Buenos Aires, AR at 08:00 PM ART",
+                    "lat": "-34.614498",
+                    "long": "-58.44619",
+                    "link": "http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-468739/",
+                    "pubDate": "Sat, 29 Jul 2017 08:00 PM ART",
+                    "condition": {
+                        "code": "27",
+                        "date": "Sat, 29 Jul 2017 08:00 PM ART",
+                        "temp": "60",
+                        "text": "Mostly Cloudy"
+                    },
+                    "forecast": [
+                        {
+                            "code": "26",
+                            "date": "29 Jul 2017",
+                            "day": "Sat",
+                            "high": "67",
+                            "low": "57",
+                            "text": "Cloudy"
+                        },
+                        {
+                            "code": "39",
+                            "date": "30 Jul 2017",
+                            "day": "Sun",
+                            "high": "55",
+                            "low": "49",
+                            "text": "Scattered Showers"
+                        },
+                        {
+                            "code": "39",
+                            "date": "31 Jul 2017",
+                            "day": "Mon",
+                            "high": "55",
+                            "low": "52",
+                            "text": "Scattered Showers"
+                        },
+                        {
+                            "code": "11",
+                            "date": "01 Aug 2017",
+                            "day": "Tue",
+                            "high": "58",
+                            "low": "55",
+                            "text": "Showers"
+                        },
+                        {
+                            "code": "11",
+                            "date": "02 Aug 2017",
+                            "day": "Wed",
+                            "high": "59",
+                            "low": "55",
+                            "text": "Showers"
+                        },
+                        {
+                            "code": "39",
+                            "date": "03 Aug 2017",
+                            "day": "Thu",
+                            "high": "62",
+                            "low": "51",
+                            "text": "Scattered Showers"
+                        },
+                        {
+                            "code": "30",
+                            "date": "04 Aug 2017",
+                            "day": "Fri",
+                            "high": "53",
+                            "low": "44",
+                            "text": "Partly Cloudy"
+                        },
+                        {
+                            "code": "30",
+                            "date": "05 Aug 2017",
+                            "day": "Sat",
+                            "high": "58",
+                            "low": "50",
+                            "text": "Partly Cloudy"
+                        },
+                        {
+                            "code": "28",
+                            "date": "06 Aug 2017",
+                            "day": "Sun",
+                            "high": "64",
+                            "low": "56",
+                            "text": "Mostly Cloudy"
+                        },
+                        {
+                            "code": "39",
+                            "date": "07 Aug 2017",
+                            "day": "Mon",
+                            "high": "59",
+                            "low": "54",
+                            "text": "Scattered Showers"
+                        }
+                    ],
+                    "description": "<![CDATA[<img src=\"http://l.yimg.com/a/i/us/we/52/27.gif\"/>\n<BR />\n<b>Current Conditions:</b>\n<BR />Mostly Cloudy\n<BR />\n<BR />\n<b>Forecast:</b>\n<BR /> Sat - Cloudy. High: 67Low: 57\n<BR /> Sun - Scattered Showers. High: 55Low: 49\n<BR /> Mon - Scattered Showers. High: 55Low: 52\n<BR /> Tue - Showers. High: 58Low: 55\n<BR /> Wed - Showers. High: 59Low: 55\n<BR />\n<BR />\n<a href=\"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-468739/\">Full Forecast at Yahoo! Weather</a>\n<BR />\n<BR />\n(provided by <a href=\"http://www.weather.com\" >The Weather Channel</a>)\n<BR />\n]]>",
+                    "guid": { "isPermaLink": "false" }
+                }
+            }
+        }
+    }
+}

@@ -1,10 +1,10 @@
 {
-  "minlength": "aaaa",
-  "maxlength": "bbb",
-  "minmaxlength": "cccc",
-  "union": "dddddd",
-  "inUnion": "cccc",
-  "minMaxUnion": "eeeee",
-  "intersection": "ffff",
-  "minMaxIntersection": "gggg"
+    "minlength": "aaaa",
+    "maxlength": "bbb",
+    "minmaxlength": "cccc",
+    "union": "dddddd",
+    "inUnion": "cccc",
+    "minMaxUnion": "eeeee",
+    "intersection": "ffff",
+    "minMaxIntersection": "gggg"
 }

@@ -1,4 +1,56 @@
-{"status":"REQUEST_SUCCEEDED","responseTime":31,"message":[],"Results":{
-"series":
-[{"seriesID":"CES0500000002","data":[{"year":"2017","period":"M06","periodName":"June","value":"34.5","footnotes":[{"code":"P","text":"preliminary"}]},{"year":"2017","period":"M05","periodName":"May","value":"34.4","footnotes":[{"code":"P","text":"preliminary"}]},{"year":"2017","period":"M04","periodName":"April","value":"34.5","footnotes":[{}]},{"year":"2017","period":"M03","periodName":"March","value":"34.3","footnotes":[{}]},{"year":"2017","period":"M02","periodName":"February","value":"34.3","footnotes":[{}]},{"year":"2017","period":"M01","periodName":"January","value":"34.4","footnotes":[{}]},{"year":"2016","period":"M12","periodName":"December","value":"34.4","footnotes":[{}]},{"year":"2016","period":"M11","periodName":"November","value":"34.3","footnotes":[{}]},{"year":"2016","period":"M10","periodName":"October","value":"34.4","footnotes":[{}]},{"year":"2016","period":"M09","periodName":"September","value":"34.4","footnotes":[{}]},{"year":"2016","period":"M08","periodName":"August","value":"34.3","footnotes":[{}]},{"year":"2016","period":"M07","periodName":"July","value":"34.4","footnotes":[{}]},{"year":"2016","period":"M06","periodName":"June","value":"34.4","footnotes":[{}]},{"year":"2016","period":"M05","periodName":"May","value":"34.4","footnotes":[{}]},{"year":"2016","period":"M04","periodName":"April","value":"34.4","footnotes":[{}]},{"year":"2016","period":"M03","periodName":"March","value":"34.4","footnotes":[{}]},{"year":"2016","period":"M02","periodName":"February","value":"34.5","footnotes":[{}]},{"year":"2016","period":"M01","periodName":"January","value":"34.6","footnotes":[{}]},{"year":"2015","period":"M12","periodName":"December","value":"34.5","footnotes":[{}]},{"year":"2015","period":"M11","periodName":"November","value":"34.5","footnotes":[{}]},{"year":"2015","period":"M10","periodName":"October","value":"34.5","footnotes":[{}]},{"year":"2015","period":"M09","periodName":"September","value":"34.5","footnotes":[{}]},{"year":"2015","period":"M08","periodName":"August","value":"34.6","footnotes":[{}]},{"year":"2015","period":"M07","periodName":"July","value":"34.5","footnotes":[{}]},{"year":"2015","period":"M06","periodName":"June","value":"34.5","footnotes":[{}]},{"year":"2015","period":"M05","periodName":"May","value":"34.5","footnotes":[{}]},{"year":"2015","period":"M04","periodName":"April","value":"34.5","footnotes":[{}]},{"year":"2015","period":"M03","periodName":"March","value":"34.5","footnotes":[{}]},{"year":"2015","period":"M02","periodName":"February","value":"34.6","footnotes":[{}]},{"year":"2015","period":"M01","periodName":"January","value":"34.5","footnotes":[{}]}]}]
-}}
+{
+    "status": "REQUEST_SUCCEEDED",
+    "responseTime": 31,
+    "message": [],
+    "Results": {
+        "series": [
+            {
+                "seriesID": "CES0500000002",
+                "data": [
+                    {
+                        "year": "2017",
+                        "period": "M06",
+                        "periodName": "June",
+                        "value": "34.5",
+                        "footnotes": [{ "code": "P", "text": "preliminary" }]
+                    },
+                    {
+                        "year": "2017",
+                        "period": "M05",
+                        "periodName": "May",
+                        "value": "34.4",
+                        "footnotes": [{ "code": "P", "text": "preliminary" }]
+                    },
+                    { "year": "2017", "period": "M04", "periodName": "April", "value": "34.5", "footnotes": [{}] },
+                    { "year": "2017", "period": "M03", "periodName": "March", "value": "34.3", "footnotes": [{}] },
+                    { "year": "2017", "period": "M02", "periodName": "February", "value": "34.3", "footnotes": [{}] },
+                    { "year": "2017", "period": "M01", "periodName": "January", "value": "34.4", "footnotes": [{}] },
+                    { "year": "2016", "period": "M12", "periodName": "December", "value": "34.4", "footnotes": [{}] },
+                    { "year": "2016", "period": "M11", "periodName": "November", "value": "34.3", "footnotes": [{}] },
+                    { "year": "2016", "period": "M10", "periodName": "October", "value": "34.4", "footnotes": [{}] },
+                    { "year": "2016", "period": "M09", "periodName": "September", "value": "34.4", "footnotes": [{}] },
+                    { "year": "2016", "period": "M08", "periodName": "August", "value": "34.3", "footnotes": [{}] },
+                    { "year": "2016", "period": "M07", "periodName": "July", "value": "34.4", "footnotes": [{}] },
+                    { "year": "2016", "period": "M06", "periodName": "June", "value": "34.4", "footnotes": [{}] },
+                    { "year": "2016", "period": "M05", "periodName": "May", "value": "34.4", "footnotes": [{}] },
+                    { "year": "2016", "period": "M04", "periodName": "April", "value": "34.4", "footnotes": [{}] },
+                    { "year": "2016", "period": "M03", "periodName": "March", "value": "34.4", "footnotes": [{}] },
+                    { "year": "2016", "period": "M02", "periodName": "February", "value": "34.5", "footnotes": [{}] },
+                    { "year": "2016", "period": "M01", "periodName": "January", "value": "34.6", "footnotes": [{}] },
+                    { "year": "2015", "period": "M12", "periodName": "December", "value": "34.5", "footnotes": [{}] },
+                    { "year": "2015", "period": "M11", "periodName": "November", "value": "34.5", "footnotes": [{}] },
+                    { "year": "2015", "period": "M10", "periodName": "October", "value": "34.5", "footnotes": [{}] },
+                    { "year": "2015", "period": "M09", "periodName": "September", "value": "34.5", "footnotes": [{}] },
+                    { "year": "2015", "period": "M08", "periodName": "August", "value": "34.6", "footnotes": [{}] },
+                    { "year": "2015", "period": "M07", "periodName": "July", "value": "34.5", "footnotes": [{}] },
+                    { "year": "2015", "period": "M06", "periodName": "June", "value": "34.5", "footnotes": [{}] },
+                    { "year": "2015", "period": "M05", "periodName": "May", "value": "34.5", "footnotes": [{}] },
+                    { "year": "2015", "period": "M04", "periodName": "April", "value": "34.5", "footnotes": [{}] },
+                    { "year": "2015", "period": "M03", "periodName": "March", "value": "34.5", "footnotes": [{}] },
+                    { "year": "2015", "period": "M02", "periodName": "February", "value": "34.6", "footnotes": [{}] },
+                    { "year": "2015", "period": "M01", "periodName": "January", "value": "34.5", "footnotes": [{}] }
+                ]
+            }
+        ]
+    }
+}

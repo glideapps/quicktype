@@ -1,5 +1,5 @@
 {
-  "one": "68ffea67-509e-482e-90ca-e80e5709cd78",
-  "nullable": null,
-  "unionWithEnum": "foo"
+    "one": "68ffea67-509e-482e-90ca-e80e5709cd78",
+    "nullable": null,
+    "unionWithEnum": "foo"
 }

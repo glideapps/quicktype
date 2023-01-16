@@ -1,424 +1,730 @@
 {
-  "meta" : {
-    "view" : {
-      "id" : "pxdv-rgvb",
-      "name" : "Michigan Facts",
-      "averageRating" : 0,
-      "category" : "Code Michigan",
-      "createdAt" : 1409992439,
-      "displayType" : "table",
-      "downloadCount" : 263,
-      "hideFromCatalog" : false,
-      "hideFromDataJson" : false,
-      "indexUpdatedAt" : 1414726876,
-      "licenseId" : "PUBLIC_DOMAIN",
-      "locale" : "",
-      "newBackend" : false,
-      "numberOfComments" : 0,
-      "oid" : 8810393,
-      "provenance" : "official",
-      "publicationAppendEnabled" : false,
-      "publicationDate" : 1409992540,
-      "publicationGroup" : 1709411,
-      "publicationStage" : "published",
-      "rowClass" : "",
-      "rowsUpdatedAt" : 1409992445,
-      "rowsUpdatedBy" : "7sm8-u9c7",
-      "tableId" : 1709411,
-      "totalTimesRated" : 0,
-      "viewCount" : 773,
-      "viewLastModified" : 1410102815,
-      "viewType" : "tabular",
-      "columns" : [ {
-        "id" : -1,
-        "name" : "sid",
-        "dataTypeName" : "meta_data",
-        "fieldName" : ":sid",
-        "position" : 0,
-        "renderTypeName" : "meta_data",
-        "format" : { },
-        "flags" : [ "hidden" ]
-      }, {
-        "id" : -1,
-        "name" : "id",
-        "dataTypeName" : "meta_data",
-        "fieldName" : ":id",
-        "position" : 0,
-        "renderTypeName" : "meta_data",
-        "format" : { },
-        "flags" : [ "hidden" ]
-      }, {
-        "id" : -1,
-        "name" : "position",
-        "dataTypeName" : "meta_data",
-        "fieldName" : ":position",
-        "position" : 0,
-        "renderTypeName" : "meta_data",
-        "format" : { },
-        "flags" : [ "hidden" ]
-      }, {
-        "id" : -1,
-        "name" : "created_at",
-        "dataTypeName" : "meta_data",
-        "fieldName" : ":created_at",
-        "position" : 0,
-        "renderTypeName" : "meta_data",
-        "format" : { },
-        "flags" : [ "hidden" ]
-      }, {
-        "id" : -1,
-        "name" : "created_meta",
-        "dataTypeName" : "meta_data",
-        "fieldName" : ":created_meta",
-        "position" : 0,
-        "renderTypeName" : "meta_data",
-        "format" : { },
-        "flags" : [ "hidden" ]
-      }, {
-        "id" : -1,
-        "name" : "updated_at",
-        "dataTypeName" : "meta_data",
-        "fieldName" : ":updated_at",
-        "position" : 0,
-        "renderTypeName" : "meta_data",
-        "format" : { },
-        "flags" : [ "hidden" ]
-      }, {
-        "id" : -1,
-        "name" : "updated_meta",
-        "dataTypeName" : "meta_data",
-        "fieldName" : ":updated_meta",
-        "position" : 0,
-        "renderTypeName" : "meta_data",
-        "format" : { },
-        "flags" : [ "hidden" ]
-      }, {
-        "id" : -1,
-        "name" : "meta",
-        "dataTypeName" : "meta_data",
-        "fieldName" : ":meta",
-        "position" : 0,
-        "renderTypeName" : "meta_data",
-        "format" : { },
-        "flags" : [ "hidden" ]
-      }, {
-        "id" : 165581924,
-        "name" : "id",
-        "dataTypeName" : "number",
-        "fieldName" : "id",
-        "position" : 2,
-        "renderTypeName" : "number",
-        "tableColumnId" : 21828799,
-        "width" : 124,
-        "cachedContents" : {
-          "non_null" : 17,
-          "average" : "9",
-          "largest" : "17",
-          "null" : 0,
-          "top" : [ {
-            "item" : "1",
-            "count" : 20
-          }, {
-            "item" : "2",
-            "count" : 19
-          }, {
-            "item" : "3",
-            "count" : 18
-          }, {
-            "item" : "4",
-            "count" : 17
-          }, {
-            "item" : "5",
-            "count" : 16
-          }, {
-            "item" : "6",
-            "count" : 15
-          }, {
-            "item" : "7",
-            "count" : 14
-          }, {
-            "item" : "8",
-            "count" : 13
-          }, {
-            "item" : "9",
-            "count" : 12
-          }, {
-            "item" : "10",
-            "count" : 11
-          }, {
-            "item" : "11",
-            "count" : 10
-          }, {
-            "item" : "12",
-            "count" : 9
-          }, {
-            "item" : "13",
-            "count" : 8
-          }, {
-            "item" : "14",
-            "count" : 7
-          }, {
-            "item" : "15",
-            "count" : 6
-          }, {
-            "item" : "16",
-            "count" : 5
-          }, {
-            "item" : "17",
-            "count" : 4
-          } ],
-          "smallest" : "1",
-          "sum" : "153"
-        },
-        "format" : { }
-      }, {
-        "id" : 165581925,
-        "name" : "Title",
-        "dataTypeName" : "text",
-        "fieldName" : "title",
-        "position" : 3,
-        "renderTypeName" : "text",
-        "tableColumnId" : 21828800,
-        "width" : 160,
-        "cachedContents" : {
-          "non_null" : 17,
-          "largest" : "State Wildflower",
-          "null" : 0,
-          "top" : [ {
-            "item" : "State Name",
-            "count" : 20
-          }, {
-            "item" : "State Nickname",
-            "count" : 19
-          }, {
-            "item" : "Capitol",
-            "count" : 18
-          }, {
-            "item" : "Admission to the Union",
-            "count" : 17
-          }, {
-            "item" : "State Motto",
-            "count" : 16
-          }, {
-            "item" : "State Flower",
-            "count" : 15
-          }, {
-            "item" : "State Seal",
-            "count" : 14
-          }, {
-            "item" : "State Bird",
-            "count" : 13
-          }, {
-            "item" : "State Tree",
-            "count" : 12
-          }, {
-            "item" : "State Stone",
-            "count" : 11
-          }, {
-            "item" : "State Gem",
-            "count" : 10
-          }, {
-            "item" : "State Fish",
-            "count" : 9
-          }, {
-            "item" : "State Soil",
-            "count" : 8
-          }, {
-            "item" : "State Reptile",
-            "count" : 7
-          }, {
-            "item" : "State Game Mammal",
-            "count" : 6
-          }, {
-            "item" : "State Wildflower",
-            "count" : 5
-          }, {
-            "item" : "State Fossil",
-            "count" : 4
-          } ],
-          "smallest" : "Admission to the Union"
-        },
-        "format" : { }
-      }, {
-        "id" : 165581926,
-        "name" : "Fact",
-        "dataTypeName" : "text",
-        "fieldName" : "fact",
-        "position" : 4,
-        "renderTypeName" : "text",
-        "tableColumnId" : 21828801,
-        "width" : 148,
-        "cachedContents" : {
-          "non_null" : 17,
-          "largest" : "’Michigan’ is derived from the Native American word ‘Michigama,’ meaning large lake",
-          "null" : 0,
-          "top" : [ {
-            "item" : "’Michigan’ is derived from the Native American word ‘Michigama,’ meaning large lake",
-            "count" : 20
-          }, {
-            "item" : "The Wolverine State",
-            "count" : 19
-          }, {
-            "item" : "Lansing",
-            "count" : 18
-          }, {
-            "item" : "Michigan became the 26th state",
-            "count" : 17
-          }, {
-            "item" : "Si Quaeris Peninsulam Amoenam Circumspice (If you seek a pleasant peninsula, look about you)",
-            "count" : 16
-          }, {
-            "item" : "Apple blossom",
-            "count" : 15
-          }, {
-            "item" : "Adopted by the legislature in 1911",
-            "count" : 14
-          }, {
-            "item" : "Robin",
-            "count" : 13
-          }, {
-            "item" : "white pine",
-            "count" : 12
-          }, {
-            "item" : "Petoskey stone",
-            "count" : 11
-          }, {
-            "item" : "Chlorastrolite (known as 'greenstone')",
-            "count" : 10
-          }, {
-            "item" : "Brook trout",
-            "count" : 9
-          }, {
-            "item" : "Kalkaska Soil Series",
-            "count" : 8
-          }, {
-            "item" : "Painted turtle",
-            "count" : 7
-          }, {
-            "item" : "White-tailed deer",
-            "count" : 6
-          }, {
-            "item" : "Dwarf lake iris",
-            "count" : 5
-          }, {
-            "item" : "Mastodon",
-            "count" : 4
-          } ],
-          "smallest" : "Adopted by the legislature in 1911"
-        },
-        "format" : { }
-      }, {
-        "id" : 165581927,
-        "name" : "Year",
-        "dataTypeName" : "number",
-        "fieldName" : "year",
-        "position" : 5,
-        "renderTypeName" : "number",
-        "tableColumnId" : 21828802,
-        "width" : 148,
-        "cachedContents" : {
-          "non_null" : 14,
-          "average" : "1948.928571428571",
-          "largest" : "2002",
-          "null" : 3,
-          "top" : [ {
-            "item" : "1847",
-            "count" : 20
-          }, {
-            "item" : "1837",
-            "count" : 19
-          }, {
-            "item" : "1897",
-            "count" : 18
-          }, {
-            "item" : "1911",
-            "count" : 17
-          }, {
-            "item" : "1931",
-            "count" : 16
-          }, {
-            "item" : "1955",
-            "count" : 15
-          }, {
-            "item" : "1965",
-            "count" : 14
-          }, {
-            "item" : "1972",
-            "count" : 13
-          }, {
-            "item" : "1988",
-            "count" : 12
-          }, {
-            "item" : "1990",
-            "count" : 11
-          }, {
-            "item" : "1995",
-            "count" : 10
-          }, {
-            "item" : "1997",
-            "count" : 9
-          }, {
-            "item" : "1998",
-            "count" : 8
-          }, {
-            "item" : "2002",
-            "count" : 7
-          } ],
-          "smallest" : "1837",
-          "sum" : "27285"
-        },
-        "format" : { }
-      } ],
-      "grants" : [ {
-        "inherited" : false,
-        "type" : "viewer",
-        "flags" : [ "public" ]
-      } ],
-      "license" : {
-        "name" : "Public Domain"
-      },
-      "metadata" : {
-        "renderTypeConfig" : {
-          "visible" : {
-            "table" : true
-          }
-        },
-        "availableDisplayTypes" : [ "table", "fatrow", "page" ],
-        "rdfSubject" : "0",
-        "rowIdentifier" : "0",
-        "rdfClass" : ""
-      },
-      "owner" : {
-        "id" : "7sm8-u9c7",
-        "displayName" : "James",
-        "screenName" : "James"
-      },
-      "query" : { },
-      "rights" : [ "read" ],
-      "tableAuthor" : {
-        "id" : "7sm8-u9c7",
-        "displayName" : "James",
-        "screenName" : "James"
-      },
-      "flags" : [ "default", "restorable", "restorePossibleForType" ]
-    }
-  },
-  "data" : [ [ 1, "7E0E34AD-544E-4760-B846-26CEB2F58DAC", 1, 1409967241, "884692", 1409967241, "884692", "{\n}", "1", "State Name", "’Michigan’ is derived from the Native American word ‘Michigama,’ meaning large lake", null ]
-, [ 2, "3549955D-959E-495C-B65F-99E4BF39E4ED", 2, 1409967241, "884692", 1409967241, "884692", "{\n}", "2", "State Nickname", "The Wolverine State", null ]
-, [ 3, "990121F5-0561-4F6E-82DB-95010FF72DDE", 3, 1409967241, "884692", 1409967241, "884692", "{\n}", "3", "Capitol", "Lansing", "1847" ]
-, [ 4, "9B737E3F-EE4B-49B9-A764-6E22A4C72839", 4, 1409967241, "884692", 1409967241, "884692", "{\n}", "4", "Admission to the Union", "Michigan became the 26th state", "1837" ]
-, [ 5, "A36DC235-A2B2-4EA9-B8B5-1B367C37C276", 5, 1409967241, "884692", 1409967241, "884692", "{\n}", "5", "State Motto", "Si Quaeris Peninsulam Amoenam Circumspice (If you seek a pleasant peninsula, look about you)", null ]
-, [ 6, "F36BEA99-FFE9-4132-9444-E3A87AA40E38", 6, 1409967241, "884692", 1409967241, "884692", "{\n}", "6", "State Flower", "Apple blossom", "1897" ]
-, [ 7, "8CA2071E-FF1F-453B-92F0-E4E9E6350095", 7, 1409967241, "884692", 1409967241, "884692", "{\n}", "7", "State Seal", "Adopted by the legislature in 1911", "1911" ]
-, [ 8, "A76E8DD0-8048-4B44-BECA-68E092B91D58", 8, 1409967241, "884692", 1409967241, "884692", "{\n}", "8", "State Bird", "Robin", "1931" ]
-, [ 9, "34C17823-FE3D-4CDB-B964-D0CB146189D3", 9, 1409967241, "884692", 1409967241, "884692", "{\n}", "9", "State Tree", "white pine", "1955" ]
-, [ 10, "C6F08305-404B-43F1-B7C3-F03D7CEE13DD", 10, 1409967241, "884692", 1409967241, "884692", "{\n}", "10", "State Stone", "Petoskey stone", "1965" ]
-, [ 11, "B4C66636-D936-4A56-841B-AC8A370B9185", 11, 1409967241, "884692", 1409967241, "884692", "{\n}", "11", "State Gem", "Chlorastrolite (known as 'greenstone')", "1972" ]
-, [ 12, "C83B9EDA-05BC-4C2D-BEAD-2380718545E2", 12, 1409967241, "884692", 1409967241, "884692", "{\n}", "12", "State Fish", "Brook trout", "1988" ]
-, [ 13, "26505FB5-1E54-46B3-8E04-6C0394623083", 13, 1409967241, "884692", 1409967241, "884692", "{\n}", "13", "State Soil", "Kalkaska Soil Series", "1990" ]
-, [ 14, "59BAC236-CE4D-4553-BEA4-B6CDDAD763FD", 14, 1409967241, "884692", 1409967241, "884692", "{\n}", "14", "State Reptile", "Painted turtle", "1995" ]
-, [ 15, "239B9C9F-3152-491C-91D2-CB818154B658", 15, 1409967241, "884692", 1409967241, "884692", "{\n}", "15", "State Game Mammal", "White-tailed deer", "1997" ]
-, [ 16, "79A0B31A-061D-44DF-88C6-276EBCD27019", 16, 1409967241, "884692", 1409967241, "884692", "{\n}", "16", "State Wildflower", "Dwarf lake iris", "1998" ]
-, [ 17, "16A890CF-3D3D-4252-B784-6759D90BFB71", 17, 1409967241, "884692", 1409967241, "884692", "{\n}", "17", "State Fossil", "Mastodon", "2002" ]
- ]
+    "meta": {
+        "view": {
+            "id": "pxdv-rgvb",
+            "name": "Michigan Facts",
+            "averageRating": 0,
+            "category": "Code Michigan",
+            "createdAt": 1409992439,
+            "displayType": "table",
+            "downloadCount": 263,
+            "hideFromCatalog": false,
+            "hideFromDataJson": false,
+            "indexUpdatedAt": 1414726876,
+            "licenseId": "PUBLIC_DOMAIN",
+            "locale": "",
+            "newBackend": false,
+            "numberOfComments": 0,
+            "oid": 8810393,
+            "provenance": "official",
+            "publicationAppendEnabled": false,
+            "publicationDate": 1409992540,
+            "publicationGroup": 1709411,
+            "publicationStage": "published",
+            "rowClass": "",
+            "rowsUpdatedAt": 1409992445,
+            "rowsUpdatedBy": "7sm8-u9c7",
+            "tableId": 1709411,
+            "totalTimesRated": 0,
+            "viewCount": 773,
+            "viewLastModified": 1410102815,
+            "viewType": "tabular",
+            "columns": [
+                {
+                    "id": -1,
+                    "name": "sid",
+                    "dataTypeName": "meta_data",
+                    "fieldName": ":sid",
+                    "position": 0,
+                    "renderTypeName": "meta_data",
+                    "format": {},
+                    "flags": ["hidden"]
+                },
+                {
+                    "id": -1,
+                    "name": "id",
+                    "dataTypeName": "meta_data",
+                    "fieldName": ":id",
+                    "position": 0,
+                    "renderTypeName": "meta_data",
+                    "format": {},
+                    "flags": ["hidden"]
+                },
+                {
+                    "id": -1,
+                    "name": "position",
+                    "dataTypeName": "meta_data",
+                    "fieldName": ":position",
+                    "position": 0,
+                    "renderTypeName": "meta_data",
+                    "format": {},
+                    "flags": ["hidden"]
+                },
+                {
+                    "id": -1,
+                    "name": "created_at",
+                    "dataTypeName": "meta_data",
+                    "fieldName": ":created_at",
+                    "position": 0,
+                    "renderTypeName": "meta_data",
+                    "format": {},
+                    "flags": ["hidden"]
+                },
+                {
+                    "id": -1,
+                    "name": "created_meta",
+                    "dataTypeName": "meta_data",
+                    "fieldName": ":created_meta",
+                    "position": 0,
+                    "renderTypeName": "meta_data",
+                    "format": {},
+                    "flags": ["hidden"]
+                },
+                {
+                    "id": -1,
+                    "name": "updated_at",
+                    "dataTypeName": "meta_data",
+                    "fieldName": ":updated_at",
+                    "position": 0,
+                    "renderTypeName": "meta_data",
+                    "format": {},
+                    "flags": ["hidden"]
+                },
+                {
+                    "id": -1,
+                    "name": "updated_meta",
+                    "dataTypeName": "meta_data",
+                    "fieldName": ":updated_meta",
+                    "position": 0,
+                    "renderTypeName": "meta_data",
+                    "format": {},
+                    "flags": ["hidden"]
+                },
+                {
+                    "id": -1,
+                    "name": "meta",
+                    "dataTypeName": "meta_data",
+                    "fieldName": ":meta",
+                    "position": 0,
+                    "renderTypeName": "meta_data",
+                    "format": {},
+                    "flags": ["hidden"]
+                },
+                {
+                    "id": 165581924,
+                    "name": "id",
+                    "dataTypeName": "number",
+                    "fieldName": "id",
+                    "position": 2,
+                    "renderTypeName": "number",
+                    "tableColumnId": 21828799,
+                    "width": 124,
+                    "cachedContents": {
+                        "non_null": 17,
+                        "average": "9",
+                        "largest": "17",
+                        "null": 0,
+                        "top": [
+                            {
+                                "item": "1",
+                                "count": 20
+                            },
+                            {
+                                "item": "2",
+                                "count": 19
+                            },
+                            {
+                                "item": "3",
+                                "count": 18
+                            },
+                            {
+                                "item": "4",
+                                "count": 17
+                            },
+                            {
+                                "item": "5",
+                                "count": 16
+                            },
+                            {
+                                "item": "6",
+                                "count": 15
+                            },
+                            {
+                                "item": "7",
+                                "count": 14
+                            },
+                            {
+                                "item": "8",
+                                "count": 13
+                            },
+                            {
+                                "item": "9",
+                                "count": 12
+                            },
+                            {
+                                "item": "10",
+                                "count": 11
+                            },
+                            {
+                                "item": "11",
+                                "count": 10
+                            },
+                            {
+                                "item": "12",
+                                "count": 9
+                            },
+                            {
+                                "item": "13",
+                                "count": 8
+                            },
+                            {
+                                "item": "14",
+                                "count": 7
+                            },
+                            {
+                                "item": "15",
+                                "count": 6
+                            },
+                            {
+                                "item": "16",
+                                "count": 5
+                            },
+                            {
+                                "item": "17",
+                                "count": 4
+                            }
+                        ],
+                        "smallest": "1",
+                        "sum": "153"
+                    },
+                    "format": {}
+                },
+                {
+                    "id": 165581925,
+                    "name": "Title",
+                    "dataTypeName": "text",
+                    "fieldName": "title",
+                    "position": 3,
+                    "renderTypeName": "text",
+                    "tableColumnId": 21828800,
+                    "width": 160,
+                    "cachedContents": {
+                        "non_null": 17,
+                        "largest": "State Wildflower",
+                        "null": 0,
+                        "top": [
+                            {
+                                "item": "State Name",
+                                "count": 20
+                            },
+                            {
+                                "item": "State Nickname",
+                                "count": 19
+                            },
+                            {
+                                "item": "Capitol",
+                                "count": 18
+                            },
+                            {
+                                "item": "Admission to the Union",
+                                "count": 17
+                            },
+                            {
+                                "item": "State Motto",
+                                "count": 16
+                            },
+                            {
+                                "item": "State Flower",
+                                "count": 15
+                            },
+                            {
+                                "item": "State Seal",
+                                "count": 14
+                            },
+                            {
+                                "item": "State Bird",
+                                "count": 13
+                            },
+                            {
+                                "item": "State Tree",
+                                "count": 12
+                            },
+                            {
+                                "item": "State Stone",
+                                "count": 11
+                            },
+                            {
+                                "item": "State Gem",
+                                "count": 10
+                            },
+                            {
+                                "item": "State Fish",
+                                "count": 9
+                            },
+                            {
+                                "item": "State Soil",
+                                "count": 8
+                            },
+                            {
+                                "item": "State Reptile",
+                                "count": 7
+                            },
+                            {
+                                "item": "State Game Mammal",
+                                "count": 6
+                            },
+                            {
+                                "item": "State Wildflower",
+                                "count": 5
+                            },
+                            {
+                                "item": "State Fossil",
+                                "count": 4
+                            }
+                        ],
+                        "smallest": "Admission to the Union"
+                    },
+                    "format": {}
+                },
+                {
+                    "id": 165581926,
+                    "name": "Fact",
+                    "dataTypeName": "text",
+                    "fieldName": "fact",
+                    "position": 4,
+                    "renderTypeName": "text",
+                    "tableColumnId": 21828801,
+                    "width": 148,
+                    "cachedContents": {
+                        "non_null": 17,
+                        "largest": "’Michigan’ is derived from the Native American word ‘Michigama,’ meaning large lake",
+                        "null": 0,
+                        "top": [
+                            {
+                                "item": "’Michigan’ is derived from the Native American word ‘Michigama,’ meaning large lake",
+                                "count": 20
+                            },
+                            {
+                                "item": "The Wolverine State",
+                                "count": 19
+                            },
+                            {
+                                "item": "Lansing",
+                                "count": 18
+                            },
+                            {
+                                "item": "Michigan became the 26th state",
+                                "count": 17
+                            },
+                            {
+                                "item": "Si Quaeris Peninsulam Amoenam Circumspice (If you seek a pleasant peninsula, look about you)",
+                                "count": 16
+                            },
+                            {
+                                "item": "Apple blossom",
+                                "count": 15
+                            },
+                            {
+                                "item": "Adopted by the legislature in 1911",
+                                "count": 14
+                            },
+                            {
+                                "item": "Robin",
+                                "count": 13
+                            },
+                            {
+                                "item": "white pine",
+                                "count": 12
+                            },
+                            {
+                                "item": "Petoskey stone",
+                                "count": 11
+                            },
+                            {
+                                "item": "Chlorastrolite (known as 'greenstone')",
+                                "count": 10
+                            },
+                            {
+                                "item": "Brook trout",
+                                "count": 9
+                            },
+                            {
+                                "item": "Kalkaska Soil Series",
+                                "count": 8
+                            },
+                            {
+                                "item": "Painted turtle",
+                                "count": 7
+                            },
+                            {
+                                "item": "White-tailed deer",
+                                "count": 6
+                            },
+                            {
+                                "item": "Dwarf lake iris",
+                                "count": 5
+                            },
+                            {
+                                "item": "Mastodon",
+                                "count": 4
+                            }
+                        ],
+                        "smallest": "Adopted by the legislature in 1911"
+                    },
+                    "format": {}
+                },
+                {
+                    "id": 165581927,
+                    "name": "Year",
+                    "dataTypeName": "number",
+                    "fieldName": "year",
+                    "position": 5,
+                    "renderTypeName": "number",
+                    "tableColumnId": 21828802,
+                    "width": 148,
+                    "cachedContents": {
+                        "non_null": 14,
+                        "average": "1948.928571428571",
+                        "largest": "2002",
+                        "null": 3,
+                        "top": [
+                            {
+                                "item": "1847",
+                                "count": 20
+                            },
+                            {
+                                "item": "1837",
+                                "count": 19
+                            },
+                            {
+                                "item": "1897",
+                                "count": 18
+                            },
+                            {
+                                "item": "1911",
+                                "count": 17
+                            },
+                            {
+                                "item": "1931",
+                                "count": 16
+                            },
+                            {
+                                "item": "1955",
+                                "count": 15
+                            },
+                            {
+                                "item": "1965",
+                                "count": 14
+                            },
+                            {
+                                "item": "1972",
+                                "count": 13
+                            },
+                            {
+                                "item": "1988",
+                                "count": 12
+                            },
+                            {
+                                "item": "1990",
+                                "count": 11
+                            },
+                            {
+                                "item": "1995",
+                                "count": 10
+                            },
+                            {
+                                "item": "1997",
+                                "count": 9
+                            },
+                            {
+                                "item": "1998",
+                                "count": 8
+                            },
+                            {
+                                "item": "2002",
+                                "count": 7
+                            }
+                        ],
+                        "smallest": "1837",
+                        "sum": "27285"
+                    },
+                    "format": {}
+                }
+            ],
+            "grants": [
+                {
+                    "inherited": false,
+                    "type": "viewer",
+                    "flags": ["public"]
+                }
+            ],
+            "license": {
+                "name": "Public Domain"
+            },
+            "metadata": {
+                "renderTypeConfig": {
+                    "visible": {
+                        "table": true
+                    }
+                },
+                "availableDisplayTypes": ["table", "fatrow", "page"],
+                "rdfSubject": "0",
+                "rowIdentifier": "0",
+                "rdfClass": ""
+            },
+            "owner": {
+                "id": "7sm8-u9c7",
+                "displayName": "James",
+                "screenName": "James"
+            },
+            "query": {},
+            "rights": ["read"],
+            "tableAuthor": {
+                "id": "7sm8-u9c7",
+                "displayName": "James",
+                "screenName": "James"
+            },
+            "flags": ["default", "restorable", "restorePossibleForType"]
+        }
+    },
+    "data": [
+        [
+            1,
+            "7E0E34AD-544E-4760-B846-26CEB2F58DAC",
+            1,
+            1409967241,
+            "884692",
+            1409967241,
+            "884692",
+            "{\n}",
+            "1",
+            "State Name",
+            "’Michigan’ is derived from the Native American word ‘Michigama,’ meaning large lake",
+            null
+        ],
+        [
+            2,
+            "3549955D-959E-495C-B65F-99E4BF39E4ED",
+            2,
+            1409967241,
+            "884692",
+            1409967241,
+            "884692",
+            "{\n}",
+            "2",
+            "State Nickname",
+            "The Wolverine State",
+            null
+        ],
+        [
+            3,
+            "990121F5-0561-4F6E-82DB-95010FF72DDE",
+            3,
+            1409967241,
+            "884692",
+            1409967241,
+            "884692",
+            "{\n}",
+            "3",
+            "Capitol",
+            "Lansing",
+            "1847"
+        ],
+        [
+            4,
+            "9B737E3F-EE4B-49B9-A764-6E22A4C72839",
+            4,
+            1409967241,
+            "884692",
+            1409967241,
+            "884692",
+            "{\n}",
+            "4",
+            "Admission to the Union",
+            "Michigan became the 26th state",
+            "1837"
+        ],
+        [
+            5,
+            "A36DC235-A2B2-4EA9-B8B5-1B367C37C276",
+            5,
+            1409967241,
+            "884692",
+            1409967241,
+            "884692",
+            "{\n}",
+            "5",
+            "State Motto",
+            "Si Quaeris Peninsulam Amoenam Circumspice (If you seek a pleasant peninsula, look about you)",
+            null
+        ],
+        [
+            6,
+            "F36BEA99-FFE9-4132-9444-E3A87AA40E38",
+            6,
+            1409967241,
+            "884692",
+            1409967241,
+            "884692",
+            "{\n}",
+            "6",
+            "State Flower",
+            "Apple blossom",
+            "1897"
+        ],
+        [
+            7,
+            "8CA2071E-FF1F-453B-92F0-E4E9E6350095",
+            7,
+            1409967241,
+            "884692",
+            1409967241,
+            "884692",
+            "{\n}",
+            "7",
+            "State Seal",
+            "Adopted by the legislature in 1911",
+            "1911"
+        ],
+        [
+            8,
+            "A76E8DD0-8048-4B44-BECA-68E092B91D58",
+            8,
+            1409967241,
+            "884692",
+            1409967241,
+            "884692",
+            "{\n}",
+            "8",
+            "State Bird",
+            "Robin",
+            "1931"
+        ],
+        [
+            9,
+            "34C17823-FE3D-4CDB-B964-D0CB146189D3",
+            9,
+            1409967241,
+            "884692",
+            1409967241,
+            "884692",
+            "{\n}",
+            "9",
+            "State Tree",
+            "white pine",
+            "1955"
+        ],
+        [
+            10,
+            "C6F08305-404B-43F1-B7C3-F03D7CEE13DD",
+            10,
+            1409967241,
+            "884692",
+            1409967241,
+            "884692",
+            "{\n}",
+            "10",
+            "State Stone",
+            "Petoskey stone",
+            "1965"
+        ],
+        [
+            11,
+            "B4C66636-D936-4A56-841B-AC8A370B9185",
+            11,
+            1409967241,
+            "884692",
+            1409967241,
+            "884692",
+            "{\n}",
+            "11",
+            "State Gem",
+            "Chlorastrolite (known as 'greenstone')",
+            "1972"
+        ],
+        [
+            12,
+            "C83B9EDA-05BC-4C2D-BEAD-2380718545E2",
+            12,
+            1409967241,
+            "884692",
+            1409967241,
+            "884692",
+            "{\n}",
+            "12",
+            "State Fish",
+            "Brook trout",
+            "1988"
+        ],
+        [
+            13,
+            "26505FB5-1E54-46B3-8E04-6C0394623083",
+            13,
+            1409967241,
+            "884692",
+            1409967241,
+            "884692",
+            "{\n}",
+            "13",
+            "State Soil",
+            "Kalkaska Soil Series",
+            "1990"
+        ],
+        [
+            14,
+            "59BAC236-CE4D-4553-BEA4-B6CDDAD763FD",
+            14,
+            1409967241,
+            "884692",
+            1409967241,
+            "884692",
+            "{\n}",
+            "14",
+            "State Reptile",
+            "Painted turtle",
+            "1995"
+        ],
+        [
+            15,
+            "239B9C9F-3152-491C-91D2-CB818154B658",
+            15,
+            1409967241,
+            "884692",
+            1409967241,
+            "884692",
+            "{\n}",
+            "15",
+            "State Game Mammal",
+            "White-tailed deer",
+            "1997"
+        ],
+        [
+            16,
+            "79A0B31A-061D-44DF-88C6-276EBCD27019",
+            16,
+            1409967241,
+            "884692",
+            1409967241,
+            "884692",
+            "{\n}",
+            "16",
+            "State Wildflower",
+            "Dwarf lake iris",
+            "1998"
+        ],
+        [
+            17,
+            "16A890CF-3D3D-4252-B784-6759D90BFB71",
+            17,
+            1409967241,
+            "884692",
+            1409967241,
+            "884692",
+            "{\n}",
+            "17",
+            "State Fossil",
+            "Mastodon",
+            "2002"
+        ]
+    ]
 }

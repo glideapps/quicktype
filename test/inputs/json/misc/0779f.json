@@ -1,1 +1,30 @@
-{"delay":"false","IATA":"CLE","state":"Ohio","name":"Cleveland Hopkins International","weather":{"visibility":10.00,"weather":"Partly Cloudy","meta":{"credit":"NOAA's National Weather Service","updated":"6:51 PM Local","url":"http://weather.gov/"},"temp":"78.0 F (25.6 C)","wind":"Northeast at 10.4mph"},"ICAO":"KCLE","city":"Cleveland","status":{"reason":"No known delays for this airport.","closureBegin":"","endTime":"","minDelay":"","avgDelay":"","maxDelay":"","closureEnd":"","trend":"","type":""}} 
+{
+    "delay": "false",
+    "IATA": "CLE",
+    "state": "Ohio",
+    "name": "Cleveland Hopkins International",
+    "weather": {
+        "visibility": 10.0,
+        "weather": "Partly Cloudy",
+        "meta": {
+            "credit": "NOAA's National Weather Service",
+            "updated": "6:51 PM Local",
+            "url": "http://weather.gov/"
+        },
+        "temp": "78.0 F (25.6 C)",
+        "wind": "Northeast at 10.4mph"
+    },
+    "ICAO": "KCLE",
+    "city": "Cleveland",
+    "status": {
+        "reason": "No known delays for this airport.",
+        "closureBegin": "",
+        "endTime": "",
+        "minDelay": "",
+        "avgDelay": "",
+        "maxDelay": "",
+        "closureEnd": "",
+        "trend": "",
+        "type": ""
+    }
+}

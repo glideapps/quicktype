@@ -1,4 +1,56 @@
-{"status":"REQUEST_SUCCEEDED","responseTime":30,"message":[],"Results":{
-"series":
-[{"seriesID":"CES0500000003","data":[{"year":"2017","period":"M06","periodName":"June","value":"26.25","footnotes":[{"code":"P","text":"preliminary"}]},{"year":"2017","period":"M05","periodName":"May","value":"26.21","footnotes":[{"code":"P","text":"preliminary"}]},{"year":"2017","period":"M04","periodName":"April","value":"26.18","footnotes":[{}]},{"year":"2017","period":"M03","periodName":"March","value":"26.13","footnotes":[{}]},{"year":"2017","period":"M02","periodName":"February","value":"26.10","footnotes":[{}]},{"year":"2017","period":"M01","periodName":"January","value":"26.02","footnotes":[{}]},{"year":"2016","period":"M12","periodName":"December","value":"25.98","footnotes":[{}]},{"year":"2016","period":"M11","periodName":"November","value":"25.91","footnotes":[{}]},{"year":"2016","period":"M10","periodName":"October","value":"25.90","footnotes":[{}]},{"year":"2016","period":"M09","periodName":"September","value":"25.81","footnotes":[{}]},{"year":"2016","period":"M08","periodName":"August","value":"25.74","footnotes":[{}]},{"year":"2016","period":"M07","periodName":"July","value":"25.71","footnotes":[{}]},{"year":"2016","period":"M06","periodName":"June","value":"25.62","footnotes":[{}]},{"year":"2016","period":"M05","periodName":"May","value":"25.59","footnotes":[{}]},{"year":"2016","period":"M04","periodName":"April","value":"25.54","footnotes":[{}]},{"year":"2016","period":"M03","periodName":"March","value":"25.46","footnotes":[{}]},{"year":"2016","period":"M02","periodName":"February","value":"25.38","footnotes":[{}]},{"year":"2016","period":"M01","periodName":"January","value":"25.37","footnotes":[{}]},{"year":"2015","period":"M12","periodName":"December","value":"25.26","footnotes":[{}]},{"year":"2015","period":"M11","periodName":"November","value":"25.24","footnotes":[{}]},{"year":"2015","period":"M10","periodName":"October","value":"25.21","footnotes":[{}]},{"year":"2015","period":"M09","periodName":"September","value":"25.12","footnotes":[{}]},{"year":"2015","period":"M08","periodName":"August","value":"25.10","footnotes":[{}]},{"year":"2015","period":"M07","periodName":"July","value":"25.02","footnotes":[{}]},{"year":"2015","period":"M06","periodName":"June","value":"24.96","footnotes":[{}]},{"year":"2015","period":"M05","periodName":"May","value":"24.96","footnotes":[{}]},{"year":"2015","period":"M04","periodName":"April","value":"24.89","footnotes":[{}]},{"year":"2015","period":"M03","periodName":"March","value":"24.85","footnotes":[{}]},{"year":"2015","period":"M02","periodName":"February","value":"24.79","footnotes":[{}]},{"year":"2015","period":"M01","periodName":"January","value":"24.75","footnotes":[{}]}]}]
-}}
+{
+    "status": "REQUEST_SUCCEEDED",
+    "responseTime": 30,
+    "message": [],
+    "Results": {
+        "series": [
+            {
+                "seriesID": "CES0500000003",
+                "data": [
+                    {
+                        "year": "2017",
+                        "period": "M06",
+                        "periodName": "June",
+                        "value": "26.25",
+                        "footnotes": [{ "code": "P", "text": "preliminary" }]
+                    },
+                    {
+                        "year": "2017",
+                        "period": "M05",
+                        "periodName": "May",
+                        "value": "26.21",
+                        "footnotes": [{ "code": "P", "text": "preliminary" }]
+                    },
+                    { "year": "2017", "period": "M04", "periodName": "April", "value": "26.18", "footnotes": [{}] },
+                    { "year": "2017", "period": "M03", "periodName": "March", "value": "26.13", "footnotes": [{}] },
+                    { "year": "2017", "period": "M02", "periodName": "February", "value": "26.10", "footnotes": [{}] },
+                    { "year": "2017", "period": "M01", "periodName": "January", "value": "26.02", "footnotes": [{}] },
+                    { "year": "2016", "period": "M12", "periodName": "December", "value": "25.98", "footnotes": [{}] },
+                    { "year": "2016", "period": "M11", "periodName": "November", "value": "25.91", "footnotes": [{}] },
+                    { "year": "2016", "period": "M10", "periodName": "October", "value": "25.90", "footnotes": [{}] },
+                    { "year": "2016", "period": "M09", "periodName": "September", "value": "25.81", "footnotes": [{}] },
+                    { "year": "2016", "period": "M08", "periodName": "August", "value": "25.74", "footnotes": [{}] },
+                    { "year": "2016", "period": "M07", "periodName": "July", "value": "25.71", "footnotes": [{}] },
+                    { "year": "2016", "period": "M06", "periodName": "June", "value": "25.62", "footnotes": [{}] },
+                    { "year": "2016", "period": "M05", "periodName": "May", "value": "25.59", "footnotes": [{}] },
+                    { "year": "2016", "period": "M04", "periodName": "April", "value": "25.54", "footnotes": [{}] },
+                    { "year": "2016", "period": "M03", "periodName": "March", "value": "25.46", "footnotes": [{}] },
+                    { "year": "2016", "period": "M02", "periodName": "February", "value": "25.38", "footnotes": [{}] },
+                    { "year": "2016", "period": "M01", "periodName": "January", "value": "25.37", "footnotes": [{}] },
+                    { "year": "2015", "period": "M12", "periodName": "December", "value": "25.26", "footnotes": [{}] },
+                    { "year": "2015", "period": "M11", "periodName": "November", "value": "25.24", "footnotes": [{}] },
+                    { "year": "2015", "period": "M10", "periodName": "October", "value": "25.21", "footnotes": [{}] },
+                    { "year": "2015", "period": "M09", "periodName": "September", "value": "25.12", "footnotes": [{}] },
+                    { "year": "2015", "period": "M08", "periodName": "August", "value": "25.10", "footnotes": [{}] },
+                    { "year": "2015", "period": "M07", "periodName": "July", "value": "25.02", "footnotes": [{}] },
+                    { "year": "2015", "period": "M06", "periodName": "June", "value": "24.96", "footnotes": [{}] },
+                    { "year": "2015", "period": "M05", "periodName": "May", "value": "24.96", "footnotes": [{}] },
+                    { "year": "2015", "period": "M04", "periodName": "April", "value": "24.89", "footnotes": [{}] },
+                    { "year": "2015", "period": "M03", "periodName": "March", "value": "24.85", "footnotes": [{}] },
+                    { "year": "2015", "period": "M02", "periodName": "February", "value": "24.79", "footnotes": [{}] },
+                    { "year": "2015", "period": "M01", "periodName": "January", "value": "24.75", "footnotes": [{}] }
+                ]
+            }
+        ]
+    }
+}

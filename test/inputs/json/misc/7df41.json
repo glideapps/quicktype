@@ -1,1 +1,7 @@
-{"pc":{"label":"PC","count":11361,"peak24":17053},"ps3":{"label":"PS3","count":9614,"peak24":11067},"xbox":{"label":"XBOX360","count":2267,"peak24":2544},"xone":{"label":"XBOXONE","count":17395,"peak24":18728},"ps4":{"label":"PS4","count":19403,"peak24":22103}}
+{
+    "pc": { "label": "PC", "count": 11361, "peak24": 17053 },
+    "ps3": { "label": "PS3", "count": 9614, "peak24": 11067 },
+    "xbox": { "label": "XBOX360", "count": 2267, "peak24": 2544 },
+    "xone": { "label": "XBOXONE", "count": 17395, "peak24": 18728 },
+    "ps4": { "label": "PS4", "count": 19403, "peak24": 22103 }
+}

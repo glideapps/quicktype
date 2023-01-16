@@ -1,1 +1,126 @@
-{"query":{"count":1,"created":"2017-07-29T23:31:19Z","lang":"en-US","results":{"channel":{"units":{"distance":"mi","pressure":"in","speed":"mph","temperature":"F"},"title":"Yahoo! Weather - London, England, GB","link":"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-44418/","description":"Yahoo! Weather for London, England, GB","language":"en-us","lastBuildDate":"Sun, 30 Jul 2017 12:31 AM BST","ttl":"60","location":{"city":"London","country":"United Kingdom","region":" England"},"wind":{"chill":"63","direction":"160","speed":"7"},"atmosphere":{"humidity":"90","pressure":"1001.0","rising":"0","visibility":"16.1"},"astronomy":{"sunrise":"5:22 am","sunset":"8:51 pm"},"image":{"title":"Yahoo! Weather","width":"142","height":"18","link":"http://weather.yahoo.com","url":"http://l.yimg.com/a/i/brand/purplelogo//uh/us/news-wea.gif"},"item":{"title":"Conditions for London, England, GB at 11:00 PM BST","lat":"51.506401","long":"-0.12721","link":"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-44418/","pubDate":"Sat, 29 Jul 2017 11:00 PM BST","condition":{"code":"26","date":"Sat, 29 Jul 2017 11:00 PM BST","temp":"62","text":"Cloudy"},"forecast":[{"code":"12","date":"30 Jul 2017","day":"Sun","high":"69","low":"59","text":"Rain"},{"code":"30","date":"31 Jul 2017","day":"Mon","high":"68","low":"58","text":"Partly Cloudy"},{"code":"30","date":"01 Aug 2017","day":"Tue","high":"69","low":"55","text":"Partly Cloudy"},{"code":"28","date":"02 Aug 2017","day":"Wed","high":"69","low":"56","text":"Mostly Cloudy"},{"code":"23","date":"03 Aug 2017","day":"Thu","high":"69","low":"62","text":"Breezy"},{"code":"30","date":"04 Aug 2017","day":"Fri","high":"67","low":"58","text":"Partly Cloudy"},{"code":"30","date":"05 Aug 2017","day":"Sat","high":"68","low":"57","text":"Partly Cloudy"},{"code":"30","date":"06 Aug 2017","day":"Sun","high":"69","low":"57","text":"Partly Cloudy"},{"code":"30","date":"07 Aug 2017","day":"Mon","high":"71","low":"57","text":"Partly Cloudy"},{"code":"30","date":"08 Aug 2017","day":"Tue","high":"71","low":"58","text":"Partly Cloudy"}],"description":"<![CDATA[<img src=\"http://l.yimg.com/a/i/us/we/52/26.gif\"/>\n<BR />\n<b>Current Conditions:</b>\n<BR />Cloudy\n<BR />\n<BR />\n<b>Forecast:</b>\n<BR /> Sun - Rain. High: 69Low: 59\n<BR /> Mon - Partly Cloudy. High: 68Low: 58\n<BR /> Tue - Partly Cloudy. High: 69Low: 55\n<BR /> Wed - Mostly Cloudy. High: 69Low: 56\n<BR /> Thu - Breezy. High: 69Low: 62\n<BR />\n<BR />\n<a href=\"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-44418/\">Full Forecast at Yahoo! Weather</a>\n<BR />\n<BR />\n(provided by <a href=\"http://www.weather.com\" >The Weather Channel</a>)\n<BR />\n]]>","guid":{"isPermaLink":"false"}}}}}}
+{
+    "query": {
+        "count": 1,
+        "created": "2017-07-29T23:31:19Z",
+        "lang": "en-US",
+        "results": {
+            "channel": {
+                "units": { "distance": "mi", "pressure": "in", "speed": "mph", "temperature": "F" },
+                "title": "Yahoo! Weather - London, England, GB",
+                "link": "http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-44418/",
+                "description": "Yahoo! Weather for London, England, GB",
+                "language": "en-us",
+                "lastBuildDate": "Sun, 30 Jul 2017 12:31 AM BST",
+                "ttl": "60",
+                "location": { "city": "London", "country": "United Kingdom", "region": " England" },
+                "wind": { "chill": "63", "direction": "160", "speed": "7" },
+                "atmosphere": { "humidity": "90", "pressure": "1001.0", "rising": "0", "visibility": "16.1" },
+                "astronomy": { "sunrise": "5:22 am", "sunset": "8:51 pm" },
+                "image": {
+                    "title": "Yahoo! Weather",
+                    "width": "142",
+                    "height": "18",
+                    "link": "http://weather.yahoo.com",
+                    "url": "http://l.yimg.com/a/i/brand/purplelogo//uh/us/news-wea.gif"
+                },
+                "item": {
+                    "title": "Conditions for London, England, GB at 11:00 PM BST",
+                    "lat": "51.506401",
+                    "long": "-0.12721",
+                    "link": "http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-44418/",
+                    "pubDate": "Sat, 29 Jul 2017 11:00 PM BST",
+                    "condition": {
+                        "code": "26",
+                        "date": "Sat, 29 Jul 2017 11:00 PM BST",
+                        "temp": "62",
+                        "text": "Cloudy"
+                    },
+                    "forecast": [
+                        {
+                            "code": "12",
+                            "date": "30 Jul 2017",
+                            "day": "Sun",
+                            "high": "69",
+                            "low": "59",
+                            "text": "Rain"
+                        },
+                        {
+                            "code": "30",
+                            "date": "31 Jul 2017",
+                            "day": "Mon",
+                            "high": "68",
+                            "low": "58",
+                            "text": "Partly Cloudy"
+                        },
+                        {
+                            "code": "30",
+                            "date": "01 Aug 2017",
+                            "day": "Tue",
+                            "high": "69",
+                            "low": "55",
+                            "text": "Partly Cloudy"
+                        },
+                        {
+                            "code": "28",
+                            "date": "02 Aug 2017",
+                            "day": "Wed",
+                            "high": "69",
+                            "low": "56",
+                            "text": "Mostly Cloudy"
+                        },
+                        {
+                            "code": "23",
+                            "date": "03 Aug 2017",
+                            "day": "Thu",
+                            "high": "69",
+                            "low": "62",
+                            "text": "Breezy"
+                        },
+                        {
+                            "code": "30",
+                            "date": "04 Aug 2017",
+                            "day": "Fri",
+                            "high": "67",
+                            "low": "58",
+                            "text": "Partly Cloudy"
+                        },
+                        {
+                            "code": "30",
+                            "date": "05 Aug 2017",
+                            "day": "Sat",
+                            "high": "68",
+                            "low": "57",
+                            "text": "Partly Cloudy"
+                        },
+                        {
+                            "code": "30",
+                            "date": "06 Aug 2017",
+                            "day": "Sun",
+                            "high": "69",
+                            "low": "57",
+                            "text": "Partly Cloudy"
+                        },
+                        {
+                            "code": "30",
+                            "date": "07 Aug 2017",
+                            "day": "Mon",
+                            "high": "71",
+                            "low": "57",
+                            "text": "Partly Cloudy"
+                        },
+                        {
+                            "code": "30",
+                            "date": "08 Aug 2017",
+                            "day": "Tue",
+                            "high": "71",
+                            "low": "58",
+                            "text": "Partly Cloudy"
+                        }
+                    ],
+                    "description": "<![CDATA[<img src=\"http://l.yimg.com/a/i/us/we/52/26.gif\"/>\n<BR />\n<b>Current Conditions:</b>\n<BR />Cloudy\n<BR />\n<BR />\n<b>Forecast:</b>\n<BR /> Sun - Rain. High: 69Low: 59\n<BR /> Mon - Partly Cloudy. High: 68Low: 58\n<BR /> Tue - Partly Cloudy. High: 69Low: 55\n<BR /> Wed - Mostly Cloudy. High: 69Low: 56\n<BR /> Thu - Breezy. High: 69Low: 62\n<BR />\n<BR />\n<a href=\"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-44418/\">Full Forecast at Yahoo! Weather</a>\n<BR />\n<BR />\n(provided by <a href=\"http://www.weather.com\" >The Weather Channel</a>)\n<BR />\n]]>",
+                    "guid": { "isPermaLink": "false" }
+                }
+            }
+        }
+    }
+}

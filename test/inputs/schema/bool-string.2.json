@@ -1,6 +1,6 @@
 {
-  "one": "true",
-  "nullable": null,
-  "unionWithBool": true,
-  "unionWithBoolAndEnum": false
+    "one": "true",
+    "nullable": null,
+    "unionWithBool": true,
+    "unionWithBoolAndEnum": false
 }

@@ -6,13 +6,9 @@
         "version": "2.0.0"
     },
     "host": "api.trade.gov",
-    "schemes": [
-        "https"
-    ],
+    "schemes": ["https"],
     "basePath": "/v2",
-    "produces": [
-        "application/json"
-    ],
+    "produces": ["application/json"],
     "paths": {
         "/business_service_providers/search": {
             "get": {
@@ -60,13 +56,7 @@
                         "format": "string"
                     }
                 ],
-                "tags": [
-                    "Trade",
-                    "Exporting",
-                    "ITA",
-                    "International",
-                    "Service Providers"
-                ],
+                "tags": ["Trade", "Exporting", "ITA", "International", "Service Providers"],
                 "responses": {
                     "200": {
                         "description": "History information for the given user",
@@ -124,7 +114,7 @@
                 "category": {
                     "type": "string",
                     "description": "Category of services that company provides."
-                }                
+                }
             }
         }
     }

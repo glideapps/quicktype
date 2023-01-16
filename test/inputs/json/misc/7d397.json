@@ -6,13 +6,9 @@
         "version": "2.0.0"
     },
     "host": "api.trade.gov",
-    "schemes": [
-        "https"
-    ],
+    "schemes": ["https"],
     "basePath": "/v2",
-    "produces": [
-        "application/json"
-    ],
+    "produces": ["application/json"],
     "paths": {
         "/consolidated_screening_list/search": {
             "get": {

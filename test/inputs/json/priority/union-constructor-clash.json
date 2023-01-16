@@ -1,6 +1,6 @@
 {
-  "union": [123, true],
-  "BoolInUnion": {
-    "a": true
-  }
+    "union": [123, true],
+    "BoolInUnion": {
+        "a": true
+    }
 }

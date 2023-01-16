@@ -1,5 +1,5 @@
 {
-  "foo": 123,
-  "bar": true,
-  "quux": "bla"
+    "foo": 123,
+    "bar": true,
+    "quux": "bla"
 }

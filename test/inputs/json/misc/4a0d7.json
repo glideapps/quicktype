@@ -1,1 +1,6 @@
-{"total_population": [{"date": "2017-07-29", "population": 326651270}, {"date": "2017-07-30", "population": 326657725}]}
+{
+    "total_population": [
+        { "date": "2017-07-29", "population": 326651270 },
+        { "date": "2017-07-30", "population": 326657725 }
+    ]
+}

@@ -1,15 +1,15 @@
 {
-  "data": {
-    "repository": {
-      "nameWithOwner": "quicktype/quicktype",
-      "n303": {
-        "title": "Don't process.exit on error when running tests",
-        "state": "OPEN"
-      },
-      "n307": {
-        "title": "DO NOT MERGE: GraphQL",
-        "merged": false
-      }
+    "data": {
+        "repository": {
+            "nameWithOwner": "quicktype/quicktype",
+            "n303": {
+                "title": "Don't process.exit on error when running tests",
+                "state": "OPEN"
+            },
+            "n307": {
+                "title": "DO NOT MERGE: GraphQL",
+                "merged": false
+            }
+        }
     }
-  }
 }

@@ -6,13 +6,9 @@
         "version": "2.0.0"
     },
     "host": "api.trade.gov",
-    "schemes": [
-        "https"
-    ],
+    "schemes": ["https"],
     "basePath": "/v2",
-    "produces": [
-        "application/json"
-    ],
+    "produces": ["application/json"],
     "paths": {
         "/market_research_library/search": {
             "get": {
@@ -68,14 +64,7 @@
                         "format": "string"
                     }
                 ],
-                "tags": [
-                    "Trade",
-                    "Exporting",
-                    "ITA",
-                    "International",
-                    "Market Research",
-                    "Market Intelligence"
-                ],
+                "tags": ["Trade", "Exporting", "ITA", "International", "Market Research", "Market Intelligence"],
                 "responses": {
                     "200": {
                         "description": "Successful Report Response",
@@ -109,7 +98,7 @@
                     "description": "Date when the report is no longer valid.",
                     "type": "string"
                 },
-                 "source_industry": {
+                "source_industry": {
                     "description": "The industries associated with the report.",
                     "type": "string"
                 },

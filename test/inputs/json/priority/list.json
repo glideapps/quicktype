@@ -1,1 +1,1 @@
-{"data": 123, "next": {"data": 234, "next": {"data": 3456, "next": null}}}
+{ "data": 123, "next": { "data": 234, "next": { "data": 3456, "next": null } } }

@@ -1,8 +1,8 @@
 {
-  "headers": {
-    "Accept-Encoding": "identity", 
-    "Connection": "close", 
-    "Host": "httpbin.org", 
-    "User-Agent": "Python-urllib/3.6"
-  }
+    "headers": {
+        "Accept-Encoding": "identity",
+        "Connection": "close",
+        "Host": "httpbin.org",
+        "User-Agent": "Python-urllib/3.6"
+    }
 }

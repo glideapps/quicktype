@@ -1,1 +1,79 @@
-{"metadata":{"responseInfo":{"status":200,"developerMessage":"OK"},"resultset":{"count":1631,"pagesize":2,"page":0},"executionTime":0.38020205497742},"results":[{"about_office":"<root><p>The United States Attorney's Office serves as the principal litigator for its judicial district and is responsible for coordinating multiple agency investigations within the district. The United States Attorney has the responsibility and authority to prosecute violations of federal criminal statutes, defend the government in civil action, seek the enforcement of a variety of civil enforcement statutes, and institute proceedings for the collection of fines and penalties among other things.</p>\n</root>","application_process":"<root><p>Cover letter, resume, official law school transcript, legal writing sample, dates when available, and telephone number(s) where student can be reached in the day and evenings.</p>\n\n<p>USAO Middle District of Alabama<br />\nHuman Resources Office<br />\n131 Clayton Street Montgomery, AL 36104<br />\nATTN: Retta Goss, Administrative Officer<br />\nTelephone:(334) 223-7280<br />\nFax:(334) 223-7524</p>\n\n<p>Application Deadlines:\u00a0Fall: May 1<br />\n\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 \u00a0Spring: September 1<br />\n\u00a0</p>\n</root>","body":"<root><p>Typical assignments will include assisting with all facets of case preparation including: researching legal issues, drafting/writing motions and responses and various pleadings, providing trial support to Assistant United States Attorneys, interviewing witnesses, and assembling exhibits for trial.</p>\n\n<p>Minimum Weeks Required: 8 weeks</p>\n\n<p>Internship Location:\u00a0 Montgomery</p>\n</root>","changed":"1483046185","created":"1399914723","deadline":null,"hiring_office":null,"hiring_org":{"uuid":"8ac879f8-0a2d-4240-8209-9403ff038743","name":"USAO Middle District of Alabama"},"job_id":null,"language":"en","location":{"country":"US","administrative_area":"AL","locality":"Montgomery","postal_code":"36104","thoroughfare":"","sub_premise":null,"phone_number":"","phone_number_extension":"","mobile_number":"","fax_number":""},"num_positions":"2","position":"law_student_volunteer_academic_year","practice_area":"oarm-crimelaw","qualifications":"<root><p>First-year (second semester), second- and third-year law students are eligible to apply. Law school graduates are not eligible for summer positions. Must be a U.S. citizen and will be subjected to a security background investigation due to the sensitive nature of the work performed by the office.</p>\n</root>","relocation_expenses":null,"salary":"Work-study credit may be possible.","title":"Law Student Volunteer, Academic Year","travel":"None","url":"https://www.justice.gov/legal-careers/job/usao-middle-district-alabama","uuid":"f46e1378-5a69-4cd0-9ff8-07bff18a9240","vuuid":"e6f43893-5787-4381-83aa-e7aaca8ea9bf"},{"about_office":"<root><p>The USAO for the District of Alaska is charged with the primary responsibility of representing the United States in court. The Criminal Division is responsible for prosecuting all federal crimes ranging from acts of terrorism to public corruption, white-collar crime, gang and gun crimes, internet-related crimes, and environmental crimes. Through its Civil Division, the Office is charged with defending agencies of the United States, enforcing regulatory agencies\u2019 authority, and recovering funds from violators of U.S. criminal, regulatory, and civil laws.</p>\n</root>","application_process":"<root><p>Cover letter, resume, official law school transcript, legal writing sample, date when available, and telephone number(s) where a student can be reached in the day and evenings.</p>\n\n<p><a href=\"/usao/ak/\">USAO District of Alaska</a><br />\nHuman Resources Office<br />\n222 West 7th Avenue, #9<br />\nAnchorage, AK 99513</p>\n\n<p>Telephone:\u00a0 (907) 271-5071<br />\nFax:\u00a0 (907) 271-1500<br />\nEmail:\u00a0 <a href=\"mailto:Aunnie.Steward@usdoj.gov\">Aunnie.Steward@usdoj.gov</a><br />\nApplications may be sent via email to the above email address.</p>\n\n<p>Application Deadline:\u00a0 Fall: June 1<br />\nSpring: October 1</p>\n</root>","body":"<root><p>Perform research projects and assist in discovery, motion practice, and trial preparation. To ensure that all interns finish the summer with a good writing sample, every intern will work under the guidance of an AUSA to prepare documents to be filed with the court. Interns will be given assignments with as many different attorneys as possible, providing exposure to a wider variety of practice areas and professional contacts. We also have brown bag lunches at which AUSAs, the defense bar, the judiciary, and federal agents speak. Our goal is to introduce our interns to the federal legal system, to develop their legal skills and, above all, to enjoy their summer here in the Last Frontier (with 20+ hours of daylight).</p>\n\n<p>Internship Locations:\u00a0\u00a0 Anchorage (5); Fairbanks (1); Juneau (1)</p>\n\n<p>Minimum Weeks Required:\u00a0 8 - 10 weeks</p>\n</root>","changed":"1460029521","created":"1399914723","deadline":null,"hiring_office":null,"hiring_org":{"uuid":"089db8e3-1ca9-43f8-9bd1-f608b3e927a0","name":"USAO District of Alaska"},"job_id":null,"language":"en","location":{"country":"US","administrative_area":"AK","locality":"Anchorage","postal_code":"99513","thoroughfare":"222 West 7th Avenue, #9","sub_premise":null,"phone_number":"","phone_number_extension":"","mobile_number":"","fax_number":""},"num_positions":"7","position":"law_student_volunteer_academic_year","practice_area":"oarm-civilliti","qualifications":"<root><p>First-year (second semester), second- and third-year law students. Second and third year students may appear in court. Must be a U.S. citizen. There is a required background check because of the sensitive nature of the work performed by the USAO.</p>\n</root>","relocation_expenses":null,"salary":"Work-study credit possible.","title":"Law Student Volunteer, Academic Year","travel":"None","url":"https://www.justice.gov/legal-careers/job/usao-district-alaska","uuid":"92db84e4-3e3d-41f0-bc79-c1b9d2153e35","vuuid":"44414d0c-fadd-4370-9687-e32dff9a3e11"}]}
+{
+    "metadata": {
+        "responseInfo": { "status": 200, "developerMessage": "OK" },
+        "resultset": { "count": 1631, "pagesize": 2, "page": 0 },
+        "executionTime": 0.38020205497742
+    },
+    "results": [
+        {
+            "about_office": "<root><p>The United States Attorney's Office serves as the principal litigator for its judicial district and is responsible for coordinating multiple agency investigations within the district. The United States Attorney has the responsibility and authority to prosecute violations of federal criminal statutes, defend the government in civil action, seek the enforcement of a variety of civil enforcement statutes, and institute proceedings for the collection of fines and penalties among other things.</p>\n</root>",
+            "application_process": "<root><p>Cover letter, resume, official law school transcript, legal writing sample, dates when available, and telephone number(s) where student can be reached in the day and evenings.</p>\n\n<p>USAO Middle District of Alabama<br />\nHuman Resources Office<br />\n131 Clayton Street Montgomery, AL 36104<br />\nATTN: Retta Goss, Administrative Officer<br />\nTelephone:(334) 223-7280<br />\nFax:(334) 223-7524</p>\n\n<p>Application Deadlines:\u00a0Fall: May 1<br />\n\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 \u00a0Spring: September 1<br />\n\u00a0</p>\n</root>",
+            "body": "<root><p>Typical assignments will include assisting with all facets of case preparation including: researching legal issues, drafting/writing motions and responses and various pleadings, providing trial support to Assistant United States Attorneys, interviewing witnesses, and assembling exhibits for trial.</p>\n\n<p>Minimum Weeks Required: 8 weeks</p>\n\n<p>Internship Location:\u00a0 Montgomery</p>\n</root>",
+            "changed": "1483046185",
+            "created": "1399914723",
+            "deadline": null,
+            "hiring_office": null,
+            "hiring_org": { "uuid": "8ac879f8-0a2d-4240-8209-9403ff038743", "name": "USAO Middle District of Alabama" },
+            "job_id": null,
+            "language": "en",
+            "location": {
+                "country": "US",
+                "administrative_area": "AL",
+                "locality": "Montgomery",
+                "postal_code": "36104",
+                "thoroughfare": "",
+                "sub_premise": null,
+                "phone_number": "",
+                "phone_number_extension": "",
+                "mobile_number": "",
+                "fax_number": ""
+            },
+            "num_positions": "2",
+            "position": "law_student_volunteer_academic_year",
+            "practice_area": "oarm-crimelaw",
+            "qualifications": "<root><p>First-year (second semester), second- and third-year law students are eligible to apply. Law school graduates are not eligible for summer positions. Must be a U.S. citizen and will be subjected to a security background investigation due to the sensitive nature of the work performed by the office.</p>\n</root>",
+            "relocation_expenses": null,
+            "salary": "Work-study credit may be possible.",
+            "title": "Law Student Volunteer, Academic Year",
+            "travel": "None",
+            "url": "https://www.justice.gov/legal-careers/job/usao-middle-district-alabama",
+            "uuid": "f46e1378-5a69-4cd0-9ff8-07bff18a9240",
+            "vuuid": "e6f43893-5787-4381-83aa-e7aaca8ea9bf"
+        },
+        {
+            "about_office": "<root><p>The USAO for the District of Alaska is charged with the primary responsibility of representing the United States in court. The Criminal Division is responsible for prosecuting all federal crimes ranging from acts of terrorism to public corruption, white-collar crime, gang and gun crimes, internet-related crimes, and environmental crimes. Through its Civil Division, the Office is charged with defending agencies of the United States, enforcing regulatory agencies\u2019 authority, and recovering funds from violators of U.S. criminal, regulatory, and civil laws.</p>\n</root>",
+            "application_process": "<root><p>Cover letter, resume, official law school transcript, legal writing sample, date when available, and telephone number(s) where a student can be reached in the day and evenings.</p>\n\n<p><a href=\"/usao/ak/\">USAO District of Alaska</a><br />\nHuman Resources Office<br />\n222 West 7th Avenue, #9<br />\nAnchorage, AK 99513</p>\n\n<p>Telephone:\u00a0 (907) 271-5071<br />\nFax:\u00a0 (907) 271-1500<br />\nEmail:\u00a0 <a href=\"mailto:Aunnie.Steward@usdoj.gov\">Aunnie.Steward@usdoj.gov</a><br />\nApplications may be sent via email to the above email address.</p>\n\n<p>Application Deadline:\u00a0 Fall: June 1<br />\nSpring: October 1</p>\n</root>",
+            "body": "<root><p>Perform research projects and assist in discovery, motion practice, and trial preparation. To ensure that all interns finish the summer with a good writing sample, every intern will work under the guidance of an AUSA to prepare documents to be filed with the court. Interns will be given assignments with as many different attorneys as possible, providing exposure to a wider variety of practice areas and professional contacts. We also have brown bag lunches at which AUSAs, the defense bar, the judiciary, and federal agents speak. Our goal is to introduce our interns to the federal legal system, to develop their legal skills and, above all, to enjoy their summer here in the Last Frontier (with 20+ hours of daylight).</p>\n\n<p>Internship Locations:\u00a0\u00a0 Anchorage (5); Fairbanks (1); Juneau (1)</p>\n\n<p>Minimum Weeks Required:\u00a0 8 - 10 weeks</p>\n</root>",
+            "changed": "1460029521",
+            "created": "1399914723",
+            "deadline": null,
+            "hiring_office": null,
+            "hiring_org": { "uuid": "089db8e3-1ca9-43f8-9bd1-f608b3e927a0", "name": "USAO District of Alaska" },
+            "job_id": null,
+            "language": "en",
+            "location": {
+                "country": "US",
+                "administrative_area": "AK",
+                "locality": "Anchorage",
+                "postal_code": "99513",
+                "thoroughfare": "222 West 7th Avenue, #9",
+                "sub_premise": null,
+                "phone_number": "",
+                "phone_number_extension": "",
+                "mobile_number": "",
+                "fax_number": ""
+            },
+            "num_positions": "7",
+            "position": "law_student_volunteer_academic_year",
+            "practice_area": "oarm-civilliti",
+            "qualifications": "<root><p>First-year (second semester), second- and third-year law students. Second and third year students may appear in court. Must be a U.S. citizen. There is a required background check because of the sensitive nature of the work performed by the USAO.</p>\n</root>",
+            "relocation_expenses": null,
+            "salary": "Work-study credit possible.",
+            "title": "Law Student Volunteer, Academic Year",
+            "travel": "None",
+            "url": "https://www.justice.gov/legal-careers/job/usao-district-alaska",
+            "uuid": "92db84e4-3e3d-41f0-bc79-c1b9d2153e35",
+            "vuuid": "44414d0c-fadd-4370-9687-e32dff9a3e11"
+        }
+    ]
+}

@@ -1,1 +1,30 @@
-{"delay":"false","IATA":"BOS","state":"Massachusetts","name":"General Edward Lawrence Logan International","weather":{"visibility":10.00,"weather":"Mostly Cloudy","meta":{"credit":"NOAA's National Weather Service","updated":"6:54 PM Local","url":"http://weather.gov/"},"temp":"66.0 F (18.9 C)","wind":"Northeast at 15.0mph"},"ICAO":"KBOS","city":"Boston","status":{"reason":"No known delays for this airport.","closureBegin":"","endTime":"","minDelay":"","avgDelay":"","maxDelay":"","closureEnd":"","trend":"","type":""}} 
+{
+    "delay": "false",
+    "IATA": "BOS",
+    "state": "Massachusetts",
+    "name": "General Edward Lawrence Logan International",
+    "weather": {
+        "visibility": 10.0,
+        "weather": "Mostly Cloudy",
+        "meta": {
+            "credit": "NOAA's National Weather Service",
+            "updated": "6:54 PM Local",
+            "url": "http://weather.gov/"
+        },
+        "temp": "66.0 F (18.9 C)",
+        "wind": "Northeast at 15.0mph"
+    },
+    "ICAO": "KBOS",
+    "city": "Boston",
+    "status": {
+        "reason": "No known delays for this airport.",
+        "closureBegin": "",
+        "endTime": "",
+        "minDelay": "",
+        "avgDelay": "",
+        "maxDelay": "",
+        "closureEnd": "",
+        "trend": "",
+        "type": ""
+    }
+}

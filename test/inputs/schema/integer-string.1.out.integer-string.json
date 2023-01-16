@@ -1,9 +1,9 @@
 {
-  "arrNullable": ["123", null, "234"],
-  "arrOne": ["123", "234"],
-  "nullable": "456",
-  "one": "123",
-  "optional": "345",
-  "unionWithInt": 123,
-  "unionWithIntAndEnum": 234
+    "arrNullable": ["123", null, "234"],
+    "arrOne": ["123", "234"],
+    "nullable": "456",
+    "one": "123",
+    "optional": "345",
+    "unionWithInt": 123,
+    "unionWithIntAndEnum": 234
 }

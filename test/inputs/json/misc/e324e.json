@@ -6,13 +6,9 @@
         "version": "2.0.0"
     },
     "host": "api.trade.gov",
-    "schemes": [
-        "https"
-    ],
+    "schemes": ["https"],
     "basePath": "/v2",
-    "produces": [
-        "application/json"
-    ],
+    "produces": ["application/json"],
     "paths": {
         "/tariff_rates/search": {
             "get": {
@@ -76,15 +72,7 @@
                         "format": "string"
                     }
                 ],
-                "tags": [
-                    "Trade",
-                    "Exporting",
-                    "ITA",
-                    "International",
-                    "Tariffs",
-                    "Duties",
-                    "Free Trade Agreements"
-                ],
+                "tags": ["Trade", "Exporting", "ITA", "International", "Tariffs", "Duties", "Free Trade Agreements"],
                 "responses": {
                     "200": {
                         "description": "Successful Rate Response",

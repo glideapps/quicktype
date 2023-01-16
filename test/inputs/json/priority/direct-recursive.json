@@ -4,9 +4,9 @@
     "quux": "hullo",
     "moo": 3.1415,
     "also": {
-	"foo": 123,
-	"bar": true,
-	"quux": "hullo",
-	"moo": 3.1415
+        "foo": 123,
+        "bar": true,
+        "quux": "hullo",
+        "moo": 3.1415
     }
 }

@@ -1,1 +1,4 @@
-[{ "one": 123, "two": true }, { "two": false, "three": 3.1415 }]
+[
+    { "one": 123, "two": true },
+    { "two": false, "three": 3.1415 }
+]

@@ -1,2265 +1,2265 @@
 {
-  "server_time": 1523196243,
-  "pairs": {
-    "ltc_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "steem_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 0.001,
-      "max_amount": 1000000000,
-      "min_total": 0.0001,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "sbd_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 0.001,
-      "max_amount": 1000000000,
-      "min_total": 0.0001,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "dash_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "ans_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000000,
-      "min_total": 0.0001,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "dct_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000000,
-      "min_total": 0.0001,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "icn_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "eth_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "xzc_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000000,
-      "min_total": 0.0001,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "golos_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 0.001,
-      "max_amount": 1000000000,
-      "min_total": 0.0001,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "gbg_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 0.001,
-      "max_amount": 1000000000,
-      "min_total": 0.0001,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "gnt_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "wings_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "plu_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 100000000,
-      "min_total": 0.0001,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "round_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000000,
-      "min_total": 0.0001,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "vsl_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000000,
-      "min_total": 0.0001,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "1st_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000000,
-      "min_total": 0.0001,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "waves_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 100000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "incnt_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 0.0001,
-      "max_amount": 10000000,
-      "min_total": 0.0001,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "mln_btc": {
-      "decimal_places": 8,
-      "min_price": 0.0001,
-      "max_price": 20,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "time_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "gnt_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 100000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "ltc_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "dash_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 20,
-      "min_amount": 1e-08,
-      "max_amount": 10000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "1st_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "icn_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "mln_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 10000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "round_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 100000000,
-      "min_total": 0.001,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "waves_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 10000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "time_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 20,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "vsl_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 100000000,
-      "min_total": 0.001,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "plu_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 100000000,
-      "min_total": 0.001,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "incnt_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 10000000,
-      "min_total": 0.001,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "ltc_usdt": {
-      "decimal_places": 8,
-      "min_price": 0.01,
-      "max_price": 6000,
-      "min_amount": 0.001,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "btc_usdt": {
-      "decimal_places": 8,
-      "min_price": 1,
-      "max_price": 100000,
-      "min_amount": 1e-05,
-      "max_amount": 10000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "dash_usdt": {
-      "decimal_places": 8,
-      "min_price": 1,
-      "max_price": 20000,
-      "min_amount": 0.0001,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "eth_usdt": {
-      "decimal_places": 8,
-      "min_price": 1,
-      "max_price": 2000,
-      "min_amount": 0.0001,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "icn_usdt": {
-      "decimal_places": 8,
-      "min_price": 0.01,
-      "max_price": 200,
-      "min_amount": 0.01,
-      "max_amount": 5000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "gnt_usdt": {
-      "decimal_places": 8,
-      "min_price": 0.001,
-      "max_price": 20,
-      "min_amount": 0.01,
-      "max_amount": 50000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "round_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 20,
-      "min_amount": 1,
-      "max_amount": 10000000,
-      "min_total": 1,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "vsl_usdt": {
-      "decimal_places": 8,
-      "min_price": 0.001,
-      "max_price": 10,
-      "min_amount": 0.1,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "1st_usdt": {
-      "decimal_places": 8,
-      "min_price": 0.001,
-      "max_price": 200,
-      "min_amount": 0.01,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "waves_usdt": {
-      "decimal_places": 8,
-      "min_price": 0.01,
-      "max_price": 100,
-      "min_amount": 0.01,
-      "max_amount": 5000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "mln_usdt": {
-      "decimal_places": 8,
-      "min_price": 0.1,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 50000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "time_usdt": {
-      "decimal_places": 8,
-      "min_price": 0.1,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 50000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "rep_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 100000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "edg_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 10000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "rep_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 100,
-      "min_amount": 1e-07,
-      "max_amount": 100000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "edg_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 100,
-      "min_amount": 1e-07,
-      "max_amount": 10000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "rep_usdt": {
-      "decimal_places": 8,
-      "min_price": 0.01,
-      "max_price": 2000,
-      "min_amount": 1e-07,
-      "max_amount": 100000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "edg_usdt": {
-      "decimal_places": 8,
-      "min_price": 0.001,
-      "max_price": 200,
-      "min_amount": 1e-07,
-      "max_amount": 10000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "rlc_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "rlc_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "rlc_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "trst_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "trst_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "trst_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "wings_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "wings_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-06,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "plu_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-06,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 100000000,
-      "min_total": 1,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "incnt_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-06,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 10000000,
-      "min_total": 1,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "gno_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 100000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "gno_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 100000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "gno_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 100000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "gup_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "gup_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "gup_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "taas_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "taas_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "taas_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "lun_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "lun_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "lun_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "tkn_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "tkn_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "tkn_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "hmq_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "hmq_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "hmq_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "bcap_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "bcap_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "bcap_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "ant_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "ant_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "ant_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "bat_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "bat_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "bat_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "qrl_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "qrl_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "qrl_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "bnt_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "bnt_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "bnt_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "mgo_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "mgo_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "mgo_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "myst_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "myst_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "myst_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "sngls_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "sngls_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "sngls_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "ptoy_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "ptoy_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "ptoy_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "cfi_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "cfi_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "cfi_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "snm_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "snm_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "snm_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "snt_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "snt_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "snt_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "mco_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "mco_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "mco_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "storj_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "storj_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "storj_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "adx_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "adx_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "adx_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "eos_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "eos_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "eos_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "pay_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "pay_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "pay_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "xid_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "xid_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "xid_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "omg_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "omg_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "omg_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "san_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "san_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "san_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "qtum_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "qtum_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "qtum_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 1,
-      "fee": 0.25
-    },
-    "cvc_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "cvc_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "cvc_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "net_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "net_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "net_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "dgd_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "dgd_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "dgd_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "oax_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "oax_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "oax_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "bcc_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 20,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "bcc_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 400,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "bcc_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 20000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "dnt_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "dnt_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "dnt_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "stx_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "stx_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "stx_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "zrx_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "zrx_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "zrx_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "tnt_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "tnt_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "tnt_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "ae_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "ae_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "ae_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "ven_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "ven_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "ven_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "bmc_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "bmc_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "bmc_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "mana_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "mana_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "mana_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "pro_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "pro_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "pro_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "knc_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "knc_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "knc_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "salt_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "salt_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "salt_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "ind_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "ind_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "ind_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "trx_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "trx_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "trx_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "eng_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "eng_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "eng_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "ast_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "ast_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "ast_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "req_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "req_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "req_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "neu_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 2,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "neu_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 40,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "neu_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 2000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "srn_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 1,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "srn_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 20,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "srn_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 1000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "ins_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 1,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "ins_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 20,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "ins_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 1000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "aion_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 1,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "aion_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 20,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "aion_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 1000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "wpr_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 1,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "wpr_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 20,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "wpr_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 1000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "ren_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 1,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "ren_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 20,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "ren_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 1000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "ldc_btc": {
-      "decimal_places": 8,
-      "min_price": 1e-08,
-      "max_price": 1,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.0001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "ldc_eth": {
-      "decimal_places": 8,
-      "min_price": 1e-07,
-      "max_price": 20,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 0.001,
-      "hidden": 0,
-      "fee": 0.25
-    },
-    "ldc_usdt": {
-      "decimal_places": 8,
-      "min_price": 1e-05,
-      "max_price": 1000,
-      "min_amount": 1e-08,
-      "max_amount": 1000000,
-      "min_total": 1,
-      "hidden": 0,
-      "fee": 0.25
+    "server_time": 1523196243,
+    "pairs": {
+        "ltc_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "steem_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 0.001,
+            "max_amount": 1000000000,
+            "min_total": 0.0001,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "sbd_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 0.001,
+            "max_amount": 1000000000,
+            "min_total": 0.0001,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "dash_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "ans_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000000,
+            "min_total": 0.0001,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "dct_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000000,
+            "min_total": 0.0001,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "icn_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "eth_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "xzc_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000000,
+            "min_total": 0.0001,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "golos_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 0.001,
+            "max_amount": 1000000000,
+            "min_total": 0.0001,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "gbg_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 0.001,
+            "max_amount": 1000000000,
+            "min_total": 0.0001,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "gnt_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "wings_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "plu_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 100000000,
+            "min_total": 0.0001,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "round_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000000,
+            "min_total": 0.0001,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "vsl_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000000,
+            "min_total": 0.0001,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "1st_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000000,
+            "min_total": 0.0001,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "waves_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 100000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "incnt_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 0.0001,
+            "max_amount": 10000000,
+            "min_total": 0.0001,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "mln_btc": {
+            "decimal_places": 8,
+            "min_price": 0.0001,
+            "max_price": 20,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "time_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "gnt_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 100000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "ltc_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "dash_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 20,
+            "min_amount": 1e-8,
+            "max_amount": 10000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "1st_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "icn_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "mln_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 10000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "round_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 100000000,
+            "min_total": 0.001,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "waves_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 10000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "time_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 20,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "vsl_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 100000000,
+            "min_total": 0.001,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "plu_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 100000000,
+            "min_total": 0.001,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "incnt_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 10000000,
+            "min_total": 0.001,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "ltc_usdt": {
+            "decimal_places": 8,
+            "min_price": 0.01,
+            "max_price": 6000,
+            "min_amount": 0.001,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "btc_usdt": {
+            "decimal_places": 8,
+            "min_price": 1,
+            "max_price": 100000,
+            "min_amount": 1e-5,
+            "max_amount": 10000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "dash_usdt": {
+            "decimal_places": 8,
+            "min_price": 1,
+            "max_price": 20000,
+            "min_amount": 0.0001,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "eth_usdt": {
+            "decimal_places": 8,
+            "min_price": 1,
+            "max_price": 2000,
+            "min_amount": 0.0001,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "icn_usdt": {
+            "decimal_places": 8,
+            "min_price": 0.01,
+            "max_price": 200,
+            "min_amount": 0.01,
+            "max_amount": 5000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "gnt_usdt": {
+            "decimal_places": 8,
+            "min_price": 0.001,
+            "max_price": 20,
+            "min_amount": 0.01,
+            "max_amount": 50000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "round_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 20,
+            "min_amount": 1,
+            "max_amount": 10000000,
+            "min_total": 1,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "vsl_usdt": {
+            "decimal_places": 8,
+            "min_price": 0.001,
+            "max_price": 10,
+            "min_amount": 0.1,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "1st_usdt": {
+            "decimal_places": 8,
+            "min_price": 0.001,
+            "max_price": 200,
+            "min_amount": 0.01,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "waves_usdt": {
+            "decimal_places": 8,
+            "min_price": 0.01,
+            "max_price": 100,
+            "min_amount": 0.01,
+            "max_amount": 5000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "mln_usdt": {
+            "decimal_places": 8,
+            "min_price": 0.1,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 50000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "time_usdt": {
+            "decimal_places": 8,
+            "min_price": 0.1,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 50000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "rep_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 100000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "edg_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 10000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "rep_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 100,
+            "min_amount": 1e-7,
+            "max_amount": 100000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "edg_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 100,
+            "min_amount": 1e-7,
+            "max_amount": 10000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "rep_usdt": {
+            "decimal_places": 8,
+            "min_price": 0.01,
+            "max_price": 2000,
+            "min_amount": 1e-7,
+            "max_amount": 100000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "edg_usdt": {
+            "decimal_places": 8,
+            "min_price": 0.001,
+            "max_price": 200,
+            "min_amount": 1e-7,
+            "max_amount": 10000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "rlc_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "rlc_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "rlc_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "trst_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "trst_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "trst_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "wings_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "wings_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-6,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "plu_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-6,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 100000000,
+            "min_total": 1,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "incnt_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-6,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 10000000,
+            "min_total": 1,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "gno_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 100000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "gno_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 100000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "gno_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 100000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "gup_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "gup_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "gup_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "taas_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "taas_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "taas_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "lun_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "lun_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "lun_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "tkn_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "tkn_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "tkn_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "hmq_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "hmq_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "hmq_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "bcap_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "bcap_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "bcap_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "ant_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "ant_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "ant_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "bat_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "bat_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "bat_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "qrl_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "qrl_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "qrl_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "bnt_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "bnt_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "bnt_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "mgo_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "mgo_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "mgo_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "myst_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "myst_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "myst_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "sngls_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "sngls_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "sngls_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "ptoy_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "ptoy_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "ptoy_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "cfi_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "cfi_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "cfi_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "snm_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "snm_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "snm_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "snt_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "snt_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "snt_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "mco_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "mco_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "mco_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "storj_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "storj_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "storj_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "adx_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "adx_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "adx_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "eos_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "eos_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "eos_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "pay_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "pay_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "pay_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "xid_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "xid_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "xid_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "omg_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "omg_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "omg_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "san_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "san_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "san_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "qtum_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "qtum_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "qtum_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 1,
+            "fee": 0.25
+        },
+        "cvc_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "cvc_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "cvc_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "net_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "net_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "net_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "dgd_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "dgd_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "dgd_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "oax_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "oax_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "oax_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "bcc_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 20,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "bcc_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 400,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "bcc_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 20000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "dnt_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "dnt_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "dnt_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "stx_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "stx_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "stx_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "zrx_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "zrx_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "zrx_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "tnt_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "tnt_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "tnt_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "ae_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "ae_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "ae_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "ven_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "ven_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "ven_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "bmc_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "bmc_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "bmc_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "mana_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "mana_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "mana_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "pro_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "pro_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "pro_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "knc_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "knc_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "knc_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "salt_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "salt_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "salt_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "ind_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "ind_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "ind_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "trx_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "trx_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "trx_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "eng_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "eng_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "eng_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "ast_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "ast_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "ast_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "req_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "req_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "req_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "neu_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 2,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "neu_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 40,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "neu_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 2000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "srn_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 1,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "srn_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 20,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "srn_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 1000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "ins_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 1,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "ins_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 20,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "ins_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 1000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "aion_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 1,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "aion_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 20,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "aion_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 1000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "wpr_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 1,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "wpr_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 20,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "wpr_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 1000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "ren_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 1,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "ren_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 20,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "ren_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 1000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "ldc_btc": {
+            "decimal_places": 8,
+            "min_price": 1e-8,
+            "max_price": 1,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.0001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "ldc_eth": {
+            "decimal_places": 8,
+            "min_price": 1e-7,
+            "max_price": 20,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 0.001,
+            "hidden": 0,
+            "fee": 0.25
+        },
+        "ldc_usdt": {
+            "decimal_places": 8,
+            "min_price": 1e-5,
+            "max_price": 1000,
+            "min_amount": 1e-8,
+            "max_amount": 1000000,
+            "min_total": 1,
+            "hidden": 0,
+            "fee": 0.25
+        }
     }
-  }
 }

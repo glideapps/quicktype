@@ -1,42 +1,42 @@
 {
-  "data": {
-    "viewer": {
-      "login": "schani",
-      "repositories": {
-        "totalCount": 99,
-        "nodes": [
-          {
-            "name": "flickr-clojure"
-          },
-          {
-            "name": "rwimg"
-          },
-          {
-            "name": "lispreader"
-          },
-          {
-            "name": "metapixel"
-          },
-          {
-            "name": "lisp-utils"
-          },
-          {
-            "name": "mathmap"
-          },
-          {
-            "name": "bintrans"
-          },
-          {
-            "name": "icfp-2004"
-          },
-          {
-            "name": "icfp-2002"
-          },
-          {
-            "name": "icfp-2008"
-          }
-        ]
-      }
+    "data": {
+        "viewer": {
+            "login": "schani",
+            "repositories": {
+                "totalCount": 99,
+                "nodes": [
+                    {
+                        "name": "flickr-clojure"
+                    },
+                    {
+                        "name": "rwimg"
+                    },
+                    {
+                        "name": "lispreader"
+                    },
+                    {
+                        "name": "metapixel"
+                    },
+                    {
+                        "name": "lisp-utils"
+                    },
+                    {
+                        "name": "mathmap"
+                    },
+                    {
+                        "name": "bintrans"
+                    },
+                    {
+                        "name": "icfp-2004"
+                    },
+                    {
+                        "name": "icfp-2002"
+                    },
+                    {
+                        "name": "icfp-2008"
+                    }
+                ]
+            }
+        }
     }
-  }
 }
