@@ -115,7 +115,12 @@ export const cPlusPlusOptions = {
         camelUpperAcronymsValue
     ]),
     boost: new BooleanOption("boost", "Require a dependency on boost. Without boost, C++17 is required", true),
-    hideNullOptional: new BooleanOption("hide-null-optional", "Hide null value for optional field", false)
+    hideNullOptional: new BooleanOption("hide-null-optional", "Hide null value for optional field", false),
+    use_optional: new BooleanOption(
+        "use-optional",
+        "Use std::optional (or boost::optional) if possible. If cycles are detected use std::shared_ptr (or boost::shared_ptr)",
+        false
+    )
 };
 
 export class CPlusPlusTargetLanguage extends TargetLanguage {
@@ -137,7 +142,8 @@ export class CPlusPlusTargetLanguage extends TargetLanguage {
             cPlusPlusOptions.enumeratorNamingStyle,
             cPlusPlusOptions.enumType,
             cPlusPlusOptions.boost,
-            cPlusPlusOptions.hideNullOptional
+            cPlusPlusOptions.hideNullOptional,
+            cPlusPlusOptions.use_optional
         ];
     }
 
@@ -284,7 +290,8 @@ const keywords = [
  * the class owns it. We COULD return unique_ptr references, which practically
  * kills the uniqueness of the smart pointer -> hence we use shared_ptrs.
  */
-const optionalType = "std::shared_ptr";
+const optionalAsSharedType = "std::shared_ptr";
+const optionalFactoryAsSharedType = "std::make_shared";
 
 /**
  * To be able to support circles in multiple files -
@@ -469,6 +476,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     private readonly _memberNamingFunction: Namer;
     private _stringType: StringType;
     private _optionalType: string;
+    private _optionalFactory: string;
     private _nulloptType: string;
     private _variantType: string;
     private _variantIndexMethodName: string;
@@ -508,17 +516,49 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
         if (_options.boost) {
             this._optionalType = "boost::optional";
+            this._optionalFactory = "boost::optional";
             this._nulloptType = "boost::none";
             this._variantType = "boost::variant";
             this._variantIndexMethodName = "which";
         } else {
             this._optionalType = "std::optional";
+            this._optionalFactory = "std::make_optional";
             this._nulloptType = "std::nullopt";
             this._variantType = "std::variant";
             this._variantIndexMethodName = "index";
         }
 
         this.setupGlobalNames();
+    }
+
+    isOptionalAsValuePossible(t: Type): boolean {
+        if (t.isPrimitive()) return true;
+        if (this.isForwardDeclaredType(t)) return false;
+        return true;
+    }
+
+    optionalTypeStack(): string {
+        return this._optionalType;
+    }
+    optionalFactoryStack(): string {
+        return this._optionalFactory;
+    }
+
+    optionalTypeHeap(): string {
+        return optionalAsSharedType;
+    }
+    optionalFactoryHeap(): string {
+        return optionalFactoryAsSharedType;
+    }
+
+    optionalType(t: Type): string {
+        if (this.isOptionalAsValuePossible(t)) return this.optionalTypeStack();
+        else return this.optionalTypeHeap();
+    }
+
+    optionalTypeLabel(t:Type):string{
+        if (this.isOptionalAsValuePossible(t)) return "stack"
+        else return "heap";
     }
 
     protected getConstraintMembers(): ConstraintMember[] {
@@ -675,11 +715,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
             if (this._options.typeSourceStyle) {
                 this.forEachTopLevel("none", (_, topLevelName) => {
-                    this.emitLine(
-                        "//     ",
-                        topLevelName,
-                        " data = nlohmann::json::parse(jsonString);"
-                    );
+                    this.emitLine("//     ", topLevelName, " data = nlohmann::json::parse(jsonString);");
                 });
             } else {
                 this.emitLine("//     ", basename, " data = nlohmann::json::parse(jsonString);");
@@ -689,12 +725,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.emitLine("//  You can get std::wstring data back out using");
                 this.emitLine("//");
                 this.forEachTopLevel("none", (_, topLevelName) => {
-                    this.emitLine(
-                        "//     std::wcout << ",
-                        "wdump((nlohmann::json) ",
-                        topLevelName,
-                        ");"
-                    );
+                    this.emitLine("//     std::wcout << ", "wdump((nlohmann::json) ", topLevelName, ");");
                 });
             }
         }
@@ -817,7 +848,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         if (!indirection) {
             return variant;
         }
-        return [optionalType, "<", variant, ">"];
+        return [this.optionalType(u), "<", variant, ">"];
     }
 
     protected ourQualifier(inJsonNamespace: boolean): Sourcelike {
@@ -828,9 +859,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         return inJsonNamespace ? [] : "nlohmann::";
     }
 
-    protected variantIndirection(needIndirection: boolean, typeSrc: Sourcelike): Sourcelike {
+    protected variantIndirection(type: Type, needIndirection: boolean, typeSrc: Sourcelike): Sourcelike {
         if (!needIndirection) return typeSrc;
-        return [optionalType, "<", typeSrc, ">"];
+        return [this.optionalType(type), "<", typeSrc, ">"];
     }
 
     protected cppType(
@@ -854,11 +885,17 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             t,
             _anyType => {
                 isOptional = false;
-                return maybeAnnotated(withIssues, anyTypeIssueAnnotation, [this.jsonQualifier(inJsonNamespace), "json"]);
+                return maybeAnnotated(withIssues, anyTypeIssueAnnotation, [
+                    this.jsonQualifier(inJsonNamespace),
+                    "json"
+                ]);
             },
             _nullType => {
                 isOptional = false;
-                return maybeAnnotated(withIssues, nullTypeIssueAnnotation, [this.jsonQualifier(inJsonNamespace), "json"]);
+                return maybeAnnotated(withIssues, nullTypeIssueAnnotation, [
+                    this.jsonQualifier(inJsonNamespace),
+                    "json"
+                ]);
             },
             _boolType => "bool",
             _integerType => "int64_t",
@@ -883,6 +920,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             ],
             classType =>
                 this.variantIndirection(
+                    classType,
                     ctx.needsForwardIndirection && this.isForwardDeclaredType(classType) && !isOptional,
                     [this.ourQualifier(inJsonNamespace), this.nameForNamedType(classType)]
                 ),
@@ -920,7 +958,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             }
         );
         if (!isOptional) return typeSource;
-        return [optionalType, "<", typeSource, ">"];
+        return [this.optionalType(t), "<", typeSource, ">"];
     }
 
     /**
@@ -1190,7 +1228,14 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
             this.emitLine("template <>");
             this.emitBlock(["struct adl_serializer<", ourQualifier, className, ">"], true, () => {
-                this.emitLine("static void from_json(", this.withConst("json"), " & j, ", ourQualifier, className, " & x);");
+                this.emitLine(
+                    "static void from_json(",
+                    this.withConst("json"),
+                    " & j, ",
+                    ourQualifier,
+                    className,
+                    " & x);"
+                );
                 this.emitLine("static void to_json(json & j, ", this.withConst([ourQualifier, className]), " & x);");
             });
         }
@@ -1211,7 +1256,17 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             let toType: Sourcelike;
 
             this.emitBlock(
-                ["inline void adl_serializer<", ourQualifier, className, ">::from_json(", this.withConst("json"), " & j, ", ourQualifier, className, "& x)"],
+                [
+                    "inline void adl_serializer<",
+                    ourQualifier,
+                    className,
+                    ">::from_json(",
+                    this.withConst("json"),
+                    " & j, ",
+                    ourQualifier,
+                    className,
+                    "& x)"
+                ],
                 false,
                 () => {
                     cppType = this.cppType(
@@ -1242,7 +1297,14 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             );
 
             this.emitBlock(
-                ["inline void adl_serializer<", ourQualifier, className, ">::to_json(json & j, ", this.withConst([ourQualifier, className]), " & x)"],
+                [
+                    "inline void adl_serializer<",
+                    ourQualifier,
+                    className,
+                    ">::to_json(json & j, ",
+                    this.withConst([ourQualifier, className]),
+                    " & x)"
+                ],
                 false,
                 () => {
                     cppType = this.cppType(
@@ -1348,11 +1410,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                                     [
                                         this._stringType.wrapEncodingChange(
                                             [ourQualifier],
-                                            [optionalType, "<", cppType, ">"],
-                                            [optionalType, "<", toType, ">"],
+                                            [this.optionalType(t), "<", cppType, ">"],
+                                            [this.optionalType(t), "<", toType, ">"],
                                             [
                                                 ourQualifier,
-                                                "get_optional<",
+                                                `get_${this.optionalTypeLabel(t)}_optional<`,
                                                 cppType,
                                                 ">(j, ",
                                                 this._stringType.wrapEncodingChange(
@@ -1537,7 +1599,15 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         );
 
         this.emitBlock(
-            ["inline void adl_serializer<", variantType, ">::from_json(", this.withConst("json"), " & j, ", variantType, " & x)"],
+            [
+                "inline void adl_serializer<",
+                variantType,
+                ">::from_json(",
+                this.withConst("json"),
+                " & j, ",
+                variantType,
+                " & x)"
+            ],
             false,
             () => {
                 let onFirst = true;
@@ -1577,50 +1647,54 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         );
         this.ensureBlankLine();
 
-        this.emitBlock(["inline void adl_serializer<", variantType, ">::to_json(json & j, ", this.withConst(variantType), " & x)"], false, () => {
-            this.emitBlock(["switch (x.", this._variantIndexMethodName, "())"], false, () => {
-                let i = 0;
-                for (const t of nonNulls) {
-                    this.emitLine("case ", i.toString(), ":");
-                    this.indent(() => {
-                        const cppType = this.cppType(
-                            t,
-                            {
-                                needsForwardIndirection: true,
-                                needsOptionalIndirection: true,
-                                inJsonNamespace: true
-                            },
-                            false,
-                            false,
-                            false
-                        );
-                        const toType = this.cppType(
-                            t,
-                            {
-                                needsForwardIndirection: true,
-                                needsOptionalIndirection: true,
-                                inJsonNamespace: true
-                            },
-                            false,
-                            true,
-                            false
-                        );
-                        this.emitLine(
-                            "j = ",
-                            this._stringType.wrapEncodingChange([ourQualifier], cppType, toType, [
-                                this._options.boost ? "boost::get<" : "std::get<",
-                                cppType,
-                                ">(x)"
-                            ]),
-                            ";"
-                        );
-                        this.emitLine("break;");
-                    });
-                    i++;
-                }
-                this.emitLine('default: throw "Input JSON does not conform to schema";');
-            });
-        });
+        this.emitBlock(
+            ["inline void adl_serializer<", variantType, ">::to_json(json & j, ", this.withConst(variantType), " & x)"],
+            false,
+            () => {
+                this.emitBlock(["switch (x.", this._variantIndexMethodName, "())"], false, () => {
+                    let i = 0;
+                    for (const t of nonNulls) {
+                        this.emitLine("case ", i.toString(), ":");
+                        this.indent(() => {
+                            const cppType = this.cppType(
+                                t,
+                                {
+                                    needsForwardIndirection: true,
+                                    needsOptionalIndirection: true,
+                                    inJsonNamespace: true
+                                },
+                                false,
+                                false,
+                                false
+                            );
+                            const toType = this.cppType(
+                                t,
+                                {
+                                    needsForwardIndirection: true,
+                                    needsOptionalIndirection: true,
+                                    inJsonNamespace: true
+                                },
+                                false,
+                                true,
+                                false
+                            );
+                            this.emitLine(
+                                "j = ",
+                                this._stringType.wrapEncodingChange([ourQualifier], cppType, toType, [
+                                    this._options.boost ? "boost::get<" : "std::get<",
+                                    cppType,
+                                    ">(x)"
+                                ]),
+                                ";"
+                            );
+                            this.emitLine("break;");
+                        });
+                        i++;
+                    }
+                    this.emitLine('default: throw "Input JSON does not conform to schema";');
+                });
+            }
+        );
     }
 
     protected emitEnumHeaders(enumName: Name): void {
@@ -1740,7 +1814,13 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             "using ",
             name,
             " = ",
-            this.cppType(t, { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false }, true, false, false),
+            this.cppType(
+                t,
+                { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false },
+                true,
+                false,
+                false
+            ),
             ";"
         );
     }
@@ -1783,27 +1863,32 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
         this.emitNamespaces(["nlohmann"], () => {
             this.emitLine("template <typename T>");
-            this.emitBlock(["struct adl_serializer<", optionalType, "<T>>"], true, () => {
-                this.emitBlock(
-                    ["static void to_json(json & j, ", this.withConst([optionalType, "<T>"]), " & opt)"],
-                    false,
-                    () => {
-                        this.emitLine("if (!opt) j = nullptr; else j = *opt;");
-                    }
-                );
 
-                this.ensureBlankLine();
+            const emitAdlStruct = (optType: string, factory: string) => {
+                this.emitBlock(["struct adl_serializer<", optType, "<T>>"], true, () => {
+                    this.emitBlock(
+                        ["static void to_json(json & j, ", this.withConst([optType, "<T>"]), " & opt)"],
+                        false,
+                        () => {
+                            this.emitLine("if (!opt) j = nullptr; else j = *opt;");
+                        }
+                    );
 
-                this.emitBlock(
-                    ["static ", optionalType, "<T> from_json(", this.withConst("json"), " & j)"],
-                    false,
-                    () => {
-                        this.emitLine(
-                            `if (j.is_null()) return std::unique_ptr<T>(); else return std::unique_ptr<T>(new T(j.get<T>()));`
-                        );
-                    }
-                );
-            });
+                    this.ensureBlankLine();
+
+                    this.emitBlock(
+                        ["static ", optType, "<T> from_json(", this.withConst("json"), " & j)"],
+                        false,
+                        () => {
+                            this.emitLine(
+                                `if (j.is_null()) return ${factory}<T>(); else return ${factory}<T>(j.get<T>());`
+                            );
+                        }
+                    );
+                });
+            };
+            emitAdlStruct(this.optionalTypeHeap(), this.optionalFactoryHeap());
+            emitAdlStruct(this.optionalTypeStack(), this.optionalFactoryStack());
         });
 
         this.emitLine("#endif");
@@ -2161,36 +2246,46 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
             this.emitLine("template <typename T>");
 
-            this.emitBlock(
-                [
-                    "inline ",
-                    optionalType,
-                    "<T> get_optional(",
-                    this.withConst("json"),
-                    " & j, ",
-                    this.withConst("char"),
-                    " * property)"
-                ],
-                false,
-                () => {
-                    this.emitBlock(["if (j.find(property) != j.end())"], false, () => {
-                        this.emitLine("return j.at(property).get<", optionalType, "<T>>();");
-                    });
-                    this.emitLine("return ", optionalType, "<T>();");
-                }
-            );
+            const emitGetOptional = (optionalType: string, label: string): void => {
+                this.emitBlock(
+                    [
+                        "inline ",
+                        optionalType,
+                        `<T> get_${label}_optional(`,
+                        this.withConst("json"),
+                        " & j, ",
+                        this.withConst("char"),
+                        " * property)"
+                    ],
+                    false,
+                    () => {
+                        this.emitBlock(["if (j.find(property) != j.end())"], false, () => {
+                            this.emitLine("return j.at(property).get<", optionalType, "<T>>();");
+                        });
+                        this.emitLine("return ", optionalType, "<T>();");
+                    }
+                );
 
-            this.ensureBlankLine();
+                this.ensureBlankLine();
 
-            this.emitLine("template <typename T>");
+                this.emitLine("template <typename T>");
 
-            this.emitBlock(
-                ["inline ", optionalType, "<T> get_optional(", this.withConst("json"), " & j, std::string property)"],
-                false,
-                () => {
-                    this.emitLine("return get_optional<T>(j, property.data());");
-                }
-            );
+                this.emitBlock(
+                    [
+                        "inline ",
+                        optionalType,
+                        `<T> get_${label}_optional(`,
+                        this.withConst("json"),
+                        " & j, std::string property)"
+                    ],
+                    false,
+                    () => {
+                        this.emitLine(`return get_${label}_optional<T>(j, property.data());`);
+                    }
+                );
+            };
+            emitGetOptional(this.optionalTypeHeap(), "heap");
+            emitGetOptional(this.optionalTypeStack(), "stack");
 
             this.emitLine("#endif");
 
@@ -2266,13 +2361,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.emitClassHeaders(className)
             );
 
-            this.forEachEnum("leading-and-interposing", (_: any, enumName: Name) =>
-                this.emitEnumHeaders(enumName)
-            );
+            this.forEachEnum("leading-and-interposing", (_: any, enumName: Name) => this.emitEnumHeaders(enumName));
         });
     }
 
-    protected gatherNlohmannNamespaceForwardDecls() : Sourcelike[] {
+    protected gatherNlohmannNamespaceForwardDecls(): Sourcelike[] {
         return this.gatherSource(() => {
             this.forEachTopLevel("leading-and-interposing", (t: Type, className: Name) =>
                 this.emitTopLevelHeaders(t, className)
