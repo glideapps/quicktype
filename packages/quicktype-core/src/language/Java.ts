@@ -810,11 +810,7 @@ export class JavaRenderer extends ConvenienceRenderer {
         this.finishFile();
     }
 
-    protected unionField(
-        u: UnionType,
-        t: Type,
-        withIssues = false
-    ): { fieldType: Sourcelike; fieldName: Sourcelike } {
+    protected unionField(u: UnionType, t: Type, withIssues = false): { fieldType: Sourcelike; fieldName: Sourcelike } {
         const fieldType = this.javaType(true, t, withIssues);
         // FIXME: "Value" should be part of the name.
         const fieldName = [this.nameForUnionMember(u, t), "Value"];
