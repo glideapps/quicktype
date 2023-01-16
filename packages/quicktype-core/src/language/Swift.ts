@@ -318,8 +318,8 @@ const stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicod
 
 export class SwiftRenderer extends ConvenienceRenderer {
     private _currentFilename: string | undefined;
-    private _needAny: boolean = false;
-    private _needNull: boolean = false;
+    private _needAny = false;
+    private _needNull = false;
 
     constructor(
         targetLanguage: TargetLanguage,
@@ -402,7 +402,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
         }
     }
 
-    protected swiftType(t: Type, withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
+    protected swiftType(t: Type, withIssues = false, noOptional = false): Sourcelike {
         const optional = noOptional ? "" : "?";
         return matchType<Sourcelike>(
             t,
@@ -1397,7 +1397,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         });
     }
 
-    protected emitMark(line: Sourcelike, horizontalLine: boolean = false) {
+    protected emitMark(line: Sourcelike, horizontalLine = false) {
         this.emitLine("// MARK:", horizontalLine ? " - " : " ", line);
     }
 

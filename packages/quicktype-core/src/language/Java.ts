@@ -212,9 +212,9 @@ abstract class JavaDateTimeProvider {
 
     abstract emitDateTimeConverters(): void;
 
-    public shouldEmitDateTimeConverter: boolean = true;
-    public shouldEmitTimeConverter: boolean = true;
-    public shouldEmitDateConverter: boolean = true;
+    public shouldEmitDateTimeConverter = true;
+    public shouldEmitTimeConverter = true;
+    public shouldEmitDateConverter = true;
 
     abstract convertStringToDateTime(variable: Sourcelike): Sourcelike;
     abstract convertStringToTime(variable: Sourcelike): Sourcelike;
@@ -251,9 +251,9 @@ class Java8DateTimeProvider extends JavaDateTimeProvider {
         "java.time.temporal.ChronoField"
     ];
 
-    dateTimeType: string = "OffsetDateTime";
-    dateType: string = "LocalDate";
-    timeType: string = "OffsetTime";
+    dateTimeType = "OffsetDateTime";
+    dateType = "LocalDate";
+    timeType = "OffsetTime";
 
     dateTimeJacksonAnnotations: string[] = [];
     dateJacksonAnnotations: string[] = [];
@@ -339,9 +339,9 @@ class JavaLegacyDateTimeProvider extends JavaDateTimeProvider {
     timeImports: string[] = ["java.util.Date"];
     converterImports: string[] = ["java.util.Date", "java.text.SimpleDateFormat"];
 
-    dateTimeType: string = "Date";
-    dateType: string = "Date";
-    timeType: string = "Date";
+    dateTimeType = "Date";
+    dateType = "Date";
+    timeType = "Date";
 
     dateTimeJacksonAnnotations: string[] = ['@JsonFormat(pattern = "yyyy-MM-dd\'T\'HH:mm:ssX", timezone = "UTC")'];
     dateJacksonAnnotations: string[] = ['@JsonFormat(pattern = "yyyy-MM-dd")'];
@@ -608,7 +608,7 @@ export class JavaRenderer extends ConvenienceRenderer {
         this.emitLine("}");
     }
 
-    public emitTryCatch(main: () => void, handler: () => void, exception: string = "Exception") {
+    public emitTryCatch(main: () => void, handler: () => void, exception = "Exception") {
         this.emitLine("try {");
         this.indent(main);
         this.emitLine("} catch (", exception, " ex) {");
@@ -620,7 +620,7 @@ export class JavaRenderer extends ConvenienceRenderer {
         this.emitTryCatch(f, () => this.emitLine("// Ignored"));
     }
 
-    protected javaType(reference: boolean, t: Type, withIssues: boolean = false): Sourcelike {
+    protected javaType(reference: boolean, t: Type, withIssues = false): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "Object"),
@@ -813,7 +813,7 @@ export class JavaRenderer extends ConvenienceRenderer {
     protected unionField(
         u: UnionType,
         t: Type,
-        withIssues: boolean = false
+        withIssues = false
     ): { fieldType: Sourcelike; fieldName: Sourcelike } {
         const fieldType = this.javaType(true, t, withIssues);
         // FIXME: "Value" should be part of the name.
@@ -1049,7 +1049,7 @@ export class JacksonRenderer extends JavaRenderer {
             }
         };
 
-        const emitDeserializeType = (t: Type, variableFieldName: string = ""): void => {
+        const emitDeserializeType = (t: Type, variableFieldName = ""): void => {
             const { fieldName } = this.unionField(u, t);
             const rendered = this.javaTypeWithoutGenerics(true, t);
             if (this._options.useList && t instanceof ArrayType) {

@@ -63,7 +63,7 @@ export function assertNever(x: never): never {
     return messageError("InternalError", { message: `Unexpected object ${x as any}` });
 }
 
-export function assert(condition: boolean, message: string = "Assertion failed"): void {
+export function assert(condition: boolean, message = "Assertion failed"): void {
     if (!condition) {
         return messageError("InternalError", { message });
     }
@@ -105,7 +105,7 @@ export function inflateBase64(encoded: string): string {
     return pako.inflate(bytes, { to: "string" });
 }
 
-export function parseJSON(text: string, description: string, address: string = "<unknown>"): any {
+export function parseJSON(text: string, description: string, address = "<unknown>"): any {
     try {
         // https://gist.github.com/pbakondy/f5045eff725193dad9c7
         if (text.charCodeAt(0) === 0xfeff) {

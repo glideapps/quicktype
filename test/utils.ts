@@ -50,7 +50,7 @@ export function callAndExpectFailure<T>(message: string, f: () => T): void {
 export function exec(
     s: string,
     env: NodeJS.ProcessEnv | undefined,
-    printFailure: boolean = true
+    printFailure = true
 ): { stdout: string; code: number } {
     debug(s);
     if (env === undefined) {

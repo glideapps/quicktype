@@ -373,7 +373,7 @@ export class DartRenderer extends ConvenienceRenderer {
         this.emitLine("}");
     }
 
-    protected dartType(t: Type, withIssues: boolean = false): Sourcelike {
+    protected dartType(t: Type, withIssues = false): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "dynamic"),

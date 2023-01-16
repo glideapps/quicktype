@@ -45,9 +45,9 @@ export class JavaScriptPropTypesTargetLanguage extends TargetLanguage {
     }
 
     constructor(
-        displayName: string = "JavaScript PropTypes",
+        displayName = "JavaScript PropTypes",
         names: string[] = ["javascript-prop-types"],
-        extension: string = "js"
+        extension = "js"
     ) {
         super(displayName, names, extension);
     }
@@ -121,7 +121,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         return super.makeNameForProperty(c, className, p, jsonName, undefined);
     }
 
-    typeMapTypeFor(t: Type, required: boolean = true): Sourcelike {
+    typeMapTypeFor(t: Type, required = true): Sourcelike {
         if (["class", "object", "enum"].indexOf(t.kind) >= 0) {
             return ["_", this.nameForNamedType(t)];
         }

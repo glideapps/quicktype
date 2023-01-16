@@ -105,7 +105,7 @@ export class TypeBuilder {
     protected readonly types: (Type | undefined)[] = [];
     private readonly typeAttributes: TypeAttributes[] = [];
 
-    private _addedForwardingIntersection: boolean = false;
+    private _addedForwardingIntersection = false;
 
     constructor(
         typeGraphSerial: number,

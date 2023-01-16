@@ -21,7 +21,7 @@ export interface TypeLookerUp {
 }
 
 export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
-    private _wasUsed: boolean = false;
+    private _wasUsed = false;
     private _typeRef: TypeRef | undefined = undefined;
 
     constructor(
@@ -209,7 +209,7 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
 export abstract class BaseGraphRewriteBuilder extends TypeBuilder implements TypeLookerUp {
     protected readonly reconstitutedTypes: Map<number, TypeRef> = new Map();
 
-    private _lostTypeAttributes: boolean = false;
+    private _lostTypeAttributes = false;
     private _printIndent = 0;
 
     constructor(
@@ -558,7 +558,7 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
 
     // If the union of these type refs have been, or are supposed to be, reconstituted to
     // one target type, return it.  Otherwise return undefined.
-    lookupTypeRefs(typeRefs: TypeRef[], forwardingRef?: TypeRef, replaceSet: boolean = true): TypeRef | undefined {
+    lookupTypeRefs(typeRefs: TypeRef[], forwardingRef?: TypeRef, replaceSet = true): TypeRef | undefined {
         this.assertTypeRefsToReconstitute(typeRefs, forwardingRef);
 
         // Check whether we have already reconstituted them.  That means ensuring

@@ -277,7 +277,7 @@ export class CrystalRenderer extends ConvenienceRenderer {
         return kind === "array" || kind === "map";
     }
 
-    private crystalType(t: Type, withIssues: boolean = false): Sourcelike {
+    private crystalType(t: Type, withIssues = false): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "JSON::Any?"),
