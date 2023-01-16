@@ -66,11 +66,7 @@ export type JavaScriptTypeAnnotations = {
 };
 
 export class JavaScriptTargetLanguage extends TargetLanguage {
-    constructor(
-        displayName = "JavaScript",
-        names: string[] = ["javascript", "js", "jsx"],
-        extension = "js"
-    ) {
+    constructor(displayName = "JavaScript", names: string[] = ["javascript", "js", "jsx"], extension = "js") {
         super(displayName, names, extension);
     }
 

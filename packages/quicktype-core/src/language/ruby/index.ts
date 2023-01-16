@@ -254,12 +254,7 @@ export class RubyRenderer extends ConvenienceRenderer {
         return `"${inner()}"`;
     }
 
-    private fromDynamic(
-        t: Type,
-        e: Sourcelike,
-        optional = false,
-        castPrimitives = false
-    ): Sourcelike {
+    private fromDynamic(t: Type, e: Sourcelike, optional = false, castPrimitives = false): Sourcelike {
         const primitiveCast = [this.dryType(t, optional), "[", e, "]"];
         const primitive = castPrimitives ? primitiveCast : e;
         const safeAccess = optional ? "&" : "";
