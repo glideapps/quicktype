@@ -522,13 +522,78 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.setupGlobalNames();
     }
 
+    // union typeguard
+    isUnion(t: Type | UnionType): t is UnionType {
+        return t.kind === "union";
+    }
+
     // Returns true if the type can be stored in
     // a stack based optional type. This requires
     // that the type does not require forward declaration.
     isOptionalAsValuePossible(t: Type): boolean {
-        if (t.isPrimitive()) return true;
         if (this.isForwardDeclaredType(t)) return false;
-        return true;
+
+        if (this.isUnion(t)) {
+            // There is something stinky about this test.
+            // There is special handling somewhere that if you
+            // have the following schema
+            // {
+            //     "$schema": "http://json-schema.org/draft-06/schema#",
+            //     "$ref": "#/definitions/List",
+            //     "definitions": {
+            //         "List": {
+            //             "type": "object",
+            //             "additionalProperties": false,
+            //             "properties": {
+            //                 "data": {
+            //                     "type": "string"
+            //                 },
+            //                 "next": {
+            //                     "anyOf": [
+            //                         {
+            //                             "$ref": "#/definitions/List"
+            //                         }
+            //                         {
+            //                             "type": "null"
+            //                         }
+            //                     ]
+            //                 }
+            //             },
+            //             "required": [],
+            //             "title": "List"
+            //         }
+            //     }
+            // }
+            // Then a variant is not output but the single item inlined
+            //
+            //     struct TopLevel {
+            //       std::optional<std::string> data;
+            //       std::optional<TopLevel> next;
+            //     };
+            //
+            // instead of
+            //     struct TopLevel {
+            //       std::optional<std::string> data;
+            //       std::shared_ptr<TopLevel> next;
+            //     };
+            //
+            // checking to see if the collapse of the variant has
+            // occured and then doing the isCycleBreakerType check
+            // on the single type the variant would contain seems
+            // to solve the problem. But does this point to a problem
+            // with the core library or with the CPlusPlus package
+            const [_hasNull, nonNulls] = removeNullFromUnion(t);
+            if (nonNulls.size === 1) {
+                const tt = defined(iterableFirst(nonNulls));
+                return !this.isCycleBreakerType(tt);
+            }
+        }
+        return !this.isCycleBreakerType(t);
+    }
+
+    isImplicitCycleBreaker(t: Type): boolean {
+        const kind = t.kind;
+        return kind === "array" || kind === "map";
     }
 
     // Is likely to return std::optional or boost::optional
@@ -951,15 +1016,18 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             enumType => [this.ourQualifier(inJsonNamespace), this.nameForNamedType(enumType)],
             unionType => {
                 const nullable = nullableFromUnion(unionType);
-                if (nullable === null) return [this.ourQualifier(inJsonNamespace), this.nameForNamedType(unionType)];
-                isOptional = true;
-                return this.cppType(
-                    nullable,
-                    { needsForwardIndirection: false, needsOptionalIndirection: false, inJsonNamespace },
-                    withIssues,
-                    forceNarrowString,
-                    false
-                );
+                if (nullable !== null) {
+                    isOptional = true;
+                    return this.cppType(
+                        nullable,
+                        { needsForwardIndirection: false, needsOptionalIndirection: false, inJsonNamespace },
+                        withIssues,
+                        forceNarrowString,
+                        false
+                    );
+                } else {
+                    return [this.ourQualifier(inJsonNamespace), this.nameForNamedType(unionType)];
+                }
             }
         );
         if (!isOptional) return typeSource;
@@ -1231,8 +1299,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         if (t instanceof MapType && this._stringType !== this.NarrowString) {
             const ourQualifier = this.ourQualifier(true);
 
-            this.emitLine("template <>");
             this.emitBlock(["struct adl_serializer<", ourQualifier, className, ">"], true, () => {
+                this.emitLine("template <>");
                 this.emitLine(
                     "static void from_json(",
                     this.withConst("json"),
@@ -1867,9 +1935,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitLine("#define NLOHMANN_OPT_HELPER");
 
         this.emitNamespaces(["nlohmann"], () => {
-            this.emitLine("template <typename T>");
-
             const emitAdlStruct = (optType: string, factory: string) => {
+                this.emitLine("template <typename T>");
                 this.emitBlock(["struct adl_serializer<", optType, "<T>>"], true, () => {
                     this.emitBlock(
                         ["static void to_json(json & j, ", this.withConst([optType, "<T>"]), " & opt)"],
@@ -2249,9 +2316,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.emitLine("#ifndef " + optionalMacroName);
             this.emitLine("#define " + optionalMacroName);
 
-            this.emitLine("template <typename T>");
-
             const emitGetOptional = (optionalType: string, label: string): void => {
+                this.emitLine("template <typename T>");
                 this.emitBlock(
                     [
                         "inline ",
@@ -2264,7 +2330,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     ],
                     false,
                     () => {
-                        this.emitBlock(["if (j.find(property) != j.end())"], false, () => {
+                        this.emitLine(["auto it = j.find(property);"]);
+                        this.emitBlock(["if (it != j.end() && !it->is_null())"], false, () => {
                             this.emitLine("return j.at(property).get<", optionalType, "<T>>();");
                         });
                         this.emitLine("return ", optionalType, "<T>();");
@@ -2274,7 +2341,6 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.ensureBlankLine();
 
                 this.emitLine("template <typename T>");
-
                 this.emitBlock(
                     [
                         "inline ",
