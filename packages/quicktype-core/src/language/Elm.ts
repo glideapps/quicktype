@@ -239,7 +239,7 @@ export class ElmRenderer extends ConvenienceRenderer {
         return this._options.useList ? "List" : "Array";
     }
 
-    private elmType(t: Type, noOptional: boolean = false): MultiWord {
+    private elmType(t: Type, noOptional = false): MultiWord {
         return matchType<MultiWord>(
             t,
             _anyType => singleWord(annotated(anyTypeIssueAnnotation, "Jdec.Value")),
@@ -277,7 +277,7 @@ export class ElmRenderer extends ConvenienceRenderer {
         return defined(this._namedTypeDependents.get(name)).decoder;
     }
 
-    private decoderNameForType(t: Type, noOptional: boolean = false): MultiWord {
+    private decoderNameForType(t: Type, noOptional = false): MultiWord {
         return matchType<MultiWord>(
             t,
             _anyType => singleWord("Jdec.value"),
@@ -320,7 +320,7 @@ export class ElmRenderer extends ConvenienceRenderer {
         return defined(this._namedTypeDependents.get(name)).encoder;
     }
 
-    private encoderNameForType(t: Type, noOptional: boolean = false): MultiWord {
+    private encoderNameForType(t: Type, noOptional = false): MultiWord {
         return matchType<MultiWord>(
             t,
             _anyType => singleWord("identity"),

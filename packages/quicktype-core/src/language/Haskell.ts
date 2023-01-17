@@ -191,7 +191,7 @@ export class HaskellRenderer extends ConvenienceRenderer {
         }
     }
 
-    private haskellType(t: Type, noOptional: boolean = false): MultiWord {
+    private haskellType(t: Type, noOptional = false): MultiWord {
         return matchType<MultiWord>(
             t,
             _anyType => multiWord(" ", "Maybe", "Text"),
@@ -318,7 +318,7 @@ export class HaskellRenderer extends ConvenienceRenderer {
     }
 
     private classPropertyLength(c: ClassType): number {
-        let counter: number = 0;
+        let counter = 0;
         this.forEachClassProperty(c, "none", () => {
             counter += 1;
         });

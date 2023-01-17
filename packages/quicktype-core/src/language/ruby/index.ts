@@ -158,7 +158,7 @@ export class RubyRenderer extends ConvenienceRenderer {
         return new Namer("enum-cases", n => simpleNameStyle(n, true), []);
     }
 
-    private dryType(t: Type, isOptional: boolean = false): Sourcelike {
+    private dryType(t: Type, isOptional = false): Sourcelike {
         const optional = isOptional ? ".optional" : "";
         return matchType<Sourcelike>(
             t,
@@ -182,7 +182,7 @@ export class RubyRenderer extends ConvenienceRenderer {
         );
     }
 
-    private exampleUse(t: Type, exp: Sourcelike, depth: number = 6, optional: boolean = false): Sourcelike {
+    private exampleUse(t: Type, exp: Sourcelike, depth = 6, optional = false): Sourcelike {
         if (depth-- <= 0) {
             return exp;
         }
@@ -254,12 +254,7 @@ export class RubyRenderer extends ConvenienceRenderer {
         return `"${inner()}"`;
     }
 
-    private fromDynamic(
-        t: Type,
-        e: Sourcelike,
-        optional: boolean = false,
-        castPrimitives: boolean = false
-    ): Sourcelike {
+    private fromDynamic(t: Type, e: Sourcelike, optional = false, castPrimitives = false): Sourcelike {
         const primitiveCast = [this.dryType(t, optional), "[", e, "]"];
         const primitive = castPrimitives ? primitiveCast : e;
         const safeAccess = optional ? "&" : "";
@@ -300,7 +295,7 @@ export class RubyRenderer extends ConvenienceRenderer {
         );
     }
 
-    private toDynamic(t: Type, e: Sourcelike, optional: boolean = false): Sourcelike {
+    private toDynamic(t: Type, e: Sourcelike, optional = false): Sourcelike {
         if (this.marshalsImplicitlyToDynamic(t)) {
             return e;
         }

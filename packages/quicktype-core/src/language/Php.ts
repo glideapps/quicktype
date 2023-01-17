@@ -36,7 +36,7 @@ export const phpOptions = {
 
 export class PhpTargetLanguage extends TargetLanguage {
     constructor() {
-        super("Php", ["php"], "php");
+        super("PHP", ["php"], "php");
     }
 
     protected getOptions(): Option<any>[] {
@@ -255,13 +255,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         this.emitLine("}");
     }
 
-    protected phpType(
-        _reference: boolean,
-        t: Type,
-        isOptional: boolean = false,
-        prefix: string = "?",
-        suffix: string = ""
-    ): Sourcelike {
+    protected phpType(_reference: boolean, t: Type, isOptional = false, prefix = "?", suffix = ""): Sourcelike {
         function optionalize(s: Sourcelike) {
             return [isOptional ? prefix : "", s, isOptional ? suffix : ""];
         }

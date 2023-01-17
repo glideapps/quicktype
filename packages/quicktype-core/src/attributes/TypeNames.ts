@@ -131,7 +131,7 @@ export class RegularTypeNames extends TypeNames {
         super(distance);
     }
 
-    add(namesArray: TypeNames[], startIndex: number = 0): TypeNames {
+    add(namesArray: TypeNames[], startIndex = 0): TypeNames {
         let newNames = new Set(this.names);
         let newDistance = this.distance;
         let newAlternativeNames = definedMap(this._alternativeNames, s => new Set(s));
@@ -228,7 +228,7 @@ export class TooManyTypeNames extends TypeNames {
         return this.names;
     }
 
-    add(namesArray: TypeNames[], startIndex: number = 0): TypeNames {
+    add(namesArray: TypeNames[], startIndex = 0): TypeNames {
         if (!this.areInferred) return this;
 
         for (let i = startIndex; i < namesArray.length; i++) {

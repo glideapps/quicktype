@@ -86,7 +86,7 @@ export interface CLIOptions {
     [option: string]: any;
 }
 
-const defaultDefaultTargetLanguageName: string = "go";
+const defaultDefaultTargetLanguageName = "go";
 
 async function sourceFromFileOrUrlArray(
     name: string,
@@ -688,7 +688,7 @@ function makeTypeScriptSource(fileNames: string[]): SchemaTypeSource {
 export function jsonInputForTargetLanguage(
     targetLanguage: string | TargetLanguage,
     languages?: TargetLanguage[],
-    handleJSONRefs: boolean = false
+    handleJSONRefs = false
 ): JSONInput<Readable> {
     if (typeof targetLanguage === "string") {
         targetLanguage = defined(languageNamed(targetLanguage, languages));
@@ -758,7 +758,7 @@ export async function makeQuicktypeOptions(
 
     let sources: TypeSource[] = [];
     let leadingComments: string[] | undefined = undefined;
-    let fixedTopLevels: boolean = false;
+    let fixedTopLevels = false;
     switch (options.srcLang) {
         case "graphql":
             let schemaString: string | undefined = undefined;

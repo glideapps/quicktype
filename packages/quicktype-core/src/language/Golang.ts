@@ -183,7 +183,7 @@ export class GoRenderer extends ConvenienceRenderer {
         return this.goType(t, true);
     }
 
-    private goType(t: Type, withIssues: boolean = false): Sourcelike {
+    private goType(t: Type, withIssues = false): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "interface{}"),

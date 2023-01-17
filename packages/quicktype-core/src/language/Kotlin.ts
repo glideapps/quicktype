@@ -252,15 +252,15 @@ export class KotlinRenderer extends ConvenienceRenderer {
 
     // (asarazan): I've broken out the following two functions
     // because some renderers, such as kotlinx, can cope with `any`, while some get mad.
-    protected arrayType(arrayType: ArrayType, withIssues: boolean = false, _noOptional: boolean = false): Sourcelike {
+    protected arrayType(arrayType: ArrayType, withIssues = false, _noOptional = false): Sourcelike {
         return ["List<", this.kotlinType(arrayType.items, withIssues), ">"];
     }
 
-    protected mapType(mapType: MapType, withIssues: boolean = false, _noOptional: boolean = false): Sourcelike {
+    protected mapType(mapType: MapType, withIssues = false, _noOptional = false): Sourcelike {
         return ["Map<String, ", this.kotlinType(mapType.values, withIssues), ">"];
     }
 
-    protected kotlinType(t: Type, withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
+    protected kotlinType(t: Type, withIssues = false, noOptional = false): Sourcelike {
         const optional = noOptional ? "" : "?";
         return matchType<Sourcelike>(
             t,
@@ -608,7 +608,7 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
         );
     }
 
-    private klaxonRenameAttribute(propName: Name, jsonName: string, ignore: boolean = false): Sourcelike | undefined {
+    private klaxonRenameAttribute(propName: Name, jsonName: string, ignore = false): Sourcelike | undefined {
         const escapedName = stringEscape(jsonName);
         const namesDiffer = this.sourcelikeToString(propName) !== escapedName;
         const properties: Sourcelike[] = [];
@@ -871,7 +871,7 @@ import com.fasterxml.jackson.module.kotlin.*`);
         propName: Name,
         jsonName: string,
         required: boolean,
-        ignore: boolean = false
+        ignore = false
     ): Sourcelike | undefined {
         const escapedName = stringEscape(jsonName);
         const namesDiffer = this.sourcelikeToString(propName) !== escapedName;
@@ -1019,7 +1019,7 @@ export class KotlinXRenderer extends KotlinRenderer {
         return ["JsonElement", optional];
     }
 
-    protected arrayType(arrayType: ArrayType, withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
+    protected arrayType(arrayType: ArrayType, withIssues = false, noOptional = false): Sourcelike {
         const valType = this.kotlinType(arrayType.items, withIssues, true);
         const name = this.sourcelikeToString(valType);
         if (name === "JsonObject" || name === "JsonElement") {
@@ -1028,7 +1028,7 @@ export class KotlinXRenderer extends KotlinRenderer {
         return super.arrayType(arrayType, withIssues, noOptional);
     }
 
-    protected mapType(mapType: MapType, withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
+    protected mapType(mapType: MapType, withIssues = false, noOptional = false): Sourcelike {
         const valType = this.kotlinType(mapType.values, withIssues, true);
         const name = this.sourcelikeToString(valType);
         if (name === "JsonObject" || name === "JsonElement") {

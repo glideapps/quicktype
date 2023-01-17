@@ -145,7 +145,7 @@ export class Ref {
         return elements;
     }
 
-    static parseURI(uri: URI, destroyURI: boolean = false): Ref {
+    static parseURI(uri: URI, destroyURI = false): Ref {
         if (!destroyURI) {
             uri = uri.clone();
         }
@@ -1110,7 +1110,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
 
     private readonly _topLevels: Map<string, Ref> = new Map();
 
-    private _needIR: boolean = false;
+    private _needIR = false;
 
     constructor(
         private _schemaStore: JSONSchemaStore | undefined,

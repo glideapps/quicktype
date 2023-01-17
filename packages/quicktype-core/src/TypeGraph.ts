@@ -167,7 +167,7 @@ export class TypeGraph {
 
     private _parents: Set<Type>[] | undefined = undefined;
 
-    private _printOnRewrite: boolean = false;
+    private _printOnRewrite = false;
 
     constructor(
         typeBuilder: TypeBuilder,
@@ -309,7 +309,7 @@ export class TypeGraph {
         replacementGroups: T[][],
         debugPrintReconstitution: boolean,
         replacer: (typesToReplace: ReadonlySet<T>, builder: GraphRewriteBuilder<T>, forwardingRef: TypeRef) => TypeRef,
-        force: boolean = false
+        force = false
     ): TypeGraph {
         this.printRewrite(title);
 
@@ -344,7 +344,7 @@ export class TypeGraph {
         alphabetizeProperties: boolean,
         map: ReadonlyMap<Type, Type>,
         debugPrintRemapping: boolean,
-        force: boolean = false
+        force = false
     ): TypeGraph {
         this.printRewrite(title);
 

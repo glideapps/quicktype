@@ -137,7 +137,7 @@ export abstract class Renderer {
         this._emitContext = new EmitContext();
     }
 
-    ensureBlankLine(numBlankLines: number = 1): void {
+    ensureBlankLine(numBlankLines = 1): void {
         this._emitContext.ensureBlankLine(numBlankLines);
     }
 
@@ -159,7 +159,7 @@ export abstract class Renderer {
     }
 
     emitLineOnce(...lineParts: Sourcelike[]): void {
-        let lineEmitted: boolean = true;
+        let lineEmitted = true;
         if (lineParts.length === 1) {
             lineEmitted = this.emitItemOnce(lineParts[0]);
         } else if (lineParts.length > 1) {

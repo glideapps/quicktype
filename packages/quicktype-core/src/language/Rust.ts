@@ -248,7 +248,7 @@ export class RustRenderer extends ConvenienceRenderer {
         return kind === "array" || kind === "map";
     }
 
-    private rustType(t: Type, withIssues: boolean = false): Sourcelike {
+    private rustType(t: Type, withIssues = false): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "Option<serde_json::Value>"),
