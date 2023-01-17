@@ -115,12 +115,7 @@ export const cPlusPlusOptions = {
         camelUpperAcronymsValue
     ]),
     boost: new BooleanOption("boost", "Require a dependency on boost. Without boost, C++17 is required", true),
-    hideNullOptional: new BooleanOption("hide-null-optional", "Hide null value for optional field", false),
-    use_optional: new BooleanOption(
-        "use-optional",
-        "Use std::optional (or boost::optional) if possible. If cycles are detected use std::shared_ptr (or boost::shared_ptr)",
-        false
-    )
+    hideNullOptional: new BooleanOption("hide-null-optional", "Hide null value for optional field", false)
 };
 
 export class CPlusPlusTargetLanguage extends TargetLanguage {
@@ -142,8 +137,7 @@ export class CPlusPlusTargetLanguage extends TargetLanguage {
             cPlusPlusOptions.enumeratorNamingStyle,
             cPlusPlusOptions.enumType,
             cPlusPlusOptions.boost,
-            cPlusPlusOptions.hideNullOptional,
-            cPlusPlusOptions.use_optional
+            cPlusPlusOptions.hideNullOptional
         ];
     }
 
