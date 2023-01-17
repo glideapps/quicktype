@@ -993,7 +993,7 @@ export const DartLanguage: Language = {
     ],
     skipMiscJSON: true,
     rendererOptions: {},
-    quickTestRendererOptions: [["pokedex.json", { "null-safety": "false" }]],
+    quickTestRendererOptions: [],
     sourceFiles: ["src/Language/Dart.ts"]
 };
 
