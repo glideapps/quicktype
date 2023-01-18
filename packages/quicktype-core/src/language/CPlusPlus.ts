@@ -272,19 +272,10 @@ const keywords = [
     "NULL"
 ];
 
-/**
- * We can't use boost/std optional. They MUST have the declaration of
- * the given structure available, meaning we can't forward declare anything.
- * Which is bad as we have circles in Json schema, which require at least
- * forward declarability.
- * The next question, why isn't unique_ptr is enough here?
- * That problem relates to getter/setter. If using getter/setters we
- * can't/mustn't return a unique_ptr out of the class -> as that is the
- * sole reason why we have declared that as unique_ptr, so that only
- * the class owns it. We COULD return unique_ptr references, which practically
- * kills the uniqueness of the smart pointer -> hence we use shared_ptrs.
- */
-const optionalType = "std::shared_ptr";
+/// Type to use as an optional if cycle breaking is required
+const optionalAsSharedType = "std::shared_ptr";
+/// Factory to use when creating an optional if cycle breaking is required
+const optionalFactoryAsSharedType = "std::make_shared";
 
 /**
  * To be able to support circles in multiple files -
@@ -468,7 +459,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     private _forbiddenGlobalNames: string[];
     private readonly _memberNamingFunction: Namer;
     private _stringType: StringType;
+    /// The type to use as an optional  (std::optional or std::shared)
     private _optionalType: string;
+    private _optionalFactory: string;
     private _nulloptType: string;
     private _variantType: string;
     private _variantIndexMethodName: string;
@@ -508,17 +501,128 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
         if (_options.boost) {
             this._optionalType = "boost::optional";
+            this._optionalFactory = "boost::optional";
             this._nulloptType = "boost::none";
             this._variantType = "boost::variant";
             this._variantIndexMethodName = "which";
         } else {
             this._optionalType = "std::optional";
+            this._optionalFactory = "std::make_optional";
             this._nulloptType = "std::nullopt";
             this._variantType = "std::variant";
             this._variantIndexMethodName = "index";
         }
 
         this.setupGlobalNames();
+    }
+
+    // union typeguard
+    isUnion(t: Type | UnionType): t is UnionType {
+        return t.kind === "union";
+    }
+
+    // Returns true if the type can be stored in
+    // a stack based optional type. This requires
+    // that the type does not require forward declaration.
+    isOptionalAsValuePossible(t: Type): boolean {
+        if (this.isForwardDeclaredType(t)) return false;
+
+        if (this.isUnion(t)) {
+            // There is something stinky about this test.
+            // There is special handling somewhere that if you
+            // have the following schema
+            // {
+            //     "$schema": "http://json-schema.org/draft-06/schema#",
+            //     "$ref": "#/definitions/List",
+            //     "definitions": {
+            //         "List": {
+            //             "type": "object",
+            //             "additionalProperties": false,
+            //             "properties": {
+            //                 "data": {
+            //                     "type": "string"
+            //                 },
+            //                 "next": {
+            //                     "anyOf": [
+            //                         {
+            //                             "$ref": "#/definitions/List"
+            //                         }
+            //                         {
+            //                             "type": "null"
+            //                         }
+            //                     ]
+            //                 }
+            //             },
+            //             "required": [],
+            //             "title": "List"
+            //         }
+            //     }
+            // }
+            // Then a variant is not output but the single item inlined
+            //
+            //     struct TopLevel {
+            //       std::optional<std::string> data;
+            //       std::optional<TopLevel> next;
+            //     };
+            //
+            // instead of
+            //     struct TopLevel {
+            //       std::optional<std::string> data;
+            //       std::shared_ptr<TopLevel> next;
+            //     };
+            //
+            // checking to see if the collapse of the variant has
+            // occured and then doing the isCycleBreakerType check
+            // on the single type the variant would contain seems
+            // to solve the problem. But does this point to a problem
+            // with the core library or with the CPlusPlus package
+            const [, nonNulls] = removeNullFromUnion(t);
+            if (nonNulls.size === 1) {
+                const tt = defined(iterableFirst(nonNulls));
+                return !this.isCycleBreakerType(tt);
+            }
+        }
+        return !this.isCycleBreakerType(t);
+    }
+
+    isImplicitCycleBreaker(t: Type): boolean {
+        const kind = t.kind;
+        return kind === "array" || kind === "map";
+    }
+
+    // Is likely to return std::optional or boost::optional
+    optionalTypeStack(): string {
+        return this._optionalType;
+    }
+
+    // Is likely to return std::make_optional or boost::optional
+    optionalFactoryStack(): string {
+        return this._optionalFactory;
+    }
+
+    // Is likely to return std::shared_ptr
+    optionalTypeHeap(): string {
+        return optionalAsSharedType;
+    }
+
+    // Is likely to return std::make_shared
+    optionalFactoryHeap(): string {
+        return optionalFactoryAsSharedType;
+    }
+
+    // Returns the optional type most suitable for the given type.
+    // Classes that don't require forward declarations can be stored
+    // in std::optional ( or boost::optional )
+    optionalType(t: Type): string {
+        if (this.isOptionalAsValuePossible(t)) return this.optionalTypeStack();
+        else return this.optionalTypeHeap();
+    }
+
+    // Returns a label that can be used to distinguish between
+    // heap and stack based optional handling methods
+    optionalTypeLabel(t: Type): string {
+        if (this.isOptionalAsValuePossible(t)) return "stack";
+        else return "heap";
     }
 
     protected getConstraintMembers(): ConstraintMember[] {
@@ -808,7 +912,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         if (!indirection) {
             return variant;
         }
-        return [optionalType, "<", variant, ">"];
+        return [this.optionalType(u), "<", variant, ">"];
     }
 
     protected ourQualifier(inJsonNamespace: boolean): Sourcelike {
@@ -819,9 +923,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         return inJsonNamespace ? [] : "nlohmann::";
     }
 
-    protected variantIndirection(needIndirection: boolean, typeSrc: Sourcelike): Sourcelike {
+    protected variantIndirection(type: Type, needIndirection: boolean, typeSrc: Sourcelike): Sourcelike {
         if (!needIndirection) return typeSrc;
-        return [optionalType, "<", typeSrc, ">"];
+        return [this.optionalType(type), "<", typeSrc, ">"];
     }
 
     protected cppType(
@@ -880,6 +984,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             ],
             classType =>
                 this.variantIndirection(
+                    classType,
                     ctx.needsForwardIndirection && this.isForwardDeclaredType(classType) && !isOptional,
                     [this.ourQualifier(inJsonNamespace), this.nameForNamedType(classType)]
                 ),
@@ -905,19 +1010,22 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             enumType => [this.ourQualifier(inJsonNamespace), this.nameForNamedType(enumType)],
             unionType => {
                 const nullable = nullableFromUnion(unionType);
-                if (nullable === null) return [this.ourQualifier(inJsonNamespace), this.nameForNamedType(unionType)];
-                isOptional = true;
-                return this.cppType(
-                    nullable,
-                    { needsForwardIndirection: false, needsOptionalIndirection: false, inJsonNamespace },
-                    withIssues,
-                    forceNarrowString,
-                    false
-                );
+                if (nullable !== null) {
+                    isOptional = true;
+                    return this.cppType(
+                        nullable,
+                        { needsForwardIndirection: false, needsOptionalIndirection: false, inJsonNamespace },
+                        withIssues,
+                        forceNarrowString,
+                        false
+                    );
+                } else {
+                    return [this.ourQualifier(inJsonNamespace), this.nameForNamedType(unionType)];
+                }
             }
         );
         if (!isOptional) return typeSource;
-        return [optionalType, "<", typeSource, ">"];
+        return [this.optionalType(t), "<", typeSource, ">"];
     }
 
     /**
@@ -1185,8 +1293,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         if (t instanceof MapType && this._stringType !== this.NarrowString) {
             const ourQualifier = this.ourQualifier(true);
 
-            this.emitLine("template <>");
             this.emitBlock(["struct adl_serializer<", ourQualifier, className, ">"], true, () => {
+
+                this.emitLine("template <>");
                 this.emitLine(
                     "static void from_json(",
                     this.withConst("json"),
@@ -1369,11 +1478,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                                     [
                                         this._stringType.wrapEncodingChange(
                                             [ourQualifier],
-                                            [optionalType, "<", cppType, ">"],
-                                            [optionalType, "<", toType, ">"],
+                                            [this.optionalType(t), "<", cppType, ">"],
+                                            [this.optionalType(t), "<", toType, ">"],
                                             [
                                                 ourQualifier,
-                                                "get_optional<",
+                                                `get_${this.optionalTypeLabel(t)}_optional<`,
                                                 cppType,
                                                 ">(j, ",
                                                 this._stringType.wrapEncodingChange(
@@ -1821,28 +1930,32 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitLine("#define NLOHMANN_OPT_HELPER");
 
         this.emitNamespaces(["nlohmann"], () => {
-            this.emitLine("template <typename T>");
-            this.emitBlock(["struct adl_serializer<", optionalType, "<T>>"], true, () => {
-                this.emitBlock(
-                    ["static void to_json(json & j, ", this.withConst([optionalType, "<T>"]), " & opt)"],
-                    false,
-                    () => {
-                        this.emitLine("if (!opt) j = nullptr; else j = *opt;");
-                    }
-                );
+            const emitAdlStruct = (optType: string, factory: string) => {
+                this.emitLine("template <typename T>");
+                this.emitBlock(["struct adl_serializer<", optType, "<T>>"], true, () => {
+                    this.emitBlock(
+                        ["static void to_json(json & j, ", this.withConst([optType, "<T>"]), " & opt)"],
+                        false,
+                        () => {
+                            this.emitLine("if (!opt) j = nullptr; else j = *opt;");
+                        }
+                    );
 
-                this.ensureBlankLine();
+                    this.ensureBlankLine();
 
-                this.emitBlock(
-                    ["static ", optionalType, "<T> from_json(", this.withConst("json"), " & j)"],
-                    false,
-                    () => {
-                        this.emitLine(
-                            `if (j.is_null()) return std::unique_ptr<T>(); else return std::unique_ptr<T>(new T(j.get<T>()));`
-                        );
-                    }
-                );
-            });
+                    this.emitBlock(
+                        ["static ", optType, "<T> from_json(", this.withConst("json"), " & j)"],
+                        false,
+                        () => {
+                            this.emitLine(
+                                `if (j.is_null()) return ${factory}<T>(); else return ${factory}<T>(j.get<T>());`
+                            );
+                        }
+                    );
+                });
+            };
+            emitAdlStruct(this.optionalTypeHeap(), this.optionalFactoryHeap());
+            emitAdlStruct(this.optionalTypeStack(), this.optionalFactoryStack());
         });
 
         this.emitLine("#endif");
@@ -2198,38 +2311,47 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.emitLine("#ifndef " + optionalMacroName);
             this.emitLine("#define " + optionalMacroName);
 
-            this.emitLine("template <typename T>");
+            const emitGetOptional = (optionalType: string, label: string): void => {
+                this.emitLine("template <typename T>");
+                this.emitBlock(
+                    [
+                        "inline ",
+                        optionalType,
+                        `<T> get_${label}_optional(`,
+                        this.withConst("json"),
+                        " & j, ",
+                        this.withConst("char"),
+                        " * property)"
+                    ],
+                    false,
+                    () => {
+                        this.emitLine(["auto it = j.find(property);"]);
+                        this.emitBlock(["if (it != j.end() && !it->is_null())"], false, () => {
+                            this.emitLine("return j.at(property).get<", optionalType, "<T>>();");
+                        });
+                        this.emitLine("return ", optionalType, "<T>();");
+                    }
+                );
 
-            this.emitBlock(
-                [
-                    "inline ",
-                    optionalType,
-                    "<T> get_optional(",
-                    this.withConst("json"),
-                    " & j, ",
-                    this.withConst("char"),
-                    " * property)"
-                ],
-                false,
-                () => {
-                    this.emitBlock(["if (j.find(property) != j.end())"], false, () => {
-                        this.emitLine("return j.at(property).get<", optionalType, "<T>>();");
-                    });
-                    this.emitLine("return ", optionalType, "<T>();");
-                }
-            );
+                this.ensureBlankLine();
 
-            this.ensureBlankLine();
-
-            this.emitLine("template <typename T>");
-
-            this.emitBlock(
-                ["inline ", optionalType, "<T> get_optional(", this.withConst("json"), " & j, std::string property)"],
-                false,
-                () => {
-                    this.emitLine("return get_optional<T>(j, property.data());");
-                }
-            );
+                this.emitLine("template <typename T>");
+                this.emitBlock(
+                    [
+                        "inline ",
+                        optionalType,
+                        `<T> get_${label}_optional(`,
+                        this.withConst("json"),
+                        " & j, std::string property)"
+                    ],
+                    false,
+                    () => {
+                        this.emitLine(`return get_${label}_optional<T>(j, property.data());`);
+                    }
+                );
+            };
+            emitGetOptional(this.optionalTypeHeap(), "heap");
+            emitGetOptional(this.optionalTypeStack(), "stack");
 
             this.emitLine("#endif");
 
