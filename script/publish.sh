@@ -20,4 +20,10 @@ jq --arg version $VERSION \
     
 mv package.1.json packages/quicktype-typescript-input/package.json
 
+jq --arg version $VERSION \
+    '.dependencies."quicktype-core" = $version' \
+    packages/quicktype-graphql-input/package.json > package.1.json
+    
+mv package.1.json packages/quicktype-graphql-input/package.json
+
 npm publish --workspaces --if-present
