@@ -420,6 +420,13 @@ export class DartRenderer extends ConvenienceRenderer {
         return ["Map.from(", map, ").map((k, v) => MapEntry<String, ", valueType, ">(k, ", valueMapper, "))"];
     }
 
+    protected mapClass(isNullable: boolean, classType: ClassType, dynamic: Sourcelike) {
+        if (this._options.nullSafety && isNullable && !this._options.requiredProperties) {
+            return [dynamic, " == null ? null : ", this.nameForNamedType(classType), ".", this.fromJson, "(", dynamic, ")"];
+        }
+        return [this.nameForNamedType(classType), ".", this.fromJson, "(", dynamic, ")"];
+    }
+
     //If the first time is the unionType type, after nullableFromUnion conversion,
     //the isNullable property will become false, which is obviously wrong,
     //so add isNullable property
@@ -434,7 +441,7 @@ export class DartRenderer extends ConvenienceRenderer {
             _stringType => dynamic,
             arrayType =>
                 this.mapList(isNullable || arrayType.isNullable, this.dartType(arrayType.items), dynamic, this.fromDynamicExpression(arrayType.items.isNullable, arrayType.items, "x")),
-            classType => [this.nameForNamedType(classType), ".", this.fromJson, "(", dynamic, ")"],
+            classType => this.mapClass(isNullable || classType.isNullable, classType, dynamic),
             mapType =>
                 this.mapMap(mapType.isNullable || isNullable, this.dartType(mapType.values), dynamic, this.fromDynamicExpression(mapType.values.isNullable, mapType.values, "v")),
             enumType => {
@@ -477,7 +484,7 @@ export class DartRenderer extends ConvenienceRenderer {
             arrayType => this.mapList(arrayType.isNullable || isNullable, "dynamic", dynamic, this.toDynamicExpression(arrayType.items.isNullable, arrayType.items, "x")),
             _classType => {
                 if (this._options.nullSafety && (_classType.isNullable || isNullable) && !this._options.requiredProperties) {
-                    return [dynamic, "!.", this.toJson, "()"];
+                    return [dynamic, "?.", this.toJson, "()"];
                 }
                 return [dynamic, ".", this.toJson, "()"];
             },
