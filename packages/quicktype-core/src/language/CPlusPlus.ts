@@ -576,7 +576,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             // on the single type the variant would contain seems
             // to solve the problem. But does this point to a problem
             // with the core library or with the CPlusPlus package
-            const [_hasNull, nonNulls] = removeNullFromUnion(t);
+            const [, nonNulls] = removeNullFromUnion(t);
             if (nonNulls.size === 1) {
                 const tt = defined(iterableFirst(nonNulls));
                 return !this.isCycleBreakerType(tt);
