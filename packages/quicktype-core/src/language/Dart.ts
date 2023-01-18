@@ -459,7 +459,7 @@ export class DartRenderer extends ConvenienceRenderer {
                     case "date-time":
                     case "date":
                         if ((transformedStringType.isNullable || isNullable) && !this._options.requiredProperties && this._options.nullSafety) {
-                            return [dynamic, " == null ? null :", "DateTime.parse(", dynamic, ")"];
+                            return [dynamic, " == null ? null : ", "DateTime.parse(", dynamic, ")"];
                         }
                         return ["DateTime.parse(", dynamic, ")"];
                     default:
