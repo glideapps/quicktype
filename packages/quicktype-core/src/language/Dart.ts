@@ -194,8 +194,8 @@ function dartNameStyle(startWithUpper: boolean, upperUnderscore: boolean, origin
     const firstWordStyle = upperUnderscore
         ? allUpperWordStyle
         : startWithUpper
-            ? firstUpperWordStyle
-            : allLowerWordStyle;
+        ? firstUpperWordStyle
+        : allLowerWordStyle;
     const restWordStyle = upperUnderscore ? allUpperWordStyle : firstUpperWordStyle;
     return combineWords(
         words,
@@ -422,7 +422,16 @@ export class DartRenderer extends ConvenienceRenderer {
 
     protected mapClass(isNullable: boolean, classType: ClassType, dynamic: Sourcelike) {
         if (this._options.nullSafety && isNullable && !this._options.requiredProperties) {
-            return [dynamic, " == null ? null : ", this.nameForNamedType(classType), ".", this.fromJson, "(", dynamic, ")"];
+            return [
+                dynamic,
+                " == null ? null : ",
+                this.nameForNamedType(classType),
+                ".",
+                this.fromJson,
+                "(",
+                dynamic,
+                ")"
+            ];
         }
         return [this.nameForNamedType(classType), ".", this.fromJson, "(", dynamic, ")"];
     }
@@ -440,12 +449,27 @@ export class DartRenderer extends ConvenienceRenderer {
             _doubleType => [dynamic, this._options.nullSafety ? "?.toDouble()" : ".toDouble()"],
             _stringType => dynamic,
             arrayType =>
-                this.mapList(isNullable || arrayType.isNullable, this.dartType(arrayType.items), dynamic, this.fromDynamicExpression(arrayType.items.isNullable, arrayType.items, "x")),
+                this.mapList(
+                    isNullable || arrayType.isNullable,
+                    this.dartType(arrayType.items),
+                    dynamic,
+                    this.fromDynamicExpression(arrayType.items.isNullable, arrayType.items, "x")
+                ),
             classType => this.mapClass(isNullable || classType.isNullable, classType, dynamic),
             mapType =>
-                this.mapMap(mapType.isNullable || isNullable, this.dartType(mapType.values), dynamic, this.fromDynamicExpression(mapType.values.isNullable, mapType.values, "v")),
+                this.mapMap(
+                    mapType.isNullable || isNullable,
+                    this.dartType(mapType.values),
+                    dynamic,
+                    this.fromDynamicExpression(mapType.values.isNullable, mapType.values, "v")
+                ),
             enumType => {
-                return [defined(this._enumValues.get(enumType)), ".map[", dynamic, this._options.nullSafety ? "]!" : "]"];
+                return [
+                    defined(this._enumValues.get(enumType)),
+                    ".map[",
+                    dynamic,
+                    this._options.nullSafety ? "]!" : "]"
+                ];
             },
             unionType => {
                 const maybeNullable = nullableFromUnion(unionType);
@@ -458,7 +482,11 @@ export class DartRenderer extends ConvenienceRenderer {
                 switch (transformedStringType.kind) {
                     case "date-time":
                     case "date":
-                        if ((transformedStringType.isNullable || isNullable) && !this._options.requiredProperties && this._options.nullSafety) {
+                        if (
+                            (transformedStringType.isNullable || isNullable) &&
+                            !this._options.requiredProperties &&
+                            this._options.nullSafety
+                        ) {
                             return [dynamic, " == null ? null : ", "DateTime.parse(", dynamic, ")"];
                         }
                         return ["DateTime.parse(", dynamic, ")"];
@@ -481,14 +509,30 @@ export class DartRenderer extends ConvenienceRenderer {
             _integerType => dynamic,
             _doubleType => dynamic,
             _stringType => dynamic,
-            arrayType => this.mapList(arrayType.isNullable || isNullable, "dynamic", dynamic, this.toDynamicExpression(arrayType.items.isNullable, arrayType.items, "x")),
+            arrayType =>
+                this.mapList(
+                    arrayType.isNullable || isNullable,
+                    "dynamic",
+                    dynamic,
+                    this.toDynamicExpression(arrayType.items.isNullable, arrayType.items, "x")
+                ),
             _classType => {
-                if (this._options.nullSafety && (_classType.isNullable || isNullable) && !this._options.requiredProperties) {
+                if (
+                    this._options.nullSafety &&
+                    (_classType.isNullable || isNullable) &&
+                    !this._options.requiredProperties
+                ) {
                     return [dynamic, "?.", this.toJson, "()"];
                 }
                 return [dynamic, ".", this.toJson, "()"];
             },
-            mapType => this.mapMap(mapType.isNullable || isNullable, "dynamic", dynamic, this.toDynamicExpression(mapType.values.isNullable, mapType.values, "v")),
+            mapType =>
+                this.mapMap(
+                    mapType.isNullable || isNullable,
+                    "dynamic",
+                    dynamic,
+                    this.toDynamicExpression(mapType.values.isNullable, mapType.values, "v")
+                ),
             enumType => {
                 return [defined(this._enumValues.get(enumType)), ".reverse[", dynamic, "]"];
             },
@@ -502,14 +546,22 @@ export class DartRenderer extends ConvenienceRenderer {
             transformedStringType => {
                 switch (transformedStringType.kind) {
                     case "date-time":
-                        if (this._options.nullSafety && !this._options.requiredProperties && (transformedStringType.isNullable || isNullable)) {
+                        if (
+                            this._options.nullSafety &&
+                            !this._options.requiredProperties &&
+                            (transformedStringType.isNullable || isNullable)
+                        ) {
                             return [dynamic, "?.toIso8601String()"];
                         }
                         return [dynamic, ".toIso8601String()"];
                     case "date":
-                        if (this._options.nullSafety && !this._options.requiredProperties && (transformedStringType.isNullable || isNullable)) {
+                        if (
+                            this._options.nullSafety &&
+                            !this._options.requiredProperties &&
+                            (transformedStringType.isNullable || isNullable)
+                        ) {
                             return [
-                                "\"${",
+                                '"${',
                                 dynamic,
                                 "!.year.toString().padLeft(4, '0')",
                                 "}-${",
@@ -520,7 +572,7 @@ export class DartRenderer extends ConvenienceRenderer {
                             ];
                         }
                         return [
-                            "\"${",
+                            '"${',
                             dynamic,
                             ".year.toString().padLeft(4, '0')",
                             "}-${",
@@ -632,7 +684,13 @@ export class DartRenderer extends ConvenienceRenderer {
                     this.emitLine(
                         name,
                         ": ",
-                        this.fromDynamicExpression(property.type.isNullable, property.type, "json[\"", stringEscape(jsonName), "\"]"),
+                        this.fromDynamicExpression(
+                            property.type.isNullable,
+                            property.type,
+                            'json["',
+                            stringEscape(jsonName),
+                            '"]'
+                        ),
                         ","
                     );
                 });
@@ -645,9 +703,9 @@ export class DartRenderer extends ConvenienceRenderer {
             this.indent(() => {
                 this.forEachClassProperty(c, "none", (name, jsonName, property) => {
                     this.emitLine(
-                        "\"",
+                        '"',
                         stringEscape(jsonName),
-                        "\": ",
+                        '": ',
                         this.toDynamicExpression(property.type.isNullable, property.type, name),
                         ","
                     );
@@ -708,7 +766,7 @@ export class DartRenderer extends ConvenienceRenderer {
         this.indent(() => {
             this.forEachEnumCase(e, "none", (name, jsonName, pos) => {
                 const comma = pos === "first" || pos === "middle" ? "," : [];
-                this.emitLine("\"", stringEscape(jsonName), "\": ", enumName, ".", name, comma);
+                this.emitLine('"', stringEscape(jsonName), '": ', enumName, ".", name, comma);
             });
         });
         this.emitLine("});");
