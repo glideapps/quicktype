@@ -1294,7 +1294,6 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             const ourQualifier = this.ourQualifier(true);
 
             this.emitBlock(["struct adl_serializer<", ourQualifier, className, ">"], true, () => {
-
                 this.emitLine("template <>");
                 this.emitLine(
                     "static void from_json(",
