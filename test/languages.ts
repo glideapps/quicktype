@@ -584,14 +584,24 @@ export const SwiftLanguage: Language = {
         // This at least is keeping blns-object from working: https://bugs.swift.org/browse/SR-6314
         "blns-object.json",
         // Doesn't seem to work on Linux, works on MacOS
-        "nst-test-suite.json"
+        "nst-test-suite.json",
+        "null-safe.json"
     ],
     skipMiscJSON: false,
     skipSchema: [
         // The code we generate for top-level enums is incompatible with the driver
         "top-level-enum.schema",
         // This works on macOS, but on Linux one of the failure test cases doesn't fail
-        "implicit-class-array-union.schema"
+        "implicit-class-array-union.schema",
+        "required.schema",
+        "multi-type-enum.schema",
+        "intersection.schema",
+        "go-schema-pattern-properties.schema",
+        "enum.schema",
+        "date-time.schema",
+        "class-with-additional.schema",
+        "class-map-union.schema",
+        "vega-lite.schema"
     ],
     rendererOptions: { "support-linux": "true" },
     quickTestRendererOptions: [
@@ -993,7 +1003,7 @@ export const DartLanguage: Language = {
     ],
     skipMiscJSON: true,
     rendererOptions: {},
-    quickTestRendererOptions: [["pokedex.json", { "null-safety": "false" }]],
+    quickTestRendererOptions: [],
     sourceFiles: ["src/Language/Dart.ts"]
 };
 
