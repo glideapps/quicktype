@@ -19,7 +19,7 @@ jobs:
 
             matrix:
                 fixture:
-                    - typescript
+                    - typescript,typescript-zod
                     - javascript,schema-javascript
                     - golang,schema-golang
                     - cplusplus,schema-cplusplus
