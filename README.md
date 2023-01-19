@@ -1,4 +1,4 @@
-![](https://raw.githubusercontent.com/quicktype/quicktype/master/quicktype-logo.svg?sanitize=true)
+![](https://raw.githubusercontent.com/quicktype/quicktype/master/media/quicktype-logo.svg?sanitize=true)
 
 [![npm version](https://badge.fury.io/js/quicktype.svg)](https://badge.fury.io/js/quicktype)
 ![Build status](https://github.com/quicktype/quicktype/actions/workflows/master.yaml/badge.svg)
@@ -138,13 +138,13 @@ $ npm install quicktype-core
 In general, first you create an `InputData` value with one or more JSON samples, JSON schemas, TypeScript sources, or other supported input types. Then you call `quicktype`, passing that `InputData` value and any options you want.
 
 ```javascript
-const {
+import {
     quicktype,
     InputData,
     jsonInputForTargetLanguage,
     JSONSchemaInput,
     FetchingJSONSchemaStore
-} = require("quicktype-core");
+} from "quicktype-core";
 
 async function quicktypeJSON(targetLanguage, typeName, jsonString) {
     const jsonInput = jsonInputForTargetLanguage(targetLanguage);
@@ -250,27 +250,7 @@ files, URLs, or add other options.
 
 ### Test
 
-`quicktype` has many complex test dependencies:
-
--   `crystal` compiler
--   `dotnetcore` SDK
--   Java, Maven
--   `elm` tools
--   `g++` C++ compiler
--   `golang` stack
--   `swift` compiler
--   `clang` and Objective-C Foundation (must be tested separately on macOS)
--   `rust` tools
--   `pike` interpreter
--   [Bundler](https://bundler.io) for Ruby
--   `haskell` [stack](https://docs.haskellstack.org/)
-
-We've assembled all of these tools in a Docker container that you build and test within:
-
 ```bash
-# Build and attach to Docker container
-script/dev
-
 # Run full test suite
 npm run test
 

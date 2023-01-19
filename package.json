@@ -1,96 +1,67 @@
 {
-  "name": "quicktype",
-  "version": "16.0.0",
-  "license": "Apache-2.0",
-  "main": "dist/cli/index.js",
-  "types": "dist/cli/index.d.ts",
-  "repository": "https://github.com/quicktype/quicktype",
-  "scripts": {
-    "pub": "script/publish.sh",
-    "prepare": "npm run build",
-    "build": "script/build.ts",
-    "test": "jest && script/test",
-    "start": "script/watch",
-    "pkg": "script/make-pkgs.sh",
-    "tslint": "tslint --project src/cli --exclude 'src/__tests__/**' --exclude 'src/quicktype-core/input/io/get-stream/**'",
-    "clean": "rm -rf dist node_modules *~",
-    "publish": "script/publish.sh"
-  },
-  "dependencies": {
-    "chalk": "^2.4.1",
-    "collection-utils": "^1.0.1",
-    "command-line-args": "^4.0.6",
-    "command-line-usage": "^5.0.5",
-    "graphql": "^0.11.7",
-    "is-url": "^1.2.4",
-    "js-base64": "^2.4.3",
-    "lodash": "^4.17.21",
-    "moment": "^2.22.1",
-    "node-fetch": "^2.6.1",
-    "pako": "^1.0.6",
-    "pluralize": "^7.0.0",
-    "stream-json": "1.1.3",
-    "string-to-stream": "^1.1.0",
-    "typescript": "~3.2.1",
-    "@mark.probst/typescript-json-schema": "~0.32.0",
-    "@mark.probst/unicode-properties": "~1.1.0",
-    "urijs": "^1.19.11",
-    "uuid": "^3.2.1",
-    "wordwrap": "^1.0.0",
-    "yaml": "^1.5.0",
-    "readable-stream": "2.3.0",
-    "isomorphic-fetch": "^2.2.1",
-    "browser-or-node": "^1.2.1"
-  },
-  "devDependencies": {
-    "@types/urijs": "^1.19.8",
-    "@types/is-url": "^1.2.28",
-    "@types/jest": "^23.1.6",
-    "@types/lodash": "^4.14.108",
-    "@types/node": "8.10.10",
-    "@types/shelljs": "^0.7.8",
-    "@types/semver": "^5.5.0",
-    "@types/yaml": "^1.0.2",
-    "ajv": "^5.5.2",
-    "deep-equal": "^1.0.1",
-    "exit": "^0.1.2",
-    "jest": "^23.1.0",
-    "promise-timeout": "^1.3.0",
-    "semver": "^5.5.0",
-    "shelljs": "^0.8.5",
-    "ts-jest": "^23.1.3",
-    "ts-node": "^10.9.1",
-    "tslint": "^5.11.0",
-    "uglify-js": "^3.3.22",
-    "watch": "^1.0.2",
-    "@types/graphql": "^0.11.7",
-    "@types/js-base64": "^2.3.1",
-    "@types/pako": "^1.0.0",
-    "@types/pluralize": "0.0.28",
-    "@types/readable-stream": "2.3.9",
-    "@types/browser-or-node": "^1.2.0"
-  },
-  "files": [
-    "dist/**"
-  ],
-  "bin": "dist/cli/index.js",
-  "jest": {
-    "transform": {
-      "^.+\\.tsx?$": "ts-jest"
+    "name": "quicktype",
+    "version": "21.0.0",
+    "license": "Apache-2.0",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "repository": "https://github.com/quicktype/quicktype",
+    "engines": {
+        "node": ">=18.13.0"
     },
-    "globals": {
-      "ts-jest": {
-        "tsConfigFile": "src/cli/tsconfig.json"
-      }
+    "scripts": {
+        "pub": "script/publish.sh",
+        "build": "npm run build --workspaces --if-present && tsc",
+        "test": "script/test",
+        "start": "script/watch",
+        "clean": "rm -rf dist node_modules *~ packages/*/{dist,node_modules}",
+        "debug": "node --inspect-brk --max-old-space-size=4096 ./dist/index.js"
     },
-    "testRegex": "(/__tests__/.*)\\.test\\.(tsx?)$",
-    "moduleFileExtensions": [
-      "ts",
-      "tsx",
-      "js",
-      "jsx",
-      "json",
-      "node"
-    ]
-  }
+    "workspaces": [
+        "./packages/quicktype-core",
+        "./packages/quicktype-graphql-input",
+        "./packages/quicktype-typescript-input"
+    ],
+    "dependencies": {
+        "@glideapps/ts-necessities": "^2.1.2",
+        "chalk": "^4.1.2",
+        "command-line-args": "^5.2.1",
+        "command-line-usage": "^6.1.3",
+        "cross-fetch": "^3.1.5",
+        "graphql": "^0.11.7",
+        "lodash": "^4.17.21",
+        "moment": "^2.29.4",
+        "quicktype-core": "20.0.12",
+        "quicktype-graphql-input": "20.0.2",
+        "quicktype-typescript-input": "20.0.2",
+        "readable-stream": "^4.3.0",
+        "stream-json": "1.7.5",
+        "string-to-stream": "^3.0.1",
+        "typescript": "4.9.4"
+    },
+    "devDependencies": {
+        "@tsconfig/node18": "^1.0.1",
+        "@types/command-line-args": "^5.2.0",
+        "@types/command-line-usage": "^5.0.2",
+        "@types/graphql": "^0.11.7",
+        "@types/lodash": "^4.14.191",
+        "@types/semver": "^7.3.13",
+        "@types/shelljs": "^0.7.8",
+        "@types/stream-json": "^1.7.3",
+        "@types/urijs": "^1.19.19",
+        "ajv": "^5.5.2",
+        "deep-equal": "^2.2.0",
+        "exit": "^0.1.2",
+        "prettier": "^2.8.3",
+        "promise-timeout": "^1.3.0",
+        "semver": "^7.3.8",
+        "shelljs": "^0.8.5",
+        "ts-node": "^10.9.1",
+        "tslint": "^6.1.3",
+        "uglify-js": "^3.3.22",
+        "watch": "^1.0.2"
+    },
+    "files": [
+        "dist"
+    ],
+    "bin": "dist/index.js"
 }

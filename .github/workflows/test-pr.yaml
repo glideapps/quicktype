@@ -8,11 +8,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v3
-            - uses: actions/setup-node@v3
-              with:
-                  node-version: 18.12.1
-                  cache: npm
-            - run: npm ci
+            - uses: ./.github/workflows/setup
 
     test:
         needs: [build]
@@ -24,31 +20,25 @@ jobs:
             matrix:
                 fixture:
                     - typescript
-
                     - javascript,schema-javascript
                     - golang,schema-golang
                     - cplusplus,schema-cplusplus
                     - flow,schema-flow
-
-                    # Break Kotlin up because it takes so long
-                    - kotlin,schema-kotlin
-                    - kotlin-jackson,schema-kotlin-jackson
-
                     - java,schema-java
                     - python,schema-python
                     - haskell,schema-haskell
-                    - rust,schema-rust
-                    - csharp,schema-csharp,schema-json-csharp,graphql-csharp
+                    - csharp,schema-csharp,schema-json-csharp,graphql-csharp,csharp-SystemTextJson
                     - json-ts-csharp
                     - dart,schema-dart
                     - swift,schema-swift
                     - javascript-prop-types
+                    - ruby
+                    - php
 
                     # Partially working
                     # - schema-typescript # TODO Unify with typescript once fixed
 
                     # Implementation is too outdated to test in GitHub Actions
-                    # - ruby,schema-ruby
                     # - elm,schema-elm
 
                     # Language is too niche / obscure to test easily on ubuntu-latest
@@ -65,28 +55,32 @@ jobs:
                 runs-on: [ubuntu-latest]
 
                 include:
+                    # Rust is very slow, so we use a larger runner
+                    - fixture: rust,schema-rust
+                      runs-on: ubuntu-latest-8-cores
+                    # Kotlin is also slow
+                    - fixture: kotlin,schema-kotlin,kotlin-jackson,schema-kotlin-jackson
+                      runs-on: ubuntu-latest-8-cores
+
                     - fixture: objective-c
-                      runs-on: macos-latest
+                      runs-on: macos-11
 
         name: ${{ matrix.fixture }}
         steps:
             - uses: actions/checkout@v3
-            - uses: actions/setup-node@v3
+            - uses: ./.github/workflows/setup
+
+            - name: Setup PHP
+              if: ${{ contains(matrix.fixture, 'php') }}
+              uses: shivammathur/setup-php@v2
               with:
-                  node-version: 18.12.1
-                  cache: npm
-
-            - run: npm ci
-
-            - name: Setup Clang (Objective-C)
-              if: ${{ contains(matrix.fixture, 'objective-c') }}
-              uses: egor-tensin/setup-clang@v1
+                  php-version: "8.2"
 
             - name: Setup Dart
               if: ${{ contains(matrix.fixture, 'dart') }}
               uses: dart-lang/setup-dart@v1.3
               with:
-                  sdk: 2.10.5
+                  sdk: 2.14.4
 
             - name: Setup Swift
               if: ${{ contains(matrix.fixture, 'swift') }}
@@ -98,7 +92,7 @@ jobs:
               uses: ruby/setup-ruby@v1
               if: ${{ contains(matrix.fixture, 'ruby') }}
               with:
-                  ruby-version: "3.0"
+                  ruby-version: "3.2.0"
 
             - name: Setup .NET Core SDK
               if: ${{ contains(matrix.fixture, 'csharp') }}
@@ -132,12 +126,6 @@ jobs:
               uses: actions/setup-python@v4
               with:
                   python-version: 3.7
-
-            - name: Install Python 2.7
-              if: ${{ contains(matrix.fixture, 'python') }}
-              uses: actions/setup-python@v4
-              with:
-                  python-version: 2.7
 
             - name: Install Python Dependencies
               if: ${{ contains(matrix.fixture, 'python') }}
@@ -179,3 +167,9 @@ jobs:
                   sudo apt-get -y install libboost-all-dev software-properties-common g++ --assume-yes
 
             - run: QUICKTEST=true FIXTURE=${{ matrix.fixture }} npm test
+
+    test-complete:
+        needs: test
+        runs-on: ubuntu-latest
+        steps:
+            - run: echo 🎉

@@ -1,15 +1,29 @@
 #!/usr/bin/env bash
 
-OUTDIR=dist
-
 ./script/patch-npm-version.ts
 
-rm -rf $OUTDIR
-npm run build
+VERSION=$(jq -r '.version' package.json )
+npm version $VERSION --workspaces --force
+
+# This is not great, but we need to get the dependencies to workspaces
+jq --arg version $VERSION \
+    '.dependencies."quicktype-core" = $version | .dependencies."quicktype-graphql-input" = $version | .dependencies."quicktype-typescript-input" = $version' \
+    package.json > package.1.json
+mv package.1.json package.json
+
+npm publish
 
 
-npm publish --ignore-scripts # Don't rebuild
+jq --arg version $VERSION \
+    '.dependencies."quicktype-core" = $version' \
+    packages/quicktype-typescript-input/package.json > package.1.json
+    
+mv package.1.json packages/quicktype-typescript-input/package.json
 
-( cd build/quicktype-core ; node build.js publish )
-( cd build/quicktype-typescript-input ; node build.js publish )
-( cd build/quicktype-graphql-input ; node build.js publish )
+jq --arg version $VERSION \
+    '.dependencies."quicktype-core" = $version' \
+    packages/quicktype-graphql-input/package.json > package.1.json
+    
+mv package.1.json packages/quicktype-graphql-input/package.json
+
+npm publish --workspaces --if-present
