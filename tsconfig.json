@@ -1,0 +1,16 @@
+{
+    "extends": "@tsconfig/node18/tsconfig.json",
+    "compilerOptions": {
+        "lib": ["ES2022", "dom"],
+        "allowJs": false,
+        "declaration": true,
+        "typeRoots": ["node_modules/@types"],
+        "strict": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noFallthroughCasesInSwitch": true,
+        "outDir": "dist",
+        "baseUrl": "src"
+    },
+    "include": ["src"]
+}

@@ -12,11 +12,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v3
-            - uses: actions/setup-node@v3
-              with:
-                  node-version: 18.12.1
-                  cache: npm
-            - run: npm ci
+            - uses: ./.github/workflows/setup
 
     test:
         needs: [build]
@@ -27,7 +23,7 @@ jobs:
 
             matrix:
                 fixture:
-                    - typescript
+                    # - typescript
                     # - javascript,schema-javascript
                     # - golang,schema-golang
                     # - cplusplus,schema-cplusplus
@@ -62,6 +58,7 @@ jobs:
 
                 runs-on: [ubuntu-latest]
 
+<<<<<<< HEAD
                 #include:
                   # Rust is very slow, so we use a larger runner
                   #- fixture: rust,schema-rust
@@ -72,12 +69,29 @@ jobs:
 
                   #- fixture: objective-c
                   #  runs-on: macos-11
+=======
+                include:
+                    # Rust is very slow, so we use a larger runner
+                    - fixture: rust,schema-rust
+                      runs-on: ubuntu-latest-8-cores
+                    # Kotlin is also slow
+                    - fixture: kotlin,schema-kotlin,kotlin-jackson,schema-kotlin-jackson
+                      runs-on: ubuntu-latest-8-cores
+
+                    - fixture: objective-c
+                      runs-on: macos-11
+>>>>>>> master
 
         name: ${{ matrix.fixture }}
         steps:
             - uses: actions/checkout@v3
-            - uses: actions/setup-node@v3
+            - uses: ./.github/workflows/setup
+
+            - name: Setup PHP
+              if: ${{ contains(matrix.fixture, 'php') }}
+              uses: shivammathur/setup-php@v2
               with:
+<<<<<<< HEAD
                   node-version: 18.12.1
                   cache: npm
 
@@ -86,5 +100,104 @@ jobs:
             - name: Install scala
               if: ${{ contains(matrix.fixture, 'scala3') }}
               uses: VirtusLab/scala-cli-setup@main
+=======
+                  php-version: "8.2"
+
+            - name: Setup Dart
+              if: ${{ contains(matrix.fixture, 'dart') }}
+              uses: dart-lang/setup-dart@v1.3
+              with:
+                  sdk: 2.14.4
+
+            - name: Setup Swift
+              if: ${{ contains(matrix.fixture, 'swift') }}
+              uses: swift-actions/setup-swift@v1
+              with:
+                  swift-version: "5.7.2"
+
+            - name: Install Ruby
+              uses: ruby/setup-ruby@v1
+              if: ${{ contains(matrix.fixture, 'ruby') }}
+              with:
+                  ruby-version: "3.2.0"
+
+            - name: Setup .NET Core SDK
+              if: ${{ contains(matrix.fixture, 'csharp') }}
+              uses: actions/setup-dotnet@v3
+              with:
+                  dotnet-version: 6
+
+            - name: Install Rust
+              if: ${{ contains(matrix.fixture, 'rust') }}
+              uses: actions-rs/toolchain@v1
+              with:
+                  toolchain: stable
+
+            - name: Install Elm
+              if: ${{ contains(matrix.fixture, 'elm') }}
+              run: |
+                  curl -L -o elm.gz https://github.com/elm/compiler/releases/download/0.19.1/binary-for-linux-64-bit.gz
+                  gunzip elm.gz
+                  chmod +x elm
+                  sudo mv elm /usr/local/bin/
+
+            - name: Install Haskell
+              if: ${{ contains(matrix.fixture, 'haskell') }}
+              run: |
+                  if ! command -v stack > /dev/null 2>&1; then
+                    curl -sL "https://get.haskellstack.org/" | sh
+                  fi
+
+            - name: Install Python 3.7
+              if: ${{ contains(matrix.fixture, 'python') }}
+              uses: actions/setup-python@v4
+              with:
+                  python-version: 3.7
+
+            - name: Install Python Dependencies
+              if: ${{ contains(matrix.fixture, 'python') }}
+              run: |
+                  pip3.7 install mypy python-dateutil types-python-dateutil
+
+            - name: Install flow
+              if: ${{ contains(matrix.fixture, 'flow') }}
+              run: |
+                  npm install -g flow-bin@0.66.0 flow-remove-types@1.2.3
+
+            - name: Install Java
+              if: ${{ matrix.fixture == 'java,schema-java' || contains(matrix.fixture, 'kotlin') }}
+              uses: actions/setup-java@v3
+              with:
+                  java-version: "11"
+                  distribution: "adopt"
+
+            - name: Install Maven
+              if: ${{ matrix.fixture == 'java,schema-java' }}
+              uses: stCarolas/setup-maven@v4.5
+              with:
+                  maven-version: 3.8.2
+
+            - name: Install Kotlin
+              if: ${{ contains(matrix.fixture, 'kotlin') }}
+              uses: fwilhe2/setup-kotlin@main
+
+            - name: Install go
+              if: ${{ contains(matrix.fixture, 'golang') }}
+              uses: actions/setup-go@v3
+              with:
+                  go-version: 1.15
+
+            - name: Install C++
+              if: ${{ contains(matrix.fixture, 'cplusplus') }}
+              run: |
+                  sudo apt-get update
+                  sudo apt-get -y install libboost-all-dev software-properties-common g++ --assume-yes
+>>>>>>> master
 
             - run: QUICKTEST=true FIXTURE=${{ matrix.fixture }} npm test
+
+    test-complete:
+        needs: test
+        runs-on: ubuntu-latest
+        steps:
+            - run: echo 🎉

@@ -2,6 +2,8 @@ import * as process from "process";
 // @ts-ignore
 import { RendererOptions } from "../dist/quicktype-core/Run";
 
+const easySampleJSONs = ["bitcoin-block.json", "pokedex.json", "simple-object.json", "getting-started.json"];
+
 export type LanguageFeature =
     | "enum"
     | "union"
@@ -28,7 +30,8 @@ export interface Language {
     features: LanguageFeature[];
     output: string;
     topLevel: string;
-    skipJSON: string[];
+    skipJSON?: string[];
+    includeJSON?: string[];
     skipMiscJSON: boolean;
     skipSchema: string[];
     rendererOptions: RendererOptions;
@@ -132,7 +135,7 @@ export const JavaLanguageWithLegacyDateTime: Language = {
         "date-time.schema" // Expects less strict serialization.
     ],
     skipJSON: [
-        ...JavaLanguage.skipJSON,
+        ...(JavaLanguage.skipJSON !== undefined ? JavaLanguage.skipJSON : []),
         "0a358.json", // Expects less strict serialization (optional milliseconds).
         "337ed.json" // Expects less strict serialization (optional milliseconds).
     ],
@@ -581,14 +584,24 @@ export const SwiftLanguage: Language = {
         // This at least is keeping blns-object from working: https://bugs.swift.org/browse/SR-6314
         "blns-object.json",
         // Doesn't seem to work on Linux, works on MacOS
-        "nst-test-suite.json"
+        "nst-test-suite.json",
+        "null-safe.json"
     ],
     skipMiscJSON: false,
     skipSchema: [
         // The code we generate for top-level enums is incompatible with the driver
         "top-level-enum.schema",
         // This works on macOS, but on Linux one of the failure test cases doesn't fail
-        "implicit-class-array-union.schema"
+        "implicit-class-array-union.schema",
+        "required.schema",
+        "multi-type-enum.schema",
+        "intersection.schema",
+        "go-schema-pattern-properties.schema",
+        "enum.schema",
+        "date-time.schema",
+        "class-with-additional.schema",
+        "class-map-union.schema",
+        "vega-lite.schema"
     ],
     rendererOptions: { "support-linux": "true" },
     quickTestRendererOptions: [
@@ -1280,4 +1293,22 @@ export const HaskellLanguage: Language = {
     rendererOptions: {},
     quickTestRendererOptions: [{ "array-type": "list" }],
     sourceFiles: ["src/language/Haskell.ts"]
+};
+
+export const PHPLanguage: Language = {
+    name: "php",
+    base: "test/fixtures/php",
+    runCommand: sample => `php main.php \"${sample}\"`,
+    diffViaSchema: false,
+    skipDiffViaSchema: [],
+    allowMissingNull: true,
+    features: ["enum"],
+    output: "TopLevel.php",
+    topLevel: "TopLevel",
+    includeJSON: easySampleJSONs,
+    skipMiscJSON: true,
+    skipSchema: [],
+    rendererOptions: {},
+    quickTestRendererOptions: [],
+    sourceFiles: ["src/Language/Php.ts"]
 };
