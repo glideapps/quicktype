@@ -1,6 +1,5 @@
-import * as TopLevel from "./TopLevel";
+import * as TopLevel from "./QuickType";
 
-declare function require(path: string): any;
 const fs = require("fs");
 const process = require("process");
 
