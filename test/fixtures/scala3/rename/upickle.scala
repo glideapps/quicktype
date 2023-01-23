@@ -2,7 +2,7 @@
 //> using lib "com.lihaoyi::upickle:1.6.0"
 
 
-package quicktype
+
 
 
 object OptionPickler extends upickle.AttributeTagged {

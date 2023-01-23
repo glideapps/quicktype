@@ -2,8 +2,6 @@
 //> using lib "io.circe::circe-core:0.15.0-M1"
 //> using lib "io.circe::circe-parser:0.15.0-M1"
 //> using options "-Xmax-inlines", "3000"
-//> using lib "com.lihaoyi::os-lib:0.9.0"
-
 package quicktype
 
 import io.circe._
@@ -26,7 +24,6 @@ case class TopLevel (
 			case Right(y) => 
 				val jsonString = y.asJson
 				val arr : Array[Byte] = jsonString.toString.getBytes("UTF-8")
-				//os.write.over(os.pwd / "out.json", jsonString.noSpaces.toString)
 				System.out.write(arr, 0, arr.length)
 			case Left(y) => println(y); println("-----");println(y.getMessage)
 		} 			

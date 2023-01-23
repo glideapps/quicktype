@@ -2,7 +2,7 @@
 //> using lib "com.lihaoyi::upickle:1.6.0"
 
 
-package quicktype
+
 
 /* case class TopLevel (val name: String)
 
