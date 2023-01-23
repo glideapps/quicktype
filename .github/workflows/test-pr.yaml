@@ -81,10 +81,12 @@ jobs:
                   node-version: 18.12.1
                   cache: npm
 
-            - run: npm ci
-            
-            - name: Install scala
-              if: ${{ contains(matrix.fixture, 'scala3') }}
-              uses: VirtusLab/scala-cli-setup@main
+            - run: npm ci                        
+              if: ${{ contains(matrix.fixture, 'scala3') }}              
+            - run: 
+                wget https://github.com/VirtusLab/scala-cli/releases/download/nightly/scala-cli-x86_64-pc-linux-static.gz
+                gunzip scala-cli-x86_64-pc-linux-static.gz
+                chmod +x scala-cli-x86_64-pc-linux-static
+                ./scala-cli-x86_64-pc-linux-static  -v -v -v circe.scala TopLevel.scala 
 
             - run: QUICKTEST=true FIXTURE=${{ matrix.fixture }} npm test
