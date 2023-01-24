@@ -48,7 +48,7 @@
         "@types/shelljs": "^0.8.11",
         "@types/stream-json": "^1.7.3",
         "@types/urijs": "^1.19.19",
-        "ajv": "^5.5.2",
+        "ajv": "^8.12.0",
         "deep-equal": "^2.2.0",
         "exit": "^0.1.2",
         "prettier": "^2.8.3",
