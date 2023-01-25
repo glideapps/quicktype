@@ -81,9 +81,7 @@ jobs:
             - run: 
                 gunzip scala-cli-x86_64-pc-linux-static.gz
             - run:                 
-                chmod +x scala-cli-x86_64-pc-linux-static 
-            - run: 
-                mv scala-cli-x86_64-pc-linux-static /usr/local/bin/scala-cli
+                chmod +x scala-cli-x86_64-pc-linux-static
 
             - run: QUICKTEST=true FIXTURE=${{ matrix.fixture }} npm test
 
