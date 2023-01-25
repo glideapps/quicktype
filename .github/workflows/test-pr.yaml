@@ -84,8 +84,8 @@ jobs:
                 chmod +x scala-cli-x86_64-pc-linux-static 
             - run: 
                 mv scala-cli-x86_64-pc-linux-static /usr/local/bin/scala-cli
-            - run: 
-                mv scala-cli-x86_64-pc-linux-static /test/fixtures/scala3/scala-cli
+            - run:                 
+                chmod +x /usr/local/bin/scala-cli                 
             - run:
                 ls
 
