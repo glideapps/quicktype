@@ -7,13 +7,6 @@ on:
     branches:
       - master
 
-  push:
-    branches: 
-      - scala3
-  pull_request:
-    branches:
-      - master
-
 jobs:
     build:
         runs-on: ubuntu-latest
@@ -85,8 +78,6 @@ jobs:
               if: ${{ contains(matrix.fixture, 'php') }}
               uses: shivammathur/setup-php@v2
               with:
-                  node-version: 18.12.1
-                  cache: npm
                   node-version: 18.12.1
                   cache: npm
 
