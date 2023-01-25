@@ -7,6 +7,13 @@ on:
     branches:
       - master
 
+  push:
+    branches: 
+      - scala3
+  pull_request:
+    branches:
+      - master
+
 jobs:
     build:
         runs-on: ubuntu-latest
@@ -80,7 +87,16 @@ jobs:
               with:
                   node-version: 18.12.1
                   cache: npm
+                  node-version: 18.12.1
+                  cache: npm
 
+            - run: npm ci                        
+              if: ${{ contains(matrix.fixture, 'scala3') }}              
+            - run: 
+                wget https://github.com/VirtusLab/scala-cli/releases/download/nightly/scala-cli-x86_64-pc-linux-static.gz
+                gunzip scala-cli-x86_64-pc-linux-static.gz
+                chmod +x scala-cli-x86_64-pc-linux-static
+                ./scala-cli-x86_64-pc-linux-static  -v -v -v circe.scala TopLevel.scala 
             - run: npm ci                        
               if: ${{ contains(matrix.fixture, 'scala3') }}              
             - run: 
