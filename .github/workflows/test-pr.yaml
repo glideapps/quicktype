@@ -74,16 +74,7 @@ jobs:
             - uses: actions/checkout@v3
             - uses: ./.github/workflows/setup
 
-            - run: npm ci                        
-              if: ${{ contains(matrix.fixture, 'scala3') }}              
-            - run: 
-                wget https://github.com/VirtusLab/scala-cli/releases/download/nightly/scala-cli-x86_64-pc-linux-static.gz               
-            - run: 
-                gunzip scala-cli-x86_64-pc-linux-static.gz
-            - run:                 
-                chmod +x scala-cli-x86_64-pc-linux-static 
-            - run: 
-                mv scala-cli-x86_64-pc-linux-static /usr/local/bin/scala-cli
+            - run: npm ci
 
             - run: QUICKTEST=true FIXTURE=${{ matrix.fixture }} npm test
 
