@@ -77,13 +77,13 @@ jobs:
             - run: npm ci                        
               if: ${{ contains(matrix.fixture, 'scala3') }}              
             - run: 
-                wget https://github.com/VirtusLab/scala-cli/releases/download/nightly/scala-cli-x86_64-pc-linux-static.gz
+                wget https://github.com/VirtusLab/scala-cli/releases/download/nightly/scala-cli-x86_64-pc-linux-static.gz               
             - run: 
                 gunzip scala-cli-x86_64-pc-linux-static.gz
             - run:                 
-                chmod +x scala-cli-x86_64-pc-linux-static
+                chmod +x scala-cli-x86_64-pc-linux-static 
             - run: 
-                ./scala-cli-x86_64-pc-linux-static  -v -v -v circe.scala TopLevel.scala 
+                mv scala-cli-x86_64-pc-linux-static /usr/local/bin/scala-cli
 
             - run: QUICKTEST=true FIXTURE=${{ matrix.fixture }} npm test
 
