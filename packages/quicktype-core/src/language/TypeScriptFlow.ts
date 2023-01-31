@@ -21,7 +21,8 @@ export const tsFlowOptions = Object.assign({}, javaScriptOptions, {
     justTypes: new BooleanOption("just-types", "Interfaces only", false),
     nicePropertyNames: new BooleanOption("nice-property-names", "Transform property names to be JavaScripty", false),
     declareUnions: new BooleanOption("explicit-unions", "Explicitly name unions", false),
-    preferUnions: new BooleanOption("prefer-unions", "Use union type instead of enum", false)
+    preferUnions: new BooleanOption("prefer-unions", "Use union type instead of enum", false),
+    preferTypes: new BooleanOption("prefer-types", "Use types instead of interfaces", false)
 });
 
 const tsFlowTypeAnnotations = {
@@ -44,7 +45,8 @@ export abstract class TypeScriptFlowBaseTargetLanguage extends JavaScriptTargetL
             tsFlowOptions.acronymStyle,
             tsFlowOptions.converters,
             tsFlowOptions.rawType,
-            tsFlowOptions.preferUnions
+            tsFlowOptions.preferUnions,
+            tsFlowOptions.preferTypes
         ];
     }
 
@@ -302,9 +304,15 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
     }
 
     protected emitClassBlock(c: ClassType, className: Name): void {
-        this.emitBlock(["export interface ", className, " "], "", () => {
-            this.emitClassBlockBody(c);
-        });
+        this.emitBlock(
+            this._tsFlowOptions.preferTypes
+                ? ["export type ", className, " = "]
+                : ["export interface ", className, " "],
+            "",
+            () => {
+                this.emitClassBlockBody(c);
+            }
+        );
     }
 }
 
