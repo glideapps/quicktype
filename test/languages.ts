@@ -657,49 +657,50 @@ export const ObjectiveCLanguage: Language = {
 };
 
 export const TypeScriptLanguage: Language = {
-    name: "typescript",
-    base: "test/fixtures/typescript",
-    runCommand(sample: string) {
-        // We have to unset TS_NODE_PROJECT because it gets set on the workers
-        // to the root test/tsconfig.json
-        return `TS_NODE_PROJECT= ts-node main.ts \"${sample}\"`;
-    },
-    diffViaSchema: true,
-    skipDiffViaSchema: [
-        "bug427.json",
-        "bug863.json",
-        "kitchen-sink.json",
-        "nbl-stats.json",
-        "nst-test-suite.json",
-        "00c36.json",
-        "2df80.json",
-        "34702.json",
-        "76ae1.json",
-        "7fbfb.json",
-        "c8c7e.json",
-        "cda6c.json",
-        "e53b5.json",
-        "e8b04.json"
-    ],
-    allowMissingNull: false,
-    features: ["enum", "union", "no-defaults", "strict-optional", "date-time"],
-    output: "TopLevel.ts",
-    topLevel: "TopLevel",
-    skipJSON: [
-        "7681c.json" // year 0 is out of range
-    ],
-    skipMiscJSON: false,
-    skipSchema: ["keyword-unions.schema"], // can't handle "constructor" property
-    rendererOptions: { "explicit-unions": "yes" },
-    quickTestRendererOptions: [
-        { "runtime-typecheck": "false" },
-        { "runtime-typecheck-ignore-unknown-properties": "true" },
-        { "nice-property-names": "true" },
-        { "declare-unions": "true" },
-        { "acronym-style": "pascal" },
-        { converters: "all-objects" }
-    ],
-    sourceFiles: ["src/language/TypeScript.ts"]
+  name: "typescript",
+  base: "test/fixtures/typescript",
+  runCommand(sample: string) {
+    // We have to unset TS_NODE_PROJECT because it gets set on the workers
+    // to the root test/tsconfig.json
+    return `TS_NODE_PROJECT= ts-node main.ts \"${sample}\"`;
+  },
+  diffViaSchema: true,
+  skipDiffViaSchema: [
+    "bug427.json",
+    "bug863.json",
+    "kitchen-sink.json",
+    "nbl-stats.json",
+    "nst-test-suite.json",
+    "00c36.json",
+    "2df80.json",
+    "34702.json",
+    "76ae1.json",
+    "7fbfb.json",
+    "c8c7e.json",
+    "cda6c.json",
+    "e53b5.json",
+    "e8b04.json",
+  ],
+  allowMissingNull: false,
+  features: ["enum", "union", "no-defaults", "strict-optional", "date-time"],
+  output: "TopLevel.ts",
+  topLevel: "TopLevel",
+  skipJSON: [
+    "7681c.json", // year 0 is out of range
+  ],
+  skipMiscJSON: false,
+  skipSchema: ["keyword-unions.schema"], // can't handle "constructor" property
+  rendererOptions: { "explicit-unions": "yes" },
+  quickTestRendererOptions: [
+    { "runtime-typecheck": "false" },
+    { "runtime-typecheck-ignore-unknown-properties": "true" },
+    { "nice-property-names": "true" },
+    { "declare-unions": "true" },
+    ["pokedex.json", { "prefer-types": "true" }],
+    { "acronym-style": "pascal" },
+    { converters: "all-objects" },
+  ],
+  sourceFiles: ["src/language/TypeScript.ts"],
 };
 
 export const JavaScriptLanguage: Language = {
