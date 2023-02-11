@@ -24,7 +24,7 @@ jobs:
                     - golang,schema-golang
                     - cplusplus,schema-cplusplus
                     - flow,schema-flow
-                    - java,schema-java
+                    - java,schema-java,java-records
                     - python,schema-python
                     - haskell,schema-haskell
                     - csharp,schema-csharp,schema-json-csharp,graphql-csharp,csharp-SystemTextJson
@@ -58,6 +58,10 @@ jobs:
                     # Rust is very slow, so we use a larger runner
                     - fixture: rust,schema-rust
                       runs-on: ubuntu-latest-8-cores
+
+                    - fixture: java,schema-java,java-records
+                      runs-on: ubuntu-latest-8-cores
+
                     # Kotlin is also slow
                     - fixture: kotlin,schema-kotlin,kotlin-jackson,schema-kotlin-jackson
                       runs-on: ubuntu-latest-8-cores
