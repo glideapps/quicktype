@@ -147,13 +147,13 @@ export const JavaLanguageWithLegacyDateTime: Language = {
 export const JavaLanguageWithLombok: Language = {
     ...JavaLanguage,
     base: "test/fixtures/java-lombok",
-    quickTestRendererOptions: [{ "array-type": "list", "class-style": "lombok" }]
+    rendererOptions: [{ "array-type": "list", "class-style": "lombok" }]
 };
 
 export const JavaLanguageWithRecord: Language = {
     ...JavaLanguage,
     base: "test/fixtures/java-record",
-    quickTestRendererOptions: [{ "array-type": "list", "class-style": "java-record" }]
+    rendererOptions: [{ "array-type": "list", "class-style": "java-record" }]
 };
 
 export const PythonLanguage: Language = {
