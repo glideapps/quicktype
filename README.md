@@ -31,7 +31,6 @@
 | [JSON Schema](https://app.quicktype.io/#l=schema) | [Pike](https://app.quicktype.io/#l=pike) | [Prop-Types](https://app.quicktype.io/#l=javascript-prop-types) | [Haskell](https://app.quicktype.io/#l=haskell) | [PHP](https://app.quicktype.io/#l=php) |
 | ------------------------------------------------- | ---------------------------------------- | --------------------------------------------------------------- | ---------------------------------------------- | -------------------------------------- |
 
-
 _Missing your favorite language? Please implement it!_
 
 ## Installation
