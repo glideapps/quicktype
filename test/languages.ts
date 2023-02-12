@@ -152,7 +152,6 @@ export const JavaLanguageWithLombok: Language = {
 
 export const JavaLanguageWithRecord: Language = {
     ...JavaLanguage,
-    name: "java-records",
     base: "test/fixtures/java-record",
     rendererOptions: [{ "array-type": "list", "class-style": "java-record" }]
 };
