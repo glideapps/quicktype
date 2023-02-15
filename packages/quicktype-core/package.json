@@ -18,7 +18,7 @@
         "collection-utils": "^1.0.1",
         "is-url": "^1.2.4",
         "cross-fetch": "^3.1.5",
-        "js-base64": "^3.7.4",
+        "js-base64": "^3.7.5",
         "lodash": "^4.17.21",
         "pako": "^1.0.6",
         "pluralize": "^8.0.0",
