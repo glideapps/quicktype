@@ -102,6 +102,7 @@ export class JavaTargetLanguage extends TargetLanguage {
 }
 
 const javaKeywords = [
+    "_", // as of release 9, '_' is a keyword, and may not be used as an identifier
     "Object",
     "Class",
     "System",
