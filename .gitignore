@@ -12,7 +12,7 @@ test/elm/elm.js
 test/elm/QuickType.elm
 test/fixtures/rust/target
 test/fixtures/java/target
-test/fixtures/java-lombok/target
+test/fixtures/java-*/target
 
 packages/*/dist
 packages/*/node_modules

@@ -108,7 +108,7 @@ export const CSharpLanguageSystemTextJson: Language = {
 export const JavaLanguage: Language = {
     name: "java",
     base: "test/fixtures/java",
-    setupCommand: "mvn package",
+    setupCommand: "mvn --version",
     compileCommand: "mvn package",
     runCommand(sample: string) {
         return `java -cp target/QuickTypeTest-1.0-SNAPSHOT.jar io.quicktype.App "${sample}"`;
@@ -147,7 +147,13 @@ export const JavaLanguageWithLegacyDateTime: Language = {
 export const JavaLanguageWithLombok: Language = {
     ...JavaLanguage,
     base: "test/fixtures/java-lombok",
-    quickTestRendererOptions: [{ "array-type": "list", lombok: "true" }]
+    rendererOptions: [{ "array-type": "list", "class-style": "lombok" }]
+};
+
+export const JavaLanguageWithRecord: Language = {
+    ...JavaLanguage,
+    base: "test/fixtures/java-record",
+    rendererOptions: [{ "array-type": "list", "class-style": "java-record" }]
 };
 
 export const PythonLanguage: Language = {
