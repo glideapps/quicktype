@@ -3,6 +3,4 @@
 export NODE_PATH=`pwd`/node_modules
 export PATH=`pwd`/node_modules/.bin:$PATH
 export TZ=UTC
-java -version
-mvn --version
 ts-node --project test/tsconfig.json test/test.ts $@

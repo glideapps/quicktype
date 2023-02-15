@@ -24,7 +24,7 @@ jobs:
                     - golang,schema-golang
                     - cplusplus,schema-cplusplus
                     - flow,schema-flow
-                    - java,schema-java,java-record
+                    - java,schema-java
                     - python,schema-python
                     - haskell,schema-haskell
                     - csharp,schema-csharp,schema-json-csharp,graphql-csharp,csharp-SystemTextJson
@@ -58,10 +58,6 @@ jobs:
                     # Rust is very slow, so we use a larger runner
                     - fixture: rust,schema-rust
                       runs-on: ubuntu-latest-8-cores
-
-                    - fixture: java,schema-java,java-record
-                      runs-on: ubuntu-latest-8-cores
-
                     # Kotlin is also slow
                     - fixture: kotlin,schema-kotlin,kotlin-jackson,schema-kotlin-jackson
                       runs-on: ubuntu-latest-8-cores
@@ -142,14 +138,14 @@ jobs:
                   npm install -g flow-bin@0.66.0 flow-remove-types@1.2.3
 
             - name: Install Java
-              if: ${{ matrix.fixture == 'java,schema-java,java-record' || contains(matrix.fixture, 'kotlin') }}
+              if: ${{ matrix.fixture == 'java,schema-java' || contains(matrix.fixture, 'kotlin') }}
               uses: actions/setup-java@v3
               with:
-                  java-version: "17"
-                  distribution: "zulu"
+                  java-version: "11"
+                  distribution: "adopt"
 
             - name: Install Maven
-              if: ${{ matrix.fixture == 'java,schema-java,java-record' }}
+              if: ${{ matrix.fixture == 'java,schema-java' }}
               uses: stCarolas/setup-maven@v4.5
               with:
                   maven-version: 3.8.2
