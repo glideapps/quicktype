@@ -795,7 +795,6 @@ export const allFixtures: Fixture[] = [
     new JSONFixture(languages.JavaLanguage),
     new JSONFixture(languages.JavaLanguageWithLegacyDateTime, "java-datetime-legacy"),
     new JSONFixture(languages.JavaLanguageWithLombok, "java-lombok"),
-    new JSONFixture(languages.JavaLanguageWithRecord, "java-record"),
     new JSONFixture(languages.GoLanguage),
     new JSONFixture(languages.CPlusPlusLanguage),
     new JSONFixture(languages.RustLanguage),

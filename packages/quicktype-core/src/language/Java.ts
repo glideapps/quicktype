@@ -27,16 +27,6 @@ import { directlyReachableSingleNamedType, matchType, nullableFromUnion, removeN
 import { StringTypeMapping, TransformedStringTypeKind, PrimitiveStringTypeKind } from "..";
 
 export const javaOptions = {
-    classStyle: new EnumOption(
-        "class-style",
-        "Style of generated Java classes",
-        [
-            ["java", "java" as const],
-            ["java-record", "java-record" as const],
-            ["lombok", "lombok" as const]
-        ],
-        "java"
-    ),
     useList: new EnumOption(
         "array-type",
         "Use T[] or List<T>",
@@ -51,14 +41,15 @@ export const javaOptions = {
         "datetime-provider",
         "Date time provider type",
         [
-            ["java8", "java8" as const],
-            ["legacy", "legacy" as const]
+            ["java8", "java8"],
+            ["legacy", "legacy"]
         ],
         "java8"
     ),
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
     // FIXME: Do this via a configurable named eventually.
     packageName: new StringOption("package", "Generated package name", "NAME", "io.quicktype"),
+    lombok: new BooleanOption("lombok", "Use lombok", false, "primary"),
     lombokCopyAnnotations: new BooleanOption("lombok-copy-annotations", "Copy accessor annotations", true, "secondary")
 };
 
@@ -69,12 +60,12 @@ export class JavaTargetLanguage extends TargetLanguage {
 
     protected getOptions(): Option<any>[] {
         return [
-            javaOptions.classStyle,
             javaOptions.useList,
             javaOptions.justTypes,
             javaOptions.dateTimeProvider,
             javaOptions.acronymStyle,
             javaOptions.packageName,
+            javaOptions.lombok,
             javaOptions.lombokCopyAnnotations
         ];
     }
@@ -732,7 +723,7 @@ export class JavaRenderer extends ConvenienceRenderer {
     }
 
     protected emitClassAttributes(_c: ClassType, _className: Name): void {
-        if (this._options.classStyle === "lombok") {
+        if (this._options.lombok) {
             this.emitLine("@lombok.Data");
         }
     }
@@ -786,12 +777,9 @@ export class JavaRenderer extends ConvenienceRenderer {
         this.emitFileHeader(className, imports);
         this.emitDescription(this.descriptionForType(c));
         this.emitClassAttributes(c, className);
-        if (this._options.classStyle === "java-record") {
-            return this.emitClassRecordDefinition(c, className);
-        }
         this.emitBlock(["public class ", className], () => {
             this.forEachClassProperty(c, "none", (name, jsonName, p) => {
-                if (this._options.classStyle === "lombok" && this._options.lombokCopyAnnotations) {
+                if (this._options.lombok && this._options.lombokCopyAnnotations) {
                     const getter = this.annotationsForAccessor(c, className, name, jsonName, p, false);
                     const setter = this.annotationsForAccessor(c, className, name, jsonName, p, true);
                     if (getter.length !== 0) {
@@ -803,7 +791,7 @@ export class JavaRenderer extends ConvenienceRenderer {
                 }
                 this.emitLine("private ", this.javaType(false, p.type, true), " ", name, ";");
             });
-            if (this._options.classStyle !== "lombok") {
+            if (!this._options.lombok) {
                 this.forEachClassProperty(c, "leading-and-interposing", (name, jsonName, p) => {
                     this.emitDescription(this.descriptionForClassProperty(c, jsonName));
                     const [getterName, setterName] = defined(this._gettersAndSettersForPropertyName.get(name));
@@ -819,22 +807,6 @@ export class JavaRenderer extends ConvenienceRenderer {
                 });
             }
         });
-        this.finishFile();
-    }
-
-    private emitClassRecordDefinition(c: ClassType, className: Name): void {
-        this.emitLine("public record ", className, " (");
-        this.indent(() => {
-            this.forEachClassProperty(c, "leading-and-interposing", (name, jsonName, p, position) => {
-                this.annotationsForAccessor(c, className, name, jsonName, p, false).forEach(annotation =>
-                    this.emitLine(annotation)
-                );
-                const rendered = this.javaType(false, p.type);
-                const comma = position === "first" || position === "middle" ? "," : [];
-                this.emitLine(rendered, " ", name, comma);
-            });
-        });
-        this.emitLine(") {}");
         this.finishFile();
     }
 
@@ -1353,7 +1325,7 @@ export class JacksonRenderer extends JavaRenderer {
         this.emitCommentLines([
             "To use this code, add the following Maven dependency to your project:",
             "",
-            this._options.classStyle === "lombok" ? "    org.projectlombok : lombok : 1.18.2" : "",
+            this._options.lombok ? "    org.projectlombok : lombok : 1.18.2" : "",
             "    com.fasterxml.jackson.core     : jackson-databind          : 2.9.0",
             this._options.dateTimeProvider === "java8"
                 ? "    com.fasterxml.jackson.datatype : jackson-datatype-jsr310   : 2.9.0"
