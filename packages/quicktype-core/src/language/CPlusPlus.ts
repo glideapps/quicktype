@@ -1845,7 +1845,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         onFirst = false;
                     });
                     // this.emitLine('else throw "Input JSON does not conform to schema";');
-                    this.emitLine('default: throw std::runtime_error("Input JSON does not conform to schema!");');
+                    this.emitLine('else { throw std::runtime_error("Input JSON does not conform to schema!"); }');
                 }
             }
         );
