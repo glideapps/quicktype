@@ -1709,7 +1709,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     });
                     onFirst = false;
                 }
-                this.emitLine('else throw "Could not deserialize";');
+                // this.emitLine('else throw "Could not deserialize";');
+                this.emitLine('else throw std::runtime_error("Could not deserialise!");');
             }
         );
         this.ensureBlankLine();
@@ -1758,7 +1759,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         });
                         i++;
                     }
-                    this.emitLine('default: throw "Input JSON does not conform to schema";');
+                    // this.emitLine('default: throw "Input JSON does not conform to schema";');
+                    this.emitLine('default: throw std::runtime_error("Input JSON does not conform to schema!");');
                 });
             }
         );
@@ -1842,7 +1844,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         );
                         onFirst = false;
                     });
-                    this.emitLine('else throw "Input JSON does not conform to schema";');
+                    // this.emitLine('else throw "Input JSON does not conform to schema";');
+                    this.emitLine('else { throw std::runtime_error("Input JSON does not conform to schema!"); }');
                 }
             }
         );
@@ -1870,7 +1873,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             "; break;"
                         );
                     });
-                    this.emitLine('default: throw "This should not happen";');
+                    // this.emitLine('default: throw "This should not happen";');
+                    this.emitLine('default: throw std::runtime_error("This should not happen");')
                 });
             }
         );
