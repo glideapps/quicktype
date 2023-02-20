@@ -1874,7 +1874,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         );
                     });
                     // this.emitLine('default: throw "This should not happen";');
-                    this.emitLine('default: throw std::runtime_error("This should not happen");')
+                    this.emitLine('default: throw std::runtime_error("This should not happen");');
                 });
             }
         );
