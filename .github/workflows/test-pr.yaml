@@ -75,6 +75,12 @@ jobs:
             - uses: ./.github/workflows/setup
 
             - run: npm ci
+            
+            - name: Install scala
+              if: ${{ contains(matrix.fixture, 'scala3') }}
+              uses: VirtusLab/scala-cli-setup@main
+            - run: echo '@main def hello() = println("We need this spam print statement for bloop to exit correctly...")' | scala-cli _
+              if: ${{ contains(matrix.fixture, 'scala3') }}
 
             - run: QUICKTEST=true FIXTURE=${{ matrix.fixture }} npm test
 
