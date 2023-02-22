@@ -13,11 +13,11 @@
     },
     "dependencies": {
         "quicktype-core": "file:../quicktype-core",
-        "typescript": "4.9.4",
+        "typescript": "4.9.5",
         "@mark.probst/typescript-json-schema": "0.55.0"
     },
     "devDependencies": {
-        "@types/node": "18.11.18",
+        "@types/node": "18.14.0",
         "tslint": "^6.1.3"
     },
     "files": [
