@@ -230,7 +230,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
 
     // (asarazan): I've broken out the following two functions
     // because some renderers, such as kotlinx, can cope with `any`, while some get mad.
-    protected arrayType(arrayType: ArrayType, _: boolean = false): Sourcelike {
+    protected arrayType(arrayType: ArrayType, _ = false): Sourcelike {
         //this.emitTopLevelArray(arrayType, new Name(arrayType.getCombinedName().toString() + "List"))
         return arrayType.getCombinedName().toString() + "List";
     }
@@ -239,12 +239,12 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
         this.emitLine([ "list " , smithyType , " { member : ",  "}"  ])
     }
 
-    protected mapType(mapType: MapType, _: boolean = false): Sourcelike {
+    protected mapType(mapType: MapType, _ = false): Sourcelike {
         return mapType.getCombinedName().toString() + "Map"
         //return [this.scalaType(mapType.values, withIssues), "Map"];
     }
 
-    protected scalaType(t: Type, withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
+    protected scalaType(t: Type, withIssues = false, noOptional = false): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => {

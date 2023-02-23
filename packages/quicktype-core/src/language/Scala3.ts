@@ -263,15 +263,15 @@ export class Scala3Renderer extends ConvenienceRenderer {
 
     // (asarazan): I've broken out the following two functions
     // because some renderers, such as kotlinx, can cope with `any`, while some get mad.
-    protected arrayType(arrayType: ArrayType, withIssues: boolean = false): Sourcelike {
+    protected arrayType(arrayType: ArrayType, withIssues = false): Sourcelike {
         return ["Seq[", this.scalaType(arrayType.items, withIssues), "]"];
     }
 
-    protected mapType(mapType: MapType, withIssues: boolean = false): Sourcelike {
+    protected mapType(mapType: MapType, withIssues = false): Sourcelike {
         return ["Map[String, ", this.scalaType(mapType.values, withIssues), "]"];
     }
 
-    protected scalaType(t: Type, withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
+    protected scalaType(t: Type, withIssues = false, noOptional = false): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => {
@@ -548,7 +548,7 @@ export class CirceRenderer extends Scala3Renderer {
 
     seenUnionTypes: Array<string> = [];
 
-    protected circeEncoderForType(t: Type, _: boolean = false, noOptional: boolean = false, paramName: string = ""): Sourcelike {
+    protected circeEncoderForType(t: Type, _ = false, noOptional = false, paramName: string = ""): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => ["Encoder.encodeJson(", paramName, ")"],
