@@ -372,26 +372,21 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
 
                 first = false;
             });
-        });
-        //console.log(emitLater)
+        });        
         this.emitClassDefinitionMethods(emitLater);
     }
 
     protected emitClassDefinitionMethods( arrayTypes : ClassProperty[] ) {
         this.emitLine("}");
-        //console.log(arrayTypes)
         arrayTypes.forEach (p  => { 
                 function ignore<T extends Type>(_: T): void {
                     return;
-                }
-                //console.log(p.type)                
+                }                
                 matchCompoundType(p.type, 
                     at => {
-                        console.log("emit array")
                         this.emitLine([ "list ",  this.scalaType(at, true) , "{ member: ", this.scalaType(at.items, true), "}" ])},
-                    _ => console.log("HERE"),
-                    mt =>{ 
-                        console.log("emit map")
+                    ignore,
+                    mt =>{                         
                         this.emitLine([ "map ",  this.scalaType(mt, true) , "{ key: String , value: ", this.scalaType(mt.values, true), "}" ])
                     },
                     ignore, 
@@ -470,15 +465,12 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
         emitLater.forEach (p  => { 
             function ignore<T extends Type>(_: T): void {
                 return;
-            }
-            //console.log(p.type)                
+            }            
             matchCompoundType(p, 
-                at => {
-                    console.log("emit array")
+                at => {                    
                     this.emitLine([ "list ",  this.scalaType(at, true) , "{ member: ", this.scalaType(at.items, true), "}" ])},
-                _ => console.log("HERE"),
-                mt =>{ 
-                    console.log("emit map")
+                ignore,
+                mt =>{                     
                     this.emitLine([ "map ",  this.scalaType(mt, true) , "{ key: String , value: ", this.scalaType(mt.values, true), "}" ])
                 },
                 ignore, 
