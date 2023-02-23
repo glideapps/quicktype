@@ -12,8 +12,6 @@ import { JavaScriptPropTypesTargetLanguage } from "./JavaScriptPropTypes";
 import { TypeScriptTargetLanguage, FlowTargetLanguage } from "./TypeScriptFlow";
 import { SwiftTargetLanguage } from "./Swift";
 import { KotlinTargetLanguage } from "./Kotlin";
-import { Scala3TargetLanguage } from "./Scala3";
-import { SmithyTargetLanguage } from "./Smithy4s";
 import { ElmTargetLanguage } from "./Elm";
 import { JSONSchemaTargetLanguage } from "./JSONSchema";
 import { RustTargetLanguage } from "./Rust";
@@ -24,7 +22,6 @@ import { PythonTargetLanguage } from "./Python";
 import { PikeTargetLanguage } from "./Pike";
 import { HaskellTargetLanguage } from "./Haskell";
 import { PhpTargetLanguage } from "./Php";
-
 
 export const all: TargetLanguage[] = [
     new CSharpTargetLanguage(),
@@ -39,8 +36,6 @@ export const all: TargetLanguage[] = [
     new JavaScriptPropTypesTargetLanguage(),
     new FlowTargetLanguage(),
     new SwiftTargetLanguage(),
-    new Scala3TargetLanguage(),
-    new SmithyTargetLanguage(),
     new KotlinTargetLanguage(),
     new ElmTargetLanguage(),
     new JSONSchemaTargetLanguage(),

@@ -34,7 +34,6 @@ jobs:
                     - javascript-prop-types
                     - ruby
                     - php
-                    - scala3
 
                     # Partially working
                     # - schema-typescript # TODO Unify with typescript once fixed
@@ -114,12 +113,14 @@ jobs:
                   gunzip elm.gz
                   chmod +x elm
                   sudo mv elm /usr/local/bin/
+
             - name: Install Haskell
               if: ${{ contains(matrix.fixture, 'haskell') }}
               run: |
                   if ! command -v stack > /dev/null 2>&1; then
                     curl -sL "https://get.haskellstack.org/" | sh
                   fi
+
             - name: Install Python 3.7
               if: ${{ contains(matrix.fixture, 'python') }}
               uses: actions/setup-python@v4
@@ -130,10 +131,12 @@ jobs:
               if: ${{ contains(matrix.fixture, 'python') }}
               run: |
                   pip3.7 install mypy python-dateutil types-python-dateutil
+
             - name: Install flow
               if: ${{ contains(matrix.fixture, 'flow') }}
               run: |
                   npm install -g flow-bin@0.66.0 flow-remove-types@1.2.3
+
             - name: Install Java
               if: ${{ matrix.fixture == 'java,schema-java' || contains(matrix.fixture, 'kotlin') }}
               uses: actions/setup-java@v3
@@ -162,12 +165,6 @@ jobs:
               run: |
                   sudo apt-get update
                   sudo apt-get -y install libboost-all-dev software-properties-common g++ --assume-yes
-            
-            - name: Install scala
-              if: ${{ contains(matrix.fixture, 'scala3') }}
-              uses: VirtusLab/scala-cli-setup@main
-            - run: echo '@main def hello() = println("We need this spam print statement for bloop to exit correctly...")' | scala-cli _
-              if: ${{ contains(matrix.fixture, 'scala3') }}
 
             - run: QUICKTEST=true FIXTURE=${{ matrix.fixture }} npm test
 
