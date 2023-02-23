@@ -141,7 +141,7 @@ const keywords = [
  * @param paramName
  */
 const shouldAddBacktick = (paramName: string): boolean => {
-    return keywords.some(s => paramName === s) || invalidSymbols.some(s => paramName.includes(s)) || !isNaN(+paramName) || !isNaN(parseInt(paramName.charAt(0)));
+    return keywords.some(s => paramName === s) || invalidSymbols.some(s => paramName.includes(s)) || !isNaN(+parseFloat(paramName)) || !isNaN(parseInt(paramName.charAt(0)));
 };
 
 const wrapOption = (s: string, optional: boolean): string => {
@@ -393,7 +393,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
     }
 
     protected emitClassDefinitionMethods() {
-        this.emitLine(")");
+      this.emitLine(")");
     }
 
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
@@ -697,7 +697,7 @@ export class CirceRenderer extends Scala3Renderer {
             this.emitLine(["given Encoder[", unionName, "] = Encoder.instance {"])
             this.indent(() => {
                 sourceLikeTypes.forEach((t, i) => {
-                    const paramTemp = "enc" + i.toString();
+                    const paramTemp = `enc + ${i.toString()}`;
                     this.emitLine(["case ", paramTemp, " : ", t[0], " => ", this.circeEncoderForType(t[1], false, false, paramTemp)]);
                 });
             })

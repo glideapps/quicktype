@@ -127,7 +127,7 @@ const keywords = [
  * @param paramName
  */
 const shouldAddBacktick = (paramName: string): boolean => {
-    return keywords.some(s => paramName === s) || invalidSymbols.some(s => paramName.includes(s)) || !isNaN(+paramName) || !isNaN(parseInt(paramName.charAt(0)));
+    return keywords.some(s => paramName === s) || invalidSymbols.some(s => paramName.includes(s)) || !isNaN(parseFloat(paramName)) || !isNaN(parseInt(paramName.charAt(0)));
 };
 
 function isPartCharacter(codePoint: number): boolean {
