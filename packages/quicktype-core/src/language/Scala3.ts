@@ -548,7 +548,7 @@ export class CirceRenderer extends Scala3Renderer {
 
     seenUnionTypes: Array<string> = [];
 
-    protected circeEncoderForType(t: Type, _: boolean = false, noOptional: boolean = false, paramName: string): Sourcelike {
+    protected circeEncoderForType(t: Type, _: boolean = false, noOptional: boolean = false, paramName: string = ""): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => ["Encoder.encodeJson(", paramName, ")"],
