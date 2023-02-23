@@ -668,7 +668,6 @@ export class CirceRenderer extends Scala3Renderer {
         const thisUnionType = theTypes.map(x => this.sourcelikeToString(x)).join(" | ");
 
         this.ensureBlankLine();
-        //console.log(this.seenUnionTypes)
         if (!this.seenUnionTypes.some(y => y === thisUnionType)) {
             this.seenUnionTypes.push(thisUnionType);
             const sourceLikeTypes: Array<[Sourcelike, Type]> = []
@@ -737,8 +736,6 @@ export class Scala3TargetLanguage extends TargetLanguage {
                 return new UpickleRenderer(this, renderContext, options);
             case Framework.Circe:
                 return new CirceRenderer(this, renderContext, options);
-            case Framework.Circe:
-                return new Smithy4sRenderer(this, renderContext, options);
             default:
                 return assertNever(options.framework);
         }
