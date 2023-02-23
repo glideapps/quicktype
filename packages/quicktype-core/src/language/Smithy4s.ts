@@ -323,7 +323,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
             }
         };
 
-        let emitLater: Array<ClassProperty> = [];
+        const emitLater: Array<ClassProperty> = [];
 
         this.emitDescription(this.descriptionForType(c));
         this.emitLine("structure ", className, " {");
@@ -435,7 +435,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
             return "_" + kind;
         }
 
-        let emitLater: Array<Type> = [];
+        const emitLater: Array<Type> = [];
 
 
         this.emitDescription(this.descriptionForType(u));
