@@ -697,7 +697,7 @@ export class CirceRenderer extends Scala3Renderer {
             this.emitLine(["given Encoder[", unionName, "] = Encoder.instance {"])
             this.indent(() => {
                 sourceLikeTypes.forEach((t, i) => {
-                    const paramTemp = `enc + ${i.toString()}`;
+                    const paramTemp = `enc${i.toString()}`;
                     this.emitLine(["case ", paramTemp, " : ", t[0], " => ", this.circeEncoderForType(t[1], false, false, paramTemp)]);
                 });
             })
