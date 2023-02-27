@@ -2366,7 +2366,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         });
 
         untypedMacroName += "HELPER";
-        untypedMacroName += "HELPER";
+        optionalMacroName += "HELPER";
 
         this.emitLine("#ifndef " + untypedMacroName);
         this.emitLine("#define " + untypedMacroName);
