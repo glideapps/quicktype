@@ -34,7 +34,7 @@ jobs:
                     - javascript-prop-types
                     - ruby
                     - php
-                    - scala3
+                    - scala3,schema-scala3
 
                     # Partially working
                     # - schema-typescript # TODO Unify with typescript once fixed
