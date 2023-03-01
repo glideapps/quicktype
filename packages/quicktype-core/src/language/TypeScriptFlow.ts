@@ -270,8 +270,8 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
         const any = this.anyType();
         return Object.assign({
             any: `: ${any}`,
-            anyArray: ": ${any}[]",
-            anyMap: ": { [k: string]: ${any} }",
+            anyArray: `: ${any}[]`,
+            anyMap: `: { [k: string]: ${any} }`,
             never: ": never"
         }, tsFlowTypeAnnotations);
     }
@@ -354,8 +354,8 @@ export class FlowRenderer extends TypeScriptFlowBaseRenderer {
         const any = this.anyType();
         return Object.assign({
             any: `: ${any}`,
-            anyArray: ": ${any}[]",
-            anyMap: ": { [k: string]: ${any} }",
+            anyArray: `: ${any}[]`,
+            anyMap: `: { [k: string]: ${any} }`,
             never: ""
         }, tsFlowTypeAnnotations);
     }
