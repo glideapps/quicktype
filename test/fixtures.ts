@@ -832,6 +832,7 @@ export const allFixtures: Fixture[] = [
     new JSONSchemaFixture(languages.JavaScriptLanguage),
     new JSONSchemaFixture(languages.KotlinLanguage),
     new JSONSchemaFixture(languages.KotlinJacksonLanguage, "schema-kotlin-jackson"),
+    new JSONSchemaFixture(languages.Scala3Language),
     new JSONSchemaFixture(languages.DartLanguage),
     new JSONSchemaFixture(languages.PikeLanguage),
     new JSONSchemaFixture(languages.HaskellLanguage),

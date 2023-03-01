@@ -856,7 +856,19 @@ I havea no idea how to encode these tests correctly.
 
   ],
   skipSchema: [
-
+    // 12 skips
+    "required.schema",    
+    "multi-type-enum.schema", // I think it doesn't correctly realise this is an array of enums.
+    "integer-string.schema",
+    "intersection.schema",
+    "implicit-class-array-union.schema",
+    "date-time-or-string.schema",
+    "implicit-one-of.schema",
+    "go-schema-pattern-properties.schema",
+    "enum.schema",
+    "class-with-additional.schema",
+    "class-map-union.schema",
+    "keyword-unions.schema"
   ],
   skipMiscJSON: false,
   rendererOptions: {framework: "circe" },
