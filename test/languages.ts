@@ -856,6 +856,7 @@ I havea no idea how to encode these tests correctly.
 
   ],
   skipSchema: [
+    // 12 skips
     "required.schema",    
     "multi-type-enum.schema", // I think it doesn't correctly realise this is an array of enums.
     "integer-string.schema",
