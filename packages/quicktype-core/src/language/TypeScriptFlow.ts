@@ -23,7 +23,7 @@ export const tsFlowOptions = Object.assign({}, javaScriptOptions, {
     declareUnions: new BooleanOption("explicit-unions", "Explicitly name unions", false),
     preferUnions: new BooleanOption("prefer-unions", "Use union type instead of enum", false),
     preferTypes: new BooleanOption("prefer-types", "Use types instead of interfaces", false),
-    preferUnknown: new BooleanOption("prefer-unknown", "Use unknown instead of any type", false),
+    preferUnknown: new BooleanOption("prefer-unknown", "Use unknown instead of any type", false)
 });
 
 const tsFlowTypeAnnotations = {
@@ -108,8 +108,8 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
             return super.namerForObjectProperty();
         }
     }
-    
-    protected anyType(): string;
+
+    protected abstract anyType(): string;
 
     protected sourceFor(t: Type): MultiWord {
         if (["class", "object", "enum"].indexOf(t.kind) >= 0) {
@@ -268,12 +268,12 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
 
     protected get typeAnnotations(): JavaScriptTypeAnnotations {
         const any = this.anyType();
-        return Object.assign({
+        return Object.assign({}, tsFlowTypeAnnotations, {
             any: `: ${any}`,
             anyArray: `: ${any}[]`,
             anyMap: `: { [k: string]: ${any} }`,
             never: ": never"
-        }, tsFlowTypeAnnotations);
+        });
     }
 
     protected emitModuleExports(): void {
@@ -325,7 +325,7 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
             }
         );
     }
-    
+
     protected anyType(): string {
         if (this._tsFlowOptions.preferUnknown) {
             return "unknown";
@@ -352,12 +352,12 @@ export class FlowRenderer extends TypeScriptFlowBaseRenderer {
 
     protected get typeAnnotations(): JavaScriptTypeAnnotations {
         const any = this.anyType();
-        return Object.assign({
+        return Object.assign({}, tsFlowTypeAnnotations, {
             any: `: ${any}`,
             anyArray: `: ${any}[]`,
             anyMap: `: { [k: string]: ${any} }`,
             never: ""
-        }, tsFlowTypeAnnotations);
+        });
     }
 
     protected emitEnum(e: EnumType, enumName: Name): void {
@@ -388,7 +388,7 @@ export class FlowRenderer extends TypeScriptFlowBaseRenderer {
         this.ensureBlankLine();
         super.emitSourceStructure();
     }
-    
+
     protected anyType(): string {
         if (this._tsFlowOptions.preferUnknown) {
             return "mixed";
