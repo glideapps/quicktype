@@ -47,6 +47,7 @@ export const rustOptions = {
         ["public", Visibility.Public]
     ]),
     deriveDebug: new BooleanOption("derive-debug", "Derive Debug impl", false),
+    deriveClone: new BooleanOption("derive-clone", "Derive Clone impl", false),
     edition2018: new BooleanOption("edition-2018", "Edition 2018", true),
     leadingComments: new BooleanOption("leading-comments", "Leading Comments", true)
 };
@@ -65,6 +66,7 @@ export class RustTargetLanguage extends TargetLanguage {
             rustOptions.density,
             rustOptions.visibility,
             rustOptions.deriveDebug,
+            rustOptions.deriveClone,
             rustOptions.edition2018,
             rustOptions.leadingComments
         ];
@@ -305,7 +307,12 @@ export class RustRenderer extends ConvenienceRenderer {
 
     protected emitStructDefinition(c: ClassType, className: Name): void {
         this.emitDescription(this.descriptionForType(c));
-        this.emitLine("#[derive(", this._options.deriveDebug ? "Debug, " : "", "Serialize, Deserialize)]");
+        this.emitLine(
+            "#[derive(",
+            this._options.deriveDebug ? "Debug, " : "",
+            this._options.deriveClone ? "Clone, " : "",
+            "Serialize, Deserialize)]"
+        );
 
         const blankLines = this._options.density === Density.Dense ? "none" : "interposing";
         const structBody = () =>
@@ -332,7 +339,12 @@ export class RustRenderer extends ConvenienceRenderer {
         }
 
         this.emitDescription(this.descriptionForType(u));
-        this.emitLine("#[derive(", this._options.deriveDebug ? "Debug, " : "", "Serialize, Deserialize)]");
+        this.emitLine(
+            "#[derive(",
+            this._options.deriveDebug ? "Debug, " : "",
+            this._options.deriveClone ? "Clone, " : "",
+            "Serialize, Deserialize)]"
+        );
         this.emitLine("#[serde(untagged)]");
 
         const [, nonNulls] = removeNullFromUnion(u);
@@ -348,7 +360,12 @@ export class RustRenderer extends ConvenienceRenderer {
 
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
-        this.emitLine("#[derive(", this._options.deriveDebug ? "Debug, " : "", "Serialize, Deserialize)]");
+        this.emitLine(
+            "#[derive(",
+            this._options.deriveDebug ? "Debug, " : "",
+            this._options.deriveClone ? "Clone, " : "",
+            "Serialize, Deserialize)]"
+        );
 
         const blankLines = this._options.density === Density.Dense ? "none" : "interposing";
         this.emitBlock(["pub enum ", enumName], () =>
