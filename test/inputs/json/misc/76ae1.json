@@ -1662,10 +1662,6 @@
                     "description": "Short description of the category that the lead falls under",
                     "type": "string"
                 },
-                "topic": {
-                    "description": "Short description of the category that the lead falls under",
-                    "type": "string"
-                },
                 "url": {
                     "description": "URL that pertains to the bid.",
                     "type": "string"
