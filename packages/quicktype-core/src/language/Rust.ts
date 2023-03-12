@@ -288,14 +288,6 @@ export class RustRenderer extends ConvenienceRenderer {
         return isCycleBreaker ? ["Box<", rustType, ">"] : rustType;
     }
 
-    private emitRenameAttribute(propName: Name, jsonName: string) {
-        const escapedName = rustStringEscape(jsonName);
-        const namesDiffer = this.sourcelikeToString(propName) !== escapedName;
-        if (namesDiffer || this._options.density === Density.Normal) {
-            this.emitLine('#[serde(rename = "', escapedName, '")]');
-        }
-    }
-
     private get visibility(): string {
         if (this._options.visibility === Visibility.Crate) {
             return "pub(crate) ";
@@ -313,12 +305,12 @@ export class RustRenderer extends ConvenienceRenderer {
             this._options.deriveClone ? "Clone, " : "",
             "Serialize, Deserialize)]"
         );
+        this.emitLine("#[serde(rename_all = \"camelCase\")]");
 
         const blankLines = this._options.density === Density.Dense ? "none" : "interposing";
         const structBody = () =>
             this.forEachClassProperty(c, blankLines, (name, jsonName, prop) => {
                 this.emitDescription(this.descriptionForClassProperty(c, jsonName));
-                this.emitRenameAttribute(name, jsonName);
                 this.emitLine(this.visibility, name, ": ", this.breakCycle(prop.type, true), ",");
             });
 
@@ -366,11 +358,11 @@ export class RustRenderer extends ConvenienceRenderer {
             this._options.deriveClone ? "Clone, " : "",
             "Serialize, Deserialize)]"
         );
+        this.emitLine("#[serde(rename_all = \"camelCase\")]");
 
         const blankLines = this._options.density === Density.Dense ? "none" : "interposing";
         this.emitBlock(["pub enum ", enumName], () =>
             this.forEachEnumCase(e, blankLines, (name, jsonName) => {
-                this.emitRenameAttribute(name, jsonName);
                 this.emitLine([name, ","]);
             })
         );
