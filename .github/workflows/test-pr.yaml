@@ -22,6 +22,7 @@ jobs:
                     - typescript
                     - javascript,schema-javascript
                     - golang,schema-golang
+                    - cjson,schema-cjson
                     - cplusplus,schema-cplusplus
                     - flow,schema-flow
                     - java,schema-java
@@ -156,6 +157,12 @@ jobs:
               uses: actions/setup-go@v3
               with:
                   go-version: 1.15
+
+            - name: Install C
+              if: ${{ contains(matrix.fixture, 'cjson') }}
+              run: |
+                  sudo apt-get update
+                  sudo apt-get -y install build-essential valgrind
 
             - name: Install C++
               if: ${{ contains(matrix.fixture, 'cplusplus') }}
