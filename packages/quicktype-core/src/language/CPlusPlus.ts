@@ -802,6 +802,13 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitLine("#pragma once");
         this.ensureBlankLine();
 
+        if (this.haveOptionalProperties) {
+            if (this._options.boost) {
+                this.emitInclude(true, "boost/optional.hpp");
+            } else {
+                this.emitInclude(true, "optional");
+            }
+        }
         if (this.haveNamedUnions) {
             if (this._options.boost) {
                 this.emitInclude(true, "boost/variant.hpp");
