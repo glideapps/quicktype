@@ -82,6 +82,7 @@ export { removeNullFromUnion, matchType, nullableFromUnion } from "./TypeUtils";
 export { ConvenienceRenderer } from "./ConvenienceRenderer";
 export { uriTypeAttributeKind } from "./attributes/URIAttributes";
 
+export { CJSONTargetLanguage, CJSONRenderer, cJSONOptions } from "./language/CJSON";
 export { CPlusPlusTargetLanguage, CPlusPlusRenderer, cPlusPlusOptions } from "./language/CPlusPlus";
 export { CSharpTargetLanguage, cSharpOptions, CSharpRenderer } from "./language/CSharp";
 export { PythonTargetLanguage, PythonRenderer, pythonOptions } from "./language/Python";
