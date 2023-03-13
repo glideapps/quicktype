@@ -52,6 +52,19 @@ export const rustOptions = {
     leadingComments: new BooleanOption("leading-comments", "Leading Comments", true)
 };
 
+const NamingStyleRegex = {
+    "snake_case": /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/,
+    "SCREAMING_SNAKE_CASE": /^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$/,
+    "camelCase": /^[a-z]+([A-Z0-9][a-z]*)*$/,
+    "PascalCase": /^[A-Z][a-z]*([A-Z0-9][a-z]*)*$/,
+    "kebab-case": /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/,
+    "SCREAMING-KEBAB-CASE": /^[A-Z][A-Z0-9]*(-[A-Z0-9]+)*$/,
+    "lowercase": /^[a-z][a-z0-9]*$/,
+    "UPPERCASE": /^[A-Z][A-Z0-9]*$/,
+}
+
+type NamingStyle = keyof typeof NamingStyleRegex;
+
 export class RustTargetLanguage extends TargetLanguage {
     protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): RustRenderer {
         return new RustRenderer(this, renderContext, getOptionValues(rustOptions, untypedOptionValues));
@@ -314,11 +327,24 @@ export class RustRenderer extends ConvenienceRenderer {
             "Serialize, Deserialize)]"
         );
 
+        // List the possible naming styles for every class property
+        const propertiesNamingStyles: { [key: string]: string[] } = {};
+        this.forEachClassProperty(c, "none", (_name, jsonName, _prop) => {
+            propertiesNamingStyles[jsonName] = listMatchingNamingStyles(jsonName);
+        });
+
+        // Set the default naming style on the struct
+        const defaultStyle = "snake_case";
+        const preferedNamingStyle = getPreferedNamingStyle(Object.values(propertiesNamingStyles).flat(), defaultStyle);
+        if (preferedNamingStyle !== defaultStyle)
+            this.emitLine(`#[serde(rename_all = "${preferedNamingStyle}")]`);
+
         const blankLines = this._options.density === Density.Dense ? "none" : "interposing";
         const structBody = () =>
             this.forEachClassProperty(c, blankLines, (name, jsonName, prop) => {
                 this.emitDescription(this.descriptionForClassProperty(c, jsonName));
-                this.emitRenameAttribute(name, jsonName);
+                if (!propertiesNamingStyles[jsonName].includes(preferedNamingStyle))
+                    this.emitRenameAttribute(name, jsonName);
                 this.emitLine(this.visibility, name, ": ", this.breakCycle(prop.type, true), ",");
             });
 
@@ -367,10 +393,23 @@ export class RustRenderer extends ConvenienceRenderer {
             "Serialize, Deserialize)]"
         );
 
+        // List the possible naming styles for every enum case
+        const enumCasesNamingStyles: { [key: string]: string[] } = {};
+        this.forEachEnumCase(e, "none", (_name, jsonName) => {
+            enumCasesNamingStyles[jsonName] = listMatchingNamingStyles(jsonName);
+        });
+
+        // Set the default naming style on the enum
+        const defaultStyle = "PascalCase";
+        const preferedNamingStyle = getPreferedNamingStyle(Object.values(enumCasesNamingStyles).flat(), defaultStyle);
+        if (preferedNamingStyle !== defaultStyle)
+            this.emitLine(`#[serde(rename_all = "${preferedNamingStyle}")]`);
+
         const blankLines = this._options.density === Density.Dense ? "none" : "interposing";
         this.emitBlock(["pub enum ", enumName], () =>
             this.forEachEnumCase(e, blankLines, (name, jsonName) => {
-                this.emitRenameAttribute(name, jsonName);
+                if (!enumCasesNamingStyles[jsonName].includes(preferedNamingStyle))
+                    this.emitRenameAttribute(name, jsonName);
                 this.emitLine([name, ","]);
             })
         );
@@ -389,17 +428,17 @@ export class RustRenderer extends ConvenienceRenderer {
         const topLevelName = defined(mapFirst(this.topLevels)).getCombinedName();
         this.emitMultiline(
             `// Example code that deserializes and serializes the model.
-// extern crate serde;
-// #[macro_use]
-// extern crate serde_derive;
-// extern crate serde_json;
-//
-// use generated_module::${topLevelName};
-//
-// fn main() {
-//     let json = r#"{"answer": 42}"#;
-//     let model: ${topLevelName} = serde_json::from_str(&json).unwrap();
-// }`
+                // extern crate serde;
+                // #[macro_use]
+                // extern crate serde_derive;
+                // extern crate serde_json;
+                //
+                // use generated_module::${topLevelName};
+                //
+                // fn main() {
+                //     let json = r#"{"answer": 42}"#;
+                //     let model: ${topLevelName} = serde_json::from_str(&json).unwrap();
+                // }`
         );
     }
 
@@ -428,4 +467,23 @@ export class RustRenderer extends ConvenienceRenderer {
         this.forEachUnion("leading-and-interposing", (u, name) => this.emitUnion(u, name));
         this.forEachEnum("leading-and-interposing", (e, name) => this.emitEnumDefinition(e, name));
     }
+}
+
+function getPreferedNamingStyle(namingStyleOccurences: string[], defaultStyle: string): string {
+    const occurrences = Object.fromEntries(Object.keys(NamingStyleRegex).map(key => [key, 0]));
+    namingStyleOccurences
+        .forEach(style => ++occurrences[style]);
+    const max = Math.max(...Object.values(occurrences));
+    const preferedStyles = Object.entries(occurrences)
+        .filter(([_style, num]) => num === max)
+        .map(([style, _num]) => style);
+    if (preferedStyles.includes(defaultStyle))
+        return defaultStyle;
+    return preferedStyles[0];
+}
+
+function listMatchingNamingStyles(name: string): string[] {
+    return Object.entries(NamingStyleRegex)
+        .filter(([_namingStyle, regex]) => regex.test(name))
+        .map(([namingStyle, _regex]) => namingStyle);
 }
