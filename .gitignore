@@ -10,6 +10,9 @@ test/golang/schema-from-schema.json
 test/elm/elm-stuff/
 test/elm/elm.js
 test/elm/QuickType.elm
+test/fixtures/cjson/cJSON.*
+test/fixtures/cjson/hashtable.*
+test/fixtures/cjson/list.*
 test/fixtures/rust/target
 test/fixtures/java/target
 test/fixtures/java-lombok/target

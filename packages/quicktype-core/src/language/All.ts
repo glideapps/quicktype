@@ -4,6 +4,7 @@ import { TargetLanguage } from "../TargetLanguage";
 
 import { CSharpTargetLanguage } from "./CSharp";
 import { GoTargetLanguage } from "./Golang";
+import { CJSONTargetLanguage } from "./CJSON";
 import { CPlusPlusTargetLanguage } from "./CPlusPlus";
 import { ObjectiveCTargetLanguage } from "./Objective-C";
 import { JavaTargetLanguage } from "./Java";
@@ -31,6 +32,7 @@ export const all: TargetLanguage[] = [
     new GoTargetLanguage(),
     new RustTargetLanguage(),
     new CrystalTargetLanguage(),
+    new CJSONTargetLanguage(),
     new CPlusPlusTargetLanguage(),
     new ObjectiveCTargetLanguage(),
     new JavaTargetLanguage(),
