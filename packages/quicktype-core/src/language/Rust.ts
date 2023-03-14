@@ -63,8 +63,6 @@ const NamingStyleRegex = {
     "UPPERCASE": /^[A-Z][A-Z0-9]*$/,
 }
 
-type NamingStyle = keyof typeof NamingStyleRegex;
-
 export class RustTargetLanguage extends TargetLanguage {
     protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): RustRenderer {
         return new RustRenderer(this, renderContext, getOptionValues(rustOptions, untypedOptionValues));
