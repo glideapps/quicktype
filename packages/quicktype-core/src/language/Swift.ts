@@ -75,6 +75,7 @@ export const swiftOptions = {
     ),
     optionalEnums: new BooleanOption("optional-enums", "If no matching case is found enum value is set to null", false),
     swift5Support: new BooleanOption("swift-5-support", "Renders output in a Swift 5 compatible mode", false),
+    observableObject: new BooleanOption("observable-objects", "Make objects observable and variables published", false),
     multiFileOutput: new BooleanOption(
         "multi-file-output",
         "Renders each top-level object in its own Swift file",
@@ -100,8 +101,7 @@ export const swiftOptions = {
         ],
         "none",
         "secondary"
-    ),
-    observableObject: new BooleanOption("observable-object", "Make objects observable and variables published", true)
+    )
 };
 
 // These are all recognized by Swift as ISO8601 date-times:
@@ -152,7 +152,8 @@ export class SwiftTargetLanguage extends TargetLanguage {
             swiftOptions.optionalEnums,
             swiftOptions.swift5Support,
             swiftOptions.multiFileOutput,
-            swiftOptions.mutableProperties
+            swiftOptions.mutableProperties,
+            swiftOptions.observableObject
         ];
     }
 
