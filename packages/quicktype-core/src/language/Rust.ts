@@ -349,9 +349,8 @@ export class RustRenderer extends ConvenienceRenderer {
     private emitRenameAttribute(propName: Name, jsonName: string, defaultNamingStyle: string, preferedNamingStyle: string) {
         const escapedName = rustStringEscape(jsonName);
         const name = NamingStyle[defaultNamingStyle].fromParts(this.sourcelikeToString(propName).split(" "));
-        const styledName = nameToNamingStyle(escapedName, preferedNamingStyle);
-        const namesDiffer = name !== styledName;
-        console.log("namesDiffer", namesDiffer, name, styledName);
+        const styledName = nameToNamingStyle(name, preferedNamingStyle);
+        const namesDiffer = escapedName !== styledName;
         if (namesDiffer) {
             this.emitLine('#[serde(rename = "', escapedName, '")]');
         }
