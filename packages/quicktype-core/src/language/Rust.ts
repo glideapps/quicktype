@@ -52,15 +52,62 @@ export const rustOptions = {
     leadingComments: new BooleanOption("leading-comments", "Leading Comments", true)
 };
 
-const NamingStyleRegex = {
-    "snake_case": /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/,
-    "SCREAMING_SNAKE_CASE": /^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$/,
-    "camelCase": /^[a-z]+([A-Z0-9][a-z]*)*$/,
-    "PascalCase": /^[A-Z][a-z]*([A-Z0-9][a-z]*)*$/,
-    "kebab-case": /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/,
-    "SCREAMING-KEBAB-CASE": /^[A-Z][A-Z0-9]*(-[A-Z0-9]+)*$/,
-    "lowercase": /^[a-z][a-z0-9]*$/,
-    "UPPERCASE": /^[A-Z][A-Z0-9]*$/,
+type nameToParts = (name: string) => string[];
+type partsToName = (parts: string[]) => string;
+type namingStyle = {
+    regex: RegExp,
+    toParts: nameToParts,
+    fromParts: partsToName,
+};
+
+const NamingStyle: { [key: string]: namingStyle } = {
+    "snake_case": {
+        regex: /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/,
+        toParts: (name: string): string[] => name.split('_'),
+        fromParts: (parts: string[]): string => parts.map(p => p.toLowerCase()).join('_'),
+    },
+    "SCREAMING_SNAKE_CASE": {
+        regex: /^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$/,
+        toParts: (name: string): string[] => name.split('_'),
+        fromParts: (parts: string[]): string => parts.map(p => p.toUpperCase()).join('_'),
+    },
+    "camelCase": {
+        regex: /^[a-z]+([A-Z0-9][a-z]*)*$/,
+        toParts: (name: string): string[] => NamingStyle.snake_case.toParts(name.replace(/(.)([A-Z])/g, "$1_$2")),
+        fromParts: (parts: string[]): string => parts
+            .map((p, i) =>
+                i === 0
+                    ? p.toLowerCase()
+                    : p.substring(0, 1).toUpperCase() + p.substring(1).toLowerCase())
+            .join(''),
+    },
+    "PascalCase": {
+        regex: /^[A-Z][a-z]*([A-Z0-9][a-z]*)*$/,
+        toParts: (name: string): string[] => NamingStyle.snake_case.toParts(name.replace(/(.)([A-Z])/g, "$1_$2")),
+        fromParts: (parts: string[]): string => parts
+            .map(p => p.substring(0, 1).toUpperCase() + p.substring(1).toLowerCase())
+            .join(''),
+    },
+    "kebab-case": {
+        regex: /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/,
+        toParts: (name: string): string[] => name.split('-'),
+        fromParts: (parts: string[]): string => parts.map(p => p.toLowerCase()).join('-'),
+    },
+    "SCREAMING-KEBAB-CASE": {
+        regex: /^[A-Z][A-Z0-9]*(-[A-Z0-9]+)*$/,
+        toParts: (name: string): string[] => name.split('-'),
+        fromParts: (parts: string[]): string => parts.map(p => p.toUpperCase()).join('-'),
+    },
+    "lowercase": {
+        regex: /^[a-z][a-z0-9]*$/,
+        toParts: (name: string): string[] => [name],
+        fromParts: (parts: string[]): string => parts.map(p => p.toLowerCase()).join(''),
+    },
+    "UPPERCASE": {
+        regex: /^[A-Z][A-Z0-9]*$/,
+        toParts: (name: string): string[] => [name],
+        fromParts: (parts: string[]): string => parts.map(p => p.toUpperCase()).join(''),
+    },
 }
 
 export class RustTargetLanguage extends TargetLanguage {
@@ -299,10 +346,13 @@ export class RustRenderer extends ConvenienceRenderer {
         return isCycleBreaker ? ["Box<", rustType, ">"] : rustType;
     }
 
-    private emitRenameAttribute(propName: Name, jsonName: string) {
+    private emitRenameAttribute(propName: Name, jsonName: string, defaultNamingStyle: string, preferedNamingStyle: string) {
         const escapedName = rustStringEscape(jsonName);
-        const namesDiffer = this.sourcelikeToString(propName) !== escapedName;
-        if (namesDiffer || this._options.density === Density.Normal) {
+        const name = NamingStyle[defaultNamingStyle].fromParts(this.sourcelikeToString(propName).split(" "));
+        const styledName = nameToNamingStyle(escapedName, preferedNamingStyle);
+        const namesDiffer = name !== styledName;
+        console.log("namesDiffer", namesDiffer, name, styledName);
+        if (namesDiffer) {
             this.emitLine('#[serde(rename = "', escapedName, '")]');
         }
     }
@@ -341,8 +391,7 @@ export class RustRenderer extends ConvenienceRenderer {
         const structBody = () =>
             this.forEachClassProperty(c, blankLines, (name, jsonName, prop) => {
                 this.emitDescription(this.descriptionForClassProperty(c, jsonName));
-                if (!propertiesNamingStyles[jsonName].includes(preferedNamingStyle))
-                    this.emitRenameAttribute(name, jsonName);
+                this.emitRenameAttribute(name, jsonName, defaultStyle, preferedNamingStyle);
                 this.emitLine(this.visibility, name, ": ", this.breakCycle(prop.type, true), ",");
             });
 
@@ -406,8 +455,7 @@ export class RustRenderer extends ConvenienceRenderer {
         const blankLines = this._options.density === Density.Dense ? "none" : "interposing";
         this.emitBlock(["pub enum ", enumName], () =>
             this.forEachEnumCase(e, blankLines, (name, jsonName) => {
-                if (!enumCasesNamingStyles[jsonName].includes(preferedNamingStyle))
-                    this.emitRenameAttribute(name, jsonName);
+                this.emitRenameAttribute(name, jsonName, defaultStyle, preferedNamingStyle);
                 this.emitLine([name, ","]);
             })
         );
@@ -461,14 +509,16 @@ export class RustRenderer extends ConvenienceRenderer {
             t => this.namedTypeToNameForTopLevel(t) === undefined
         );
 
-        this.forEachObject("leading-and-interposing", (c: ClassType, name: Name) => this.emitStructDefinition(c, name));
-        this.forEachUnion("leading-and-interposing", (u, name) => this.emitUnion(u, name));
-        this.forEachEnum("leading-and-interposing", (e, name) => this.emitEnumDefinition(e, name));
+        this.forEachNamedType("leading-and-interposing",
+            (c: ClassType, name: Name) => this.emitStructDefinition(c, name),
+            (e, name) => this.emitEnumDefinition(e, name),
+            (u, name) => this.emitUnion(u, name)
+        );
     }
 }
 
 function getPreferedNamingStyle(namingStyleOccurences: string[], defaultStyle: string): string {
-    const occurrences = Object.fromEntries(Object.keys(NamingStyleRegex).map(key => [key, 0]));
+    const occurrences = Object.fromEntries(Object.keys(NamingStyle).map(key => [key, 0]));
     namingStyleOccurences
         .forEach(style => ++occurrences[style]);
     const max = Math.max(...Object.values(occurrences));
@@ -481,7 +531,14 @@ function getPreferedNamingStyle(namingStyleOccurences: string[], defaultStyle: s
 }
 
 function listMatchingNamingStyles(name: string): string[] {
-    return Object.entries(NamingStyleRegex)
-        .filter(([_namingStyle, regex]) => regex.test(name))
-        .map(([namingStyle, _regex]) => namingStyle);
+    return Object.entries(NamingStyle)
+        .filter(([_, { regex }]) => regex.test(name))
+        .map(([namingStyle, _]) => namingStyle);
+}
+
+function nameToNamingStyle(name: string, style: string): string {
+    if (NamingStyle[style].regex.test(name)) return name;
+    const fromStyle = listMatchingNamingStyles(name)[0];
+    if (fromStyle === undefined) return name;
+    return NamingStyle[style].fromParts(NamingStyle[fromStyle].toParts(name));
 }
