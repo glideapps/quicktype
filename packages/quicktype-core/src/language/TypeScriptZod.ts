@@ -1,24 +1,25 @@
 import { arrayIntercalate } from "collection-utils";
-import {
-    capitalize,
-    ClassProperty,
-    combineWords,
-    firstUpperWordStyle,
-    matchType,
-    ObjectType,
-    panic,
-    Sourcelike,
-    splitIntoWords,
-    Type
-} from "..";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
+import { ClassProperty, EnumType, ObjectType, Type } from "../Type";
+import { matchType } from "../TypeUtils";
 import { funPrefixNamer, Name, Namer } from "../Naming";
 import { RenderContext } from "../Renderer";
-import { Option } from "../RendererOptions";
+import { getOptionValues, Option, OptionValues } from "../RendererOptions";
 import { acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
-import { allLowerWordStyle, isLetterOrUnderscore, utf16StringEscape } from "../support/Strings";
+import {
+    allLowerWordStyle,
+    capitalize,
+    combineWords,
+    firstUpperWordStyle,
+    isLetterOrUnderscore,
+    splitIntoWords,
+    stringEscape,
+    utf16StringEscape
+} from "../support/Strings";
 import { TargetLanguage } from "../TargetLanguage";
 import { legalizeName } from "./JavaScript";
+import { Sourcelike } from "../Source";
+import { panic } from "../support/Support";
+import { ConvenienceRenderer } from "../ConvenienceRenderer";
 
 export const typeScriptZodOptions = {};
 
@@ -36,22 +37,28 @@ export class TypeScriptZodTargetLanguage extends TargetLanguage {
     }
 
     protected makeRenderer(
-        renderContext: RenderContext
-        // untypedOptionValues: { [name: string]: any }
+        renderContext: RenderContext,
+        untypedOptionValues: { [name: string]: any }
     ): TypeScriptZodRenderer {
         return new TypeScriptZodRenderer(
             this,
-            renderContext
-            // getOptionValues(typeScriptZodOptions, untypedOptionValues)
+            renderContext,
+            getOptionValues(typeScriptZodOptions, untypedOptionValues)
         );
     }
 }
 
-const identityNamingFunction = funPrefixNamer("properties", s => s);
-
 export class TypeScriptZodRenderer extends ConvenienceRenderer {
-    constructor(targetLanguage: TargetLanguage, renderContext: RenderContext) {
+    constructor(
+        targetLanguage: TargetLanguage,
+        renderContext: RenderContext,
+        private readonly _options: OptionValues<typeof typeScriptZodOptions>
+    ) {
         super(targetLanguage, renderContext);
+    }
+
+    protected forbiddenNamesForGlobalNamespace(): string[] {
+        return ["Class", "Date", "Object", "String", "Array", "JSON", "Error"];
     }
 
     protected nameStyle(original: string, upper: boolean): string {
@@ -73,15 +80,15 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         return funPrefixNamer("types", s => this.nameStyle(s, true));
     }
 
-    protected namerForObjectProperty(): Namer | null {
-        return identityNamingFunction;
+    protected makeUnionMemberNamer(): Namer {
+        return funPrefixNamer("properties", s => this.nameStyle(s, true));
     }
 
-    protected makeUnionMemberNamer(): Namer | null {
-        return null;
+    protected namerForObjectProperty(): Namer {
+        return funPrefixNamer("properties", s => this.nameStyle(s, true));
     }
 
-    protected makeEnumCaseNamer(): Namer | null {
+    protected makeEnumCaseNamer(): Namer {
         return funPrefixNamer("enum-cases", s => this.nameStyle(s, false));
     }
 
@@ -96,10 +103,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
 
     typeMapTypeForProperty(p: ClassProperty): Sourcelike {
         const typeMap = this.typeMapTypeFor(p.type);
-        if (!p.isOptional) {
-            return typeMap;
-        }
-        return ["z.any"];
+        return p.isOptional ? [typeMap, ".optional()"] : typeMap;
     }
 
     typeMapTypeFor(t: Type, required: boolean = true): Sourcelike {
@@ -111,13 +115,13 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
             t,
             _anyType => "z.any()",
             _nullType => "z.null()",
-            _boolType => "z.bool()",
+            _boolType => "z.boolean()",
             _integerType => "z.number()",
             _doubleType => "z.number()",
             _stringType => "z.string()",
             arrayType => ["z.array(", this.typeMapTypeFor(arrayType.items, false), ")"],
             _classType => panic("Should already be handled."),
-            _mapType => ["z.map(z.string(), ", this.typeMapTypeFor(_mapType.values, false), ")"],
+            _mapType => ["z.record(z.string(), ", this.typeMapTypeFor(_mapType.values, false), ")"],
             _enumType => panic("Should already be handled."),
             unionType => {
                 const children = Array.from(unionType.getChildren()).map((type: Type) =>
@@ -149,8 +153,25 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         this.emitLine("export type ", name, " = z.infer<typeof ", name, "Schema>;");
     }
 
+    private emitEnum(e: EnumType, enumName: Name): void {
+        this.ensureBlankLine();
+        this.emitDescription(this.descriptionForType(e));
+        this.emitLine("\nexport const ", enumName, "Schema = ", "z.enum([");
+        this.indent(() =>
+            this.forEachEnumCase(e, "none", (_, jsonName) => {
+                this.emitLine('"', stringEscape(jsonName), '",');
+            })
+        );
+        this.emitLine("]);");
+        this.emitLine("export type ", enumName, " = z.infer<typeof ", enumName, "Schema>;");
+    }
+
     protected emitSchemas(): void {
         this.ensureBlankLine();
+
+        this.forEachEnum("leading-and-interposing", (u: EnumType, enumName: Name) => {
+            this.emitEnum(u, enumName);
+        });
 
         const order: number[] = [];
         const mapKey: Name[] = [];
