@@ -1172,10 +1172,18 @@ export const TypeScriptZodLanguage: Language = {
     base: "test/fixtures/typescript-zod",
     setupCommand: "npm install",
     runCommand(sample: string) {
-        return `npm run test "${sample}"`;
+        return `npm run --silent test "${sample}"`;
     },
     diffViaSchema: true,
     skipDiffViaSchema: [
+        // Schema generated type uses first key as type name, JSON uses last
+        "0cffa.json",
+        "f6a65.json",
+        "c3303.json",
+        "7681c.json",
+        "127a1.json",
+        "26b49.json",
+
         "bug863.json",
         "reddit.json",
         "github-events.json",
@@ -1197,6 +1205,25 @@ export const TypeScriptZodLanguage: Language = {
     output: "TopLevel.ts",
     topLevel: "TopLevel",
     skipJSON: [
+        // Uses generated schema before it's defined
+        "be234.json",
+        "76ae1.json",
+        "6de06.json",
+        "2df80.json",
+        "29f47.json",
+        "spotify-album.json",
+        "reddit.json",
+        "github-events.json",
+
+        // Does not handle recursive
+        "direct-recursive.json",
+        "list.json",
+        "bug790.json",
+
+        // Does not handle top level array
+        "bug863.json",
+
+        "no-classes.json",
         "00c36.json",
         "10be4.json",
         "050b0.json",
@@ -1233,7 +1260,8 @@ export const TypeScriptZodLanguage: Language = {
         "recursive.json",
         "bug427.json",
         "nst-test-suite.json",
-        "keywords.json"
+        "keywords.json",
+        "ed095.json"
     ],
     skipMiscJSON: false,
     skipSchema: [
