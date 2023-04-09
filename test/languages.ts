@@ -1194,8 +1194,8 @@ export const TypeScriptZodLanguage: Language = {
     ],
     allowMissingNull: false,
     features: ["enum", "union", "no-defaults"],
-    output: "QuickType.ts",
-    topLevel: "QuickType",
+    output: "TopLevel.ts",
+    topLevel: "TopLevel",
     skipJSON: [
         "00c36.json",
         "10be4.json",

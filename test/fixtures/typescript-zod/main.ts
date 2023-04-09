@@ -1,12 +1,12 @@
-import * as TopLevel from "./QuickType";
-
-const fs = require("fs");
-const process = require("process");
+import * as TopLevel from "./TopLevel";
+import fs from "fs";
+import process from "process";
 
 const sample = process.argv[2];
 const json = fs.readFileSync(sample);
 
-let value = TopLevel.Convert.toTopLevel(json);
-let backToJson = TopLevel.Convert.topLevelToJson(value);
+let value = JSON.parse(json.toString());
+let parsedValue = TopLevel.TopLevelSchema.parse(value);
+let backToJson = JSON.stringify(parsedValue, null, 2);
 
 console.log(backToJson);
