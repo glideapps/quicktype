@@ -82,6 +82,7 @@ export { removeNullFromUnion, matchType, nullableFromUnion } from "./TypeUtils";
 export { ConvenienceRenderer } from "./ConvenienceRenderer";
 export { uriTypeAttributeKind } from "./attributes/URIAttributes";
 
+export { CJSONTargetLanguage, CJSONRenderer, cJSONOptions } from "./language/CJSON";
 export { CPlusPlusTargetLanguage, CPlusPlusRenderer, cPlusPlusOptions } from "./language/CPlusPlus";
 export { CSharpTargetLanguage, cSharpOptions, CSharpRenderer } from "./language/CSharp";
 export { PythonTargetLanguage, PythonRenderer, pythonOptions } from "./language/Python";
@@ -103,6 +104,8 @@ export {
 } from "./language/TypeScriptFlow";
 export { SwiftTargetLanguage, SwiftRenderer, swiftOptions } from "./language/Swift";
 export { KotlinTargetLanguage, KotlinRenderer, kotlinOptions } from "./language/Kotlin";
+export { Scala3TargetLanguage, Scala3Renderer, scala3Options } from "./language/Scala3";
+export { SmithyTargetLanguage, Smithy4sRenderer, SmithyOptions } from "./language/Smithy4s";
 export { ElmTargetLanguage, ElmRenderer, elmOptions } from "./language/Elm";
 export { JSONSchemaTargetLanguage, JSONSchemaRenderer } from "./language/JSONSchema";
 export { RustTargetLanguage, RustRenderer, rustOptions } from "./language/Rust";

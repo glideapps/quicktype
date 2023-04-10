@@ -321,8 +321,9 @@ export class PythonRenderer extends ConvenienceRenderer {
         return ["'", name, "'"];
     }
 
-    protected pythonType(t: Type): Sourcelike {
+    protected pythonType(t: Type, _isRootTypeDef = false): Sourcelike {
         const actualType = followTargetType(t);
+
         return matchType<Sourcelike>(
             actualType,
             _anyType => this.withTyping("Any"),
@@ -341,7 +342,12 @@ export class PythonRenderer extends ConvenienceRenderer {
 
                 if (hasNull !== null) {
                     let rest: string[] = [];
-                    if (!this.getAlphabetizeProperties() && this.pyOptions.features.dataClasses) rest.push(" = None");
+                    if (!this.getAlphabetizeProperties() && this.pyOptions.features.dataClasses && _isRootTypeDef) {
+                        // Only push "= None" if this is a root level type def
+                        //   otherwise we may get type defs like List[Optional[int] = None]
+                        //   which are invalid
+                        rest.push(" = None");
+                    }
 
                     if (nonNulls.size > 1) {
                         this.withImport("typing", "Union");
@@ -449,7 +455,7 @@ export class PythonRenderer extends ConvenienceRenderer {
                 } else {
                     this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
                         this.emitDescription(this.descriptionForClassProperty(t, jsonName));
-                        this.emitLine(name, this.typeHint(": ", this.pythonType(cp.type)));
+                        this.emitLine(name, this.typeHint(": ", this.pythonType(cp.type, true)));
                     });
                 }
                 this.ensureBlankLine();

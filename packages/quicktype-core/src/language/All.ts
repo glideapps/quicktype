@@ -4,6 +4,7 @@ import { TargetLanguage } from "../TargetLanguage";
 
 import { CSharpTargetLanguage } from "./CSharp";
 import { GoTargetLanguage } from "./Golang";
+import { CJSONTargetLanguage } from "./CJSON";
 import { CPlusPlusTargetLanguage } from "./CPlusPlus";
 import { ObjectiveCTargetLanguage } from "./Objective-C";
 import { JavaTargetLanguage } from "./Java";
@@ -12,6 +13,8 @@ import { JavaScriptPropTypesTargetLanguage } from "./JavaScriptPropTypes";
 import { TypeScriptTargetLanguage, FlowTargetLanguage } from "./TypeScriptFlow";
 import { SwiftTargetLanguage } from "./Swift";
 import { KotlinTargetLanguage } from "./Kotlin";
+import { Scala3TargetLanguage } from "./Scala3";
+import { SmithyTargetLanguage } from "./Smithy4s";
 import { ElmTargetLanguage } from "./Elm";
 import { JSONSchemaTargetLanguage } from "./JSONSchema";
 import { RustTargetLanguage } from "./Rust";
@@ -24,11 +27,13 @@ import { HaskellTargetLanguage } from "./Haskell";
 import { TypeScriptZodTargetLanguage } from "./TypeScriptZod";
 import { PhpTargetLanguage } from "./Php";
 
+
 export const all: TargetLanguage[] = [
     new CSharpTargetLanguage(),
     new GoTargetLanguage(),
     new RustTargetLanguage(),
     new CrystalTargetLanguage(),
+    new CJSONTargetLanguage(),
     new CPlusPlusTargetLanguage(),
     new ObjectiveCTargetLanguage(),
     new JavaTargetLanguage(),
@@ -37,6 +42,8 @@ export const all: TargetLanguage[] = [
     new JavaScriptPropTypesTargetLanguage(),
     new FlowTargetLanguage(),
     new SwiftTargetLanguage(),
+    new Scala3TargetLanguage(),
+    new SmithyTargetLanguage(),
     new KotlinTargetLanguage(),
     new ElmTargetLanguage(),
     new JSONSchemaTargetLanguage(),

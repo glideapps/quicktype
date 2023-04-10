@@ -1,12 +1,12 @@
 {
     "name": "quicktype",
-    "version": "21.0.0",
+    "version": "23.0.0",
     "license": "Apache-2.0",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "repository": "https://github.com/quicktype/quicktype",
     "engines": {
-        "node": ">=18.13.0"
+        "node": ">=18.12.0"
     },
     "scripts": {
         "pub": "script/publish.sh",
@@ -24,8 +24,9 @@
     "dependencies": {
         "@glideapps/ts-necessities": "^2.1.2",
         "chalk": "^4.1.2",
+        "collection-utils": "^1.0.1",
         "command-line-args": "^5.2.1",
-        "command-line-usage": "^6.1.3",
+        "command-line-usage": "^7.0.1",
         "cross-fetch": "^3.1.5",
         "graphql": "^0.11.7",
         "lodash": "^4.17.21",
@@ -36,7 +37,7 @@
         "readable-stream": "^4.3.0",
         "stream-json": "1.7.5",
         "string-to-stream": "^3.0.1",
-        "typescript": "4.9.4"
+        "typescript": "4.9.5"
     },
     "devDependencies": {
         "@tsconfig/node18": "^1.0.1",
@@ -45,19 +46,18 @@
         "@types/graphql": "^0.11.7",
         "@types/lodash": "^4.14.191",
         "@types/semver": "^7.3.13",
-        "@types/shelljs": "^0.7.8",
+        "@types/shelljs": "^0.8.11",
         "@types/stream-json": "^1.7.3",
         "@types/urijs": "^1.19.19",
         "ajv": "^5.5.2",
         "deep-equal": "^2.2.0",
         "exit": "^0.1.2",
-        "prettier": "^2.8.3",
+        "prettier": "^2.8.7",
         "promise-timeout": "^1.3.0",
         "semver": "^7.3.8",
         "shelljs": "^0.8.5",
         "ts-node": "^10.9.1",
         "tslint": "^6.1.3",
-        "uglify-js": "^3.3.22",
         "watch": "^1.0.2"
     },
     "files": [

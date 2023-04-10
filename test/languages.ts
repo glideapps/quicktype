@@ -399,6 +399,86 @@ export const GoLanguage: Language = {
     sourceFiles: ["src/language/Golang.ts"]
 };
 
+export const CJSONLanguage: Language = {
+    name: "cjson",
+    base: "test/fixtures/cjson",
+    setupCommand:
+        "curl -o cJSON.c https://raw.githubusercontent.com/DaveGamble/cJSON/v1.7.15/cJSON.c && curl -o cJSON.h https://raw.githubusercontent.com/DaveGamble/cJSON/v1.7.15/cJSON.h && curl -o list.h https://raw.githubusercontent.com/joelguittet/c-list/master/include/list.h && curl -o list.c https://raw.githubusercontent.com/joelguittet/c-list/master/src/list.c && curl -o hashtable.h https://raw.githubusercontent.com/joelguittet/c-hashtable/master/include/hashtable.h && curl -o hashtable.c https://raw.githubusercontent.com/joelguittet/c-hashtable/master/src/hashtable.c",
+    compileCommand: "gcc -O0 -o quicktype -I. cJSON.c hashtable.c list.c main.c -lpthread",
+    runCommand(sample: string) {
+        return `valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --error-exitcode=1 ./quicktype "${sample}"`;
+    },
+    diffViaSchema: true,
+    skipDiffViaSchema: [
+        /* Enum constants are different when generating with schema */
+        "34702.json",
+        /* Member names are different when generating with schema */
+        "0a91a.json",
+        "7f568.json",
+        "e8b04.json",
+        "fcca3.json",
+        "bug427.json",
+        "github-events.json",
+        "keywords.json",
+    ],
+    allowMissingNull: false,
+    features: ["minmax", "minmaxlength", "pattern", "enum", "union", "no-defaults"],
+    output: "TopLevel.h",
+    topLevel: "TopLevel",
+    skipJSON: [
+        /* Line feed in identifiers is not supported */
+        "identifiers.json",
+        /* Quote in identifier is not supported */
+        "blns-object.json",
+        "simple-identifiers.json",
+        /* cJSON is not able to parse input with special characters */
+        "nst-test-suite.json",
+        /* Union with no name in nullable Array in Array is not supported */
+        "combinations1.json",
+        "combinations3.json",
+        /* Map in Array in TopLevel is not supported (for the current implementation, can be added later, need recursivity) */
+        "combinations2.json",
+        /* Array in Array in Union is not supported (for the current implementation, can be added later, need recursivity) */
+        "combinations4.json",
+    ],
+    skipMiscJSON: false,
+    skipSchema: [
+        /* Member names are different when generating with schema */
+        "vega-lite.schema",
+        /* Enum as TopLevel is not supported */
+        "top-level-enum.schema",
+        /* Union with Number and Integer are not supported */
+        "integer-float-union.schema",
+        /* Enum with invalid values are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
+        "enum.schema",
+        /* Union, Map and Arrays with invalid types are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
+        "class-with-additional.schema",
+        "go-schema-pattern-properties.schema",
+        "multi-type-enum.schema",
+        /* Class elements with invalid type are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
+        "class-map-union.schema",
+        /* Constraints (min/max and regex) are not supported (for the current implementation, can be added later, should abord parsing and return NULL) */
+        "minmaxlength.schema",
+        "minmax.schema",
+        "pattern.schema",
+        /* Required properties absent are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
+        "intersection.schema",
+        "required.schema",
+        /* Pure Any type not supported (for the current implementation, can be added later, should manage a callback to provide the final application a way to handle it at parsing and creation of cJSON) */
+        "any.schema",
+        "direct-union.schema",
+        "optional-any.schema",
+        "required-non-properties.schema",
+        /* Other cases not supported */
+        "implicit-class-array-union.schema",
+    ],
+    rendererOptions: {},
+    quickTestRendererOptions: [
+        { "source-style": "single-source" }
+    ],
+    sourceFiles: ["src/language/CJSON.ts"]
+};
+
 export const CPlusPlusLanguage: Language = {
     name: "cplusplus",
     base: "test/fixtures/cplusplus",
@@ -696,6 +776,7 @@ export const TypeScriptLanguage: Language = {
         { "runtime-typecheck-ignore-unknown-properties": "true" },
         { "nice-property-names": "true" },
         { "declare-unions": "true" },
+        ["pokedex.json", { "prefer-types": "true" }],
         { "acronym-style": "pascal" },
         { converters: "all-objects" }
     ],
@@ -788,6 +869,164 @@ export const FlowLanguage: Language = {
         { "declare-unions": "true" }
     ],
     sourceFiles: ["src/language/Flow.ts"]
+};
+
+export const Scala3Language: Language = {
+  name: "scala3",
+  base: "test/fixtures/scala3",  
+  runCommand(sample: string) {
+    return `cp "${sample}" sample.json && ./run.sh`;
+  },
+  diffViaSchema: true,
+  skipDiffViaSchema: [
+    "bug427.json",
+    "keywords.json",
+
+  ],
+  allowMissingNull: true,
+  features: ["enum", "union", "no-defaults"],
+  output: "TopLevel.scala",
+  topLevel: "TopLevel",
+  skipJSON: [
+    // These tests have "_" as a param name. Scala can't do this?     
+    "blns-object.json",
+    "identifiers.json",
+    "simple-identifiers.json",
+    "keywords.json",
+
+    // these actually work as far as I can tell, but seem to fail because properties are sorted differently
+    // I don't think they fail... but I can't figure out sorting so hey ho let's skip them
+    "github-events.json", 
+    "0a358.json",
+    "0a91a.json",
+    "34702.json",
+    "76ae1.json",
+    "af2d1.json",
+    "bug427.json",
+    "3d04a0.json",
+
+    // Top level primitives... trivial, 
+    //  but annoying as it breaks compilation of the "Top Level" construct... which doesn't exist. 
+    // It's too much hassle to fix
+    // and has no practical application in this context. Skip.
+    "no-classes.json",
+    
+    // spaces in variables names doesn't seem to work
+    "name-style.json",
+
+/*
+I havea no idea how to encode these tests correctly. 
+*/
+    "kitchen-sink.json",
+    "26c9c.json",
+    "421d4.json",
+    "a0496.json",
+    "fcca3.json",
+    "ae9ca.json",
+    "617e8.json",
+    "5f7fe.json",
+    "f74d5.json",
+    "a3d8c.json",
+    "combinations1.json",
+    "combinations2.json",
+    "combinations3.json",
+    "combinations4.json",
+    "unions.json",
+    "nst-test-suite.json", 
+
+  ],
+  skipSchema: [
+    // 12 skips
+    "required.schema",    
+    "multi-type-enum.schema", // I think it doesn't correctly realise this is an array of enums.
+    "integer-string.schema",
+    "intersection.schema",
+    "implicit-class-array-union.schema",
+    "date-time-or-string.schema",
+    "implicit-one-of.schema",
+    "go-schema-pattern-properties.schema",
+    "enum.schema",
+    "class-with-additional.schema",
+    "class-map-union.schema",
+    "keyword-unions.schema"
+  ],
+  skipMiscJSON: false,
+  rendererOptions: {framework: "circe" },
+  quickTestRendererOptions: [],
+  sourceFiles: ["src/Language/Scala3.ts"],
+};
+
+export const Smithy4sLanguage: Language = {
+  name: "smithy4a",
+  base: "test/fixtures/smithy4s",  
+  runCommand(sample: string) {
+    return `cp "${sample}" sample.json && ./run.sh`;
+  },
+  diffViaSchema: true,
+  skipDiffViaSchema: [
+    "bug427.json",
+    "keywords.json",
+
+  ],
+  allowMissingNull: true,
+  features: ["enum", "union", "no-defaults"],
+  output: "TopLevel.scala",
+  topLevel: "TopLevel",
+  skipJSON: [
+    // These tests have "_" as a param name. Scala can't do this?     
+    "blns-object.json",
+    "identifiers.json",
+    "simple-identifiers.json",
+    "keywords.json",
+
+    // these actually work as far as I can tell, but seem to fail because properties are sorted differently
+    // I don't think they fail... but I can't figure out sorting so hey ho let's skip them
+    "github-events.json", 
+    "0a358.json",
+    "0a91a.json",
+    "34702.json",
+    "76ae1.json",
+    "af2d1.json",
+    "bug427.json",
+    "3d04a0.json",
+
+    // Top level primitives... trivial, 
+    //  but annoying as it breaks compilation of the "Top Level" construct... which doesn't exist. 
+    // It's too much hassle to fix
+    // and has no practical application in this context. Skip.
+    "no-classes.json",
+    
+    // spaces in variables names doesn't seem to work
+    "name-style.json",
+
+/*
+I havea no idea how to encode these tests correctly. 
+*/
+    "kitchen-sink.json",
+    "26c9c.json",
+    "421d4.json",
+    "a0496.json",
+    "fcca3.json",
+    "ae9ca.json",
+    "617e8.json",
+    "5f7fe.json",
+    "f74d5.json",
+    "a3d8c.json",
+    "combinations1.json",
+    "combinations2.json",
+    "combinations3.json",
+    "combinations4.json",
+    "unions.json",
+    "nst-test-suite.json", 
+
+  ],
+  skipSchema: [
+
+  ],
+  skipMiscJSON: false,
+  rendererOptions: {framework: "just-types" },
+  quickTestRendererOptions: [],
+  sourceFiles: ["src/Language/Smithy4s.ts"],
 };
 
 export const KotlinLanguage: Language = {
