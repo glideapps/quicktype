@@ -3,7 +3,7 @@ import { ClassProperty, EnumType, ObjectType, Type } from "../Type";
 import { matchType } from "../TypeUtils";
 import { funPrefixNamer, Name, Namer } from "../Naming";
 import { RenderContext } from "../Renderer";
-import { getOptionValues, Option, OptionValues } from "../RendererOptions";
+import { BooleanOption, getOptionValues, Option, OptionValues } from "../RendererOptions";
 import { acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
 import {
     allLowerWordStyle,
@@ -21,7 +21,9 @@ import { Sourcelike } from "../Source";
 import { panic } from "../support/Support";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 
-export const typeScriptZodOptions = {};
+export const typeScriptZodOptions = {
+    justSchema: new BooleanOption("just-schema", "Schema only", false)
+};
 
 export class TypeScriptZodTargetLanguage extends TargetLanguage {
     protected getOptions(): Option<any>[] {
@@ -150,7 +152,9 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
             });
         });
         this.emitLine("});");
-        this.emitLine("export type ", name, " = z.infer<typeof ", name, "Schema>;");
+        if (!this._options.justSchema) {
+            this.emitLine("export type ", name, " = z.infer<typeof ", name, "Schema>;");
+        }
     }
 
     private emitEnum(e: EnumType, enumName: Name): void {
@@ -163,7 +167,9 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
             })
         );
         this.emitLine("]);");
-        this.emitLine("export type ", enumName, " = z.infer<typeof ", enumName, "Schema>;");
+        if (!this._options.justSchema) {
+            this.emitLine("export type ", enumName, " = z.infer<typeof ", enumName, "Schema>;");
+        }
     }
 
     protected emitSchemas(): void {
