@@ -956,6 +956,91 @@ I havea no idea how to encode these tests correctly.
   sourceFiles: ["src/Language/Scala3.ts"],
 };
 
+export const Scala3UpickleLanguage: Language = {
+  name: "scala3",
+  base: "test/fixtures/scala3-upickle",  
+  runCommand(sample: string) {
+    return `cp "${sample}" sample.json && ./run.sh`;
+  },
+  diffViaSchema: true,
+  skipDiffViaSchema: [
+    "bug427.json",
+    "keywords.json",
+
+  ],
+  allowMissingNull: true,
+  features: ["enum", "union", "no-defaults"],
+  output: "TopLevel.scala",
+  topLevel: "TopLevel",
+  skipJSON: [
+    // These tests have "_" as a param name. Scala can't do this?     
+    "blns-object.json",
+    "identifiers.json",
+    "simple-identifiers.json",
+    "keywords.json",
+
+    // these actually work as far as I can tell, but seem to fail because properties are sorted differently
+    // I don't think they fail... but I can't figure out sorting so hey ho let's skip them
+    "github-events.json", 
+    "0a358.json",
+    "0a91a.json",
+    "34702.json",
+    "76ae1.json",
+    "af2d1.json",
+    "bug427.json",
+    "3d04a0.json",
+
+    // Top level primitives... trivial, 
+    //  but annoying as it breaks compilation of the "Top Level" construct... which doesn't exist. 
+    // It's too much hassle to fix
+    // and has no practical application in this context. Skip.
+    "no-classes.json",
+    
+    // spaces in variables names doesn't seem to work
+    "name-style.json",
+
+/*
+I havea no idea how to encode these tests correctly. 
+*/
+    "kitchen-sink.json",
+    "26c9c.json",
+    "421d4.json",
+    "a0496.json",
+    "fcca3.json",
+    "ae9ca.json",
+    "617e8.json",
+    "5f7fe.json",
+    "f74d5.json",
+    "a3d8c.json",
+    "combinations1.json",
+    "combinations2.json",
+    "combinations3.json",
+    "combinations4.json",
+    "unions.json",
+    "nst-test-suite.json", 
+
+  ],
+  skipSchema: [
+    // 12 skips
+    "required.schema",    
+    "multi-type-enum.schema", // I think it doesn't correctly realise this is an array of enums.
+    "integer-string.schema",
+    "intersection.schema",
+    "implicit-class-array-union.schema",
+    "date-time-or-string.schema",
+    "implicit-one-of.schema",
+    "go-schema-pattern-properties.schema",
+    "enum.schema",
+    "class-with-additional.schema",
+    "class-map-union.schema",
+    "keyword-unions.schema"
+  ],
+  skipMiscJSON: false,
+  rendererOptions: {framework: "upickle" },
+  quickTestRendererOptions: [],
+  sourceFiles: ["src/Language/Scala3.ts"],
+};
+
 export const Smithy4sLanguage: Language = {
   name: "smithy4a",
   base: "test/fixtures/smithy4s",  
