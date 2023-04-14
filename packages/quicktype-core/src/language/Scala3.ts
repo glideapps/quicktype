@@ -19,7 +19,6 @@ import { TargetLanguage } from "../TargetLanguage";
 import { ArrayType, ClassProperty, ClassType, EnumType, MapType, ObjectType, Type, UnionType } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 import { RenderContext } from "../Renderer";
-import { json } from "stream/consumers";
 
 export enum Framework {
     None,
@@ -568,11 +567,11 @@ end JsonExt
     }
 
     protected override emitUnionDefinition(u: UnionType, unionName: Name): void {
-        function sortBy(t: Type): string {
-            const kind = t.kind;
-            if (kind === "class") return kind;
-            return "_" + kind;
-        }
+        // function sortBy(t: Type): string {
+        //     const kind = t.kind;
+        //     if (kind === "class") return kind;
+        //     return "_" + kind;
+        // }
 
         this.emitDescription(this.descriptionForType(u));
 
