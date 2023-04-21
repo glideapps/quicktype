@@ -178,10 +178,6 @@ jobs:
               if: ${{ contains(matrix.fixture, 'scala3') }}
             - run: QUICKTEST=true FIXTURE=${{ matrix.fixture }} npm test
 
-            - run: echo '@main def hello() = println("We need this spam print statement for bloop to exit correctly...")' | scala-cli _
-              if: ${{ contains(matrix.fixture, 'scala3-upickle') }}
-            - run: QUICKTEST=true FIXTURE=${{ matrix.fixture }} npm test
-
     test-complete:
         needs: test
         runs-on: ubuntu-latest

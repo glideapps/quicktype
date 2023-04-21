@@ -351,6 +351,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
             let count = c.getProperties().size;
             let first = true;
             this.forEachClassProperty(c, "none", (_, jsonName, p) => {
+                //console.log(jsonName); // Why is this in different order!!!!!!
                 const nullable = p.type.kind === "union" && nullableFromUnion(p.type as UnionType) !== null;
                 const nullableOrOptional = p.isOptional || p.type.kind === "null" || nullable;
                 const last = --count === 0;
@@ -395,7 +396,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
     }
 
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
-        console.log("vanilla");
+        //console.log("vanilla");
         this.emitDescription(this.descriptionForType(e));
 
         this.emitBlock(
@@ -406,7 +407,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
                     this.emitItem("\t case ");
                 }
                 this.forEachEnumCase(e, "none", (name, jsonName) => {
-                    console.log(jsonName);
+                    //console.log(jsonName);
                     if (!(jsonName == "")) {
                         const backticks =
                             shouldAddBacktick(jsonName) ||
@@ -749,7 +750,7 @@ export class CirceRenderer extends Scala3Renderer {
             arrayType => ["Encoder.encodeSeq[", this.scalaType(arrayType.items), "].apply(", paramName, ")"],
             classType => ["Encoder.AsObject[", this.scalaType(classType), "].apply(", paramName, ")"],
             mapType => ["Encoder.encodeMap[String,", this.scalaType(mapType.values), "].apply(", paramName, ")"],
-            _ => ["Encoder.encodeString(", paramName, ")"],
+            enumType => ["summon[Encoder[", this.scalaType(enumType), "]].apply(", paramName, ")"],
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
@@ -781,24 +782,105 @@ export class CirceRenderer extends Scala3Renderer {
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
 
-        this.ensureBlankLine();
-        this.emitItem(["type ", enumName, " = "]);
-        let count = e.cases.size;
+        let hasBlank = false;
         this.forEachEnumCase(e, "none", (_, jsonName) => {
-            // if (!(jsonName == "")) {
-            /*                 const backticks = 
-                                shouldAddBacktick(jsonName) || 
-                                jsonName.includes(" ") || 
-                                !isNaN(parseInt(jsonName.charAt(0)))
-                            if (backticks) {this.emitItem("`")} else  */
-            this.emitItem(['"', jsonName, '"']);
-            //                if (backticks) {this.emitItem("`")}
-            if (--count > 0) this.emitItem([" | "]);
-            //} else {
-            //--count
-            //}
+            if (jsonName.trim() == "") {
+                hasBlank = true;
+            }
         });
         this.ensureBlankLine();
+
+        const isBlank = (str: string): boolean => !str.trim();
+
+        if (hasBlank) {
+            //console.log("enumName: " + enumName + " has blank");
+            this.emitItem(["type ", enumName, ' = "" | ', enumName, "NonBlank"]);
+            this.ensureBlankLine();
+            this.emitLine([
+                "given ",
+                enumName,
+                "Enc: Encoder[",
+                enumName,
+                "] = Encoder.encodeString.contramap(_.toString())"
+            ]);
+            this.emitLine(["given ", enumName, "Dec: Decoder[", enumName, "] = List[Decoder[", enumName, "]]("]);
+            this.indent(() => {
+                this.emitLine('Decoder[""].widen,');
+                this.emitLine(["Decoder[", enumName, "NonBlank].widen"]);
+            });
+            this.emitLine(").reduceLeft(_ or _)");
+
+            let count = e.cases.size - 1;
+
+            this.ensureBlankLine();
+            //let count = e.cases.size;
+            this.ensureBlankLine();
+            this.emitLine(["enum ", enumName, "NonBlank :"]);
+            this.indent(() => {
+                let count = e.cases.size;
+
+                this.forEachEnumCase(e, "none", (_, jsonName) => {
+                    let strBuild = "";
+                    const backticks =
+                        shouldAddBacktick(jsonName) || jsonName.includes(" ") || !isNaN(parseInt(jsonName.charAt(0)));
+                    if (!isBlank(jsonName)) {
+                        this.emitItem(["case "]);
+                    }
+                    if (backticks) {
+                        strBuild = strBuild + "`";
+                    }
+                    strBuild = strBuild + jsonName;
+                    if (backticks) {
+                        strBuild = strBuild + "`";
+                    }
+                    if (--count > 0) strBuild + ",";
+                    // don't emit the blank case
+                    if (!isBlank(jsonName)) {
+                        this.emitLine([strBuild]);
+                    }
+                });
+            });
+
+            this.emitLine([
+                "given Decoder[",
+                enumName,
+                "NonBlank] = Decoder.decodeString.emapTry(x => Try(",
+                enumName,
+                "NonBlank.valueOf(x) ))"
+            ]);
+            this.emitLine("given Encoder[", enumName, "NonBlank] = Encoder.encodeString.contramap(_.toString())");
+        } else {
+            //console.log("enumName: " + enumName + " has non blank");
+            this.emitLine(["enum ", enumName, " : "]);
+
+            this.indent(() => {
+                let count = e.cases.size;
+                this.forEachEnumCase(e, "none", (_, jsonName) => {
+                    let strBuild = "";
+                    const backticks =
+                        shouldAddBacktick(jsonName) || jsonName.includes(" ") || !isNaN(parseInt(jsonName.charAt(0)));
+                    this.emitItem(["case "]);
+                    if (backticks) {
+                        strBuild = strBuild + "`";
+                    }
+                    strBuild = strBuild + jsonName;
+                    if (backticks) {
+                        strBuild = strBuild + "`";
+                    }
+                    if (--count > 0) strBuild + ",";
+                    this.emitLine([strBuild]);
+                });
+            });
+            this.emitLine([
+                "given Decoder[",
+                enumName,
+                "] = Decoder.decodeString.emapTry(x => Try(",
+                enumName,
+                ".valueOf(x) )) "
+            ]);
+            this.emitLine(["given Encoder[", enumName, "] = Encoder.encodeString.contramap(_.toString())"]);
+            this.ensureBlankLine();
+        }
     }
 
     protected emitHeader(): void {
@@ -811,12 +893,12 @@ export class CirceRenderer extends Scala3Renderer {
         this.ensureBlankLine();
 
         this.emitLine("// For serialising string unions");
-        this.emitLine(
-            "given [A <: Singleton](using A <:< String): Decoder[A] = Decoder.decodeString.emapTry(x => Try(x.asInstanceOf[A])) "
-        );
-        this.emitLine(
-            "given [A <: Singleton](using ev: A <:< String): Encoder[A] = Encoder.encodeString.contramap(ev) "
-        );
+        // this.emitLine(
+        //     "given [A <: Singleton](using A <:< String): Decoder[A] = Decoder.decodeString.emapTry(x => Try(x.asInstanceOf[A])) "
+        // );
+        // this.emitLine(
+        //     "given [A <: Singleton](using ev: A <:< String): Encoder[A] = Encoder.encodeString.contramap(ev) "
+        // );
         this.ensureBlankLine();
         this.emitLine("// If a union has a null in, then we'll need this too... ");
         this.emitLine("type NullValue = None.type");
@@ -828,9 +910,9 @@ export class CirceRenderer extends Scala3Renderer {
         this.emitLine([
             "given (using ev : ",
             elementType,
-            "): Encoder[Map[String,",
+            "): Encoder[Seq[",
             elementType,
-            "]] = Encoder.encodeMap[String, ",
+            "]] = Encoder.encodeSeq[",
             elementType,
             "]"
         ]);
