@@ -810,8 +810,6 @@ export class CirceRenderer extends Scala3Renderer {
             });
             this.emitLine(").reduceLeft(_ or _)");
 
-            let count = e.cases.size - 1;
-
             this.ensureBlankLine();
             //let count = e.cases.size;
             this.ensureBlankLine();
