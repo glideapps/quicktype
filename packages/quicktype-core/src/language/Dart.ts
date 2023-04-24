@@ -194,8 +194,8 @@ function dartNameStyle(startWithUpper: boolean, upperUnderscore: boolean, origin
     const firstWordStyle = upperUnderscore
         ? allUpperWordStyle
         : startWithUpper
-        ? firstUpperWordStyle
-        : allLowerWordStyle;
+            ? firstUpperWordStyle
+            : allLowerWordStyle;
     const restWordStyle = upperUnderscore ? allUpperWordStyle : firstUpperWordStyle;
     return combineWords(
         words,
@@ -372,8 +372,8 @@ export class DartRenderer extends ConvenienceRenderer {
         this.emitLine("}");
     }
 
-    protected dartType(t: Type, withIssues = false): Sourcelike {
-        const nullable = this._options.nullSafety && t.isNullable && !this._options.requiredProperties;
+    protected dartType(t: Type, withIssues = false, forceNullable = false): Sourcelike {
+        const nullable = forceNullable || (this._options.nullSafety && t.isNullable && !this._options.requiredProperties);
         const withNullable = (s: Sourcelike): Sourcelike => (nullable ? [s, "?"] : s);
         return matchType<Sourcelike>(
             t,
@@ -588,6 +588,128 @@ export class DartRenderer extends ConvenienceRenderer {
         );
     }
 
+
+    private _emitEmptyConstructor(className: Name): void {
+        this.emitLine(className, "();");
+    }
+
+    private _emitConstructor(c: ClassType, className: Name): void {
+        this.emitLine(className, "({");
+        this.indent(() => {
+            this.forEachClassProperty(c, "none", (name, _, prop) => {
+                const required =
+                    this._options.requiredProperties || (this._options.nullSafety && !prop.type.isNullable);
+                this.emitLine(required ? "required " : "", "this.", name, ",");
+            });
+        });
+        this.emitLine("});");
+        this.ensureBlankLine();
+    }
+
+    private _emitVariables(c: ClassType): void {
+        this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+            const description = this.descriptionForClassProperty(c, jsonName);
+            if (description !== undefined) {
+                this.emitDescription(description);
+            }
+
+            if (this._options.useHive) {
+                this.classPropertyCounter++;
+                this.emitLine(`@HiveField(${this.classPropertyCounter})`);
+            }
+
+            this.emitLine(
+                this._options.finalProperties ? "final " : "",
+                this.dartType(p.type, true),
+                " ",
+                name,
+                ";"
+            );
+        });
+    }
+
+    private _emitCopyConstructor(c: ClassType, className: Name): void {
+        this.ensureBlankLine();
+        this.emitLine(className, " copyWith({");
+        this.indent(() => {
+            this.forEachClassProperty(c, "none", (name, _, _p) => {
+                this.emitLine(this.dartType(_p.type, true, true), " ", name, ",");
+            });
+        });
+        this.emitLine("}) => ");
+        this.indent(() => {
+            this.emitLine(className, "(");
+            this.indent(() => {
+                this.forEachClassProperty(c, "none", (name, _, _p) => {
+                    this.emitLine(name, ": ", name, " ?? ", "this.", name, ",");
+                });
+            });
+            this.emitLine(");");
+        });
+    }
+
+    private _emitStringJsonEncoderDecoder(className: Name): void {
+        this.ensureBlankLine();
+        this.emitLine(
+            "factory ",
+            className,
+            ".from",
+            this._options.methodNamesWithMap ? "Json" : "RawJson",
+            "(String str) => ",
+            className,
+            ".",
+            this.fromJson,
+            "(json.decode(str));"
+        );
+
+        this.ensureBlankLine();
+        this.emitLine(
+            "String ",
+            this._options.methodNamesWithMap ? "toJson() => " : "toRawJson() => ",
+            "json.encode(",
+            this.toJson,
+            "());"
+        );
+    }
+
+    private _emitMapEncoderDecoder(c: ClassType, className: Name): void {
+        this.ensureBlankLine();
+        this.emitLine("factory ", className, ".", this.fromJson, "(Map<String, dynamic> json) => ", className, "(");
+        this.indent(() => {
+            this.forEachClassProperty(c, "none", (name, jsonName, property) => {
+                this.emitLine(
+                    name,
+                    ": ",
+                    this.fromDynamicExpression(
+                        property.type.isNullable,
+                        property.type,
+                        'json["',
+                        stringEscape(jsonName),
+                        '"]'
+                    ),
+                    ","
+                );
+            });
+        });
+        this.emitLine(");");
+
+        this.ensureBlankLine();
+
+        this.emitLine("Map<String, dynamic> ", this.toJson, "() => {");
+        this.indent(() => {
+            this.forEachClassProperty(c, "none", (name, jsonName, property) => {
+                this.emitLine(
+                    '"',
+                    stringEscape(jsonName),
+                    '": ',
+                    this.toDynamicExpression(property.type.isNullable, property.type, name),
+                    ","
+                );
+            });
+        });
+        this.emitLine("};");
+    }
+
     protected emitClassDefinition(c: ClassType, className: Name): void {
         this.emitDescription(this.descriptionForType(c));
         if (this._options.useHive) {
@@ -597,121 +719,24 @@ export class DartRenderer extends ConvenienceRenderer {
         }
         this.emitBlock(["class ", className], () => {
             if (c.getProperties().size === 0) {
-                this.emitLine(className, "();");
+                this._emitEmptyConstructor(className);
             } else {
-                this.emitLine(className, "({");
-                this.indent(() => {
-                    this.forEachClassProperty(c, "none", (name, _, prop) => {
-                        const required =
-                            this._options.requiredProperties || (this._options.nullSafety && !prop.type.isNullable);
-                        this.emitLine(required ? "required " : "", "this.", name, ",");
-                    });
-                });
-                this.emitLine("});");
+                this._emitVariables(c);
                 this.ensureBlankLine();
-
-                this.forEachClassProperty(c, "none", (name, jsonName, p) => {
-                    const description = this.descriptionForClassProperty(c, jsonName);
-                    if (description !== undefined) {
-                        this.emitDescription(description);
-                    }
-
-                    if (this._options.useHive) {
-                        this.classPropertyCounter++;
-                        this.emitLine(`@HiveField(${this.classPropertyCounter})`);
-                    }
-
-                    this.emitLine(
-                        this._options.finalProperties ? "final " : "",
-                        this.dartType(p.type, true),
-                        " ",
-                        name,
-                        ";"
-                    );
-                });
+                this._emitConstructor(c, className);
             }
 
             if (this._options.generateCopyWith) {
-                this.ensureBlankLine();
-                this.emitLine(className, " copyWith({");
-                this.indent(() => {
-                    this.forEachClassProperty(c, "none", (name, _, _p) => {
-                        this.emitLine(this.dartType(_p.type, true), " ", name, ",");
-                    });
-                });
-                this.emitLine("}) => ");
-                this.indent(() => {
-                    this.emitLine(className, "(");
-                    this.indent(() => {
-                        this.forEachClassProperty(c, "none", (name, _, _p) => {
-                            this.emitLine(name, ": ", name, " ?? ", "this.", name, ",");
-                        });
-                    });
-                    this.emitLine(");");
-                });
+                this._emitCopyConstructor(c, className);
             }
 
             if (this._options.justTypes) return;
 
             if (this._options.codersInClass) {
-                this.ensureBlankLine();
-                this.emitLine(
-                    "factory ",
-                    className,
-                    ".from",
-                    this._options.methodNamesWithMap ? "Json" : "RawJson",
-                    "(String str) => ",
-                    className,
-                    ".",
-                    this.fromJson,
-                    "(json.decode(str));"
-                );
-
-                this.ensureBlankLine();
-                this.emitLine(
-                    "String ",
-                    this._options.methodNamesWithMap ? "toJson() => " : "toRawJson() => ",
-                    "json.encode(",
-                    this.toJson,
-                    "());"
-                );
+                this._emitStringJsonEncoderDecoder(className);
             }
 
-            this.ensureBlankLine();
-            this.emitLine("factory ", className, ".", this.fromJson, "(Map<String, dynamic> json) => ", className, "(");
-            this.indent(() => {
-                this.forEachClassProperty(c, "none", (name, jsonName, property) => {
-                    this.emitLine(
-                        name,
-                        ": ",
-                        this.fromDynamicExpression(
-                            property.type.isNullable,
-                            property.type,
-                            'json["',
-                            stringEscape(jsonName),
-                            '"]'
-                        ),
-                        ","
-                    );
-                });
-            });
-            this.emitLine(");");
-
-            this.ensureBlankLine();
-
-            this.emitLine("Map<String, dynamic> ", this.toJson, "() => {");
-            this.indent(() => {
-                this.forEachClassProperty(c, "none", (name, jsonName, property) => {
-                    this.emitLine(
-                        '"',
-                        stringEscape(jsonName),
-                        '": ',
-                        this.toDynamicExpression(property.type.isNullable, property.type, name),
-                        ","
-                    );
-                });
-            });
-            this.emitLine("};");
+            this._emitMapEncoderDecoder(c, className);
         });
     }
 
@@ -789,38 +814,42 @@ export class DartRenderer extends ConvenienceRenderer {
 }`);
     }
 
+    private _emitTopLvlEncoderDecoder(): void {
+        this.forEachTopLevel("leading-and-interposing", (t, name) => {
+            const { encoder, decoder } = defined(this._topLevelDependents.get(name));
+
+            this.emitLine(
+                this.dartType(t),
+                " ",
+                decoder,
+                "(String str) => ",
+                this.fromDynamicExpression(t.isNullable, t, "json.decode(str)"),
+                ";"
+            );
+
+            this.ensureBlankLine();
+
+            this.emitLine(
+                "String ",
+                encoder,
+                "(",
+                this.dartType(t),
+                " data) => json.encode(",
+                this.toDynamicExpression(t.isNullable, t, "data"),
+                ");"
+            );
+
+            // this.emitBlock(["String ", encoder, "(", this.dartType(t), " data)"], () => {
+            //     this.emitJsonEncoderBlock(t);
+            // });
+        });
+    }
+
     protected emitSourceStructure(): void {
         this.emitFileHeader();
 
         if (!this._options.justTypes && !this._options.codersInClass) {
-            this.forEachTopLevel("leading-and-interposing", (t, name) => {
-                const { encoder, decoder } = defined(this._topLevelDependents.get(name));
-
-                this.emitLine(
-                    this.dartType(t),
-                    " ",
-                    decoder,
-                    "(String str) => ",
-                    this.fromDynamicExpression(t.isNullable, t, "json.decode(str)"),
-                    ";"
-                );
-
-                this.ensureBlankLine();
-
-                this.emitLine(
-                    "String ",
-                    encoder,
-                    "(",
-                    this.dartType(t),
-                    " data) => json.encode(",
-                    this.toDynamicExpression(t.isNullable, t, "data"),
-                    ");"
-                );
-
-                // this.emitBlock(["String ", encoder, "(", this.dartType(t), " data)"], () => {
-                //     this.emitJsonEncoderBlock(t);
-                // });
-            });
+            this._emitTopLvlEncoderDecoder();
         }
 
         this.forEachNamedType(
