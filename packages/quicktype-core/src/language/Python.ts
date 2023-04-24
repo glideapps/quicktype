@@ -275,7 +275,7 @@ export class PythonRenderer extends ConvenienceRenderer {
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
         if (lines.length === 1) {
-            this.emitLine('"""', lines[0], '"""');
+            this.emitLine('"""', lines[0], ' """');
         } else {
             this.emitCommentLines(lines, "", undefined, '"""', '"""');
         }
