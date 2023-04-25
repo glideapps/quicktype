@@ -1299,13 +1299,13 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             res.set(jsonName, [
                 this.constraintMember(jsonName),
                 "(", 
-                minMax !== undefined && minMax[0] !== undefined && cppType == "int64_t" ? String(minMax[0]) : this._nulloptType,
+                minMax !== undefined && minMax[0] !== undefined && cppType === "int64_t" ? String(minMax[0]) : this._nulloptType,
                 ", ",
-                minMax !== undefined && minMax[1] !== undefined && cppType == "int64_t" ? String(minMax[1]) : this._nulloptType,
+                minMax !== undefined && minMax[1] !== undefined && cppType === "int64_t" ? String(minMax[1]) : this._nulloptType,
                 ", ",
-                minMax !== undefined && minMax[0] !== undefined && cppType == "double" ? String(minMax[0]) : this._nulloptType,
+                minMax !== undefined && minMax[0] !== undefined && cppType === "double" ? String(minMax[0]) : this._nulloptType,
                 ", ",
-                minMax !== undefined && minMax[1] !== undefined && cppType == "double" ? String(minMax[1]) : this._nulloptType,
+                minMax !== undefined && minMax[1] !== undefined && cppType === "double" ? String(minMax[1]) : this._nulloptType,
                 ", ",
                 minMaxLength !== undefined && minMaxLength[0] !== undefined
                     ? String(minMaxLength[0])
