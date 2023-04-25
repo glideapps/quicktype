@@ -276,7 +276,7 @@ export class PythonRenderer extends ConvenienceRenderer {
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
         if (lines.length === 1) {
             const docstring = modifySource(content => {
-                if (content.length > 0 && content[content.length - 1] === '"') {
+                if (content.endsWith('"')) {
                     return content.slice(0, -1) + '\\"';
                 }
 
