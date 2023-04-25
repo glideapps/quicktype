@@ -302,7 +302,6 @@ export enum GlobalNames {
     CheckConstraint
 }
 
-//TODO add double member here
 export enum MemberNames {
     MinIntValue,
     GetMinIntValue,
@@ -310,6 +309,12 @@ export enum MemberNames {
     MaxIntValue,
     GetMaxIntValue,
     SetMaxIntValue,
+    MinDoubleValue,
+    GetMinDoubleValue,
+    SetMinDoubleValue,
+    MaxDoubleValue,
+    GetMaxDoubleValue,
+    SetMaxDoubleValue,
     MinLength,
     GetMinLength,
     SetMinLength,
@@ -632,7 +637,6 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
     protected getConstraintMembers(): ConstraintMember[] {
         return [
-            //TODO add double member here
             {
                 name: MemberNames.MinIntValue,
                 getter: MemberNames.GetMinIntValue,
@@ -644,6 +648,18 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 getter: MemberNames.GetMaxIntValue,
                 setter: MemberNames.SetMaxIntValue,
                 cppType: "int64_t"
+            },
+            {
+                name: MemberNames.MinDoubleValue,
+                getter: MemberNames.GetMinDoubleValue,
+                setter: MemberNames.SetMinDoubleValue,
+                cppType: "double"
+            },
+            {
+                name: MemberNames.MaxDoubleValue,
+                getter: MemberNames.GetMaxDoubleValue,
+                setter: MemberNames.SetMaxDoubleValue,
+                cppType: "double"
             },
             {
                 name: MemberNames.MinLength,
@@ -2091,11 +2107,82 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitLine("auto ", getterName, "() const { return ", memberName, "; }");
     }
 
+    protected emitNumericCheckConstraints(checkConst: string, classConstraint: string, getterMinValue: string, getterMaxValue: string, cppType: string): void {
+        this.emitBlock(
+            [
+                "inline void ",
+                checkConst,
+                "(",
+                this._stringType.getConstType(),
+                " name, ",
+                this.withConst(classConstraint),
+                " & c, ",
+                cppType,
+                " value)"
+            ],
+            false,
+            () => {
+                this.emitBlock(
+                    ["if (c.", getterMinValue, "() != ", this._nulloptType, " && value < *c.", getterMinValue, "())"],
+                    false,
+                    () => {
+                        this.emitLine(
+                            "throw ",
+                            this.lookupGlobalName(GlobalNames.ValueTooLowException),
+                            " (",
+                            this._stringType.createStringLiteral(["Value too low for "]),
+                            " + name + ",
+                            this._stringType.createStringLiteral([" ("]),
+                            " + ",
+                            this._stringType.wrapToString(["value"]),
+                            " + ",
+                            this._stringType.createStringLiteral(["<"]),
+                            " + ",
+                            this._stringType.wrapToString(["*c.", getterMinValue, "()"]),
+                            " + ",
+                            this._stringType.createStringLiteral([")"]),
+                            ");"
+                        );
+                    }
+                );
+                this.ensureBlankLine();
+
+                this.emitBlock(
+                    ["if (c.", getterMaxValue, "() != ", this._nulloptType, " && value > *c.", getterMaxValue, "())"],
+                    false,
+                    () => {
+                        this.emitLine(
+                            "throw ",
+                            this.lookupGlobalName(GlobalNames.ValueTooHighException),
+                            " (",
+                            this._stringType.createStringLiteral(["Value too high for "]),
+                            " + name + ",
+                            this._stringType.createStringLiteral([" ("]),
+                            " + ",
+                            this._stringType.wrapToString(["value"]),
+                            " + ",
+                            this._stringType.createStringLiteral([">"]),
+                            " + ",
+                            this._stringType.wrapToString(["*c.", getterMaxValue, "()"]),
+                            " + ",
+                            this._stringType.createStringLiteral([")"]),
+                            ");"
+                        );
+                    }
+                );
+                this.ensureBlankLine();
+            }
+        );
+        this.ensureBlankLine();
+    }
+
     protected emitConstraintClasses(): void {
         const ourQualifier = this.ourQualifier(false) as string;
 
         const getterMinIntValue = this.lookupMemberName(MemberNames.GetMinIntValue);
         const getterMaxIntValue = this.lookupMemberName(MemberNames.GetMaxIntValue);
+        const getterMinDoubleValue = this.lookupMemberName(MemberNames.GetMinDoubleValue);
+        const getterMaxDoubleValue = this.lookupMemberName(MemberNames.GetMaxDoubleValue);
         const getterMinLength = this.lookupMemberName(MemberNames.GetMinLength);
         const getterMaxLength = this.lookupMemberName(MemberNames.GetMaxLength);
         const getterPattern = this.lookupMemberName(MemberNames.GetPattern);
@@ -2174,70 +2261,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
 
         const checkConst = this.lookupGlobalName(GlobalNames.CheckConstraint);
-        this.emitBlock(
-            [
-                "inline void ",
-                checkConst,
-                "(",
-                this._stringType.getConstType(),
-                " name, ",
-                this.withConst(classConstraint),
-                " & c, int64_t value)"
-            ],
-            false,
-            () => {
-                this.emitBlock(
-                    ["if (c.", getterMinIntValue, "() != ", this._nulloptType, " && value < *c.", getterMinIntValue, "())"],
-                    false,
-                    () => {
-                        this.emitLine(
-                            "throw ",
-                            this.lookupGlobalName(GlobalNames.ValueTooLowException),
-                            " (",
-                            this._stringType.createStringLiteral(["Value too low for "]),
-                            " + name + ",
-                            this._stringType.createStringLiteral([" ("]),
-                            " + ",
-                            this._stringType.wrapToString(["value"]),
-                            " + ",
-                            this._stringType.createStringLiteral(["<"]),
-                            " + ",
-                            this._stringType.wrapToString(["*c.", getterMinIntValue, "()"]),
-                            " + ",
-                            this._stringType.createStringLiteral([")"]),
-                            ");"
-                        );
-                    }
-                );
-                this.ensureBlankLine();
-
-                this.emitBlock(
-                    ["if (c.", getterMaxIntValue, "() != ", this._nulloptType, " && value > *c.", getterMaxIntValue, "())"],
-                    false,
-                    () => {
-                        this.emitLine(
-                            "throw ",
-                            this.lookupGlobalName(GlobalNames.ValueTooHighException),
-                            " (",
-                            this._stringType.createStringLiteral(["Value too high for "]),
-                            " + name + ",
-                            this._stringType.createStringLiteral([" ("]),
-                            " + ",
-                            this._stringType.wrapToString(["value"]),
-                            " + ",
-                            this._stringType.createStringLiteral([">"]),
-                            " + ",
-                            this._stringType.wrapToString(["*c.", getterMaxIntValue, "()"]),
-                            " + ",
-                            this._stringType.createStringLiteral([")"]),
-                            ");"
-                        );
-                    }
-                );
-                this.ensureBlankLine();
-            }
-        );
-        this.ensureBlankLine();
+        this.emitNumericCheckConstraints(checkConst, classConstraint, getterMinIntValue, getterMaxIntValue, "int64_t");
+        this.emitNumericCheckConstraints(checkConst, classConstraint, getterMinDoubleValue, getterMaxDoubleValue, "double");
 
         this.emitBlock(
             [
