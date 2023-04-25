@@ -302,13 +302,14 @@ export enum GlobalNames {
     CheckConstraint
 }
 
+//TODO add double member here
 export enum MemberNames {
-    MinValue,
-    GetMinValue,
-    SetMinValue,
-    MaxValue,
-    GetMaxValue,
-    SetMaxValue,
+    MinIntValue,
+    GetMinIntValue,
+    SetMinIntValue,
+    MaxIntValue,
+    GetMaxIntValue,
+    SetMaxIntValue,
     MinLength,
     GetMinLength,
     SetMinLength,
@@ -631,16 +632,17 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
     protected getConstraintMembers(): ConstraintMember[] {
         return [
+            //TODO add double member here
             {
-                name: MemberNames.MinValue,
-                getter: MemberNames.GetMinValue,
-                setter: MemberNames.SetMinValue,
+                name: MemberNames.MinIntValue,
+                getter: MemberNames.GetMinIntValue,
+                setter: MemberNames.SetMinIntValue,
                 cppType: "int64_t"
             },
             {
-                name: MemberNames.MaxValue,
-                getter: MemberNames.GetMaxValue,
-                setter: MemberNames.SetMaxValue,
+                name: MemberNames.MaxIntValue,
+                getter: MemberNames.GetMaxIntValue,
+                setter: MemberNames.SetMaxIntValue,
                 cppType: "int64_t"
             },
             {
@@ -1261,6 +1263,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     protected generateClassConstraints(c: ClassType): Map<string, Sourcelike> | undefined {
         let res: Map<string, Sourcelike> = new Map<string, Sourcelike>();
         this.forEachClassProperty(c, "none", (_name, jsonName, property) => {
+            //TODO here integer/double necessary
             const constraints = constraintsForType(property.type);
             if (constraints === undefined) return;
             const { minMax, minMaxLength, pattern } = constraints;
@@ -2091,8 +2094,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     protected emitConstraintClasses(): void {
         const ourQualifier = this.ourQualifier(false) as string;
 
-        const getterMinValue = this.lookupMemberName(MemberNames.GetMinValue);
-        const getterMaxValue = this.lookupMemberName(MemberNames.GetMaxValue);
+        const getterMinIntValue = this.lookupMemberName(MemberNames.GetMinIntValue);
+        const getterMaxIntValue = this.lookupMemberName(MemberNames.GetMaxIntValue);
         const getterMinLength = this.lookupMemberName(MemberNames.GetMinLength);
         const getterMaxLength = this.lookupMemberName(MemberNames.GetMaxLength);
         const getterPattern = this.lookupMemberName(MemberNames.GetPattern);
@@ -2184,7 +2187,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             false,
             () => {
                 this.emitBlock(
-                    ["if (c.", getterMinValue, "() != ", this._nulloptType, " && value < *c.", getterMinValue, "())"],
+                    ["if (c.", getterMinIntValue, "() != ", this._nulloptType, " && value < *c.", getterMinIntValue, "())"],
                     false,
                     () => {
                         this.emitLine(
@@ -2199,7 +2202,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             " + ",
                             this._stringType.createStringLiteral(["<"]),
                             " + ",
-                            this._stringType.wrapToString(["*c.", getterMinValue, "()"]),
+                            this._stringType.wrapToString(["*c.", getterMinIntValue, "()"]),
                             " + ",
                             this._stringType.createStringLiteral([")"]),
                             ");"
@@ -2209,7 +2212,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.ensureBlankLine();
 
                 this.emitBlock(
-                    ["if (c.", getterMaxValue, "() != ", this._nulloptType, " && value > *c.", getterMaxValue, "())"],
+                    ["if (c.", getterMaxIntValue, "() != ", this._nulloptType, " && value > *c.", getterMaxIntValue, "())"],
                     false,
                     () => {
                         this.emitLine(
@@ -2224,7 +2227,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             " + ",
                             this._stringType.createStringLiteral([">"]),
                             " + ",
-                            this._stringType.wrapToString(["*c.", getterMaxValue, "()"]),
+                            this._stringType.wrapToString(["*c.", getterMaxIntValue, "()"]),
                             " + ",
                             this._stringType.createStringLiteral([")"]),
                             ");"
