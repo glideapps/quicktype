@@ -978,7 +978,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 }
             }
         }
-        let typeSource = matchType<Sourcelike>(
+        const typeSource = matchType<Sourcelike>(
             t,
             _anyType => {
                 isOptional = false;
@@ -1277,7 +1277,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected generateClassConstraints(c: ClassType): Map<string, Sourcelike> | undefined {
-        let res: Map<string, Sourcelike> = new Map<string, Sourcelike>();
+        const res: Map<string, Sourcelike> = new Map<string, Sourcelike>();
         this.forEachClassProperty(c, "none", (_name, jsonName, property) => {
             const constraints = constraintsForType(property.type);
             if (constraints === undefined) return;
@@ -1535,7 +1535,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                                 const [maybeNull, nonNulls] = removeNullFromUnion(t, true);
                                 return [maybeNull !== null || p.isOptional, nonNulls];
                             } else {
-                                let set = new Set<Type>();
+                                const set = new Set<Type>();
                                 set.add(t);
                                 return [true, set];
                             }
@@ -1671,7 +1671,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     } else {
                         getter = [name];
                     }
-                    let assignment: Sourcelike[] = [
+                    const assignment: Sourcelike[] = [
                         "j[",
                         this._stringType.wrapEncodingChange(
                             [ourQualifier],
@@ -1808,7 +1808,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             true,
                             false
                         );
-                        let toType = this.cppType(
+                        const toType = this.cppType(
                             typeForKind,
                             {
                                 needsForwardIndirection: true,
@@ -2206,7 +2206,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
         this.emitBlock(["class ", classConstraint], true, () => {
             this.emitLine("private:");
-            let constraintMembers: ConstraintMember[] = this.getConstraintMembers();
+            const constraintMembers: ConstraintMember[] = this.getConstraintMembers();
             for (const member of constraintMembers) {
                 this.emitMember([this._optionalType, "<", member.cppType, ">"], this.lookupMemberName(member.name));
             }
@@ -2624,8 +2624,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.ensureBlankLine();
             }
         } else {
-            let userNamespaceForwardDecls = this.gatherUserNamespaceForwardDecls();
-            let nlohmannNamespaceForwardDecls = this.gatherNlohmannNamespaceForwardDecls();
+            const userNamespaceForwardDecls = this.gatherUserNamespaceForwardDecls();
+            const nlohmannNamespaceForwardDecls = this.gatherNlohmannNamespaceForwardDecls();
 
             if (userNamespaceForwardDecls.length == 0 && nlohmannNamespaceForwardDecls.length > 0) {
                 this.emitNamespaces(["nlohmann"], () => {
@@ -2683,7 +2683,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         for (const t of propTypes) {
             const typeName = this.sourcelikeToString(t.name);
 
-            let propRecord: IncludeRecord = { kind: undefined, typeKind: undefined };
+            const propRecord: IncludeRecord = { kind: undefined, typeKind: undefined };
 
             if (t.type instanceof ClassType) {
                 /**
@@ -2735,7 +2735,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
          * Need to generate "includes", in terms 'c' has members, which
          * are defined by others
          */
-        let includes: IncludeMap = new Map();
+        const includes: IncludeMap = new Map();
 
         if (c instanceof UnionType) {
             this.updateIncludes(false, includes, c, defName);
@@ -2916,7 +2916,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected isConversionRequired(t: Type) {
-        let originalType = this.cppType(
+        const originalType = this.cppType(
             t,
             {
                 needsForwardIndirection: true,
@@ -2928,7 +2928,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             false
         );
 
-        let newType = this.cppType(
+        const newType = this.cppType(
             t,
             {
                 needsForwardIndirection: true,
