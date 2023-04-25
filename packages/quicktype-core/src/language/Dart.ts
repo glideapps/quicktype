@@ -194,8 +194,8 @@ function dartNameStyle(startWithUpper: boolean, upperUnderscore: boolean, origin
     const firstWordStyle = upperUnderscore
         ? allUpperWordStyle
         : startWithUpper
-            ? firstUpperWordStyle
-            : allLowerWordStyle;
+        ? firstUpperWordStyle
+        : allLowerWordStyle;
     const restWordStyle = upperUnderscore ? allUpperWordStyle : firstUpperWordStyle;
     return combineWords(
         words,
@@ -373,7 +373,8 @@ export class DartRenderer extends ConvenienceRenderer {
     }
 
     protected dartType(t: Type, withIssues = false, forceNullable = false): Sourcelike {
-        const nullable = forceNullable || (this._options.nullSafety && t.isNullable && !this._options.requiredProperties);
+        const nullable =
+            forceNullable || (this._options.nullSafety && t.isNullable && !this._options.requiredProperties);
         const withNullable = (s: Sourcelike): Sourcelike => (nullable ? [s, "?"] : s);
         return matchType<Sourcelike>(
             t,
@@ -588,7 +589,6 @@ export class DartRenderer extends ConvenienceRenderer {
         );
     }
 
-
     private _emitEmptyConstructor(className: Name): void {
         this.emitLine(className, "();");
     }
@@ -618,13 +618,7 @@ export class DartRenderer extends ConvenienceRenderer {
                 this.emitLine(`@HiveField(${this.classPropertyCounter})`);
             }
 
-            this.emitLine(
-                this._options.finalProperties ? "final " : "",
-                this.dartType(p.type, true),
-                " ",
-                name,
-                ";"
-            );
+            this.emitLine(this._options.finalProperties ? "final " : "", this.dartType(p.type, true), " ", name, ";");
         });
     }
 
