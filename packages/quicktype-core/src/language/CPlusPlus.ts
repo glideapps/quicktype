@@ -1279,17 +1279,33 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     protected generateClassConstraints(c: ClassType): Map<string, Sourcelike> | undefined {
         let res: Map<string, Sourcelike> = new Map<string, Sourcelike>();
         this.forEachClassProperty(c, "none", (_name, jsonName, property) => {
-            //TODO here integer/double necessary
             const constraints = constraintsForType(property.type);
             if (constraints === undefined) return;
             const { minMax, minMaxLength, pattern } = constraints;
 
+            // TODO is there a better way to check if property.type is an interger or a number?
+            const cppType = this.cppType(
+                property.type,
+                {
+                    needsForwardIndirection: true,
+                    needsOptionalIndirection: true,
+                    inJsonNamespace: false
+                },
+                true,
+                false,
+                property.isOptional
+            );            
+
             res.set(jsonName, [
                 this.constraintMember(jsonName),
-                "(",
-                minMax !== undefined && minMax[0] !== undefined ? String(minMax[0]) : this._nulloptType,
+                "(", 
+                minMax !== undefined && minMax[0] !== undefined && cppType == "int64_t" ? String(minMax[0]) : this._nulloptType,
                 ", ",
-                minMax !== undefined && minMax[1] !== undefined ? String(minMax[1]) : this._nulloptType,
+                minMax !== undefined && minMax[1] !== undefined && cppType == "int64_t" ? String(minMax[1]) : this._nulloptType,
+                ", ",
+                minMax !== undefined && minMax[0] !== undefined && cppType == "double" ? String(minMax[0]) : this._nulloptType,
+                ", ",
+                minMax !== undefined && minMax[1] !== undefined && cppType == "double" ? String(minMax[1]) : this._nulloptType,
                 ", ",
                 minMaxLength !== undefined && minMaxLength[0] !== undefined
                     ? String(minMaxLength[0])
