@@ -1166,7 +1166,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     ),
                     name
                 );
-                if (constraints !== undefined && constraints.has(jsonName)) {
+                if (constraints?.has(jsonName)) {
                     /** FIXME!!! NameStyle will/can collide with other Names */
                     const cnst = this.lookupGlobalName(GlobalNames.ClassMemberConstraints);
                     this.emitMember(cnst, this.constraintMember(jsonName));
@@ -1221,7 +1221,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     (property.isOptional && property.type.kind !== "null" && property.type.kind !== "any")
                 ) {
                     this.emitLine(rendered, " ", getterName, "() const { return ", name, "; }");
-                    if (constraints !== undefined && constraints.has(jsonName)) {
+                    if (constraints?.has(jsonName)) {
                         this.emitLine(
                             "void ",
                             setterName,
@@ -1243,7 +1243,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 } else {
                     this.emitLine(this.withConst(rendered), " & ", getterName, "() const { return ", name, "; }");
                     this.emitLine(rendered, " & ", mutableGetterName, "() { return ", name, "; }");
-                    if (constraints !== undefined && constraints.has(jsonName)) {
+                    if (constraints?.has(jsonName)) {
                         this.emitLine(
                             "void ",
                             setterName,
@@ -1299,21 +1299,19 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             res.set(jsonName, [
                 this.constraintMember(jsonName),
                 "(", 
-                minMax !== undefined && minMax[0] !== undefined && cppType === "int64_t" ? String(minMax[0]) : this._nulloptType,
+                minMax?.[0] && cppType === "int64_t" ? String(minMax[0]) : this._nulloptType,
                 ", ",
-                minMax !== undefined && minMax[1] !== undefined && cppType === "int64_t" ? String(minMax[1]) : this._nulloptType,
+                minMax?.[1] && cppType === "int64_t" ? String(minMax[1]) : this._nulloptType,
                 ", ",
-                minMax !== undefined && minMax[0] !== undefined && cppType === "double" ? String(minMax[0]) : this._nulloptType,
+                minMax?.[0] && cppType === "double" ? String(minMax[0]) : this._nulloptType,
                 ", ",
-                minMax !== undefined && minMax[1] !== undefined && cppType === "double" ? String(minMax[1]) : this._nulloptType,
+                minMax?.[1] && cppType === "double" ? String(minMax[1]) : this._nulloptType,
                 ", ",
-                minMaxLength !== undefined && minMaxLength[0] !== undefined
+                minMaxLength?.[0]
                     ? String(minMaxLength[0])
                     : this._nulloptType,
                 ", ",
-                minMaxLength !== undefined && minMaxLength[1] !== undefined
-                    ? String(minMaxLength[1])
-                    : this._nulloptType,
+                minMaxLength?.[1] ? String(minMaxLength[1]) : this._nulloptType,
                 ", ",
                 pattern === undefined
                     ? this._nulloptType
