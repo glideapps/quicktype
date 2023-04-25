@@ -24,7 +24,7 @@ import {
     originalWord
 } from "../support/Strings";
 import { assertNever, panic, defined } from "../support/Support";
-import { Sourcelike, MultiWord, multiWord, singleWord, parenIfNeeded } from "../Source";
+import { Sourcelike, MultiWord, multiWord, singleWord, parenIfNeeded, modifySource } from "../Source";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 import {
     followTargetType,
@@ -275,7 +275,14 @@ export class PythonRenderer extends ConvenienceRenderer {
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
         if (lines.length === 1) {
-            this.emitLine('"""', lines[0], '"""');
+            const docstring = modifySource(content => {
+                if (content.endsWith('"')) {
+                    return content.slice(0, -1) + '\\"';
+                }
+
+                return content;
+            }, lines[0]);
+            this.emitLine('"""', docstring, '"""');
         } else {
             this.emitCommentLines(lines, "", undefined, '"""', '"""');
         }
