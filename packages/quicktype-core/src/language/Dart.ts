@@ -53,6 +53,7 @@ export const dartOptions = {
         "secondary"
     ),
     useHive: new BooleanOption("use-hive", "Generate annotations for Hive type adapters", false, "secondary"),
+    useJsonAnnotation: new BooleanOption("use-json-annotation", "Generate annotations for json_serializable", false, "secondary"),
     partName: new StringOption("part-name", "Use this name in `part` directive", "NAME", "", "secondary")
 };
 
@@ -72,6 +73,7 @@ export class DartTargetLanguage extends TargetLanguage {
             dartOptions.generateCopyWith,
             dartOptions.useFreezed,
             dartOptions.useHive,
+            dartOptions.useJsonAnnotation,
             dartOptions.partName
         ];
     }
@@ -343,9 +345,12 @@ export class DartRenderer extends ConvenienceRenderer {
         if (this._options.useHive) {
             this.emitLine("import 'package:hive/hive.dart';");
         }
+        if (this._options.useJsonAnnotation) {
+            this.emitLine("import 'package:json_annotation/json_annotation.dart';");
+        }
 
         this.emitLine("import 'dart:convert';");
-        if (this._options.useFreezed || this._options.useHive) {
+        if (this._options.useFreezed || this._options.useHive || this._options.useJsonAnnotation) {
             this.ensureBlankLine();
             const optionNameIsEmpty = this._options.partName.length === 0;
             // FIXME: This should use a `Name`, not `modifySource`
@@ -618,6 +623,11 @@ export class DartRenderer extends ConvenienceRenderer {
                 this.emitLine(`@HiveField(${this.classPropertyCounter})`);
             }
 
+            if (this._options.useJsonAnnotation) {
+                this.classPropertyCounter++;
+                this.emitLine(`@JsonKey(name:"${jsonName}")`);
+            }
+
             this.emitLine(this._options.finalProperties ? "final " : "", this.dartType(p.type, true), " ", name, ";");
         });
     }
@@ -711,6 +721,9 @@ export class DartRenderer extends ConvenienceRenderer {
             this.emitLine(`@HiveType(typeId: ${this.classCounter})`);
             this.classPropertyCounter = 0;
         }
+        if(this._options.useJsonAnnotation){
+            this.emitLine(`@JsonSerializable()`);
+        }
         this.emitBlock(["class ", className], () => {
             if (c.getProperties().size === 0) {
                 this._emitEmptyConstructor(className);
@@ -724,13 +737,36 @@ export class DartRenderer extends ConvenienceRenderer {
                 this._emitCopyConstructor(c, className);
             }
 
-            if (this._options.justTypes) return;
+            if(this._options.useJsonAnnotation){
+                this.ensureBlankLine();
+                this.emitLine(
+                    // factory PublicAnswer.fromJson(Map<String, dynamic> json) => _$PublicAnswerFromJson(json);
+                    "factory ",
+                    className,
+                    ".fromJson(Map<String, dynamic> json) => ",
+                    "_$",
+                    className,
+                    "FromJson(json);"
+                );
 
-            if (this._options.codersInClass) {
-                this._emitStringJsonEncoderDecoder(className);
+                this.ensureBlankLine();
+                this.emitLine(
+                    // Map<String, dynamic> toJson() => _$PublicAnswerToJson(this);
+                    "Map<String, dynamic> toJson() => ",
+                    "_$",
+                    className,
+                    "ToJson(this);"
+                );
+            } else {
+                if (this._options.justTypes) return;
+
+                if (this._options.codersInClass) {
+                    this._emitStringJsonEncoderDecoder(className);
+                }
+
+                this._emitMapEncoderDecoder(c, className);
             }
 
-            this._emitMapEncoderDecoder(c, className);
         });
     }
 
