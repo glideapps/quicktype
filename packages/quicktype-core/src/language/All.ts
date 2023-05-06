@@ -24,6 +24,7 @@ import { DartTargetLanguage } from "./Dart";
 import { PythonTargetLanguage } from "./Python";
 import { PikeTargetLanguage } from "./Pike";
 import { HaskellTargetLanguage } from "./Haskell";
+import { TypeScriptZodTargetLanguage } from "./TypeScriptZod";
 import { PhpTargetLanguage } from "./Php";
 
 
@@ -51,6 +52,7 @@ export const all: TargetLanguage[] = [
     new PythonTargetLanguage("Python", ["python", "py"], "py"),
     new PikeTargetLanguage(),
     new HaskellTargetLanguage(),
+    new TypeScriptZodTargetLanguage(),
     new PhpTargetLanguage()
 ];
 
