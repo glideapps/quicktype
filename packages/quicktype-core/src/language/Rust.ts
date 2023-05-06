@@ -449,8 +449,9 @@ export class RustRenderer extends ConvenienceRenderer {
         // Set the default naming style on the enum
         const defaultStyle = "PascalCase";
         const preferedNamingStyle = getPreferedNamingStyle(Object.values(enumCasesNamingStyles).flat(), defaultStyle);
-        if (preferedNamingStyle !== defaultStyle)
+        if (preferedNamingStyle !== defaultStyle) {
             this.emitLine(`#[serde(rename_all = "${preferedNamingStyle}")]`);
+        }
 
         const blankLines = this._options.density === Density.Dense ? "none" : "interposing";
         this.emitBlock(["pub enum ", enumName], () =>
