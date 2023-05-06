@@ -52,15 +52,15 @@ export const rustOptions = {
     leadingComments: new BooleanOption("leading-comments", "Leading Comments", true)
 };
 
-type nameToParts = (name: string) => string[];
-type partsToName = (parts: string[]) => string;
-type namingStyle = {
+type NameToParts = (name: string) => string[];
+type PartsToName = (parts: string[]) => string;
+type NamingStyle = {
     regex: RegExp,
-    toParts: nameToParts,
-    fromParts: partsToName,
+    toParts: NameToParts,
+    fromParts: PartsToName,
 };
 
-const NamingStyle: { [key: string]: namingStyle } = {
+const namingStyles: Record<string, NamingStyle> = {
     "snake_case": {
         regex: /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/,
         toParts: (name: string): string[] => name.split('_'),
@@ -73,7 +73,7 @@ const NamingStyle: { [key: string]: namingStyle } = {
     },
     "camelCase": {
         regex: /^[a-z]+([A-Z0-9][a-z]*)*$/,
-        toParts: (name: string): string[] => NamingStyle.snake_case.toParts(name.replace(/(.)([A-Z])/g, "$1_$2")),
+        toParts: (name: string): string[] => namingStyles.snake_case.toParts(name.replace(/(.)([A-Z])/g, "$1_$2")),
         fromParts: (parts: string[]): string => parts
             .map((p, i) =>
                 i === 0
@@ -83,7 +83,7 @@ const NamingStyle: { [key: string]: namingStyle } = {
     },
     "PascalCase": {
         regex: /^[A-Z][a-z]*([A-Z0-9][a-z]*)*$/,
-        toParts: (name: string): string[] => NamingStyle.snake_case.toParts(name.replace(/(.)([A-Z])/g, "$1_$2")),
+        toParts: (name: string): string[] => namingStyles.snake_case.toParts(name.replace(/(.)([A-Z])/g, "$1_$2")),
         fromParts: (parts: string[]): string => parts
             .map(p => p.substring(0, 1).toUpperCase() + p.substring(1).toLowerCase())
             .join(''),
@@ -348,7 +348,7 @@ export class RustRenderer extends ConvenienceRenderer {
 
     private emitRenameAttribute(propName: Name, jsonName: string, defaultNamingStyle: string, preferedNamingStyle: string) {
         const escapedName = rustStringEscape(jsonName);
-        const name = NamingStyle[defaultNamingStyle].fromParts(this.sourcelikeToString(propName).split(" "));
+        const name = namingStyles[defaultNamingStyle].fromParts(this.sourcelikeToString(propName).split(" "));
         const styledName = nameToNamingStyle(name, preferedNamingStyle);
         const namesDiffer = escapedName !== styledName;
         if (namesDiffer) {
@@ -383,8 +383,9 @@ export class RustRenderer extends ConvenienceRenderer {
         // Set the default naming style on the struct
         const defaultStyle = "snake_case";
         const preferedNamingStyle = getPreferedNamingStyle(Object.values(propertiesNamingStyles).flat(), defaultStyle);
-        if (preferedNamingStyle !== defaultStyle)
+        if (preferedNamingStyle !== defaultStyle) {
             this.emitLine(`#[serde(rename_all = "${preferedNamingStyle}")]`);
+        }
 
         const blankLines = this._options.density === Density.Dense ? "none" : "interposing";
         const structBody = () =>
@@ -517,7 +518,7 @@ export class RustRenderer extends ConvenienceRenderer {
 }
 
 function getPreferedNamingStyle(namingStyleOccurences: string[], defaultStyle: string): string {
-    const occurrences = Object.fromEntries(Object.keys(NamingStyle).map(key => [key, 0]));
+    const occurrences = Object.fromEntries(Object.keys(namingStyles).map(key => [key, 0]));
     namingStyleOccurences
         .forEach(style => ++occurrences[style]);
     const max = Math.max(...Object.values(occurrences));
@@ -530,14 +531,14 @@ function getPreferedNamingStyle(namingStyleOccurences: string[], defaultStyle: s
 }
 
 function listMatchingNamingStyles(name: string): string[] {
-    return Object.entries(NamingStyle)
+    return Object.entries(namingStyles)
         .filter(([_, { regex }]) => regex.test(name))
         .map(([namingStyle, _]) => namingStyle);
 }
 
 function nameToNamingStyle(name: string, style: string): string {
-    if (NamingStyle[style].regex.test(name)) return name;
+    if (namingStyles[style].regex.test(name)) return name;
     const fromStyle = listMatchingNamingStyles(name)[0];
     if (fromStyle === undefined) return name;
-    return NamingStyle[style].fromParts(NamingStyle[fromStyle].toParts(name));
+    return namingStyles[style].fromParts(namingStyles[fromStyle].toParts(name));
 }
