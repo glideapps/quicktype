@@ -244,6 +244,11 @@ abstract class LanguageFixture extends Fixture {
             shell.cp(path.join(cwd, this.language.output), outputDir);
         }
 
+        // Clean up the run directory if we're in CI.
+        if (process.env.CI !== undefined) {
+            shell.rm("-rf", cwd);
+        }
+
         this.runMessageEnd(message, numFiles);
     }
 }
@@ -806,6 +811,7 @@ export const allFixtures: Fixture[] = [
     new JSONFixture(languages.SwiftLanguage),
     new JSONFixture(languages.ObjectiveCLanguage),
     new JSONFixture(languages.TypeScriptLanguage),
+    new JSONFixture(languages.TypeScriptZodLanguage),
     new JSONFixture(languages.FlowLanguage),
     new JSONFixture(languages.JavaScriptLanguage),
     new JSONFixture(languages.KotlinLanguage),
