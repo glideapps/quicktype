@@ -525,8 +525,9 @@ function getPreferedNamingStyle(namingStyleOccurences: string[], defaultStyle: s
     const preferedStyles = Object.entries(occurrences)
         .filter(([_style, num]) => num === max)
         .map(([style, _num]) => style);
-    if (preferedStyles.includes(defaultStyle))
+    if (preferedStyles.includes(defaultStyle)) {
         return defaultStyle;
+    }
     return preferedStyles[0];
 }
 
@@ -537,8 +538,12 @@ function listMatchingNamingStyles(name: string): string[] {
 }
 
 function nameToNamingStyle(name: string, style: string): string {
-    if (namingStyles[style].regex.test(name)) return name;
+    if (namingStyles[style].regex.test(name)) {
+        return name;
+    }
     const fromStyle = listMatchingNamingStyles(name)[0];
-    if (fromStyle === undefined) return name;
+    if (fromStyle === undefined) {
+        return name;
+    }
     return namingStyles[style].fromParts(namingStyles[fromStyle].toParts(name));
 }
