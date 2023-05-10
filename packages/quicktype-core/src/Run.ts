@@ -332,7 +332,7 @@ class Run implements RunContext {
     }
 
     private processGraph(allInputs: InputData, graphInputs: GraphInputs): TypeGraph {
-        const { targetLanguage, stringTypeMapping, conflateNumbers, flattenUnions, typeBuilder } = graphInputs;
+        const { targetLanguage, stringTypeMapping, conflateNumbers, flattenUnions: flattenUnionsFlag, typeBuilder } = graphInputs;
 
         let graph = typeBuilder.finish();
         if (this._options.debugPrintGraph) {
@@ -373,7 +373,7 @@ class Run implements RunContext {
                                 graph,
                                 stringTypeMapping,
                                 conflateNumbers,
-                                flattenUnions,
+                                flattenUnionsFlag,
                                 true,
                                 debugPrintReconstitution
                             ))
@@ -405,7 +405,7 @@ class Run implements RunContext {
                         graph,
                         stringTypeMapping,
                         conflateNumbers,
-                        flattenUnions,
+                        flattenUnionsFlag,
                         false,
                         debugPrintReconstitution
                     ))
@@ -455,7 +455,7 @@ class Run implements RunContext {
                     graph,
                     stringTypeMapping,
                     conflateNumbers,
-                    flattenUnions,
+                    flattenUnionsFlag,
                     false,
                     debugPrintReconstitution
                 ))
@@ -488,7 +488,7 @@ class Run implements RunContext {
                     graph,
                     stringTypeMapping,
                     conflateNumbers,
-                    flattenUnions,
+                    flattenUnionsFlag,
                     false,
                     debugPrintReconstitution
                 ))
