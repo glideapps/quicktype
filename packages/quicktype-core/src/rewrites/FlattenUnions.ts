@@ -14,6 +14,7 @@ export function flattenUnions(
     graph: TypeGraph,
     stringTypeMapping: StringTypeMapping,
     conflateNumbers: boolean,
+    flattenUnions: boolean,
     makeObjectTypes: boolean,
     debugPrintReconstitution: boolean
 ): [TypeGraph, boolean] {
@@ -37,17 +38,35 @@ export function flattenUnions(
     let foundIntersection = false;
     const groups = makeGroupsToFlatten(nonCanonicalUnions, members => {
         messageAssert(members.size > 0, "IRNoEmptyUnions", {});
-        if (!iterableSome(members, m => m instanceof IntersectionType)) return true;
+        if (iterableSome(members, m => m instanceof IntersectionType)) {
+            // FIXME: This is stupid.  `flattenUnions` returns true when no more union
+            // flattening is necessary, but `resolveIntersections` can introduce new
+            // unions that might require flattening, so now `flattenUnions` needs to take
+            // that into account.  Either change `resolveIntersections` such that it
+            // doesn't introduce non-canonical unions (by using `unifyTypes`), or have
+            // some other way to tell whether more work is needed that doesn't require
+            // the two passes to know about each other.
+            foundIntersection = true;
+            return false;
+        }
 
-        // FIXME: This is stupid.  `flattenUnions` returns true when no more union
-        // flattening is necessary, but `resolveIntersections` can introduce new
-        // unions that might require flattening, so now `flattenUnions` needs to take
-        // that into account.  Either change `resolveIntersections` such that it
-        // doesn't introduce non-canonical unions (by using `unifyTypes`), or have
-        // some other way to tell whether more work is needed that doesn't require
-        // the two passes to know about each other.
-        foundIntersection = true;
-        return false;
+        if (
+            !flattenUnions &&
+            members.size > 1
+        ) {
+            // If the target language supports unions of classes we can avoid
+            // union flattening.
+            //
+            // FIXME: This is suboptimal because it also completely skips
+            // merging of number types based on `conflateNumbers`. The proper
+            // place for this logic would be in UnionBuilder/UnionAccumulator,
+            // but that module would have to be refactored to allow for
+            // multiple variants with the same typekind.
+            return false;
+        }
+
+        return true;
+
     });
     graph = graph.rewrite("flatten unions", stringTypeMapping, false, groups, debugPrintReconstitution, replace);
 
