@@ -16,6 +16,7 @@ import { defined, panic } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
 import { RenderContext } from "../Renderer";
 import { isES3IdentifierStart } from "./JavaScriptUnicodeMaps";
+import { minMaxItemsForType } from "../attributes/Constraints";
 
 export const tsFlowOptions = Object.assign({}, javaScriptOptions, {
     justTypes: new BooleanOption("just-types", "Interfaces only", false),
@@ -121,12 +122,19 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
             _stringType => singleWord("string"),
             arrayType => {
                 const itemType = this.sourceFor(arrayType.items);
+                const minMaxItems = minMaxItemsForType(arrayType.items);
                 if (
                     (arrayType.items instanceof UnionType && !this._tsFlowOptions.declareUnions) ||
                     arrayType.items instanceof ArrayType
                 ) {
-                    return singleWord(["Array<", itemType.source, ">"]);
+                    if (minMaxItems?.[0] && minMaxItems[0] > 0) {
+                        return singleWord(["[", itemType.source, ", ...", itemType.source ,"[]]"]);
+                    }
+                    return singleWord(["ArrayT<", itemType.source, ">"]);
                 } else {
+                    if (minMaxItems?.[0] && minMaxItems[0] > 0) {
+                        return singleWord(["[",parenIfNeeded(itemType) ,", ...", parenIfNeeded(itemType),"[]]"]);
+                    }
                     return singleWord([parenIfNeeded(itemType), "[]"]);
                 }
             },
