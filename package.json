@@ -27,7 +27,7 @@
         "collection-utils": "^1.0.1",
         "command-line-args": "^5.2.1",
         "command-line-usage": "^7.0.1",
-        "cross-fetch": "^3.1.5",
+        "cross-fetch": "^3.1.6",
         "graphql": "^0.11.7",
         "lodash": "^4.17.21",
         "moment": "^2.29.4",
