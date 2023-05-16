@@ -81,7 +81,7 @@ function additionalTestFiles(base: string, extension: string, features: string[]
 function runEnvForLanguage(additionalRendererOptions: RendererOptions): NodeJS.ProcessEnv {
     const newEnv = Object.assign({}, process.env);
     for (const o of Object.getOwnPropertyNames(additionalRendererOptions)) {
-        newEnv["QUICKTYPE_" + o.toUpperCase().replace("-", "_")] = additionalRendererOptions[o];
+        newEnv["QUICKTYPE_" + o.toUpperCase().replace("-", "_")] = additionalRendererOptions[o].toString();
     }
     return newEnv;
 }
