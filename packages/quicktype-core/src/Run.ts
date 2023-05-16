@@ -31,7 +31,7 @@ export function getTargetLanguage(nameOrInstance: string | TargetLanguage): Targ
     return messageError("DriverUnknownOutputLanguage", { lang: nameOrInstance });
 }
 
-export type RendererOptions = { [name: string]: string };
+export type RendererOptions = { [name: string]: string | boolean };
 
 export interface InferenceFlag {
     description: string;
