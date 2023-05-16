@@ -245,6 +245,7 @@ class GQLQuery {
                 if (!fieldType.ofType) {
                     return panic("No type for list");
                 }
+                optional = true;
                 result = builder.getArrayType(
                     emptyTypeAttributes,
                     this.makeIRTypeFromFieldNode(builder, fieldNode, fieldType.ofType, containingTypeName)
