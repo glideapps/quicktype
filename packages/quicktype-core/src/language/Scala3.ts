@@ -1,5 +1,6 @@
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import * as ConvenienceRenderer from "../ConvenienceRenderer";
+import { ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { Name, Namer, funPrefixNamer } from "../Naming";
 import { EnumOption, Option, StringOption, OptionValues, getOptionValues } from "../RendererOptions";
 import { Sourcelike, maybeAnnotated } from "../Source";
@@ -206,7 +207,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
     }
 
     protected forbiddenForEnumCases(_: EnumType, _enumName: Name): ForbiddenWordsInfo {
-        return { names: [], includeGlobalForbidden: true };
+        return { names: ["_"], includeGlobalForbidden: true };
     }
 
     protected forbiddenForUnionMembers(_u: UnionType, _unionName: Name): ForbiddenWordsInfo {
@@ -408,7 +409,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
                 }
                 this.forEachEnumCase(e, "none", (name, jsonName) => {
                     //console.log(jsonName);
-                    if (!(jsonName == "")) {
+                    if (!(jsonName === "")) {
                         const backticks =
                             shouldAddBacktick(jsonName) ||
                             jsonName.includes(" ") ||
@@ -644,7 +645,7 @@ end JsonExt
 
         let hasBlank = false;
         this.forEachEnumCase(e, "none", (_, jsonName) => {
-            if (jsonName.trim() == "") {
+            if (jsonName.trim() === "") {
                 hasBlank = true;
             }
         });
@@ -690,7 +691,7 @@ end JsonExt
             this.indent(() => {
                 let count = e.cases.size;
                 this.forEachEnumCase(e, "none", (_, jsonName) => {
-                    if (!(jsonName.trim() == "")) {
+                    if (!(jsonName.trim() === "")) {
                         let strBuild = "";
                         const backticks =
                             shouldAddBacktick(jsonName) ||
@@ -704,7 +705,7 @@ end JsonExt
                         if (backticks) {
                             strBuild = strBuild + "`";
                         }
-                        if (--count > 0) strBuild + ",";
+                        //                        if (--count > 0) strBuild + ",";
                         this.emitLine([strBuild]);
                     }
                 });
@@ -727,7 +728,7 @@ end JsonExt
                     if (backticks) {
                         strBuild = strBuild + "`";
                     }
-                    if (--count > 0) strBuild + ",";
+                    //                  if (--count > 0) strBuild + ",";
                     this.emitLine([strBuild]);
                 });
             });
@@ -784,7 +785,7 @@ export class CirceRenderer extends Scala3Renderer {
 
         let hasBlank = false;
         this.forEachEnumCase(e, "none", (_, jsonName) => {
-            if (jsonName.trim() == "") {
+            if (jsonName.trim() === "") {
                 hasBlank = true;
             }
         });
@@ -815,7 +816,7 @@ export class CirceRenderer extends Scala3Renderer {
             this.ensureBlankLine();
             this.emitLine(["enum ", enumName, "NonBlank :"]);
             this.indent(() => {
-                let count = e.cases.size;
+                //let count = e.cases.size;
 
                 this.forEachEnumCase(e, "none", (_, jsonName) => {
                     let strBuild = "";
@@ -831,7 +832,7 @@ export class CirceRenderer extends Scala3Renderer {
                     if (backticks) {
                         strBuild = strBuild + "`";
                     }
-                    if (--count > 0) strBuild + ",";
+                    //if (--count > 0) strBuild + ",";
                     // don't emit the blank case
                     if (!isBlank(jsonName)) {
                         this.emitLine([strBuild]);
@@ -865,7 +866,7 @@ export class CirceRenderer extends Scala3Renderer {
                     if (backticks) {
                         strBuild = strBuild + "`";
                     }
-                    if (--count > 0) strBuild + ",";
+                    //                    if (--count > 0) strBuild + ",";
                     this.emitLine([strBuild]);
                 });
             });
