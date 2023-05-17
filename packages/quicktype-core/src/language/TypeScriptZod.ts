@@ -124,8 +124,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
             _stringType => "z.string()",
             arrayType => {
                 const minMaxItems = minMaxItemsForType(arrayType.items);
-                console.log('minMax', minMaxItems);
-
+                
                 const arrayString = ["z.array(", this.typeMapTypeFor(arrayType.items, false), ")"]
                 if (minMaxItems?.[0]) {
                     arrayString.push('.min(', minMaxItems[0].toString(10) , ')');

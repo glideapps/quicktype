@@ -546,7 +546,7 @@ class Resolver {
             assert(canonical.hasAddress, "Canonical ref can't be resolved without an address");
             const address = canonical.address;
 
-            let schema =
+            const schema =
                 canonical.addressURI === undefined
                     ? undefined
                     : await this._store.get(address, this._ctx.debugPrintSchemaResolving);
@@ -615,7 +615,7 @@ async function addTypesInSchema(
     references: ReadonlyMap<string, Ref>,
     attributeProducers: JSONSchemaAttributeProducer[]
 ): Promise<void> {
-    let typeForCanonicalRef = new EqualityMap<Ref, TypeRef>();
+    const typeForCanonicalRef = new EqualityMap<Ref, TypeRef>();
 
     function setTypeForLocation(loc: Location, t: TypeRef): void {
         const maybeRef = typeForCanonicalRef.get(loc.canonicalRef);
@@ -783,8 +783,6 @@ async function addTypesInSchema(
         }
 
         async function makeArrayType(attributes: TypeAttributes): Promise<TypeRef> {
-            const singularAttributes = singularizeTypeNames(typeAttributes);
-            
             const items = schema.items;
             let itemType: TypeRef;
             if (Array.isArray(items)) {
