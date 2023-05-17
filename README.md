@@ -193,7 +193,7 @@ async function main() {
 main();
 ```
 
-The argument to `quicktype` is a complex object with many optional properties. [Explore its definition](https://github.com/quicktype/quicktype/blob/master/src/quicktype-core/Run.ts#L119) to understand what options are allowed.
+The argument to `quicktype` is a complex object with many optional properties. [Explore its definition](https://github.com/quicktype/quicktype/blob/master/packages/quicktype-core/src/Run.ts#L637) to understand what options are allowed.
 
 ## Contributing
 
