@@ -130,7 +130,7 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
                     if (minMaxItems?.[0] && minMaxItems[0] > 0) {
                         return singleWord(["[", itemType.source, ", ...", itemType.source ,"[]]"]);
                     }
-                    return singleWord(["ArrayT<", itemType.source, ">"]);
+                    return singleWord(["Array<", itemType.source, ">"]);
                 } else {
                     if (minMaxItems?.[0] && minMaxItems[0] > 0) {
                         return singleWord(["[",parenIfNeeded(itemType) ,", ...", parenIfNeeded(itemType),"[]]"]);
