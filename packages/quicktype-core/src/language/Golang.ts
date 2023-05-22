@@ -13,7 +13,7 @@ import {
     camelCase
 } from "../support/Strings";
 import { assert, defined } from "../support/Support";
-import { StringOption, BooleanOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
+import { StringOption, BooleanOption, StringsOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { TargetLanguage } from "../TargetLanguage";
@@ -24,7 +24,8 @@ export const goOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     justTypesAndPackage: new BooleanOption("just-types-and-package", "Plain types with package only", false),
     packageName: new StringOption("package", "Generated package name", "NAME", "main"),
-    multiFileOutput: new BooleanOption("multi-file-output", "Renders each top-level object in its own Go file", false)
+    multiFileOutput: new BooleanOption("multi-file-output", "Renders each top-level object in its own Go file", false),
+    fieldTags: new StringsOption("field-tags", "list of tags which should be generated for fields", "TAGS", ["json"])
 };
 
 export class GoTargetLanguage extends TargetLanguage {
@@ -33,7 +34,7 @@ export class GoTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [goOptions.justTypes, goOptions.packageName, goOptions.multiFileOutput, goOptions.justTypesAndPackage];
+        return [goOptions.justTypes, goOptions.packageName, goOptions.multiFileOutput, goOptions.justTypesAndPackage, goOptions.fieldTags];
     }
 
     get supportsUnionsWithBothNumberTypes(): boolean {
@@ -266,10 +267,11 @@ export class GoRenderer extends ConvenienceRenderer {
             const omitEmpty = canOmitEmpty(p) ? ",omitempty" : [];
 
             docStrings.forEach(doc => columns.push([doc]));
+            const tags = this._options.fieldTags.map(tag => tag + ':"' + stringEscape(jsonName)+ omitEmpty+ '"').join(" ,")
             columns.push([
                 [name, " "],
                 [goType, " "],
-                ['`json:"', stringEscape(jsonName), omitEmpty, '"`']
+                [tags]
             ]);
         });
         this.emitDescription(this.descriptionForType(c));

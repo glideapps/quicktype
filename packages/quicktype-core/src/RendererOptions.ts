@@ -142,6 +142,26 @@ export class StringOption extends Option<string> {
     }
 }
 
+export class StringsOption extends Option<string[]> {
+    constructor(
+        name: string,
+        description: string,
+        typeLabel: string,
+        defaultValue: string[],
+        kind: OptionKind = "primary"
+    ) {
+        const definition = {
+            name,
+            kind,
+            type: String,
+            description,
+            typeLabel,
+            defaultValue
+        };
+        super(definition);
+    }
+}
+
 export class EnumOption<T> extends Option<T> {
     private readonly _values: { [name: string]: T };
 
