@@ -166,6 +166,8 @@ export type NonInferenceOptions = {
     debugPrintTimes: boolean;
     /** Print schema resolving steps */
     debugPrintSchemaResolving: boolean;
+    /** Will flatten union types */
+    flattenUnions: boolean;
 };
 
 export type Options = NonInferenceOptions & InferenceFlags;
@@ -187,7 +189,8 @@ const defaultOptions: NonInferenceOptions = {
     debugPrintGatherNames: false,
     debugPrintTransformations: false,
     debugPrintTimes: false,
-    debugPrintSchemaResolving: false
+    debugPrintSchemaResolving: false,
+    flattenUnions: false
 };
 
 export interface RunContext {
@@ -204,6 +207,7 @@ interface GraphInputs {
     targetLanguage: TargetLanguage;
     stringTypeMapping: StringTypeMapping;
     conflateNumbers: boolean;
+    flattenUnions: boolean;
     typeBuilder: TypeBuilder;
 }
 
@@ -280,6 +284,7 @@ class Run implements RunContext {
         const targetLanguage = getTargetLanguage(this._options.lang);
         const stringTypeMapping = this.stringTypeMapping;
         const conflateNumbers = !targetLanguage.supportsUnionsWithBothNumberTypes;
+        const flattenUnions = this._options.flattenUnions;
         const typeBuilder = new TypeBuilder(
             0,
             stringTypeMapping,
@@ -289,7 +294,7 @@ class Run implements RunContext {
             false
         );
 
-        return { targetLanguage, stringTypeMapping, conflateNumbers, typeBuilder };
+        return { targetLanguage, stringTypeMapping, conflateNumbers, flattenUnions, typeBuilder };
     }
 
     private async makeGraph(allInputs: InputData): Promise<TypeGraph> {
@@ -327,7 +332,7 @@ class Run implements RunContext {
     }
 
     private processGraph(allInputs: InputData, graphInputs: GraphInputs): TypeGraph {
-        const { targetLanguage, stringTypeMapping, conflateNumbers, typeBuilder } = graphInputs;
+        const { targetLanguage, stringTypeMapping, conflateNumbers, flattenUnions: flattenUnionsFlag, typeBuilder } = graphInputs;
 
         let graph = typeBuilder.finish();
         if (this._options.debugPrintGraph) {
@@ -368,6 +373,7 @@ class Run implements RunContext {
                                 graph,
                                 stringTypeMapping,
                                 conflateNumbers,
+                                flattenUnionsFlag,
                                 true,
                                 debugPrintReconstitution
                             ))
@@ -399,6 +405,7 @@ class Run implements RunContext {
                         graph,
                         stringTypeMapping,
                         conflateNumbers,
+                        flattenUnionsFlag,
                         false,
                         debugPrintReconstitution
                     ))
@@ -448,6 +455,7 @@ class Run implements RunContext {
                     graph,
                     stringTypeMapping,
                     conflateNumbers,
+                    flattenUnionsFlag,
                     false,
                     debugPrintReconstitution
                 ))
@@ -480,6 +488,7 @@ class Run implements RunContext {
                     graph,
                     stringTypeMapping,
                     conflateNumbers,
+                    flattenUnionsFlag,
                     false,
                     debugPrintReconstitution
                 ))

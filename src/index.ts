@@ -84,6 +84,8 @@ export interface CLIOptions {
 
     // We use this to access the inference flags
     [option: string]: any;
+
+    flattenUnions: boolean;
 }
 
 const defaultDefaultTargetLanguageName = "go";
@@ -293,7 +295,8 @@ function inferCLIOptions(opts: Partial<CLIOptions>, targetLanguage: TargetLangua
         httpMethod: opts.httpMethod,
         httpHeader: opts.httpHeader,
         debug: opts.debug,
-        telemetry: opts.telemetry
+        telemetry: opts.telemetry,
+        flattenUnions: !!opts.flattenUnions
     };
     /* tslint:enable */
     for (const flagName of inferenceFlagNames) {
@@ -324,6 +327,11 @@ function dashedFromCamelCase(name: string): string {
 
 function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinition[] {
     const beforeLang: OptionDefinition[] = [
+        {
+            name: "flatten-unions",
+            type: Boolean,
+            description: "Flatten union types to a single type."
+        },
         {
             name: "out",
             alias: "o",
@@ -885,7 +893,8 @@ export async function makeQuicktypeOptions(
         debugPrintGatherNames,
         debugPrintTransformations,
         debugPrintSchemaResolving,
-        debugPrintTimes
+        debugPrintTimes,
+        flattenUnions: options.flattenUnions
     };
     for (const flagName of inferenceFlagNames) {
         const cliName = negatedInferenceFlagName(flagName);
