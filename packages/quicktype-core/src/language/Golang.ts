@@ -271,7 +271,7 @@ export class GoRenderer extends ConvenienceRenderer {
             columns.push([
                 [name, " "],
                 [goType, " "],
-                [tags]
+                ["`", tags, "`"]
             ]);
         });
         this.emitDescription(this.descriptionForType(c));
