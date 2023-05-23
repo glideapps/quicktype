@@ -267,7 +267,7 @@ export class GoRenderer extends ConvenienceRenderer {
             const omitEmpty = canOmitEmpty(p) ? ",omitempty" : [];
 
             docStrings.forEach(doc => columns.push([doc]));
-            const tags = this._options.fieldTags.split(",").map(tag => tag + ':"' + stringEscape(jsonName)+ omitEmpty+ '"').join(", ")
+            const tags = this._options.fieldTags.split(",").map(tag => tag + ':"' + stringEscape(jsonName)+ omitEmpty+ '"').join(" ")
             columns.push([
                 [name, " "],
                 [goType, " "],
