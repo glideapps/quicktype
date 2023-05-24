@@ -158,6 +158,7 @@ export class SwiftTargetLanguage extends TargetLanguage {
     get stringTypeMapping(): StringTypeMapping {
         const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
         mapping.set("date-time", "date-time");
+        mapping.set("url-string", "url-string");
         return mapping;
     }
 
@@ -438,6 +439,8 @@ export class SwiftRenderer extends ConvenienceRenderer {
             transformedStringType => {
                 if (transformedStringType.kind === "date-time") {
                     return "Date";
+                } else if (transformedStringType.kind === "url-string") {
+                    return "URL"
                 } else {
                     return panic(`Transformed string type ${transformedStringType.kind} not supported`);
                 }

@@ -53,6 +53,7 @@ const transformedStringTypeTargetTypeKinds = {
     date: { jsonSchema: "date", primitive: undefined },
     time: { jsonSchema: "time", primitive: undefined },
     "date-time": { jsonSchema: "date-time", primitive: undefined },
+    "url-string": { jsonSchema: "url-string", primitive: undefined },
     uuid: { jsonSchema: "uuid", primitive: undefined },
     uri: { jsonSchema: "uri", primitive: undefined, attributesProducer: uriInferenceAttributesProducer },
     "integer-string": { jsonSchema: "integer", primitive: "integer" } as TransformedStringTypeTargets,
@@ -139,7 +140,7 @@ export type MaybeTypeIdentity = TypeIdentity | undefined;
 export abstract class Type {
     abstract readonly kind: TypeKind;
 
-    constructor(readonly typeRef: TypeRef, protected readonly graph: TypeGraph) {}
+    constructor(readonly typeRef: TypeRef, protected readonly graph: TypeGraph) { }
 
     get index(): number {
         return typeRefIndex(this.typeRef);
@@ -269,7 +270,7 @@ export abstract class Type {
         const workList: Type[] = [this];
         const processed = new Set<Type>();
         const ancestors = new Set<Type>();
-        for (;;) {
+        for (; ;) {
             const t = workList.pop();
             if (t === undefined) break;
 
@@ -405,7 +406,7 @@ export class ArrayType extends Type {
 }
 
 export class GenericClassProperty<T> {
-    constructor(readonly typeData: T, readonly isOptional: boolean) {}
+    constructor(readonly typeData: T, readonly isOptional: boolean) { }
 
     equals(other: any): boolean {
         if (!(other instanceof GenericClassProperty)) {
