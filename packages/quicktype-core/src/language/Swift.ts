@@ -75,6 +75,7 @@ export const swiftOptions = {
     ),
     optionalEnums: new BooleanOption("optional-enums", "If no matching case is found enum value is set to null", false),
     swift5Support: new BooleanOption("swift-5-support", "Renders output in a Swift 5 compatible mode", false),
+    sendable: new BooleanOption("sendable", "Mark generated models as Sendable", false),
     multiFileOutput: new BooleanOption(
         "multi-file-output",
         "Renders each top-level object in its own Swift file",
@@ -149,6 +150,7 @@ export class SwiftTargetLanguage extends TargetLanguage {
             swiftOptions.acronymStyle,
             swiftOptions.objcSupport,
             swiftOptions.optionalEnums,
+            swiftOptions.sendable,
             swiftOptions.swift5Support,
             swiftOptions.multiFileOutput,
             swiftOptions.mutableProperties
@@ -169,7 +171,7 @@ export class SwiftTargetLanguage extends TargetLanguage {
         return true;
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): SwiftRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any; }): SwiftRenderer {
         return new SwiftRenderer(this, renderContext, getOptionValues(swiftOptions, untypedOptionValues));
     }
 
@@ -562,6 +564,11 @@ export class SwiftRenderer extends ConvenienceRenderer {
         if (this._options.protocol.equatable) {
             protocols.push("Equatable");
         }
+
+        if (this._options.sendable && !this._options.mutableProperties) {
+            protocols.push("Sendable");
+        }
+
         return protocols;
     }
 
@@ -571,7 +578,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
     }
 
     private getEnumPropertyGroups(c: ClassType) {
-        type PropertyGroup = { name: Name; label?: string }[];
+        type PropertyGroup = { name: Name; label?: string; }[];
 
         let groups: PropertyGroup[] = [];
         let group: PropertyGroup = [];
