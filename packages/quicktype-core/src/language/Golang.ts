@@ -34,7 +34,13 @@ export class GoTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [goOptions.justTypes, goOptions.packageName, goOptions.multiFileOutput, goOptions.justTypesAndPackage, goOptions.fieldTags];
+        return [
+            goOptions.justTypes,
+            goOptions.packageName,
+            goOptions.multiFileOutput,
+            goOptions.justTypesAndPackage,
+            goOptions.fieldTags
+        ];
     }
 
     get supportsUnionsWithBothNumberTypes(): boolean {
@@ -267,7 +273,10 @@ export class GoRenderer extends ConvenienceRenderer {
             const omitEmpty = canOmitEmpty(p) ? ",omitempty" : [];
 
             docStrings.forEach(doc => columns.push([doc]));
-            const tags = this._options.fieldTags.split(",").map(tag => tag + ':"' + stringEscape(jsonName)+ omitEmpty+ '"').join(" ")
+            const tags = this._options.fieldTags
+                .split(",")
+                .map(tag => tag + ':"' + stringEscape(jsonName) + omitEmpty + '"')
+                .join(" ");
             columns.push([
                 [name, " "],
                 [goType, " "],
