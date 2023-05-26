@@ -171,7 +171,7 @@ export class SwiftTargetLanguage extends TargetLanguage {
         return true;
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any; }): SwiftRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): SwiftRenderer {
         return new SwiftRenderer(this, renderContext, getOptionValues(swiftOptions, untypedOptionValues));
     }
 
@@ -547,14 +547,9 @@ export class SwiftRenderer extends ConvenienceRenderer {
 
         // [Michael Fey (@MrRooni), 2019-4-24] Technically NSObject isn't a "protocol" in this instance, but this felt like the best place to slot in this superclass declaration.
         const isClass = kind === "class";
-        const isEnum = kind === "enum";
 
         if (isClass && this._options.objcSupport) {
             protocols.push("NSObject");
-        }
-
-        if (isEnum) {
-            protocols.push("String");
         }
 
         if (!this._options.justTypes) {
@@ -576,13 +571,16 @@ export class SwiftRenderer extends ConvenienceRenderer {
         return protocols;
     }
 
-    private getProtocolString(kind: "struct" | "class" | "enum"): Sourcelike {
-        const protocols = this.getProtocolsArray(kind);
+    private getProtocolString(kind: "struct" | "class" | "enum", baseClass: string | undefined = undefined): Sourcelike {
+        let protocols = this.getProtocolsArray(kind);
+        if (baseClass) {
+            protocols.unshift(baseClass);
+        }
         return protocols.length > 0 ? ": " + protocols.join(", ") : "";
     }
 
     private getEnumPropertyGroups(c: ClassType) {
-        type PropertyGroup = { name: Name; label?: string; }[];
+        type PropertyGroup = { name: Name; label?: string }[];
 
         let groups: PropertyGroup[] = [];
         let group: PropertyGroup = [];
@@ -920,7 +918,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         this.ensureBlankLine();
 
         this.emitDescription(this.descriptionForType(e));
-        const protocolString = this.getProtocolString("enum");
+        const protocolString = this.getProtocolString("enum", "String");
 
         if (this._options.justTypes) {
             this.emitBlockWithAccess(["enum ", enumName, protocolString], () => {
