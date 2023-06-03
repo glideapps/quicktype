@@ -2076,10 +2076,10 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             } else if (type instanceof UnionType) {
                 this.emitUnionTypedefs(type, name);
             } else {
-                return panic(`Cannot declare type ${type.kind}`);
+                panic(`Cannot declare type ${type.kind}`);
             }
         } else {
-            return assertNever(decl.kind);
+            assertNever(decl.kind);
         }
     }
 
