@@ -2067,16 +2067,16 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.emitLine("struct ", this.nameForNamedType(decl.type), ";");
             }
         } else if (decl.kind === "define") {
-            const t = decl.type;
-            const name = this.nameForNamedType(t);
-            if (t instanceof ClassType) {
-                this.emitClass(t, name);
-            } else if (t instanceof EnumType) {
-                this.emitEnum(t, name);
-            } else if (t instanceof UnionType) {
-                this.emitUnionTypedefs(t, name);
+            const type = decl.type;
+            const name = this.nameForNamedType(type);
+            if (type instanceof ClassType) {
+                this.emitClass(type, name);
+            } else if (type instanceof EnumType) {
+                this.emitEnum(type, name);
+            } else if (type instanceof UnionType) {
+                this.emitUnionTypedefs(type, name);
             } else {
-                return panic(`Cannot declare type ${t.kind}`);
+                return panic(`Cannot declare type ${type.kind}`);
             }
         } else {
             return assertNever(decl.kind);
