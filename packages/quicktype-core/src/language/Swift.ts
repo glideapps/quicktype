@@ -571,7 +571,10 @@ export class SwiftRenderer extends ConvenienceRenderer {
         return protocols;
     }
 
-    private getProtocolString(kind: "struct" | "class" | "enum", baseClass: string | undefined = undefined): Sourcelike {
+    private getProtocolString(
+        kind: "struct" | "class" | "enum",
+        baseClass: string | undefined = undefined
+    ): Sourcelike {
         let protocols = this.getProtocolsArray(kind);
         if (baseClass) {
             protocols.unshift(baseClass);
