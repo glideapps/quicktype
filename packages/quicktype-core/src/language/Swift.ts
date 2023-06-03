@@ -535,6 +535,9 @@ export class SwiftRenderer extends ConvenienceRenderer {
         if (!this._options.justTypes && this._options.alamofire) {
             this.emitLineOnce("import Alamofire");
         }
+        if (this._options.optionalEnums) {
+            this.emitLineOnce("import OptionallyDecodable // https://github.com/idrougge/OptionallyDecodable");    
+        }
         this.ensureBlankLine();
     }
 
@@ -684,7 +687,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                     let sources: Sourcelike[] = [
                         [
                             this._options.optionalEnums && lastProperty.type.kind === "enum"
-                                ? `@NilOnFail${this._options.namedTypePrefix} `
+                                ? `@OptionallyDecodable `
                                 : "",
                             this.accessLevel,
                             useMutableProperties || (this._options.optionalEnums && lastProperty.type.kind === "enum")
@@ -1414,21 +1417,6 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             this.emitSupportFunctions4();
         }
 
-        if (this._options.optionalEnums) {
-            this.emitBlockWithAccess(
-                `@propertyWrapper public struct NilOnFail${this._options.namedTypePrefix}<T: Codable>: Codable`,
-                () => {
-                    this.emitMultiline(`
-public let wrappedValue: T?
-public init(from decoder: Decoder) throws {
-    wrappedValue = try? T(from: decoder)
-}
-public init(_ wrappedValue: T?) {
-    self.wrappedValue = wrappedValue
-}`);
-                }
-            );
-        }
     }
 
     private emitAlamofireExtension() {
