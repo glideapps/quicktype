@@ -410,14 +410,14 @@ class BaseString {
         encodingClass: string,
         encodingFunction: string
     ) {
-        (this._stringType = stringType),
-            (this._constStringType = constStringType),
-            (this._smatch = smatch),
-            (this._regex = regex),
-            (this._stringLiteralPrefix = stringLiteralPrefix),
-            (this._toString = toString),
-            (this._encodingClass = encodingClass),
-            (this._encodingFunction = encodingFunction);
+        this._stringType = stringType;
+        this._constStringType = constStringType;
+        this._smatch = smatch;
+        this._regex = regex;
+        this._stringLiteralPrefix = stringLiteralPrefix;
+        this._toString = toString;
+        this._encodingClass = encodingClass;
+        this._encodingFunction = encodingFunction;
     }
 
     public getType(): string {
