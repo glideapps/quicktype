@@ -1070,7 +1070,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     type: t,
                     level: l,
                     variant: isVariant,
-                    forceInclude: forceInclude
+                    forceInclude
                 });
             } else if (t instanceof MapType) {
                 recur(forceInclude, isVariant, l + 1, t.values);
@@ -1104,7 +1104,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         type: t,
                         level: l,
                         variant: true,
-                        forceInclude: forceInclude
+                        forceInclude
                     });
                     /** intentional "fall-through", add all subtypes as well - but forced include */
                 }
