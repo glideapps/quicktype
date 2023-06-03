@@ -1465,7 +1465,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             () => {
                 this.forEachClassProperty(c, "none", (name, json, p) => {
                     const [, , setterName] = defined(this._gettersAndSettersForPropertyName.get(name));
-                    const t = p.type;
+                    const propType = p.type;
 
                     let assignment: WrappingCode;
                     if (this._options.codeFormat) {
@@ -1474,7 +1474,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         assignment = new WrappingCode(["x.", name, " = "], []);
                     }
 
-                    if (t.kind === "null" || t.kind === "any") {
+                    if (propType.kind === "null" || propType.kind === "any") {
                         this.emitLine(
                             assignment.wrap(
                                 [],
@@ -1494,14 +1494,14 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         );
                         return;
                     }
-                    if (p.isOptional || t instanceof UnionType) {
+                    if (p.isOptional || propType instanceof UnionType) {
                         const [nullOrOptional, typeSet] = (function (): [boolean, ReadonlySet<Type>] {
-                            if (t instanceof UnionType) {
-                                const [maybeNull, nonNulls] = removeNullFromUnion(t, true);
+                            if (propType instanceof UnionType) {
+                                const [maybeNull, nonNulls] = removeNullFromUnion(propType, true);
                                 return [maybeNull !== null || p.isOptional, nonNulls];
                             } else {
                                 let set = new Set<Type>();
-                                set.add(t);
+                                set.add(propType);
                                 return [true, set];
                             }
                         })();
@@ -1532,11 +1532,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                                     [
                                         this._stringType.wrapEncodingChange(
                                             [ourQualifier],
-                                            [this.optionalType(t), "<", cppType, ">"],
-                                            [this.optionalType(t), "<", toType, ">"],
+                                            [this.optionalType(propType), "<", cppType, ">"],
+                                            [this.optionalType(propType), "<", toType, ">"],
                                             [
                                                 ourQualifier,
-                                                `get_${this.optionalTypeLabel(t)}_optional<`,
+                                                `get_${this.optionalTypeLabel(propType)}_optional<`,
                                                 cppType,
                                                 ">(j, ",
                                                 this._stringType.wrapEncodingChange(
@@ -1556,7 +1556,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         }
                     }
                     cppType = this.cppType(
-                        t,
+                        propType,
                         {
                             needsForwardIndirection: true,
                             needsOptionalIndirection: true,
@@ -1567,7 +1567,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         p.isOptional
                     );
                     toType = this.cppType(
-                        t,
+                        propType,
                         {
                             needsForwardIndirection: true,
                             needsOptionalIndirection: true,
@@ -1606,9 +1606,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             () => {
                 this.emitLine("j = json::object();");
                 this.forEachClassProperty(c, "none", (name, json, p) => {
-                    const t = p.type;
+                    const propType = p.type;
                     cppType = this.cppType(
-                        t,
+                        propType,
                         {
                             needsForwardIndirection: true,
                             needsOptionalIndirection: true,
@@ -1619,7 +1619,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         p.isOptional
                     );
                     toType = this.cppType(
-                        t,
+                        propType,
                         {
                             needsForwardIndirection: true,
                             needsOptionalIndirection: true,
