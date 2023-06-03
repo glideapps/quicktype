@@ -2462,22 +2462,22 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
         if (this._options.codeFormat) {
             if (this._options.boost) {
-                this.emitInclude(true, `boost/optional.hpp`);
+                this.emitInclude(true, "boost/optional.hpp");
             } else {
-                this.emitInclude(true, `optional`);
+                this.emitInclude(true, "optional");
             }
-            this.emitInclude(true, `stdexcept`);
-            this.emitInclude(true, `regex`);
+            this.emitInclude(true, "stdexcept");
+            this.emitInclude(true, "regex");
         }
 
         if (this._options.wstring) {
-            this.emitInclude(true, `codecvt`);
-            this.emitInclude(true, `locale`);
+            this.emitInclude(true, "codecvt");
+            this.emitInclude(true, "locale");
         }
 
         // Include unordered_map if contains large enums
         if (Array.from(this.enums).some(enumType => this.isLargeEnum(enumType))) {
-            this.emitInclude(true, `unordered_map`);
+            this.emitInclude(true, "unordered_map");
         }
 
         this.ensureBlankLine();
