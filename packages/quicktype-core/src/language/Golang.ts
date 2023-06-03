@@ -141,8 +141,7 @@ export class GoRenderer extends ConvenienceRenderer {
         }
 
         assert(this._currentFilename === undefined, "Previous file wasn't finished: " + this._currentFilename);
-        // FIXME: The filenames should actually be Sourcelikes, too
-        this._currentFilename = `${this.sourcelikeToString(basename)}.go`.toLowerCase();
+        this._currentFilename = `${this.sourcelikeToString(basename)}.go`;
         this.initializeEmitContextForFilename(this._currentFilename);
     }
 
