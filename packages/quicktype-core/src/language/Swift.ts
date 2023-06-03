@@ -75,6 +75,7 @@ export const swiftOptions = {
     ),
     optionalEnums: new BooleanOption("optional-enums", "If no matching case is found enum value is set to null", false),
     swift5Support: new BooleanOption("swift-5-support", "Renders output in a Swift 5 compatible mode", false),
+    sendable: new BooleanOption("sendable", "Mark generated models as Sendable", false),
     multiFileOutput: new BooleanOption(
         "multi-file-output",
         "Renders each top-level object in its own Swift file",
@@ -149,6 +150,7 @@ export class SwiftTargetLanguage extends TargetLanguage {
             swiftOptions.acronymStyle,
             swiftOptions.objcSupport,
             swiftOptions.optionalEnums,
+            swiftOptions.sendable,
             swiftOptions.swift5Support,
             swiftOptions.multiFileOutput,
             swiftOptions.mutableProperties
@@ -540,10 +542,12 @@ export class SwiftRenderer extends ConvenienceRenderer {
         this.emitLine(this.accessLevel, "typealias ", name, " = ", this.swiftType(t, true));
     }
 
-    protected getProtocolsArray(_t: Type, isClass: boolean): string[] {
+    protected getProtocolsArray(kind: "struct" | "class" | "enum"): string[] {
         const protocols: string[] = [];
 
         // [Michael Fey (@MrRooni), 2019-4-24] Technically NSObject isn't a "protocol" in this instance, but this felt like the best place to slot in this superclass declaration.
+        const isClass = kind === "class";
+
         if (isClass && this._options.objcSupport) {
             protocols.push("NSObject");
         }
@@ -559,11 +563,19 @@ export class SwiftRenderer extends ConvenienceRenderer {
         if (this._options.protocol.equatable) {
             protocols.push("Equatable");
         }
+
+        if (this._options.sendable && !this._options.mutableProperties && !this._options.objcSupport) {
+            protocols.push("Sendable");
+        }
+
         return protocols;
     }
 
-    private getProtocolString(_t: Type, isClass: boolean): Sourcelike {
-        const protocols = this.getProtocolsArray(_t, isClass);
+    private getProtocolString(kind: "struct" | "class" | "enum", baseClass: string | undefined = undefined): Sourcelike {
+        let protocols = this.getProtocolsArray(kind);
+        if (baseClass) {
+            protocols.unshift(baseClass);
+        }
         return protocols.length > 0 ? ": " + protocols.join(", ") : "";
     }
 
@@ -659,7 +671,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
             this.emitItem(this.objcMembersDeclaration);
         }
 
-        this.emitBlockWithAccess([structOrClass, " ", className, this.getProtocolString(c, isClass)], () => {
+        this.emitBlockWithAccess([structOrClass, " ", className, this.getProtocolString(structOrClass)], () => {
             if (this._options.dense) {
                 let lastProperty: ClassProperty | undefined = undefined;
                 let lastNames: Name[] = [];
@@ -906,22 +918,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         this.ensureBlankLine();
 
         this.emitDescription(this.descriptionForType(e));
-
-        const protocols: string[] = [];
-        if (!this._options.justTypes) {
-            protocols.push("String"); // Not a protocol
-            protocols.push("Codable");
-        }
-
-        if (this._options.protocol.hashable) {
-            protocols.push("Hashable");
-        }
-
-        if (this._options.protocol.equatable) {
-            protocols.push("Equatable");
-        }
-
-        const protocolString = protocols.length > 0 ? ": " + protocols.join(", ") : "";
+        const protocolString = this.getProtocolString("enum", "String");
 
         if (this._options.justTypes) {
             this.emitBlockWithAccess(["enum ", enumName, protocolString], () => {
@@ -963,7 +960,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
 
         const indirect = this.isCycleBreakerType(u) ? "indirect " : "";
         const [maybeNull, nonNulls] = removeNullFromUnion(u, sortBy);
-        this.emitBlockWithAccess([indirect, "enum ", unionName, this.getProtocolString(u, false)], () => {
+        this.emitBlockWithAccess([indirect, "enum ", unionName, this.getProtocolString("enum")], () => {
             this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
                 this.emitLine("case ", name, "(", this.swiftType(t), ")");
             });
