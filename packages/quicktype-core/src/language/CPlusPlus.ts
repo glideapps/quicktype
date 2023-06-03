@@ -2583,12 +2583,12 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             let userNamespaceForwardDecls = this.gatherUserNamespaceForwardDecls();
             let nlohmannNamespaceForwardDecls = this.gatherNlohmannNamespaceForwardDecls();
 
-            if (userNamespaceForwardDecls.length == 0 && nlohmannNamespaceForwardDecls.length > 0) {
+            if (userNamespaceForwardDecls.length === 0 && nlohmannNamespaceForwardDecls.length > 0) {
                 this.emitNamespaces(["nlohmann"], () => {
                     this.emitGatheredSource(nlohmannNamespaceForwardDecls);
                     this.emitNlohmannNamespaceImpls();
                 });
-            } else if (userNamespaceForwardDecls.length > 0 && nlohmannNamespaceForwardDecls.length == 0) {
+            } else if (userNamespaceForwardDecls.length > 0 && nlohmannNamespaceForwardDecls.length === 0) {
                 this.emitNamespaces(this._namespaceNames, () => {
                     this.emitGatheredSource(userNamespaceForwardDecls);
                     this.emitUserNamespaceImpls();
