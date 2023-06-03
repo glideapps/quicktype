@@ -2488,7 +2488,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
         this.emitExtraIncludes();
 
-        this.emitInclude(true, `sstream`);
+        this.emitInclude(true, "sstream");
         this.ensureBlankLine();
         this.emitNamespaces(this._namespaceNames, () => {
             this.emitLine("using nlohmann::json;");
