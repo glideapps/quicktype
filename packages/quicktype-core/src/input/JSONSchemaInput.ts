@@ -42,7 +42,7 @@ import { messageAssert, messageError } from "../Messages";
 import { StringTypes } from "../attributes/StringTypes";
 
 import { TypeRef } from "../TypeGraph";
-import { RunContext } from "../Run";
+import { type RunContext } from "../Run";
 import { Input } from "./Inputs";
 import { descriptionAttributeProducer } from "../attributes/Description";
 import { accessorNamesAttributeProducer } from "../attributes/AccessorNames";
