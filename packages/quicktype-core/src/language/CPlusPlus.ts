@@ -2059,7 +2059,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitLine("#endif");
     }
 
-    protected emitDeclaration(decl: Declaration): void {
+    protected emitDeclaration(decl: Declaration) {
         if (decl.kind === "forward") {
             if (this._options.codeFormat) {
                 this.emitLine("class ", this.nameForNamedType(decl.type), ";");
