@@ -1166,7 +1166,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
             const refs = await refsInSchemaForURI(resolver, normalizedURI, givenName);
             if (Array.isArray(refs)) {
                 let name: string;
-                if (this._schemaSources.length === 1) {
+                if (this._schemaSources.length === 1 && givenName !== undefined) {
                     name = givenName;
                 } else {
                     name = refs[0];
