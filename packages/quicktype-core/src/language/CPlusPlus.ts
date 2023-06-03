@@ -1122,7 +1122,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected constraintMember(jsonName: string): string {
-        return this._memberNameStyle(jsonName + "Constraint");
+        return this._memberNameStyle(`${jsonName}Constraint`);
     }
 
     protected emitMember(cppType: Sourcelike, name: Sourcelike): void {
@@ -2375,8 +2375,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         untypedMacroName += "HELPER";
         optionalMacroName += "HELPER";
 
-        this.emitLine("#ifndef " + untypedMacroName);
-        this.emitLine("#define " + untypedMacroName);
+        this.emitLine(`#ifndef ${untypedMacroName}`);
+        this.emitLine(`#define ${untypedMacroName}`);
 
         this.emitBlock(
             ["inline json get_untyped(", this.withConst("json"), " & j, ", this.withConst("char"), " * property)"],
@@ -2406,8 +2406,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         if (this.haveUnions || this.haveOptionalProperties) {
             this.ensureBlankLine();
 
-            this.emitLine("#ifndef " + optionalMacroName);
-            this.emitLine("#define " + optionalMacroName);
+            this.emitLine(`#ifndef ${optionalMacroName}`);
+            this.emitLine(`#define ${optionalMacroName}`);
 
             const emitGetOptional = (optionalType: string, label: string): void => {
                 this.emitLine("template <typename T>");
@@ -2754,7 +2754,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected emitDefinition(d: ClassType | EnumType | UnionType, defName: Name): void {
-        const name = this.sourcelikeToString(defName) + ".hpp";
+        const name = `${this.sourcelikeToString(defName)}.hpp`;
         this.startFile(name, true);
         this._generatedFiles.add(name);
 
