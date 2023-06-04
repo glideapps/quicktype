@@ -53,7 +53,12 @@ export const dartOptions = {
         "secondary"
     ),
     useHive: new BooleanOption("use-hive", "Generate annotations for Hive type adapters", false, "secondary"),
-    useJsonAnnotation: new BooleanOption("use-json-annotation", "Generate annotations for json_serializable", false, "secondary"),
+    useJsonAnnotation: new BooleanOption(
+        "use-json-annotation",
+        "Generate annotations for json_serializable",
+        false,
+        "secondary"
+    ),
     partName: new StringOption("part-name", "Use this name in `part` directive", "NAME", "", "secondary")
 };
 
@@ -721,7 +726,7 @@ export class DartRenderer extends ConvenienceRenderer {
             this.emitLine(`@HiveType(typeId: ${this.classCounter})`);
             this.classPropertyCounter = 0;
         }
-        if(this._options.useJsonAnnotation){
+        if (this._options.useJsonAnnotation) {
             this.emitLine(`@JsonSerializable()`);
         }
         this.emitBlock(["class ", className], () => {
@@ -737,7 +742,7 @@ export class DartRenderer extends ConvenienceRenderer {
                 this._emitCopyConstructor(c, className);
             }
 
-            if(this._options.useJsonAnnotation){
+            if (this._options.useJsonAnnotation) {
                 this.ensureBlankLine();
                 this.emitLine(
                     // factory PublicAnswer.fromJson(Map<String, dynamic> json) => _$PublicAnswerFromJson(json);
@@ -766,7 +771,6 @@ export class DartRenderer extends ConvenienceRenderer {
 
                 this._emitMapEncoderDecoder(c, className);
             }
-
         });
     }
 
