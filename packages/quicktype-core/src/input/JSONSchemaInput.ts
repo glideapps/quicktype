@@ -42,9 +42,13 @@ import { messageAssert, messageError } from "../Messages";
 import { StringTypes } from "../attributes/StringTypes";
 
 import { TypeRef } from "../TypeGraph";
-import { RunContext } from "../Run";
-import { Input } from "./Inputs";
+import { type RunContext } from "../Run";
+import { type Input } from "./Inputs";
+
+// There's a cyclic import here. Ignoring now because it requires a large refactor.
+// skipcq: JS-E1008
 import { descriptionAttributeProducer } from "../attributes/Description";
+
 import { accessorNamesAttributeProducer } from "../attributes/AccessorNames";
 import { enumValuesAttributeProducer } from "../attributes/EnumValues";
 import { minMaxAttributeProducer } from "../attributes/Constraints";
@@ -1175,7 +1179,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
             const refs = await refsInSchemaForURI(resolver, normalizedURI, givenName);
             if (Array.isArray(refs)) {
                 let name: string;
-                if (this._schemaSources.length === 1) {
+                if (this._schemaSources.length === 1 && givenName !== undefined) {
                     name = givenName;
                 } else {
                     name = refs[0];

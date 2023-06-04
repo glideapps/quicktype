@@ -1,0 +1,62 @@
+{
+  "type": "object",
+  "properties": {
+    "free": { "type": "integer" },
+    "min": {
+      "type": "integer",
+      "minimum": 3
+    },
+    "max": {
+      "type": "integer",
+      "maximum": 5
+    },
+    "minmax": {
+      "type": "integer",
+      "minimum": 3,
+      "maximum": 5
+    },
+    "union": {
+      "oneOf": [
+        {
+          "$ref": "#/properties/minmax"
+        },
+        {
+          "type": "integer",
+          "minimum": 4,
+          "maximum": 6
+        }
+      ]
+    },
+    "minMaxUnion": {
+      "oneOf": [
+        {
+          "$ref": "#/properties/min"
+        },
+        {
+          "$ref": "#/properties/max"
+        }
+      ]
+    },
+    "intersection": {
+      "allOf": [
+        {
+          "$ref": "#/properties/union/oneOf/0"
+        },
+        {
+          "$ref": "#/properties/union/oneOf/1"
+        }
+      ]
+    },
+    "minMaxIntersection": {
+      "allOf": [
+        {
+          "$ref": "#/properties/min"
+        },
+        {
+          "$ref": "#/properties/max"
+        }
+      ]
+    }
+  },
+  "required": ["free", "min", "max", "minmax", "union", "minMaxUnion", "intersection", "minMaxIntersection"]
+}
