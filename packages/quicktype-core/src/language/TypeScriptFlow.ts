@@ -22,7 +22,8 @@ export const tsFlowOptions = Object.assign({}, javaScriptOptions, {
     nicePropertyNames: new BooleanOption("nice-property-names", "Transform property names to be JavaScripty", false),
     declareUnions: new BooleanOption("explicit-unions", "Explicitly name unions", false),
     preferUnions: new BooleanOption("prefer-unions", "Use union type instead of enum", false),
-    preferTypes: new BooleanOption("prefer-types", "Use types instead of interfaces", false)
+    preferTypes: new BooleanOption("prefer-types", "Use types instead of interfaces", false),
+    preferUnknown: new BooleanOption("prefer-unknown", "Use unknown instead of any type", false)
 });
 
 const tsFlowTypeAnnotations = {
@@ -46,7 +47,8 @@ export abstract class TypeScriptFlowBaseTargetLanguage extends JavaScriptTargetL
             tsFlowOptions.converters,
             tsFlowOptions.rawType,
             tsFlowOptions.preferUnions,
-            tsFlowOptions.preferTypes
+            tsFlowOptions.preferTypes,
+            tsFlowOptions.preferUnknown
         ];
     }
 
@@ -107,13 +109,15 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
         }
     }
 
+    protected abstract anyType(): string;
+
     protected sourceFor(t: Type): MultiWord {
         if (["class", "object", "enum"].indexOf(t.kind) >= 0) {
             return singleWord(this.nameForNamedType(t));
         }
         return matchType<MultiWord>(
             t,
-            _anyType => singleWord("any"),
+            _anyType => singleWord(this.anyType()),
             _nullType => singleWord("null"),
             _boolType => singleWord("boolean"),
             _integerType => singleWord("number"),
@@ -200,13 +204,13 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
     }
 
     protected deserializerFunctionLine(t: Type, name: Name): Sourcelike {
-        const jsonType = this._tsFlowOptions.rawType === "json" ? "string" : "any";
+        const jsonType = this._tsFlowOptions.rawType === "json" ? "string" : this.anyType();
         return ["function to", name, "(json: ", jsonType, "): ", this.sourceFor(t).source];
     }
 
     protected serializerFunctionLine(t: Type, name: Name): Sourcelike {
         const camelCaseName = modifySource(camelCase, name);
-        const returnType = this._tsFlowOptions.rawType === "json" ? "string" : "any";
+        const returnType = this._tsFlowOptions.rawType === "json" ? "string" : this.anyType();
         return ["function ", camelCaseName, "ToJson(value: ", this.sourceFor(t).source, "): ", returnType];
     }
 
@@ -215,7 +219,8 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
     }
 
     protected get castFunctionLines(): [string, string] {
-        return ["function cast<T>(val: any, typ: any): T", "function uncast<T>(val: T, typ: any): any"];
+        const any = this.anyType();
+        return [`function cast<T>(val: ${any}, typ: ${any}): T`, `function uncast<T>(val: T, typ: ${any}): ${any}`];
     }
 
     protected get typeAnnotations(): JavaScriptTypeAnnotations {
@@ -247,13 +252,13 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
     }
 
     protected deserializerFunctionLine(t: Type, name: Name): Sourcelike {
-        const jsonType = this._tsFlowOptions.rawType === "json" ? "string" : "any";
+        const jsonType = this._tsFlowOptions.rawType === "json" ? "string" : this.anyType();
         return ["public static to", name, "(json: ", jsonType, "): ", this.sourceFor(t).source];
     }
 
     protected serializerFunctionLine(t: Type, name: Name): Sourcelike {
         const camelCaseName = modifySource(camelCase, name);
-        const returnType = this._tsFlowOptions.rawType === "json" ? "string" : "any";
+        const returnType = this._tsFlowOptions.rawType === "json" ? "string" : this.anyType();
         return ["public static ", camelCaseName, "ToJson(value: ", this.sourceFor(t).source, "): ", returnType];
     }
 
@@ -262,7 +267,13 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
     }
 
     protected get typeAnnotations(): JavaScriptTypeAnnotations {
-        return Object.assign({ never: ": never" }, tsFlowTypeAnnotations);
+        const any = this.anyType();
+        return Object.assign({}, tsFlowTypeAnnotations, {
+            any: `: ${any}`,
+            anyArray: `: ${any}[]`,
+            anyMap: `: { [k: string]: ${any} }`,
+            never: ": never"
+        });
     }
 
     protected emitModuleExports(): void {
@@ -314,6 +325,14 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
             }
         );
     }
+
+    protected anyType(): string {
+        if (this._tsFlowOptions.preferUnknown) {
+            return "unknown";
+        } else {
+            return "any";
+        }
+    }
 }
 
 export class FlowTargetLanguage extends TypeScriptFlowBaseTargetLanguage {
@@ -332,7 +351,13 @@ export class FlowRenderer extends TypeScriptFlowBaseRenderer {
     }
 
     protected get typeAnnotations(): JavaScriptTypeAnnotations {
-        return Object.assign({ never: "" }, tsFlowTypeAnnotations);
+        const any = this.anyType();
+        return Object.assign({}, tsFlowTypeAnnotations, {
+            any: `: ${any}`,
+            anyArray: `: ${any}[]`,
+            anyMap: `: { [k: string]: ${any} }`,
+            never: ""
+        });
     }
 
     protected emitEnum(e: EnumType, enumName: Name): void {
@@ -362,5 +387,13 @@ export class FlowRenderer extends TypeScriptFlowBaseRenderer {
         this.emitLine("// @flow");
         this.ensureBlankLine();
         super.emitSourceStructure();
+    }
+
+    protected anyType(): string {
+        if (this._tsFlowOptions.preferUnknown) {
+            return "mixed";
+        } else {
+            return "any";
+        }
     }
 }

@@ -777,7 +777,8 @@ export const TypeScriptLanguage: Language = {
         { "declare-unions": "true" },
         ["pokedex.json", { "prefer-types": "true" }],
         { "acronym-style": "pascal" },
-        { converters: "all-objects" }
+        { converters: "all-objects" },
+        { "prefer-unknown": "true" },
     ],
     sourceFiles: ["src/language/TypeScript.ts"]
 };
