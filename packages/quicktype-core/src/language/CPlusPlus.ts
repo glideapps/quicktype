@@ -954,7 +954,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 }
             }
         }
-        let typeSource = matchType<Sourcelike>(
+        const typeSource = matchType<Sourcelike>(
             t,
             _anyType => {
                 isOptional = false;
