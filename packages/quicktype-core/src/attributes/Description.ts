@@ -9,6 +9,7 @@ import {
 } from "collection-utils";
 
 import { TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
+// FIXME: This is a circular import
 import { JSONSchemaType, Ref, JSONSchemaAttributes, PathElementKind, PathElement } from "../input/JSONSchemaInput";
 import { JSONSchema } from "../input/JSONSchemaStore";
 import { Type } from "../Type";
