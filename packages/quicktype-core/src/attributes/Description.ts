@@ -8,7 +8,10 @@ import {
     setSubtract
 } from "collection-utils";
 
+// There's a cyclic import here. Ignoring now because it requires a large refactor.
+// skipcq: JS-E1008
 import { TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
+// FIXME: This is a circular import
 import { JSONSchemaType, Ref, JSONSchemaAttributes, PathElementKind, PathElement } from "../input/JSONSchemaInput";
 import { JSONSchema } from "../input/JSONSchemaStore";
 import { Type } from "../Type";
