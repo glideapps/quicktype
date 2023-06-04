@@ -1142,7 +1142,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     ),
                     name
                 );
-                if (constraints !== undefined && constraints.has(jsonName)) {
+                if (constraints?.has(jsonName)) {
                     /** FIXME!!! NameStyle will/can collide with other Names */
                     const cnst = this.lookupGlobalName(GlobalNames.ClassMemberConstraints);
                     this.emitMember(cnst, this.constraintMember(jsonName));
@@ -1197,7 +1197,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     (property.isOptional && property.type.kind !== "null" && property.type.kind !== "any")
                 ) {
                     this.emitLine(rendered, " ", getterName, "() const { return ", name, "; }");
-                    if (constraints !== undefined && constraints.has(jsonName)) {
+                    if (constraints?.has(jsonName)) {
                         this.emitLine(
                             "void ",
                             setterName,
@@ -1219,7 +1219,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 } else {
                     this.emitLine(this.withConst(rendered), " & ", getterName, "() const { return ", name, "; }");
                     this.emitLine(rendered, " & ", mutableGetterName, "() { return ", name, "; }");
-                    if (constraints !== undefined && constraints.has(jsonName)) {
+                    if (constraints?.has(jsonName)) {
                         this.emitLine(
                             "void ",
                             setterName,
