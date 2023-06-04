@@ -44,7 +44,11 @@ import { StringTypes } from "../attributes/StringTypes";
 import { TypeRef } from "../TypeGraph";
 import { type RunContext } from "../Run";
 import { type Input } from "./Inputs";
+
+// There's a cyclic import here. Ignoring now because it requires a large refactor.
+// skipcq: JS-E1008
 import { descriptionAttributeProducer } from "../attributes/Description";
+
 import { accessorNamesAttributeProducer } from "../attributes/AccessorNames";
 import { enumValuesAttributeProducer } from "../attributes/EnumValues";
 import { minMaxAttributeProducer } from "../attributes/Constraints";
