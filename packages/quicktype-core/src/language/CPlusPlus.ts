@@ -1294,11 +1294,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 true,
                 false,
                 property.isOptional
-            );            
+            );
 
             res.set(jsonName, [
                 this.constraintMember(jsonName),
-                "(", 
+                "(",
                 minMax?.[0] && cppType === "int64_t" ? String(minMax[0]) : this._nulloptType,
                 ", ",
                 minMax?.[1] && cppType === "int64_t" ? String(minMax[1]) : this._nulloptType,
@@ -1307,9 +1307,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 ", ",
                 minMax?.[1] && cppType === "double" ? String(minMax[1]) : this._nulloptType,
                 ", ",
-                minMaxLength?.[0]
-                    ? String(minMaxLength[0])
-                    : this._nulloptType,
+                minMaxLength?.[0] ? String(minMaxLength[0]) : this._nulloptType,
                 ", ",
                 minMaxLength?.[1] ? String(minMaxLength[1]) : this._nulloptType,
                 ", ",
@@ -2121,7 +2119,13 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitLine("auto ", getterName, "() const { return ", memberName, "; }");
     }
 
-    protected emitNumericCheckConstraints(checkConst: string, classConstraint: string, getterMinValue: string, getterMaxValue: string, cppType: string): void {
+    protected emitNumericCheckConstraints(
+        checkConst: string,
+        classConstraint: string,
+        getterMinValue: string,
+        getterMaxValue: string,
+        cppType: string
+    ): void {
         this.emitBlock(
             [
                 "inline void ",
@@ -2276,7 +2280,13 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
         const checkConst = this.lookupGlobalName(GlobalNames.CheckConstraint);
         this.emitNumericCheckConstraints(checkConst, classConstraint, getterMinIntValue, getterMaxIntValue, "int64_t");
-        this.emitNumericCheckConstraints(checkConst, classConstraint, getterMinDoubleValue, getterMaxDoubleValue, "double");
+        this.emitNumericCheckConstraints(
+            checkConst,
+            classConstraint,
+            getterMinDoubleValue,
+            getterMaxDoubleValue,
+            "double"
+        );
 
         this.emitBlock(
             [
