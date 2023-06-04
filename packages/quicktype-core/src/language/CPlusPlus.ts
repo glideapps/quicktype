@@ -377,16 +377,10 @@ function addQualifier(qualifier: Sourcelike, qualified: Sourcelike[]): Sourcelik
 }
 
 class WrappingCode {
-    private _start: Sourcelike[];
-    private _end: Sourcelike[];
-
-    constructor(start: Sourcelike[], end: Sourcelike[]) {
-        this._start = start;
-        this._end = end;
-    }
+    constructor(private readonly start: Sourcelike[], private readonly end: Sourcelike[]) {}
 
     wrap(qualifier: Sourcelike, inner: Sourcelike): Sourcelike {
-        return [addQualifier(qualifier, this._start), inner, this._end];
+        return [addQualifier(qualifier, this.start), inner, this.end];
     }
 }
 
@@ -449,26 +443,26 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     /**
      * For forward declaration practically
      */
-    private _enumType: string;
+    private readonly _enumType: string;
 
-    private _generatedFiles: Set<string>;
+    private readonly _generatedFiles: Set<string>;
     private _currentFilename: string | undefined;
     private _allTypeNames: Set<string>;
     private readonly _gettersAndSettersForPropertyName = new Map<Name, [Name, Name, Name]>();
     private readonly _namespaceNames: ReadonlyArray<string>;
-    private _memberNameStyle: NameStyle;
-    private _namedTypeNameStyle: NameStyle;
-    private _generatedGlobalNames: Map<GlobalNames, string>;
-    private _generatedMemberNames: Map<MemberNames, string>;
-    private _forbiddenGlobalNames: string[];
+    private readonly _memberNameStyle: NameStyle;
+    private readonly _namedTypeNameStyle: NameStyle;
+    private readonly _generatedGlobalNames: Map<GlobalNames, string>;
+    private readonly _generatedMemberNames: Map<MemberNames, string>;
+    private readonly _forbiddenGlobalNames: string[];
     private readonly _memberNamingFunction: Namer;
-    private _stringType: StringType;
+    private readonly _stringType: StringType;
     /// The type to use as an optional  (std::optional or std::shared)
-    private _optionalType: string;
-    private _optionalFactory: string;
-    private _nulloptType: string;
-    private _variantType: string;
-    private _variantIndexMethodName: string;
+    private readonly _optionalType: string;
+    private readonly _optionalFactory: string;
+    private readonly _nulloptType: string;
+    private readonly _variantType: string;
+    private readonly _variantIndexMethodName: string;
 
     protected readonly typeNamingStyle: NamingStyle;
     protected readonly enumeratorNamingStyle: NamingStyle;
