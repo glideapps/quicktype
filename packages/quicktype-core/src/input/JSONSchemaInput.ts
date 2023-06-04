@@ -43,7 +43,7 @@ import { StringTypes } from "../attributes/StringTypes";
 
 import { TypeRef } from "../TypeGraph";
 import { type RunContext } from "../Run";
-import { Input } from "./Inputs";
+import { type Input } from "./Inputs";
 import { descriptionAttributeProducer } from "../attributes/Description";
 import { accessorNamesAttributeProducer } from "../attributes/AccessorNames";
 import { enumValuesAttributeProducer } from "../attributes/EnumValues";
