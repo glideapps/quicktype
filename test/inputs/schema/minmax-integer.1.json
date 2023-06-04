@@ -1,10 +1,10 @@
 {
-  "free": -123,
-  "min": 123,
-  "max": -123,
-  "minmax": 3,
-  "union": 6,
-  "minMaxUnion": 5,
-  "intersection": 4,
-  "minMaxIntersection": 4
+    "free": -123,
+    "min": 123,
+    "max": -123,
+    "minmax": 3,
+    "union": 6,
+    "minMaxUnion": 5,
+    "intersection": 4,
+    "minMaxIntersection": 4
 }
