@@ -19,6 +19,7 @@ import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { TargetLanguage } from "../TargetLanguage";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { RenderContext } from "../Renderer";
+import { StringTypeMapping, TransformedStringTypeKind, PrimitiveStringTypeKind } from "..";
 
 export const goOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
@@ -45,6 +46,14 @@ export class GoTargetLanguage extends TargetLanguage {
 
     get supportsUnionsWithBothNumberTypes(): boolean {
         return true;
+    }
+
+    get stringTypeMapping(): StringTypeMapping {
+        const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
+        mapping.set("date", "date-time");
+        mapping.set("time", "date-time");
+        mapping.set("date-time", "date-time");
+        return mapping;
     }
 
     get supportsOptionalClassProperties(): boolean {
@@ -215,6 +224,13 @@ export class GoRenderer extends ConvenienceRenderer {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) return this.nullableGoType(nullable, withIssues);
                 return this.nameForNamedType(unionType);
+            },
+            transformedStringType => {
+                if (transformedStringType.kind === "date-time") {
+                    return "time.Time";
+                }
+
+                return "string";
             }
         );
     }
@@ -262,8 +278,8 @@ export class GoRenderer extends ConvenienceRenderer {
 
     private emitClass(c: ClassType, className: Name): void {
         this.startFile(className);
-        this.emitPackageDefinitons(false);
         let columns: Sourcelike[][] = [];
+        const usedTypes = new Set<string>();
         this.forEachClassProperty(c, "none", (name, jsonName, p) => {
             const description = this.descriptionForClassProperty(c, jsonName);
             const docStrings =
@@ -281,7 +297,13 @@ export class GoRenderer extends ConvenienceRenderer {
                 [goType, " "],
                 ["`", tags, "`"]
             ]);
+            usedTypes.add(goType.toString());
         });
+
+        this.emitPackageDefinitons(
+            false,
+            usedTypes.has("time.Time") ? { imports: new Set<string>(["time"]) } : undefined
+        );
         this.emitDescription(this.descriptionForType(c));
         this.emitStruct(className, columns);
         this.endFile();
@@ -405,7 +427,18 @@ export class GoRenderer extends ConvenienceRenderer {
         });
     }
 
-    private emitPackageDefinitons(includeJSONEncodingImport: boolean): void {
+    private emitPackageDefinitons(
+        includeJSONEncodingImport: boolean,
+        addtionalOptions?: { imports?: Set<string> }
+    ): void {
+        if (addtionalOptions == null) {
+            addtionalOptions = {};
+        }
+
+        if (addtionalOptions.imports == null) {
+            addtionalOptions.imports = new Set<string>();
+        }
+
         if (!this._options.justTypes || this._options.justTypesAndPackage) {
             this.ensureBlankLine();
             const packageDeclaration = "package " + this._options.packageName;
@@ -414,15 +447,24 @@ export class GoRenderer extends ConvenienceRenderer {
         }
 
         if (!this._options.justTypes && !this._options.justTypesAndPackage) {
-            this.ensureBlankLine();
             if (this.haveNamedUnions && this._options.multiFileOutput === false) {
-                this.emitLineOnce('import "bytes"');
-                this.emitLineOnce('import "errors"');
+                addtionalOptions.imports.add("bytes");
+                addtionalOptions.imports.add("errors");
             }
 
             if (includeJSONEncodingImport) {
-                this.emitLineOnce('import "encoding/json"');
+                addtionalOptions.imports.add("encoding/json");
             }
+        }
+
+        const sortedImports = Array.from(addtionalOptions.imports).sort();
+
+        if (sortedImports.length > 0) {
+            this.emitLineOnce("import (");
+            sortedImports.forEach(packageName => {
+                this.emitLineOnce(`import "${packageName}"`);
+            });
+            this.emitLineOnce(")");
             this.ensureBlankLine();
         }
     }
