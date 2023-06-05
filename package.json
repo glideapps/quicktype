@@ -35,7 +35,7 @@
         "quicktype-graphql-input": "20.0.2",
         "quicktype-typescript-input": "20.0.2",
         "readable-stream": "^4.3.0",
-        "stream-json": "1.7.5",
+        "stream-json": "1.8.0",
         "string-to-stream": "^3.0.1",
         "typescript": "4.9.5"
     },
