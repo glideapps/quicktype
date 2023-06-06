@@ -452,7 +452,7 @@ export class GoRenderer extends ConvenienceRenderer {
         if (sortedImports.length > 0) {
             this.emitLineOnce("import (");
             sortedImports.forEach(packageName => {
-                this.emitLineOnce(`import "${packageName}"`);
+                this.emitLineOnce(`\t"${packageName}"`);
             });
             this.emitLineOnce(")");
             this.ensureBlankLine();
