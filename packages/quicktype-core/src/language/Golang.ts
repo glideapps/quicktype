@@ -50,8 +50,6 @@ export class GoTargetLanguage extends TargetLanguage {
 
     get stringTypeMapping(): StringTypeMapping {
         const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
-        mapping.set("date", "date-time");
-        mapping.set("time", "date-time");
         mapping.set("date-time", "date-time");
         return mapping;
     }
@@ -429,16 +427,8 @@ export class GoRenderer extends ConvenienceRenderer {
 
     private emitPackageDefinitons(
         includeJSONEncodingImport: boolean,
-        addtionalOptions?: { imports?: Set<string> }
+        additionalOptions = { imports: new Set<string>() }
     ): void {
-        if (addtionalOptions == null) {
-            addtionalOptions = {};
-        }
-
-        if (addtionalOptions.imports == null) {
-            addtionalOptions.imports = new Set<string>();
-        }
-
         if (!this._options.justTypes || this._options.justTypesAndPackage) {
             this.ensureBlankLine();
             const packageDeclaration = "package " + this._options.packageName;
@@ -448,16 +438,16 @@ export class GoRenderer extends ConvenienceRenderer {
 
         if (!this._options.justTypes && !this._options.justTypesAndPackage) {
             if (this.haveNamedUnions && this._options.multiFileOutput === false) {
-                addtionalOptions.imports.add("bytes");
-                addtionalOptions.imports.add("errors");
+                additionalOptions.imports.add("bytes");
+                additionalOptions.imports.add("errors");
             }
 
             if (includeJSONEncodingImport) {
-                addtionalOptions.imports.add("encoding/json");
+                additionalOptions.imports.add("encoding/json");
             }
         }
 
-        const sortedImports = Array.from(addtionalOptions.imports).sort();
+        const sortedImports = Array.from(additionalOptions.imports).sort();
 
         if (sortedImports.length > 0) {
             this.emitLineOnce("import (");
