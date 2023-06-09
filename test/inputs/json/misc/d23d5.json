@@ -1,1 +1,410 @@
-{"count": 49140, "facets": {}, "results": [{"name": "Mr Giampiero Reggidori", "acronym": null, "created_at": "2016-08-10T02:08:59.817023", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffff4d12eef74252b51812e9ce1713de", "updated_at": "2016-08-10T02:08:59.815655", "id": "ffff4d12eef74252b51812e9ce1713de"}, {"name": "Istituto Diplomatico Internazionale", "acronym": "I D I", "created_at": "2015-04-24T01:57:50.571116", "uri": "http://api.lobbyfacts.eu/api/1/entity/fffe798a051d4b228ae612b431ca064a", "updated_at": "2015-04-24T01:57:50.570385", "id": "fffe798a051d4b228ae612b431ca064a"}, {"name": "Ms Dragica Pilipovic Chaffey", "acronym": null, "created_at": "2016-02-03T02:50:46.244113", "uri": "http://api.lobbyfacts.eu/api/1/entity/fffd45719a79476c8ef0366685e99a74", "updated_at": "2016-02-03T02:50:46.242658", "id": "fffd45719a79476c8ef0366685e99a74"}, {"name": "Mr Alex Gorsky", "acronym": null, "created_at": "2015-04-24T01:48:58.565673", "uri": "http://api.lobbyfacts.eu/api/1/entity/fffcf9db4c424ba38fd5e812dd8aeaac", "updated_at": "2015-04-24T01:48:58.564945", "id": "fffcf9db4c424ba38fd5e812dd8aeaac"}, {"name": "Mr Gregory  Francis ", "acronym": null, "created_at": "2015-04-24T02:23:58.791310", "uri": "http://api.lobbyfacts.eu/api/1/entity/fffce2ef05014cfdaf322f13ee3d9db0", "updated_at": "2015-04-24T02:23:58.790188", "id": "fffce2ef05014cfdaf322f13ee3d9db0"}, {"name": "Ms Larisa Pircalabelu", "acronym": null, "created_at": "2016-07-21T01:23:59.142183", "uri": "http://api.lobbyfacts.eu/api/1/entity/fffc8702608445c9a8793517f4534fb1", "updated_at": "2016-07-21T01:23:59.141433", "id": "fffc8702608445c9a8793517f4534fb1"}, {"name": "Mr Alexander Kneepkens", "acronym": null, "created_at": "2015-05-07T21:34:40.869573", "uri": "http://api.lobbyfacts.eu/api/1/entity/fff720deb12f4b1fb0f149469d15b5e5", "updated_at": "2015-05-07T21:34:40.868283", "id": "fff720deb12f4b1fb0f149469d15b5e5"}, {"name": "Mr Marco Digioia", "acronym": null, "created_at": "2015-04-24T01:53:59.129907", "uri": "http://api.lobbyfacts.eu/api/1/entity/fff48726498240688ff6db5c7611a70c", "updated_at": "2015-04-24T01:53:59.129280", "id": "fff48726498240688ff6db5c7611a70c"}, {"name": "Ms Adela BRUSOVA", "acronym": null, "created_at": "2015-04-24T02:03:33.932156", "uri": "http://api.lobbyfacts.eu/api/1/entity/fff1decf9c744ea09e540504ad514763", "updated_at": "2015-04-24T02:03:33.931445", "id": "fff1decf9c744ea09e540504ad514763"}, {"name": "Ms Anja Ingenrieth", "acronym": null, "created_at": "2015-05-07T21:14:28.711779", "uri": "http://api.lobbyfacts.eu/api/1/entity/fff1538c8ea349d18866a8f98c862ff8", "updated_at": "2015-05-07T21:14:28.710327", "id": "fff1538c8ea349d18866a8f98c862ff8"}, {"name": "Mr Dimitrios Lyridis", "acronym": null, "created_at": "2016-05-08T01:49:49.437857", "uri": "http://api.lobbyfacts.eu/api/1/entity/fff11d63c1334292bf8a4780e68c8cfe", "updated_at": "2016-05-08T01:49:49.436442", "id": "fff11d63c1334292bf8a4780e68c8cfe"}, {"name": "Ms Rosanna Lewis", "acronym": null, "created_at": "2016-03-18T01:36:59.675522", "uri": "http://api.lobbyfacts.eu/api/1/entity/fff0a5c1b9494f989e85ef7c2b9f5ac5", "updated_at": "2016-03-18T01:36:59.673429", "id": "fff0a5c1b9494f989e85ef7c2b9f5ac5"}, {"name": "Mr Pascal Montredon", "acronym": null, "created_at": "2016-05-05T01:19:54.860443", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffee3e4971634c929b8b61b24fb2f08a", "updated_at": "2016-05-05T01:19:54.859001", "id": "ffee3e4971634c929b8b61b24fb2f08a"}, {"name": "Mr Jelmen HAAZE", "acronym": null, "created_at": "2015-10-30T00:39:35.770055", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffeba603bb3947c7a43a4c086031b3aa", "updated_at": "2015-10-30T00:39:35.768633", "id": "ffeba603bb3947c7a43a4c086031b3aa"}, {"name": "Mr Flavio BURLIZZI", "acronym": null, "created_at": "2015-08-04T22:57:51.011270", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffeae77f2b894a33b881ec2b79e29117", "updated_at": "2015-08-04T22:57:51.009831", "id": "ffeae77f2b894a33b881ec2b79e29117"}, {"name": "Ms Tomoyo Sekiguchi ", "acronym": null, "created_at": "2016-03-09T02:38:11.880805", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffe968703bb44040b61bce6494c59a97", "updated_at": "2016-03-09T02:38:11.878442", "id": "ffe968703bb44040b61bce6494c59a97"}, {"name": "Conseil G\u00e9n\u00e9ral du Gard", "acronym": null, "created_at": "2016-03-17T03:00:04.766562", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffe8919709ac4830ad71b625294b7382", "updated_at": "2016-03-17T03:00:04.765137", "id": "ffe8919709ac4830ad71b625294b7382"}, {"name": "EUROPEAN FEDERATION OF BUILDING AND WOODWORKERS", "acronym": "EFBWW", "created_at": "2015-05-07T21:26:53.280572", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffe7eff4d34b4d7b97239846b8964fbe", "updated_at": "2015-05-07T21:26:53.279783", "id": "ffe7eff4d34b4d7b97239846b8964fbe"}, {"name": "Think Tank EUROPA", "acronym": "TTE", "created_at": "2015-04-24T02:24:58.732688", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffe6fffd4f1e4dbf8ff26ffa80f132c6", "updated_at": "2015-04-24T02:24:58.731979", "id": "ffe6fffd4f1e4dbf8ff26ffa80f132c6"}, {"name": "Ms Willig Caren", "acronym": null, "created_at": "2015-12-10T02:00:11.666098", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffe54c713fc04c03bf8aca713f9ad2e8", "updated_at": "2015-12-10T02:00:11.665101", "id": "ffe54c713fc04c03bf8aca713f9ad2e8"}, {"name": "Solum", "acronym": null, "created_at": "2015-05-07T21:30:52.601629", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffe3e1c97a4f445ab1dd1e4c60bc18cf", "updated_at": "2015-05-07T21:30:52.600789", "id": "ffe3e1c97a4f445ab1dd1e4c60bc18cf"}, {"name": "EUBrasil", "acronym": null, "created_at": "2015-04-24T02:06:02.774935", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffe37e4dd46042a0bf0654695f0ad0ae", "updated_at": "2015-04-24T02:06:02.773344", "id": "ffe37e4dd46042a0bf0654695f0ad0ae"}, {"name": "Mr Thorsten Dr. Diercks", "acronym": null, "created_at": "2015-05-07T21:21:26.956745", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffe3548dcf8c48a9b4fa39d530a9fd0e", "updated_at": "2015-05-07T21:21:26.955469", "id": "ffe3548dcf8c48a9b4fa39d530a9fd0e"}, {"name": "Airbus Aeronautics", "acronym": null, "created_at": "2016-04-05T00:12:27.592570", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffe23c57f5d34e55b63580fa92eef387", "updated_at": "2016-04-05T00:12:27.590570", "id": "ffe23c57f5d34e55b63580fa92eef387"}, {"name": "Ms Elisa Briga", "acronym": null, "created_at": "2015-04-24T01:57:23.904841", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffe18d1d8713464bbbf7c1e81887c68b", "updated_at": "2015-04-24T01:57:23.904057", "id": "ffe18d1d8713464bbbf7c1e81887c68b"}, {"name": "Ms Roza Maria Strevinioti", "acronym": null, "created_at": "2015-04-24T02:00:42.086250", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffe06b4f2f2c4b6faebdf361bb9b4ac1", "updated_at": "2015-04-24T02:00:42.084916", "id": "ffe06b4f2f2c4b6faebdf361bb9b4ac1"}, {"name": "Association for the International Collective Management of Audiovisual Works", "acronym": "AGICOA", "created_at": "2015-11-14T02:02:49.268803", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffddc42b48c641b2b9781be1123df0e5", "updated_at": "2015-11-14T02:02:49.267949", "id": "ffddc42b48c641b2b9781be1123df0e5"}, {"name": "Mr Joachim BERNEY", "acronym": null, "created_at": "2015-08-04T23:44:49.425906", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffdda474c46e47698baa4d5afbc99977", "updated_at": "2015-08-04T23:44:49.424473", "id": "ffdda474c46e47698baa4d5afbc99977"}, {"name": "Mr John  Barradell", "acronym": null, "created_at": "2015-10-15T00:50:12.091403", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffdd6e406d494529821a8bdee1be4b33", "updated_at": "2015-10-15T00:50:12.089971", "id": "ffdd6e406d494529821a8bdee1be4b33"}, {"name": "Osterreichische Post AG", "acronym": null, "created_at": "2016-04-21T01:17:40.241168", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffdcb1ae5ba74431aa24fa630b339e18", "updated_at": "2016-04-21T01:17:40.240405", "id": "ffdcb1ae5ba74431aa24fa630b339e18"}, {"name": "Mr Tom Nysted", "acronym": null, "created_at": "2015-04-24T02:15:04.802512", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffdb8caab0284102b7177dd75d4922a8", "updated_at": "2015-04-24T02:15:04.801810", "id": "ffdb8caab0284102b7177dd75d4922a8"}, {"name": "Mr Jaime BERNIS", "acronym": null, "created_at": "2015-09-16T23:38:29.717737", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffda5015f466463aad395c55eb98d234", "updated_at": "2015-09-16T23:38:29.716938", "id": "ffda5015f466463aad395c55eb98d234"}, {"name": "Mr David McKenna", "acronym": null, "created_at": "2015-04-24T02:02:52.877702", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffd990efd8c341b78aa0101b67b9477f", "updated_at": "2015-04-24T02:02:52.876918", "id": "ffd990efd8c341b78aa0101b67b9477f"}, {"name": "Instituto para la Producci\u00f3n Sostenible", "acronym": null, "created_at": "2015-05-07T21:39:59.552249", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffd783eb6a9a4e43883b05dc4f211e01", "updated_at": "2015-05-07T21:39:59.551454", "id": "ffd783eb6a9a4e43883b05dc4f211e01"}, {"name": "Associazione Nazionale Consorzi Gestione e Tutela del Territorio e Acque irrigue", "acronym": "ANBI", "created_at": "2016-07-06T02:05:14.587863", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffd67dd940974fff8dc870ddc0839205", "updated_at": "2016-07-06T02:05:14.586583", "id": "ffd67dd940974fff8dc870ddc0839205"}, {"name": "Open Internet Project", "acronym": "OIP", "created_at": "2015-04-24T02:30:51.174761", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffd5e14900b64b1a9dd4a79748b1221e", "updated_at": "2015-04-24T02:30:51.173582", "id": "ffd5e14900b64b1a9dd4a79748b1221e"}, {"name": "MEADOW VALE FOODS LIMITED", "acronym": null, "created_at": "2016-05-07T01:57:58.384964", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffd33a5c282d4b59b962b08b9383c823", "updated_at": "2016-05-07T01:57:58.383522", "id": "ffd33a5c282d4b59b962b08b9383c823"}, {"name": "Ms Costanza BUFALINI", "acronym": null, "created_at": "2015-05-07T21:17:08.207441", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffcf912c4bf349bc8777cdd382dbeb77", "updated_at": "2015-05-07T21:17:08.206097", "id": "ffcf912c4bf349bc8777cdd382dbeb77"}, {"name": "Ms VILLARINO PILAR", "acronym": null, "created_at": "2016-05-18T01:55:35.885694", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffcf6d726f9d4f2a865d4f9fffb80747", "updated_at": "2016-05-18T01:55:35.884374", "id": "ffcf6d726f9d4f2a865d4f9fffb80747"}, {"name": "Ms Claire Wilson-Leary", "acronym": null, "created_at": "2016-08-24T01:09:24.395536", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffcbde4c9fff4951b1fd532ea5c3761d", "updated_at": "2016-08-24T01:09:24.394197", "id": "ffcbde4c9fff4951b1fd532ea5c3761d"}, {"name": "BlackBerry", "acronym": "BlackBerry", "created_at": "2015-04-24T02:07:17.565441", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffcbcdf1eec342ed9287cfc9dc5ed71d", "updated_at": "2015-04-24T02:07:17.564649", "id": "ffcbcdf1eec342ed9287cfc9dc5ed71d"}, {"name": "Hewlett-Packard Company", "acronym": null, "created_at": "2015-04-24T01:48:14.159850", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffcb47bb0ee44ac0a3597ba822be1d36", "updated_at": "2015-04-24T01:48:14.158413", "id": "ffcb47bb0ee44ac0a3597ba822be1d36"}, {"name": "Slovensk\u00e1 po\u0161ta, a. s.", "acronym": null, "created_at": "2016-04-21T01:17:40.762874", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffca0afa625f4d3bb5c87eb4c6d7e9af", "updated_at": "2016-04-21T01:17:40.762126", "id": "ffca0afa625f4d3bb5c87eb4c6d7e9af"}, {"name": "ADAS UK Limited", "acronym": null, "created_at": "2015-04-24T02:27:26.106588", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffc8242abb324f3ba18bbf76fefb6284", "updated_at": "2015-04-24T02:27:26.105885", "id": "ffc8242abb324f3ba18bbf76fefb6284"}, {"name": "Ms Sandrell SULTANA", "acronym": null, "created_at": "2015-08-04T22:33:54.008095", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffc7e169388b47c2bf38ba17931f77e6", "updated_at": "2015-08-04T22:33:54.006715", "id": "ffc7e169388b47c2bf38ba17931f77e6"}, {"name": "Europ\u00e4ischer Kartellverband christlicher Studentenverb\u00e4nde", "acronym": "EKV", "created_at": "2015-05-07T21:30:10.558170", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffc781ee1d4041a1a6dc391f7f93b8b4", "updated_at": "2015-05-07T21:30:10.556740", "id": "ffc781ee1d4041a1a6dc391f7f93b8b4"}, {"name": "Mr Zden\u011bk Vermouzek", "acronym": null, "created_at": "2016-09-04T02:09:52.477933", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffc654bd22e34ef0a77c5fbb0f6aec17", "updated_at": "2016-09-04T02:09:52.475693", "id": "ffc654bd22e34ef0a77c5fbb0f6aec17"}, {"name": "Ms Ana MINGO", "acronym": null, "created_at": "2015-08-04T23:30:45.426863", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffc636f187cc4601b14f19d857092fc5", "updated_at": "2015-08-04T23:30:45.425384", "id": "ffc636f187cc4601b14f19d857092fc5"}, {"name": "Mr Carlton DEAL", "acronym": null, "created_at": "2015-08-04T22:55:14.129970", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffc5d109563948389eadfd45ddf17112", "updated_at": "2015-08-04T22:55:14.128531", "id": "ffc5d109563948389eadfd45ddf17112"}, {"name": "Ms Diana Popa", "acronym": null, "created_at": "2015-04-24T02:09:48.888939", "uri": "http://api.lobbyfacts.eu/api/1/entity/ffc4b62de478477d8b25f1d593e99467", "updated_at": "2015-04-24T02:09:48.888213", "id": "ffc4b62de478477d8b25f1d593e99467"}], "next": "http://api.lobbyfacts.eu/api/1/entity?limit=50&offset=50", "limit": 50, "offset": 0, "previous": false}
+{
+    "count": 49140,
+    "facets": {},
+    "results": [
+        {
+            "name": "Mr Giampiero Reggidori",
+            "acronym": null,
+            "created_at": "2016-08-10T02:08:59.817023Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffff4d12eef74252b51812e9ce1713de",
+            "updated_at": "2016-08-10T02:08:59.815655Z",
+            "id": "ffff4d12eef74252b51812e9ce1713de"
+        },
+        {
+            "name": "Istituto Diplomatico Internazionale",
+            "acronym": "I D I",
+            "created_at": "2015-04-24T01:57:50.571116Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/fffe798a051d4b228ae612b431ca064a",
+            "updated_at": "2015-04-24T01:57:50.570385Z",
+            "id": "fffe798a051d4b228ae612b431ca064a"
+        },
+        {
+            "name": "Ms Dragica Pilipovic Chaffey",
+            "acronym": null,
+            "created_at": "2016-02-03T02:50:46.244113Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/fffd45719a79476c8ef0366685e99a74",
+            "updated_at": "2016-02-03T02:50:46.242658Z",
+            "id": "fffd45719a79476c8ef0366685e99a74"
+        },
+        {
+            "name": "Mr Alex Gorsky",
+            "acronym": null,
+            "created_at": "2015-04-24T01:48:58.565673Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/fffcf9db4c424ba38fd5e812dd8aeaac",
+            "updated_at": "2015-04-24T01:48:58.564945Z",
+            "id": "fffcf9db4c424ba38fd5e812dd8aeaac"
+        },
+        {
+            "name": "Mr Gregory  Francis ",
+            "acronym": null,
+            "created_at": "2015-04-24T02:23:58.791310Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/fffce2ef05014cfdaf322f13ee3d9db0",
+            "updated_at": "2015-04-24T02:23:58.790188Z",
+            "id": "fffce2ef05014cfdaf322f13ee3d9db0"
+        },
+        {
+            "name": "Ms Larisa Pircalabelu",
+            "acronym": null,
+            "created_at": "2016-07-21T01:23:59.142183Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/fffc8702608445c9a8793517f4534fb1",
+            "updated_at": "2016-07-21T01:23:59.141433Z",
+            "id": "fffc8702608445c9a8793517f4534fb1"
+        },
+        {
+            "name": "Mr Alexander Kneepkens",
+            "acronym": null,
+            "created_at": "2015-05-07T21:34:40.869573Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/fff720deb12f4b1fb0f149469d15b5e5",
+            "updated_at": "2015-05-07T21:34:40.868283Z",
+            "id": "fff720deb12f4b1fb0f149469d15b5e5"
+        },
+        {
+            "name": "Mr Marco Digioia",
+            "acronym": null,
+            "created_at": "2015-04-24T01:53:59.129907Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/fff48726498240688ff6db5c7611a70c",
+            "updated_at": "2015-04-24T01:53:59.129280Z",
+            "id": "fff48726498240688ff6db5c7611a70c"
+        },
+        {
+            "name": "Ms Adela BRUSOVA",
+            "acronym": null,
+            "created_at": "2015-04-24T02:03:33.932156Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/fff1decf9c744ea09e540504ad514763",
+            "updated_at": "2015-04-24T02:03:33.931445Z",
+            "id": "fff1decf9c744ea09e540504ad514763"
+        },
+        {
+            "name": "Ms Anja Ingenrieth",
+            "acronym": null,
+            "created_at": "2015-05-07T21:14:28.711779Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/fff1538c8ea349d18866a8f98c862ff8",
+            "updated_at": "2015-05-07T21:14:28.710327Z",
+            "id": "fff1538c8ea349d18866a8f98c862ff8"
+        },
+        {
+            "name": "Mr Dimitrios Lyridis",
+            "acronym": null,
+            "created_at": "2016-05-08T01:49:49.437857Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/fff11d63c1334292bf8a4780e68c8cfe",
+            "updated_at": "2016-05-08T01:49:49.436442Z",
+            "id": "fff11d63c1334292bf8a4780e68c8cfe"
+        },
+        {
+            "name": "Ms Rosanna Lewis",
+            "acronym": null,
+            "created_at": "2016-03-18T01:36:59.675522Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/fff0a5c1b9494f989e85ef7c2b9f5ac5",
+            "updated_at": "2016-03-18T01:36:59.673429Z",
+            "id": "fff0a5c1b9494f989e85ef7c2b9f5ac5"
+        },
+        {
+            "name": "Mr Pascal Montredon",
+            "acronym": null,
+            "created_at": "2016-05-05T01:19:54.860443Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffee3e4971634c929b8b61b24fb2f08a",
+            "updated_at": "2016-05-05T01:19:54.859001Z",
+            "id": "ffee3e4971634c929b8b61b24fb2f08a"
+        },
+        {
+            "name": "Mr Jelmen HAAZE",
+            "acronym": null,
+            "created_at": "2015-10-30T00:39:35.770055Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffeba603bb3947c7a43a4c086031b3aa",
+            "updated_at": "2015-10-30T00:39:35.768633Z",
+            "id": "ffeba603bb3947c7a43a4c086031b3aa"
+        },
+        {
+            "name": "Mr Flavio BURLIZZI",
+            "acronym": null,
+            "created_at": "2015-08-04T22:57:51.011270Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffeae77f2b894a33b881ec2b79e29117",
+            "updated_at": "2015-08-04T22:57:51.009831Z",
+            "id": "ffeae77f2b894a33b881ec2b79e29117"
+        },
+        {
+            "name": "Ms Tomoyo Sekiguchi ",
+            "acronym": null,
+            "created_at": "2016-03-09T02:38:11.880805Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffe968703bb44040b61bce6494c59a97",
+            "updated_at": "2016-03-09T02:38:11.878442Z",
+            "id": "ffe968703bb44040b61bce6494c59a97"
+        },
+        {
+            "name": "Conseil G\u00e9n\u00e9ral du Gard",
+            "acronym": null,
+            "created_at": "2016-03-17T03:00:04.766562Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffe8919709ac4830ad71b625294b7382",
+            "updated_at": "2016-03-17T03:00:04.765137Z",
+            "id": "ffe8919709ac4830ad71b625294b7382"
+        },
+        {
+            "name": "EUROPEAN FEDERATION OF BUILDING AND WOODWORKERS",
+            "acronym": "EFBWW",
+            "created_at": "2015-05-07T21:26:53.280572Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffe7eff4d34b4d7b97239846b8964fbe",
+            "updated_at": "2015-05-07T21:26:53.279783Z",
+            "id": "ffe7eff4d34b4d7b97239846b8964fbe"
+        },
+        {
+            "name": "Think Tank EUROPA",
+            "acronym": "TTE",
+            "created_at": "2015-04-24T02:24:58.732688Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffe6fffd4f1e4dbf8ff26ffa80f132c6",
+            "updated_at": "2015-04-24T02:24:58.731979Z",
+            "id": "ffe6fffd4f1e4dbf8ff26ffa80f132c6"
+        },
+        {
+            "name": "Ms Willig Caren",
+            "acronym": null,
+            "created_at": "2015-12-10T02:00:11.666098Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffe54c713fc04c03bf8aca713f9ad2e8",
+            "updated_at": "2015-12-10T02:00:11.665101Z",
+            "id": "ffe54c713fc04c03bf8aca713f9ad2e8"
+        },
+        {
+            "name": "Solum",
+            "acronym": null,
+            "created_at": "2015-05-07T21:30:52.601629Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffe3e1c97a4f445ab1dd1e4c60bc18cf",
+            "updated_at": "2015-05-07T21:30:52.600789Z",
+            "id": "ffe3e1c97a4f445ab1dd1e4c60bc18cf"
+        },
+        {
+            "name": "EUBrasil",
+            "acronym": null,
+            "created_at": "2015-04-24T02:06:02.774935Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffe37e4dd46042a0bf0654695f0ad0ae",
+            "updated_at": "2015-04-24T02:06:02.773344Z",
+            "id": "ffe37e4dd46042a0bf0654695f0ad0ae"
+        },
+        {
+            "name": "Mr Thorsten Dr. Diercks",
+            "acronym": null,
+            "created_at": "2015-05-07T21:21:26.956745Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffe3548dcf8c48a9b4fa39d530a9fd0e",
+            "updated_at": "2015-05-07T21:21:26.955469Z",
+            "id": "ffe3548dcf8c48a9b4fa39d530a9fd0e"
+        },
+        {
+            "name": "Airbus Aeronautics",
+            "acronym": null,
+            "created_at": "2016-04-05T00:12:27.592570Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffe23c57f5d34e55b63580fa92eef387",
+            "updated_at": "2016-04-05T00:12:27.590570Z",
+            "id": "ffe23c57f5d34e55b63580fa92eef387"
+        },
+        {
+            "name": "Ms Elisa Briga",
+            "acronym": null,
+            "created_at": "2015-04-24T01:57:23.904841Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffe18d1d8713464bbbf7c1e81887c68b",
+            "updated_at": "2015-04-24T01:57:23.904057Z",
+            "id": "ffe18d1d8713464bbbf7c1e81887c68b"
+        },
+        {
+            "name": "Ms Roza Maria Strevinioti",
+            "acronym": null,
+            "created_at": "2015-04-24T02:00:42.086250Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffe06b4f2f2c4b6faebdf361bb9b4ac1",
+            "updated_at": "2015-04-24T02:00:42.084916Z",
+            "id": "ffe06b4f2f2c4b6faebdf361bb9b4ac1"
+        },
+        {
+            "name": "Association for the International Collective Management of Audiovisual Works",
+            "acronym": "AGICOA",
+            "created_at": "2015-11-14T02:02:49.268803Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffddc42b48c641b2b9781be1123df0e5",
+            "updated_at": "2015-11-14T02:02:49.267949Z",
+            "id": "ffddc42b48c641b2b9781be1123df0e5"
+        },
+        {
+            "name": "Mr Joachim BERNEY",
+            "acronym": null,
+            "created_at": "2015-08-04T23:44:49.425906Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffdda474c46e47698baa4d5afbc99977",
+            "updated_at": "2015-08-04T23:44:49.424473Z",
+            "id": "ffdda474c46e47698baa4d5afbc99977"
+        },
+        {
+            "name": "Mr John  Barradell",
+            "acronym": null,
+            "created_at": "2015-10-15T00:50:12.091403Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffdd6e406d494529821a8bdee1be4b33",
+            "updated_at": "2015-10-15T00:50:12.089971Z",
+            "id": "ffdd6e406d494529821a8bdee1be4b33"
+        },
+        {
+            "name": "Osterreichische Post AG",
+            "acronym": null,
+            "created_at": "2016-04-21T01:17:40.241168Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffdcb1ae5ba74431aa24fa630b339e18",
+            "updated_at": "2016-04-21T01:17:40.240405Z",
+            "id": "ffdcb1ae5ba74431aa24fa630b339e18"
+        },
+        {
+            "name": "Mr Tom Nysted",
+            "acronym": null,
+            "created_at": "2015-04-24T02:15:04.802512Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffdb8caab0284102b7177dd75d4922a8",
+            "updated_at": "2015-04-24T02:15:04.801810Z",
+            "id": "ffdb8caab0284102b7177dd75d4922a8"
+        },
+        {
+            "name": "Mr Jaime BERNIS",
+            "acronym": null,
+            "created_at": "2015-09-16T23:38:29.717737Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffda5015f466463aad395c55eb98d234",
+            "updated_at": "2015-09-16T23:38:29.716938Z",
+            "id": "ffda5015f466463aad395c55eb98d234"
+        },
+        {
+            "name": "Mr David McKenna",
+            "acronym": null,
+            "created_at": "2015-04-24T02:02:52.877702Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffd990efd8c341b78aa0101b67b9477f",
+            "updated_at": "2015-04-24T02:02:52.876918Z",
+            "id": "ffd990efd8c341b78aa0101b67b9477f"
+        },
+        {
+            "name": "Instituto para la Producci\u00f3n Sostenible",
+            "acronym": null,
+            "created_at": "2015-05-07T21:39:59.552249Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffd783eb6a9a4e43883b05dc4f211e01",
+            "updated_at": "2015-05-07T21:39:59.551454Z",
+            "id": "ffd783eb6a9a4e43883b05dc4f211e01"
+        },
+        {
+            "name": "Associazione Nazionale Consorzi Gestione e Tutela del Territorio e Acque irrigue",
+            "acronym": "ANBI",
+            "created_at": "2016-07-06T02:05:14.587863Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffd67dd940974fff8dc870ddc0839205",
+            "updated_at": "2016-07-06T02:05:14.586583Z",
+            "id": "ffd67dd940974fff8dc870ddc0839205"
+        },
+        {
+            "name": "Open Internet Project",
+            "acronym": "OIP",
+            "created_at": "2015-04-24T02:30:51.174761Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffd5e14900b64b1a9dd4a79748b1221e",
+            "updated_at": "2015-04-24T02:30:51.173582Z",
+            "id": "ffd5e14900b64b1a9dd4a79748b1221e"
+        },
+        {
+            "name": "MEADOW VALE FOODS LIMITED",
+            "acronym": null,
+            "created_at": "2016-05-07T01:57:58.384964Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffd33a5c282d4b59b962b08b9383c823",
+            "updated_at": "2016-05-07T01:57:58.383522Z",
+            "id": "ffd33a5c282d4b59b962b08b9383c823"
+        },
+        {
+            "name": "Ms Costanza BUFALINI",
+            "acronym": null,
+            "created_at": "2015-05-07T21:17:08.207441Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffcf912c4bf349bc8777cdd382dbeb77",
+            "updated_at": "2015-05-07T21:17:08.206097Z",
+            "id": "ffcf912c4bf349bc8777cdd382dbeb77"
+        },
+        {
+            "name": "Ms VILLARINO PILAR",
+            "acronym": null,
+            "created_at": "2016-05-18T01:55:35.885694Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffcf6d726f9d4f2a865d4f9fffb80747",
+            "updated_at": "2016-05-18T01:55:35.884374Z",
+            "id": "ffcf6d726f9d4f2a865d4f9fffb80747"
+        },
+        {
+            "name": "Ms Claire Wilson-Leary",
+            "acronym": null,
+            "created_at": "2016-08-24T01:09:24.395536Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffcbde4c9fff4951b1fd532ea5c3761d",
+            "updated_at": "2016-08-24T01:09:24.394197Z",
+            "id": "ffcbde4c9fff4951b1fd532ea5c3761d"
+        },
+        {
+            "name": "BlackBerry",
+            "acronym": "BlackBerry",
+            "created_at": "2015-04-24T02:07:17.565441Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffcbcdf1eec342ed9287cfc9dc5ed71d",
+            "updated_at": "2015-04-24T02:07:17.564649Z",
+            "id": "ffcbcdf1eec342ed9287cfc9dc5ed71d"
+        },
+        {
+            "name": "Hewlett-Packard Company",
+            "acronym": null,
+            "created_at": "2015-04-24T01:48:14.159850Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffcb47bb0ee44ac0a3597ba822be1d36",
+            "updated_at": "2015-04-24T01:48:14.158413Z",
+            "id": "ffcb47bb0ee44ac0a3597ba822be1d36"
+        },
+        {
+            "name": "Slovensk\u00e1 po\u0161ta, a. s.",
+            "acronym": null,
+            "created_at": "2016-04-21T01:17:40.762874Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffca0afa625f4d3bb5c87eb4c6d7e9af",
+            "updated_at": "2016-04-21T01:17:40.762126Z",
+            "id": "ffca0afa625f4d3bb5c87eb4c6d7e9af"
+        },
+        {
+            "name": "ADAS UK Limited",
+            "acronym": null,
+            "created_at": "2015-04-24T02:27:26.106588Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffc8242abb324f3ba18bbf76fefb6284",
+            "updated_at": "2015-04-24T02:27:26.105885Z",
+            "id": "ffc8242abb324f3ba18bbf76fefb6284"
+        },
+        {
+            "name": "Ms Sandrell SULTANA",
+            "acronym": null,
+            "created_at": "2015-08-04T22:33:54.008095Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffc7e169388b47c2bf38ba17931f77e6",
+            "updated_at": "2015-08-04T22:33:54.006715Z",
+            "id": "ffc7e169388b47c2bf38ba17931f77e6"
+        },
+        {
+            "name": "Europ\u00e4ischer Kartellverband christlicher Studentenverb\u00e4nde",
+            "acronym": "EKV",
+            "created_at": "2015-05-07T21:30:10.558170Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffc781ee1d4041a1a6dc391f7f93b8b4",
+            "updated_at": "2015-05-07T21:30:10.556740Z",
+            "id": "ffc781ee1d4041a1a6dc391f7f93b8b4"
+        },
+        {
+            "name": "Mr Zden\u011bk Vermouzek",
+            "acronym": null,
+            "created_at": "2016-09-04T02:09:52.477933Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffc654bd22e34ef0a77c5fbb0f6aec17",
+            "updated_at": "2016-09-04T02:09:52.475693Z",
+            "id": "ffc654bd22e34ef0a77c5fbb0f6aec17"
+        },
+        {
+            "name": "Ms Ana MINGO",
+            "acronym": null,
+            "created_at": "2015-08-04T23:30:45.426863Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffc636f187cc4601b14f19d857092fc5",
+            "updated_at": "2015-08-04T23:30:45.425384Z",
+            "id": "ffc636f187cc4601b14f19d857092fc5"
+        },
+        {
+            "name": "Mr Carlton DEAL",
+            "acronym": null,
+            "created_at": "2015-08-04T22:55:14.129970Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffc5d109563948389eadfd45ddf17112",
+            "updated_at": "2015-08-04T22:55:14.128531Z",
+            "id": "ffc5d109563948389eadfd45ddf17112"
+        },
+        {
+            "name": "Ms Diana Popa",
+            "acronym": null,
+            "created_at": "2015-04-24T02:09:48.888939Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/entity/ffc4b62de478477d8b25f1d593e99467",
+            "updated_at": "2015-04-24T02:09:48.888213Z",
+            "id": "ffc4b62de478477d8b25f1d593e99467"
+        }
+    ],
+    "next": "http://api.lobbyfacts.eu/api/1/entity?limit=50&offset=50",
+    "limit": 50,
+    "offset": 0,
+    "previous": false
+}

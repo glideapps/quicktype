@@ -90,7 +90,7 @@ const compoundTypeKinds: TypeKind[] = ["array", "class", "map", "enum"];
 
 function isValueType(t: Type): boolean {
     const kind = t.kind;
-    return primitiveValueTypeKinds.indexOf(kind) >= 0 || kind === "class" || kind === "enum";
+    return primitiveValueTypeKinds.indexOf(kind) >= 0 || kind === "class" || kind === "enum" || kind === "date-time";
 }
 
 function canOmitEmpty(cp: ClassProperty): boolean {
@@ -300,7 +300,7 @@ export class GoRenderer extends ConvenienceRenderer {
 
         this.emitPackageDefinitons(
             false,
-            usedTypes.has("time.Time") ? { imports: new Set<string>(["time"]) } : undefined
+            usedTypes.has("time.Time") || usedTypes.has("*,time.Time") ? new Set<string>(["time"]) : undefined
         );
         this.emitDescription(this.descriptionForType(c));
         this.emitStruct(className, columns);
@@ -425,10 +425,7 @@ export class GoRenderer extends ConvenienceRenderer {
         });
     }
 
-    private emitPackageDefinitons(
-        includeJSONEncodingImport: boolean,
-        additionalOptions = { imports: new Set<string>() }
-    ): void {
+    private emitPackageDefinitons(includeJSONEncodingImport: boolean, imports: Set<string> = new Set<string>()): void {
         if (!this._options.justTypes || this._options.justTypesAndPackage) {
             this.ensureBlankLine();
             const packageDeclaration = "package " + this._options.packageName;
@@ -438,37 +435,41 @@ export class GoRenderer extends ConvenienceRenderer {
 
         if (!this._options.justTypes && !this._options.justTypesAndPackage) {
             if (this.haveNamedUnions && this._options.multiFileOutput === false) {
-                additionalOptions.imports.add("bytes");
-                additionalOptions.imports.add("errors");
+                imports.add("bytes");
+                imports.add("errors");
             }
 
             if (includeJSONEncodingImport) {
-                additionalOptions.imports.add("encoding/json");
+                imports.add("encoding/json");
             }
         }
 
-        const sortedImports = Array.from(additionalOptions.imports).sort();
+        this.emitImports(imports);
+    }
 
-        if (sortedImports.length > 0) {
-            this.emitLineOnce("import (");
-            this.indent(() => {
-                sortedImports.forEach(packageName => {
-                    this.emitLineOnce(`"${packageName}"`);
-                });
-            });
-            this.emitLineOnce(")");
-            this.ensureBlankLine();
+    private emitImports(imports: Set<string>): void {
+        const sortedImports = Array.from(imports).sort();
+
+        if (sortedImports.length == 0) {
+            return;
         }
+
+        sortedImports.forEach(packageName => {
+            this.emitLineOnce(`import "${packageName}"`);
+        });
+        this.ensureBlankLine();
     }
 
     private emitHelperFunctions(): void {
         if (this.haveNamedUnions) {
             this.startFile("JSONSchemaSupport");
-            this.emitPackageDefinitons(true);
+            const imports = new Set<string>();
             if (this._options.multiFileOutput) {
-                this.emitLineOnce('import "bytes"');
-                this.emitLineOnce('import "errors"');
+                imports.add("bytes");
+                imports.add("errors");
             }
+
+            this.emitPackageDefinitons(true, imports);
             this.ensureBlankLine();
             this
                 .emitMultiline(`func unmarshalUnion(data []byte, pi **int64, pf **float64, pb **bool, ps **string, haveArray bool, pa interface{}, haveObject bool, pc interface{}, haveMap bool, pm interface{}, haveEnum bool, pe interface{}, nullable bool) (bool, error) {
@@ -596,6 +597,7 @@ func marshalUnion(pi *int64, pf *float64, pb *bool, ps *string, haveArray bool, 
             this.leadingComments === undefined
         ) {
             this.emitSingleFileHeaderComments();
+            this.emitPackageDefinitons(false, this.collectAllImports());
         }
 
         this.forEachTopLevel(
@@ -614,5 +616,65 @@ func marshalUnion(pi *int64, pf *float64, pb *bool, ps *string, haveArray bool, 
         }
 
         this.emitHelperFunctions();
+    }
+
+    private collectAllImports(): Set<string> {
+        let imports = new Set<string>();
+        this.forEachObject("leading-and-interposing", (c: ClassType, _className: Name) => {
+            const classImports = this.collectClassImports(c);
+            imports = new Set([...imports, ...classImports]);
+        });
+
+        this.forEachUnion("leading-and-interposing", (u: UnionType, _unionName: Name) => {
+            const unionImports = this.collectUnionImports(u);
+            imports = new Set([...imports, ...unionImports]);
+        });
+        return imports;
+    }
+
+    private collectClassImports(c: ClassType): Set<string> {
+        const usedTypes = new Set<string>();
+        const mapping: Map<string, string> = new Map();
+        mapping.set("time.Time", "time");
+        mapping.set("*,time.Time", "time");
+
+        this.forEachClassProperty(c, "none", (_name, _jsonName, p) => {
+            const goType = this.propertyGoType(p);
+            usedTypes.add(goType.toString());
+        });
+
+        const imports = new Set<string>();
+        usedTypes.forEach(k => {
+            const typeImport = mapping.get(k);
+            if (typeImport) {
+                imports.add(typeImport);
+            }
+        });
+
+        return imports;
+    }
+
+    private collectUnionImports(u: UnionType): Set<string> {
+        const usedTypes = new Set<string>();
+        const mapping: Map<string, string> = new Map();
+        mapping.set("time.Time", "time");
+        mapping.set("*,time.Time", "time");
+
+        this.forEachUnionMember(u, null, "none", null, (_fieldName, t) => {
+            const goType = this.nullableGoType(t, true);
+            usedTypes.add(goType.toString());
+        });
+
+        const imports = new Set<string>();
+        usedTypes.forEach(k => {
+            const typeImport = mapping.get(k);
+            if (!typeImport) {
+                return;
+            }
+
+            imports.add(typeImport);
+        });
+
+        return imports;
     }
 }
