@@ -448,9 +448,9 @@ export class GoRenderer extends ConvenienceRenderer {
     }
 
     private emitImports(imports: Set<string>): void {
-        const sortedImports = Array.from(imports).sort();
+        const sortedImports = Array.from(imports).sort((a, b) => a.localeCompare(b));
 
-        if (sortedImports.length == 0) {
+        if (sortedImports.length === 0) {
             return;
         }
 
