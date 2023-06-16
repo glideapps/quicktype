@@ -292,12 +292,16 @@ export class GoRenderer extends ConvenienceRenderer {
         this.emitPackageDefinitons(false);
         this.emitDescription(this.descriptionForType(e));
         this.emitLine("type ", enumName, " string");
+        this.ensureBlankLine();
         this.emitLine("const (");
-        this.indent(() =>
-            this.forEachEnumCase(e, "none", (name, jsonName) => {
-                this.emitLine(name, " ", enumName, ' = "', stringEscape(jsonName), '"');
-            })
-        );
+        let columns: Sourcelike[][] = [];
+        this.forEachEnumCase(e, "none", (name, jsonName) => {
+            columns.push([
+                [name, " "],
+                [enumName, ' = "', stringEscape(jsonName), '"']
+            ]);
+        });
+        this.indent(() => this.emitTable(columns));
         this.emitLine(")");
         this.endFile();
     }
