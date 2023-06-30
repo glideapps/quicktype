@@ -419,7 +419,7 @@ export const CJSONLanguage: Language = {
         "fcca3.json",
         "bug427.json",
         "github-events.json",
-        "keywords.json",
+        "keywords.json"
     ],
     allowMissingNull: false,
     features: ["minmax", "minmaxlength", "pattern", "enum", "union", "no-defaults"],
@@ -439,7 +439,7 @@ export const CJSONLanguage: Language = {
         /* Map in Array in TopLevel is not supported (for the current implementation, can be added later, need recursivity) */
         "combinations2.json",
         /* Array in Array in Union is not supported (for the current implementation, can be added later, need recursivity) */
-        "combinations4.json",
+        "combinations4.json"
     ],
     skipMiscJSON: false,
     skipSchema: [
@@ -470,12 +470,10 @@ export const CJSONLanguage: Language = {
         "optional-any.schema",
         "required-non-properties.schema",
         /* Other cases not supported */
-        "implicit-class-array-union.schema",
+        "implicit-class-array-union.schema"
     ],
     rendererOptions: {},
-    quickTestRendererOptions: [
-        { "source-style": "single-source" }
-    ],
+    quickTestRendererOptions: [{ "source-style": "single-source" }],
     sourceFiles: ["src/language/CJSON.ts"]
 };
 
@@ -871,161 +869,149 @@ export const FlowLanguage: Language = {
 };
 
 export const Scala3Language: Language = {
-  name: "scala3",
-  base: "test/fixtures/scala3",  
-  runCommand(sample: string) {
-    return `cp "${sample}" sample.json && ./run.sh`;
-  },
-  diffViaSchema: true,
-  skipDiffViaSchema: [
-    "bug427.json",
-    "keywords.json",
+    name: "scala3",
+    base: "test/fixtures/scala3",
+    runCommand(sample: string) {
+        return `cp "${sample}" sample.json && ./run.sh`;
+    },
+    diffViaSchema: true,
+    skipDiffViaSchema: ["bug427.json", "keywords.json"],
+    allowMissingNull: true,
+    features: ["enum", "union", "no-defaults"],
+    output: "TopLevel.scala",
+    topLevel: "TopLevel",
+    skipJSON: [
+        // These tests have "_" as a param name. Scala can't do this?
+        "blns-object.json",
+        "identifiers.json",
+        "simple-identifiers.json",
+        "keywords.json",
 
-  ],
-  allowMissingNull: true,
-  features: ["enum", "union", "no-defaults"],
-  output: "TopLevel.scala",
-  topLevel: "TopLevel",
-  skipJSON: [
-    // These tests have "_" as a param name. Scala can't do this?     
-    "blns-object.json",
-    "identifiers.json",
-    "simple-identifiers.json",
-    "keywords.json",
+        // these actually work as far as I can tell, but seem to fail because properties are sorted differently
+        // I don't think they fail... but I can't figure out sorting so hey ho let's skip them
+        "github-events.json",
+        "0a358.json",
+        "0a91a.json",
+        "34702.json",
+        "76ae1.json",
+        "af2d1.json",
+        "bug427.json",
+        "3d04a0.json",
 
-    // these actually work as far as I can tell, but seem to fail because properties are sorted differently
-    // I don't think they fail... but I can't figure out sorting so hey ho let's skip them
-    "github-events.json", 
-    "0a358.json",
-    "0a91a.json",
-    "34702.json",
-    "76ae1.json",
-    "af2d1.json",
-    "bug427.json",
-    "3d04a0.json",
+        // Top level primitives... trivial,
+        //  but annoying as it breaks compilation of the "Top Level" construct... which doesn't exist.
+        // It's too much hassle to fix
+        // and has no practical application in this context. Skip.
+        "no-classes.json",
 
-    // Top level primitives... trivial, 
-    //  but annoying as it breaks compilation of the "Top Level" construct... which doesn't exist. 
-    // It's too much hassle to fix
-    // and has no practical application in this context. Skip.
-    "no-classes.json",
-    
-    // spaces in variables names doesn't seem to work
-    "name-style.json",
+        // spaces in variables names doesn't seem to work
+        "name-style.json",
 
-/*
+        /*
 I havea no idea how to encode these tests correctly. 
 */
-    "kitchen-sink.json",
-    "26c9c.json",
-    "421d4.json",
-    "a0496.json",
-    "fcca3.json",
-    "ae9ca.json",
-    "617e8.json",
-    "5f7fe.json",
-    "f74d5.json",
-    "a3d8c.json",
-    "combinations1.json",
-    "combinations2.json",
-    "combinations3.json",
-    "combinations4.json",
-    "unions.json",
-    "nst-test-suite.json", 
-
-  ],
-  skipSchema: [
-    // 12 skips
-    "required.schema",    
-    "multi-type-enum.schema", // I think it doesn't correctly realise this is an array of enums.
-    "integer-string.schema",
-    "intersection.schema",
-    "implicit-class-array-union.schema",
-    "date-time-or-string.schema",
-    "implicit-one-of.schema",
-    "go-schema-pattern-properties.schema",
-    "enum.schema",
-    "class-with-additional.schema",
-    "class-map-union.schema",
-    "keyword-unions.schema"
-  ],
-  skipMiscJSON: false,
-  rendererOptions: {framework: "circe" },
-  quickTestRendererOptions: [],
-  sourceFiles: ["src/Language/Scala3.ts"],
+        "kitchen-sink.json",
+        "26c9c.json",
+        "421d4.json",
+        "a0496.json",
+        "fcca3.json",
+        "ae9ca.json",
+        "617e8.json",
+        "5f7fe.json",
+        "f74d5.json",
+        "a3d8c.json",
+        "combinations1.json",
+        "combinations2.json",
+        "combinations3.json",
+        "combinations4.json",
+        "unions.json",
+        "nst-test-suite.json"
+    ],
+    skipSchema: [
+        // 12 skips
+        "required.schema",
+        "multi-type-enum.schema", // I think it doesn't correctly realise this is an array of enums.
+        "integer-string.schema",
+        "intersection.schema",
+        "implicit-class-array-union.schema",
+        "date-time-or-string.schema",
+        "implicit-one-of.schema",
+        "go-schema-pattern-properties.schema",
+        "enum.schema",
+        "class-with-additional.schema",
+        "class-map-union.schema",
+        "keyword-unions.schema"
+    ],
+    skipMiscJSON: false,
+    rendererOptions: { framework: "circe" },
+    quickTestRendererOptions: [],
+    sourceFiles: ["src/Language/Scala3.ts"]
 };
 
 export const Smithy4sLanguage: Language = {
-  name: "smithy4a",
-  base: "test/fixtures/smithy4s",  
-  runCommand(sample: string) {
-    return `cp "${sample}" sample.json && ./run.sh`;
-  },
-  diffViaSchema: true,
-  skipDiffViaSchema: [
-    "bug427.json",
-    "keywords.json",
+    name: "smithy4a",
+    base: "test/fixtures/smithy4s",
+    runCommand(sample: string) {
+        return `cp "${sample}" sample.json && ./run.sh`;
+    },
+    diffViaSchema: true,
+    skipDiffViaSchema: ["bug427.json", "keywords.json"],
+    allowMissingNull: true,
+    features: ["enum", "union", "no-defaults"],
+    output: "TopLevel.scala",
+    topLevel: "TopLevel",
+    skipJSON: [
+        // These tests have "_" as a param name. Scala can't do this?
+        "blns-object.json",
+        "identifiers.json",
+        "simple-identifiers.json",
+        "keywords.json",
 
-  ],
-  allowMissingNull: true,
-  features: ["enum", "union", "no-defaults"],
-  output: "TopLevel.scala",
-  topLevel: "TopLevel",
-  skipJSON: [
-    // These tests have "_" as a param name. Scala can't do this?     
-    "blns-object.json",
-    "identifiers.json",
-    "simple-identifiers.json",
-    "keywords.json",
+        // these actually work as far as I can tell, but seem to fail because properties are sorted differently
+        // I don't think they fail... but I can't figure out sorting so hey ho let's skip them
+        "github-events.json",
+        "0a358.json",
+        "0a91a.json",
+        "34702.json",
+        "76ae1.json",
+        "af2d1.json",
+        "bug427.json",
+        "3d04a0.json",
 
-    // these actually work as far as I can tell, but seem to fail because properties are sorted differently
-    // I don't think they fail... but I can't figure out sorting so hey ho let's skip them
-    "github-events.json", 
-    "0a358.json",
-    "0a91a.json",
-    "34702.json",
-    "76ae1.json",
-    "af2d1.json",
-    "bug427.json",
-    "3d04a0.json",
+        // Top level primitives... trivial,
+        //  but annoying as it breaks compilation of the "Top Level" construct... which doesn't exist.
+        // It's too much hassle to fix
+        // and has no practical application in this context. Skip.
+        "no-classes.json",
 
-    // Top level primitives... trivial, 
-    //  but annoying as it breaks compilation of the "Top Level" construct... which doesn't exist. 
-    // It's too much hassle to fix
-    // and has no practical application in this context. Skip.
-    "no-classes.json",
-    
-    // spaces in variables names doesn't seem to work
-    "name-style.json",
+        // spaces in variables names doesn't seem to work
+        "name-style.json",
 
-/*
+        /*
 I havea no idea how to encode these tests correctly. 
 */
-    "kitchen-sink.json",
-    "26c9c.json",
-    "421d4.json",
-    "a0496.json",
-    "fcca3.json",
-    "ae9ca.json",
-    "617e8.json",
-    "5f7fe.json",
-    "f74d5.json",
-    "a3d8c.json",
-    "combinations1.json",
-    "combinations2.json",
-    "combinations3.json",
-    "combinations4.json",
-    "unions.json",
-    "nst-test-suite.json", 
-
-  ],
-  skipSchema: [
-
-  ],
-  skipMiscJSON: false,
-  rendererOptions: {framework: "just-types" },
-  quickTestRendererOptions: [],
-  sourceFiles: ["src/Language/Smithy4s.ts"],
+        "kitchen-sink.json",
+        "26c9c.json",
+        "421d4.json",
+        "a0496.json",
+        "fcca3.json",
+        "ae9ca.json",
+        "617e8.json",
+        "5f7fe.json",
+        "f74d5.json",
+        "a3d8c.json",
+        "combinations1.json",
+        "combinations2.json",
+        "combinations3.json",
+        "combinations4.json",
+        "unions.json",
+        "nst-test-suite.json"
+    ],
+    skipSchema: [],
+    skipMiscJSON: false,
+    rendererOptions: { framework: "just-types" },
+    quickTestRendererOptions: [],
+    sourceFiles: ["src/Language/Smithy4s.ts"]
 };
 
 export const KotlinLanguage: Language = {
@@ -1519,4 +1505,120 @@ export const TypeScriptZodLanguage: Language = {
     rendererOptions: {},
     quickTestRendererOptions: [{ "array-type": "list" }],
     sourceFiles: ["src/language/TypeScriptZod.ts"]
+};
+
+export const TypeScriptEffectSchemaLanguage: Language = {
+    name: "typescript-effect-schema",
+    base: "test/fixtures/typescript-effect-schema",
+    setupCommand: "npm install",
+    runCommand(sample: string) {
+        return `npm run --silent test "${sample}"`;
+    },
+    diffViaSchema: true,
+    skipDiffViaSchema: [
+        // Schema generated type uses first key as type name, JSON uses last
+        "0cffa.json",
+        "f6a65.json",
+        "c3303.json",
+        "7681c.json",
+        "127a1.json",
+        "26b49.json",
+
+        "bug863.json",
+        "reddit.json",
+        "github-events.json",
+        "nbl-stats.json",
+        "0a91a.json",
+        "0e0c2.json",
+        "29f47.json",
+        "2df80.json",
+        "27332.json",
+        "34702.json",
+        "6de06.json",
+        "76ae1.json",
+        "af2d1.json",
+        "be234.json",
+        "e8b04.json"
+    ],
+    allowMissingNull: false,
+    features: ["enum", "union", "no-defaults"],
+    output: "TopLevel.ts",
+    topLevel: "TopLevel",
+    skipJSON: [
+        // Uses generated schema before it's defined
+        "be234.json",
+        "76ae1.json",
+        "6de06.json",
+        "2df80.json",
+        "29f47.json",
+        "spotify-album.json",
+        "reddit.json",
+        "github-events.json",
+
+        // Does not handle recursive
+        "direct-recursive.json",
+        "list.json",
+        "bug790.json",
+
+        // Does not handle top level array
+        "bug863.json",
+
+        "no-classes.json",
+        "00c36.json",
+        "10be4.json",
+        "050b0.json",
+        "06bee.json",
+        "07c75.json",
+        "3536b.json",
+        "13d8d.json",
+        "43970.json",
+        "570ec.json",
+        "4d6fb.json",
+        "66121.json",
+        "5eae5.json",
+        "6eb00.json",
+        "7f568.json",
+        "7fbfb.json",
+        "8592b.json",
+        "9847b.json",
+        "996bd.json",
+        "9a503.json",
+        "9eed5.json",
+        "ad8be.json",
+        "ae7f0.json",
+        "b4865.json",
+        "cda6c.json",
+        "c8c7e.json",
+        "e53b5.json",
+        "f3139.json",
+        "f22f5.json",
+        "nbl-stats.json",
+        "bug855-short.json",
+        "combinations4.json",
+        "identifiers.json",
+        "blns-object.json",
+        "recursive.json",
+        "bug427.json",
+        "nst-test-suite.json",
+        "keywords.json",
+        "ed095.json"
+    ],
+    skipMiscJSON: false,
+    skipSchema: [
+        "any.schema",
+        "class-map-union.schema",
+        "direct-union.schema",
+        "enum.schema",
+        "go-schema-pattern-properties.schema",
+        "implicit-class-array-union.schema",
+        "intersection.schema",
+        "multi-type-enum.schema",
+        "keyword-unions.schema",
+        "optional-any.schema",
+        "required.schema",
+        "required-non-properties.schema"
+    ],
+    rendererOptions: {},
+    quickTestRendererOptions: [{ "array-type": "list" }],
+    sourceFiles: ["src/language/TypeScriptEffectSchema.ts"]
 };

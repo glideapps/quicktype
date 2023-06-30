@@ -26,7 +26,7 @@ import { PikeTargetLanguage } from "./Pike";
 import { HaskellTargetLanguage } from "./Haskell";
 import { TypeScriptZodTargetLanguage } from "./TypeScriptZod";
 import { PhpTargetLanguage } from "./Php";
-
+import { TypeScriptEffectSchemaTargetLanguage } from "./TypeScriptEffectSchema";
 
 export const all: TargetLanguage[] = [
     new CSharpTargetLanguage(),
@@ -53,6 +53,7 @@ export const all: TargetLanguage[] = [
     new PikeTargetLanguage(),
     new HaskellTargetLanguage(),
     new TypeScriptZodTargetLanguage(),
+    new TypeScriptEffectSchemaTargetLanguage(),
     new PhpTargetLanguage()
 ];
 
