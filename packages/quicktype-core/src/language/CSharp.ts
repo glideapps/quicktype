@@ -19,7 +19,8 @@ import {
     splitIntoWords,
     combineWords,
     firstUpperWordStyle,
-    camelCase
+    camelCase,
+    WordInName
 } from "../support/Strings";
 import { defined, assert, panic, assertNever } from "../support/Support";
 import { Name, DependencyName, Namer, funPrefixNamer, SimpleName } from "../Naming";
@@ -189,7 +190,8 @@ export const cSharpOptions = {
         "Object",
         "secondary"
     ),
-    checkRequired: new BooleanOption("check-required", "Fail if required properties are missing", false)
+    checkRequired: new BooleanOption("check-required", "Fail if required properties are missing", false),
+    keepPropertyName: new BooleanOption("keep-property-name", "Keep original field name generate", true),
 };
 
 export class CSharpTargetLanguage extends TargetLanguage {
@@ -209,7 +211,8 @@ export class CSharpTargetLanguage extends TargetLanguage {
             cSharpOptions.virtual,
             cSharpOptions.features,
             cSharpOptions.baseclass,
-            cSharpOptions.checkRequired
+            cSharpOptions.checkRequired,
+            cSharpOptions.keepPropertyName
         ];
     }
 
@@ -264,6 +267,7 @@ export class CSharpTargetLanguage extends TargetLanguage {
 }
 
 const namingFunction = funPrefixNamer("namer", csNameStyle);
+const namingFunctionKeep = funPrefixNamer("namerKeep", csNameStyleKeep);
 
 // FIXME: Make a Named?
 const denseJsonPropertyName = "J";
@@ -296,6 +300,25 @@ function csNameStyle(original: string): string {
         firstUpperWordStyle,
         firstUpperWordStyle,
         firstUpperWordStyle,
+        "",
+        isStartCharacter
+    );
+}
+
+function csNameStyleKeep(original: string): string {
+    const words: WordInName[] = [
+        {
+            word: original,
+            isAcronym: false
+        }
+    ];
+    return combineWords(
+        words,
+        legalizeName,
+        x => x,
+        x => x,
+        x => x,
+        x => x,
         "",
         isStartCharacter
     );
@@ -346,7 +369,10 @@ export class CSharpRenderer extends ConvenienceRenderer {
     }
 
     protected namerForObjectProperty(): Namer {
-        return namingFunction;
+        if (this._csOptions.keepPropertyName)
+            return namingFunctionKeep
+        else
+            return namingFunction;
     }
 
     protected makeUnionMemberNamer(): Namer {
