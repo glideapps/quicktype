@@ -191,7 +191,7 @@ export const cSharpOptions = {
         "secondary"
     ),
     checkRequired: new BooleanOption("check-required", "Fail if required properties are missing", false),
-    keepPropertyName: new BooleanOption("keep-property-name", "Keep original field name generate", true),
+    keepPropertyName: new BooleanOption("keep-property-name", "Keep original field name generate", false),
 };
 
 export class CSharpTargetLanguage extends TargetLanguage {
@@ -453,10 +453,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
     }
 
     protected namerForObjectProperty(): Namer {
-        if (this._csOptions.keepPropertyName)
-            return namingFunctionKeep
-        else
-            return namingFunction;
+        return this._csOptions.keepPropertyName ? namingFunctionKeep : namingFunction;
     }
 
     protected makeUnionMemberNamer(): Namer {
