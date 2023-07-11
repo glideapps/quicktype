@@ -169,10 +169,7 @@ export class Ref {
 
     public addressURI: URI | undefined;
 
-    constructor(
-        addressURI: URI | undefined,
-        readonly path: ReadonlyArray<PathElement>
-    ) {
+    constructor(addressURI: URI | undefined, readonly path: ReadonlyArray<PathElement>) {
         if (addressURI !== undefined) {
             assert(addressURI.fragment() === "", `Ref URI with fragment is not allowed: ${addressURI.toString()}`);
             this.addressURI = normalizeURI(addressURI);
@@ -359,11 +356,7 @@ class Location {
     public readonly canonicalRef: Ref;
     public readonly virtualRef: Ref;
 
-    constructor(
-        canonicalRef: Ref,
-        virtualRef?: Ref,
-        readonly haveID: boolean = false
-    ) {
+    constructor(canonicalRef: Ref, virtualRef?: Ref, readonly haveID: boolean = false) {
         this.canonicalRef = canonicalRef;
         this.virtualRef = virtualRef !== undefined ? virtualRef : canonicalRef;
     }
@@ -707,7 +700,7 @@ async function addTypesInSchema(
                 return enumArray.find(predicate) !== undefined;
             }
             if (isConst) {
-                return name === "string";
+                return name === (schema.type ?? typeof schema.const);
             }
             return true;
         }
@@ -1094,10 +1087,7 @@ async function refsInSchemaForURI(
 }
 
 class InputJSONSchemaStore extends JSONSchemaStore {
-    constructor(
-        private readonly _inputs: Map<string, string>,
-        private readonly _delegate?: JSONSchemaStore
-    ) {
+    constructor(private readonly _inputs: Map<string, string>, private readonly _delegate?: JSONSchemaStore) {
         super();
     }
 
