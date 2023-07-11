@@ -75,6 +75,7 @@ export const swiftOptions = {
     ),
     optionalEnums: new BooleanOption("optional-enums", "If no matching case is found enum value is set to null", false),
     swift5Support: new BooleanOption("swift-5-support", "Renders output in a Swift 5 compatible mode", false),
+    previewContent: new BooleanOption("preview-content", "Add extensions with static preview value", true),
     sendable: new BooleanOption("sendable", "Mark generated models as Sendable", false),
     multiFileOutput: new BooleanOption(
         "multi-file-output",
@@ -152,6 +153,7 @@ export class SwiftTargetLanguage extends TargetLanguage {
             swiftOptions.optionalEnums,
             swiftOptions.sendable,
             swiftOptions.swift5Support,
+            swiftOptions.previewContent,
             swiftOptions.multiFileOutput,
             swiftOptions.mutableProperties
         ];
@@ -798,6 +800,11 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 this.emitConvenienceInitializersExtension(c, className);
                 this.ensureBlankLine();
             }
+
+            if (this._options.previewContent) {
+                this.ensureBlankLine();
+                this.emitPreviewContentExtension(c, className);
+            }
         }
 
         this.endFile();
@@ -911,6 +918,18 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             this.emitBlock(`func jsonString(encoding: String.Encoding = .utf8) throws -> String?`, () => {
                 this.emitLine("return String(data: try self.jsonData(), encoding: encoding)");
             });
+        });
+    }
+
+    private emitPreviewContentExtension(c: ClassType, className: Name): void {
+        this.emitBlockWithAccess(["extension ", className], () => {
+            this.emitLine("static let preview = ", className, "(");
+            this.indent(() => {
+                this.forEachClassProperty(c, "none", (name, _, _p, position) => {
+                    this.emitLine(name, ": ", "value", position !== "only" && position !== "last" ? "," : "");
+                });
+            });
+            this.emitLine(")");
         });
     }
 
