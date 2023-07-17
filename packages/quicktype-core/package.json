@@ -22,7 +22,7 @@
         "lodash": "^4.17.21",
         "pako": "^1.0.6",
         "pluralize": "^8.0.0",
-        "readable-stream": "4.3.0",
+        "readable-stream": "4.4.2",
         "unicode-properties": "^1.4.1",
         "urijs": "^1.19.1",
         "wordwrap": "^1.0.0",
