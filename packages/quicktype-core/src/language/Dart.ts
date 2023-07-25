@@ -36,7 +36,6 @@ import { BooleanOption, getOptionValues, Option, OptionValues, StringOption } fr
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { defined } from "../support/Support";
 import { RenderContext } from "../Renderer";
-import { arrayIntercalate } from "collection-utils";
 
 export const dartOptions = {
     nullSafety: new BooleanOption("null-safety", "Null Safety", true),
@@ -814,9 +813,18 @@ export class DartRenderer extends ConvenienceRenderer {
     }
 
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
-        const caseNames: Sourcelike[] = Array.from(e.cases).map(c => this.nameForEnumCase(e, c));
         this.emitDescription(this.descriptionForType(e));
-        this.emitLine("enum ", enumName, " { ", arrayIntercalate(", ", caseNames), " }");
+        this.emitLine("enum ", enumName, " {");
+        this.indent(() => {
+            this.forEachEnumCase(e, "none", (name, jsonName, pos) => {
+                const comma = pos === "first" || pos === "middle" ? "," : [];
+                if (this._options.useJsonAnnotation) {
+                    this.emitLine('@JsonValue("', stringEscape(jsonName), '")');
+                }
+                this.emitLine(name, comma);
+            });
+        });
+        this.emitLine("}");
 
         if (this._options.justTypes) return;
 
