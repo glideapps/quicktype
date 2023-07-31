@@ -51,6 +51,10 @@ export const cJSONOptions = {
     typeIntegerSize: new EnumOption("integer-size", "Integer code generation type (int64_t by default)",
         [["int8_t", "int8_t"], ["int16_t", "int16_t"], ["int32_t", "int32_t"], ["int64_t", "int64_t"]], "int64_t", "secondary"),
     hashtableSize: new StringOption("hashtable-size", "Hashtable size, used when maps are created (64 by default)", "SIZE", "64"),
+    structStyle: new EnumOption("struct-style", "Struct declaration, add typedef alias or not (no typedef by default)",
+        [["no-typedef", false], ["add-typedef", true]], "no-typedef", "secondary"),
+    printStyle: new EnumOption("print-style", "Which cJSON print should be used (formatted by default)",
+        [["print-formatted", false], ["print-unformatted", true]], "print-formatted", "secondary"),
     typeNamingStyle: new EnumOption<NamingStyle>("type-style", "Naming style for types",
         [pascalValue, underscoreValue, camelValue, upperUnderscoreValue, pascalUpperAcronymsValue, camelUpperAcronymsValue]),
     memberNamingStyle: new EnumOption<NamingStyle>("member-style", "Naming style for members",
@@ -694,7 +698,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
 
         this.emitDescription(this.descriptionForType(unionType));
         this.emitBlock(
-            ["struct ", unionName],
+            this._options.structStyle ? ["typedef struct "] : ["struct ", unionName],
             () => {
                 this.emitLine("int type;");
                 this.emitBlock(
@@ -710,7 +714,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                 );
 
             },
-            "",
+            this._options.structStyle ? unionName : "",
             true
         );
         this.ensureBlankLine();
@@ -723,10 +727,18 @@ export class CJSONRenderer extends ConvenienceRenderer {
     protected emitUnionPrototypes(unionType: UnionType): void {
 
         const unionName = this.nameForNamedType(unionType);
-
-        this.emitLine("struct ", unionName, " * cJSON_Get", unionName, "Value(const cJSON * j);");
-        this.emitLine("cJSON * cJSON_Create", unionName, "(", this.withConst(["struct ", unionName]), " * x);");
-        this.emitLine("void cJSON_Delete", unionName, "(struct ", unionName, " * x);");
+        if (this._options.structStyle)
+        {
+            this.emitLine(unionName, " * cJSON_Get", unionName, "Value(const cJSON * j);");
+            this.emitLine("cJSON * cJSON_Create", unionName, "(", this.withConst([unionName]), " * x);");
+            this.emitLine("void cJSON_Delete", unionName, "(", unionName, " * x);");
+        }
+        else 
+        {
+            this.emitLine("struct ", unionName, " * cJSON_Get", unionName, "Value(const cJSON * j);");
+            this.emitLine("cJSON * cJSON_Create", unionName, "(", this.withConst(["struct ", unionName]), " * x);");
+            this.emitLine("void cJSON_Delete", unionName, "(struct ", unionName, " * x);");
+        }
         this.ensureBlankLine();
     }
 
@@ -741,14 +753,14 @@ export class CJSONRenderer extends ConvenienceRenderer {
 
         /* Create cJSON to unionType generator function */
         this.emitBlock(
-            ["struct ", unionName, " * cJSON_Get", unionName, "Value(const cJSON * j)"],
+            [this._options.structStyle ? "" : "struct ", unionName, " * cJSON_Get", unionName, "Value(const cJSON * j)"],
             () => {
                 let onFirst = true;
-                this.emitLine("struct ", unionName, " * x = cJSON_malloc(sizeof(struct ", unionName, "));");
+                this.emitLine(this._options.structStyle ? "" : "struct ", unionName, " * x = cJSON_malloc(sizeof(", this._options.structStyle ? "" : "struct ", unionName, "));");
                 this.emitBlock(
                     ["if (NULL != x)"],
                     () => {
-                        this.emitLine("memset(x, 0, sizeof(struct ", unionName, "));");
+                        this.emitLine("memset(x, 0, sizeof(",this._options.structStyle ? "" : "struct ", unionName, "));");
                         if (hasNull !== null) {
                             this.emitBlock(
                                 ["if (cJSON_IsNull(j))"],
@@ -892,7 +904,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
 
         /* Create unionName to cJSON generator function */
         this.emitBlock(
-            ["cJSON * cJSON_Create", unionName, "(", this.withConst(["struct ", unionName]), " * x)"],
+            ["cJSON * cJSON_Create", unionName, "(", this.withConst([this._options.structStyle ? "" : "struct ", unionName]), " * x)"],
             () => {
                 this.emitLine("cJSON * j = NULL;");
                 this.emitBlock(
@@ -1185,7 +1197,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
 
         this.emitDescription(this.descriptionForType(classType));
         this.emitBlock(
-            ["struct ", className],
+            [this._options.structStyle ? "typdef struct" : ["struct ", className]],
             () => {
                 this.forEachClassProperty(classType, "none", (name, jsonName, property) => {
                     this.emitDescription(this.descriptionForClassProperty(classType, jsonName));
@@ -1193,7 +1205,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                     this.emitLine(cJSON.cType, (cJSON.optionalQualifier !== "") ? " " : "", cJSON.optionalQualifier, " ", name, ";");
                 });
             },
-            "",
+            this._options.structStyle ? className : "",
             true
         );
         this.ensureBlankLine();
@@ -1207,11 +1219,11 @@ export class CJSONRenderer extends ConvenienceRenderer {
 
         const className = this.nameForNamedType(classType);
 
-        this.emitLine("struct ", className, " * cJSON_Parse", className, "(", this.withConst("char")," * s);");
-        this.emitLine("struct ", className, " * cJSON_Get", className, "Value(", this.withConst("cJSON")," * j);");
-        this.emitLine("cJSON * cJSON_Create", className, "(", this.withConst(["struct ", className]), " * x);");
-        this.emitLine("char * cJSON_Print", className, "(", this.withConst(["struct ", className]), " * x);");
-        this.emitLine("void cJSON_Delete", className, "(struct ", className, " * x);");
+        this.emitLine(this._options.structStyle ? "" : "struct ", className, " * cJSON_Parse", className, "(", this.withConst("char")," * s);");
+        this.emitLine(this._options.structStyle ? "" : "struct ", className, " * cJSON_Get", className, "Value(", this.withConst("cJSON")," * j);");
+        this.emitLine("cJSON * cJSON_Create", className, "(", this.withConst([this._options.structStyle ? "" : "struct ", className]), " * x);");
+        this.emitLine("char * cJSON_Print", className, "(", this.withConst([this._options.structStyle ? "" : "struct ", className]), " * x);");
+        this.emitLine("void cJSON_Delete", className, "(", this._options.structStyle ? "" : "struct ", className, " * x);");
         this.ensureBlankLine();
     }
 
@@ -1225,9 +1237,9 @@ export class CJSONRenderer extends ConvenienceRenderer {
 
         /* Create string to className generator function */
         this.emitBlock(
-            ["struct ", className, " * cJSON_Parse", className, "(", this.withConst("char")," * s)"],
+            [this._options.structStyle ? "" : "struct ", className, " * cJSON_Parse", className, "(", this.withConst("char")," * s)"],
             () => {
-                this.emitLine("struct ", className, " * x = NULL;");
+                this.emitLine(this._options.structStyle ? "" : "struct ", className, " * x = NULL;");
                 this.emitBlock(
                     ["if (NULL != s)"],
                     () => {
@@ -1248,16 +1260,16 @@ export class CJSONRenderer extends ConvenienceRenderer {
 
         /* Create cJSON to className generator function */
         this.emitBlock(
-            ["struct ", className, " * cJSON_Get", className, "Value(", this.withConst("cJSON")," * j)"],
+            [this._options.structStyle ? "" : "struct ", className, " * cJSON_Get", className, "Value(", this.withConst("cJSON")," * j)"],
             () => {
-                this.emitLine("struct ", className, " * x = NULL;");
+                this.emitLine(this._options.structStyle ? "" : "struct ", className, " * x = NULL;");
                 this.emitBlock(
                     ["if (NULL != j)"],
                     () => {
                         this.emitBlock(
-                            ["if (NULL != (x = cJSON_malloc(sizeof(struct ", className, "))))"],
+                            ["if (NULL != (x = cJSON_malloc(sizeof(", this._options.structStyle ? "" : "struct ", className, "))))"],
                             () => {
-                                this.emitLine("memset(x, 0, sizeof(struct ", className, "));");
+                                this.emitLine("memset(x, 0, sizeof(", this._options.structStyle ? "" : "struct ", className, "));");
                                 const recur = (type: Type, level: number) => {
                                     if (type instanceof ArrayType) {
                                         const child_level = level + 1;
@@ -1495,7 +1507,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
 
         /* Create className to cJSON generator function */
         this.emitBlock(
-            ["cJSON * cJSON_Create", className, "(", this.withConst(["struct ", className]), " * x)"],
+            ["cJSON * cJSON_Create", className, "(", this.withConst([this._options.structStyle ? "" : "struct ", className]), " * x)"],
             () => {
                 this.emitLine("cJSON * j = NULL;");
                 this.emitBlock(
@@ -1746,7 +1758,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
 
         /* Create className to string generator function */
         this.emitBlock(
-            ["char * cJSON_Print", className, "(", this.withConst(["struct ", className]), " * x)"],
+            ["char * cJSON_Print", className, "(", this.withConst([this._options.structStyle ? "" : "struct ", className]), " * x)"],
             () => {
                 this.emitLine("char * s = NULL;");
                 this.emitBlock(
@@ -1756,7 +1768,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                         this.emitBlock(
                             ["if (NULL != j)"],
                             () => {
-                                this.emitLine("s = cJSON_Print(j);");
+                                this.emitLine(this._options.printStyle ? "s = cJSON_PrintUnformatted(j)" : "s = cJSON_Print(j);");
                                 this.emitLine("cJSON_Delete(j);");
                             }
                         );
@@ -1769,7 +1781,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
 
         /* Create className delete function */
         this.emitBlock(
-            ["void cJSON_Delete", className, "(struct ", className, " * x)"],
+            ["void cJSON_Delete", className, "(", this._options.structStyle ? "" : "struct ", className, " * x)"],
             () => {
                 this.emitBlock(
                     ["if (NULL != x)"],
@@ -1956,7 +1968,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
     protected emitTopLevelTypedef(type: Type, className: Name): void {
 
         this.emitBlock(
-            ["struct ", className],
+            [this._options.structStyle ? "" : "struct ", className],
             () => {
                 const cJSON = this.quicktypeTypeToCJSON(type, false);
                 this.emitLine(cJSON.cType, (cJSON.optionalQualifier !== "") ? " " : "", cJSON.optionalQualifier, " value;");
@@ -1974,11 +1986,11 @@ export class CJSONRenderer extends ConvenienceRenderer {
      */
     protected emitTopLevelPrototypes(_type: Type, className: Name): void {
 
-        this.emitLine("struct ", className, " * cJSON_Parse", className, "(", this.withConst("char")," * s);");
-        this.emitLine("struct ", className, " * cJSON_Get", className, "Value(", this.withConst("cJSON")," * j);");
-        this.emitLine("cJSON * cJSON_Create", className, "(", this.withConst(["struct ", className]), " * x);");
-        this.emitLine("char * cJSON_Print", className, "(", this.withConst(["struct ", className]), " * x);");
-        this.emitLine("void cJSON_Delete", className, "(struct ", className, " * x);");
+        this.emitLine(this._options.structStyle ? "" : "struct ", className, " * cJSON_Parse", className, "(", this.withConst("char")," * s);");
+        this.emitLine(this._options.structStyle ? "" : "struct ", className, " * cJSON_Get", className, "Value(", this.withConst("cJSON")," * j);");
+        this.emitLine("cJSON * cJSON_Create", className, "(", this.withConst([this._options.structStyle ? "" : "struct ", className]), " * x);");
+        this.emitLine("char * cJSON_Print", className, "(", this.withConst([this._options.structStyle ? "" : "struct ", className]), " * x);");
+        this.emitLine("void cJSON_Delete", className, "(",this._options.structStyle ? "" : "struct ", className, " * x);");
         this.ensureBlankLine();
     }
 
@@ -1991,9 +2003,9 @@ export class CJSONRenderer extends ConvenienceRenderer {
 
         /* Create string to className generator function */
         this.emitBlock(
-            ["struct ", className, " * cJSON_Parse", className, "(", this.withConst("char")," * s)"],
+            [this._options.structStyle ? "" : "struct ", className, " * cJSON_Parse", className, "(", this.withConst("char")," * s)"],
             () => {
-                this.emitLine("struct ", className, " * x = NULL;");
+                this.emitLine(this._options.structStyle ? "" : "struct ", className, " * x = NULL;");
                 this.emitBlock(
                     ["if (NULL != s)"],
                     () => {
@@ -2014,16 +2026,16 @@ export class CJSONRenderer extends ConvenienceRenderer {
 
         /* Create cJSON to className generator function */
         this.emitBlock(
-            ["struct ", className, " * cJSON_Get", className, "Value(", this.withConst("cJSON")," * j)"],
+            [this._options.structStyle ? "" : "struct ", className, " * cJSON_Get", className, "Value(", this.withConst("cJSON")," * j)"],
             () => {
-                this.emitLine("struct ", className, " * x = NULL;");
+                this.emitLine(this._options.structStyle ? "" : "struct ", className, " * x = NULL;");
                 this.emitBlock(
                     ["if (NULL != j)"],
                     () => {
                         this.emitBlock(
-                            ["if (NULL != (x = cJSON_malloc(sizeof(struct ", className, "))))"],
+                            ["if (NULL != (x = cJSON_malloc(sizeof(", this._options.structStyle ? "" : "struct ", className, "))))"],
                             () => {
-                                this.emitLine("memset(x, 0, sizeof(struct ", className, "));");
+                                this.emitLine("memset(x, 0, sizeof(",this._options.structStyle ? "" : "struct ", className, "));");
                                 const cJSON = this.quicktypeTypeToCJSON(type, false);
                                 if ((cJSON.cjsonType === "cJSON_Array") && (cJSON.items !== undefined)) {
                                     this.emitLine("x->value = list_create(false, NULL);");
@@ -2129,7 +2141,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
 
         /* Create className to cJSON generator function */
         this.emitBlock(
-            ["cJSON * cJSON_Create", className, "(", this.withConst(["struct ", className]), " * x)"],
+            ["cJSON * cJSON_Create", className, "(", this.withConst([this._options.structStyle ? "" : "struct ", className]), " * x)"],
             () => {
                 this.emitLine("cJSON * j = NULL;");
                 this.emitBlock(
@@ -2259,7 +2271,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
 
         /* Create className to string generator function */
         this.emitBlock(
-            ["char * cJSON_Print", className, "(", this.withConst(["struct ", className]), " * x)"],
+            ["char * cJSON_Print", className, "(", this.withConst([this._options.structStyle ? "" : "struct ", className]), " * x)"],
             () => {
                 this.emitLine("char * s = NULL;");
                 this.emitBlock(
@@ -2282,7 +2294,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
 
         /* Create className delete function */
         this.emitBlock(
-            ["void cJSON_Delete", className, "(struct ", className, " * x)"],
+            ["void cJSON_Delete", className, "(", this._options.structStyle ? "" : "struct ", className, " * x)"],
             () => {
                 this.emitBlock(
                     ["if (NULL != x)"],
@@ -2398,7 +2410,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                 return { cType: "list_t", optionalQualifier: "*", cjsonType: "cJSON_Array", isType: "cJSON_IsArray", getValue: "cJSON_GetArrayItem", addToObject: "cJSON_AddItemToObject", createObject: "cJSON_CreateArray", deleteType: "list_release", items, isNullable };
             },
             classType => {
-                return { cType: ["struct ", this.nameForNamedType(classType)], optionalQualifier: "*", cjsonType: "cJSON_Object", isType: "cJSON_IsObject", getValue: ["cJSON_Get", this.nameForNamedType(classType), "Value"], addToObject: "cJSON_AddItemToObject", createObject: ["cJSON_Create", this.nameForNamedType(classType)], deleteType: ["cJSON_Delete", this.nameForNamedType(classType)], items: undefined, isNullable };
+                return { cType: [this._options.structStyle ? "" : "struct ", this.nameForNamedType(classType)], optionalQualifier: "*", cjsonType: "cJSON_Object", isType: "cJSON_IsObject", getValue: ["cJSON_Get", this.nameForNamedType(classType), "Value"], addToObject: "cJSON_AddItemToObject", createObject: ["cJSON_Create", this.nameForNamedType(classType)], deleteType: ["cJSON_Delete", this.nameForNamedType(classType)], items: undefined, isNullable };
             },
             mapType => {
                 const items = this.quicktypeTypeToCJSON(mapType.values, false);
@@ -2412,7 +2424,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                 if (nullable !== null) {
                     return this.quicktypeTypeToCJSON(nullable, true, true);
                 } else {
-                    return { cType: ["struct ", this.nameForNamedType(unionType)], optionalQualifier: "*", cjsonType: "cJSON_Union", isType: "", getValue: ["cJSON_Get", this.nameForNamedType(unionType), "Value"], addToObject: "cJSON_AddItemToObject", createObject: ["cJSON_Create", this.nameForNamedType(unionType)], deleteType: ["cJSON_Delete", this.nameForNamedType(unionType)], items: undefined, isNullable };
+                    return { cType: [this._options.structStyle ? "" : "struct ", this.nameForNamedType(unionType)], optionalQualifier: "*", cjsonType: "cJSON_Union", isType: "", getValue: ["cJSON_Get", this.nameForNamedType(unionType), "Value"], addToObject: "cJSON_AddItemToObject", createObject: ["cJSON_Create", this.nameForNamedType(unionType)], deleteType: ["cJSON_Delete", this.nameForNamedType(unionType)], items: undefined, isNullable };
                 }
             }
         );
@@ -2555,7 +2567,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
      * @param withSemicolon: true to add semicolon at the end of the block, false otherwise
      * @param withIndent: true to indent the block (default), false otherwise
      */
-    protected emitBlock(line: Sourcelike, f: () => void, withName = "", withSemicolon = false, withIndent = true): void {
+    protected emitBlock(line: Sourcelike, f: () => void, withName: Sourcelike = "", withSemicolon = false, withIndent = true): void {
         this.emitLine(line, " {");
         this.preventBlankLine();
         if (withIndent) {
