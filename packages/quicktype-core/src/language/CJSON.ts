@@ -1777,7 +1777,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                         this.emitBlock(
                             ["if (NULL != j)"],
                             () => {
-                                this.emitLine("s = cJSON_Print(j);");
+                                this.emitLine(this._options.printStyle ? "s = cJSON_PrintUnformatted(j);" : "s = cJSON_Print(j);");
                                 this.emitLine("cJSON_Delete(j);");
                             }
                         );
