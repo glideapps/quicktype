@@ -20,6 +20,7 @@ import { legalizeName } from "./JavaScript";
 import { Sourcelike } from "../Source";
 import { panic } from "../support/Support";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
+import { minMaxItemsForType } from "../attributes/Constraints";
 
 export const typeScriptZodOptions = {
     justSchema: new BooleanOption("just-schema", "Schema only", false)
@@ -121,7 +122,18 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
             _integerType => "z.number()",
             _doubleType => "z.number()",
             _stringType => "z.string()",
-            arrayType => ["z.array(", this.typeMapTypeFor(arrayType.items, false), ")"],
+            arrayType => {
+                const minMaxItems = minMaxItemsForType(arrayType.items);
+                
+                const arrayString = ["z.array(", this.typeMapTypeFor(arrayType.items, false), ")"]
+                if (minMaxItems?.[0]) {
+                    arrayString.push('.min(', minMaxItems[0].toString(10) , ')');
+                }
+                if (minMaxItems?.[1]) {
+                    arrayString.push('.max(', minMaxItems[1].toString(10) , ')');
+                }
+                return arrayString;
+            },
             _classType => panic("Should already be handled."),
             _mapType => ["z.record(z.string(), ", this.typeMapTypeFor(_mapType.values, false), ")"],
             _enumType => panic("Should already be handled."),

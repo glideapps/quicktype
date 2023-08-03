@@ -53,6 +53,8 @@ import { accessorNamesAttributeProducer } from "../attributes/AccessorNames";
 import { enumValuesAttributeProducer } from "../attributes/EnumValues";
 import { minMaxAttributeProducer } from "../attributes/Constraints";
 import { minMaxLengthAttributeProducer } from "../attributes/Constraints";
+import { minMaxItemsAttributeProducer } from "../attributes/Constraints";
+import { minMaxContainsAttributeProducer } from "../attributes/Constraints";
 import { patternAttributeProducer } from "../attributes/Constraints";
 import { uriSchemaAttributesProducer } from "../attributes/URIAttributes";
 
@@ -505,6 +507,7 @@ export type JSONSchemaAttributes = {
     forObject?: TypeAttributes;
     forNumber?: TypeAttributes;
     forString?: TypeAttributes;
+    forArray?: TypeAttributes;
     forCases?: TypeAttributes[];
 };
 export type JSONSchemaAttributeProducer = (
@@ -554,7 +557,7 @@ class Resolver {
             assert(canonical.hasAddress, "Canonical ref can't be resolved without an address");
             const address = canonical.address;
 
-            let schema =
+            const schema =
                 canonical.addressURI === undefined
                     ? undefined
                     : await this._store.get(address, this._ctx.debugPrintSchemaResolving);
@@ -623,7 +626,7 @@ async function addTypesInSchema(
     references: ReadonlyMap<string, Ref>,
     attributeProducers: JSONSchemaAttributeProducer[]
 ): Promise<void> {
-    let typeForCanonicalRef = new EqualityMap<Ref, TypeRef>();
+    const typeForCanonicalRef = new EqualityMap<Ref, TypeRef>();
 
     function setTypeForLocation(loc: Location, t: TypeRef): void {
         const maybeRef = typeForCanonicalRef.get(loc.canonicalRef);
@@ -794,26 +797,25 @@ async function addTypesInSchema(
             }
         }
 
-        async function makeArrayType(): Promise<TypeRef> {
-            const singularAttributes = singularizeTypeNames(typeAttributes);
+        async function makeArrayType(attributes: TypeAttributes): Promise<TypeRef> {
             const items = schema.items;
             let itemType: TypeRef;
             if (Array.isArray(items)) {
                 const itemsLoc = loc.push("items");
                 const itemTypes = await arrayMapSync(items, async (item, i) => {
                     const itemLoc = itemsLoc.push(i.toString());
-                    return await toType(checkJSONSchema(item, itemLoc.canonicalRef), itemLoc, singularAttributes);
+                    return await toType(checkJSONSchema(item, itemLoc.canonicalRef), itemLoc, attributes);
                 });
-                itemType = typeBuilder.getUnionType(emptyTypeAttributes, new Set(itemTypes));
+                itemType = typeBuilder.getUnionType(attributes, new Set(itemTypes));
             } else if (typeof items === "object") {
                 const itemsLoc = loc.push("items");
-                itemType = await toType(checkJSONSchema(items, itemsLoc.canonicalRef), itemsLoc, singularAttributes);
+                itemType = await toType(checkJSONSchema(items, itemsLoc.canonicalRef), itemsLoc, attributes);
             } else if (items !== undefined) {
                 return messageError("SchemaArrayItemsMustBeStringOrArray", withRef(loc, { actual: items }));
             } else {
                 itemType = typeBuilder.getPrimitiveType("any");
             }
-            typeBuilder.addAttributes(itemType, singularAttributes);
+            typeBuilder.addAttributes(itemType, attributes);
             return typeBuilder.getArrayType(emptyTypeAttributes, itemType);
         }
 
@@ -947,7 +949,7 @@ async function addTypesInSchema(
             }
 
             const stringAttributes = combineTypeAttributes(
-                "union",
+                "union", 
                 inferredAttributes,
                 combineProducedAttributes(({ forString }) => forString)
             );
@@ -962,7 +964,12 @@ async function addTypesInSchema(
             }
 
             if (includeArray) {
-                unionTypes.push(await makeArrayType());
+                const arrayAttributes = combineTypeAttributes(
+                    "union",
+                    inferredAttributes,
+                    combineProducedAttributes(({ forArray }) => forArray)
+                );
+                unionTypes.push(await makeArrayType(arrayAttributes));
             }
             if (includeObject) {
                 unionTypes.push(await makeObjectType());
@@ -1145,6 +1152,8 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
             uriSchemaAttributesProducer,
             minMaxAttributeProducer,
             minMaxLengthAttributeProducer,
+            minMaxItemsAttributeProducer,
+            minMaxContainsAttributeProducer,
             patternAttributeProducer
         ].concat(additionalAttributeProducers);
     }
