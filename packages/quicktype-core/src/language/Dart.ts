@@ -332,12 +332,14 @@ export class DartRenderer extends ConvenienceRenderer {
 
         if (this._options.justTypes) return;
 
-        this.emitLine("// To parse this JSON data, do");
-        this.emitLine("//");
-        this.forEachTopLevel("none", (_t, name) => {
-            const { decoder } = defined(this._topLevelDependents.get(name));
-            this.emitLine("//     final ", modifySource(decapitalize, name), " = ", decoder, "(jsonString);");
-        });
+        if (!this._options.codersInClass) {
+            this.emitLine("// To parse this JSON data, do");
+            this.emitLine("//");
+            this.forEachTopLevel("none", (_t, name) => {
+                const { decoder } = defined(this._topLevelDependents.get(name));
+                this.emitLine("//     final ", modifySource(decapitalize, name), " = ", decoder, "(jsonString);");
+            });
+        }
 
         this.ensureBlankLine();
         if (this._options.requiredProperties) {
@@ -349,7 +351,8 @@ export class DartRenderer extends ConvenienceRenderer {
         if (this._options.useHive) {
             this.emitLine("import 'package:hive/hive.dart';");
         }
-        if (this._options.useJsonAnnotation) {
+        if (this._options.useJsonAnnotation && !this._options.useFreezed) {
+            // The freezed annotatation import already provides the import for json_annotation
             this.emitLine("import 'package:json_annotation/json_annotation.dart';");
         }
 
@@ -607,7 +610,8 @@ export class DartRenderer extends ConvenienceRenderer {
         this.indent(() => {
             this.forEachClassProperty(c, "none", (name, _, prop) => {
                 const required =
-                    this._options.requiredProperties || (this._options.nullSafety && !prop.type.isNullable);
+                    this._options.requiredProperties ||
+                    (this._options.nullSafety && (!prop.type.isNullable || !prop.isOptional));
                 this.emitLine(required ? "required " : "", "this.", name, ",");
             });
         });
@@ -629,7 +633,7 @@ export class DartRenderer extends ConvenienceRenderer {
 
             if (this._options.useJsonAnnotation) {
                 this.classPropertyCounter++;
-                this.emitLine(`@JsonKey(name:"${jsonName}")`);
+                this.emitLine(`@JsonKey(name: "${jsonName}")`);
             }
 
             this.emitLine(this._options.finalProperties ? "final " : "", this.dartType(p.type, true), " ", name, ";");
@@ -783,15 +787,15 @@ export class DartRenderer extends ConvenienceRenderer {
             } else {
                 this.emitLine("const factory ", className, "({");
                 this.indent(() => {
-                    this.forEachClassProperty(c, "none", (name, _, _p) => {
-                        this.emitLine(
-                            this._options.requiredProperties ? "required " : "",
-                            this.dartType(_p.type, true),
-                            this._options.requiredProperties ? "" : "?",
-                            " ",
-                            name,
-                            ","
-                        );
+                    this.forEachClassProperty(c, "none", (name, jsonName, prop) => {
+                        const required =
+                            this._options.requiredProperties ||
+                            (this._options.nullSafety && (!prop.type.isNullable || !prop.isOptional));
+                        if (this._options.useJsonAnnotation) {
+                            this.classPropertyCounter++;
+                            this.emitLine(`@JsonKey(name: "${jsonName}")`);
+                        }
+                        this.emitLine(required ? "required " : "", this.dartType(prop.type, true), " ", name, ",");
                     });
                 });
                 this.emitLine("}) = _", className, ";");
