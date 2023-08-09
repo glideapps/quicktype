@@ -1,10 +1,14 @@
+import { StringTypeMapping } from "TypeBuilder";
 import { arrayIntercalate } from "collection-utils";
-import { ClassProperty, EnumType, ObjectType, Type } from "../Type";
-import { matchType } from "../TypeUtils";
-import { funPrefixNamer, Name, Namer } from "../Naming";
+import { ConvenienceRenderer } from "../ConvenienceRenderer";
+import { Name, Namer, funPrefixNamer } from "../Naming";
 import { RenderContext } from "../Renderer";
-import { BooleanOption, getOptionValues, Option, OptionValues } from "../RendererOptions";
-import { acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
+import { BooleanOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
+import { Sourcelike } from "../Source";
+import { TargetLanguage } from "../TargetLanguage";
+import { ClassProperty, EnumType, ObjectType, PrimitiveStringTypeKind, TransformedStringTypeKind, Type } from "../Type";
+import { matchType } from "../TypeUtils";
+import { AcronymStyleOptions, acronymStyle } from "../support/Acronyms";
 import {
     allLowerWordStyle,
     capitalize,
@@ -15,11 +19,8 @@ import {
     stringEscape,
     utf16StringEscape
 } from "../support/Strings";
-import { TargetLanguage } from "../TargetLanguage";
-import { legalizeName } from "./JavaScript";
-import { Sourcelike } from "../Source";
 import { panic } from "../support/Support";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
+import { legalizeName } from "./JavaScript";
 
 export const typeScriptZodOptions = {
     justSchema: new BooleanOption("just-schema", "Schema only", false)
@@ -36,6 +37,13 @@ export class TypeScriptZodTargetLanguage extends TargetLanguage {
         extension: string = "ts"
     ) {
         super(displayName, names, extension);
+    }
+
+    get stringTypeMapping(): StringTypeMapping {
+        const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
+        const dateTimeType = "date-time";
+        mapping.set("date-time", dateTimeType);
+        return mapping;
     }
 
     protected makeRenderer(
@@ -132,6 +140,9 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
                 return ["z.union([", ...arrayIntercalate(", ", children), "])"];
             },
             _transformedStringType => {
+                if (_transformedStringType.kind === "date-time") {
+                    return "z.coerce.date()";
+                }
                 return "z.string()";
             }
         );
