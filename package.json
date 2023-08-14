@@ -44,7 +44,7 @@
         "@types/command-line-args": "^5.2.0",
         "@types/command-line-usage": "^5.0.2",
         "@types/graphql": "^0.11.7",
-        "@types/lodash": "^4.14.196",
+        "@types/lodash": "^4.14.197",
         "@types/semver": "^7.5.0",
         "@types/shelljs": "^0.8.12",
         "@types/stream-json": "^1.7.3",
