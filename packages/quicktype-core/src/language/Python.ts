@@ -444,7 +444,7 @@ export class PythonRenderer extends ConvenienceRenderer {
     ): ReadonlyMap<string, ClassProperty> {
         if (this.pyOptions.features.dataClasses) {
             return mapSortBy(properties, (p: ClassProperty) => {
-                return ((p.type instanceof UnionType && nullableFromUnion(p.type) != null) || p.isOptional) ? 1 : 0;
+                return (p.type instanceof UnionType && nullableFromUnion(p.type) != null) || p.isOptional ? 1 : 0;
             });
         } else {
             return super.sortClassProperties(properties, propertyNames);
