@@ -51,6 +51,10 @@ export const cJSONOptions = {
     typeIntegerSize: new EnumOption("integer-size", "Integer code generation type (int64_t by default)",
         [["int8_t", "int8_t"], ["int16_t", "int16_t"], ["int32_t", "int32_t"], ["int64_t", "int64_t"]], "int64_t", "secondary"),
     hashtableSize: new StringOption("hashtable-size", "Hashtable size, used when maps are created (64 by default)", "SIZE", "64"),
+    addTypedefAlias: new EnumOption("typedef-alias", "Add typedef alias to unions, structs, and enums (no typedef by default)",
+        [["no-typedef", false], ["add-typedef", true]], "no-typedef", "secondary"),
+    printStyle: new EnumOption("print-style", "Which cJSON print should be used (formatted by default)",
+        [["print-formatted", false], ["print-unformatted", true]], "print-formatted", "secondary"),
     typeNamingStyle: new EnumOption<NamingStyle>("type-style", "Naming style for types",
         [pascalValue, underscoreValue, camelValue, upperUnderscoreValue, pascalUpperAcronymsValue, camelUpperAcronymsValue]),
     memberNamingStyle: new EnumOption<NamingStyle>("member-style", "Naming style for members",
@@ -80,6 +84,8 @@ export class CJSONTargetLanguage extends TargetLanguage {
         return [
             cJSONOptions.typeSourceStyle,
             cJSONOptions.typeIntegerSize,
+            cJSONOptions.addTypedefAlias,
+            cJSONOptions.printStyle,
             cJSONOptions.hashtableSize,
             cJSONOptions.typeNamingStyle,
             cJSONOptions.memberNamingStyle,
@@ -406,6 +412,18 @@ export class CJSONRenderer extends ConvenienceRenderer {
     }
 
     /**
+     * Function called to emit typedef alias for a a given type
+     * @param fieldType: the variable type
+     * @param fieldName: name of the variable
+     */
+    protected emitTypdefAlias(fieldType: Type, fieldName: Name) {
+        if (this._options.addTypedefAlias) {
+            this.emitLine("typedef ", this.quicktypeTypeToCJSON(fieldType, false).cType, " ", fieldName, ";")
+            this.ensureBlankLine();
+        }
+    }
+
+    /**
      * Function called to create header file(s)
      * @param proposedFilename: source filename provided from stdin
      */
@@ -590,6 +608,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
             true
         );
         this.ensureBlankLine();
+        this.emitTypdefAlias(enumType, enumName);
     }
 
     /**
@@ -714,6 +733,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
             true
         );
         this.ensureBlankLine();
+        this.emitTypdefAlias(unionType, unionName);
     }
 
     /**
@@ -1197,6 +1217,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
             true
         );
         this.ensureBlankLine();
+        this.emitTypdefAlias(classType, className);
     }
 
     /**
@@ -1756,7 +1777,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                         this.emitBlock(
                             ["if (NULL != j)"],
                             () => {
-                                this.emitLine("s = cJSON_Print(j);");
+                                this.emitLine(this._options.printStyle ? "s = cJSON_PrintUnformatted(j);" : "s = cJSON_Print(j);");
                                 this.emitLine("cJSON_Delete(j);");
                             }
                         );
@@ -1965,6 +1986,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
             true
         );
         this.ensureBlankLine();
+        this.emitTypdefAlias(type, className);
     }
 
     /**
