@@ -14,7 +14,7 @@
     "dependencies": {
         "quicktype-core": "file:../quicktype-core",
         "collection-utils": "^1.0.1",
-        "graphql": "^0.11.7"
+        "graphql": "^16.8.0"
     },
     "devDependencies": {
         "@types/node": "18.14.0",
