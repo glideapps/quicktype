@@ -143,6 +143,7 @@ const keywords = [
 
     // Keywords used in the language.
     "as",
+    "async",
     "box",
     "break",
     "const",
