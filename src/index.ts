@@ -347,7 +347,7 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
                       name: "lang",
                       alias: "l",
                       type: String,
-                      typeLabel: makeLangTypeLabel(targetLanguages),
+                      typeLabel: "LANG",
                       description: "The target language."
                   }
               ];
