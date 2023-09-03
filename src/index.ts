@@ -495,10 +495,11 @@ const tableOptionsForOptions: TableOptions = {
     columns: [
         {
             name: "option",
-            width: 50
+            width: 60
         },
         {
-            name: "description"
+            name: "description",
+            width: 60
         }
     ]
 };
