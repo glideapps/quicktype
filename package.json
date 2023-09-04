@@ -45,7 +45,7 @@
         "@types/command-line-usage": "^5.0.2",
         "@types/graphql": "^0.11.7",
         "@types/lodash": "^4.14.197",
-        "@types/semver": "^7.5.0",
+        "@types/semver": "^7.5.1",
         "@types/shelljs": "^0.8.12",
         "@types/stream-json": "^1.7.3",
         "@types/urijs": "^1.19.19",
