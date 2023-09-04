@@ -657,7 +657,7 @@ async function typeSourcesForURIs(name: string, uris: string[], options: CLIOpti
         case "json":
             return [await sourceFromFileOrUrlArray(name, uris, options.httpHeader)];
         case "schema":
-            return uris.map(uri => ({ kind: "schema", name, uris: [uri] } as SchemaTypeSource));
+            return uris.map(uri => ({ kind: "schema", name, uris: [uri] }) as SchemaTypeSource);
         default:
             return panic(`typeSourceForURIs must not be called for source language ${options.srcLang}`);
     }
