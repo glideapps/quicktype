@@ -6,7 +6,17 @@ import { RenderContext } from "../Renderer";
 import { BooleanOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
 import { Sourcelike } from "../Source";
 import { TargetLanguage } from "../TargetLanguage";
-import { ClassProperty, EnumType, ObjectType, PrimitiveStringTypeKind, TransformedStringTypeKind, Type } from "../Type";
+import {
+    ArrayType,
+    ClassProperty,
+    ClassType,
+    EnumType,
+    ObjectType,
+    PrimitiveStringTypeKind,
+    SetOperationType,
+    TransformedStringTypeKind,
+    Type
+} from "../Type";
 import { matchType } from "../TypeUtils";
 import { AcronymStyleOptions, acronymStyle } from "../support/Acronyms";
 import {
@@ -183,6 +193,52 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         }
     }
 
+    /** Static function that extracts underlying type refs for types that form part of the
+     * definition of the passed type - used to ensure that these appear in generated source
+     * before types that reference them.
+     *
+     * Primitive types don't need defining and enums are output before other types, hence,
+     * these are ignored.
+     */
+    static extractUnderlyingTyperefs(type: Type): number[] {
+        let typeRefs: number[] = [];
+        //Ignore enums and primitives
+        if (!type.isPrimitive() && type.kind != "enum") {
+            //need to extract constituent types for unions and intersections (which both extend SetOperationType)
+            //and can ignore the union/intersection itself
+            if (type instanceof SetOperationType) {
+                (type as SetOperationType).members.forEach(member => {
+                    //recurse as the underlying type could itself be a union, instersection or array etc.
+                    typeRefs.push(...TypeScriptZodRenderer.extractUnderlyingTyperefs(member));
+                });
+            }
+
+            //need to extract additional properties for object, class and map types (which all extend ObjectType)
+            if (type instanceof ObjectType) {
+                const addType = (type as ObjectType).getAdditionalProperties();
+                if (addType) {
+                    //recurse as the underlying type could itself be a union, instersection or array etc.
+                    typeRefs.push(...TypeScriptZodRenderer.extractUnderlyingTyperefs(addType));
+                }
+            }
+
+            //need to extract items types for ArrayType
+            if (type instanceof ArrayType) {
+                const itemsType = (type as ArrayType).items;
+                if (itemsType) {
+                    //recurse as the underlying type could itself be a union, instersection or array etc.
+                    typeRefs.push(...TypeScriptZodRenderer.extractUnderlyingTyperefs(itemsType));
+                }
+            }
+
+            //Finally return the reference to a class as that will need to be defined (where objects, maps, unions, intersections and arrays do not)
+            if (type instanceof ClassType) {
+                typeRefs.push(type.typeRef);
+            }
+        }
+        return typeRefs;
+    }
+
     protected emitSchemas(): void {
         this.ensureBlankLine();
 
@@ -190,42 +246,89 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
             this.emitEnum(u, enumName);
         });
 
+        // All children must be defined before this type to avoid forward references in generated code
+        // Build a model that will tell us if a referenced type has been defined then make multiple
+        // passes over the defined objects to put them into the correct order for output in the
+        // generated sourcecode
+
         const order: number[] = [];
-        const mapKey: Name[] = [];
-        const mapValue: Sourcelike[][] = [];
+        const mapType: ObjectType[] = [];
+        const mapTypeRef: number[] = [];
+        const mapName: Name[] = [];
+        const mapChildTypeRefs: number[][] = [];
+
         this.forEachObject("none", (type: ObjectType, name: Name) => {
-            mapKey.push(name);
-            mapValue.push(this.gatherSource(() => this.emitObject(name, type)));
+            mapType.push(type);
+            mapTypeRef.push(type.typeRef);
+            mapName.push(name);
+
+            const children = type.getChildren();
+            let childTypeRefs: number[] = [];
+
+            children.forEach(child => {
+                childTypeRefs = childTypeRefs.concat(TypeScriptZodRenderer.extractUnderlyingTyperefs(child));
+            });
+            mapChildTypeRefs.push(childTypeRefs);
         });
 
-        mapKey.forEach((_, index) => {
-            // assume first
-            let ordinal = 0;
+        //Items to process on this pass
+        let indices: number[] = [];
+        mapType.forEach((_, index) => {
+            indices.push(index);
+        });
+        //items to process on the next pass
+        let deferredIndices: number[] = [];
 
-            // pull out all names
-            const source = mapValue[index];
-            const names = source.filter(value => value as Name);
+        //defensive: make sure we don't loop foreever, even complex sets shouldn't require many passes
+        const MAX_PASSES = 999;
+        let passNum = 0;
+        do {
+            indices.forEach(index => {
+                // must be behind all these children
+                const childTypeRefs = mapChildTypeRefs[index];
+                let foundAllChildren = true;
 
-            // must be behind all these names
-            for (let i = 0; i < names.length; i++) {
-                const depName = names[i];
-
-                // find this name's ordinal, if it has already been added
-                for (let j = 0; j < order.length; j++) {
-                    const depIndex = order[j];
-                    if (mapKey[depIndex] === depName) {
-                        // this is the index of the dependency, so make sure we come after it
-                        ordinal = Math.max(ordinal, depIndex + 1);
+                childTypeRefs.forEach(childRef => {
+                    //defensive: first check if there is a definition for the referenced type (there should be)
+                    if (mapTypeRef.indexOf(childRef) > -1) {
+                        let found = false;
+                        // find this childs's ordinal, if it has already been added
+                        //faster to go through what we've defined so far than all definitions
+                        for (let j = 0; j < order.length; j++) {
+                            const childIndex = order[j];
+                            if (mapTypeRef[childIndex] === childRef) {
+                                found = true;
+                                break;
+                            }
+                        }
+                        foundAllChildren = foundAllChildren && found;
+                    } else {
+                        console.error(
+                            "A child type reference was not found amongst all Object definitions! TypeRef: " + childRef
+                        );
                     }
-                }
-            }
+                });
 
-            // insert index
-            order.splice(ordinal, 0, index);
-        });
+                if (foundAllChildren) {
+                    // insert index into order as we are safe to define this type
+                    order.push(index);
+                } else {
+                    //defer to a subsequent pass as we need to define other types
+                    deferredIndices.push(index);
+                }
+            });
+            indices = deferredIndices;
+            deferredIndices = [];
+            passNum++;
+
+            if (passNum > MAX_PASSES) {
+                //giving up
+                order.push(...deferredIndices);
+            }
+        } while (indices.length > 0 && passNum <= MAX_PASSES);
 
         // now emit ordered source
-        order.forEach(i => this.emitGatheredSource(mapValue[i]));
+        order.forEach(i => this.emitGatheredSource(this.gatherSource(() => this.emitObject(mapName[i], mapType[i]))));
     }
 
     protected emitSourceStructure(): void {
