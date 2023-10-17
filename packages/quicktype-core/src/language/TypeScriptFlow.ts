@@ -51,7 +51,8 @@ export abstract class TypeScriptFlowBaseTargetLanguage extends JavaScriptTargetL
             tsFlowOptions.converters,
             tsFlowOptions.rawType,
             tsFlowOptions.preferUnions,
-            tsFlowOptions.preferTypes
+            tsFlowOptions.preferTypes,
+            tsFlowOptions.preferConstValues
         ];
     }
 
