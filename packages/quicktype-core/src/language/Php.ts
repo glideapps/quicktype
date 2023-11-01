@@ -100,7 +100,6 @@ export interface FunctionNames {
     readonly validate: Name;
     readonly from: Name;
     readonly to: Name;
-    readonly sample: Name;
 }
 
 export class PhpRenderer extends ConvenienceRenderer {
@@ -177,18 +176,12 @@ export class PhpRenderer extends ConvenienceRenderer {
             name.order,
             lookup => `to_${lookup(name)}`
         );
-        const sampleName = new DependencyName(
-            this.getNameStyling("propertyNamingFunction"),
-            name.order,
-            lookup => `sample_${lookup(name)}`
-        );
         return {
             getter: getterName,
             setter: setterName,
             validate: validateName,
             from: fromName,
-            to: toName,
-            sample: sampleName
+            to: toName
         };
     }
 
@@ -206,8 +199,7 @@ export class PhpRenderer extends ConvenienceRenderer {
             getterAndSetterNames.setter,
             getterAndSetterNames.validate,
             getterAndSetterNames.to,
-            getterAndSetterNames.from,
-            getterAndSetterNames.sample
+            getterAndSetterNames.from
         ];
     }
 
@@ -460,64 +452,6 @@ export class PhpRenderer extends ConvenienceRenderer {
         );
     }
 
-    protected phpSampleConvert(
-        className: Name,
-        t: Type,
-        lhs: Sourcelike[],
-        args: Sourcelike[],
-        idx: number,
-        suffix: Sourcelike
-    ) {
-        return matchType<void>(
-            t,
-            _anyType => this.emitLine(...lhs, "'AnyType::", className, "::", args, "::" + idx, "'", suffix),
-            _nullType => this.emitLine(...lhs, "null", suffix),
-            _boolType => this.emitLine(...lhs, "true", suffix),
-            _integerType => this.emitLine(...lhs, "" + idx, suffix),
-            _doubleType => this.emitLine(...lhs, "" + (idx + idx / 1000), suffix),
-            _stringType => this.emitLine(...lhs, "'", className, "::", args, "::" + idx, "'", suffix),
-            arrayType => {
-                this.emitLine(...lhs, " array(");
-                this.indent(() => {
-                    this.phpSampleConvert(className, arrayType.items, [], [], idx, "");
-                });
-                this.emitLine(");");
-            },
-            classType => this.emitLine(...lhs, this.nameForNamedType(classType), "::sample()", suffix),
-            mapType => {
-                this.emitBlock(["function sample(): stdClass"], () => {
-                    this.emitLine("$out = new stdClass();");
-                    this.phpSampleConvert(className, mapType.values, ["$out->{'", className, "'} = "], args, idx, ";");
-                    this.emitLine("return $out;");
-                });
-                this.emitLine("return sample();");
-            },
-            enumType => this.emitLine(...lhs, this.nameForNamedType(enumType), "::sample()", suffix),
-            unionType => {
-                const nullable = nullableFromUnion(unionType);
-                if (nullable !== null) {
-                    this.phpSampleConvert(className, nullable, lhs, args, idx, suffix);
-                    return;
-                }
-                throw Error("union are not supported:" + unionType);
-            },
-            transformedStringType => {
-                if (transformedStringType.kind === "date-time") {
-                    const x = _.pad("" + (1 + (idx % 31)), 2, "0");
-                    this.emitLine(
-                        ...lhs,
-                        "DateTime::createFromFormat(DateTimeInterface::ISO8601, '",
-                        `2020-12-${x}T12:${x}:${x}+00:00`,
-                        "')",
-                        suffix
-                    );
-                    return;
-                }
-                throw Error('transformedStringType.kind === "unknown"');
-            }
-        );
-    }
-
     private phpValidate(className: Name, t: Type, attrName: Sourcelike, scopeAttrName: string) {
         const is = (isfn: string, myT: Name = className) => {
             this.emitBlock(["if (!", isfn, "(", scopeAttrName, "))"], () =>
@@ -681,28 +615,6 @@ export class PhpRenderer extends ConvenienceRenderer {
             });
         }
     }
-    protected emitSampleMethod(
-        names: FunctionNames,
-        p: ClassProperty,
-        className: Name,
-        name: Name,
-        desc: string[] | undefined,
-        idx: number
-    ) {
-        if (this._options.withGet) {
-            this.emitLine("/**");
-            if (desc !== undefined) {
-                this.emitLine(" * ", desc);
-                this.emitLine(" *");
-            }
-            const rendered = this.phpType(false, p.type);
-            this.emitLine(" * @return ", rendered);
-            this.emitLine(" */");
-            this.emitBlock(["public static function ", names.sample, "(): ", rendered], () => {
-                this.phpSampleConvert(className, p.type, ["return "], [name], idx, ";");
-            });
-        }
-    }
 
     protected emitClassDefinition(c: ClassType, className: Name): void {
         this.emitFileHeader(className, []);
@@ -727,7 +639,6 @@ export class PhpRenderer extends ConvenienceRenderer {
                 });
             });
 
-            let idx = 31;
             this.forEachClassProperty(c, "leading-and-interposing", (name, jsonName, p) => {
                 const desc = this.descriptionForClassProperty(c, jsonName);
                 const names = defined(this._gettersAndSettersForPropertyName.get(name));
@@ -742,8 +653,6 @@ export class PhpRenderer extends ConvenienceRenderer {
                 this.emitGetMethod(names, p, className, name, desc);
                 this.ensureBlankLine();
                 this.emitSetMethod(names, p, className, name, desc);
-                this.ensureBlankLine();
-                this.emitSampleMethod(names, p, className, name, desc, idx++);
             });
 
             this.ensureBlankLine();
@@ -757,8 +666,8 @@ export class PhpRenderer extends ConvenienceRenderer {
                         lines.push([p, className, "::", names.validate, "($this->", name, ")"]);
                         p = "|| ";
                     });
-                    lines.forEach((line, jdx) => {
-                        this.emitLine(...line, lines.length === jdx + 1 ? ";" : "");
+                    lines.forEach((line, i) => {
+                        this.emitLine(...line, lines.length === i + 1 ? ";" : "");
                     });
                 }
             );
@@ -807,20 +716,6 @@ export class PhpRenderer extends ConvenienceRenderer {
                     this.forEachClassProperty(c, "none", (name, jsonName) => {
                         const names = defined(this._gettersAndSettersForPropertyName.get(name));
                         this.emitLine(comma, className, "::", names.from, "($obj->{'", jsonName, "'})");
-                        comma = ",";
-                    });
-                    this.emitLine(");");
-                }
-            );
-            this.ensureBlankLine();
-            this.emitBlock(
-                ["/**\n", " * @return ", className, "\n", " */\n", "public static function sample(): ", className],
-                () => {
-                    this.emitLine("return new ", className, "(");
-                    let comma = " ";
-                    this.forEachClassProperty(c, "none", name => {
-                        const names = defined(this._gettersAndSettersForPropertyName.get(name));
-                        this.emitLine(comma, className, "::", names.sample, "()");
                         comma = ",";
                     });
                     this.emitLine(");");
@@ -936,17 +831,6 @@ export class PhpRenderer extends ConvenienceRenderer {
                     });
                     this.emitLine("}");
                     this.emitLine('throw new Exception("Cannot deserialize ', enumName, '");');
-                }
-            );
-            this.ensureBlankLine();
-            this.emitBlock(
-                ["/**\n", ` * @return `, enumName, "\n", " */\n", "public static function sample(): ", enumName],
-                () => {
-                    const lines: Sourcelike[] = [];
-                    this.forEachEnumCase(e, "none", name => {
-                        lines.push([enumName, "::$", name]);
-                    });
-                    this.emitLine("return ", lines[0], ";");
                 }
             );
         });
