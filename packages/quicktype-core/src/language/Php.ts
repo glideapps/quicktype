@@ -241,6 +241,13 @@ export class PhpRenderer extends ConvenienceRenderer {
         this.emitCommentLines(lines, " * ", "/**", " */");
     }
 
+    public emitBlockWithBraceOnNewLine(line: Sourcelike, f: () => void): void {
+        this.emitLine(line);
+        this.emitLine("{");
+        this.indent(f);
+        this.emitLine("}");
+    }
+
     public emitBlock(line: Sourcelike, f: () => void): void {
         this.emitLine(line, " {");
         this.indent(f);
@@ -362,7 +369,7 @@ export class PhpRenderer extends ConvenienceRenderer {
             },
             _classType => this.emitLine(...lhs, ...args, "->to();"),
             mapType => {
-                this.emitBlock(["function to($my): stdClass"], () => {
+                this.emitBlockWithBraceOnNewLine(["function to($my): stdClass"], () => {
                     this.emitLine("$out = new stdClass();");
                     this.emitBlock(["foreach ($my as $k => $v)"], () => {
                         this.phpToObjConvert(className, mapType.values, ["$my->$k = "], ["$v"]);
@@ -410,7 +417,7 @@ export class PhpRenderer extends ConvenienceRenderer {
             _doubleType => this.emitLine(...lhs, ...args, ";"),
             _stringType => this.emitLine(...lhs, ...args, ";"),
             arrayType => {
-                this.emitLine(...lhs, " array_map(function ($value) {");
+                this.emitLine(...lhs, "array_map(function ($value) {");
                 this.indent(() => {
                     this.phpFromObjConvert(className, arrayType.items, ["return "], ["$value"]);
                 });
@@ -418,7 +425,7 @@ export class PhpRenderer extends ConvenienceRenderer {
             },
             classType => this.emitLine(...lhs, this.nameForNamedType(classType), "::from(", ...args, ");"),
             mapType => {
-                this.emitBlock(["function from($my): stdClass"], () => {
+                this.emitBlockWithBraceOnNewLine(["function from($my): stdClass"], () => {
                     this.emitLine("$out = new stdClass();");
                     this.emitBlock(["foreach ($my as $k => $v)"], () => {
                         this.phpFromObjConvert(className, mapType.values, ["$out->$k = "], ["$v"]);
@@ -468,7 +475,7 @@ export class PhpRenderer extends ConvenienceRenderer {
             _stringType => is("is_string"),
             arrayType => {
                 is("is_array");
-                this.emitLine("array_walk(", scopeAttrName, ", function(", scopeAttrName, "_v) {");
+                this.emitLine("array_walk(", scopeAttrName, ", function (", scopeAttrName, "_v) {");
                 this.indent(() => {
                     this.phpValidate(className, arrayType.items, attrName, `${scopeAttrName}_v`);
                 });
@@ -517,7 +524,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         this.emitLine(" * @throws Exception");
         this.emitLine(" * @return ", this.phpType(false, p.type));
         this.emitLine(" */");
-        this.emitBlock(
+        this.emitBlockWithBraceOnNewLine(
             [
                 "public static function ",
                 names.from,
@@ -540,12 +547,15 @@ export class PhpRenderer extends ConvenienceRenderer {
         this.emitLine(" * @throws Exception");
         this.emitLine(" * @return ", this.phpConvertType(className, p.type));
         this.emitLine(" */");
-        this.emitBlock(["public function ", names.to, "(): ", this.phpConvertType(className, p.type)], () => {
-            this.emitBlock(["if (", className, "::", names.validate, "($this->", name, ")) "], () => {
-                this.phpToObjConvert(className, p.type, ["return "], ["$this->", name]);
-            });
-            this.emitLine("throw new Exception('never get to this ", className, "::", name, "');");
-        });
+        this.emitBlockWithBraceOnNewLine(
+            ["public function ", names.to, "(): ", this.phpConvertType(className, p.type)],
+            () => {
+                this.emitBlock(["if (", className, "::", names.validate, "($this->", name, "))"], () => {
+                    this.phpToObjConvert(className, p.type, ["return "], ["$this->", name]);
+                });
+                this.emitLine("throw new Exception('never get to this ", className, "::", name, "');");
+            }
+        );
     }
     protected emitValidateMethod(names: FunctionNames, p: ClassProperty, className: Name, name: Name, desc?: string[]) {
         this.emitLine("/**");
@@ -557,7 +567,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         this.emitLine(" * @return bool");
         this.emitLine(" * @throws Exception");
         this.emitLine(" */");
-        this.emitBlock(
+        this.emitBlockWithBraceOnNewLine(
             ["public static function ", names.validate, "(", this.phpType(false, p.type), " $value): bool"],
             () => {
                 this.phpValidate(className, p.type, name, "$value");
@@ -578,9 +588,9 @@ export class PhpRenderer extends ConvenienceRenderer {
             const rendered = this.phpType(false, p.type);
             this.emitLine(" * @return ", rendered);
             this.emitLine(" */");
-            this.emitBlock(["public function ", names.getter, "(): ", rendered], () => {
+            this.emitBlockWithBraceOnNewLine(["public function ", names.getter, "(): ", rendered], () => {
                 if (!this._options.fastGet) {
-                    this.emitBlock(["if (", className, "::", names.validate, "($this->", name, ")) "], () => {
+                    this.emitBlock(["if (", className, "::", names.validate, "($this->", name, "))"], () => {
                         this.emitLine("return $this->", name, ";");
                     });
                     this.emitLine(
@@ -608,32 +618,39 @@ export class PhpRenderer extends ConvenienceRenderer {
             this.emitLine(" * @param ", this.phpType(false, p.type, false, "", "|null"));
             this.emitLine(" * @throws Exception");
             this.emitLine(" */");
-            this.emitBlock(["public function ", names.setter, "(", this.phpType(false, p.type), " $value)"], () => {
-                this.emitBlock(["if (", className, "::", names.validate, "($value)) "], () => {
-                    this.emitLine("$this->", name, " = $value;");
-                });
-            });
+            this.emitBlockWithBraceOnNewLine(
+                ["public function ", names.setter, "(", this.phpType(false, p.type), " $value)"],
+                () => {
+                    this.emitBlock(["if (", className, "::", names.validate, "($value))"], () => {
+                        this.emitLine("$this->", name, " = $value;");
+                    });
+                }
+            );
         }
     }
 
     protected emitClassDefinition(c: ClassType, className: Name): void {
         this.emitFileHeader(className, []);
 
-        this.emitBlock(["class ", className], () => {
+        this.emitBlockWithBraceOnNewLine(["class ", className], () => {
             this.forEachClassProperty(c, "none", (name, _jsonName, p) => {
                 this.emitLine("private ", this.phpType(false, p.type), " $", name, ";");
             });
 
             this.ensureBlankLine();
-            const comments: Sourcelike[][] = [];
-            const args: Sourcelike[][] = [];
-            let prefix = "";
+            this.emitLine("/**");
             this.forEachClassProperty(c, "none", (name, __, p) => {
-                args.push([prefix, this.phpType(false, p.type), " $", name]);
-                prefix = ", ";
-                comments.push([" * @param ", this.phpType(false, p.type, false, "", "|null"), " $", name, "\n"]);
+                this.emitLine(" * @param ", this.phpType(false, p.type, false, "", "|null"), " $", name);
             });
-            this.emitBlock(["/**\n", ...comments, " */\n", "public function __construct(", ...args, ")"], () => {
+            this.emitLine(" */");
+            this.emitLine("public function __construct(");
+            this.indent(() => {
+                this.forEachClassProperty(c, "none", (name, __, p, position) => {
+                    const suffix = ["last", "only"].includes(position) ? "" : ",";
+                    this.emitLine(this.phpType(false, p.type), " $", name, suffix);
+                });
+            });
+            this.emitBlock(")", () => {
                 this.forEachClassProperty(c, "none", name => {
                     this.emitLine("$this->", name, " = $", name, ";");
                 });
@@ -656,24 +673,40 @@ export class PhpRenderer extends ConvenienceRenderer {
             });
 
             this.ensureBlankLine();
-            this.emitBlock(
+            this.emitBlockWithBraceOnNewLine(
                 ["/**\n", " * @throws Exception\n", " * @return bool\n", " */\n", "public function validate(): bool"],
                 () => {
-                    let lines: Sourcelike[][] = [];
-                    let p = "return ";
-                    this.forEachClassProperty(c, "none", (name, _jsonName, _p) => {
+                    this.forEachClassProperty(c, "none", (name, _jsonName, _p, position) => {
+                        const isFirstLine = ["first", "only"].includes(position);
+                        const isLastLine = ["last", "only"].includes(position);
+                        const prefix = isFirstLine ? "return " : "|| ";
+                        const suffix = isLastLine ? ";" : "";
+
                         const names = defined(this._gettersAndSettersForPropertyName.get(name));
-                        lines.push([p, className, "::", names.validate, "($this->", name, ")"]);
-                        p = "|| ";
-                    });
-                    lines.forEach((line, i) => {
-                        this.emitLine(...line, lines.length === i + 1 ? ";" : "");
+                        const line: Sourcelike = [
+                            prefix,
+                            className,
+                            "::",
+                            names.validate,
+                            "($this->",
+                            name,
+                            ")",
+                            suffix
+                        ];
+
+                        if (isFirstLine) {
+                            this.emitLine(line);
+                        } else {
+                            this.indent(() => {
+                                this.emitLine(line);
+                            });
+                        }
                     });
                 }
             );
 
             this.ensureBlankLine();
-            this.emitBlock(
+            this.emitBlockWithBraceOnNewLine(
                 ["/**\n", " * @return stdClass\n", " * @throws Exception\n", " */\n", "public function to(): stdClass"],
                 () => {
                     this.emitLine("$out = new stdClass();");
@@ -686,7 +719,7 @@ export class PhpRenderer extends ConvenienceRenderer {
             );
 
             this.ensureBlankLine();
-            this.emitBlock(
+            this.emitBlockWithBraceOnNewLine(
                 [
                     "/**\n",
                     " * @param stdClass $obj\n",
@@ -706,11 +739,12 @@ export class PhpRenderer extends ConvenienceRenderer {
                         });
                     }
                     this.emitLine("return new ", className, "(");
-                    let comma = " ";
-                    this.forEachClassProperty(c, "none", (name, jsonName) => {
-                        const names = defined(this._gettersAndSettersForPropertyName.get(name));
-                        this.emitLine(comma, className, "::", names.from, "($obj->{'", jsonName, "'})");
-                        comma = ",";
+                    this.indent(() => {
+                        this.forEachClassProperty(c, "none", (name, jsonName, _, position) => {
+                            const suffix = ["last", "only"].includes(position) ? "" : ",";
+                            const names = defined(this._gettersAndSettersForPropertyName.get(name));
+                            this.emitLine(className, "::", names.from, "($obj->{'", jsonName, "'})", suffix);
+                        });
                     });
                     this.emitLine(");");
                 }
@@ -742,26 +776,26 @@ export class PhpRenderer extends ConvenienceRenderer {
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitFileHeader(enumName, []);
         this.emitDescription(this.descriptionForType(e));
-        this.emitBlock(["class ", enumName], () => {
+        this.emitBlockWithBraceOnNewLine(["class ", enumName], () => {
             this.forEachEnumCase(e, "none", (name, _jsonName) => {
                 this.emitLine("public static ", enumName, " $", name, ";");
             });
 
-            this.emitBlock("public static function init()", () => {
+            this.emitBlockWithBraceOnNewLine("public static function init()", () => {
                 this.forEachEnumCase(e, "none", (name, jsonName) => {
                     this.emitLine(enumName, "::$", name, " = new ", enumName, "('", jsonName, "');");
                 });
             });
 
             this.emitLine("private string $enum;");
-            this.emitBlock(["public function __construct(string $enum)"], () => {
+            this.emitBlockWithBraceOnNewLine(["public function __construct(string $enum)"], () => {
                 this.emitLine("$this->enum = $enum;");
             });
 
             this.ensureBlankLine();
             this.emitEnumSerializationAttributes(e);
 
-            this.emitBlock(
+            this.emitBlockWithBraceOnNewLine(
                 [
                     "/**\n",
                     " * @param ",
@@ -780,15 +814,10 @@ export class PhpRenderer extends ConvenienceRenderer {
                     this.indent(() => {
                         this.forEachEnumCase(e, "none", (name, jsonName) => {
                             // Todo String or Number
-                            this.emitLine(
-                                "case ",
-                                enumName,
-                                "::$",
-                                name,
-                                "->enum: return '",
-                                stringEscape(jsonName),
-                                "';"
-                            );
+                            this.emitLine("case ", enumName, "::$", name, "->enum:");
+                            this.indent(() => {
+                                this.emitLine("return '", stringEscape(jsonName), "';");
+                            });
                         });
                     });
                     this.emitLine("}");
@@ -798,7 +827,7 @@ export class PhpRenderer extends ConvenienceRenderer {
             this.ensureBlankLine();
             this.emitEnumDeserializationAttributes(e);
 
-            this.emitBlock(
+            this.emitBlockWithBraceOnNewLine(
                 [
                     "/**\n",
                     " * @param mixed\n",
@@ -815,7 +844,10 @@ export class PhpRenderer extends ConvenienceRenderer {
                     this.indent(() => {
                         this.forEachEnumCase(e, "none", (name, jsonName) => {
                             // Todo String or Enum
-                            this.emitLine("case '", stringEscape(jsonName), "': return ", enumName, "::$", name, ";");
+                            this.emitLine("case '", stringEscape(jsonName), "':");
+                            this.indent(() => {
+                                this.emitLine("return ", enumName, "::$", name, ";");
+                            });
                         });
                     });
                     this.emitLine("}");
