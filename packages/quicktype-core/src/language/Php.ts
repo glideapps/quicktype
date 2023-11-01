@@ -365,7 +365,6 @@ export class PhpRenderer extends ConvenienceRenderer {
                 this.emitLine(...lhs, "array_map(function ($value) {");
                 this.indent(() => {
                     this.phpToObjConvert(className, arrayType.items, ["return "], ["$value"]);
-                    // this.emitLine("return $tmp;");
                 });
                 this.emitLine("}, ", ...args, ");");
             },
@@ -407,9 +406,6 @@ export class PhpRenderer extends ConvenienceRenderer {
         this.emitBlock(["if (!is_a(", scopeAttrName, ", 'DateTime'))"], () =>
             this.emitLine("throw new Exception('Attribute Error:", className, "::", attrName, "');")
         );
-        // if (lhs !== undefined) {
-        //     this.emitLine(lhs, "$tmp;");
-        // }
     }
 
     protected phpFromObjConvert(className: Name, t: Type, lhs: Sourcelike[], args: Sourcelike[]) {
@@ -425,7 +421,6 @@ export class PhpRenderer extends ConvenienceRenderer {
                 this.emitLine(...lhs, " array_map(function ($value) {");
                 this.indent(() => {
                     this.phpFromObjConvert(className, arrayType.items, ["return "], ["$value"]);
-                    // this.emitLine("return $tmp;");
                 });
                 this.emitLine("}, ", ...args, ");");
             },
@@ -558,7 +553,6 @@ export class PhpRenderer extends ConvenienceRenderer {
                         "')",
                         suffix
                     );
-                    // this.emitLine("return sample();");
                     return;
                 }
                 throw Error('transformedStringType.kind === "unknown"');
@@ -627,7 +621,6 @@ export class PhpRenderer extends ConvenienceRenderer {
             this.emitLine(" * ", desc);
             this.emitLine(" *");
         }
-        // this.emitLine(" * @param ", this.phpType(false, p.type, false, "", "|null"));
         this.emitLine(" * @param ", this.phpConvertType(className, p.type), " $value");
         this.emitLine(" * @throws Exception");
         this.emitLine(" * @return ", this.phpType(false, p.type));
@@ -643,7 +636,6 @@ export class PhpRenderer extends ConvenienceRenderer {
             ],
             () => {
                 this.phpFromObjConvert(className, p.type, ["return "], [`$value`]);
-                // this.emitLine("return $ret;");
             }
         );
     }
