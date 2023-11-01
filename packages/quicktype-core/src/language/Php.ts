@@ -2,7 +2,7 @@ import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { DependencyName, funPrefixNamer, Name, Namer } from "../Naming";
 import { RenderContext } from "../Renderer";
-import { BooleanOption, getOptionValues, Option, OptionValues } from "../RendererOptions";
+import { BooleanOption, EnumOption, getOptionValues, Option, OptionValues } from "../RendererOptions";
 import { maybeAnnotated, Sourcelike } from "../Source";
 import { acronymOption, acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
 import {
@@ -26,11 +26,25 @@ import { directlyReachableSingleNamedType, matchType, nullableFromUnion } from "
 import { StringTypeMapping, TransformedStringTypeKind, PrimitiveStringTypeKind } from "..";
 import * as _ from "lodash";
 
+export enum SerializeWith {
+    array = "Associative Array",
+    stdClass = "stdClass"
+}
+
 export const phpOptions = {
     withGet: new BooleanOption("with-get", "Create Getter", true),
     fastGet: new BooleanOption("fast-get", "getter without validation", false),
     withSet: new BooleanOption("with-set", "Create Setter", false),
     withClosing: new BooleanOption("with-closing", "PHP Closing Tag", false),
+    serializeWith: new EnumOption(
+        "serialize-with",
+        "Serialize with",
+        [
+            ["array", SerializeWith.array],
+            ["stdClass", SerializeWith.stdClass]
+        ],
+        "array"
+    ),
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal)
 };
 
@@ -268,7 +282,7 @@ export class PhpRenderer extends ConvenienceRenderer {
             _stringType => optionalize("string"),
             _arrayType => optionalize("array"),
             classType => optionalize(this.nameForNamedType(classType)),
-            _mapType => optionalize("stdClass"),
+            _mapType => optionalize(this._options.serializeWith === SerializeWith.stdClass ? "stdClass" : "array"),
             enumType => optionalize(this.nameForNamedType(enumType)),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
@@ -304,7 +318,7 @@ export class PhpRenderer extends ConvenienceRenderer {
             _stringType => "string",
             arrayType => [this.phpDocConvertType(className, arrayType.items), "[]"],
             _classType => _classType.getCombinedName(),
-            _mapType => "stdClass",
+            _mapType => (this._options.serializeWith === SerializeWith.stdClass ? "stdClass" : "array"),
             enumType => this.nameForNamedType(enumType),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
@@ -332,8 +346,8 @@ export class PhpRenderer extends ConvenienceRenderer {
             _doubleType => "float",
             _stringType => "string",
             _arrayType => "array",
-            _classType => "stdClass",
-            _mapType => "stdClass",
+            _classType => (this._options.serializeWith === SerializeWith.stdClass ? "stdClass" : "array"),
+            _mapType => (this._options.serializeWith === SerializeWith.stdClass ? "stdClass" : "array"),
             _enumType => "string", // TODO number this.nameForNamedType(enumType),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
@@ -369,6 +383,7 @@ export class PhpRenderer extends ConvenienceRenderer {
             },
             _classType => this.emitLine(...lhs, ...args, "->to();"),
             mapType => {
+                // TODO: this._options.serializeWith === SerializeWith.stdClass
                 this.emitBlockWithBraceOnNewLine(["function to($my): stdClass"], () => {
                     this.emitLine("$out = new stdClass();");
                     this.emitBlock(["foreach ($my as $k => $v)"], () => {
@@ -425,6 +440,7 @@ export class PhpRenderer extends ConvenienceRenderer {
             },
             classType => this.emitLine(...lhs, this.nameForNamedType(classType), "::from(", ...args, ");"),
             mapType => {
+                // TODO: this._options.serializeWith === SerializeWith.stdClass
                 this.emitBlockWithBraceOnNewLine(["function from($my): stdClass"], () => {
                     this.emitLine("$out = new stdClass();");
                     this.emitBlock(["foreach ($my as $k => $v)"], () => {
@@ -706,49 +722,104 @@ export class PhpRenderer extends ConvenienceRenderer {
             );
 
             this.ensureBlankLine();
-            this.emitBlockWithBraceOnNewLine(
-                ["/**\n", " * @return stdClass\n", " * @throws Exception\n", " */\n", "public function to(): stdClass"],
-                () => {
-                    this.emitLine("$out = new stdClass();");
-                    this.forEachClassProperty(c, "none", (name, jsonName) => {
-                        const names = defined(this._gettersAndSettersForPropertyName.get(name));
-                        this.emitLine("$out->", jsonName, " = $this->", names.to, "();");
-                    });
-                    this.emitLine("return $out;");
-                }
-            );
+            if (this._options.serializeWith === SerializeWith.stdClass) {
+                this.emitBlockWithBraceOnNewLine(
+                    [
+                        "/**\n",
+                        " * @return stdClass\n",
+                        " * @throws Exception\n",
+                        " */\n",
+                        "public function to(): stdClass"
+                    ],
+                    () => {
+                        this.emitLine("$out = new stdClass();");
+                        this.forEachClassProperty(c, "none", (name, jsonName) => {
+                            const names = defined(this._gettersAndSettersForPropertyName.get(name));
+                            this.emitLine("$out->", jsonName, " = $this->", names.to, "();");
+                        });
+                        this.emitLine("return $out;");
+                    }
+                );
+            } else {
+                this.emitBlockWithBraceOnNewLine(
+                    ["/**\n", " * @return array\n", " * @throws Exception\n", " */\n", "public function to(): array"],
+                    () => {
+                        this.emitLine("return [");
+                        this.indent(() => {
+                            this.forEachClassProperty(c, "none", (name, jsonName) => {
+                                const names = defined(this._gettersAndSettersForPropertyName.get(name));
+                                this.emitLine("'", jsonName, "' => $this->", names.to, "(),");
+                            });
+                        });
+                        this.emitLine("];");
+                    }
+                );
+            }
 
             this.ensureBlankLine();
-            this.emitBlockWithBraceOnNewLine(
-                [
-                    "/**\n",
-                    " * @param stdClass $obj\n",
-                    " * @return ",
-                    className,
-                    "\n",
-                    " * @throws Exception\n",
-                    " */\n",
-                    "public static function from(stdClass $obj): ",
-                    className
-                ],
-                () => {
-                    if (this._options.fastGet) {
-                        this.forEachClassProperty(c, "none", name => {
-                            const names = defined(this._gettersAndSettersForPropertyName.get(name));
-                            this.emitLine(className, "::", names.validate, "($this->", name, ", true);");
+            if (this._options.serializeWith === SerializeWith.stdClass) {
+                this.emitBlockWithBraceOnNewLine(
+                    [
+                        "/**\n",
+                        " * @param stdClass $obj\n",
+                        " * @return ",
+                        className,
+                        "\n",
+                        " * @throws Exception\n",
+                        " */\n",
+                        "public static function from(stdClass $obj): ",
+                        className
+                    ],
+                    () => {
+                        if (this._options.fastGet) {
+                            this.forEachClassProperty(c, "none", name => {
+                                const names = defined(this._gettersAndSettersForPropertyName.get(name));
+                                this.emitLine(className, "::", names.validate, "($this->", name, ", true);");
+                            });
+                        }
+                        this.emitLine("return new ", className, "(");
+                        this.indent(() => {
+                            this.forEachClassProperty(c, "none", (name, jsonName, _, position) => {
+                                const suffix = ["last", "only"].includes(position) ? "" : ",";
+                                const names = defined(this._gettersAndSettersForPropertyName.get(name));
+                                this.emitLine(className, "::", names.from, "($obj->", jsonName, ")", suffix);
+                            });
                         });
+                        this.emitLine(");");
                     }
-                    this.emitLine("return new ", className, "(");
-                    this.indent(() => {
-                        this.forEachClassProperty(c, "none", (name, jsonName, _, position) => {
-                            const suffix = ["last", "only"].includes(position) ? "" : ",";
-                            const names = defined(this._gettersAndSettersForPropertyName.get(name));
-                            this.emitLine(className, "::", names.from, "($obj->", jsonName, ")", suffix);
+                );
+            } else {
+                this.emitBlockWithBraceOnNewLine(
+                    [
+                        "/**\n",
+                        " * @param array $arr\n",
+                        " * @return ",
+                        className,
+                        "\n",
+                        " * @throws Exception\n",
+                        " */\n",
+                        "public static function from(array $arr): ",
+                        className
+                    ],
+                    () => {
+                        if (this._options.fastGet) {
+                            this.forEachClassProperty(c, "none", name => {
+                                const names = defined(this._gettersAndSettersForPropertyName.get(name));
+                                this.emitLine(className, "::", names.validate, "($this->", name, ", true);");
+                            });
+                        }
+                        this.emitLine("return new ", className, "(");
+                        this.indent(() => {
+                            this.forEachClassProperty(c, "none", (name, jsonName, _, position) => {
+                                const suffix = ["last", "only"].includes(position) ? "" : ",";
+                                const names = defined(this._gettersAndSettersForPropertyName.get(name));
+                                this.emitLine(className, "::", names.from, "($arr['", jsonName, "'])", suffix);
+                            });
                         });
-                    });
-                    this.emitLine(");");
-                }
-            );
+                        this.emitLine(");");
+                    }
+                );
+            }
         });
         this.finishFile();
     }
