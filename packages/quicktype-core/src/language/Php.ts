@@ -712,7 +712,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                     this.emitLine("$out = new stdClass();");
                     this.forEachClassProperty(c, "none", (name, jsonName) => {
                         const names = defined(this._gettersAndSettersForPropertyName.get(name));
-                        this.emitLine("$out->{'", jsonName, "'} = $this->", names.to, "();");
+                        this.emitLine("$out->", jsonName, " = $this->", names.to, "();");
                     });
                     this.emitLine("return $out;");
                 }
@@ -743,7 +743,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                         this.forEachClassProperty(c, "none", (name, jsonName, _, position) => {
                             const suffix = ["last", "only"].includes(position) ? "" : ",";
                             const names = defined(this._gettersAndSettersForPropertyName.get(name));
-                            this.emitLine(className, "::", names.from, "($obj->{'", jsonName, "'})", suffix);
+                            this.emitLine(className, "::", names.from, "($obj->", jsonName, ")", suffix);
                         });
                     });
                     this.emitLine(");");
