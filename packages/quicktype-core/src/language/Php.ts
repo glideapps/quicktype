@@ -378,7 +378,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                 });
                 this.emitLine("return to(", ...args, ");");
             },
-            enumType => this.emitLine(...lhs, this.nameForNamedType(enumType), "::to(", ...args, ");"),
+            _enumType => this.emitLine(...lhs, ...args, "->to();"),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
@@ -491,8 +491,8 @@ export class PhpRenderer extends ConvenienceRenderer {
                 });
                 this.emitLine("}");
             },
-            enumType => {
-                this.emitLine(this.phpType(false, enumType), "::to(", scopeAttrName, ");");
+            _enumType => {
+                this.emitLine(scopeAttrName, "->to();");
             },
             unionType => {
                 const nullable = nullableFromUnion(unionType);
@@ -777,17 +777,23 @@ export class PhpRenderer extends ConvenienceRenderer {
         this.emitFileHeader(enumName, []);
         this.emitDescription(this.descriptionForType(e));
         this.emitBlockWithBraceOnNewLine(["class ", enumName], () => {
-            this.forEachEnumCase(e, "none", (name, _jsonName) => {
-                this.emitLine("public static ", enumName, " $", name, ";");
+            this.forEachEnumCase(e, "none", (name, jsonName) => {
+                this.emitLine("public const ", name, " = '", jsonName, "';");
             });
+            this.ensureBlankLine();
 
-            this.emitBlockWithBraceOnNewLine("public static function init()", () => {
-                this.forEachEnumCase(e, "none", (name, jsonName) => {
-                    this.emitLine(enumName, "::$", name, " = new ", enumName, "('", jsonName, "');");
+            this.emitLine("public const VALUES = [");
+            this.indent(() => {
+                this.forEachEnumCase(e, "none", name => {
+                    this.emitLine(enumName, "::", name, ",");
                 });
             });
+            this.emitLine("];");
+            this.ensureBlankLine();
 
             this.emitLine("private string $enum;");
+            this.ensureBlankLine();
+
             this.emitBlockWithBraceOnNewLine(["public function __construct(string $enum)"], () => {
                 this.emitLine("$this->enum = $enum;");
             });
@@ -796,31 +802,11 @@ export class PhpRenderer extends ConvenienceRenderer {
             this.emitEnumSerializationAttributes(e);
 
             this.emitBlockWithBraceOnNewLine(
-                [
-                    "/**\n",
-                    " * @param ",
-                    enumName,
-                    "\n",
-                    " * @return string",
-                    "\n",
-                    " * @throws Exception\n",
-                    " */\n",
-                    "public static function to(",
-                    enumName,
-                    " $obj): string"
-                ],
+                ["/**\n", " * @return string\n", " * @throws Exception\n", " */\n", "public function to(): string"],
                 () => {
-                    this.emitLine("switch ($obj->enum) {");
-                    this.indent(() => {
-                        this.forEachEnumCase(e, "none", (name, jsonName) => {
-                            // Todo String or Number
-                            this.emitLine("case ", enumName, "::$", name, "->enum:");
-                            this.indent(() => {
-                                this.emitLine("return '", stringEscape(jsonName), "';");
-                            });
-                        });
+                    this.emitBlock(["if (in_array($this->enum, ", enumName, "::VALUES, true))"], () => {
+                        this.emitLine("return $this->enum;");
                     });
-                    this.emitLine("}");
                     this.emitLine("throw new Exception('the give value is not an enum-value.');");
                 }
             );
@@ -840,22 +826,13 @@ export class PhpRenderer extends ConvenienceRenderer {
                     enumName
                 ],
                 () => {
-                    this.emitLine("switch ($obj) {");
-                    this.indent(() => {
-                        this.forEachEnumCase(e, "none", (name, jsonName) => {
-                            // Todo String or Enum
-                            this.emitLine("case '", stringEscape(jsonName), "':");
-                            this.indent(() => {
-                                this.emitLine("return ", enumName, "::$", name, ";");
-                            });
-                        });
+                    this.emitBlock(["if (in_array($obj, ", enumName, "::VALUES, true))"], () => {
+                        this.emitLine("return new ", enumName, "($obj);");
                     });
-                    this.emitLine("}");
                     this.emitLine("throw new Exception('Cannot deserialize ", enumName, "');");
                 }
             );
         });
-        this.emitLine(enumName, "::init();");
         this.finishFile();
     }
 
