@@ -748,9 +748,6 @@ export class PhpRenderer extends ConvenienceRenderer {
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitFileHeader(enumName, []);
         this.emitDescription(this.descriptionForType(e));
-        const caseNames: Sourcelike[] = [];
-        caseNames.push(";");
-        const enumSerdeType = "string";
         this.emitBlock(["class ", enumName], () => {
             this.forEachEnumCase(e, "none", (name, _jsonName) => {
                 this.emitLine("public static ", enumName, " $", name, ";");
@@ -762,8 +759,8 @@ export class PhpRenderer extends ConvenienceRenderer {
                 });
             });
 
-            this.emitLine("private ", enumSerdeType, " $enum;");
-            this.emitBlock(["public function __construct(", enumSerdeType, " $enum)"], () => {
+            this.emitLine("private string $enum;");
+            this.emitBlock(["public function __construct(string $enum)"], () => {
                 this.emitLine("$this->enum = $enum;");
             });
 
@@ -776,15 +773,13 @@ export class PhpRenderer extends ConvenienceRenderer {
                     ` * @param `,
                     enumName,
                     `\n`,
-                    ` * @return `,
-                    enumSerdeType,
+                    ` * @return string`,
                     `\n`,
                     ` * @throws Exception\n`,
                     " */\n",
                     "public static function to(",
                     enumName,
-                    " $obj): ",
-                    enumSerdeType
+                    " $obj): string"
                 ],
                 () => {
                     this.emitLine("switch ($obj->enum) {");
