@@ -527,7 +527,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                 this.phpType(false, p.type)
             ],
             () => {
-                this.phpFromObjConvert(className, p.type, ["return "], [`$value`]);
+                this.phpFromObjConvert(className, p.type, ["return "], ["$value"]);
             }
         );
     }
@@ -560,7 +560,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         this.emitBlock(
             ["public static function ", names.validate, "(", this.phpType(false, p.type), " $value): bool"],
             () => {
-                this.phpValidate(className, p.type, name, `$value`);
+                this.phpValidate(className, p.type, name, "$value");
                 this.emitLine("return true;");
             }
         );
@@ -573,7 +573,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                 this.emitLine(" *");
             }
             if (!this._options.fastGet) {
-                this.emitLine(` * @throws Exception`);
+                this.emitLine(" * @throws Exception");
             }
             const rendered = this.phpType(false, p.type);
             this.emitLine(" * @return ", rendered);
@@ -606,7 +606,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                 this.emitLine(" *");
             }
             this.emitLine(" * @param ", this.phpType(false, p.type, false, "", "|null"));
-            this.emitLine(` * @throws Exception`);
+            this.emitLine(" * @throws Exception");
             this.emitLine(" */");
             this.emitBlock(["public function ", names.setter, "(", this.phpType(false, p.type), " $value)"], () => {
                 this.emitBlock(["if (", className, "::", names.validate, "($value)) "], () => {
@@ -657,7 +657,7 @@ export class PhpRenderer extends ConvenienceRenderer {
 
             this.ensureBlankLine();
             this.emitBlock(
-                ["/**\n", ` * @throws Exception\n`, ` * @return bool\n`, " */\n", "public function validate(): bool"],
+                ["/**\n", " * @throws Exception\n", " * @return bool\n", " */\n", "public function validate(): bool"],
                 () => {
                     let lines: Sourcelike[][] = [];
                     let p = "return ";
@@ -674,13 +674,7 @@ export class PhpRenderer extends ConvenienceRenderer {
 
             this.ensureBlankLine();
             this.emitBlock(
-                [
-                    "/**\n",
-                    ` * @return stdClass\n`,
-                    ` * @throws Exception\n`,
-                    " */\n",
-                    "public function to(): stdClass "
-                ],
+                ["/**\n", " * @return stdClass\n", " * @throws Exception\n", " */\n", "public function to(): stdClass"],
                 () => {
                     this.emitLine("$out = new stdClass();");
                     this.forEachClassProperty(c, "none", (name, jsonName) => {
@@ -695,11 +689,11 @@ export class PhpRenderer extends ConvenienceRenderer {
             this.emitBlock(
                 [
                     "/**\n",
-                    ` * @param stdClass $obj\n`,
-                    ` * @return `,
+                    " * @param stdClass $obj\n",
+                    " * @return ",
                     className,
-                    `\n`,
-                    ` * @throws Exception\n`,
+                    "\n",
+                    " * @throws Exception\n",
                     " */\n",
                     "public static function from(stdClass $obj): ",
                     className
@@ -770,12 +764,12 @@ export class PhpRenderer extends ConvenienceRenderer {
             this.emitBlock(
                 [
                     "/**\n",
-                    ` * @param `,
+                    " * @param ",
                     enumName,
-                    `\n`,
-                    ` * @return string`,
-                    `\n`,
-                    ` * @throws Exception\n`,
+                    "\n",
+                    " * @return string",
+                    "\n",
+                    " * @throws Exception\n",
                     " */\n",
                     "public static function to(",
                     enumName,
@@ -807,11 +801,11 @@ export class PhpRenderer extends ConvenienceRenderer {
             this.emitBlock(
                 [
                     "/**\n",
-                    ` * @param mixed\n`,
-                    ` * @return `,
+                    " * @param mixed\n",
+                    " * @return ",
                     enumName,
                     "\n",
-                    ` * @throws Exception\n`,
+                    " * @throws Exception\n",
                     " */\n",
                     "public static function from($obj): ",
                     enumName
