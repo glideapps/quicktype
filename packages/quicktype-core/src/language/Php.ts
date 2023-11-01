@@ -355,12 +355,12 @@ export class PhpRenderer extends ConvenienceRenderer {
     protected phpToObjConvert(className: Name, t: Type, lhs: Sourcelike[], args: Sourcelike[]) {
         return matchType<void>(
             t,
-            _anyType => this.emitLine(...lhs, ...args, "; /*any*/"),
-            _nullType => this.emitLine(...lhs, ...args, "; /*null*/"),
-            _boolType => this.emitLine(...lhs, ...args, "; /*bool*/"),
-            _integerType => this.emitLine(...lhs, ...args, "; /*int*/"),
-            _doubleType => this.emitLine(...lhs, ...args, "; /*float*/"),
-            _stringType => this.emitLine(...lhs, ...args, "; /*string*/"),
+            _anyType => this.emitLine(...lhs, ...args, ";"),
+            _nullType => this.emitLine(...lhs, ...args, ";"),
+            _boolType => this.emitLine(...lhs, ...args, ";"),
+            _integerType => this.emitLine(...lhs, ...args, ";"),
+            _doubleType => this.emitLine(...lhs, ...args, ";"),
+            _stringType => this.emitLine(...lhs, ...args, ";"),
             arrayType => {
                 this.emitLine(...lhs, "array_map(function ($value) {");
                 this.indent(() => {
@@ -368,7 +368,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                 });
                 this.emitLine("}, ", ...args, ");");
             },
-            _classType => this.emitLine(...lhs, ...args, "->to(); ", "/*class*/"),
+            _classType => this.emitLine(...lhs, ...args, "->to();"),
             mapType => {
                 this.emitBlock(["function to($my): stdClass"], () => {
                     this.emitLine("$out = new stdClass();");
@@ -379,7 +379,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                 });
                 this.emitLine("return to(", ...args, ");");
             },
-            enumType => this.emitLine(...lhs, this.nameForNamedType(enumType), "::to(", ...args, "); ", "/*enum*/"),
+            enumType => this.emitLine(...lhs, this.nameForNamedType(enumType), "::to(", ...args, ");"),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
@@ -411,12 +411,12 @@ export class PhpRenderer extends ConvenienceRenderer {
     protected phpFromObjConvert(className: Name, t: Type, lhs: Sourcelike[], args: Sourcelike[]) {
         return matchType<void>(
             t,
-            _anyType => this.emitLine(...lhs, ...args, "; /*any*/"),
-            _nullType => this.emitLine(...lhs, ...args, "; /*null*/"),
-            _boolType => this.emitLine(...lhs, ...args, "; /*bool*/"),
-            _integerType => this.emitLine(...lhs, ...args, "; /*int*/"),
-            _doubleType => this.emitLine(...lhs, ...args, "; /*float*/"),
-            _stringType => this.emitLine(...lhs, ...args, "; /*string*/"),
+            _anyType => this.emitLine(...lhs, ...args, ";"),
+            _nullType => this.emitLine(...lhs, ...args, ";"),
+            _boolType => this.emitLine(...lhs, ...args, ";"),
+            _integerType => this.emitLine(...lhs, ...args, ";"),
+            _doubleType => this.emitLine(...lhs, ...args, ";"),
+            _stringType => this.emitLine(...lhs, ...args, ";"),
             arrayType => {
                 this.emitLine(...lhs, " array_map(function ($value) {");
                 this.indent(() => {
@@ -424,8 +424,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                 });
                 this.emitLine("}, ", ...args, ");");
             },
-            classType =>
-                this.emitLine(...lhs, this.nameForNamedType(classType), "::from(", ...args, "); ", "/*class*/"),
+            classType => this.emitLine(...lhs, this.nameForNamedType(classType), "::from(", ...args, ");"),
             mapType => {
                 this.emitBlock(["function from($my): stdClass"], () => {
                     this.emitLine("$out = new stdClass();");
@@ -436,7 +435,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                 });
                 this.emitLine("return from(", ...args, ");");
             },
-            enumType => this.emitLine(...lhs, this.nameForNamedType(enumType), "::from(", ...args, "); ", "/*enum*/"),
+            enumType => this.emitLine(...lhs, this.nameForNamedType(enumType), "::from(", ...args, ");"),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
@@ -471,61 +470,20 @@ export class PhpRenderer extends ConvenienceRenderer {
     ) {
         return matchType<void>(
             t,
-            _anyType =>
-                this.emitLine(
-                    ...lhs,
-                    "'AnyType::",
-                    className,
-                    "::",
-                    args,
-                    "::" + idx,
-                    "'",
-                    suffix,
-                    "/*",
-                    "" + idx,
-                    ":",
-                    args,
-                    "*/"
-                ),
-            _nullType => this.emitLine(...lhs, "null", suffix, " /*", "" + idx, ":", args, "*/"),
-            _boolType => this.emitLine(...lhs, "true", suffix, " /*", "" + idx, ":", args, "*/"),
-            _integerType => this.emitLine(...lhs, "" + idx, suffix, " /*", "" + idx, ":", args, "*/"),
-            _doubleType => this.emitLine(...lhs, "" + (idx + idx / 1000), suffix, " /*", "" + idx, ":", args, "*/"),
-            _stringType =>
-                this.emitLine(
-                    ...lhs,
-                    "'",
-                    className,
-                    "::",
-                    args,
-                    "::" + idx,
-                    "'",
-                    suffix,
-                    " /*",
-                    "" + idx,
-                    ":",
-                    args,
-                    "*/"
-                ),
+            _anyType => this.emitLine(...lhs, "'AnyType::", className, "::", args, "::" + idx, "'", suffix),
+            _nullType => this.emitLine(...lhs, "null", suffix),
+            _boolType => this.emitLine(...lhs, "true", suffix),
+            _integerType => this.emitLine(...lhs, "" + idx, suffix),
+            _doubleType => this.emitLine(...lhs, "" + (idx + idx / 1000), suffix),
+            _stringType => this.emitLine(...lhs, "'", className, "::", args, "::" + idx, "'", suffix),
             arrayType => {
                 this.emitLine(...lhs, " array(");
                 this.indent(() => {
                     this.phpSampleConvert(className, arrayType.items, [], [], idx, "");
                 });
-                this.emitLine("); /* ", "" + idx, ":", args, "*/");
+                this.emitLine(");");
             },
-            classType =>
-                this.emitLine(
-                    ...lhs,
-                    this.nameForNamedType(classType),
-                    "::sample()",
-                    suffix,
-                    " /*",
-                    "" + idx,
-                    ":",
-                    args,
-                    "*/"
-                ),
+            classType => this.emitLine(...lhs, this.nameForNamedType(classType), "::sample()", suffix),
             mapType => {
                 this.emitBlock(["function sample(): stdClass"], () => {
                     this.emitLine("$out = new stdClass();");
@@ -534,7 +492,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                 });
                 this.emitLine("return sample();");
             },
-            enumType => this.emitLine(...lhs, this.nameForNamedType(enumType), "::sample()", suffix, " /*enum*/"),
+            enumType => this.emitLine(...lhs, this.nameForNamedType(enumType), "::sample()", suffix),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
@@ -750,17 +708,8 @@ export class PhpRenderer extends ConvenienceRenderer {
         this.emitFileHeader(className, []);
 
         this.emitBlock(["class ", className], () => {
-            this.forEachClassProperty(c, "none", (name, jsonName, p) => {
-                this.emitLine(
-                    "private ",
-                    this.phpType(false, p.type),
-                    " $",
-                    name,
-                    "; // json:",
-                    jsonName,
-                    " ",
-                    p.type.isNullable ? "Optional" : "Required"
-                );
+            this.forEachClassProperty(c, "none", (name, _jsonName, p) => {
+                this.emitLine("private ", this.phpType(false, p.type), " $", name, ";");
             });
 
             this.ensureBlankLine();
