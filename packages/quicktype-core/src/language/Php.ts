@@ -462,7 +462,7 @@ export class PhpRenderer extends ConvenienceRenderer {
     private phpValidate(className: Name, t: Type, attrName: Sourcelike, scopeAttrName: string) {
         const is = (isfn: string, myT: Name = className) => {
             this.emitBlock(["if (!", isfn, "(", scopeAttrName, "))"], () =>
-                this.emitLine('throw new Exception("Attribute Error:', myT, "::", attrName, '");')
+                this.emitLine("throw new Exception('Attribute Error:", myT, "::", attrName, "');")
             );
         };
         return matchType<void>(
@@ -851,7 +851,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                         });
                     });
                     this.emitLine("}");
-                    this.emitLine('throw new Exception("Cannot deserialize ', enumName, '");');
+                    this.emitLine("throw new Exception('Cannot deserialize ", enumName, "');");
                 }
             );
         });
