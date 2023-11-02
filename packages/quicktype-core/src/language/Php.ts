@@ -507,16 +507,15 @@ export class PhpRenderer extends ConvenienceRenderer {
     }
 
     protected emitFromMethod(names: FunctionNames, p: ClassProperty, className: Name, _name: Name, desc?: string[]) {
-        this.emitLine("/**");
+        const docBlock: Sourcelike[] = [];
         if (desc !== undefined) {
-            this.emitLine(" * ", desc);
-            this.emitLine(" *");
+            docBlock.push([...desc, "\n *"]);
         }
         const valueType = p.type.kind === "array" ? "mixed[]" : this.phpDocType(className, p.type);
-        this.emitLine(" * @param ", valueType, " $value");
-        this.emitLine(" * @throws Exception");
-        this.emitLine(" * @return ", this.phpDocType(className, p.type));
-        this.emitLine(" */");
+        docBlock.push(["@param ", valueType, " $value"]);
+        docBlock.push(["@throws Exception"]);
+        docBlock.push(["@return ", this.phpDocType(className, p.type)]);
+        this.emitDescriptionBlock(docBlock);
         this.emitBlockWithBraceOnNewLine(
             [
                 "public static function ",
@@ -532,14 +531,13 @@ export class PhpRenderer extends ConvenienceRenderer {
         );
     }
     protected emitToMethod(names: FunctionNames, p: ClassProperty, className: Name, name: Name, desc?: string[]) {
-        this.emitLine("/**");
+        const docBlock: Sourcelike[] = [];
         if (desc !== undefined) {
-            this.emitLine(" * ", desc);
-            this.emitLine(" *");
+            docBlock.push([...desc, "\n *"]);
         }
-        this.emitLine(" * @throws Exception");
-        this.emitLine(" * @return ", this.phpDocType(className, p.type));
-        this.emitLine(" */");
+        docBlock.push(["@throws Exception"]);
+        docBlock.push(["@return ", this.phpDocType(className, p.type)]);
+        this.emitDescriptionBlock(docBlock);
         this.emitBlockWithBraceOnNewLine(["public function ", names.to, "(): ", this.phpType(false, p.type)], () => {
             this.emitBlock(["if (", className, "::", names.validate, "($this->", name, "))"], () => {
                 this.phpToObjConvert(className, p.type, ["return "], ["$this->", name]);
@@ -548,15 +546,14 @@ export class PhpRenderer extends ConvenienceRenderer {
         });
     }
     protected emitValidateMethod(names: FunctionNames, p: ClassProperty, className: Name, name: Name, desc?: string[]) {
-        this.emitLine("/**");
+        const docBlock: Sourcelike[] = [];
         if (desc !== undefined) {
-            this.emitLine(" * ", desc);
-            this.emitLine(" *");
+            docBlock.push([...desc, "\n *"]);
         }
-        this.emitLine(" * @param ", this.phpDocType(className, p.type));
-        this.emitLine(" * @return bool");
-        this.emitLine(" * @throws Exception");
-        this.emitLine(" */");
+        docBlock.push(["@param ", this.phpDocType(className, p.type), " $value"]);
+        docBlock.push(["@throws Exception"]);
+        docBlock.push(["@return bool"]);
+        this.emitDescriptionBlock(docBlock);
         this.emitBlockWithBraceOnNewLine(
             ["public static function ", names.validate, "(", this.phpType(false, p.type), " $value): bool"],
             () => {
@@ -566,59 +563,54 @@ export class PhpRenderer extends ConvenienceRenderer {
         );
     }
     protected emitGetMethod(names: FunctionNames, p: ClassProperty, className: Name, name: Name, desc?: string[]) {
-        if (this._options.withGet) {
-            this.emitLine("/**");
-            if (desc !== undefined) {
-                this.emitLine(" * ", desc);
-                this.emitLine(" *");
-            }
-            if (!this._options.fastGet) {
-                this.emitLine(" * @throws Exception");
-            }
-            this.emitLine(" * @return ", this.phpDocType(className, p.type));
-            this.emitLine(" */");
-            this.emitBlockWithBraceOnNewLine(
-                ["public function ", names.getter, "(): ", this.phpType(false, p.type)],
-                () => {
-                    if (!this._options.fastGet) {
-                        this.emitBlock(["if (", className, "::", names.validate, "($this->", name, "))"], () => {
-                            this.emitLine("return $this->", name, ";");
-                        });
-                        this.emitLine(
-                            "throw new Exception('never get to ",
-                            names.getter,
-                            " ",
-                            className,
-                            "::",
-                            name,
-                            "');"
-                        );
-                    } else {
-                        this.emitLine("return $this->", name, ";");
-                    }
-                }
-            );
+        if (!this._options.withGet) {
+            return;
         }
+
+        const docBlock: Sourcelike[] = [];
+        if (desc !== undefined) {
+            docBlock.push([...desc, "\n *"]);
+        }
+        if (!this._options.fastGet) {
+            docBlock.push(["@throws Exception"]);
+        }
+        docBlock.push(["@return ", this.phpDocType(className, p.type)]);
+        this.emitDescriptionBlock(docBlock);
+        this.emitBlockWithBraceOnNewLine(
+            ["public function ", names.getter, "(): ", this.phpType(false, p.type)],
+            () => {
+                if (this._options.fastGet) {
+                    return this.emitLine("return $this->", name, ";");
+                }
+
+                this.emitBlock(["if (", className, "::", names.validate, "($this->", name, "))"], () => {
+                    this.emitLine("return $this->", name, ";");
+                });
+                this.emitLine("throw new Exception('never get to ", names.getter, " ", className, "::", name, "');");
+            }
+        );
     }
     protected emitSetMethod(names: FunctionNames, p: ClassProperty, className: Name, name: Name, desc?: string[]) {
-        if (this._options.withSet) {
-            this.emitLine("/**");
-            if (desc !== undefined) {
-                this.emitLine(" * ", desc);
-                this.emitLine(" *");
-            }
-            this.emitLine(" * @param ", this.phpDocType(className, p.type));
-            this.emitLine(" * @throws Exception");
-            this.emitLine(" */");
-            this.emitBlockWithBraceOnNewLine(
-                ["public function ", names.setter, "(", this.phpType(false, p.type), " $value)"],
-                () => {
-                    this.emitBlock(["if (", className, "::", names.validate, "($value))"], () => {
-                        this.emitLine("$this->", name, " = $value;");
-                    });
-                }
-            );
+        if (!this._options.withSet) {
+            return;
         }
+
+        const docBlock: Sourcelike[] = [];
+        if (desc !== undefined) {
+            docBlock.push([...desc, "\n *"]);
+        }
+        docBlock.push(["@param ", this.phpDocType(className, p.type)]);
+        docBlock.push(["@throws Exception"]);
+        docBlock.push(["@return void"]);
+        this.emitDescriptionBlock(docBlock);
+        this.emitBlockWithBraceOnNewLine(
+            ["public function ", names.setter, "(", this.phpType(false, p.type), " $value): void"],
+            () => {
+                this.emitBlock(["if (", className, "::", names.validate, "($value))"], () => {
+                    this.emitLine("$this->", name, " = $value;");
+                });
+            }
+        );
     }
 
     protected emitClassDefinition(c: ClassType, className: Name): void {
@@ -634,11 +626,11 @@ export class PhpRenderer extends ConvenienceRenderer {
                 this.ensureBlankLine();
             }
 
-            this.emitLine("/**");
+            const docBlock: Sourcelike[] = [];
             this.forEachClassProperty(c, "none", (name, __, p) => {
-                this.emitLine(" * @param ", this.phpDocType(className, p.type), " $", name);
+                docBlock.push(["@param ", this.phpDocType(className, p.type), " $", name]);
             });
-            this.emitLine(" */");
+            this.emitDescriptionBlock(docBlock);
             this.emitLine("public function __construct(");
             this.indent(() => {
                 this.forEachClassProperty(c, "none", (name, __, p, position) => {
@@ -673,136 +665,91 @@ export class PhpRenderer extends ConvenienceRenderer {
             });
 
             this.ensureBlankLine();
-            this.emitBlockWithBraceOnNewLine(
-                ["/**\n", " * @throws Exception\n", " * @return bool\n", " */\n", "public function validate(): bool"],
-                () => {
-                    this.forEachClassProperty(c, "none", (name, _jsonName, _p, position) => {
-                        const isFirstLine = ["first", "only"].includes(position);
-                        const isLastLine = ["last", "only"].includes(position);
-                        const prefix = isFirstLine ? "return " : "|| ";
-                        const suffix = isLastLine ? ";" : "";
+            this.emitDescriptionBlock(["@throws Exception", "@return bool"]);
+            this.emitBlockWithBraceOnNewLine(["public function validate(): bool"], () => {
+                this.forEachClassProperty(c, "none", (name, _jsonName, _p, position) => {
+                    const isFirstLine = ["first", "only"].includes(position);
+                    const isLastLine = ["last", "only"].includes(position);
+                    const prefix = isFirstLine ? "return " : "|| ";
+                    const suffix = isLastLine ? ";" : "";
 
-                        const names = defined(this._gettersAndSettersForPropertyName.get(name));
-                        const line: Sourcelike = [
-                            prefix,
-                            className,
-                            "::",
-                            names.validate,
-                            "($this->",
-                            name,
-                            ")",
-                            suffix
-                        ];
+                    const names = defined(this._gettersAndSettersForPropertyName.get(name));
+                    const line: Sourcelike = [prefix, className, "::", names.validate, "($this->", name, ")", suffix];
 
-                        if (isFirstLine) {
+                    if (isFirstLine) {
+                        this.emitLine(line);
+                    } else {
+                        this.indent(() => {
                             this.emitLine(line);
-                        } else {
-                            this.indent(() => {
-                                this.emitLine(line);
-                            });
-                        }
-                    });
-                }
-            );
+                        });
+                    }
+                });
+            });
 
             this.ensureBlankLine();
             if (this._options.serializeWith === SerializeWith.stdClass) {
-                this.emitBlockWithBraceOnNewLine(
-                    [
-                        "/**\n",
-                        " * @return stdClass\n",
-                        " * @throws Exception\n",
-                        " */\n",
-                        "public function to(): stdClass"
-                    ],
-                    () => {
-                        this.emitLine("$out = new stdClass();");
+                this.emitDescriptionBlock(["@throws Exception", "@return stdClass"]);
+                this.emitBlockWithBraceOnNewLine(["public function to(): stdClass"], () => {
+                    this.emitLine("$out = new stdClass();");
+                    this.forEachClassProperty(c, "none", (name, jsonName) => {
+                        const names = defined(this._gettersAndSettersForPropertyName.get(name));
+                        this.emitLine("$out->", jsonName, " = $this->", names.to, "();");
+                    });
+                    this.emitLine("return $out;");
+                });
+            } else {
+                this.emitDescriptionBlock(["@throws Exception", "@return mixed[]"]);
+                this.emitBlockWithBraceOnNewLine(["public function to(): array"], () => {
+                    this.emitLine("return [");
+                    this.indent(() => {
                         this.forEachClassProperty(c, "none", (name, jsonName) => {
                             const names = defined(this._gettersAndSettersForPropertyName.get(name));
-                            this.emitLine("$out->", jsonName, " = $this->", names.to, "();");
+                            this.emitLine("'", jsonName, "' => $this->", names.to, "(),");
                         });
-                        this.emitLine("return $out;");
-                    }
-                );
-            } else {
-                this.emitBlockWithBraceOnNewLine(
-                    ["/**\n", " * @return array\n", " * @throws Exception\n", " */\n", "public function to(): array"],
-                    () => {
-                        this.emitLine("return [");
-                        this.indent(() => {
-                            this.forEachClassProperty(c, "none", (name, jsonName) => {
-                                const names = defined(this._gettersAndSettersForPropertyName.get(name));
-                                this.emitLine("'", jsonName, "' => $this->", names.to, "(),");
-                            });
-                        });
-                        this.emitLine("];");
-                    }
-                );
+                    });
+                    this.emitLine("];");
+                });
             }
 
             this.ensureBlankLine();
             if (this._options.serializeWith === SerializeWith.stdClass) {
-                this.emitBlockWithBraceOnNewLine(
-                    [
-                        "/**\n",
-                        " * @param stdClass $obj\n",
-                        " * @return ",
-                        className,
-                        "\n",
-                        " * @throws Exception\n",
-                        " */\n",
-                        "public static function from(stdClass $obj): ",
-                        className
-                    ],
-                    () => {
-                        if (this._options.fastGet) {
-                            this.forEachClassProperty(c, "none", name => {
-                                const names = defined(this._gettersAndSettersForPropertyName.get(name));
-                                this.emitLine(className, "::", names.validate, "($this->", name, ", true);");
-                            });
-                        }
-                        this.emitLine("return new ", className, "(");
-                        this.indent(() => {
-                            this.forEachClassProperty(c, "none", (name, jsonName, _, position) => {
-                                const suffix = ["last", "only"].includes(position) ? "" : ",";
-                                const names = defined(this._gettersAndSettersForPropertyName.get(name));
-                                this.emitLine(className, "::", names.from, "($obj->", jsonName, ")", suffix);
-                            });
+                this.emitDescriptionBlock(["@param stdClass $obj", "@throws Exception", ["@return ", className]]);
+                this.emitBlockWithBraceOnNewLine(["public static function from(stdClass $obj): ", className], () => {
+                    if (this._options.fastGet) {
+                        this.forEachClassProperty(c, "none", name => {
+                            const names = defined(this._gettersAndSettersForPropertyName.get(name));
+                            this.emitLine(className, "::", names.validate, "($this->", name, ", true);");
                         });
-                        this.emitLine(");");
                     }
-                );
+                    this.emitLine("return new ", className, "(");
+                    this.indent(() => {
+                        this.forEachClassProperty(c, "none", (name, jsonName, _, position) => {
+                            const suffix = ["last", "only"].includes(position) ? "" : ",";
+                            const names = defined(this._gettersAndSettersForPropertyName.get(name));
+                            this.emitLine(className, "::", names.from, "($obj->", jsonName, ")", suffix);
+                        });
+                    });
+                    this.emitLine(");");
+                });
             } else {
-                this.emitBlockWithBraceOnNewLine(
-                    [
-                        "/**\n",
-                        " * @param mixed[] $arr\n",
-                        " * @return ",
-                        className,
-                        "\n",
-                        " * @throws Exception\n",
-                        " */\n",
-                        "public static function from(array $arr): ",
-                        className
-                    ],
-                    () => {
-                        if (this._options.fastGet) {
-                            this.forEachClassProperty(c, "none", name => {
-                                const names = defined(this._gettersAndSettersForPropertyName.get(name));
-                                this.emitLine(className, "::", names.validate, "($this->", name, ", true);");
-                            });
-                        }
-                        this.emitLine("return new ", className, "(");
-                        this.indent(() => {
-                            this.forEachClassProperty(c, "none", (name, jsonName, _, position) => {
-                                const suffix = ["last", "only"].includes(position) ? "" : ",";
-                                const names = defined(this._gettersAndSettersForPropertyName.get(name));
-                                this.emitLine(className, "::", names.from, "($arr['", jsonName, "'])", suffix);
-                            });
+                this.emitDescriptionBlock(["@param mixed[] $arr", "@throws Exception", ["@return ", className]]);
+                this.emitBlockWithBraceOnNewLine(["public static function from(array $arr): ", className], () => {
+                    if (this._options.fastGet) {
+                        this.forEachClassProperty(c, "none", name => {
+                            const names = defined(this._gettersAndSettersForPropertyName.get(name));
+                            this.emitLine(className, "::", names.validate, "($this->", name, ", true);");
                         });
-                        this.emitLine(");");
                     }
-                );
+                    this.emitLine("return new ", className, "(");
+                    this.indent(() => {
+                        this.forEachClassProperty(c, "none", (name, jsonName, _, position) => {
+                            const suffix = ["last", "only"].includes(position) ? "" : ",";
+                            const names = defined(this._gettersAndSettersForPropertyName.get(name));
+                            this.emitLine(className, "::", names.from, "($arr['", jsonName, "'])", suffix);
+                        });
+                    });
+                    this.emitLine(");");
+                });
             }
         });
         this.finishFile();
@@ -865,37 +812,23 @@ export class PhpRenderer extends ConvenienceRenderer {
             this.ensureBlankLine();
             this.emitEnumSerializationAttributes(e);
 
-            this.emitBlockWithBraceOnNewLine(
-                ["/**\n", " * @return string\n", " * @throws Exception\n", " */\n", "public function to(): string"],
-                () => {
-                    this.emitBlock(["if (in_array($this->enum, ", enumName, "::VALUES, true))"], () => {
-                        this.emitLine("return $this->enum;");
-                    });
-                    this.emitLine("throw new Exception('the give value is not an enum-value.');");
-                }
-            );
+            this.emitDescriptionBlock(["@throws Exception", "@return string"]);
+            this.emitBlockWithBraceOnNewLine(["public function to(): string"], () => {
+                this.emitBlock(["if (in_array($this->enum, ", enumName, "::VALUES, true))"], () => {
+                    this.emitLine("return $this->enum;");
+                });
+                this.emitLine("throw new Exception('the give value is not an enum-value.');");
+            });
             this.ensureBlankLine();
             this.emitEnumDeserializationAttributes(e);
 
-            this.emitBlockWithBraceOnNewLine(
-                [
-                    "/**\n",
-                    " * @param mixed\n",
-                    " * @return ",
-                    enumName,
-                    "\n",
-                    " * @throws Exception\n",
-                    " */\n",
-                    "public static function from($obj): ",
-                    enumName
-                ],
-                () => {
-                    this.emitBlock(["if (in_array($obj, ", enumName, "::VALUES, true))"], () => {
-                        this.emitLine("return new ", enumName, "($obj);");
-                    });
-                    this.emitLine("throw new Exception('Cannot deserialize ", enumName, "');");
-                }
-            );
+            this.emitDescriptionBlock(["@param mixed", "@throws Exception", ["@return ", enumName]]);
+            this.emitBlockWithBraceOnNewLine(["public static function from($obj): ", enumName], () => {
+                this.emitBlock(["if (in_array($obj, ", enumName, "::VALUES, true))"], () => {
+                    this.emitLine("return new ", enumName, "($obj);");
+                });
+                this.emitLine("throw new Exception('Cannot deserialize ", enumName, "');");
+            });
         });
         this.finishFile();
     }
