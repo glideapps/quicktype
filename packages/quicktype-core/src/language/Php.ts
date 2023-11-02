@@ -273,7 +273,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         this.emitLine("}");
     }
 
-    protected phpType(_reference: boolean, t: Type, isOptional = false, prefix = "?", suffix = ""): Sourcelike {
+    protected phpType(t: Type, isOptional = false, prefix = "?", suffix = ""): Sourcelike {
         function optionalize(s: Sourcelike) {
             return [isOptional ? prefix : "", s, isOptional ? suffix : ""];
         }
@@ -291,7 +291,9 @@ export class PhpRenderer extends ConvenienceRenderer {
             enumType => optionalize(this.nameForNamedType(enumType)),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
-                if (nullable !== null) return this.phpType(true, nullable, true, prefix, suffix);
+                if (nullable !== null) {
+                    return this.phpType(nullable, true, prefix, suffix);
+                }
                 return this.nameForNamedType(unionType);
             },
             transformedStringType => {
@@ -517,14 +519,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         docBlock.push(["@return ", this.phpDocType(className, p.type)]);
         this.emitDescriptionBlock(docBlock);
         this.emitBlockWithBraceOnNewLine(
-            [
-                "public static function ",
-                names.from,
-                "(",
-                this.phpType(false, p.type),
-                " $value): ",
-                this.phpType(false, p.type)
-            ],
+            ["public static function ", names.from, "(", this.phpType(p.type), " $value): ", this.phpType(p.type)],
             () => {
                 this.phpFromObjConvert(className, p.type, ["return "], ["$value"]);
             }
@@ -538,7 +533,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         docBlock.push(["@throws Exception"]);
         docBlock.push(["@return ", this.phpDocType(className, p.type)]);
         this.emitDescriptionBlock(docBlock);
-        this.emitBlockWithBraceOnNewLine(["public function ", names.to, "(): ", this.phpType(false, p.type)], () => {
+        this.emitBlockWithBraceOnNewLine(["public function ", names.to, "(): ", this.phpType(p.type)], () => {
             this.emitBlock(["if (", className, "::", names.validate, "($this->", name, "))"], () => {
                 this.phpToObjConvert(className, p.type, ["return "], ["$this->", name]);
             });
@@ -555,7 +550,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         docBlock.push(["@return bool"]);
         this.emitDescriptionBlock(docBlock);
         this.emitBlockWithBraceOnNewLine(
-            ["public static function ", names.validate, "(", this.phpType(false, p.type), " $value): bool"],
+            ["public static function ", names.validate, "(", this.phpType(p.type), " $value): bool"],
             () => {
                 this.phpValidate(className, p.type, name, "$value");
                 this.emitLine("return true;");
@@ -576,19 +571,16 @@ export class PhpRenderer extends ConvenienceRenderer {
         }
         docBlock.push(["@return ", this.phpDocType(className, p.type)]);
         this.emitDescriptionBlock(docBlock);
-        this.emitBlockWithBraceOnNewLine(
-            ["public function ", names.getter, "(): ", this.phpType(false, p.type)],
-            () => {
-                if (this._options.fastGet) {
-                    return this.emitLine("return $this->", name, ";");
-                }
-
-                this.emitBlock(["if (", className, "::", names.validate, "($this->", name, "))"], () => {
-                    this.emitLine("return $this->", name, ";");
-                });
-                this.emitLine("throw new Exception('never get to ", names.getter, " ", className, "::", name, "');");
+        this.emitBlockWithBraceOnNewLine(["public function ", names.getter, "(): ", this.phpType(p.type)], () => {
+            if (this._options.fastGet) {
+                return this.emitLine("return $this->", name, ";");
             }
-        );
+
+            this.emitBlock(["if (", className, "::", names.validate, "($this->", name, "))"], () => {
+                this.emitLine("return $this->", name, ";");
+            });
+            this.emitLine("throw new Exception('never get to ", names.getter, " ", className, "::", name, "');");
+        });
     }
     protected emitSetMethod(names: FunctionNames, p: ClassProperty, className: Name, name: Name, desc?: string[]) {
         if (!this._options.withSet) {
@@ -604,7 +596,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         docBlock.push(["@return void"]);
         this.emitDescriptionBlock(docBlock);
         this.emitBlockWithBraceOnNewLine(
-            ["public function ", names.setter, "(", this.phpType(false, p.type), " $value): void"],
+            ["public function ", names.setter, "(", this.phpType(p.type), " $value): void"],
             () => {
                 this.emitBlock(["if (", className, "::", names.validate, "($value))"], () => {
                     this.emitLine("$this->", name, " = $value;");
@@ -621,7 +613,7 @@ export class PhpRenderer extends ConvenienceRenderer {
 
             if (!constructorProperties) {
                 this.forEachClassProperty(c, "none", (name, _jsonName, p) => {
-                    this.emitLine("protected ", this.phpType(false, p.type), " $", name, ";");
+                    this.emitLine("protected ", this.phpType(p.type), " $", name, ";");
                 });
                 this.ensureBlankLine();
             }
@@ -637,7 +629,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                     const prefix = constructorProperties ? "protected " : "";
                     const suffix = ["last", "only"].includes(position) ? "" : ",";
 
-                    this.emitLine(prefix, this.phpType(false, p.type), " $", name, suffix);
+                    this.emitLine(prefix, this.phpType(p.type), " $", name, suffix);
                 });
             });
             this.emitBlock(")", () => {
