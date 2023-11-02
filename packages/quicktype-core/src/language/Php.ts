@@ -621,7 +621,7 @@ export class PhpRenderer extends ConvenienceRenderer {
 
         this.emitBlockWithBraceOnNewLine(["class ", className], () => {
             this.forEachClassProperty(c, "none", (name, _jsonName, p) => {
-                this.emitLine("private ", this.phpType(false, p.type), " $", name, ";");
+                this.emitLine("protected ", this.phpType(false, p.type), " $", name, ";");
             });
 
             this.ensureBlankLine();
@@ -833,7 +833,7 @@ export class PhpRenderer extends ConvenienceRenderer {
             this.emitLine("];");
             this.ensureBlankLine();
 
-            this.emitLine("private string $enum;");
+            this.emitLine("protected string $enum;");
             this.ensureBlankLine();
 
             this.emitBlockWithBraceOnNewLine(["public function __construct(string $enum)"], () => {
