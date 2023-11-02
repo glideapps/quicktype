@@ -315,7 +315,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         );
     }
 
-    protected phpDocType(className: Name, t: Type): Sourcelike {
+    protected phpDocType(t: Type): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => "any",
@@ -324,14 +324,14 @@ export class PhpRenderer extends ConvenienceRenderer {
             _integerType => "int",
             _doubleType => "float",
             _stringType => "string",
-            arrayType => [this.phpDocType(className, arrayType.items), "[]"],
+            arrayType => [this.phpDocType(arrayType.items), "[]"],
             classType => this.nameForNamedType(classType),
             _mapType => (this._options.serializeWith === SerializeWith.stdClass ? "stdClass" : "array"),
             enumType => this.nameForNamedType(enumType),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
-                    return ["?", this.phpDocType(className, nullable)];
+                    return ["?", this.phpDocType(nullable)];
                 }
                 throw Error("union are not supported");
             },
@@ -344,7 +344,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         );
     }
 
-    protected phpToObjConvert(className: Name, t: Type, lhs: Sourcelike[], args: Sourcelike[]) {
+    protected phpToObjConvert(t: Type, lhs: Sourcelike[], args: Sourcelike[]) {
         return matchType<void>(
             t,
             _anyType => this.emitLine(...lhs, ...args, ";"),
@@ -356,7 +356,7 @@ export class PhpRenderer extends ConvenienceRenderer {
             arrayType => {
                 this.emitLine(...lhs, "array_map(function ($value) {");
                 this.indent(() => {
-                    this.phpToObjConvert(className, arrayType.items, ["return "], ["$value"]);
+                    this.phpToObjConvert(arrayType.items, ["return "], ["$value"]);
                 });
                 this.emitLine("}, ", ...args, ");");
             },
@@ -366,7 +366,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                 this.emitBlockWithBraceOnNewLine(["function to($my): stdClass"], () => {
                     this.emitLine("$out = new stdClass();");
                     this.emitBlock(["foreach ($my as $k => $v)"], () => {
-                        this.phpToObjConvert(className, mapType.values, ["$my->$k = "], ["$v"]);
+                        this.phpToObjConvert(mapType.values, ["$my->$k = "], ["$v"]);
                     });
                     this.emitLine("return $out;");
                 });
@@ -377,7 +377,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
                     this.emitLine("if (!is_null(", ...args, ")) {");
-                    this.indent(() => this.phpToObjConvert(className, nullable, lhs, args));
+                    this.indent(() => this.phpToObjConvert(nullable, lhs, args));
                     this.emitLine("} else {");
                     this.indent(() => this.emitLine(...lhs, " null;"));
                     this.emitLine("}");
@@ -514,10 +514,10 @@ export class PhpRenderer extends ConvenienceRenderer {
         if (desc !== undefined) {
             docBlock.push([...desc, "\n *"]);
         }
-        const valueType = p.type.kind === "array" ? "mixed[]" : this.phpDocType(className, p.type);
+        const valueType = p.type.kind === "array" ? "mixed[]" : this.phpDocType(p.type);
         docBlock.push(["@param ", valueType, " $value"]);
         docBlock.push(["@throws Exception"]);
-        docBlock.push(["@return ", this.phpDocType(className, p.type)]);
+        docBlock.push(["@return ", this.phpDocType(p.type)]);
         this.emitDescriptionBlock(docBlock);
         this.emitBlockWithBraceOnNewLine(
             ["public static function ", names.from, "(", this.phpType(p.type), " $value): ", this.phpType(p.type)],
@@ -532,11 +532,11 @@ export class PhpRenderer extends ConvenienceRenderer {
             docBlock.push([...desc, "\n *"]);
         }
         docBlock.push(["@throws Exception"]);
-        docBlock.push(["@return ", this.phpDocType(className, p.type)]);
+        docBlock.push(["@return ", this.phpDocType(p.type)]);
         this.emitDescriptionBlock(docBlock);
         this.emitBlockWithBraceOnNewLine(["public function ", names.to, "(): ", this.phpType(p.type)], () => {
             this.emitBlock(["if (", className, "::", names.validate, "($this->", name, "))"], () => {
-                this.phpToObjConvert(className, p.type, ["return "], ["$this->", name]);
+                this.phpToObjConvert(p.type, ["return "], ["$this->", name]);
             });
             this.emitLine("throw new Exception('never get to this ", className, "::", name, "');");
         });
@@ -546,7 +546,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         if (desc !== undefined) {
             docBlock.push([...desc, "\n *"]);
         }
-        docBlock.push(["@param ", this.phpDocType(className, p.type), " $value"]);
+        docBlock.push(["@param ", this.phpDocType(p.type), " $value"]);
         docBlock.push(["@throws Exception"]);
         docBlock.push(["@return bool"]);
         this.emitDescriptionBlock(docBlock);
@@ -570,7 +570,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         if (!this._options.fastGet) {
             docBlock.push(["@throws Exception"]);
         }
-        docBlock.push(["@return ", this.phpDocType(className, p.type)]);
+        docBlock.push(["@return ", this.phpDocType(p.type)]);
         this.emitDescriptionBlock(docBlock);
         this.emitBlockWithBraceOnNewLine(["public function ", names.getter, "(): ", this.phpType(p.type)], () => {
             if (this._options.fastGet) {
@@ -592,7 +592,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         if (desc !== undefined) {
             docBlock.push([...desc, "\n *"]);
         }
-        docBlock.push(["@param ", this.phpDocType(className, p.type)]);
+        docBlock.push(["@param ", this.phpDocType(p.type)]);
         docBlock.push(["@throws Exception"]);
         docBlock.push(["@return void"]);
         this.emitDescriptionBlock(docBlock);
@@ -622,7 +622,7 @@ export class PhpRenderer extends ConvenienceRenderer {
 
             const docBlock: Sourcelike[] = [];
             this.forEachClassProperty(c, "none", (name, __, p) => {
-                docBlock.push(["@param ", this.phpDocType(className, p.type), " $", name]);
+                docBlock.push(["@param ", this.phpDocType(p.type), " $", name]);
             });
             this.emitDescriptionBlock(docBlock);
             this.emitLine("public function __construct(");
