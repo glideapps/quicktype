@@ -36,6 +36,11 @@ export const phpOptions = {
     fastGet: new BooleanOption("fast-get", "getter without validation", false),
     withSet: new BooleanOption("with-set", "Create Setter", false),
     withClosing: new BooleanOption("with-closing", "PHP Closing Tag", false),
+    constructorProperties: new BooleanOption(
+        "constructor-properties",
+        "Declare class properties inside constructor",
+        true
+    ),
     serializeWith: new EnumOption(
         "serialize-with",
         "Serialize with",
@@ -620,11 +625,15 @@ export class PhpRenderer extends ConvenienceRenderer {
         this.emitFileHeader(className, []);
 
         this.emitBlockWithBraceOnNewLine(["class ", className], () => {
-            this.forEachClassProperty(c, "none", (name, _jsonName, p) => {
-                this.emitLine("protected ", this.phpType(false, p.type), " $", name, ";");
-            });
+            const { constructorProperties } = this._options;
 
-            this.ensureBlankLine();
+            if (!constructorProperties) {
+                this.forEachClassProperty(c, "none", (name, _jsonName, p) => {
+                    this.emitLine("protected ", this.phpType(false, p.type), " $", name, ";");
+                });
+                this.ensureBlankLine();
+            }
+
             this.emitLine("/**");
             this.forEachClassProperty(c, "none", (name, __, p) => {
                 this.emitLine(" * @param ", this.phpDocType(className, p.type), " $", name);
@@ -633,14 +642,18 @@ export class PhpRenderer extends ConvenienceRenderer {
             this.emitLine("public function __construct(");
             this.indent(() => {
                 this.forEachClassProperty(c, "none", (name, __, p, position) => {
+                    const prefix = constructorProperties ? "protected " : "";
                     const suffix = ["last", "only"].includes(position) ? "" : ",";
-                    this.emitLine(this.phpType(false, p.type), " $", name, suffix);
+
+                    this.emitLine(prefix, this.phpType(false, p.type), " $", name, suffix);
                 });
             });
             this.emitBlock(")", () => {
-                this.forEachClassProperty(c, "none", name => {
-                    this.emitLine("$this->", name, " = $", name, ";");
-                });
+                if (!constructorProperties) {
+                    this.forEachClassProperty(c, "none", name => {
+                        this.emitLine("$this->", name, " = $", name, ";");
+                    });
+                }
             });
 
             this.forEachClassProperty(c, "leading-and-interposing", (name, jsonName, p) => {
@@ -819,6 +832,8 @@ export class PhpRenderer extends ConvenienceRenderer {
         this.emitFileHeader(enumName, []);
         this.emitDescription(this.descriptionForType(e));
         this.emitBlockWithBraceOnNewLine(["class ", enumName], () => {
+            const { constructorProperties } = this._options;
+
             this.forEachEnumCase(e, "none", (name, jsonName) => {
                 this.emitLine("public const ", name, " = '", jsonName, "';");
             });
@@ -833,12 +848,19 @@ export class PhpRenderer extends ConvenienceRenderer {
             this.emitLine("];");
             this.ensureBlankLine();
 
-            this.emitLine("protected string $enum;");
-            this.ensureBlankLine();
+            if (!constructorProperties) {
+                this.emitLine("protected string $enum;");
+                this.ensureBlankLine();
+            }
 
-            this.emitBlockWithBraceOnNewLine(["public function __construct(string $enum)"], () => {
-                this.emitLine("$this->enum = $enum;");
-            });
+            this.emitBlockWithBraceOnNewLine(
+                ["public function __construct(", constructorProperties ? "protected " : "", "string $enum)"],
+                () => {
+                    if (!constructorProperties) {
+                        this.emitLine("$this->enum = $enum;");
+                    }
+                }
+            );
 
             this.ensureBlankLine();
             this.emitEnumSerializationAttributes(e);
