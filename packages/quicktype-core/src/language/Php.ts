@@ -36,6 +36,7 @@ export const phpOptions = {
     fastGet: new BooleanOption("fast-get", "getter without validation", false),
     withSet: new BooleanOption("with-set", "Create Setter", false),
     withClosing: new BooleanOption("with-closing", "PHP Closing Tag", false),
+    readonlyProperties: new BooleanOption("readonly-properties", "Use public readonly instead of protected", true),
     nativeEnums: new BooleanOption("native-enums", "Use enums instead of enum classes", true),
     constructorProperties: new BooleanOption(
         "constructor-properties",
@@ -609,11 +610,12 @@ export class PhpRenderer extends ConvenienceRenderer {
         this.emitFileHeader(className, []);
 
         this.emitBlockWithBraceOnNewLine(["class ", className], () => {
-            const { constructorProperties } = this._options;
+            const { constructorProperties, readonlyProperties } = this._options;
+            const accessor = readonlyProperties ? "public readonly" : "protected";
 
             if (!constructorProperties) {
                 this.forEachClassProperty(c, "none", (name, _jsonName, p) => {
-                    this.emitLine("protected ", this.phpType(p.type), " $", name, ";");
+                    this.emitLine(accessor, " ", this.phpType(p.type), " $", name, ";");
                 });
                 this.ensureBlankLine();
             }
@@ -626,10 +628,10 @@ export class PhpRenderer extends ConvenienceRenderer {
             this.emitLine("public function __construct(");
             this.indent(() => {
                 this.forEachClassProperty(c, "none", (name, __, p, position) => {
-                    const prefix = constructorProperties ? "protected " : "";
+                    const prefix = constructorProperties ? [accessor, " "] : [""];
                     const suffix = ["last", "only"].includes(position) ? "" : ",";
 
-                    this.emitLine(prefix, this.phpType(p.type), " $", name, suffix);
+                    this.emitLine(...prefix, this.phpType(p.type), " $", name, suffix);
                 });
             });
             this.emitBlock(")", () => {
@@ -781,7 +783,8 @@ export class PhpRenderer extends ConvenienceRenderer {
         }
 
         this.emitBlockWithBraceOnNewLine(["class ", enumName], () => {
-            const { constructorProperties } = this._options;
+            const { constructorProperties, readonlyProperties } = this._options;
+            const accessor = readonlyProperties ? "public readonly" : "protected";
 
             this.forEachEnumCase(e, "none", (name, jsonName) => {
                 this.emitLine("public const ", name, " = '", jsonName, "';");
@@ -798,12 +801,12 @@ export class PhpRenderer extends ConvenienceRenderer {
             this.ensureBlankLine();
 
             if (!constructorProperties) {
-                this.emitLine("protected string $enum;");
+                this.emitLine(accessor, " string $enum;");
                 this.ensureBlankLine();
             }
 
             this.emitBlockWithBraceOnNewLine(
-                ["public function __construct(", constructorProperties ? "protected " : "", "string $enum)"],
+                ["public function __construct(", constructorProperties ? accessor + " " : "", "string $enum)"],
                 () => {
                     if (!constructorProperties) {
                         this.emitLine("$this->enum = $enum;");
