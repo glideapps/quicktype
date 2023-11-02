@@ -36,6 +36,7 @@ export const phpOptions = {
     fastGet: new BooleanOption("fast-get", "getter without validation", false),
     withSet: new BooleanOption("with-set", "Create Setter", false),
     withClosing: new BooleanOption("with-closing", "PHP Closing Tag", false),
+    nativeEnums: new BooleanOption("native-enums", "Use enums instead of enum classes", true),
     constructorProperties: new BooleanOption(
         "constructor-properties",
         "Declare class properties inside constructor",
@@ -370,7 +371,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                 });
                 this.emitLine("return to(", ...args, ");");
             },
-            _enumType => this.emitLine(...lhs, ...args, "->to();"),
+            _enumType => this.emitLine(...lhs, ...args, "->value;"),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
@@ -485,7 +486,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                 this.emitLine("}");
             },
             _enumType => {
-                this.emitLine(scopeAttrName, "->to();");
+                this.emitLine(scopeAttrName, "->value;");
             },
             unionType => {
                 const nullable = nullableFromUnion(unionType);
@@ -769,6 +770,16 @@ export class PhpRenderer extends ConvenienceRenderer {
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitFileHeader(enumName, []);
         this.emitDescription(this.descriptionForType(e));
+
+        if (this._options.nativeEnums) {
+            this.emitBlockWithBraceOnNewLine(["enum ", enumName, ": string"], () => {
+                this.forEachEnumCase(e, "none", (name, jsonName) => {
+                    this.emitLine("case ", name, " = '", jsonName, "';");
+                });
+            });
+            return this.finishFile();
+        }
+
         this.emitBlockWithBraceOnNewLine(["class ", enumName], () => {
             const { constructorProperties } = this._options;
 
