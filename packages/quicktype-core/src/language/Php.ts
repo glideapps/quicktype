@@ -32,7 +32,7 @@ export enum SerializeWith {
 }
 
 export const phpOptions = {
-    withGet: new BooleanOption("with-get", "Create Getter", true),
+    withGet: new BooleanOption("with-get", "Create Getter", false),
     fastGet: new BooleanOption("fast-get", "getter without validation", false),
     withSet: new BooleanOption("with-set", "Create Setter", false),
     withClosing: new BooleanOption("with-closing", "PHP Closing Tag", false),
