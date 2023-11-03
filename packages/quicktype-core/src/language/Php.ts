@@ -39,6 +39,7 @@ export const phpOptions = {
     nativeEnums: new BooleanOption("native-enums", "Use enums instead of enum classes", true),
     arrowFunctions: new BooleanOption("arrow-functions", "Use arrow functions whenever possible", true),
     callable: new BooleanOption("callable", "Use callable syntax whenever possible", true),
+    firstCallable: new BooleanOption("first-callable", "Use first callable syntax whenever possible", true),
     constructorProperties: new BooleanOption(
         "constructor-properties",
         "Declare class properties inside constructor",
@@ -440,7 +441,11 @@ export class PhpRenderer extends ConvenienceRenderer {
                 return [...lhs, "array_map(function ($value) {\n    ", from, ";\n}, ", ...args, ")"];
             },
             classType => {
-                const { callable } = this._options;
+                const { callable, firstCallable } = this._options;
+
+                if (firstCallable && args.length === 0) {
+                    return [this.nameForNamedType(classType), "::from(...)"];
+                }
 
                 if (callable && args.length === 0) {
                     return ["[", this.nameForNamedType(classType), "::class, 'from']"];
@@ -452,7 +457,11 @@ export class PhpRenderer extends ConvenienceRenderer {
                 throw Error("maps are not supported");
             },
             enumType => {
-                const { callable } = this._options;
+                const { callable, firstCallable } = this._options;
+
+                if (firstCallable && args.length === 0) {
+                    return [this.nameForNamedType(enumType), "::from(...)"];
+                }
 
                 if (callable && args.length === 0) {
                     return ["[", this.nameForNamedType(enumType), "::class, 'from']"];
