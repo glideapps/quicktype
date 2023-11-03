@@ -38,6 +38,7 @@ export const phpOptions = {
     readonlyProperties: new BooleanOption("readonly-properties", "Use public readonly instead of protected", true),
     nativeEnums: new BooleanOption("native-enums", "Use enums instead of enum classes", true),
     arrowFunctions: new BooleanOption("arrow-functions", "Use arrow functions whenever possible", true),
+    callable: new BooleanOption("callable", "Use callable syntax whenever possible", true),
     constructorProperties: new BooleanOption(
         "constructor-properties",
         "Declare class properties inside constructor",
@@ -419,7 +420,7 @@ export class PhpRenderer extends ConvenienceRenderer {
             _doubleType => [...lhs, ...args],
             _stringType => [...lhs, ...args],
             arrayType => {
-                const { arrowFunctions } = this._options;
+                const { arrowFunctions, callable } = this._options;
                 const from = this.phpFromObjConvert(className, arrayType.items, ["return "], ["$value"]);
 
                 if (this.sourcelikeToString(from) === "return $value") {
@@ -427,17 +428,38 @@ export class PhpRenderer extends ConvenienceRenderer {
                 }
 
                 if (arrowFunctions) {
+                    if (callable && ["class", "enum"].includes(arrayType.items.kind)) {
+                        const from = this.phpFromObjConvert(className, arrayType.items, [], []);
+                        return [...lhs, "array_map(", from, ", ", ...args, ")"];
+                    }
+
                     const from = this.phpFromObjConvert(className, arrayType.items, [], ["$value"]);
                     return [...lhs, "array_map(fn($value) => ", from, ", ", ...args, ")"];
                 }
 
                 return [...lhs, "array_map(function ($value) {\n    ", from, ";\n}, ", ...args, ")"];
             },
-            classType => [...lhs, this.nameForNamedType(classType), "::from(", ...args, ")"],
+            classType => {
+                const { callable } = this._options;
+
+                if (callable && args.length === 0) {
+                    return ["[", this.nameForNamedType(classType), "::class, 'from']"];
+                }
+
+                return [...lhs, this.nameForNamedType(classType), "::from(", ...args, ")"];
+            },
             _mapType => {
                 throw Error("maps are not supported");
             },
-            enumType => [...lhs, this.nameForNamedType(enumType), "::from(", ...args, ")"],
+            enumType => {
+                const { callable } = this._options;
+
+                if (callable && args.length === 0) {
+                    return ["[", this.nameForNamedType(enumType), "::class, 'from']"];
+                }
+
+                return [...lhs, this.nameForNamedType(enumType), "::from(", ...args, ")"];
+            },
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
