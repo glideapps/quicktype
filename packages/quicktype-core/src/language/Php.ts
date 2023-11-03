@@ -688,7 +688,13 @@ export class PhpRenderer extends ConvenienceRenderer {
                         this.indent(() => {
                             this.forEachClassProperty(c, "none", (_name, jsonName, p, position) => {
                                 const suffix = ["last", "only"].includes(position) ? "" : ",";
-                                const from = this.phpFromObjConvert(className, p.type, [], ["$arr['", jsonName, "']"]);
+
+                                const from = this.phpFromObjConvert(
+                                    className,
+                                    p.type,
+                                    [],
+                                    ["$arr['", jsonName, "']", p.isOptional ? " ?? null" : ""]
+                                );
 
                                 this.emitLine(from, suffix);
                             });
