@@ -475,7 +475,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                     const from = this.phpFromObjConvert(className, nullable, [], args);
 
                     if (this.sourcelikeToString(from) === this.sourcelikeToString(args)) {
-                        return from;
+                        return [...lhs, from];
                     }
 
                     return [...lhs, ...args, " === null ? null : ", from];
