@@ -395,59 +395,61 @@ export class PhpRenderer extends ConvenienceRenderer {
         );
     }
 
-    private transformDateTime(className: Name, attrName: Sourcelike, scopeAttrName: Sourcelike[]) {
+    private transformDateTime(className: Name, attrName: Sourcelike, scopeAttrName: Sourcelike[]): Sourcelike {
         this.emitBlock(["if (!is_a(", scopeAttrName, ", 'DateTime'))"], () =>
             this.emitLine("throw new Exception('Attribute Error:", className, "::", attrName, "');")
         );
+        throw Error("datetime is not supported");
     }
 
-    protected phpFromObjConvert(className: Name, t: Type, lhs: Sourcelike[], args: Sourcelike[]) {
-        return matchType<void>(
+    protected phpFromObjConvert(className: Name, t: Type, lhs: Sourcelike[], args: Sourcelike[]): Sourcelike {
+        return matchType<Sourcelike>(
             t,
-            _anyType => this.emitLine(...lhs, ...args, ";"),
-            _nullType => this.emitLine(...lhs, ...args, ";"),
-            _boolType => this.emitLine(...lhs, ...args, ";"),
-            _integerType => this.emitLine(...lhs, ...args, ";"),
-            _doubleType => this.emitLine(...lhs, ...args, ";"),
-            _stringType => this.emitLine(...lhs, ...args, ";"),
+            _anyType => [...lhs, ...args],
+            _nullType => [...lhs, ...args],
+            _boolType => [...lhs, ...args],
+            _integerType => [...lhs, ...args],
+            _doubleType => [...lhs, ...args],
+            _stringType => [...lhs, ...args],
             arrayType => {
-                this.emitLine(...lhs, "array_map(function ($value) {");
-                this.indent(() => {
-                    this.phpFromObjConvert(className, arrayType.items, ["return "], ["$value"]);
-                });
-                this.emitLine("}, ", ...args, ");");
+                const from = this.phpFromObjConvert(className, arrayType.items, ["return "], ["$value"]);
+
+                if (this.sourcelikeToString(from) === "return $value") {
+                    return [...lhs, ...args];
+                }
+
+                return [...lhs, "array_map(function ($value) {\n    ", from, ";\n}, ", ...args, ")"];
             },
-            classType => this.emitLine(...lhs, this.nameForNamedType(classType), "::from(", ...args, ");"),
-            mapType => {
-                // TODO: this._options.serializeWith === SerializeWith.stdClass
-                this.emitBlockWithBraceOnNewLine(["function from($my): stdClass"], () => {
-                    this.emitLine("$out = new stdClass();");
-                    this.emitBlock(["foreach ($my as $k => $v)"], () => {
-                        this.phpFromObjConvert(className, mapType.values, ["$out->$k = "], ["$v"]);
-                    });
-                    this.emitLine("return $out;");
-                });
-                this.emitLine("return from(", ...args, ");");
+            classType => [...lhs, this.nameForNamedType(classType), "::from(", ...args, ")"],
+            _mapType => {
+                throw Error("maps are not supported");
             },
-            enumType => this.emitLine(...lhs, this.nameForNamedType(enumType), "::from(", ...args, ");"),
+            enumType => [...lhs, this.nameForNamedType(enumType), "::from(", ...args, ")"],
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
-                    this.emitLine("if (!is_null(", ...args, ")) {");
-                    this.indent(() => this.phpFromObjConvert(className, nullable, lhs, args));
-                    this.emitLine("} else {");
-                    this.indent(() => this.emitLine("return null;"));
-                    this.emitLine("}");
-                    return;
+                    const from = this.phpFromObjConvert(className, nullable, [], args);
+
+                    if (this.sourcelikeToString(from) === this.sourcelikeToString(args)) {
+                        return from;
+                    }
+
+                    return [...lhs, ...args, " === null ? null : ", from];
                 }
                 throw Error("union are not supported");
             },
             transformedStringType => {
                 if (transformedStringType.kind === "date-time") {
-                    this.emitLine("$tmp = ", "DateTime::createFromFormat(DateTimeInterface::ISO8601, ", args, ");");
-                    this.transformDateTime(className, "", ["$tmp"]);
-                    this.emitLine("return $tmp;");
-                    return;
+                    return [
+                        "$tmp = DateTime::createFromFormat(DateTimeInterface::ISO8601, ",
+                        args,
+                        ");",
+                        className,
+                        "",
+                        ["$tmp"],
+                        this.transformDateTime(className, "", ["$tmp"]),
+                        "return $tmp;"
+                    ];
                 }
                 throw Error('transformedStringType.kind === "unknown"');
             }
@@ -557,7 +559,9 @@ export class PhpRenderer extends ConvenienceRenderer {
         this.emitMethod({
             name: names.from,
             body: () => {
-                this.phpFromObjConvert(className, p.type, ["return "], ["$value"]);
+                const from = this.phpFromObjConvert(className, p.type, ["return "], ["$value"]);
+
+                this.emitLine(from, ";");
             },
             desc,
             args: [[this.phpType(p.type), " $value"]],
