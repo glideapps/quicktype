@@ -37,6 +37,7 @@ export const phpOptions = {
     withClosing: new BooleanOption("with-closing", "PHP Closing Tag", false),
     readonlyProperties: new BooleanOption("readonly-properties", "Use public readonly instead of protected", true),
     nativeEnums: new BooleanOption("native-enums", "Use enums instead of enum classes", true),
+    arrowFunctions: new BooleanOption("arrow-functions", "Use arrow functions whenever possible", true),
     constructorProperties: new BooleanOption(
         "constructor-properties",
         "Declare class properties inside constructor",
@@ -358,6 +359,7 @@ export class PhpRenderer extends ConvenienceRenderer {
             _doubleType => [...lhs, ...args],
             _stringType => [...lhs, ...args],
             arrayType => {
+                const { arrowFunctions } = this._options;
                 const to = this.phpToObjConvert(arrayType.items, ["return "], ["$value"]);
 
                 if (this.sourcelikeToString(to) === "return $value") {
@@ -365,6 +367,11 @@ export class PhpRenderer extends ConvenienceRenderer {
                 }
 
                 const type = this.phpType(arrayType.items);
+
+                if (arrowFunctions) {
+                    const to = this.phpToObjConvert(arrayType.items, [], ["$value"]);
+                    return [...lhs, "array_map(fn(", type, " $value) => ", to, ", ", ...args, ")"];
+                }
 
                 return [...lhs, "array_map(function (", type, " $value) {\n    ", to, ";\n}, ", ...args, ")"];
             },
@@ -412,10 +419,16 @@ export class PhpRenderer extends ConvenienceRenderer {
             _doubleType => [...lhs, ...args],
             _stringType => [...lhs, ...args],
             arrayType => {
+                const { arrowFunctions } = this._options;
                 const from = this.phpFromObjConvert(className, arrayType.items, ["return "], ["$value"]);
 
                 if (this.sourcelikeToString(from) === "return $value") {
                     return [...lhs, ...args];
+                }
+
+                if (arrowFunctions) {
+                    const from = this.phpFromObjConvert(className, arrayType.items, [], ["$value"]);
+                    return [...lhs, "array_map(fn($value) => ", from, ", ", ...args, ")"];
                 }
 
                 return [...lhs, "array_map(function ($value) {\n    ", from, ";\n}, ", ...args, ")"];
