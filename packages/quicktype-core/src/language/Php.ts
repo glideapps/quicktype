@@ -494,61 +494,6 @@ export class PhpRenderer extends ConvenienceRenderer {
         );
     }
 
-    private phpValidate(className: Name, t: Type, attrName: Sourcelike, scopeAttrName: string) {
-        const is = (isfn: string, myT: Name = className) => {
-            this.emitBlock(["if (!", isfn, "(", scopeAttrName, "))"], () =>
-                this.emitLine("throw new Exception('Attribute Error:", myT, "::", attrName, "');")
-            );
-        };
-        return matchType<void>(
-            t,
-            _anyType => is("defined"),
-            _nullType => is("is_null"),
-            _boolType => is("is_bool"),
-            _integerType => is("is_integer"),
-            _doubleType => is("is_float"),
-            _stringType => is("is_string"),
-            arrayType => {
-                is("is_array");
-                this.emitLine("array_walk(", scopeAttrName, ", function (", scopeAttrName, "_v) {");
-                this.indent(() => {
-                    this.phpValidate(className, arrayType.items, attrName, `${scopeAttrName}_v`);
-                });
-                this.emitLine("});");
-            },
-            _classType => {
-                this.emitLine(scopeAttrName, "->validate();");
-            },
-            mapType => {
-                this.emitLine("foreach (", scopeAttrName, " as $k => $v) {");
-                this.indent(() => {
-                    this.phpValidate(className, mapType.values, attrName, "$v");
-                });
-                this.emitLine("}");
-            },
-            _enumType => {
-                this.emitLine(scopeAttrName, "->value;");
-            },
-            unionType => {
-                const nullable = nullableFromUnion(unionType);
-                if (nullable !== null) {
-                    this.emitBlock(["if (!is_null(", scopeAttrName, "))"], () => {
-                        this.phpValidate(className, nullable, attrName, scopeAttrName);
-                    });
-                    return;
-                }
-                throw Error("not implemented");
-            },
-            transformedStringType => {
-                if (transformedStringType.kind === "date-time") {
-                    this.transformDateTime(className, attrName, [scopeAttrName]);
-                    return;
-                }
-                throw Error(`transformedStringType.kind === ${transformedStringType.kind}`);
-            }
-        );
-    }
-
     protected emitMethod(method: Method): void {
         const {
             name,
@@ -713,6 +658,9 @@ export class PhpRenderer extends ConvenienceRenderer {
                 this.emitMethod({
                     name: "from",
                     body: () => {
+                        this.emitAsserts(c, className);
+                        this.ensureBlankLine();
+
                         this.emitLine("return new ", self, "(");
                         this.indent(() => {
                             this.forEachClassProperty(c, "none", (_name, jsonName, p, position) => {
@@ -733,6 +681,9 @@ export class PhpRenderer extends ConvenienceRenderer {
                 this.emitMethod({
                     name: "from",
                     body: () => {
+                        this.emitAsserts(c, className);
+                        this.ensureBlankLine();
+
                         this.emitLine("return new ", self, "(");
                         this.indent(() => {
                             this.forEachClassProperty(c, "none", (_name, jsonName, p, position) => {
@@ -753,6 +704,125 @@ export class PhpRenderer extends ConvenienceRenderer {
             }
         });
         this.finishFile();
+    }
+
+    protected emitAsserts(classType: ClassType, className: Name): void {
+        const { selfNameType } = this._options;
+        const self = selfNameType === "default" ? className : selfNameType;
+
+        this.emitLine("assert(is_array($arr), ", self, "::class . '::from expects array');");
+
+        this.forEachClassProperty(classType, "none", (name, jsonName, classProperty) => {
+            this.emitTypeAsserts(name, jsonName, className, classProperty.type, !classProperty.isOptional);
+        });
+    }
+
+    protected emitTypeAsserts(
+        name: Name,
+        jsonName: string,
+        className: Name,
+        type: Type,
+        required: boolean = true,
+        isNullable: boolean = false
+    ): void {
+        const { selfNameType } = this._options;
+        const self = selfNameType === "default" ? className : selfNameType;
+
+        const emitAssert = (
+            func: Sourcelike,
+            expected: string,
+            value: Sourcelike = ["$arr['", jsonName, "']", required ? "" : " ?? null"]
+        ) => {
+            const line: Sourcelike[] = [];
+
+            line.push("assert(", func, "(", value, ")");
+            if (isNullable) {
+                line.push(" || is_null(", value, ")");
+            }
+            line.push(", ", self, "::class . '.", name, " must be ");
+
+            if (isNullable) {
+                line.push("either ", expected, " or null');");
+            } else {
+                line.push(expected, "');");
+            }
+
+            this.emitLine(...line);
+        };
+
+        const emitRequired = () => {
+            if (!required) {
+                return;
+            }
+
+            this.emitLine(
+                "assert(array_key_exists('",
+                jsonName,
+                "', $arr), ",
+                self,
+                "::class . '.",
+                name,
+                " is required');"
+            );
+        };
+
+        matchType<void>(
+            type,
+            _anyType => {
+                emitRequired();
+            },
+            _nullType => {
+                emitRequired();
+                emitAssert("is_null", "null");
+            },
+            _boolType => {
+                emitRequired();
+                emitAssert("is_bool", "boolean");
+            },
+            _integerType => {
+                emitRequired();
+                emitAssert("is_int", "integer");
+            },
+            _doubleType => {
+                emitRequired();
+                emitAssert("is_numeric", "float");
+            },
+            _stringType => {
+                emitRequired();
+                emitAssert("is_string", "a string");
+            },
+            arrayType => {
+                emitRequired();
+                emitAssert("is_array", "an array");
+
+                if (arrayType.items.kind === "enum") {
+                    this.emitBlock(["foreach ($arr['", jsonName, "'] as $el)"], () => {
+                        emitAssert("is_string", "an array of strings", "$el");
+                    });
+                }
+            },
+            _classType => {
+                emitRequired();
+            },
+            _mapType => {},
+            enumType => {
+                const enumName = this.nameForNamedType(enumType);
+
+                emitRequired();
+                emitAssert("is_string", "a string");
+                emitAssert(["!!", enumName, "::tryFrom"], "a valid enum option");
+            },
+            unionType => {
+                const nullable = nullableFromUnion(unionType);
+
+                if (nullable !== null) {
+                    return this.emitTypeAsserts(name, jsonName, className, nullable, required, true);
+                }
+
+                emitRequired();
+            },
+            _transformedStringType => {}
+        );
     }
 
     protected emitUnionDefinition(_u: UnionType, _unionName: Name): void {
