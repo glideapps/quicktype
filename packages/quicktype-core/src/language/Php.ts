@@ -120,8 +120,6 @@ export function phpNameStyle(
 export interface FunctionNames {
     readonly getter: Name;
     readonly setter: Name;
-    readonly from: Name;
-    readonly to: Name;
 }
 
 type Method = {
@@ -195,21 +193,10 @@ export class PhpRenderer extends ConvenienceRenderer {
             name.order,
             lookup => `set_${lookup(name)}`
         );
-        const fromName = new DependencyName(
-            this.getNameStyling("propertyNamingFunction"),
-            name.order,
-            lookup => `from_${lookup(name)}`
-        );
-        const toName = new DependencyName(
-            this.getNameStyling("propertyNamingFunction"),
-            name.order,
-            lookup => `to_${lookup(name)}`
-        );
+
         return {
             getter: getterName,
-            setter: setterName,
-            from: fromName,
-            to: toName
+            setter: setterName
         };
     }
 
@@ -222,12 +209,7 @@ export class PhpRenderer extends ConvenienceRenderer {
     ): Name[] {
         const getterAndSetterNames = this.makeNamesForPropertyGetterAndSetter(c, className, p, jsonName, name);
         this._gettersAndSettersForPropertyName.set(name, getterAndSetterNames);
-        return [
-            getterAndSetterNames.getter,
-            getterAndSetterNames.setter,
-            getterAndSetterNames.to,
-            getterAndSetterNames.from
-        ];
+        return [getterAndSetterNames.getter, getterAndSetterNames.setter];
     }
 
     private getNameStyling(convention: string): Namer {
@@ -594,22 +576,6 @@ export class PhpRenderer extends ConvenienceRenderer {
         this.emitBlockWithBraceOnNewLine(line, body);
     }
 
-    protected emitFromMethod(names: FunctionNames, p: ClassProperty, className: Name, _name: Name, desc?: string[]) {
-        this.emitMethod({
-            name: names.from,
-            body: () => {
-                const from = this.phpFromObjConvert(className, p.type, ["return "], ["$value"]);
-
-                this.emitLine(from, ";");
-            },
-            desc,
-            args: [[this.phpType(p.type), " $value"]],
-            returnType: p.type,
-            docBlockArgs: [[p.type.kind === "array" ? "mixed[]" : this.phpDocType(p.type), " $value"]],
-            isStatic: true
-        });
-    }
-
     protected emitGetMethod(names: FunctionNames, p: ClassProperty, _className: Name, name: Name, desc?: string[]) {
         const { withGet } = this._options;
 
@@ -685,8 +651,6 @@ export class PhpRenderer extends ConvenienceRenderer {
                 const names = defined(this._gettersAndSettersForPropertyName.get(name));
 
                 this.ensureBlankLine();
-                this.emitFromMethod(names, p, className, name, desc);
-                this.ensureBlankLine();
                 this.emitGetMethod(names, p, className, name, desc);
                 this.ensureBlankLine();
                 this.emitSetMethod(names, p, className, name, desc);
@@ -701,9 +665,9 @@ export class PhpRenderer extends ConvenienceRenderer {
                     name: "to",
                     body: () => {
                         this.emitLine("$out = new stdClass();");
-                        this.forEachClassProperty(c, "none", (name, jsonName) => {
-                            const names = defined(this._gettersAndSettersForPropertyName.get(name));
-                            this.emitLine("$out->", jsonName, " = $this->", names.to, "();");
+                        this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+                            const to = this.phpToObjConvert(p.type, [], ["$this->", name]);
+                            this.emitLine("$out->", jsonName, " = $this->", to, ";");
                         });
                         this.emitLine("return $out;");
                     },
@@ -734,10 +698,11 @@ export class PhpRenderer extends ConvenienceRenderer {
                     body: () => {
                         this.emitLine("return new ", className, "(");
                         this.indent(() => {
-                            this.forEachClassProperty(c, "none", (name, jsonName, _, position) => {
+                            this.forEachClassProperty(c, "none", (_name, jsonName, p, position) => {
                                 const suffix = ["last", "only"].includes(position) ? "" : ",";
-                                const names = defined(this._gettersAndSettersForPropertyName.get(name));
-                                this.emitLine(className, "::", names.from, "($obj->", jsonName, ")", suffix);
+                                const from = this.phpFromObjConvert(className, p.type, [], ["$obj->", jsonName]);
+
+                                this.emitLine(from, suffix);
                             });
                         });
                         this.emitLine(");");
@@ -752,10 +717,11 @@ export class PhpRenderer extends ConvenienceRenderer {
                     body: () => {
                         this.emitLine("return new ", className, "(");
                         this.indent(() => {
-                            this.forEachClassProperty(c, "none", (name, jsonName, _, position) => {
+                            this.forEachClassProperty(c, "none", (_name, jsonName, p, position) => {
                                 const suffix = ["last", "only"].includes(position) ? "" : ",";
-                                const names = defined(this._gettersAndSettersForPropertyName.get(name));
-                                this.emitLine(className, "::", names.from, "($arr['", jsonName, "'])", suffix);
+                                const from = this.phpFromObjConvert(className, p.type, [], ["$arr['", jsonName, "']"]);
+
+                                this.emitLine(from, suffix);
                             });
                         });
                         this.emitLine(");");
