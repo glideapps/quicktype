@@ -672,7 +672,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                         });
                         this.emitLine(");");
                     },
-                    args: ["stdClass $obj"],
+                    args: ["mixed $obj"],
                     returnType,
                     docBlockReturnType: self,
                     isStatic: true
@@ -701,8 +701,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                         });
                         this.emitLine(");");
                     },
-                    args: ["array $arr"],
-                    docBlockArgs: ["mixed[] $arr"],
+                    args: ["mixed $arr"],
                     returnType,
                     docBlockReturnType: self,
                     isStatic: true
