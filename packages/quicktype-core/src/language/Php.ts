@@ -132,7 +132,6 @@ type Method = {
     returnType?: Type | Sourcelike;
     docBlockArgs?: Sourcelike[];
     docBlockReturnType?: Type | Sourcelike;
-    throws?: boolean;
     isStatic?: boolean;
     isProtected?: boolean;
 };
@@ -564,7 +563,6 @@ export class PhpRenderer extends ConvenienceRenderer {
             returnType = "void",
             docBlockArgs = args,
             docBlockReturnType = returnType,
-            throws = false,
             isStatic = false,
             isProtected = false
         } = method;
@@ -575,9 +573,6 @@ export class PhpRenderer extends ConvenienceRenderer {
         }
         for (const docBlockArg of docBlockArgs) {
             docBlock.push(["@param ", docBlockArg]);
-        }
-        if (throws) {
-            docBlock.push(["@throws Exception"]);
         }
         docBlock.push([
             "@return ",
@@ -611,7 +606,6 @@ export class PhpRenderer extends ConvenienceRenderer {
             args: [[this.phpType(p.type), " $value"]],
             returnType: p.type,
             docBlockArgs: [[p.type.kind === "array" ? "mixed[]" : this.phpDocType(p.type), " $value"]],
-            throws: true,
             isStatic: true
         });
     }
@@ -629,8 +623,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                 this.emitLine("return $this->", name, ";");
             },
             desc,
-            returnType: p.type,
-            throws: true
+            returnType: p.type
         });
     }
 
@@ -647,8 +640,7 @@ export class PhpRenderer extends ConvenienceRenderer {
             desc,
             args: [[this.phpType(p.type), " $value"]],
             docBlockArgs: [[this.phpDocType(p.type), " $value"]],
-            returnType: "void",
-            throws: true
+            returnType: "void"
         });
     }
 
@@ -715,8 +707,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                         });
                         this.emitLine("return $out;");
                     },
-                    returnType: "stdClass",
-                    throws: true
+                    returnType: "stdClass"
                 });
             } else {
                 this.emitMethod({
@@ -732,8 +723,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                         this.emitLine("];");
                     },
                     returnType: "array",
-                    docBlockReturnType: "mixed[]",
-                    throws: true
+                    docBlockReturnType: "mixed[]"
                 });
             }
 
@@ -754,7 +744,6 @@ export class PhpRenderer extends ConvenienceRenderer {
                     },
                     args: ["stdClass $obj"],
                     returnType: className,
-                    throws: true,
                     isStatic: true
                 });
             } else {
@@ -774,7 +763,6 @@ export class PhpRenderer extends ConvenienceRenderer {
                     args: ["array $arr"],
                     docBlockArgs: ["mixed[] $arr"],
                     returnType: className,
-                    throws: true,
                     isStatic: true
                 });
             }
