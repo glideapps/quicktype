@@ -31,6 +31,8 @@ export enum SerializeWith {
     stdClass = "stdClass"
 }
 
+export type SelfNameType = "default" | "self" | "static";
+
 export const phpOptions = {
     withGet: new BooleanOption("with-get", "Create Getter", false),
     withSet: new BooleanOption("with-set", "Create Setter", false),
@@ -40,6 +42,7 @@ export const phpOptions = {
     arrowFunctions: new BooleanOption("arrow-functions", "Use arrow functions whenever possible", true),
     callable: new BooleanOption("callable", "Use callable syntax whenever possible", true),
     firstCallable: new BooleanOption("first-callable", "Use first callable syntax whenever possible", true),
+    staticTypeAnnotation: new BooleanOption("static-type-annotation", "Use static type hinting on methods", true),
     constructorProperties: new BooleanOption(
         "constructor-properties",
         "Declare class properties inside constructor",
@@ -53,6 +56,16 @@ export const phpOptions = {
             ["stdClass", SerializeWith.stdClass]
         ],
         "array"
+    ),
+    selfNameType: new EnumOption<SelfNameType>(
+        "self-name-type",
+        "How to refer to a class from inside itself",
+        [
+            ["default", "default"],
+            ["self", "self"],
+            ["static", "static"]
+        ],
+        "static"
     ),
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal)
 };
@@ -691,12 +704,16 @@ export class PhpRenderer extends ConvenienceRenderer {
                 });
             }
 
+            const { selfNameType, staticTypeAnnotation } = this._options;
+            const self = selfNameType === "default" ? className : selfNameType;
+            const returnType = staticTypeAnnotation ? "static" : selfNameType === "static" ? "self" : self;
+
             this.ensureBlankLine();
             if (useStdClass) {
                 this.emitMethod({
                     name: "from",
                     body: () => {
-                        this.emitLine("return new ", className, "(");
+                        this.emitLine("return new ", self, "(");
                         this.indent(() => {
                             this.forEachClassProperty(c, "none", (_name, jsonName, p, position) => {
                                 const suffix = ["last", "only"].includes(position) ? "" : ",";
@@ -708,14 +725,15 @@ export class PhpRenderer extends ConvenienceRenderer {
                         this.emitLine(");");
                     },
                     args: ["stdClass $obj"],
-                    returnType: className,
+                    returnType,
+                    docBlockReturnType: self,
                     isStatic: true
                 });
             } else {
                 this.emitMethod({
                     name: "from",
                     body: () => {
-                        this.emitLine("return new ", className, "(");
+                        this.emitLine("return new ", self, "(");
                         this.indent(() => {
                             this.forEachClassProperty(c, "none", (_name, jsonName, p, position) => {
                                 const suffix = ["last", "only"].includes(position) ? "" : ",";
@@ -728,7 +746,8 @@ export class PhpRenderer extends ConvenienceRenderer {
                     },
                     args: ["array $arr"],
                     docBlockArgs: ["mixed[] $arr"],
-                    returnType: className,
+                    returnType,
+                    docBlockReturnType: self,
                     isStatic: true
                 });
             }
