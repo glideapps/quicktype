@@ -43,6 +43,7 @@ export const phpOptions = {
     callable: new BooleanOption("callable", "Use callable syntax whenever possible", true),
     firstCallable: new BooleanOption("first-callable", "Use first callable syntax whenever possible", true),
     staticTypeAnnotation: new BooleanOption("static-type-annotation", "Use static type hinting on methods", true),
+    mixedTypeAnnotation: new BooleanOption("mixed-type-annotation", "Use mixed type hinting on methods", true),
     constructorProperties: new BooleanOption(
         "constructor-properties",
         "Declare class properties inside constructor",
@@ -281,8 +282,8 @@ export class PhpRenderer extends ConvenienceRenderer {
         }
         return matchType<Sourcelike>(
             t,
-            _anyType => maybeAnnotated(isOptional, anyTypeIssueAnnotation, "Object"),
-            _nullType => maybeAnnotated(isOptional, nullTypeIssueAnnotation, "Object"),
+            _anyType => maybeAnnotated(isOptional, anyTypeIssueAnnotation, "mixed"),
+            _nullType => maybeAnnotated(isOptional, nullTypeIssueAnnotation, "null"),
             _boolType => optionalize("bool"),
             _integerType => optionalize("int"),
             _doubleType => optionalize("float"),
@@ -319,7 +320,7 @@ export class PhpRenderer extends ConvenienceRenderer {
     protected phpDocType(t: Type): Sourcelike {
         return matchType<Sourcelike>(
             t,
-            _anyType => "any",
+            _anyType => "mixed",
             _nullType => "null",
             _boolType => "bool",
             _integerType => "int",
@@ -334,7 +335,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                 if (nullable !== null) {
                     return ["?", this.phpDocType(nullable)];
                 }
-                throw Error("union are not supported");
+                return "mixed";
             },
             transformedStringType => {
                 if (transformedStringType.kind === "date-time") {
@@ -649,7 +650,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                 });
             }
 
-            const { selfNameType, staticTypeAnnotation } = this._options;
+            const { selfNameType, staticTypeAnnotation, mixedTypeAnnotation } = this._options;
             const self = selfNameType === "default" ? className : selfNameType;
             const returnType = staticTypeAnnotation ? "static" : selfNameType === "static" ? "self" : self;
 
@@ -672,7 +673,8 @@ export class PhpRenderer extends ConvenienceRenderer {
                         });
                         this.emitLine(");");
                     },
-                    args: ["mixed $obj"],
+                    args: mixedTypeAnnotation ? ["mixed $obj"] : ["$obj"],
+                    docBlockArgs: ["mixed $obj"],
                     returnType,
                     docBlockReturnType: self,
                     isStatic: true
@@ -701,7 +703,8 @@ export class PhpRenderer extends ConvenienceRenderer {
                         });
                         this.emitLine(");");
                     },
-                    args: ["mixed $arr"],
+                    args: mixedTypeAnnotation ? ["mixed $arr"] : ["$arr"],
+                    docBlockArgs: ["mixed $arr"],
                     returnType,
                     docBlockReturnType: self,
                     isStatic: true
