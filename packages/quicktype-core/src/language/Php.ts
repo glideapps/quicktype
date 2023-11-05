@@ -55,6 +55,11 @@ export const phpOptions = {
     firstCallable: new BooleanOption("first-callable", "Use first callable syntax whenever possible", true),
     staticTypeAnnotation: new BooleanOption("static-type-annotation", "Use static type hinting on methods", true),
     mixedTypeAnnotation: new BooleanOption("mixed-type-annotation", "Use mixed type hinting on methods", true),
+    classPropertyTypeAnnotations: new BooleanOption(
+        "class-property-type-annotations",
+        "Use type annotations on class properties",
+        true
+    ),
     constructorProperties: new BooleanOption(
         "constructor-properties",
         "Declare class properties inside constructor",
@@ -130,6 +135,7 @@ export class PhpTargetLanguage extends TargetLanguage {
 
         if (phpVersion < 7.4) {
             options.arrowFunctions = false;
+            options.classPropertyTypeAnnotations = false;
         }
 
         return options;
@@ -606,17 +612,35 @@ export class PhpRenderer extends ConvenienceRenderer {
         });
     }
 
+    protected emitClassProperty(
+        propertyType: Type,
+        propertyName: Name,
+        withAccessor: boolean,
+        withType: boolean,
+        suffix: Sourcelike
+    ): void {
+        const { readonlyProperties } = this._options;
+
+        const accessor = withAccessor ? (readonlyProperties ? "public readonly" : "protected") : "";
+        const type =
+            withType || accessor === "public readonly" ? this.sourcelikeToString(this.phpType(propertyType)) : "";
+        const variable = "$" + this.sourcelikeToString(propertyName);
+
+        const line = [accessor, type, variable].filter(Boolean).join(" ");
+
+        this.emitLine(line, suffix);
+    }
+
     protected emitClassDefinition(c: ClassType, className: Name): void {
         this.emitFileHeader(className, []);
 
         this.emitBlockWithBraceOnNewLine(["class ", className], () => {
-            const { constructorProperties, readonlyProperties } = this._options;
-            const accessor = readonlyProperties ? "public readonly" : "protected";
+            const { constructorProperties, classPropertyTypeAnnotations } = this._options;
 
             if (!constructorProperties) {
                 this.forEachClassProperty(c, "none", (name, _jsonName, p) => {
                     this.emitDescriptionBlock([["@var ", this.phpDocType(p.type)]]);
-                    this.emitLine(accessor, " ", this.phpType(p.type), " $", name, ";");
+                    this.emitClassProperty(p.type, name, true, classPropertyTypeAnnotations, ";");
                     this.ensureBlankLine();
                 });
             }
@@ -629,18 +653,19 @@ export class PhpRenderer extends ConvenienceRenderer {
             this.emitLine("public function __construct(");
             this.indent(() => {
                 this.forEachClassProperty(c, "none", (name, __, p, position) => {
-                    const prefix = constructorProperties ? [accessor, " "] : [""];
                     const suffix = ["last", "only"].includes(position) ? "" : ",";
 
-                    this.emitLine(...prefix, this.phpType(p.type), " $", name, suffix);
+                    this.emitClassProperty(p.type, name, constructorProperties, true, suffix);
                 });
             });
             this.emitBlock(")", () => {
-                if (!constructorProperties) {
-                    this.forEachClassProperty(c, "none", name => {
-                        this.emitLine("$this->", name, " = $", name, ";");
-                    });
+                if (constructorProperties) {
+                    return;
                 }
+
+                this.forEachClassProperty(c, "none", name => {
+                    this.emitLine("$this->", name, " = $", name, ";");
+                });
             });
 
             this.forEachClassProperty(c, "leading-and-interposing", (name, jsonName, p) => {
@@ -889,6 +914,17 @@ export class PhpRenderer extends ConvenienceRenderer {
         throw Error("emitUnionDefinition not implemented");
     }
 
+    protected emitEnumProperty(withAccessor: boolean, withType: boolean, suffix: Sourcelike): void {
+        const { readonlyProperties } = this._options;
+
+        const accessor = withAccessor ? (readonlyProperties ? "public readonly" : "protected") : "";
+        const type = withType || accessor === "public readonly" ? "string" : "";
+
+        const line = [accessor, type, "$value"].filter(Boolean).join(" ");
+
+        this.emitLine(line, suffix);
+    }
+
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
         const {
             nativeEnums,
@@ -896,7 +932,7 @@ export class PhpRenderer extends ConvenienceRenderer {
             staticTypeAnnotation,
             mixedTypeAnnotation,
             constructorProperties,
-            readonlyProperties
+            classPropertyTypeAnnotations
         } = this._options;
         const self = selfNameType === "default" ? enumName : selfNameType;
 
@@ -913,9 +949,6 @@ export class PhpRenderer extends ConvenienceRenderer {
         }
 
         this.emitBlockWithBraceOnNewLine(["class ", enumName], () => {
-            const accessor = readonlyProperties ? "public readonly" : "protected";
-            const returnType = staticTypeAnnotation ? "static" : selfNameType === "static" ? "self" : self;
-
             this.forEachEnumCase(e, "none", (name, jsonName) => {
                 this.emitLine("public const ", name, " = '", jsonName, "';");
             });
@@ -931,19 +964,23 @@ export class PhpRenderer extends ConvenienceRenderer {
             this.ensureBlankLine();
 
             if (!constructorProperties) {
-                this.emitLine(accessor, " string $value;");
+                this.emitDescriptionBlock([["@var string $value"]]);
+                this.emitEnumProperty(true, classPropertyTypeAnnotations, ";");
                 this.ensureBlankLine();
             }
 
             this.emitDescriptionBlock(["@param string $value"]);
-            this.emitBlockWithBraceOnNewLine(
-                ["public function __construct(", constructorProperties ? accessor + " " : "", "string $value)"],
-                () => {
-                    if (!constructorProperties) {
-                        this.emitLine("$this->value = $value;");
-                    }
+            this.emitLine("public function __construct(");
+            this.indent(() => {
+                this.emitEnumProperty(constructorProperties, true, "");
+            });
+            this.emitBlock(")", () => {
+                if (constructorProperties) {
+                    return;
                 }
-            );
+
+                this.emitLine("$this->value = $value;");
+            });
 
             this.ensureBlankLine();
             this.emitMethod({
@@ -965,7 +1002,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                 },
                 args: mixedTypeAnnotation ? ["mixed $obj"] : ["$obj"],
                 docBlockArgs: ["mixed $obj"],
-                returnType,
+                returnType: staticTypeAnnotation ? "static" : selfNameType === "static" ? "self" : self,
                 docBlockReturnType: self,
                 isStatic: true
             });
