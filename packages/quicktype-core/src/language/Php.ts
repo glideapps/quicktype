@@ -48,7 +48,6 @@ export const phpOptions = {
     ),
     withGet: new BooleanOption("with-get", "Create Getter", false),
     withSet: new BooleanOption("with-set", "Create Setter", false),
-    withClosing: new BooleanOption("with-closing", "PHP Closing Tag", false),
     readonlyProperties: new BooleanOption("readonly-properties", "Use public readonly instead of protected", true),
     nativeEnums: new BooleanOption("native-enums", "Use enums instead of enum classes", true),
     arrowFunctions: new BooleanOption("arrow-functions", "Use arrow functions whenever possible", true),
@@ -958,9 +957,7 @@ export class PhpRenderer extends ConvenienceRenderer {
             (e, n) => this.emitEnumDefinition(e, n),
             (u, n) => this.emitUnionDefinition(u, n)
         );
-        if (this._options.withClosing) {
-            this.emitLine("?>");
-        }
+
         super.finishFile(defined(givenFilename));
     }
 }
