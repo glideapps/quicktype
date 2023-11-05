@@ -34,6 +34,18 @@ export enum SerializeWith {
 export type SelfNameType = "default" | "self" | "static";
 
 export const phpOptions = {
+    phpVersion: new EnumOption<number>(
+        "php-version",
+        "PHP Version to target",
+        [
+            ["7.3", 7.3],
+            ["7.4", 7.4],
+            ["8.0", 8.0],
+            ["8.1", 8.1],
+            ["8.2", 8.2]
+        ],
+        "8.2"
+    ),
     withGet: new BooleanOption("with-get", "Create Getter", false),
     withSet: new BooleanOption("with-set", "Create Setter", false),
     withClosing: new BooleanOption("with-closing", "PHP Closing Tag", false),
@@ -86,7 +98,7 @@ export class PhpTargetLanguage extends TargetLanguage {
 
     protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): PhpRenderer {
         const options = getOptionValues(phpOptions, untypedOptionValues);
-        return new PhpRenderer(this, renderContext, options);
+        return new PhpRenderer(this, renderContext, this.fixOptionsByPhpVersion(options));
     }
 
     get stringTypeMapping(): StringTypeMapping {
@@ -96,6 +108,32 @@ export class PhpTargetLanguage extends TargetLanguage {
         mapping.set("uuid", "uuid"); // TODO is not implemented yet
         mapping.set("date-time", "date-time");
         return mapping;
+    }
+
+    protected fixOptionsByPhpVersion(options: OptionValues<typeof phpOptions>): OptionValues<typeof phpOptions> {
+        const { phpVersion } = options;
+
+        if (phpVersion < 8.2) {
+            // no features yet
+        }
+
+        if (phpVersion < 8.1) {
+            options.nativeEnums = false;
+            options.readonlyProperties = false;
+            options.firstCallable = false;
+        }
+
+        if (phpVersion < 8.0) {
+            options.constructorProperties = false;
+            options.mixedTypeAnnotation = false;
+            options.staticTypeAnnotation = false;
+        }
+
+        if (phpVersion < 7.4) {
+            options.arrowFunctions = false;
+        }
+
+        return options;
     }
 }
 
