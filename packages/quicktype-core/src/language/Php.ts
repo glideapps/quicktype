@@ -461,12 +461,12 @@ export class PhpRenderer extends ConvenienceRenderer {
                     return [...lhs, ...args];
                 }
 
-                if (arrowFunctions) {
-                    if (callable && ["class", "enum"].includes(arrayType.items.kind)) {
-                        const from = this.phpFromObjConvert(className, arrayType.items, [], []);
-                        return [...lhs, "array_map(", from, ", ", ...args, ")"];
-                    }
+                if (callable && ["class", "enum"].includes(arrayType.items.kind)) {
+                    const from = this.phpFromObjConvert(className, arrayType.items, [], []);
+                    return [...lhs, "array_map(", from, ", ", ...args, ")"];
+                }
 
+                if (arrowFunctions) {
                     const from = this.phpFromObjConvert(className, arrayType.items, [], ["$value"]);
                     return [...lhs, "array_map(fn($value) => ", from, ", ", ...args, ")"];
                 }
