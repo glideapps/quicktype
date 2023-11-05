@@ -615,9 +615,10 @@ export class PhpRenderer extends ConvenienceRenderer {
 
             if (!constructorProperties) {
                 this.forEachClassProperty(c, "none", (name, _jsonName, p) => {
+                    this.emitDescriptionBlock([["@var ", this.phpDocType(p.type)]]);
                     this.emitLine(accessor, " ", this.phpType(p.type), " $", name, ";");
+                    this.ensureBlankLine();
                 });
-                this.ensureBlankLine();
             }
 
             const docBlock: Sourcelike[] = [];
