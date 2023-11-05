@@ -696,7 +696,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                 this.emitMethod({
                     name: "from",
                     body: () => {
-                        this.emitAsserts(c, className);
+                        this.emitClassAsserts(c, className);
                         this.ensureBlankLine();
 
                         this.emitLine("return new ", self, "(");
@@ -720,7 +720,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                 this.emitMethod({
                     name: "from",
                     body: () => {
-                        this.emitAsserts(c, className);
+                        this.emitClassAsserts(c, className);
                         this.ensureBlankLine();
 
                         this.emitLine("return new ", self, "(");
@@ -751,7 +751,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         this.finishFile();
     }
 
-    protected emitAsserts(classType: ClassType, className: Name): void {
+    protected emitClassAsserts(classType: ClassType, className: Name): void {
         const { selfNameType } = this._options;
         const self = selfNameType === "default" ? className : selfNameType;
 
@@ -760,6 +760,20 @@ export class PhpRenderer extends ConvenienceRenderer {
         this.forEachClassProperty(classType, "none", (name, jsonName, classProperty) => {
             this.emitTypeAsserts(name, jsonName, className, classProperty.type, !classProperty.isOptional);
         });
+    }
+
+    protected emitEnumAsserts(enumName: Name): void {
+        const { selfNameType } = this._options;
+        const self = selfNameType === "default" ? enumName : selfNameType;
+
+        this.emitLine("assert(is_string($obj), ", self, "::class . '::from expects string');");
+        this.emitLine(
+            "assert(in_array($obj, ",
+            self,
+            "::VALUES, true), ",
+            self,
+            "::class . '::from expects valid enum value');"
+        );
     }
 
     protected emitTypeAsserts(
@@ -875,10 +889,20 @@ export class PhpRenderer extends ConvenienceRenderer {
     }
 
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
+        const {
+            nativeEnums,
+            selfNameType,
+            staticTypeAnnotation,
+            mixedTypeAnnotation,
+            constructorProperties,
+            readonlyProperties
+        } = this._options;
+        const self = selfNameType === "default" ? enumName : selfNameType;
+
         this.emitFileHeader(enumName, []);
         this.emitDescription(this.descriptionForType(e));
 
-        if (this._options.nativeEnums) {
+        if (nativeEnums) {
             this.emitBlockWithBraceOnNewLine(["enum ", enumName, ": string"], () => {
                 this.forEachEnumCase(e, "none", (name, jsonName) => {
                     this.emitLine("case ", name, " = '", jsonName, "';");
@@ -888,8 +912,8 @@ export class PhpRenderer extends ConvenienceRenderer {
         }
 
         this.emitBlockWithBraceOnNewLine(["class ", enumName], () => {
-            const { constructorProperties, readonlyProperties } = this._options;
             const accessor = readonlyProperties ? "public readonly" : "protected";
+            const returnType = staticTypeAnnotation ? "static" : selfNameType === "static" ? "self" : self;
 
             this.forEachEnumCase(e, "none", (name, jsonName) => {
                 this.emitLine("public const ", name, " = '", jsonName, "';");
@@ -899,23 +923,23 @@ export class PhpRenderer extends ConvenienceRenderer {
             this.emitLine("public const VALUES = [");
             this.indent(() => {
                 this.forEachEnumCase(e, "none", name => {
-                    this.emitLine(enumName, "::", name, ",");
+                    this.emitLine(self === "static" ? "self" : self, "::", name, ",");
                 });
             });
             this.emitLine("];");
             this.ensureBlankLine();
 
             if (!constructorProperties) {
-                this.emitLine(accessor, " string $enum;");
+                this.emitLine(accessor, " string $value;");
                 this.ensureBlankLine();
             }
 
-            this.emitDescriptionBlock(["@param string $enum"]);
+            this.emitDescriptionBlock(["@param string $value"]);
             this.emitBlockWithBraceOnNewLine(
-                ["public function __construct(", constructorProperties ? accessor + " " : "", "string $enum)"],
+                ["public function __construct(", constructorProperties ? accessor + " " : "", "string $value)"],
                 () => {
                     if (!constructorProperties) {
-                        this.emitLine("$this->enum = $enum;");
+                        this.emitLine("$this->value = $value;");
                     }
                 }
             );
@@ -924,10 +948,7 @@ export class PhpRenderer extends ConvenienceRenderer {
             this.emitMethod({
                 name: "to",
                 body: () => {
-                    this.emitBlock(["if (in_array($this->enum, ", enumName, "::VALUES, true))"], () => {
-                        this.emitLine("return $this->enum;");
-                    });
-                    this.emitLine("throw new Exception('the give value is not an enum-value.');");
+                    this.emitLine("return $this->value;");
                 },
                 returnType: "string"
             });
@@ -936,14 +957,15 @@ export class PhpRenderer extends ConvenienceRenderer {
             this.emitMethod({
                 name: "from",
                 body: () => {
-                    this.emitBlock(["if (in_array($obj, ", enumName, "::VALUES, true))"], () => {
-                        this.emitLine("return new ", enumName, "($obj);");
-                    });
-                    this.emitLine("throw new Exception('Cannot deserialize ", enumName, "');");
+                    this.emitEnumAsserts(enumName);
+                    this.ensureBlankLine();
+
+                    this.emitLine("return new ", self, "($obj);");
                 },
-                args: ["$obj"],
+                args: mixedTypeAnnotation ? ["mixed $obj"] : ["$obj"],
                 docBlockArgs: ["mixed $obj"],
-                returnType: enumName,
+                returnType,
+                docBlockReturnType: self,
                 isStatic: true
             });
         });
