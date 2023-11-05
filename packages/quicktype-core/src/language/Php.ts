@@ -414,7 +414,7 @@ export class PhpRenderer extends ConvenienceRenderer {
             _mapType => {
                 throw Error("maps are not supported");
             },
-            _enumType => [...lhs, ...args, "->value"],
+            _enumType => [...lhs, ...args, this._options.nativeEnums ? "->value" : "->to()"],
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
