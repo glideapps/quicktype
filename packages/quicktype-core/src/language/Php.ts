@@ -49,6 +49,7 @@ export const phpOptions = {
     withGet: new BooleanOption("with-get", "Create Getter", false),
     withSet: new BooleanOption("with-set", "Create Setter", false),
     readonlyProperties: new BooleanOption("readonly-properties", "Use public readonly instead of protected", true),
+    readonlyClasses: new BooleanOption("readonly-classes", "Make classes readonly", true),
     nativeEnums: new BooleanOption("native-enums", "Use enums instead of enum classes", true),
     arrowFunctions: new BooleanOption("arrow-functions", "Use arrow functions whenever possible", true),
     callable: new BooleanOption("callable", "Use callable syntax whenever possible", true),
@@ -118,7 +119,7 @@ export class PhpTargetLanguage extends TargetLanguage {
         const { phpVersion } = options;
 
         if (phpVersion < 8.2) {
-            // no features yet
+            options.readonlyClasses = false;
         }
 
         if (phpVersion < 8.1) {
@@ -619,9 +620,15 @@ export class PhpRenderer extends ConvenienceRenderer {
         withType: boolean,
         suffix: Sourcelike
     ): void {
-        const { readonlyProperties } = this._options;
+        const { readonlyProperties, readonlyClasses } = this._options;
 
-        const accessor = withAccessor ? (readonlyProperties ? "public readonly" : "protected") : "";
+        const accessor = withAccessor
+            ? readonlyClasses
+                ? "public"
+                : readonlyProperties
+                ? "public readonly"
+                : "protected"
+            : "";
         const type =
             withType || accessor === "public readonly" ? this.sourcelikeToString(this.phpType(propertyType)) : "";
         const variable = "$" + this.sourcelikeToString(propertyName);
@@ -632,11 +639,10 @@ export class PhpRenderer extends ConvenienceRenderer {
     }
 
     protected emitClassDefinition(c: ClassType, className: Name): void {
+        const { constructorProperties, classPropertyTypeAnnotations, readonlyClasses } = this._options;
         this.emitFileHeader(className, []);
 
-        this.emitBlockWithBraceOnNewLine(["class ", className], () => {
-            const { constructorProperties, classPropertyTypeAnnotations } = this._options;
-
+        this.emitBlockWithBraceOnNewLine([readonlyClasses ? "readonly " : "", "class ", className], () => {
             if (!constructorProperties) {
                 this.forEachClassProperty(c, "none", (name, _jsonName, p) => {
                     this.emitDescriptionBlock([["@var ", this.phpDocType(p.type)]]);
@@ -915,9 +921,15 @@ export class PhpRenderer extends ConvenienceRenderer {
     }
 
     protected emitEnumProperty(withAccessor: boolean, withType: boolean, suffix: Sourcelike): void {
-        const { readonlyProperties } = this._options;
+        const { readonlyProperties, readonlyClasses } = this._options;
 
-        const accessor = withAccessor ? (readonlyProperties ? "public readonly" : "protected") : "";
+        const accessor = withAccessor
+            ? readonlyClasses
+                ? "public"
+                : readonlyProperties
+                ? "public readonly"
+                : "protected"
+            : "";
         const type = withType || accessor === "public readonly" ? "string" : "";
 
         const line = [accessor, type, "$value"].filter(Boolean).join(" ");
@@ -932,6 +944,7 @@ export class PhpRenderer extends ConvenienceRenderer {
             staticTypeAnnotation,
             mixedTypeAnnotation,
             constructorProperties,
+            readonlyClasses,
             classPropertyTypeAnnotations
         } = this._options;
         const self = selfNameType === "default" ? enumName : selfNameType;
@@ -948,7 +961,7 @@ export class PhpRenderer extends ConvenienceRenderer {
             return this.finishFile();
         }
 
-        this.emitBlockWithBraceOnNewLine(["class ", enumName], () => {
+        this.emitBlockWithBraceOnNewLine([readonlyClasses ? "readonly " : "", "class ", enumName], () => {
             this.forEachEnumCase(e, "none", (name, jsonName) => {
                 this.emitLine("public const ", name, " = '", jsonName, "';");
             });
