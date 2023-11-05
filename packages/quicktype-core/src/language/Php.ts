@@ -888,7 +888,66 @@ export class PhpRenderer extends ConvenienceRenderer {
             return this.finishFile();
         }
 
-        this.emitBlockWithBraceOnNewLine(["class ", enumName], () => {});
+        this.emitBlockWithBraceOnNewLine(["class ", enumName], () => {
+            const { constructorProperties, readonlyProperties } = this._options;
+            const accessor = readonlyProperties ? "public readonly" : "protected";
+
+            this.forEachEnumCase(e, "none", (name, jsonName) => {
+                this.emitLine("public const ", name, " = '", jsonName, "';");
+            });
+            this.ensureBlankLine();
+
+            this.emitLine("public const VALUES = [");
+            this.indent(() => {
+                this.forEachEnumCase(e, "none", name => {
+                    this.emitLine(enumName, "::", name, ",");
+                });
+            });
+            this.emitLine("];");
+            this.ensureBlankLine();
+
+            if (!constructorProperties) {
+                this.emitLine(accessor, " string $enum;");
+                this.ensureBlankLine();
+            }
+
+            this.emitDescriptionBlock(["@param string $enum"]);
+            this.emitBlockWithBraceOnNewLine(
+                ["public function __construct(", constructorProperties ? accessor + " " : "", "string $enum)"],
+                () => {
+                    if (!constructorProperties) {
+                        this.emitLine("$this->enum = $enum;");
+                    }
+                }
+            );
+
+            this.ensureBlankLine();
+            this.emitMethod({
+                name: "to",
+                body: () => {
+                    this.emitBlock(["if (in_array($this->enum, ", enumName, "::VALUES, true))"], () => {
+                        this.emitLine("return $this->enum;");
+                    });
+                    this.emitLine("throw new Exception('the give value is not an enum-value.');");
+                },
+                returnType: "string"
+            });
+
+            this.ensureBlankLine();
+            this.emitMethod({
+                name: "from",
+                body: () => {
+                    this.emitBlock(["if (in_array($obj, ", enumName, "::VALUES, true))"], () => {
+                        this.emitLine("return new ", enumName, "($obj);");
+                    });
+                    this.emitLine("throw new Exception('Cannot deserialize ", enumName, "');");
+                },
+                args: ["$obj"],
+                docBlockArgs: ["mixed $obj"],
+                returnType: enumName,
+                isStatic: true
+            });
+        });
     }
 
     protected emitSourceStructure(givenFilename: string): void {
