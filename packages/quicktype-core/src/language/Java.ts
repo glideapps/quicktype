@@ -195,7 +195,10 @@ export function javaNameStyle(
 }
 
 abstract class JavaDateTimeProvider {
-    constructor(protected readonly _renderer: JavaRenderer, protected readonly _className: string) {}
+    constructor(
+        protected readonly _renderer: JavaRenderer,
+        protected readonly _className: string
+    ) {}
     abstract keywords: string[];
 
     abstract dateTimeImports: string[];

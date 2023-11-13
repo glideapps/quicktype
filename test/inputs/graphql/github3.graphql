@@ -1,12 +1,12 @@
 query {
-  viewer {
-    login
-    repository(name: "metapixel") {
-      pullRequests(first:10) {
-        nodes {
-          state
+    viewer {
+        login
+        repository(name: "metapixel") {
+            pullRequests(first: 10) {
+                nodes {
+                    state
+                }
+            }
         }
-      }
     }
-  }
 }

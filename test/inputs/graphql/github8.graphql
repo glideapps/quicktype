@@ -1,22 +1,22 @@
 {
-  repository(owner: "quicktype", name: "quicktype") {
-    nameWithOwner,
-    n303: issueOrPullRequest(number: 303) {
-      ... IOPR
-    },
-    n307: issueOrPullRequest(number: 307) {
-      ... IOPR
+    repository(owner: "quicktype", name: "quicktype") {
+        nameWithOwner
+        n303: issueOrPullRequest(number: 303) {
+            ...IOPR
+        }
+        n307: issueOrPullRequest(number: 307) {
+            ...IOPR
+        }
     }
-  }
 }
 
 fragment IOPR on IssueOrPullRequest {
-  ... on Issue {
-    title
-    state
-  }
-  ... on PullRequest {
-    title
-    merged
-  }  
+    ... on Issue {
+        title
+        state
+    }
+    ... on PullRequest {
+        title
+        merged
+    }
 }

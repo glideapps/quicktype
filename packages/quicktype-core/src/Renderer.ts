@@ -128,7 +128,10 @@ export abstract class Renderer {
 
     private _emitContext: EmitContext;
 
-    constructor(protected readonly targetLanguage: TargetLanguage, renderContext: RenderContext) {
+    constructor(
+        protected readonly targetLanguage: TargetLanguage,
+        renderContext: RenderContext
+    ) {
         this.typeGraph = renderContext.typeGraph;
         this.leadingComments = renderContext.leadingComments;
 

@@ -13,7 +13,11 @@ import { DateTimeRecognizer, DefaultDateTimeRecognizer } from "./DateTime";
 export type MultiFileRenderResult = ReadonlyMap<string, SerializedRenderResult>;
 
 export abstract class TargetLanguage {
-    constructor(readonly displayName: string, readonly names: string[], readonly extension: string) {}
+    constructor(
+        readonly displayName: string,
+        readonly names: string[],
+        readonly extension: string
+    ) {}
 
     protected abstract getOptions(): Option<any>[];
 

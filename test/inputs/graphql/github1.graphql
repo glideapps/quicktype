@@ -1,6 +1,6 @@
 query {
-  viewer {
-    login
-    realName: name
-  }
+    viewer {
+        login
+        realName: name
+    }
 }

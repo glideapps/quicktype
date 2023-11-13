@@ -81,7 +81,7 @@ export function sourcelikeToSource(sl: Sourcelike): Source {
             kind: "sequence",
             sequence: arrayIntercalate(
                 newline(),
-                lines.map((l: string) => ({ kind: "text", text: l } as Source))
+                lines.map((l: string) => ({ kind: "text", text: l }) as Source)
             )
         };
     }

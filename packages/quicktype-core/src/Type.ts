@@ -108,7 +108,10 @@ function triviallyStructurallyCompatible(x: Type, y: Type): boolean {
 export class TypeIdentity {
     private readonly _hashCode: number;
 
-    constructor(private readonly _kind: TypeKind, private readonly _components: ReadonlyArray<any>) {
+    constructor(
+        private readonly _kind: TypeKind,
+        private readonly _components: ReadonlyArray<any>
+    ) {
         let h = hashCodeInit;
         h = addHashCode(h, hashCodeOf(this._kind));
         for (const c of _components) {
@@ -139,7 +142,10 @@ export type MaybeTypeIdentity = TypeIdentity | undefined;
 export abstract class Type {
     abstract readonly kind: TypeKind;
 
-    constructor(readonly typeRef: TypeRef, protected readonly graph: TypeGraph) {}
+    constructor(
+        readonly typeRef: TypeRef,
+        protected readonly graph: TypeGraph
+    ) {}
 
     get index(): number {
         return typeRefIndex(this.typeRef);
@@ -305,7 +311,11 @@ export function primitiveTypeIdentity(kind: PrimitiveTypeKind, attributes: TypeA
 }
 
 export class PrimitiveType extends Type {
-    constructor(typeRef: TypeRef, graph: TypeGraph, public readonly kind: PrimitiveTypeKind) {
+    constructor(
+        typeRef: TypeRef,
+        graph: TypeGraph,
+        public readonly kind: PrimitiveTypeKind
+    ) {
         super(typeRef, graph);
     }
 
@@ -346,7 +356,11 @@ export function arrayTypeIdentity(attributes: TypeAttributes, itemsRef: TypeRef)
 export class ArrayType extends Type {
     public readonly kind = "array";
 
-    constructor(typeRef: TypeRef, graph: TypeGraph, private _itemsRef?: TypeRef) {
+    constructor(
+        typeRef: TypeRef,
+        graph: TypeGraph,
+        private _itemsRef?: TypeRef
+    ) {
         super(typeRef, graph);
     }
 
@@ -405,7 +419,10 @@ export class ArrayType extends Type {
 }
 
 export class GenericClassProperty<T> {
-    constructor(readonly typeData: T, readonly isOptional: boolean) {}
+    constructor(
+        readonly typeData: T,
+        readonly isOptional: boolean
+    ) {}
 
     equals(other: any): boolean {
         if (!(other instanceof GenericClassProperty)) {
@@ -420,7 +437,11 @@ export class GenericClassProperty<T> {
 }
 
 export class ClassProperty extends GenericClassProperty<TypeRef> {
-    constructor(typeRef: TypeRef, readonly graph: TypeGraph, isOptional: boolean) {
+    constructor(
+        typeRef: TypeRef,
+        readonly graph: TypeGraph,
+        isOptional: boolean
+    ) {
         super(typeRef, isOptional);
     }
 
@@ -661,7 +682,11 @@ export function enumTypeIdentity(attributes: TypeAttributes, cases: ReadonlySet<
 export class EnumType extends Type {
     public readonly kind = "enum";
 
-    constructor(typeRef: TypeRef, graph: TypeGraph, readonly cases: ReadonlySet<string>) {
+    constructor(
+        typeRef: TypeRef,
+        graph: TypeGraph,
+        readonly cases: ReadonlySet<string>
+    ) {
         super(typeRef, graph);
     }
 

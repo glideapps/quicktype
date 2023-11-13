@@ -69,7 +69,10 @@ export function typeAndAttributesForTypeRef(
 export class TypeAttributeStore {
     private readonly _topLevelValues: Map<string, TypeAttributes> = new Map();
 
-    constructor(private readonly _typeGraph: TypeGraph, private _values: (TypeAttributes | undefined)[]) {}
+    constructor(
+        private readonly _typeGraph: TypeGraph,
+        private _values: (TypeAttributes | undefined)[]
+    ) {}
 
     private getTypeIndex(t: Type): number {
         const tref = t.typeRef;

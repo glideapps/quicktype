@@ -77,7 +77,11 @@ export type NameStyle = (rawName: string) => string;
 export class Namer {
     private readonly _prefixes: ReadonlySet<string>;
 
-    constructor(readonly name: string, readonly nameStyle: NameStyle, prefixes: string[]) {
+    constructor(
+        readonly name: string,
+        readonly nameStyle: NameStyle,
+        prefixes: string[]
+    ) {
         this._prefixes = new Set(prefixes);
     }
 
@@ -177,7 +181,10 @@ export abstract class Name {
     private readonly _associates = new Set<AssociatedName>();
 
     // If a Named is fixed, the namingFunction is undefined.
-    constructor(private readonly _namingFunction: Namer | undefined, readonly order: number) {}
+    constructor(
+        private readonly _namingFunction: Namer | undefined,
+        readonly order: number
+    ) {}
 
     addAssociate(associate: AssociatedName): void {
         this._associates.add(associate);
@@ -255,7 +262,11 @@ export class SimpleName extends Name {
 }
 
 export class AssociatedName extends Name {
-    constructor(private readonly _sponsor: Name, order: number, readonly getName: (sponsorName: string) => string) {
+    constructor(
+        private readonly _sponsor: Name,
+        order: number,
+        readonly getName: (sponsorName: string) => string
+    ) {
         super(undefined, order);
     }
 
