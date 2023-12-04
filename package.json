@@ -47,7 +47,7 @@
         "@types/lodash": "^4.14.197",
         "@types/semver": "^7.5.0",
         "@types/shelljs": "^0.8.12",
-        "@types/stream-json": "^1.7.3",
+        "@types/stream-json": "^1.7.7",
         "@types/urijs": "^1.19.19",
         "ajv": "^5.5.2",
         "deep-equal": "^2.2.2",
