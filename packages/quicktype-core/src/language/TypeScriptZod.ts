@@ -279,7 +279,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         //items to process on the next pass
         let deferredIndices: number[] = [];
 
-        //defensive: make sure we don't loop foreever, even complex sets shouldn't require many passes
+        //defensive: make sure we don't loop forever, even complex sets shouldn't require many passes
         const MAX_PASSES = 999;
         let passNum = 0;
         do {
@@ -324,6 +324,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
             if (passNum > MAX_PASSES) {
                 //giving up
                 order.push(...deferredIndices);
+                console.warn("Exceeded maximum number of passes when determining output order, output may contain forward references");
             }
         } while (indices.length > 0 && passNum <= MAX_PASSES);
 
