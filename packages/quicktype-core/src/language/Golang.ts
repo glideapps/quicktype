@@ -25,7 +25,8 @@ export const goOptions = {
     justTypesAndPackage: new BooleanOption("just-types-and-package", "Plain types with package only", false),
     packageName: new StringOption("package", "Generated package name", "NAME", "main"),
     multiFileOutput: new BooleanOption("multi-file-output", "Renders each top-level object in its own Go file", false),
-    fieldTags: new StringOption("field-tags", "list of tags which should be generated for fields", "TAGS", "json")
+    fieldTags: new StringOption("field-tags", "list of tags which should be generated for fields", "TAGS", "json"),
+    omitEmpty: new BooleanOption("omit-empty", "If set, all non-required objects will be tagged with ,omitempty", false)
 };
 
 export class GoTargetLanguage extends TargetLanguage {
@@ -88,6 +89,7 @@ function isValueType(t: Type): boolean {
 
 function canOmitEmpty(cp: ClassProperty): boolean {
     if (!cp.isOptional) return false;
+    if (goOptions.omitEmpty) return true;
     const t = cp.type;
     return ["union", "null", "any"].indexOf(t.kind) < 0;
 }
