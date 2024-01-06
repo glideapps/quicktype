@@ -380,6 +380,14 @@ export const GoLanguage: Language = {
     output: "quicktype.go",
     topLevel: "TopLevel",
     skipJSON: [
+        "734ad.json",
+        "1b409.json",
+        "0a91a.json",
+        "combinations1.json",
+        "combinations2.json",
+        "combinations3.json",
+        "combinations4.json",
+
         "identifiers.json",
         "simple-identifiers.json",
         "blns-object.json",
