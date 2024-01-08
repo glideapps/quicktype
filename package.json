@@ -41,7 +41,7 @@
     },
     "devDependencies": {
         "@tsconfig/node18": "^1.0.1",
-        "@types/command-line-args": "^5.2.0",
+        "@types/command-line-args": "^5.2.3",
         "@types/command-line-usage": "^5.0.2",
         "@types/graphql": "^0.11.7",
         "@types/lodash": "^4.14.197",
