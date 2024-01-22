@@ -49,7 +49,8 @@ export abstract class TypeScriptFlowBaseTargetLanguage extends JavaScriptTargetL
             tsFlowOptions.rawType,
             tsFlowOptions.preferUnions,
             tsFlowOptions.preferTypes,
-            tsFlowOptions.preferConstValues
+            tsFlowOptions.preferConstValues,
+            tsFlowOptions.preferUnknown,
         ];
     }
 
@@ -180,9 +181,9 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
         }
     }
 
-    private emitClass(c: ClassType, className: Name) {
-        this.emitDescription(this.descriptionForType(c));
-        this.emitClassBlock(c, className);
+    private emitClass(classType: ClassType, className: Name) {
+        this.emitDescription(this.descriptionForType(classType));
+        this.emitClassBlock(classType, className);
     }
 
     emitUnion(u: UnionType, unionName: Name) {
@@ -196,7 +197,16 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
         this.emitLine("export type ", unionName, " = ", children.source, ";");
     }
 
+    protected emitTopLevelAlias(t: Type, name: Name): void {
+        this.emitLine("export type ", name, " = ", this.sourceFor(t).source, ";");
+    }
+
     protected emitTypes(): void {
+        this.forEachTopLevel(
+            "leading",
+            (t, name) => this.emitTopLevelAlias(t, name),
+            t => this.namedTypeToNameForTopLevel(t) === undefined
+        );
         this.forEachNamedType(
             "leading-and-interposing",
             (c: ClassType, n: Name) => this.emitClass(c, n),
