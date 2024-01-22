@@ -27,17 +27,14 @@ export const tsFlowOptions = Object.assign({}, javaScriptOptions, {
         "prefer-const-values",
         "Use string instead of enum for string enums with single value",
         false
-    )
+    ),
+    preferUnknown: new BooleanOption(
+        "prefer-unknown",
+        "Use unknown instead of any",
+        false
+    ),
 });
-
-const tsFlowTypeAnnotations = {
-    any: ": any",
-    anyArray: ": any[]",
-    anyMap: ": { [k: string]: any }",
-    string: ": string",
-    stringArray: ": string[]",
-    boolean: ": boolean"
-};
+;
 
 export abstract class TypeScriptFlowBaseTargetLanguage extends JavaScriptTargetLanguage {
     protected getOptions(): Option<any>[] {
@@ -105,6 +102,10 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
         super(targetLanguage, renderContext, _tsFlowOptions);
     }
 
+    protected get anyType(): string {
+        return this._tsFlowOptions.preferUnknown ? "unknown" : "any";
+    }
+
     protected namerForObjectProperty(): Namer {
         if (this._tsFlowOptions.nicePropertyNames) {
             return funPrefixNamer("properties", s => this.nameStyle(s, false));
@@ -123,7 +124,7 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
         }
         return matchType<MultiWord>(
             t,
-            _anyType => singleWord("any"),
+            _anyType => singleWord(this.anyType),
             _nullType => singleWord("null"),
             _boolType => singleWord("boolean"),
             _integerType => singleWord("number"),
@@ -272,7 +273,16 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
     }
 
     protected get typeAnnotations(): JavaScriptTypeAnnotations {
-        return Object.assign({ never: ": never" }, tsFlowTypeAnnotations);
+        const typeAnnotations = {
+            any: `: ${this.anyType}`,
+            anyArray: `: ${this.anyType}[]`,
+            anyMap: `: { [k: string]: ${this.anyType} }`,
+            string: ": string",
+            stringArray: ": string[]",
+            boolean: ": boolean"
+        };
+
+        return Object.assign({ never: ": never" }, typeAnnotations);
     }
 
     protected emitModuleExports(): void {
@@ -345,7 +355,16 @@ export class FlowRenderer extends TypeScriptFlowBaseRenderer {
     }
 
     protected get typeAnnotations(): JavaScriptTypeAnnotations {
-        return Object.assign({ never: "" }, tsFlowTypeAnnotations);
+        const typeAnnotations = {
+            any: `: ${this.anyType}`,
+            anyArray: `: ${this.anyType}[]`,
+            anyMap: `: { [k: string]: ${this.anyType} }`,
+            string: ": string",
+            stringArray: ": string[]",
+            boolean: ": boolean"
+        };
+
+        return Object.assign({ never: ": never" }, typeAnnotations);
     }
 
     protected emitEnum(e: EnumType, enumName: Name): void {
