@@ -111,12 +111,12 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         this.emitLine(this.importStatement("* as z", '"zod"'));
     }
 
-    typeMapTypeForProperty(p: ClassProperty): Sourcelike {
+    protected typeMapTypeForProperty(p: ClassProperty): Sourcelike {
         const typeMap = this.typeMapTypeFor(p.type);
         return p.isOptional ? [typeMap, ".optional()"] : typeMap;
     }
 
-    typeMapTypeFor(t: Type, required: boolean = true): Sourcelike {
+    protected typeMapTypeFor(t: Type, required: boolean = true): Sourcelike {
         if (["class", "object", "enum"].indexOf(t.kind) >= 0) {
             return [this.nameForNamedType(t), "Schema"];
         }
