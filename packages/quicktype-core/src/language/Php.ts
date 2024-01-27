@@ -246,7 +246,7 @@ export class PhpRenderer extends ConvenienceRenderer {
     }
 
     public emitDescriptionBlock(lines: Sourcelike[]): void {
-        this.emitCommentLines(lines, { lineStart: " * ", beforeLine: "/**", afterLine: " */" });
+        this.emitCommentLines(lines, { lineStart: " * ", beforeComment: "/**", afterComment: " */" });
     }
 
     public emitBlock(line: Sourcelike, f: () => void): void {

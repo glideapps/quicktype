@@ -231,7 +231,7 @@ export class ElmRenderer extends ConvenienceRenderer {
         if (lines.length === 1) {
             this.emitLine("{-| ", lines[0], " -}");
         } else {
-            this.emitCommentLines(lines, { firstLineStart: "{-| ", lineStart: "", afterLine: "-}" });
+            this.emitCommentLines(lines, { firstLineStart: "{-| ", lineStart: "", afterComment: "-}" });
         }
     }
 

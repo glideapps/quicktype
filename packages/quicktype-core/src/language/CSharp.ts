@@ -474,7 +474,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
         if (this._csOptions.dense) {
             this.emitLine(start, lines.join("; "), "</summary>");
         } else {
-            this.emitCommentLines(lines, { lineStart: "/// ", beforeLine: start, afterLine: "/// </summary>" });
+            this.emitCommentLines(lines, { lineStart: "/// ", beforeComment: start, afterComment: "/// </summary>" });
         }
     }
 

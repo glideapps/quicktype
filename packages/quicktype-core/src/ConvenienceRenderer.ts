@@ -825,13 +825,13 @@ export abstract class ConvenienceRenderer extends Renderer {
         {
             lineStart = this.commentLineStart,
             firstLineStart = lineStart,
-            beforeLine,
-            afterLine,
-            lineEnd
+            lineEnd,
+            beforeComment,
+            afterComment
         }: CommentOptions = {}
     ): void {
-        if (beforeLine !== undefined) {
-            this.emitLine(beforeLine);
+        if (beforeComment !== undefined) {
+            this.emitLine(beforeComment);
         }
         let first = true;
         for (const line of lines) {
@@ -842,8 +842,8 @@ export abstract class ConvenienceRenderer extends Renderer {
             this.emitLine(start, line);
             first = false;
         }
-        if (afterLine !== undefined) {
-            this.emitLine(afterLine);
+        if (afterComment !== undefined) {
+            this.emitLine(afterComment);
         }
     }
 

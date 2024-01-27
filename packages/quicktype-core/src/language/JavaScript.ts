@@ -164,7 +164,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
     }
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
-        this.emitCommentLines(lines, { lineStart: " * ", beforeLine: "/**", afterLine: " */" });
+        this.emitCommentLines(lines, { lineStart: " * ", beforeComment: "/**", afterComment: " */" });
     }
 
     typeMapTypeFor(t: Type): Sourcelike {

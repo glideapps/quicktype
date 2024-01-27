@@ -375,7 +375,7 @@ export class DartRenderer extends ConvenienceRenderer {
     }
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
-        this.emitCommentLines(lines, { lineStart: "///", beforeLine: "" });
+        this.emitCommentLines(lines, { lineStart: "///", beforeComment: "" });
     }
 
     protected emitBlock(line: Sourcelike, f: () => void): void {

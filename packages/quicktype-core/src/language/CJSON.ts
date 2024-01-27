@@ -3948,7 +3948,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
      * @param lines: description block lines
      */
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
-        this.emitCommentLines(lines, {lineStart:" * ", beforeLine: "/**", afterLine: " */"});
+        this.emitCommentLines(lines, { lineStart: " * ", beforeComment: "/**", afterComment: " */" });
     }
 
     /**

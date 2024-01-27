@@ -1,8 +1,8 @@
 export type CommentOptions = {
     lineStart?: string;
     lineEnd?: string;
-    beforeLine?: string;
-    afterLine?: string;
+    beforeComment?: string;
+    afterComment?: string;
     firstLineStart?: string;
 };
 

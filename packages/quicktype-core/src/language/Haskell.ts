@@ -190,7 +190,7 @@ export class HaskellRenderer extends ConvenienceRenderer {
             this.emitCommentLines(lines, {
                 firstLineStart: "{-| ",
                 lineStart: "",
-                afterLine: "-}"
+                afterComment: "-}"
             });
         }
     }
