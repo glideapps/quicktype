@@ -187,7 +187,11 @@ export class HaskellRenderer extends ConvenienceRenderer {
         if (lines.length === 1) {
             this.emitLine("{-| ", lines[0], " -}");
         } else {
-            this.emitCommentLines(lines, "", undefined, "-}", "{-| ");
+            this.emitCommentLines(lines, {
+                firstLineStart: "{-| ",
+                lineStart: "",
+                afterLine: "-}"
+            });
         }
     }
 

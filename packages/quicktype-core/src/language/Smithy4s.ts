@@ -193,7 +193,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
     }
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
-        this.emitCommentLines(lines, " * ", "/**", " */");
+        this.emitCommentLines(lines, { lineStart: " * ", beforeLine: "/**", afterLine: " */" });
     }
 
     protected emitBlock(

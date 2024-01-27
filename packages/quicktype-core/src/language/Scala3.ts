@@ -233,7 +233,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
     }
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
-        this.emitCommentLines(lines, " * ", "/**", " */");
+        this.emitCommentLines(lines, { lineStart: " * ", beforeLine: "/**", afterLine: " */" });
     }
 
     protected emitBlock(

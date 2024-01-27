@@ -374,7 +374,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
     }
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
-        this.emitCommentLines(lines, "/// ");
+        this.emitCommentLines(lines, { lineStart: "/// " });
     }
 
     private emitBlock(line: Sourcelike, f: () => void): void {

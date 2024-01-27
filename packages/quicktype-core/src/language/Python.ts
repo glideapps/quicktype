@@ -284,7 +284,11 @@ export class PythonRenderer extends ConvenienceRenderer {
             }, lines[0]);
             this.emitLine('"""', docstring, '"""');
         } else {
-            this.emitCommentLines(lines, "", undefined, '"""', '"""');
+            this.emitCommentLines(lines, {
+                firstLineStart: '"""',
+                lineStart: "",
+                afterLine: '"""'
+            });
         }
     }
 

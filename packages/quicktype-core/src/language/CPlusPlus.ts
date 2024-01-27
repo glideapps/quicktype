@@ -860,7 +860,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
-        this.emitCommentLines(lines, " * ", "/**", " */");
+        this.emitCommentLines(lines, {lineStart: " * ", beforeLine: "/**", afterLine: " */"});
     }
 
     protected emitBlock(line: Sourcelike, withSemicolon: boolean, f: () => void, withIndent = true): void {

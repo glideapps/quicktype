@@ -236,7 +236,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
     }
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
-        this.emitCommentLines(lines, " * ", "/**", " */");
+        this.emitCommentLines(lines, { lineStart: " * ", beforeLine: "/**", afterLine: " */" });
     }
 
     protected emitBlock(line: Sourcelike, f: () => void, delimiter: "curly" | "paren" | "lambda" = "curly"): void {

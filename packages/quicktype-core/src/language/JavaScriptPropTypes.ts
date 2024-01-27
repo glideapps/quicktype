@@ -180,7 +180,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
                 "  input: MyShape",
                 "};"
             ],
-            "// "
+            { lineStart: "// " }
         );
     }
 

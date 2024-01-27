@@ -290,7 +290,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
     }
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
-        this.emitCommentLines(lines, "/// ");
+        this.emitCommentLines(lines, { lineStart: "/// " });
     }
 
     protected emitBlock(line: Sourcelike, f: () => void): void {
