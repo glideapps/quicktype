@@ -6,6 +6,7 @@ import { Source, Sourcelike, NewlineSource, annotated, sourcelikeToSource, newli
 import { AnnotationData, IssueAnnotationData } from "./Annotation";
 import { assert, panic } from "./support/Support";
 import { TargetLanguage } from "./TargetLanguage";
+import { type LeadingComments } from "./support/Comments";
 
 export type RenderResult = {
     sources: ReadonlyMap<string, Source>;
@@ -40,7 +41,7 @@ function lineIndentation(line: string): { indent: number; text: string | null } 
 
 export type RenderContext = {
     typeGraph: TypeGraph;
-    leadingComments: string[] | undefined;
+    leadingComments?: LeadingComments;
 };
 
 export type ForEachPosition = "first" | "last" | "middle" | "only";
@@ -120,7 +121,7 @@ class EmitContext {
 
 export abstract class Renderer {
     protected readonly typeGraph: TypeGraph;
-    protected readonly leadingComments: string[] | undefined;
+    protected readonly leadingComments: LeadingComments | undefined;
 
     private _names: ReadonlyMap<Name, string> | undefined;
     private _finishedFiles: Map<string, Source>;
@@ -128,7 +129,10 @@ export abstract class Renderer {
 
     private _emitContext: EmitContext;
 
-    constructor(protected readonly targetLanguage: TargetLanguage, renderContext: RenderContext) {
+    constructor(
+        protected readonly targetLanguage: TargetLanguage,
+        renderContext: RenderContext
+    ) {
         this.typeGraph = renderContext.typeGraph;
         this.leadingComments = renderContext.leadingComments;
 

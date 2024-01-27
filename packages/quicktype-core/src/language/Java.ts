@@ -195,7 +195,10 @@ export function javaNameStyle(
 }
 
 abstract class JavaDateTimeProvider {
-    constructor(protected readonly _renderer: JavaRenderer, protected readonly _className: string) {}
+    constructor(
+        protected readonly _renderer: JavaRenderer,
+        protected readonly _className: string
+    ) {}
     abstract keywords: string[];
 
     abstract dateTimeImports: string[];
@@ -574,7 +577,9 @@ export class JavaRenderer extends ConvenienceRenderer {
         // FIXME: Why is this necessary?
         this.ensureBlankLine();
         if (!this._haveEmittedLeadingComments && this.leadingComments !== undefined) {
-            this.emitCommentLines(this.leadingComments);
+            if (Array.isArray(this.leadingComments)) {
+                this.emitCommentLines(this.leadingComments);
+            }
             this.ensureBlankLine();
             this._haveEmittedLeadingComments = true;
         }

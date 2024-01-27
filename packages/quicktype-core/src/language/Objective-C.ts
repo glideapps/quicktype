@@ -912,7 +912,9 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             this.startFile(filename, "h");
 
             if (this.leadingComments !== undefined) {
-                this.emitCommentLines(this.leadingComments);
+                if (Array.isArray(this.leadingComments)) {
+                    this.emitCommentLines(this.leadingComments);
+                }
             } else if (!this._options.justTypes) {
                 this.emitCommentLines(["To parse this JSON:", ""]);
                 this.emitLine("//   NSError *error;");

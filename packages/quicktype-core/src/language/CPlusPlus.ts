@@ -383,7 +383,10 @@ function addQualifier(qualifier: Sourcelike, qualified: Sourcelike[]): Sourcelik
 }
 
 class WrappingCode {
-    constructor(private readonly start: Sourcelike[], private readonly end: Sourcelike[]) {}
+    constructor(
+        private readonly start: Sourcelike[],
+        private readonly end: Sourcelike[]
+    ) {}
 
     wrap(qualifier: Sourcelike, inner: Sourcelike): Sourcelike {
         return [addQualifier(qualifier, this.start), inner, this.end];
@@ -780,7 +783,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
 
         if (this.leadingComments !== undefined) {
-            this.emitCommentLines(this.leadingComments);
+            if (Array.isArray(this.leadingComments)) {
+                this.emitCommentLines(this.leadingComments);
+            }
         } else if (!this._options.justTypes) {
             this.emitCommentLines([" To parse this JSON data, first install", ""]);
             if (this._options.boost) {

@@ -230,7 +230,9 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
 
     protected emitSourceStructure(): void {
         if (this.leadingComments !== undefined) {
-            this.emitCommentLines(this.leadingComments);
+            if (Array.isArray(this.leadingComments)) {
+                this.emitCommentLines(this.leadingComments);
+            }
         }
 
         this.emitImports();

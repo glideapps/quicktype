@@ -485,7 +485,9 @@ export class SwiftRenderer extends ConvenienceRenderer {
 
     private renderHeader(type: Type, name: Name): void {
         if (this.leadingComments !== undefined) {
-            this.emitCommentLines(this.leadingComments);
+            if (Array.isArray(this.leadingComments)) {
+                this.emitCommentLines(this.leadingComments);
+            }
         } else if (!this._options.justTypes) {
             if (this._options.multiFileOutput) {
                 this.emitLineOnce(
@@ -536,7 +538,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
             this.emitLineOnce("import Alamofire");
         }
         if (this._options.optionalEnums) {
-            this.emitLineOnce("import OptionallyDecodable // https://github.com/idrougge/OptionallyDecodable");    
+            this.emitLineOnce("import OptionallyDecodable // https://github.com/idrougge/OptionallyDecodable");
         }
         this.ensureBlankLine();
     }
@@ -574,7 +576,10 @@ export class SwiftRenderer extends ConvenienceRenderer {
         return protocols;
     }
 
-    private getProtocolString(kind: "struct" | "class" | "enum", baseClass: string | undefined = undefined): Sourcelike {
+    private getProtocolString(
+        kind: "struct" | "class" | "enum",
+        baseClass: string | undefined = undefined
+    ): Sourcelike {
         let protocols = this.getProtocolsArray(kind);
         if (baseClass) {
             protocols.unshift(baseClass);
@@ -1416,7 +1421,6 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         if (!this._options.justTypes) {
             this.emitSupportFunctions4();
         }
-
     }
 
     private emitAlamofireExtension() {

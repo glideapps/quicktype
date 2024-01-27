@@ -9,11 +9,16 @@ import { defined } from "./support/Support";
 import { ConvenienceRenderer } from "./ConvenienceRenderer";
 import { Type } from "./Type";
 import { DateTimeRecognizer, DefaultDateTimeRecognizer } from "./DateTime";
+import { type LeadingComments } from "./support/Comments";
 
 export type MultiFileRenderResult = ReadonlyMap<string, SerializedRenderResult>;
 
 export abstract class TargetLanguage {
-    constructor(readonly displayName: string, readonly names: string[], readonly extension: string) {}
+    constructor(
+        readonly displayName: string,
+        readonly names: string[],
+        readonly extension: string
+    ) {}
 
     protected abstract getOptions(): Option<any>[];
 
@@ -41,7 +46,7 @@ export abstract class TargetLanguage {
         typeGraph: TypeGraph,
         givenOutputFilename: string,
         alphabetizeProperties: boolean,
-        leadingComments: string[] | undefined,
+        leadingComments: LeadingComments | undefined,
         rendererOptions: { [name: string]: any },
         indentation?: string
     ): MultiFileRenderResult {

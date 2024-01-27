@@ -574,7 +574,9 @@ export class ElmRenderer extends ConvenienceRenderer {
         });
 
         if (this.leadingComments !== undefined) {
-            this.emitCommentLines(this.leadingComments);
+            if (Array.isArray(this.leadingComments)) {
+                this.emitCommentLines(this.leadingComments);
+            }
         } else if (!this._options.justTypes) {
             this.emitCommentLines([
                 "To decode the JSON data, add this file to your project, run",
