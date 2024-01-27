@@ -1,3 +1,5 @@
+import { Sourcelike } from "../Source";
+
 export type CommentOptions = {
     lineStart?: string;
     lineEnd?: string;
@@ -6,10 +8,10 @@ export type CommentOptions = {
     firstLineStart?: string;
 };
 
-type DescriptionBlockCommentConfig = { descriptionBlock: string[] };
-type InlineCommentConfig = { lines: string[] };
+type DescriptionBlockCommentConfig = { descriptionBlock: Sourcelike[] };
+type InlineCommentConfig = { lines: Sourcelike[] };
 type CustomCommentConfig = CommentOptions & {
-    customLines: string[];
+    customLines: Sourcelike[];
 };
 
 export type CommentConfig = DescriptionBlockCommentConfig | InlineCommentConfig | CustomCommentConfig;
