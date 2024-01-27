@@ -282,7 +282,7 @@ export class PythonRenderer extends ConvenienceRenderer {
 
                 return content;
             }, lines[0]);
-            this.emitLine('"""', docstring, '"""');
+            this.emitComments([{ customLines: [docstring], lineStart: '"""', lineEnd: '"""' }]);
         } else {
             this.emitCommentLines(lines, {
                 firstLineStart: '"""',

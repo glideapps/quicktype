@@ -185,7 +185,7 @@ export class HaskellRenderer extends ConvenienceRenderer {
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
         if (lines.length === 1) {
-            this.emitLine("{-| ", lines[0], " -}");
+            this.emitComments([{ customLines: lines, lineStart: "{-| ", lineEnd: " -}" }]);
         } else {
             this.emitCommentLines(lines, {
                 firstLineStart: "{-| ",
