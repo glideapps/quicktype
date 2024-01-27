@@ -509,9 +509,7 @@ export class PythonRenderer extends ConvenienceRenderer {
         const supportLines = this.gatherSource(() => this.emitSupportCode());
 
         if (this.leadingComments !== undefined) {
-            if (Array.isArray(this.leadingComments)) {
-                this.emitCommentLines(this.leadingComments);
-            }
+            this.emitComments(this.leadingComments);
         }
         this.ensureBlankLine();
         this.emitImports();

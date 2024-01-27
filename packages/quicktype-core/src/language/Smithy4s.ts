@@ -268,9 +268,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
 
     protected emitHeader(): void {
         if (this.leadingComments !== undefined) {
-            if (Array.isArray(this.leadingComments)) {
-                this.emitCommentLines(this.leadingComments);
-            }
+            this.emitComments(this.leadingComments);
         } else {
             this.emitUsageHeader();
         }

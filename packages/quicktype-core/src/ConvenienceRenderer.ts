@@ -24,6 +24,7 @@ import { descriptionTypeAttributeKind, propertyDescriptionsTypeAttributeKind } f
 import { enumCaseNames, objectPropertyNames, unionMemberName, getAccessorName } from "./attributes/AccessorNames";
 import { transformationForType, followTargetType, Transformation } from "./Transformers";
 import { TargetLanguage } from "./TargetLanguage";
+import { type Comment, isStringComment } from "./support/Comments";
 
 const wordWrap: (s: string) => string = require("wordwrap")(90);
 
@@ -801,6 +802,28 @@ export abstract class ConvenienceRenderer extends Renderer {
 
     protected get commentLineStart(): string {
         return "// ";
+    }
+
+    protected emitComments(comments: Comment[]): void {
+        comments.forEach(comment => {
+            if (isStringComment(comment)) {
+                this.emitCommentLines([comment]);
+            } else if ("lines" in comment) {
+                this.emitCommentLines(comment.lines);
+            } else if ("descriptionBlock" in comment) {
+                this.emitDescriptionBlock(comment.descriptionBlock);
+            } else {
+                this.emitCommentLines(
+                    comment.customLines,
+                    comment.lineStart,
+                    comment.beforeLine,
+                    comment.afterLine,
+                    comment.firstLineStart
+                );
+            }
+
+            this.ensureBlankLine();
+        });
     }
 
     protected emitCommentLines(

@@ -485,9 +485,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
 
     private renderHeader(type: Type, name: Name): void {
         if (this.leadingComments !== undefined) {
-            if (Array.isArray(this.leadingComments)) {
-                this.emitCommentLines(this.leadingComments);
-            }
+            this.emitComments(this.leadingComments);
         } else if (!this._options.justTypes) {
             if (this._options.multiFileOutput) {
                 this.emitLineOnce(

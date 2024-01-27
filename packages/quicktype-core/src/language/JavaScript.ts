@@ -554,9 +554,7 @@ function r(name${stringAnnotation}) {
 
     protected emitSourceStructure() {
         if (this.leadingComments !== undefined) {
-            if (Array.isArray(this.leadingComments)) {
-                this.emitCommentLines(this.leadingComments);
-            }
+            this.emitComments(this.leadingComments);
         } else {
             this.emitUsageComments();
         }

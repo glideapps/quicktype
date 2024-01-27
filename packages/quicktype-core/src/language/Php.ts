@@ -229,9 +229,7 @@ export class PhpRenderer extends ConvenienceRenderer {
     protected startFile(_basename: Sourcelike): void {
         this.ensureBlankLine();
         if (!this._haveEmittedLeadingComments && this.leadingComments !== undefined) {
-            if (Array.isArray(this.leadingComments)) {
-                this.emitCommentLines(this.leadingComments);
-            }
+            this.emitComments(this.leadingComments);
             this.ensureBlankLine();
             this._haveEmittedLeadingComments = true;
         }

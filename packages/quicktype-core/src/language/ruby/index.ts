@@ -620,9 +620,7 @@ export class RubyRenderer extends ConvenienceRenderer {
 
     protected emitSourceStructure() {
         if (this.leadingComments !== undefined) {
-            if (Array.isArray(this.leadingComments)) {
-                this.emitCommentLines(this.leadingComments);
-            }
+            this.emitComments(this.leadingComments);
         } else if (!this._options.justTypes) {
             this.emitLine("# This code may look unusually verbose for Ruby (and it is), but");
             this.emitLine("# it performs some subtle and complex validation of JSON data.");

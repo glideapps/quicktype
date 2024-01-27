@@ -305,9 +305,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
 
     protected emitHeader(): void {
         if (this.leadingComments !== undefined) {
-            if (Array.isArray(this.leadingComments)) {
-                this.emitCommentLines(this.leadingComments);
-            }
+            this.emitComments(this.leadingComments);
         } else {
             this.emitUsageHeader();
         }
@@ -490,9 +488,7 @@ export class UpickleRenderer extends Scala3Renderer {
 export class Smithy4sRenderer extends Scala3Renderer {
     protected emitHeader(): void {
         if (this.leadingComments !== undefined) {
-            if (Array.isArray(this.leadingComments)) {
-                this.emitCommentLines(this.leadingComments);
-            }
+            this.emitComments(this.leadingComments);
         } else {
             this.emitUsageHeader();
         }

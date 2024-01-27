@@ -327,9 +327,7 @@ export class DartRenderer extends ConvenienceRenderer {
 
     protected emitFileHeader(): void {
         if (this.leadingComments !== undefined) {
-            if (Array.isArray(this.leadingComments)) {
-                this.emitCommentLines(this.leadingComments);
-            }
+            this.emitComments(this.leadingComments);
         }
 
         if (this._options.justTypes) return;

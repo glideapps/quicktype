@@ -577,9 +577,7 @@ export class JavaRenderer extends ConvenienceRenderer {
         // FIXME: Why is this necessary?
         this.ensureBlankLine();
         if (!this._haveEmittedLeadingComments && this.leadingComments !== undefined) {
-            if (Array.isArray(this.leadingComments)) {
-                this.emitCommentLines(this.leadingComments);
-            }
+            this.emitComments(this.leadingComments);
             this.ensureBlankLine();
             this._haveEmittedLeadingComments = true;
         }

@@ -481,9 +481,7 @@ export class RustRenderer extends ConvenienceRenderer {
 
     protected emitLeadingComments(): void {
         if (this.leadingComments !== undefined) {
-            if (Array.isArray(this.leadingComments)) {
-                this.emitCommentLines(this.leadingComments);
-            }
+            this.emitComments(this.leadingComments);
             return;
         }
 

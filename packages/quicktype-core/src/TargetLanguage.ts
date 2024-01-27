@@ -9,7 +9,7 @@ import { defined } from "./support/Support";
 import { ConvenienceRenderer } from "./ConvenienceRenderer";
 import { Type } from "./Type";
 import { DateTimeRecognizer, DefaultDateTimeRecognizer } from "./DateTime";
-import { type LeadingComments } from "./support/Comments";
+import { type Comment } from "./support/Comments";
 
 export type MultiFileRenderResult = ReadonlyMap<string, SerializedRenderResult>;
 
@@ -46,7 +46,7 @@ export abstract class TargetLanguage {
         typeGraph: TypeGraph,
         givenOutputFilename: string,
         alphabetizeProperties: boolean,
-        leadingComments: LeadingComments | undefined,
+        leadingComments: Comment[] | undefined,
         rendererOptions: { [name: string]: any },
         indentation?: string
     ): MultiFileRenderResult {

@@ -19,7 +19,7 @@ import { InputData } from "./input/Inputs";
 import { flattenStrings } from "./rewrites/FlattenStrings";
 import { makeTransformations } from "./MakeTransformations";
 import { TransformedStringTypeKind } from "./Type";
-import { type LeadingComments } from "./support/Comments";
+import { type Comment } from "./support/Comments";
 
 export function getTargetLanguage(nameOrInstance: string | TargetLanguage): TargetLanguage {
     if (typeof nameOrInstance === "object") {
@@ -138,7 +138,7 @@ export type NonInferenceOptions = {
     /** Don't render output.  This is mainly useful for benchmarking. */
     noRender: boolean;
     /** If given, output these comments at the beginning of the main output file */
-    leadingComments?: LeadingComments;
+    leadingComments?: Comment[];
     /** Options for the target language's renderer */
     rendererOptions: RendererOptions;
     /** String to use for one indentation level.  If not given, use the target language's default. */
