@@ -203,7 +203,10 @@ const keywords = [
     "default",
     "dyn",
     "'static",
-    "union"
+    "union",
+
+    // Conflict between `std::Option` and potentially generated Option
+    "option"
 ];
 
 const isAsciiLetterOrUnderscoreOrDigit = (codePoint: number): boolean => {
