@@ -46,9 +46,9 @@ export class TypeScriptZodTargetLanguage extends TargetLanguage {
         return mapping;
     }
 
-		get supportsOptionalClassProperties(): boolean {
-			return true;
-		}
+    get supportsOptionalClassProperties(): boolean {
+        return true;
+    }
 
     protected makeRenderer(
         renderContext: RenderContext,
