@@ -19,7 +19,8 @@ import {
     splitIntoWords,
     combineWords,
     firstUpperWordStyle,
-    camelCase
+    camelCase,
+    WordInName
 } from "../support/Strings";
 import { defined, assert, panic, assertNever } from "../support/Support";
 import { Name, DependencyName, Namer, funPrefixNamer, SimpleName } from "../Naming";
@@ -189,7 +190,8 @@ export const cSharpOptions = {
         "Object",
         "secondary"
     ),
-    checkRequired: new BooleanOption("check-required", "Fail if required properties are missing", false)
+    checkRequired: new BooleanOption("check-required", "Fail if required properties are missing", false),
+    keepPropertyName: new BooleanOption("keep-property-name", "Keep original field name generate", false),
 };
 
 export class CSharpTargetLanguage extends TargetLanguage {
@@ -209,7 +211,8 @@ export class CSharpTargetLanguage extends TargetLanguage {
             cSharpOptions.virtual,
             cSharpOptions.features,
             cSharpOptions.baseclass,
-            cSharpOptions.checkRequired
+            cSharpOptions.checkRequired,
+            cSharpOptions.keepPropertyName
         ];
     }
 
@@ -264,6 +267,7 @@ export class CSharpTargetLanguage extends TargetLanguage {
 }
 
 const namingFunction = funPrefixNamer("namer", csNameStyle);
+const namingFunctionKeep = funPrefixNamer("namerKeep", csNameStyleKeep);
 
 // FIXME: Make a Named?
 const denseJsonPropertyName = "J";
@@ -299,6 +303,109 @@ function csNameStyle(original: string): string {
         "",
         isStartCharacter
     );
+}
+
+function csNameStyleKeep(original: string): string {
+
+    const keywords = [
+        "abstract",
+        "as",
+        "base",
+        "bool",
+        "break",
+        "byte",
+        "case",
+        "catch",
+        "char",
+        "checked",
+        "class",
+        "const",
+        "continue",
+        "decimal",
+        "default",
+        "delegate",
+        "do",
+        "double",
+        "else",
+        "enum",
+        "event",
+        "explicit",
+        "extern",
+        "false",
+        "finally",
+        "fixed",
+        "float",
+        "for",
+        "foreach",
+        "goto",
+        "if",
+        "implicit",
+        "in",
+        "int",
+        "interface",
+        "internal",
+        "is",
+        "lock",
+        "long",
+        "namespace",
+        "new",
+        "null",
+        "object",
+        "operator",
+        "out",
+        "override",
+        "params",
+        "private",
+        "protected",
+        "public",
+        "readonly",
+        "ref",
+        "return",
+        "sbyte",
+        "sealed",
+        "short",
+        "sizeof",
+        "stackalloc",
+        "static",
+        "string",
+        "struct",
+        "switch",
+        "this",
+        "throw",
+        "true",
+        "try",
+        "typeof",
+        "uint",
+        "ulong",
+        "unchecked",
+        "unsafe",
+        "ushort",
+        "using",
+        "virtual",
+        "void",
+        "volatile",
+        "while",
+    ]
+
+    const words: WordInName[] = [
+        {
+            word: original,
+            isAcronym: false
+        }
+    ];
+
+    const result = combineWords(
+        words,
+        legalizeName,
+        x => x,
+        x => x,
+        x => x,
+        x => x,
+        "",
+        isStartCharacter
+    )
+
+    return keywords.includes(result) ? "@" + result : result;
 }
 
 function isValueType(t: Type): boolean {
@@ -346,7 +453,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
     }
 
     protected namerForObjectProperty(): Namer {
-        return namingFunction;
+        return this._csOptions.keepPropertyName ? namingFunctionKeep : namingFunction;
     }
 
     protected makeUnionMemberNamer(): Namer {
