@@ -40,7 +40,8 @@ export class GoTargetLanguage extends TargetLanguage {
             goOptions.packageName,
             goOptions.multiFileOutput,
             goOptions.justTypesAndPackage,
-            goOptions.fieldTags
+            goOptions.fieldTags,
+            goOptions.omitEmpty
         ];
     }
 

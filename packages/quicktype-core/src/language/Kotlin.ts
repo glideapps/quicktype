@@ -236,7 +236,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
     }
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
-        this.emitCommentLines(lines, " * ", "/**", " */");
+        this.emitCommentLines(lines, { lineStart: " * ", beforeComment: "/**", afterComment: " */" });
     }
 
     protected emitBlock(line: Sourcelike, f: () => void, delimiter: "curly" | "paren" | "lambda" = "curly"): void {
@@ -292,7 +292,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
 
     protected emitHeader(): void {
         if (this.leadingComments !== undefined) {
-            this.emitCommentLines(this.leadingComments);
+            this.emitComments(this.leadingComments);
         } else {
             this.emitUsageHeader();
         }

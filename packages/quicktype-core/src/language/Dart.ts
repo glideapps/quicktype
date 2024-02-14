@@ -327,7 +327,7 @@ export class DartRenderer extends ConvenienceRenderer {
 
     protected emitFileHeader(): void {
         if (this.leadingComments !== undefined) {
-            this.emitCommentLines(this.leadingComments);
+            this.emitComments(this.leadingComments);
         }
 
         if (this._options.justTypes) return;
@@ -375,7 +375,7 @@ export class DartRenderer extends ConvenienceRenderer {
     }
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
-        this.emitCommentLines(lines, "///", "");
+        this.emitCommentLines(lines, { lineStart: "///", beforeComment: "" });
     }
 
     protected emitBlock(line: Sourcelike, f: () => void): void {
@@ -788,6 +788,11 @@ export class DartRenderer extends ConvenienceRenderer {
                 this.emitLine("const factory ", className, "({");
                 this.indent(() => {
                     this.forEachClassProperty(c, "none", (name, jsonName, prop) => {
+                        const description = this.descriptionForClassProperty(c, jsonName);
+                        if (description !== undefined) {
+                            this.emitDescription(description);
+                        }
+
                         const required =
                             this._options.requiredProperties ||
                             (this._options.nullSafety && (!prop.type.isNullable || !prop.isOptional));
