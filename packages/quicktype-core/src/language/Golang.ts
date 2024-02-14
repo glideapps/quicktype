@@ -19,6 +19,7 @@ import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { TargetLanguage } from "../TargetLanguage";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { RenderContext } from "../Renderer";
+import _, { flatMap } from "lodash";
 
 export const goOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
@@ -89,7 +90,6 @@ function isValueType(t: Type): boolean {
 
 function canOmitEmpty(cp: ClassProperty): boolean {
     if (!cp.isOptional) return false;
-    if (goOptions.omitEmpty) return true;
     const t = cp.type;
     return ["union", "null", "any"].indexOf(t.kind) < 0;
 }
@@ -271,7 +271,7 @@ export class GoRenderer extends ConvenienceRenderer {
             const docStrings =
                 description !== undefined && description.length > 0 ? description.map(d => "// " + d) : [];
             const goType = this.propertyGoType(p);
-            const omitEmpty = canOmitEmpty(p) ? ",omitempty" : [];
+            const omitEmpty = canOmitEmpty(p) || this._options.omitEmpty ? ",omitempty" : [];
 
             docStrings.forEach(doc => columns.push([doc]));
             const tags = this._options.fieldTags
