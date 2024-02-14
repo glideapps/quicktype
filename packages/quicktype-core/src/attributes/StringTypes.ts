@@ -77,9 +77,14 @@ export class StringTypes {
             } else if (other.cases !== undefined) {
                 const thisCases = cases;
                 const otherCases = other.cases;
-                cases = mapMap(setIntersect(thisCases.keys(), new Set(otherCases.keys())).entries(), k =>
-                    Math.min(defined(thisCases.get(k)), defined(otherCases.get(k)))
-                );
+
+                const intersects = setIntersect(thisCases.keys(), new Set(otherCases.keys()));
+                const entries = intersects.size > 0 ? intersects.entries() : new Set(thisCases.keys()).entries();
+                cases = mapMap(entries, k => {
+                    const thisValue = defined(thisCases.get(k));
+                    const otherValue = otherCases.get(k) ?? Math.min();
+                    return Math.min(thisValue, otherValue);
+                });
             }
 
             transformations = setIntersect(transformations, other.transformations);
