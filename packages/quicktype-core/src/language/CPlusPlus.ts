@@ -383,7 +383,10 @@ function addQualifier(qualifier: Sourcelike, qualified: Sourcelike[]): Sourcelik
 }
 
 class WrappingCode {
-    constructor(private readonly start: Sourcelike[], private readonly end: Sourcelike[]) {}
+    constructor(
+        private readonly start: Sourcelike[],
+        private readonly end: Sourcelike[]
+    ) {}
 
     wrap(qualifier: Sourcelike, inner: Sourcelike): Sourcelike {
         return [addQualifier(qualifier, this.start), inner, this.end];
@@ -1982,7 +1985,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             "; break;"
                         );
                     });
-                    this.emitLine(`default: throw std::runtime_error("Unexpected value in enumeration \\"${enumName}\\": " + std::to_string(static_cast<int>(x)));`);
+                    this.emitLine(
+                        `default: throw std::runtime_error("Unexpected value in enumeration \\"${enumName}\\": " + std::to_string(static_cast<int>(x)));`
+                    );
                 });
             }
         );
