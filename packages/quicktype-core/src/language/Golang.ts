@@ -27,7 +27,7 @@ export const goOptions = {
     packageName: new StringOption("package", "Generated package name", "NAME", "main"),
     multiFileOutput: new BooleanOption("multi-file-output", "Renders each top-level object in its own Go file", false),
     fieldTags: new StringOption("field-tags", "list of tags which should be generated for fields", "TAGS", "json"),
-    omitEmpty: new BooleanOption("omit-empty", "If set, all non-required objects will be tagged with ,omitempty", false)
+    omitEmpty: new BooleanOption("omit-empty", "If set, all non-required objects will be tagged with \",omitempty\"", false)
 };
 
 export class GoTargetLanguage extends TargetLanguage {
@@ -38,11 +38,11 @@ export class GoTargetLanguage extends TargetLanguage {
     protected getOptions(): Option<any>[] {
         return [
             goOptions.justTypes,
+            goOptions.justTypesAndPackage,
             goOptions.packageName,
             goOptions.multiFileOutput,
-            goOptions.justTypesAndPackage,
             goOptions.fieldTags,
-            goOptions.omitEmpty
+            goOptions.omitEmpty,
         ];
     }
 
@@ -95,8 +95,9 @@ function isValueType(t: Type): boolean {
     return primitiveValueTypeKinds.indexOf(kind) >= 0 || kind === "class" || kind === "enum" || kind === "date-time";
 }
 
-function canOmitEmpty(cp: ClassProperty): boolean {
+function canOmitEmpty(cp: ClassProperty, omitEmptyOption: boolean): boolean {
     if (!cp.isOptional) return false;
+    if (omitEmptyOption) return true;
     const t = cp.type;
     return ["union", "null", "any"].indexOf(t.kind) < 0;
 }
@@ -285,7 +286,7 @@ export class GoRenderer extends ConvenienceRenderer {
             const docStrings =
                 description !== undefined && description.length > 0 ? description.map(d => "// " + d) : [];
             const goType = this.propertyGoType(p);
-            const omitEmpty = canOmitEmpty(p) || this._options.omitEmpty ? ",omitempty" : [];
+            const omitEmpty = canOmitEmpty(p, this._options.omitEmpty) ? ",omitempty" : [];
 
             docStrings.forEach(doc => columns.push([doc]));
             const tags = this._options.fieldTags
