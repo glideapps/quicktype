@@ -567,7 +567,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
             protocols.push("Equatable");
         }
 
-        if (this._options.sendable && !this._options.mutableProperties && !this._options.objcSupport) {
+        if (this._options.sendable && (!this._options.mutableProperties || !isClass) && !this._options.objcSupport) {
             protocols.push("Sendable");
         }
 
