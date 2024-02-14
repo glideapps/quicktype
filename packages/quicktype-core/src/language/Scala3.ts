@@ -245,10 +245,10 @@ export class Scala3Renderer extends ConvenienceRenderer {
             delimiter === "curly"
                 ? ["{", "}"]
                 : delimiter === "paren"
-                ? ["(", ")"]
-                : delimiter === "none"
-                ? ["", ""]
-                : ["{", "})"];
+                  ? ["(", ")"]
+                  : delimiter === "none"
+                    ? ["", ""]
+                    : ["{", "})"];
         this.emitLine(line, " ", open);
         this.indent(f);
         this.emitLine(close);
