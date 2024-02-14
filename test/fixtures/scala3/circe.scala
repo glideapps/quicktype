@@ -1,12 +1,16 @@
-//> using scala "3.2.1"
-//> using lib "io.circe::circe-core:0.15.0-M1"
-//> using lib "io.circe::circe-parser:0.15.0-M1"
+//> using scala "3.2.2"
+//> using lib "io.circe::circe-core:0.14.5"
+//> using lib "io.circe::circe-parser:0.14.5"
 //> using options "-Xmax-inlines", "3000"
 package quicktype
 
 import io.circe._
 import io.circe.parser._
 import io.circe.syntax._
+import scala.util.Try
+import scala.util.Right
+import scala.util.Left
+
 /* 
 
 case class TopLevel (

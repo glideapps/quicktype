@@ -940,7 +940,8 @@ I havea no idea how to encode these tests correctly.
         "enum.schema",
         "class-with-additional.schema",
         "class-map-union.schema",
-        "keyword-unions.schema"
+        "keyword-unions.schema",
+        "keyword-enum.schema"
     ],
     skipMiscJSON: false,
     rendererOptions: { framework: "circe" },
