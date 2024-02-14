@@ -788,6 +788,11 @@ export class DartRenderer extends ConvenienceRenderer {
                 this.emitLine("const factory ", className, "({");
                 this.indent(() => {
                     this.forEachClassProperty(c, "none", (name, jsonName, prop) => {
+                        const description = this.descriptionForClassProperty(c, jsonName);
+                        if (description !== undefined) {
+                            this.emitDescription(description);
+                        }
+
                         const required =
                             this._options.requiredProperties ||
                             (this._options.nullSafety && (!prop.type.isNullable || !prop.isOptional));
