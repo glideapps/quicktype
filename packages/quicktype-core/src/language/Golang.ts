@@ -19,7 +19,6 @@ import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { TargetLanguage } from "../TargetLanguage";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { RenderContext } from "../Renderer";
-import _, { flatMap } from "lodash";
 
 export const goOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
