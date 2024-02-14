@@ -229,9 +229,9 @@ export class ElmRenderer extends ConvenienceRenderer {
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
         if (lines.length === 1) {
-            this.emitLine("{-| ", lines[0], " -}");
+            this.emitComments([{ customLines: lines, lineStart: "{-| ", lineEnd: " -}" }]);
         } else {
-            this.emitCommentLines(lines, "", undefined, "-}", "{-| ");
+            this.emitCommentLines(lines, { firstLineStart: "{-| ", lineStart: "", afterComment: "-}" });
         }
     }
 
@@ -574,7 +574,7 @@ export class ElmRenderer extends ConvenienceRenderer {
         });
 
         if (this.leadingComments !== undefined) {
-            this.emitCommentLines(this.leadingComments);
+            this.emitComments(this.leadingComments);
         } else if (!this._options.justTypes) {
             this.emitCommentLines([
                 "To decode the JSON data, add this file to your project, run",

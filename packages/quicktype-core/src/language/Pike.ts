@@ -269,7 +269,7 @@ export class PikeRenderer extends ConvenienceRenderer {
                 "and will likely throw an error, if the JSON string does not",
                 "match the expected interface, even if the JSON itself is valid."
             ],
-            "// "
+            { lineStart: "// " }
         );
     }
 

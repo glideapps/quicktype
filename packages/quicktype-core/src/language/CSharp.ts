@@ -581,7 +581,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
         if (this._csOptions.dense) {
             this.emitLine(start, lines.join("; "), "</summary>");
         } else {
-            this.emitCommentLines(lines, "/// ", start, "/// </summary>");
+            this.emitCommentLines(lines, { lineStart: "/// ", beforeComment: start, afterComment: "/// </summary>" });
         }
     }
 
@@ -755,7 +755,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
 
     protected emitSourceStructure(): void {
         if (this.leadingComments !== undefined) {
-            this.emitCommentLines(this.leadingComments);
+            this.emitComments(this.leadingComments);
         } else {
             this.emitDefaultLeadingComments();
         }
