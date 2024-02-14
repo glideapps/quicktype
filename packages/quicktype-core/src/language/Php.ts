@@ -229,7 +229,7 @@ export class PhpRenderer extends ConvenienceRenderer {
     protected startFile(_basename: Sourcelike): void {
         this.ensureBlankLine();
         if (!this._haveEmittedLeadingComments && this.leadingComments !== undefined) {
-            this.emitCommentLines(this.leadingComments);
+            this.emitComments(this.leadingComments);
             this.ensureBlankLine();
             this._haveEmittedLeadingComments = true;
         }
@@ -246,7 +246,7 @@ export class PhpRenderer extends ConvenienceRenderer {
     }
 
     public emitDescriptionBlock(lines: Sourcelike[]): void {
-        this.emitCommentLines(lines, " * ", "/**", " */");
+        this.emitCommentLines(lines, { lineStart: " * ", beforeComment: "/**", afterComment: " */" });
     }
 
     public emitBlock(line: Sourcelike, f: () => void): void {

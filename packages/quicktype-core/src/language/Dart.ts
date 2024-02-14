@@ -327,7 +327,7 @@ export class DartRenderer extends ConvenienceRenderer {
 
     protected emitFileHeader(): void {
         if (this.leadingComments !== undefined) {
-            this.emitCommentLines(this.leadingComments);
+            this.emitComments(this.leadingComments);
         }
 
         if (this._options.justTypes) return;
@@ -375,7 +375,7 @@ export class DartRenderer extends ConvenienceRenderer {
     }
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
-        this.emitCommentLines(lines, "///", "");
+        this.emitCommentLines(lines, { lineStart: "///", beforeComment: "" });
     }
 
     protected emitBlock(line: Sourcelike, f: () => void): void {

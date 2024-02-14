@@ -46,6 +46,10 @@ export class TypeScriptZodTargetLanguage extends TargetLanguage {
         return mapping;
     }
 
+    get supportsOptionalClassProperties(): boolean {
+        return true;
+    }
+
     protected makeRenderer(
         renderContext: RenderContext,
         untypedOptionValues: { [name: string]: any }
@@ -230,7 +234,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
 
     protected emitSourceStructure(): void {
         if (this.leadingComments !== undefined) {
-            this.emitCommentLines(this.leadingComments);
+            this.emitComments(this.leadingComments);
         }
 
         this.emitImports();
