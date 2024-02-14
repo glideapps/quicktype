@@ -27,7 +27,11 @@ export const goOptions = {
     packageName: new StringOption("package", "Generated package name", "NAME", "main"),
     multiFileOutput: new BooleanOption("multi-file-output", "Renders each top-level object in its own Go file", false),
     fieldTags: new StringOption("field-tags", "list of tags which should be generated for fields", "TAGS", "json"),
-    omitEmpty: new BooleanOption("omit-empty", "If set, all non-required objects will be tagged with \",omitempty\"", false)
+    omitEmpty: new BooleanOption(
+        "omit-empty",
+        'If set, all non-required objects will be tagged with ",omitempty"',
+        false
+    )
 };
 
 export class GoTargetLanguage extends TargetLanguage {
@@ -42,7 +46,7 @@ export class GoTargetLanguage extends TargetLanguage {
             goOptions.packageName,
             goOptions.multiFileOutput,
             goOptions.fieldTags,
-            goOptions.omitEmpty,
+            goOptions.omitEmpty
         ];
     }
 
