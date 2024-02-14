@@ -1,10 +1,14 @@
+import { StringTypeMapping } from "TypeBuilder";
 import { arrayIntercalate } from "collection-utils";
-import { ClassProperty, EnumType, ObjectType, Type } from "../Type";
-import { matchType } from "../TypeUtils";
-import { funPrefixNamer, Name, Namer } from "../Naming";
+import { ConvenienceRenderer } from "../ConvenienceRenderer";
+import { Name, Namer, funPrefixNamer } from "../Naming";
 import { RenderContext } from "../Renderer";
-import { BooleanOption, getOptionValues, Option, OptionValues } from "../RendererOptions";
-import { acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
+import { BooleanOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
+import { Sourcelike } from "../Source";
+import { TargetLanguage } from "../TargetLanguage";
+import { ClassProperty, EnumType, ObjectType, PrimitiveStringTypeKind, TransformedStringTypeKind, Type } from "../Type";
+import { matchType } from "../TypeUtils";
+import { AcronymStyleOptions, acronymStyle } from "../support/Acronyms";
 import {
     allLowerWordStyle,
     capitalize,
@@ -15,11 +19,8 @@ import {
     stringEscape,
     utf16StringEscape
 } from "../support/Strings";
-import { TargetLanguage } from "../TargetLanguage";
-import { legalizeName } from "./JavaScript";
-import { Sourcelike } from "../Source";
 import { panic } from "../support/Support";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
+import { legalizeName } from "./JavaScript";
 
 export const typeScriptZodOptions = {
     justSchema: new BooleanOption("just-schema", "Schema only", false)
@@ -38,6 +39,13 @@ export class TypeScriptZodTargetLanguage extends TargetLanguage {
         super(displayName, names, extension);
     }
 
+    get stringTypeMapping(): StringTypeMapping {
+        const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
+        const dateTimeType = "date-time";
+        mapping.set("date-time", dateTimeType);
+        return mapping;
+    }
+
     protected makeRenderer(
         renderContext: RenderContext,
         untypedOptionValues: { [name: string]: any }
@@ -54,7 +62,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
     constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        private readonly _options: OptionValues<typeof typeScriptZodOptions>
+        protected readonly _options: OptionValues<typeof typeScriptZodOptions>
     ) {
         super(targetLanguage, renderContext);
     }
@@ -94,7 +102,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         return funPrefixNamer("enum-cases", s => this.nameStyle(s, false));
     }
 
-    private importStatement(lhs: Sourcelike, moduleName: Sourcelike): Sourcelike {
+    protected importStatement(lhs: Sourcelike, moduleName: Sourcelike): Sourcelike {
         return ["import ", lhs, " from ", moduleName, ";"];
     }
 
@@ -103,12 +111,12 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         this.emitLine(this.importStatement("* as z", '"zod"'));
     }
 
-    typeMapTypeForProperty(p: ClassProperty): Sourcelike {
+    protected typeMapTypeForProperty(p: ClassProperty): Sourcelike {
         const typeMap = this.typeMapTypeFor(p.type);
         return p.isOptional ? [typeMap, ".optional()"] : typeMap;
     }
 
-    typeMapTypeFor(t: Type, required: boolean = true): Sourcelike {
+    protected typeMapTypeFor(t: Type, required: boolean = true): Sourcelike {
         if (["class", "object", "enum"].indexOf(t.kind) >= 0) {
             return [this.nameForNamedType(t), "Schema"];
         }
@@ -132,6 +140,9 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
                 return ["z.union([", ...arrayIntercalate(", ", children), "])"];
             },
             _transformedStringType => {
+                if (_transformedStringType.kind === "date-time") {
+                    return "z.coerce.date()";
+                }
                 return "z.string()";
             }
         );
@@ -143,7 +154,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         return match;
     }
 
-    private emitObject(name: Name, t: ObjectType) {
+    protected emitObject(name: Name, t: ObjectType) {
         this.ensureBlankLine();
         this.emitLine("\nexport const ", name, "Schema = ", "z.object({");
         this.indent(() => {
@@ -157,7 +168,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         }
     }
 
-    private emitEnum(e: EnumType, enumName: Name): void {
+    protected emitEnum(e: EnumType, enumName: Name): void {
         this.ensureBlankLine();
         this.emitDescription(this.descriptionForType(e));
         this.emitLine("\nexport const ", enumName, "Schema = ", "z.enum([");

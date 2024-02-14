@@ -1425,7 +1425,7 @@ export const TypeScriptZodLanguage: Language = {
         "e8b04.json"
     ],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults"],
+    features: ["enum", "union", "no-defaults", "date-time"],
     output: "TopLevel.ts",
     topLevel: "TopLevel",
     skipJSON: [
@@ -1485,7 +1485,9 @@ export const TypeScriptZodLanguage: Language = {
         "bug427.json",
         "nst-test-suite.json",
         "keywords.json",
-        "ed095.json"
+        "ed095.json",
+        "7681c.json",
+        "32d5c.json"
     ],
     skipMiscJSON: false,
     skipSchema: [
