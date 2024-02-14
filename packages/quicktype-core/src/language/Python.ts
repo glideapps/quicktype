@@ -444,7 +444,7 @@ export class PythonRenderer extends ConvenienceRenderer {
     ): ReadonlyMap<string, ClassProperty> {
         if (this.pyOptions.features.dataClasses) {
             return mapSortBy(properties, (p: ClassProperty) => {
-                return p.type instanceof UnionType && nullableFromUnion(p.type) != null ? 1 : 0;
+                return (p.type instanceof UnionType && nullableFromUnion(p.type) != null) || p.isOptional ? 1 : 0;
             });
         } else {
             return super.sortClassProperties(properties, propertyNames);
@@ -461,8 +461,8 @@ export class PythonRenderer extends ConvenienceRenderer {
                     this.emitLine("pass");
                 } else {
                     this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
-                        this.emitDescription(this.descriptionForClassProperty(t, jsonName));
                         this.emitLine(name, this.typeHint(": ", this.pythonType(cp.type, true)));
+                        this.emitDescription(this.descriptionForClassProperty(t, jsonName));
                     });
                 }
                 this.ensureBlankLine();

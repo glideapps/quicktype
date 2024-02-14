@@ -1,0 +1,18 @@
+{
+    "name": "typescript-effect-schema",
+    "version": "0.1.0",
+    "type": "module",
+    "description": "Test builds.",
+    "scripts": {
+        "test": "tsx main.ts"
+    },
+    "author": "",
+    "license": "Apache-2.0",
+    "devDependencies": {
+        "tsx": "^3.12.2",
+        "typescript": "^4.3.5"
+    },
+    "dependencies": {
+        "@effect/schema": "^0.47.1"
+    }
+}

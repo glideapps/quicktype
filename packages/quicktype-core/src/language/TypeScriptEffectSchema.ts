@@ -1,14 +1,10 @@
-import { StringTypeMapping } from "TypeBuilder";
 import { arrayIntercalate } from "collection-utils";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { Name, Namer, funPrefixNamer } from "../Naming";
-import { RenderContext } from "../Renderer";
-import { BooleanOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
-import { Sourcelike } from "../Source";
-import { TargetLanguage } from "../TargetLanguage";
-import { ClassProperty, EnumType, ObjectType, PrimitiveStringTypeKind, TransformedStringTypeKind, Type } from "../Type";
+import { ClassProperty, EnumType, ObjectType, Type } from "../Type";
 import { matchType } from "../TypeUtils";
-import { AcronymStyleOptions, acronymStyle } from "../support/Acronyms";
+import { funPrefixNamer, Name, Namer } from "../Naming";
+import { RenderContext } from "../Renderer";
+import { BooleanOption, getOptionValues, Option, OptionValues } from "../RendererOptions";
+import { acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
 import {
     allLowerWordStyle,
     capitalize,
@@ -19,50 +15,46 @@ import {
     stringEscape,
     utf16StringEscape
 } from "../support/Strings";
-import { panic } from "../support/Support";
+import { TargetLanguage } from "../TargetLanguage";
 import { legalizeName } from "./JavaScript";
+import { Sourcelike } from "../Source";
+import { panic } from "../support/Support";
+import { ConvenienceRenderer } from "../ConvenienceRenderer";
 
-export const typeScriptZodOptions = {
+export const typeScriptEffectSchemaOptions = {
     justSchema: new BooleanOption("just-schema", "Schema only", false)
 };
 
-export class TypeScriptZodTargetLanguage extends TargetLanguage {
+export class TypeScriptEffectSchemaTargetLanguage extends TargetLanguage {
     protected getOptions(): Option<any>[] {
         return [];
     }
 
     constructor(
-        displayName: string = "TypeScript Zod",
-        names: string[] = ["typescript-zod"],
+        displayName: string = "TypeScript Effect Schema",
+        names: string[] = ["typescript-effect-schema"],
         extension: string = "ts"
     ) {
         super(displayName, names, extension);
     }
 
-    get stringTypeMapping(): StringTypeMapping {
-        const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
-        const dateTimeType = "date-time";
-        mapping.set("date-time", dateTimeType);
-        return mapping;
-    }
-
     protected makeRenderer(
         renderContext: RenderContext,
         untypedOptionValues: { [name: string]: any }
-    ): TypeScriptZodRenderer {
-        return new TypeScriptZodRenderer(
+    ): TypeScriptEffectSchemaRenderer {
+        return new TypeScriptEffectSchemaRenderer(
             this,
             renderContext,
-            getOptionValues(typeScriptZodOptions, untypedOptionValues)
+            getOptionValues(typeScriptEffectSchemaOptions, untypedOptionValues)
         );
     }
 }
 
-export class TypeScriptZodRenderer extends ConvenienceRenderer {
+export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
     constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        protected readonly _options: OptionValues<typeof typeScriptZodOptions>
+        private readonly _options: OptionValues<typeof typeScriptEffectSchemaOptions>
     ) {
         super(targetLanguage, renderContext);
     }
@@ -102,48 +94,45 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         return funPrefixNamer("enum-cases", s => this.nameStyle(s, false));
     }
 
-    protected importStatement(lhs: Sourcelike, moduleName: Sourcelike): Sourcelike {
+    private importStatement(lhs: Sourcelike, moduleName: Sourcelike): Sourcelike {
         return ["import ", lhs, " from ", moduleName, ";"];
     }
 
     protected emitImports(): void {
         this.ensureBlankLine();
-        this.emitLine(this.importStatement("* as z", '"zod"'));
+        this.emitLine(this.importStatement("* as S", '"@effect/schema/Schema"'));
     }
 
-    protected typeMapTypeForProperty(p: ClassProperty): Sourcelike {
+    typeMapTypeForProperty(p: ClassProperty): Sourcelike {
         const typeMap = this.typeMapTypeFor(p.type);
-        return p.isOptional ? [typeMap, ".optional()"] : typeMap;
+        return p.isOptional ? ["S.optional(", typeMap, ")"] : typeMap;
     }
 
-    protected typeMapTypeFor(t: Type, required: boolean = true): Sourcelike {
+    typeMapTypeFor(t: Type, required: boolean = true): Sourcelike {
         if (["class", "object", "enum"].indexOf(t.kind) >= 0) {
-            return [this.nameForNamedType(t), "Schema"];
+            return ["S.lazy(() => ", this.nameForNamedType(t), ")"];
         }
 
         const match = matchType<Sourcelike>(
             t,
-            _anyType => "z.any()",
-            _nullType => "z.null()",
-            _boolType => "z.boolean()",
-            _integerType => "z.number()",
-            _doubleType => "z.number()",
-            _stringType => "z.string()",
-            arrayType => ["z.array(", this.typeMapTypeFor(arrayType.items, false), ")"],
+            _anyType => "S.any",
+            _nullType => "S.null",
+            _boolType => "S.boolean",
+            _integerType => "S.number",
+            _doubleType => "S.number",
+            _stringType => "S.string",
+            arrayType => ["S.array(", this.typeMapTypeFor(arrayType.items, false), ")"],
             _classType => panic("Should already be handled."),
-            _mapType => ["z.record(z.string(), ", this.typeMapTypeFor(_mapType.values, false), ")"],
+            _mapType => ["S.record(S.string, ", this.typeMapTypeFor(_mapType.values, false), ")"],
             _enumType => panic("Should already be handled."),
             unionType => {
                 const children = Array.from(unionType.getChildren()).map((type: Type) =>
                     this.typeMapTypeFor(type, false)
                 );
-                return ["z.union([", ...arrayIntercalate(", ", children), "])"];
+                return ["S.union(", ...arrayIntercalate(", ", children), ")"];
             },
             _transformedStringType => {
-                if (_transformedStringType.kind === "date-time") {
-                    return "z.coerce.date()";
-                }
-                return "z.string()";
+                return "S.string";
             }
         );
 
@@ -154,9 +143,13 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         return match;
     }
 
-    protected emitObject(name: Name, t: ObjectType) {
+    private emitObject(name: Name, t: ObjectType) {
         this.ensureBlankLine();
-        this.emitLine("\nexport const ", name, "Schema = ", "z.object({");
+        if (this._options.justSchema) {
+            this.emitLine("\nexport const ", name, " = S.struct({");
+        } else {
+            this.emitLine("\nconst ", name, "_ = S.struct({");
+        }
         this.indent(() => {
             this.forEachClassProperty(t, "none", (_, jsonName, property) => {
                 this.emitLine(`"${utf16StringEscape(jsonName)}"`, ": ", this.typeMapTypeForProperty(property), ",");
@@ -164,22 +157,34 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         });
         this.emitLine("});");
         if (!this._options.justSchema) {
-            this.emitLine("export type ", name, " = z.infer<typeof ", name, "Schema>;");
+            this.emitLine("export interface ", name, " extends S.Schema.To<typeof ", name, "_> {}");
+            this.emitLine(
+                "export const ",
+                name,
+                ": S.Schema<S.Schema.From<typeof ",
+                name,
+                "_>, ",
+                name,
+                "> = ",
+                name,
+                "_;"
+            );
         }
     }
 
-    protected emitEnum(e: EnumType, enumName: Name): void {
+    private emitEnum(e: EnumType, enumName: Name): void {
         this.ensureBlankLine();
         this.emitDescription(this.descriptionForType(e));
-        this.emitLine("\nexport const ", enumName, "Schema = ", "z.enum([");
+        this.emitLine("\nexport const ", enumName, " = ", "S.enums({");
         this.indent(() =>
             this.forEachEnumCase(e, "none", (_, jsonName) => {
-                this.emitLine('"', stringEscape(jsonName), '",');
+                const name = stringEscape(jsonName);
+                this.emitLine('"', name, '": "', name, '",');
             })
         );
-        this.emitLine("]);");
+        this.emitLine("});");
         if (!this._options.justSchema) {
-            this.emitLine("export type ", enumName, " = z.infer<typeof ", enumName, "Schema>;");
+            this.emitLine("export type ", enumName, " = S.Schema.To<typeof ", enumName, ">;");
         }
     }
 

@@ -48,6 +48,8 @@ export const rustOptions = {
     ]),
     deriveDebug: new BooleanOption("derive-debug", "Derive Debug impl", false),
     deriveClone: new BooleanOption("derive-clone", "Derive Clone impl", false),
+    derivePartialEq: new BooleanOption("derive-partial-eq", "Derive PartialEq impl", false),
+    skipSerializingNone: new BooleanOption("skip-serializing-none", "Skip serializing empty Option fields", false),
     edition2018: new BooleanOption("edition-2018", "Edition 2018", true),
     leadingComments: new BooleanOption("leading-comments", "Leading Comments", true)
 };
@@ -124,8 +126,10 @@ export class RustTargetLanguage extends TargetLanguage {
             rustOptions.visibility,
             rustOptions.deriveDebug,
             rustOptions.deriveClone,
+            rustOptions.derivePartialEq,
             rustOptions.edition2018,
-            rustOptions.leadingComments
+            rustOptions.leadingComments,
+            rustOptions.skipSerializingNone,
         ];
     }
 }
@@ -141,6 +145,7 @@ const keywords = [
 
     // Keywords used in the language.
     "as",
+    "async",
     "box",
     "break",
     "const",
@@ -200,7 +205,10 @@ const keywords = [
     "default",
     "dyn",
     "'static",
-    "union"
+    "union",
+
+    // Conflict between `std::Option` and potentially generated Option
+    "option"
 ];
 
 const isAsciiLetterOrUnderscoreOrDigit = (codePoint: number): boolean => {
@@ -360,6 +368,13 @@ export class RustRenderer extends ConvenienceRenderer {
         }
     }
 
+    private emitSkipSerializeNone(t: Type) {
+        if (t instanceof UnionType) {
+            const nullable = nullableFromUnion(t);
+            if (nullable !== null) this.emitLine('#[serde(skip_serializing_if = "Option::is_none")]'); 
+        }
+    }
+
     private get visibility(): string {
         if (this._options.visibility === Visibility.Crate) {
             return "pub(crate) ";
@@ -375,6 +390,7 @@ export class RustRenderer extends ConvenienceRenderer {
             "#[derive(",
             this._options.deriveDebug ? "Debug, " : "",
             this._options.deriveClone ? "Clone, " : "",
+            this._options.derivePartialEq ? "PartialEq, " : "",
             "Serialize, Deserialize)]"
         );
 
@@ -396,6 +412,7 @@ export class RustRenderer extends ConvenienceRenderer {
             this.forEachClassProperty(c, blankLines, (name, jsonName, prop) => {
                 this.emitDescription(this.descriptionForClassProperty(c, jsonName));
                 this.emitRenameAttribute(name, jsonName, defaultStyle, preferedNamingStyle);
+                this._options.skipSerializingNone && this.emitSkipSerializeNone(prop.type);
                 this.emitLine(this.visibility, name, ": ", this.breakCycle(prop.type, true), ",");
             });
 
@@ -420,6 +437,7 @@ export class RustRenderer extends ConvenienceRenderer {
             "#[derive(",
             this._options.deriveDebug ? "Debug, " : "",
             this._options.deriveClone ? "Clone, " : "",
+            this._options.derivePartialEq ? "PartialEq, " : "",
             "Serialize, Deserialize)]"
         );
         this.emitLine("#[serde(untagged)]");
@@ -441,6 +459,7 @@ export class RustRenderer extends ConvenienceRenderer {
             "#[derive(",
             this._options.deriveDebug ? "Debug, " : "",
             this._options.deriveClone ? "Clone, " : "",
+            this._options.derivePartialEq ? "PartialEq, " : "",
             "Serialize, Deserialize)]"
         );
 

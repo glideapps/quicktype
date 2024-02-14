@@ -347,7 +347,7 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
                       name: "lang",
                       alias: "l",
                       type: String,
-                      typeLabel: makeLangTypeLabel(targetLanguages),
+                      typeLabel: "LANG",
                       description: "The target language."
                   }
               ];
@@ -357,7 +357,7 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
             alias: "s",
             type: String,
             defaultValue: undefined,
-            typeLabel: "json|schema|graphql|postman|typescript",
+            typeLabel: "SRC_LANG",
             description: "The source language (default is json)."
         },
         {
@@ -495,10 +495,11 @@ const tableOptionsForOptions: TableOptions = {
     columns: [
         {
             name: "option",
-            width: 50
+            width: 60
         },
         {
-            name: "description"
+            name: "description",
+            width: 60
         }
     ]
 };
@@ -510,9 +511,13 @@ function makeSectionsBeforeRenderers(targetLanguages: TargetLanguage[]): UsageSe
         {
             header: "Synopsis",
             content: [
-                `$ quicktype [${chalk.bold("--lang")} LANG] [${chalk.bold("--out")} FILE] FILE|URL ...`,
+                `$ quicktype [${chalk.bold("--lang")} LANG] [${chalk.bold("--src-lang")} SRC_LANG] [${chalk.bold(
+                    "--out"
+                )} FILE] FILE|URL ...`,
                 "",
-                `  LANG ... ${makeLangTypeLabel(targetLanguages)}`
+                `  LANG ... ${makeLangTypeLabel(targetLanguages)}`,
+                "",
+                "SRC_LANG ... json|schema|graphql|postman|typescript"
             ]
         },
         {
@@ -652,7 +657,7 @@ async function typeSourcesForURIs(name: string, uris: string[], options: CLIOpti
         case "json":
             return [await sourceFromFileOrUrlArray(name, uris, options.httpHeader)];
         case "schema":
-            return uris.map(uri => ({ kind: "schema", name, uris: [uri] } as SchemaTypeSource));
+            return uris.map(uri => ({ kind: "schema", name, uris: [uri] }) as SchemaTypeSource);
         default:
             return panic(`typeSourceForURIs must not be called for source language ${options.srcLang}`);
     }
