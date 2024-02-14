@@ -386,7 +386,16 @@ export const GoLanguage: Language = {
         "nst-test-suite.json",
         // can't differenciate empty array and nothing for optional empty array
         // (omitempty).
-        "github-events.json"
+        "github-events.json",
+        // files contains datetime filed with contain non rfc3339 format value
+        "f6a65.json",
+        "e0ac7.json",
+        "c3303.json",
+        "7681c.json",
+        "437e7.json",
+        "127a1.json",
+        "26b49.json",
+        "0cffa.json"
     ],
     skipMiscJSON: false,
     skipSchema: [

@@ -180,7 +180,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
                 "  input: MyShape",
                 "};"
             ],
-            "// "
+            { lineStart: "// " }
         );
     }
 
@@ -291,7 +291,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
 
     protected emitSourceStructure(): void {
         if (this.leadingComments !== undefined) {
-            this.emitCommentLines(this.leadingComments);
+            this.emitComments(this.leadingComments);
         } else {
             this.emitUsageComments();
         }

@@ -100,39 +100,39 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
 
     protected emitImports(): void {
         this.ensureBlankLine();
-        this.emitLine(this.importStatement("* as Schema", '"@effect/schema/Schema"'));
+        this.emitLine(this.importStatement("* as S", '"@effect/schema/Schema"'));
     }
 
     typeMapTypeForProperty(p: ClassProperty): Sourcelike {
         const typeMap = this.typeMapTypeFor(p.type);
-        return p.isOptional ? ["Schema.optional(", typeMap, ")"] : typeMap;
+        return p.isOptional ? ["S.optional(", typeMap, ")"] : typeMap;
     }
 
     typeMapTypeFor(t: Type, required: boolean = true): Sourcelike {
         if (["class", "object", "enum"].indexOf(t.kind) >= 0) {
-            return ["Schema.lazy(() => ", this.nameForNamedType(t), "Schema)"];
+            return ["S.lazy(() => ", this.nameForNamedType(t), ")"];
         }
 
         const match = matchType<Sourcelike>(
             t,
-            _anyType => "Schema.any",
-            _nullType => "Schema.null",
-            _boolType => "Schema.boolean",
-            _integerType => "Schema.number",
-            _doubleType => "Schema.number",
-            _stringType => "Schema.string",
-            arrayType => ["Schema.array(", this.typeMapTypeFor(arrayType.items, false), ")"],
+            _anyType => "S.any",
+            _nullType => "S.null",
+            _boolType => "S.boolean",
+            _integerType => "S.number",
+            _doubleType => "S.number",
+            _stringType => "S.string",
+            arrayType => ["S.array(", this.typeMapTypeFor(arrayType.items, false), ")"],
             _classType => panic("Should already be handled."),
-            _mapType => ["Schema.record(Schema.string, ", this.typeMapTypeFor(_mapType.values, false), ")"],
+            _mapType => ["S.record(S.string, ", this.typeMapTypeFor(_mapType.values, false), ")"],
             _enumType => panic("Should already be handled."),
             unionType => {
                 const children = Array.from(unionType.getChildren()).map((type: Type) =>
                     this.typeMapTypeFor(type, false)
                 );
-                return ["Schema.union(", ...arrayIntercalate(", ", children), ")"];
+                return ["S.union(", ...arrayIntercalate(", ", children), ")"];
             },
             _transformedStringType => {
-                return "Schema.string";
+                return "S.string";
             }
         );
 
@@ -145,7 +145,11 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
 
     private emitObject(name: Name, t: ObjectType) {
         this.ensureBlankLine();
-        this.emitLine("\nexport const ", name, "Schema = ", "Schema.struct({");
+        if (this._options.justSchema) {
+            this.emitLine("\nexport const ", name, " = S.struct({");
+        } else {
+            this.emitLine("\nconst ", name, "_ = S.struct({");
+        }
         this.indent(() => {
             this.forEachClassProperty(t, "none", (_, jsonName, property) => {
                 this.emitLine(`"${utf16StringEscape(jsonName)}"`, ": ", this.typeMapTypeForProperty(property), ",");
@@ -153,14 +157,25 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
         });
         this.emitLine("});");
         if (!this._options.justSchema) {
-            this.emitLine("export type ", name, " = Schema.From<typeof ", name, "Schema>;");
+            this.emitLine("export interface ", name, " extends S.Schema.To<typeof ", name, "_> {}");
+            this.emitLine(
+                "export const ",
+                name,
+                ": S.Schema<S.Schema.From<typeof ",
+                name,
+                "_>, ",
+                name,
+                "> = ",
+                name,
+                "_;"
+            );
         }
     }
 
     private emitEnum(e: EnumType, enumName: Name): void {
         this.ensureBlankLine();
         this.emitDescription(this.descriptionForType(e));
-        this.emitLine("\nexport const ", enumName, "Schema = ", "Schema.enums({");
+        this.emitLine("\nexport const ", enumName, " = ", "S.enums({");
         this.indent(() =>
             this.forEachEnumCase(e, "none", (_, jsonName) => {
                 const name = stringEscape(jsonName);
@@ -169,7 +184,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
         );
         this.emitLine("});");
         if (!this._options.justSchema) {
-            this.emitLine("export type ", enumName, " = Schema.From<typeof ", enumName, "Schema>;");
+            this.emitLine("export type ", enumName, " = S.Schema.To<typeof ", enumName, ">;");
         }
     }
 
@@ -220,7 +235,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
 
     protected emitSourceStructure(): void {
         if (this.leadingComments !== undefined) {
-            this.emitCommentLines(this.leadingComments);
+            this.emitComments(this.leadingComments);
         }
 
         this.emitImports();

@@ -25,8 +25,8 @@
 | [Dart](https://app.quicktype.io/#l=dart) | [Python](https://app.quicktype.io/#l=python) | [C#](https://app.quicktype.io/#l=cs) | [Go](https://app.quicktype.io/#l=go) | [C++](https://app.quicktype.io/#l=cpp) |
 | ---------------------------------------- | -------------------------------------------- | ------------------------------------ | ------------------------------------ | -------------------------------------- |
 
-| [Java](https://app.quicktype.io/#l=java) | [TypeScript](https://app.quicktype.io/#l=ts) | [Swift](https://app.quicktype.io/#l=swift) | [Objective-C](https://app.quicktype.io/#l=objc) | [Elm](https://app.quicktype.io/#l=elm) |
-| ---------------------------------------- | -------------------------------------------- | ------------------------------------------ | ----------------------------------------------- | -------------------------------------- |
+| [Java](https://app.quicktype.io/#l=java) | [Scala](https://app.quicktype.io/#l=scala3) | [TypeScript](https://app.quicktype.io/#l=ts) | [Swift](https://app.quicktype.io/#l=swift) | [Objective-C](https://app.quicktype.io/#l=objc) | [Elm](https://app.quicktype.io/#l=elm) |
+| ---------------------------------------- | ------------------------------------------- | -------------------------------------------- | ------------------------------------------ | ----------------------------------------------- | -------------------------------------- |
 
 | [JSON Schema](https://app.quicktype.io/#l=schema) | [Pike](https://app.quicktype.io/#l=pike) | [Prop-Types](https://app.quicktype.io/#l=javascript-prop-types) | [Haskell](https://app.quicktype.io/#l=haskell) | [PHP](https://app.quicktype.io/#l=php) |
 | ------------------------------------------------- | ---------------------------------------- | --------------------------------------------------------------- | ---------------------------------------------- | -------------------------------------- |
@@ -42,15 +42,6 @@ For the best CLI, we recommend installing `quicktype` globally via `npm`:
 ```bash
 npm install -g quicktype
 ```
-
-Other options:
-
--   [Homebrew](http://formulae.brew.sh/formula/quicktype) _(infrequently updated)_
--   [Xcode extension](https://itunes.apple.com/us/app/paste-json-as-code-quicktype/id1330801220?mt=12)\*
--   [VSCode extension](https://marketplace.visualstudio.com/items/quicktype.quicktype)\*
--   [Visual Studio extension](https://marketplace.visualstudio.com/items?itemName=typeguard.quicktype-vs)\*
-
-<small>\* limited functionality</small>
 
 ## Using `quicktype`
 

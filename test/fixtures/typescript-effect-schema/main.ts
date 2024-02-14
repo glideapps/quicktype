@@ -7,11 +7,11 @@ const sample = process.argv[2];
 const json = fs.readFileSync(sample);
 
 const value = JSON.parse(json.toString());
-let schema = TopLevel.TopLevelSchema ?? TopLevel.TopLevelElementSchema;
+let schema = TopLevel.TopLevel ?? TopLevel.TopLevelElement;
 if (!schema) {
     // Sometimes key is prefixed with funPrefixes (e.g. 2df80.json)
     Object.keys(TopLevel).some(key => {
-        if (key.endsWith("TopLevelSchema") || key.endsWith("TopLevelElementSchema")) {
+        if (key.endsWith("TopLevel") || key.endsWith("TopLevelElement")) {
             schema = TopLevel[key];
             return true;
         }
@@ -25,11 +25,11 @@ if (!schema) {
 let backToJson: string;
 if (Array.isArray(value)) {
     const parsedValue = value.map(v => {
-        return Schema.parse(schema)(v);
+        return Schema.parseSync(schema)(v);
     });
     backToJson = JSON.stringify(parsedValue, null, 2);
 } else {
-    const parsedValue = Schema.parse(schema)(value);
+    const parsedValue = Schema.parseSync(schema)(value);
     backToJson = JSON.stringify(parsedValue, null, 2);
 }
 

@@ -3,7 +3,7 @@
 # This runs quicktype, ensuring dependencies are installed
 # and rebuilding quicktype first.
 #
-# Use script/quickertype to skip reinstalling dependencies
+# Use script/quickesttype to skip reinstalling dependencies
 # and rebuilding PureScript for 10s faster runs if you
 # are just working on TargetLanguage code in TypeScript.
 

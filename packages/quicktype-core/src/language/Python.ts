@@ -282,9 +282,13 @@ export class PythonRenderer extends ConvenienceRenderer {
 
                 return content;
             }, lines[0]);
-            this.emitLine('"""', docstring, '"""');
+            this.emitComments([{ customLines: [docstring], lineStart: '"""', lineEnd: '"""' }]);
         } else {
-            this.emitCommentLines(lines, "", undefined, '"""', '"""');
+            this.emitCommentLines(lines, {
+                firstLineStart: '"""',
+                lineStart: "",
+                afterComment: '"""'
+            });
         }
     }
 
@@ -461,8 +465,8 @@ export class PythonRenderer extends ConvenienceRenderer {
                     this.emitLine("pass");
                 } else {
                     this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
-                        this.emitDescription(this.descriptionForClassProperty(t, jsonName));
                         this.emitLine(name, this.typeHint(": ", this.pythonType(cp.type, true)));
+                        this.emitDescription(this.descriptionForClassProperty(t, jsonName));
                     });
                 }
                 this.ensureBlankLine();
@@ -509,7 +513,7 @@ export class PythonRenderer extends ConvenienceRenderer {
         const supportLines = this.gatherSource(() => this.emitSupportCode());
 
         if (this.leadingComments !== undefined) {
-            this.emitCommentLines(this.leadingComments);
+            this.emitComments(this.leadingComments);
         }
         this.ensureBlankLine();
         this.emitImports();
