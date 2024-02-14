@@ -9,7 +9,7 @@ jobs:
         steps:
             - uses: actions/checkout@v3
             - uses: ./.github/workflows/setup
-
+    
     test:
         needs: [build]
         runs-on: ${{ matrix.runs-on }}
@@ -176,6 +176,7 @@ jobs:
             - run: echo '@main def hello() = println("We need this spam print statement for bloop to exit correctly...")' | scala-cli _
               if: ${{ contains(matrix.fixture, 'scala3') }}
 
+            - run: tsc --noEmit
             - run: QUICKTEST=true FIXTURE=${{ matrix.fixture }} npm test
 
     test-complete:
