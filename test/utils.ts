@@ -9,6 +9,8 @@ import { RendererOptions } from "quicktype-core";
 import * as languages from "./languages";
 import deepEquals from "./lib/deepEquals";
 
+import optionMap from "./lib/optionMap"
+
 import chalk from "chalk";
 const strictDeepEquals: (x: any, y: any) => boolean = require("deep-equal");
 
@@ -180,10 +182,29 @@ export interface Sample {
     path: string;
     additionalRendererOptions: RendererOptions;
     saveOutput: boolean;
+    outPath?: string;
 }
 
 export function samplesFromPaths(paths: string[]): Sample[] {
-    return paths.map(p => ({ path: p, additionalRendererOptions: {}, saveOutput: true }));
+    const samples: Sample[] = [];
+    for (const path of paths) {
+        const skipFile = path.match(/^.*\.out\..*$/)
+        if (skipFile) continue
+        const currentSample: Sample = { path: path, additionalRendererOptions: {}, saveOutput: true }
+        const options: RendererOptions = optionMap[path] ? optionMap[path] : {};
+        currentSample.additionalRendererOptions = options;
+
+        const inFileMatch = path.match(/^(.*)\.in\.(.*)$/)
+        if (inFileMatch) {
+            const outFilePath = inFileMatch[1] + '.out.' + inFileMatch[2]
+            if (!fs.existsSync(outFilePath)) {
+                throw new Error(`Input file with name ${path} does not have a matching output file named ${outFilePath}`)
+            }
+            currentSample.outPath = outFilePath;
+        }
+        samples.push(currentSample);
+    }
+    return samples;
 }
 
 export function samplesFromSources(
@@ -229,7 +250,7 @@ export function compareJsonFileToJson(args: ComparisonArgs) {
 
     const { expectedFile, strict } = args;
     const { given } = args;
-
+    
     const jsonString = fileOrCommandIsFile(given)
         ? callAndReportFailure("Could not read JSON output file", () => fs.readFileSync(given.file, "utf8"))
         : callAndReportFailure("Could not run command for JSON output", () => exec(given.command, given.env).stdout);

@@ -188,7 +188,8 @@ abstract class LanguageFixture extends Fixture {
     abstract test(
         filename: string,
         additionalRendererOptions: RendererOptions,
-        additionalFiles: string[]
+        additionalFiles: string[],
+        expectedFilename?: string,
     ): Promise<number>;
 
     additionalFiles(_sample: Sample): string[] {
@@ -198,6 +199,7 @@ abstract class LanguageFixture extends Fixture {
     async runWithSample(sample: Sample, index: number, total: number) {
         const cwd = this.getRunDirectory();
         const sampleFile = path.resolve(sample.path);
+        const sampleOutFile = sample.outPath ? path.resolve(sample.outPath) : undefined
         const shouldSkip = this.shouldSkipTest(sample);
         const additionalFiles = this.additionalFiles(sample).map(p => path.resolve(p));
 
@@ -223,7 +225,7 @@ abstract class LanguageFixture extends Fixture {
 
             try {
                 numFiles = await timeout(
-                    this.test(sampleFile, sample.additionalRendererOptions, additionalFiles),
+                    this.test(sampleFile, sample.additionalRendererOptions, additionalFiles, sampleOutFile),
                     MAX_TEST_RUNTIME_MS
                 );
             } catch (e) {
@@ -270,14 +272,15 @@ class JSONFixture extends LanguageFixture {
     async test(
         filename: string,
         additionalRendererOptions: RendererOptions,
-        _additionalFiles: string[]
+        _additionalFiles: string[],
+        expectedFilename?: string,
     ): Promise<number> {
         if (this.language.compileCommand) {
             await execAsync(this.language.compileCommand);
         }
         if (this.language.runCommand === undefined) return 0;
 
-        compareJsonFileToJson(comparisonArgs(this.language, filename, filename, additionalRendererOptions));
+        compareJsonFileToJson(comparisonArgs(this.language, filename, expectedFilename ? expectedFilename : filename, additionalRendererOptions));
 
         if (this.language.diffViaSchema && !_.includes(this.language.skipDiffViaSchema, path.basename(filename))) {
             debug("* Diffing with code generated via JSON Schema");
