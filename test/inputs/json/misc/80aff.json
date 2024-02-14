@@ -1,1 +1,235 @@
-{"count": 25, "facets": {}, "results": [{"name": "Other public or mixed entities, created by law whose purpose is to act in the public interest", "parent": 6, "items": 264, "created_at": "2015-06-20T23:47:50.629565", "updated_at": "2015-06-20T23:47:50.629571", "uri": "http://api.lobbyfacts.eu/api/1/category/66", "id": 66}, {"name": "Transnational associations and networks of public regional or other sub-national authorities", "parent": 6, "items": 86, "created_at": "2015-06-20T23:52:01.435197", "updated_at": "2015-06-20T23:52:01.435209", "uri": "http://api.lobbyfacts.eu/api/1/category/65", "id": 65}, {"name": "Other sub-national public authorities", "parent": 6, "items": 131, "created_at": "2015-06-20T23:45:21.341529", "updated_at": "2015-06-20T23:45:21.341540", "uri": "http://api.lobbyfacts.eu/api/1/category/64", "id": 64}, {"name": "Regional structures", "parent": 6, "items": 139, "created_at": "2015-06-20T23:46:06.687738", "updated_at": "2015-06-20T23:46:06.687750", "uri": "http://api.lobbyfacts.eu/api/1/category/63", "id": 63}, {"name": "Other public or mixed entities, etc.", "parent": 6, "items": 1, "created_at": "2015-04-24T01:48:38.622659", "updated_at": "2015-06-08T21:59:49.003576", "uri": "http://api.lobbyfacts.eu/api/1/category/62", "id": 62}, {"name": "Local, regional and municipal authorities (at sub-national level)", "parent": 6, "items": 2, "created_at": "2015-04-24T01:46:58.298572", "updated_at": "2015-06-08T21:48:45.111744", "uri": "http://api.lobbyfacts.eu/api/1/category/61", "id": 61}, {"name": "Organisations representing churches and religious communities", "parent": 5, "items": 62, "created_at": "2015-04-24T01:53:24.257993", "updated_at": "2015-04-24T01:53:24.258004", "uri": "http://api.lobbyfacts.eu/api/1/category/51", "id": 51}, {"name": "Academic institutions", "parent": 4, "items": 315, "created_at": "2015-04-24T01:49:12.530337", "updated_at": "2015-04-24T01:49:12.530348", "uri": "http://api.lobbyfacts.eu/api/1/category/42", "id": 42}, {"name": "Think tanks and research institutions", "parent": 4, "items": 606, "created_at": "2015-04-24T01:47:16.228011", "updated_at": "2015-04-24T01:47:16.228017", "uri": "http://api.lobbyfacts.eu/api/1/category/41", "id": 41}, {"name": "Non-governmental organisations, platforms and networks and similar", "parent": 3, "items": 3120, "created_at": "2015-04-24T01:46:51.539328", "updated_at": "2015-04-24T01:46:51.539333", "uri": "http://api.lobbyfacts.eu/api/1/category/31", "id": 31}, {"name": "Other in house lobbyists", "parent": 2, "items": 368, "created_at": "2015-06-20T23:45:13.999259", "updated_at": "2015-06-20T23:45:13.999266", "uri": "http://api.lobbyfacts.eu/api/1/category/27", "id": 27}, {"name": "Trade unions and professional associations", "parent": 2, "items": 783, "created_at": "2015-06-20T23:45:15.961411", "updated_at": "2015-06-20T23:45:15.961422", "uri": "http://api.lobbyfacts.eu/api/1/category/26", "id": 26}, {"name": "Trade and business organisations", "parent": 2, "items": 2477, "created_at": "2015-06-20T23:45:10.255417", "updated_at": "2015-06-20T23:45:10.255424", "uri": "http://api.lobbyfacts.eu/api/1/category/25", "id": 25}, {"name": "Other similar organisations", "parent": 2, "items": 2, "created_at": "2015-04-24T01:46:54.547344", "updated_at": "2015-06-08T21:59:29.739023", "uri": "http://api.lobbyfacts.eu/api/1/category/24", "id": 24}, {"name": "Trade, business & professional associations", "parent": 2, "items": 2, "created_at": "2015-04-24T01:46:52.124504", "updated_at": "2015-06-08T22:00:51.075491", "uri": "http://api.lobbyfacts.eu/api/1/category/22", "id": 22}, {"name": "Companies & groups", "parent": 2, "items": 2166, "created_at": "2015-04-24T01:46:51.879074", "updated_at": "2015-04-24T01:46:51.879079", "uri": "http://api.lobbyfacts.eu/api/1/category/21", "id": 21}, {"name": "Self-employed consultants", "parent": 1, "items": 483, "created_at": "2015-04-24T01:46:56.610098", "updated_at": "2015-04-24T01:46:56.610103", "uri": "http://api.lobbyfacts.eu/api/1/category/13", "id": 13}, {"name": "Law firms", "parent": 1, "items": 163, "created_at": "2015-04-24T01:47:16.905163", "updated_at": "2015-04-24T01:47:16.905173", "uri": "http://api.lobbyfacts.eu/api/1/category/12", "id": 12}, {"name": "Professional consultancies", "parent": 1, "items": 852, "created_at": "2015-04-24T01:46:54.278376", "updated_at": "2015-04-24T01:46:54.278380", "uri": "http://api.lobbyfacts.eu/api/1/category/11", "id": 11}, {"name": "VI - Organisations representing local, regional and municipal authorities, other public or mixed entities, etc.", "parent": null, "items": 623, "created_at": "2015-04-24T01:46:58.289906", "updated_at": "2015-04-24T01:46:58.289912", "uri": "http://api.lobbyfacts.eu/api/1/category/6", "id": 6}, {"name": "V - Organisations representing churches and religious communities", "parent": null, "items": 62, "created_at": "2015-04-24T01:53:24.174057", "updated_at": "2015-04-24T01:53:24.174068", "uri": "http://api.lobbyfacts.eu/api/1/category/5", "id": 5}, {"name": "IV - Think tanks, research and academic institutions", "parent": null, "items": 921, "created_at": "2015-04-24T01:47:16.221072", "updated_at": "2015-04-24T01:47:16.221083", "uri": "http://api.lobbyfacts.eu/api/1/category/4", "id": 4}, {"name": "III - Non-governmental organisations", "parent": null, "items": 3120, "created_at": "2015-04-24T01:46:51.534790", "updated_at": "2015-04-24T01:46:51.534797", "uri": "http://api.lobbyfacts.eu/api/1/category/3", "id": 3}, {"name": "II - In-house lobbyists and trade/professional associations", "parent": null, "items": 5799, "created_at": "2015-04-24T01:46:51.875300", "updated_at": "2015-06-08T22:00:51.062663", "uri": "http://api.lobbyfacts.eu/api/1/category/2", "id": 2}, {"name": "I - Professional consultancies/law firms/self-employed consultants", "parent": null, "items": 1498, "created_at": "2015-04-24T01:46:54.274270", "updated_at": "2015-04-24T01:46:54.274275", "uri": "http://api.lobbyfacts.eu/api/1/category/1", "id": 1}], "next": false, "limit": 50, "offset": 0, "previous": false}
+{
+    "count": 25,
+    "facets": {},
+    "results": [
+        {
+            "name": "Other public or mixed entities, created by law whose purpose is to act in the public interest",
+            "parent": 6,
+            "items": 264,
+            "created_at": "2015-06-20T23:47:50.629565Z",
+            "updated_at": "2015-06-20T23:47:50.629571Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/category/66",
+            "id": 66
+        },
+        {
+            "name": "Transnational associations and networks of public regional or other sub-national authorities",
+            "parent": 6,
+            "items": 86,
+            "created_at": "2015-06-20T23:52:01.435197Z",
+            "updated_at": "2015-06-20T23:52:01.435209Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/category/65",
+            "id": 65
+        },
+        {
+            "name": "Other sub-national public authorities",
+            "parent": 6,
+            "items": 131,
+            "created_at": "2015-06-20T23:45:21.341529Z",
+            "updated_at": "2015-06-20T23:45:21.341540Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/category/64",
+            "id": 64
+        },
+        {
+            "name": "Regional structures",
+            "parent": 6,
+            "items": 139,
+            "created_at": "2015-06-20T23:46:06.687738Z",
+            "updated_at": "2015-06-20T23:46:06.687750Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/category/63",
+            "id": 63
+        },
+        {
+            "name": "Other public or mixed entities, etc.",
+            "parent": 6,
+            "items": 1,
+            "created_at": "2015-04-24T01:48:38.622659Z",
+            "updated_at": "2015-06-08T21:59:49.003576Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/category/62",
+            "id": 62
+        },
+        {
+            "name": "Local, regional and municipal authorities (at sub-national level)",
+            "parent": 6,
+            "items": 2,
+            "created_at": "2015-04-24T01:46:58.298572Z",
+            "updated_at": "2015-06-08T21:48:45.111744Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/category/61",
+            "id": 61
+        },
+        {
+            "name": "Organisations representing churches and religious communities",
+            "parent": 5,
+            "items": 62,
+            "created_at": "2015-04-24T01:53:24.257993Z",
+            "updated_at": "2015-04-24T01:53:24.258004Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/category/51",
+            "id": 51
+        },
+        {
+            "name": "Academic institutions",
+            "parent": 4,
+            "items": 315,
+            "created_at": "2015-04-24T01:49:12.530337Z",
+            "updated_at": "2015-04-24T01:49:12.530348Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/category/42",
+            "id": 42
+        },
+        {
+            "name": "Think tanks and research institutions",
+            "parent": 4,
+            "items": 606,
+            "created_at": "2015-04-24T01:47:16.228011Z",
+            "updated_at": "2015-04-24T01:47:16.228017Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/category/41",
+            "id": 41
+        },
+        {
+            "name": "Non-governmental organisations, platforms and networks and similar",
+            "parent": 3,
+            "items": 3120,
+            "created_at": "2015-04-24T01:46:51.539328Z",
+            "updated_at": "2015-04-24T01:46:51.539333Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/category/31",
+            "id": 31
+        },
+        {
+            "name": "Other in house lobbyists",
+            "parent": 2,
+            "items": 368,
+            "created_at": "2015-06-20T23:45:13.999259Z",
+            "updated_at": "2015-06-20T23:45:13.999266Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/category/27",
+            "id": 27
+        },
+        {
+            "name": "Trade unions and professional associations",
+            "parent": 2,
+            "items": 783,
+            "created_at": "2015-06-20T23:45:15.961411Z",
+            "updated_at": "2015-06-20T23:45:15.961422Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/category/26",
+            "id": 26
+        },
+        {
+            "name": "Trade and business organisations",
+            "parent": 2,
+            "items": 2477,
+            "created_at": "2015-06-20T23:45:10.255417Z",
+            "updated_at": "2015-06-20T23:45:10.255424Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/category/25",
+            "id": 25
+        },
+        {
+            "name": "Other similar organisations",
+            "parent": 2,
+            "items": 2,
+            "created_at": "2015-04-24T01:46:54.547344Z",
+            "updated_at": "2015-06-08T21:59:29.739023Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/category/24",
+            "id": 24
+        },
+        {
+            "name": "Trade, business & professional associations",
+            "parent": 2,
+            "items": 2,
+            "created_at": "2015-04-24T01:46:52.124504Z",
+            "updated_at": "2015-06-08T22:00:51.075491Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/category/22",
+            "id": 22
+        },
+        {
+            "name": "Companies & groups",
+            "parent": 2,
+            "items": 2166,
+            "created_at": "2015-04-24T01:46:51.879074Z",
+            "updated_at": "2015-04-24T01:46:51.879079Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/category/21",
+            "id": 21
+        },
+        {
+            "name": "Self-employed consultants",
+            "parent": 1,
+            "items": 483,
+            "created_at": "2015-04-24T01:46:56.610098Z",
+            "updated_at": "2015-04-24T01:46:56.610103Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/category/13",
+            "id": 13
+        },
+        {
+            "name": "Law firms",
+            "parent": 1,
+            "items": 163,
+            "created_at": "2015-04-24T01:47:16.905163Z",
+            "updated_at": "2015-04-24T01:47:16.905173Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/category/12",
+            "id": 12
+        },
+        {
+            "name": "Professional consultancies",
+            "parent": 1,
+            "items": 852,
+            "created_at": "2015-04-24T01:46:54.278376Z",
+            "updated_at": "2015-04-24T01:46:54.278380Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/category/11",
+            "id": 11
+        },
+        {
+            "name": "VI - Organisations representing local, regional and municipal authorities, other public or mixed entities, etc.",
+            "parent": null,
+            "items": 623,
+            "created_at": "2015-04-24T01:46:58.289906Z",
+            "updated_at": "2015-04-24T01:46:58.289912Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/category/6",
+            "id": 6
+        },
+        {
+            "name": "V - Organisations representing churches and religious communities",
+            "parent": null,
+            "items": 62,
+            "created_at": "2015-04-24T01:53:24.174057Z",
+            "updated_at": "2015-04-24T01:53:24.174068Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/category/5",
+            "id": 5
+        },
+        {
+            "name": "IV - Think tanks, research and academic institutions",
+            "parent": null,
+            "items": 921,
+            "created_at": "2015-04-24T01:47:16.221072Z",
+            "updated_at": "2015-04-24T01:47:16.221083Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/category/4",
+            "id": 4
+        },
+        {
+            "name": "III - Non-governmental organisations",
+            "parent": null,
+            "items": 3120,
+            "created_at": "2015-04-24T01:46:51.534790Z",
+            "updated_at": "2015-04-24T01:46:51.534797Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/category/3",
+            "id": 3
+        },
+        {
+            "name": "II - In-house lobbyists and trade/professional associations",
+            "parent": null,
+            "items": 5799,
+            "created_at": "2015-04-24T01:46:51.875300Z",
+            "updated_at": "2015-06-08T22:00:51.062663Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/category/2",
+            "id": 2
+        },
+        {
+            "name": "I - Professional consultancies/law firms/self-employed consultants",
+            "parent": null,
+            "items": 1498,
+            "created_at": "2015-04-24T01:46:54.274270Z",
+            "updated_at": "2015-04-24T01:46:54.274275Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/category/1",
+            "id": 1
+        }
+    ],
+    "next": false,
+    "limit": 50,
+    "offset": 0,
+    "previous": false
+}
