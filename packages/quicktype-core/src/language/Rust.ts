@@ -129,7 +129,7 @@ export class RustTargetLanguage extends TargetLanguage {
             rustOptions.derivePartialEq,
             rustOptions.edition2018,
             rustOptions.leadingComments,
-            rustOptions.skipSerializingNone,
+            rustOptions.skipSerializingNone
         ];
     }
 }
@@ -371,7 +371,7 @@ export class RustRenderer extends ConvenienceRenderer {
     private emitSkipSerializeNone(t: Type) {
         if (t instanceof UnionType) {
             const nullable = nullableFromUnion(t);
-            if (nullable !== null) this.emitLine('#[serde(skip_serializing_if = "Option::is_none")]'); 
+            if (nullable !== null) this.emitLine('#[serde(skip_serializing_if = "Option::is_none")]');
         }
     }
 
