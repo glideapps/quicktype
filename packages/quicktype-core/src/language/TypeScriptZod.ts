@@ -62,7 +62,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
     constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        private readonly _options: OptionValues<typeof typeScriptZodOptions>
+        protected readonly _options: OptionValues<typeof typeScriptZodOptions>
     ) {
         super(targetLanguage, renderContext);
     }
@@ -102,7 +102,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         return funPrefixNamer("enum-cases", s => this.nameStyle(s, false));
     }
 
-    private importStatement(lhs: Sourcelike, moduleName: Sourcelike): Sourcelike {
+    protected importStatement(lhs: Sourcelike, moduleName: Sourcelike): Sourcelike {
         return ["import ", lhs, " from ", moduleName, ";"];
     }
 
@@ -111,12 +111,12 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         this.emitLine(this.importStatement("* as z", '"zod"'));
     }
 
-    typeMapTypeForProperty(p: ClassProperty): Sourcelike {
+    protected typeMapTypeForProperty(p: ClassProperty): Sourcelike {
         const typeMap = this.typeMapTypeFor(p.type);
         return p.isOptional ? [typeMap, ".optional()"] : typeMap;
     }
 
-    typeMapTypeFor(t: Type, required: boolean = true): Sourcelike {
+    protected typeMapTypeFor(t: Type, required: boolean = true): Sourcelike {
         if (["class", "object", "enum"].indexOf(t.kind) >= 0) {
             return [this.nameForNamedType(t), "Schema"];
         }
@@ -154,7 +154,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         return match;
     }
 
-    private emitObject(name: Name, t: ObjectType) {
+    protected emitObject(name: Name, t: ObjectType) {
         this.ensureBlankLine();
         this.emitLine("\nexport const ", name, "Schema = ", "z.object({");
         this.indent(() => {
@@ -168,7 +168,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         }
     }
 
-    private emitEnum(e: EnumType, enumName: Name): void {
+    protected emitEnum(e: EnumType, enumName: Name): void {
         this.ensureBlankLine();
         this.emitDescription(this.descriptionForType(e));
         this.emitLine("\nexport const ", enumName, "Schema = ", "z.enum([");

@@ -1982,7 +1982,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             "; break;"
                         );
                     });
-                    this.emitLine('default: throw std::runtime_error("This should not happen");');
+                    this.emitLine(`default: throw std::runtime_error("Unexpected value in enumeration \\"${enumName}\\": " + std::to_string(static_cast<int>(x)));`);
                 });
             }
         );
