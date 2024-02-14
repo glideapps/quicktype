@@ -812,6 +812,7 @@ export const allFixtures: Fixture[] = [
     new JSONFixture(languages.ObjectiveCLanguage),
     new JSONFixture(languages.TypeScriptLanguage),
     new JSONFixture(languages.TypeScriptZodLanguage),
+    new JSONFixture(languages.TypeScriptEffectSchemaLanguage),
     new JSONFixture(languages.FlowLanguage),
     new JSONFixture(languages.JavaScriptLanguage),
     new JSONFixture(languages.KotlinLanguage),

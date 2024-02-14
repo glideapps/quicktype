@@ -48,6 +48,7 @@ export const rustOptions = {
     ]),
     deriveDebug: new BooleanOption("derive-debug", "Derive Debug impl", false),
     deriveClone: new BooleanOption("derive-clone", "Derive Clone impl", false),
+    derivePartialEq: new BooleanOption("derive-partial-eq", "Derive PartialEq impl", false),
     edition2018: new BooleanOption("edition-2018", "Edition 2018", true),
     leadingComments: new BooleanOption("leading-comments", "Leading Comments", true)
 };
@@ -124,6 +125,7 @@ export class RustTargetLanguage extends TargetLanguage {
             rustOptions.visibility,
             rustOptions.deriveDebug,
             rustOptions.deriveClone,
+            rustOptions.derivePartialEq,
             rustOptions.edition2018,
             rustOptions.leadingComments
         ];
@@ -141,6 +143,7 @@ const keywords = [
 
     // Keywords used in the language.
     "as",
+    "async",
     "box",
     "break",
     "const",
@@ -200,7 +203,10 @@ const keywords = [
     "default",
     "dyn",
     "'static",
-    "union"
+    "union",
+
+    // Conflict between `std::Option` and potentially generated Option
+    "option"
 ];
 
 const isAsciiLetterOrUnderscoreOrDigit = (codePoint: number): boolean => {
@@ -375,6 +381,7 @@ export class RustRenderer extends ConvenienceRenderer {
             "#[derive(",
             this._options.deriveDebug ? "Debug, " : "",
             this._options.deriveClone ? "Clone, " : "",
+            this._options.derivePartialEq ? "PartialEq, " : "",
             "Serialize, Deserialize)]"
         );
 
@@ -420,6 +427,7 @@ export class RustRenderer extends ConvenienceRenderer {
             "#[derive(",
             this._options.deriveDebug ? "Debug, " : "",
             this._options.deriveClone ? "Clone, " : "",
+            this._options.derivePartialEq ? "PartialEq, " : "",
             "Serialize, Deserialize)]"
         );
         this.emitLine("#[serde(untagged)]");
@@ -441,6 +449,7 @@ export class RustRenderer extends ConvenienceRenderer {
             "#[derive(",
             this._options.deriveDebug ? "Debug, " : "",
             this._options.deriveClone ? "Clone, " : "",
+            this._options.derivePartialEq ? "PartialEq, " : "",
             "Serialize, Deserialize)]"
         );
 

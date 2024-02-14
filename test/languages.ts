@@ -1426,6 +1426,124 @@ export const TypeScriptZodLanguage: Language = {
         "e8b04.json"
     ],
     allowMissingNull: false,
+    features: ["enum", "union", "no-defaults", "date-time"],
+    output: "TopLevel.ts",
+    topLevel: "TopLevel",
+    skipJSON: [
+        // Uses generated schema before it's defined
+        "be234.json",
+        "76ae1.json",
+        "6de06.json",
+        "2df80.json",
+        "29f47.json",
+        "spotify-album.json",
+        "reddit.json",
+        "github-events.json",
+
+        // Does not handle recursive
+        "direct-recursive.json",
+        "list.json",
+        "bug790.json",
+
+        // Does not handle top level array
+        "bug863.json",
+
+        "no-classes.json",
+        "00c36.json",
+        "10be4.json",
+        "050b0.json",
+        "06bee.json",
+        "07c75.json",
+        "3536b.json",
+        "13d8d.json",
+        "43970.json",
+        "570ec.json",
+        "4d6fb.json",
+        "66121.json",
+        "5eae5.json",
+        "6eb00.json",
+        "7f568.json",
+        "7fbfb.json",
+        "8592b.json",
+        "9847b.json",
+        "996bd.json",
+        "9a503.json",
+        "9eed5.json",
+        "ad8be.json",
+        "ae7f0.json",
+        "b4865.json",
+        "cda6c.json",
+        "c8c7e.json",
+        "e53b5.json",
+        "f3139.json",
+        "f22f5.json",
+        "nbl-stats.json",
+        "bug855-short.json",
+        "combinations4.json",
+        "identifiers.json",
+        "blns-object.json",
+        "recursive.json",
+        "bug427.json",
+        "nst-test-suite.json",
+        "keywords.json",
+        "ed095.json",
+        "7681c.json",
+        "32d5c.json"
+    ],
+    skipMiscJSON: false,
+    skipSchema: [
+        "any.schema",
+        "class-map-union.schema",
+        "direct-union.schema",
+        "enum.schema",
+        "go-schema-pattern-properties.schema",
+        "implicit-class-array-union.schema",
+        "intersection.schema",
+        "multi-type-enum.schema",
+        "keyword-unions.schema",
+        "optional-any.schema",
+        "required.schema",
+        "required-non-properties.schema"
+    ],
+    rendererOptions: {},
+    quickTestRendererOptions: [{ "array-type": "list" }],
+    sourceFiles: ["src/language/TypeScriptZod.ts"]
+};
+
+export const TypeScriptEffectSchemaLanguage: Language = {
+    name: "typescript-effect-schema",
+    base: "test/fixtures/typescript-effect-schema",
+    setupCommand: "npm install",
+    runCommand(sample: string) {
+        return `npm run --silent test "${sample}"`;
+    },
+    diffViaSchema: true,
+    skipDiffViaSchema: [
+        // Schema generated type uses first key as type name, JSON uses last
+        "0cffa.json",
+        "f6a65.json",
+        "c3303.json",
+        "7681c.json",
+        "127a1.json",
+        "26b49.json",
+
+        "bug863.json",
+        "reddit.json",
+        "github-events.json",
+        "nbl-stats.json",
+        "0a91a.json",
+        "0e0c2.json",
+        "29f47.json",
+        "2df80.json",
+        "27332.json",
+        "34702.json",
+        "6de06.json",
+        "76ae1.json",
+        "af2d1.json",
+        "be234.json",
+        "e8b04.json"
+    ],
+    allowMissingNull: false,
     features: ["enum", "union", "no-defaults"],
     output: "TopLevel.ts",
     topLevel: "TopLevel",
@@ -1505,5 +1623,5 @@ export const TypeScriptZodLanguage: Language = {
     ],
     rendererOptions: {},
     quickTestRendererOptions: [{ "array-type": "list" }],
-    sourceFiles: ["src/language/TypeScriptZod.ts"]
+    sourceFiles: ["src/language/TypeScriptEffectSchema.ts"]
 };

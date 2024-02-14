@@ -22,7 +22,12 @@ export const tsFlowOptions = Object.assign({}, javaScriptOptions, {
     nicePropertyNames: new BooleanOption("nice-property-names", "Transform property names to be JavaScripty", false),
     declareUnions: new BooleanOption("explicit-unions", "Explicitly name unions", false),
     preferUnions: new BooleanOption("prefer-unions", "Use union type instead of enum", false),
-    preferTypes: new BooleanOption("prefer-types", "Use types instead of interfaces", false)
+    preferTypes: new BooleanOption("prefer-types", "Use types instead of interfaces", false),
+    preferConstValues: new BooleanOption(
+        "prefer-const-values",
+        "Use string instead of enum for string enums with single value",
+        false
+    )
 });
 
 const tsFlowTypeAnnotations = {
@@ -46,7 +51,8 @@ export abstract class TypeScriptFlowBaseTargetLanguage extends JavaScriptTargetL
             tsFlowOptions.converters,
             tsFlowOptions.rawType,
             tsFlowOptions.preferUnions,
-            tsFlowOptions.preferTypes
+            tsFlowOptions.preferTypes,
+            tsFlowOptions.preferConstValues
         ];
     }
 
@@ -108,6 +114,10 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
     }
 
     protected sourceFor(t: Type): MultiWord {
+        if (this._tsFlowOptions.preferConstValues && t.kind === "enum" && t instanceof EnumType && t.cases.size === 1) {
+            const item = t.cases.values().next().value;
+            return singleWord(`"${utf16StringEscape(item)}"`);
+        }
         if (["class", "object", "enum"].indexOf(t.kind) >= 0) {
             return singleWord(this.nameForNamedType(t));
         }
@@ -283,6 +293,9 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
 
     protected emitEnum(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
+
+        // enums with only one value are emitted as constants
+        if (this._tsFlowOptions.preferConstValues && e.cases.size === 1) return;
 
         if (this._tsFlowOptions.preferUnions) {
             let items = "";

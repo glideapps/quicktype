@@ -19,7 +19,7 @@ jobs:
 
             matrix:
                 fixture:
-                    - typescript,typescript-zod
+                    - typescript,typescript-zod,typescript-effect-schema
                     - javascript,schema-javascript
                     - golang,schema-golang
                     - cjson,schema-cjson
@@ -169,7 +169,7 @@ jobs:
               run: |
                   sudo apt-get update
                   sudo apt-get -y install libboost-all-dev software-properties-common g++ --assume-yes
-            
+
             - name: Install scala
               if: ${{ contains(matrix.fixture, 'scala3') }}
               uses: VirtusLab/scala-cli-setup@main
