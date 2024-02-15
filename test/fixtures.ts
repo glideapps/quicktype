@@ -189,7 +189,7 @@ abstract class LanguageFixture extends Fixture {
         filename: string,
         additionalRendererOptions: RendererOptions,
         additionalFiles: string[],
-        expectedFilename?: string,
+        expectedFilename?: string
     ): Promise<number>;
 
     additionalFiles(_sample: Sample): string[] {
@@ -199,7 +199,7 @@ abstract class LanguageFixture extends Fixture {
     async runWithSample(sample: Sample, index: number, total: number) {
         const cwd = this.getRunDirectory();
         const sampleFile = path.resolve(sample.path);
-        const sampleOutFile = sample.outPath ? path.resolve(sample.outPath) : undefined
+        const sampleOutFile = sample.outPath ? path.resolve(sample.outPath) : undefined;
         const shouldSkip = this.shouldSkipTest(sample);
         const additionalFiles = this.additionalFiles(sample).map(p => path.resolve(p));
 
@@ -256,7 +256,10 @@ abstract class LanguageFixture extends Fixture {
 }
 
 class JSONFixture extends LanguageFixture {
-    constructor(language: languages.Language, public name: string = language.name) {
+    constructor(
+        language: languages.Language,
+        public name: string = language.name
+    ) {
         super(language);
     }
 
@@ -273,14 +276,22 @@ class JSONFixture extends LanguageFixture {
         filename: string,
         additionalRendererOptions: RendererOptions,
         _additionalFiles: string[],
-        expectedFilename?: string,
+        expectedFilename?: string
     ): Promise<number> {
         if (this.language.compileCommand) {
             await execAsync(this.language.compileCommand);
         }
         if (this.language.runCommand === undefined) return 0;
 
-        compareJsonFileToJson(comparisonArgs(this.language, filename, expectedFilename ? expectedFilename : filename, additionalRendererOptions));
+        compareJsonFileToJson({
+            ...comparisonArgs(
+                this.language,
+                filename,
+                expectedFilename ? expectedFilename : filename,
+                additionalRendererOptions
+            ),
+            strict: expectedFilename ? true : false
+        });
 
         if (this.language.diffViaSchema && !_.includes(this.language.skipDiffViaSchema, path.basename(filename))) {
             debug("* Diffing with code generated via JSON Schema");
@@ -571,7 +582,10 @@ class JSONTypeScriptFixture extends JSONToXToYFixture {
 
 // This fixture tests generating code from JSON Schema.
 class JSONSchemaFixture extends LanguageFixture {
-    constructor(language: languages.Language, readonly name: string = `schema-${language.name}`) {
+    constructor(
+        language: languages.Language,
+        readonly name: string = `schema-${language.name}`
+    ) {
         super(language);
     }
 
@@ -702,7 +716,10 @@ class GraphQLFixture extends LanguageFixture {
 }
 
 class CommandSuccessfulLanguageFixture extends LanguageFixture {
-    constructor(language: languages.Language, public name: string = language.name) {
+    constructor(
+        language: languages.Language,
+        public name: string = language.name
+    ) {
         super(language);
     }
 

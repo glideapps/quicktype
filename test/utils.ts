@@ -9,13 +9,16 @@ import { RendererOptions } from "quicktype-core";
 import * as languages from "./languages";
 import deepEquals from "./lib/deepEquals";
 
-import optionMap from "./lib/optionMap"
+import optionMap from "./lib/optionMap";
 
 import chalk from "chalk";
 const strictDeepEquals: (x: any, y: any) => boolean = require("deep-equal");
 
 const DEBUG = process.env.DEBUG !== undefined;
 const ASSUME_STRINGS_EQUAL = process.env.ASSUME_STRINGS_EQUAL !== undefined;
+
+const inputFilePattern = /^(.*)\.in\.(.*)$/;
+const outputFilePattern = /^.*\.out\..*$/;
 
 export function debug<T>(x: T): T {
     if (DEBUG) {
@@ -185,24 +188,32 @@ export interface Sample {
     outPath?: string;
 }
 
+function sampleFromPath(path: string): Sample {
+    // Check optionMap for any CLI options the test in this path should run with
+    const options: RendererOptions = optionMap[path] ? optionMap[path] : {};
+    const currentSample: Sample = { path: path, additionalRendererOptions: options, saveOutput: true };
+
+    // If this is an input file, we should expect a corresponding output file to compare against
+    const inputFileMatch = path.match(inputFilePattern);
+    if (inputFileMatch) {
+        // Search for expected output file. Add to sample if found, throw error if one does not exist.
+        const outFilePath = inputFileMatch[1] + ".out." + inputFileMatch[2];
+        if (!fs.existsSync(outFilePath)) {
+            throw new Error(`Input file with name ${path} does not have a matching output file named ${outFilePath}`);
+        }
+        currentSample.outPath = outFilePath;
+    }
+    return currentSample;
+}
+
 export function samplesFromPaths(paths: string[]): Sample[] {
     const samples: Sample[] = [];
     for (const path of paths) {
-        const skipFile = path.match(/^.*\.out\..*$/)
-        if (skipFile) continue
-        const currentSample: Sample = { path: path, additionalRendererOptions: {}, saveOutput: true }
-        const options: RendererOptions = optionMap[path] ? optionMap[path] : {};
-        currentSample.additionalRendererOptions = options;
+        // Output files will be processed with their corresponding input file and added to the same sample.
+        const outputFileMatch = path.match(outputFilePattern);
+        if (outputFileMatch) continue;
 
-        const inFileMatch = path.match(/^(.*)\.in\.(.*)$/)
-        if (inFileMatch) {
-            const outFilePath = inFileMatch[1] + '.out.' + inFileMatch[2]
-            if (!fs.existsSync(outFilePath)) {
-                throw new Error(`Input file with name ${path} does not have a matching output file named ${outFilePath}`)
-            }
-            currentSample.outPath = outFilePath;
-        }
-        samples.push(currentSample);
+        samples.push(sampleFromPath(path));
     }
     return samples;
 }
@@ -250,7 +261,7 @@ export function compareJsonFileToJson(args: ComparisonArgs) {
 
     const { expectedFile, strict } = args;
     const { given } = args;
-    
+
     const jsonString = fileOrCommandIsFile(given)
         ? callAndReportFailure("Could not read JSON output file", () => fs.readFileSync(given.file, "utf8"))
         : callAndReportFailure("Could not run command for JSON output", () => exec(given.command, given.env).stdout);

@@ -1,11 +1,13 @@
 package main
 
-import "io/ioutil"
-import "log"
-import "os"
+import (
+	"io"
+	"log"
+	"os"
+)
 
 func main() {
-	bytes, err := ioutil.ReadAll(os.Stdin)
+	bytes, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		log.Fatal(err)
 	}
