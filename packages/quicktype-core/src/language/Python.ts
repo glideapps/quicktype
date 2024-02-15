@@ -472,11 +472,11 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected emitEnum(t: EnumType): void {
-        this.declareType(t, () => {
-            this.forEachEnumCase(t, "none", (name, jsonName) => {
-                this.emitLine([name, " = ", this.string(jsonName)]);
-            });
-        });
+        // Custom to HF fork: emit as Literal instead of Enum
+        this.emitLine([
+            this.nameForNamedType(t),
+            this.typeHint(" = ", this.withTyping("Literal"), "[", arrayIntercalate(", ", Array.from(t.cases.keys())), "]")
+        ]);
     }
 
     protected emitImports(): void {
