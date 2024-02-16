@@ -1,8 +1,22 @@
 import { RendererOptions } from "quicktype-core";
+import { ComparisonArgs } from "../utils";
+import { GoLanguage, Language } from "../languages";
 
-const optionMap: Record<string, RendererOptions> = {
+type TestOptions = {
+    cliOptions: RendererOptions;
+    language: Language;
+    comparisonArgs?: Partial<ComparisonArgs>;
+};
+
+const optionMap: Record<string, TestOptions> = {
     "test/inputs/json/misc/227e2.in.json": {
-        "omit-empty": true
+        cliOptions: {
+            "omit-empty": true
+        },
+        language: GoLanguage,
+        comparisonArgs: {
+            strict: true
+        }
     }
 };
 

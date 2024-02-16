@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 
-import * as _ from "lodash";
+import _ from "lodash";
 import * as shell from "shelljs";
 
 import { main as quicktype_, CLIOptions } from "../src";
@@ -12,6 +12,7 @@ import deepEquals from "./lib/deepEquals";
 import optionMap from "./lib/optionMap";
 
 import chalk from "chalk";
+import { Language } from "./languages";
 const strictDeepEquals: (x: any, y: any) => boolean = require("deep-equal");
 
 const DEBUG = process.env.DEBUG !== undefined;
@@ -186,12 +187,24 @@ export interface Sample {
     additionalRendererOptions: RendererOptions;
     saveOutput: boolean;
     outPath?: string;
+    comparisonArgs?: Partial<ComparisonArgs>;
+    language?: Language;
 }
 
 function sampleFromPath(path: string): Sample {
-    // Check optionMap for any CLI options the test in this path should run with
-    const options: RendererOptions = optionMap[path] ? optionMap[path] : {};
-    const currentSample: Sample = { path: path, additionalRendererOptions: options, saveOutput: true };
+    const currentSample: Sample = {
+        path: path,
+        additionalRendererOptions: {},
+        saveOutput: true
+    };
+
+    // Check optionMap for any CLI options and comparison options the test in this path should run with
+    if (optionMap[path]) {
+        const { cliOptions, language, comparisonArgs } = optionMap[path];
+        currentSample.additionalRendererOptions = cliOptions;
+        currentSample.language = language;
+        currentSample.comparisonArgs = comparisonArgs;
+    }
 
     // If this is an input file, we should expect a corresponding output file to compare against
     const inputFileMatch = path.match(inputFilePattern);

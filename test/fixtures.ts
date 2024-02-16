@@ -189,6 +189,7 @@ abstract class LanguageFixture extends Fixture {
         filename: string,
         additionalRendererOptions: RendererOptions,
         additionalFiles: string[],
+        testComparisonArgs?: Partial<ComparisonArgs>,
         expectedFilename?: string
     ): Promise<number>;
 
@@ -225,7 +226,13 @@ abstract class LanguageFixture extends Fixture {
 
             try {
                 numFiles = await timeout(
-                    this.test(sampleFile, sample.additionalRendererOptions, additionalFiles, sampleOutFile),
+                    this.test(
+                        sampleFile,
+                        sample.additionalRendererOptions,
+                        additionalFiles,
+                        sample.comparisonArgs,
+                        sampleOutFile
+                    ),
                     MAX_TEST_RUNTIME_MS
                 );
             } catch (e) {
@@ -276,6 +283,7 @@ class JSONFixture extends LanguageFixture {
         filename: string,
         additionalRendererOptions: RendererOptions,
         _additionalFiles: string[],
+        testComparisonArgs?: Partial<ComparisonArgs>,
         expectedFilename?: string
     ): Promise<number> {
         if (this.language.compileCommand) {
@@ -283,15 +291,19 @@ class JSONFixture extends LanguageFixture {
         }
         if (this.language.runCommand === undefined) return 0;
 
-        compareJsonFileToJson({
-            ...comparisonArgs(
-                this.language,
-                filename,
-                expectedFilename ? expectedFilename : filename,
-                additionalRendererOptions
-            ),
-            strict: expectedFilename ? true : false
-        });
+        let sampleComparisonArgs = comparisonArgs(
+            this.language,
+            filename,
+            expectedFilename ? expectedFilename : filename,
+            additionalRendererOptions
+        );
+
+        // Add any additional comparison args specified in optionMap for this test
+        if (testComparisonArgs) {
+            sampleComparisonArgs = { ...sampleComparisonArgs, ...testComparisonArgs };
+        }
+
+        compareJsonFileToJson(sampleComparisonArgs);
 
         if (this.language.diffViaSchema && !_.includes(this.language.skipDiffViaSchema, path.basename(filename))) {
             debug("* Diffing with code generated via JSON Schema");
@@ -316,6 +328,9 @@ class JSONFixture extends LanguageFixture {
 
     shouldSkipTest(sample: Sample): boolean {
         if (fs.statSync(sample.path).size > 32 * 1024 * 1024) {
+            return true;
+        }
+        if (sample.language && this.language.name !== sample.language.name) {
             return true;
         }
         if (this.language.includeJSON !== undefined) {
