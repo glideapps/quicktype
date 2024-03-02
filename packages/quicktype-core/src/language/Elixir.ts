@@ -50,63 +50,104 @@ import {
 
 import unicode from "unicode-properties";
 
-const forbiddenTypeNames = [
-    "Any",
-    "True",
-    "False",
-    "None",
-    "Enum",
-    "List",
+const forbiddenModuleNames = [
+    "Access",
+    "Agent",
+    "Application",
+    "ArgumentError",
+    "ArithmeticError",
+    "Atom",
+    "BadArityError",
+    "BadBooleanError",
+    "BadFunctionError",
+    "BadMapError",
+    "BadStructError",
+    "Base",
+    "Behaviour",
+    "Bitwise",
+    "Calendar",
+    "CaseClauseError",
+    "Code",
+    "Collectable",
+    "CondClauseError",
+    "Config",
+    "Date",
+    "DateTime",
     "Dict",
-    "Optional",
-    "Union",
-    "Iterable",
-    "Type",
-    "TypeVar",
-    "T",
-    "EnumT"
+    "DynamicSupervisor",
+    "Enum",
+    "ErlangError",
+    "Exception",
+    "File",
+    "Float",
+    "Function",
+    "FunctionClauseError",
+    "GenEvent",
+    "GenServer",
+    "HashDict",
+    "HashSet",
+    "IO",
+    "Inspect",
+    "Integer",
+    "Kernel",
+    "KeyError",
+    "Keyword",
+    "List",
+    "Macro",
+    "Map",
+    "MapSet",
+    "MatchError",
+    "Module",
+    "Node",
+    "OptionParser",
+    "Path",
+    "Port",
+    "Process",
+    "Protocol",
+    "Range",
+    "Record",
+    "Regex",
+    "Registry",
+    "RuntimeError",
+    "Set",
+    "Stream",
+    "String",
+    "StringIO",
+    "Supervisor",
+    "SyntaxError",
+    "System",
+    "SystemLimitError",
+    "Task",
+    "Time",
+    "TokenMissingError",
+    "Tuple",
+    "URI",
+    "UndefinedFunctionError",
+    "UnicodeConversionError",
+    "Version",
+    "WithClauseError"
 ];
-const forbiddenPropertyNames = [
-    "and",
-    "as",
-    "assert",
-    "async",
-    "await",
-    "bool",
-    "break",
-    "class",
-    "continue",
-    "datetime",
+const forbiddenFieldNames = [
     "def",
-    "del",
-    "dict",
-    "elif",
-    "else",
-    "except",
-    "finally",
-    "float",
-    "for",
-    "from",
-    "global",
-    "if",
+    "defmodule",
+    "use",
     "import",
-    "in",
-    "int",
-    "is",
-    "lambda",
-    "nonlocal",
-    "not",
+    "alias",
+    "true",
+    "false",
+    "nil",
+    "when",
+    "and",
     "or",
-    "pass",
-    "print",
-    "raise",
-    "return",
-    "self",
-    "str",
-    "try",
-    "while",
-    "with",
-    "yield"
+    "not",
+    "in",
+    "fn",
+    "do",
+    "end",
+    "catch",
+    "rescue",
+    "after",
+    "else"
 ];
 
 export type PythonFeatures = {
@@ -129,7 +170,7 @@ export const pythonOptions = {
     nicePropertyNames: new BooleanOption("nice-property-names", "Transform property names to be Pythonic", true)
 };
 
-export class PythonTargetLanguage extends TargetLanguage {
+export class ElixirTargetLanguage extends TargetLanguage {
     protected getOptions(): Option<any>[] {
         return [pythonOptions.features, pythonOptions.justTypes, pythonOptions.nicePropertyNames];
     }
@@ -161,10 +202,10 @@ export class PythonTargetLanguage extends TargetLanguage {
         return t.kind === "integer-string" || t.kind === "bool-string";
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): PythonRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): ElixirRenderer {
         const options = getOptionValues(pythonOptions, untypedOptionValues);
         if (options.justTypes) {
-            return new PythonRenderer(this, renderContext, options);
+            return new ElixirRenderer(this, renderContext, options);
         } else {
             return new JSONPythonRenderer(this, renderContext, options);
         }
@@ -233,7 +274,7 @@ function snakeNameStyle(original: string, uppercase: boolean, forceSnakeNameStyl
     return combineWords(words, legalizeName3, wordStyle, wordStyle, wordStyle, wordStyle, separator, isStartCharacter3);
 }
 
-export class PythonRenderer extends ConvenienceRenderer {
+export class ElixirRenderer extends ConvenienceRenderer {
     private readonly imports: Map<string, Set<string>> = new Map();
     private readonly declaredTypes: Set<Type> = new Set();
 
@@ -246,11 +287,14 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
-        return forbiddenTypeNames;
+        return forbiddenModuleNames;
     }
 
     protected forbiddenForObjectProperties(_: ClassType, _classNamed: Name): ForbiddenWordsInfo {
-        return { names: forbiddenPropertyNames, includeGlobalForbidden: false };
+        return {
+            names: forbiddenFieldNames,
+            includeGlobalForbidden: false
+        };
     }
 
     protected makeNamedTypeNamer(): Namer {
@@ -633,7 +677,7 @@ function makeValue(vol: ValueOrLambda): Sourcelike {
     return vol.value;
 }
 
-export class JSONPythonRenderer extends PythonRenderer {
+export class JSONPythonRenderer extends ElixirRenderer {
     private readonly _deserializerFunctions = new Set<ConverterFunction>();
     private readonly _converterNamer = funPrefixNamer("converter", s =>
         snakeNameStyle(s, false, this.pyOptions.nicePropertyNames)
