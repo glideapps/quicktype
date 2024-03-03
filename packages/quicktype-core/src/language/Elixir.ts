@@ -1,339 +1,129 @@
+import unicode from "unicode-properties";
+
+import { Sourcelike, modifySource } from "../Source";
+import { Namer, Name } from "../Naming";
+import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
-import { StringTypeMapping } from "../TypeBuilder";
+import { Option, BooleanOption, EnumOption, OptionValues, getOptionValues, StringOption } from "../RendererOptions";
+
+import * as keywords from "./ruby/keywords";
+
+const forbiddenForObjectProperties = Array.from(new Set([...keywords.keywords, ...keywords.reservedProperties]));
+
+import { Type, EnumType, ClassType, UnionType, ArrayType, MapType, ClassProperty } from "../Type";
+import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
+
 import {
-    TransformedStringTypeKind,
-    PrimitiveStringTypeKind,
-    Type,
-    EnumType,
-    ClassType,
-    UnionType,
-    ClassProperty
-} from "../Type";
-import { RenderContext } from "../Renderer";
-import { Option, getOptionValues, OptionValues, EnumOption, BooleanOption } from "../RendererOptions";
-import { ConvenienceRenderer, ForbiddenWordsInfo, topLevelNameOrder } from "../ConvenienceRenderer";
-import { Namer, funPrefixNamer, Name, DependencyName } from "../Naming";
-import {
+    legalizeCharacters,
     splitIntoWords,
     combineWords,
     firstUpperWordStyle,
-    utf16LegalizeCharacters,
     allUpperWordStyle,
     allLowerWordStyle,
-    stringEscape,
-    originalWord
+    utf32ConcatMap,
+    isPrintable,
+    escapeNonPrintableMapper,
+    intToHex,
+    snakeCase,
+    isLetterOrUnderscore
 } from "../support/Strings";
-import { assertNever, panic, defined } from "../support/Support";
-import { Sourcelike, MultiWord, multiWord, singleWord, parenIfNeeded, modifySource } from "../Source";
-import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
-import {
-    followTargetType,
-    transformationForType,
-    Transformer,
-    DecodingChoiceTransformer,
-    ChoiceTransformer,
-    DecodingTransformer,
-    UnionInstantiationTransformer,
-    ParseStringTransformer,
-    UnionMemberMatchTransformer,
-    StringifyTransformer,
-    EncodingTransformer
-} from "../Transformers";
-import {
-    arrayIntercalate,
-    setUnionInto,
-    mapUpdateInto,
-    iterableSome,
-    mapSortBy,
-    iterableFirst
-} from "collection-utils";
+import { RenderContext } from "../Renderer";
 
-import unicode from "unicode-properties";
+function unicodeEscape(codePoint: number): string {
+    return "\\u{" + intToHex(codePoint, 0) + "}";
+}
 
-const forbiddenModuleNames = [
-    "Access",
-    "Agent",
-    "Application",
-    "ArgumentError",
-    "ArithmeticError",
-    "Atom",
-    "BadArityError",
-    "BadBooleanError",
-    "BadFunctionError",
-    "BadMapError",
-    "BadStructError",
-    "Base",
-    "Behaviour",
-    "Bitwise",
-    "Calendar",
-    "CaseClauseError",
-    "Code",
-    "Collectable",
-    "CondClauseError",
-    "Config",
-    "Date",
-    "DateTime",
-    "Dict",
-    "DynamicSupervisor",
-    "Enum",
-    "ErlangError",
-    "Exception",
-    "File",
-    "Float",
-    "Function",
-    "FunctionClauseError",
-    "GenEvent",
-    "GenServer",
-    "HashDict",
-    "HashSet",
-    "IO",
-    "Inspect",
-    "Integer",
-    "Kernel",
-    "KeyError",
-    "Keyword",
-    "List",
-    "Macro",
-    "Map",
-    "MapSet",
-    "MatchError",
-    "Module",
-    "Node",
-    "OptionParser",
-    "Path",
-    "Port",
-    "Process",
-    "Protocol",
-    "Range",
-    "Record",
-    "Regex",
-    "Registry",
-    "RuntimeError",
-    "Set",
-    "Stream",
-    "String",
-    "StringIO",
-    "Supervisor",
-    "SyntaxError",
-    "System",
-    "SystemLimitError",
-    "Task",
-    "Time",
-    "TokenMissingError",
-    "Tuple",
-    "URI",
-    "UndefinedFunctionError",
-    "UnicodeConversionError",
-    "Version",
-    "WithClauseError"
-];
-const forbiddenFieldNames = [
-    "def",
-    "defmodule",
-    "use",
-    "import",
-    "alias",
-    "true",
-    "false",
-    "nil",
-    "when",
-    "and",
-    "or",
-    "not",
-    "in",
-    "fn",
-    "do",
-    "end",
-    "catch",
-    "rescue",
-    "after",
-    "else"
-];
+const stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
 
-export type PythonFeatures = {
-    typeHints: boolean;
-    dataClasses: boolean;
+export enum Strictness {
+    Strict = "Strict::",
+    Coercible = "Coercible::",
+    None = "Types::"
+}
+
+export const rubyOptions = {
+    justTypes: new BooleanOption("just-types", "Plain types only", false),
+    strictness: new EnumOption("strictness", "Type strictness", [
+        ["strict", Strictness.Strict],
+        ["coercible", Strictness.Coercible],
+        ["none", Strictness.None]
+    ]),
+    namespace: new StringOption("namespace", "Specify a wrapping Namespace", "NAME", "", "secondary")
 };
 
-export const pythonOptions = {
-    features: new EnumOption<PythonFeatures>(
-        "python-version",
-        "Python version",
-        [
-            ["3.5", { typeHints: false, dataClasses: false }],
-            ["3.6", { typeHints: true, dataClasses: false }],
-            ["3.7", { typeHints: true, dataClasses: true }]
-        ],
-        "3.6"
-    ),
-    justTypes: new BooleanOption("just-types", "Classes only", false),
-    nicePropertyNames: new BooleanOption("nice-property-names", "Transform property names to be Pythonic", true)
-};
+export class RubyTargetLanguage extends TargetLanguage {
+    constructor() {
+        super("Ruby", ["ruby"], "rb");
+    }
 
-export class ElixirTargetLanguage extends TargetLanguage {
     protected getOptions(): Option<any>[] {
-        return [pythonOptions.features, pythonOptions.justTypes, pythonOptions.nicePropertyNames];
-    }
-
-    get stringTypeMapping(): StringTypeMapping {
-        const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
-        const dateTimeType = "date-time";
-        mapping.set("date", dateTimeType);
-        mapping.set("time", dateTimeType);
-        mapping.set("date-time", dateTimeType);
-        mapping.set("uuid", "uuid");
-        mapping.set("integer-string", "integer-string");
-        mapping.set("bool-string", "bool-string");
-        return mapping;
-    }
-
-    get supportsUnionsWithBothNumberTypes(): boolean {
-        return true;
+        return [rubyOptions.justTypes, rubyOptions.strictness, rubyOptions.namespace];
     }
 
     get supportsOptionalClassProperties(): boolean {
-        return false;
+        return true;
     }
 
-    needsTransformerForType(t: Type): boolean {
-        if (t instanceof UnionType) {
-            return iterableSome(t.members, m => this.needsTransformerForType(m));
-        }
-        return t.kind === "integer-string" || t.kind === "bool-string";
+    protected get defaultIndentation(): string {
+        return "  ";
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): ElixirRenderer {
-        const options = getOptionValues(pythonOptions, untypedOptionValues);
-        if (options.justTypes) {
-            return new ElixirRenderer(this, renderContext, options);
-        } else {
-            return new JSONPythonRenderer(this, renderContext, options);
-        }
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): RubyRenderer {
+        return new RubyRenderer(this, renderContext, getOptionValues(rubyOptions, untypedOptionValues));
     }
 }
 
-function isNormalizedStartCharacter3(utf16Unit: number): boolean {
-    // FIXME: add Other_ID_Start - https://docs.python.org/3/reference/lexical_analysis.html#identifiers
+const isStartCharacter = isLetterOrUnderscore;
+
+function isPartCharacter(utf16Unit: number): boolean {
     const category: string = unicode.getCategory(utf16Unit);
-    return ["Lu", "Ll", "Lt", "Lm", "Lo", "Nl"].indexOf(category) >= 0;
+    return ["Nd", "Pc", "Mn", "Mc"].indexOf(category) >= 0 || isStartCharacter(utf16Unit);
 }
 
-function isNormalizedPartCharacter3(utf16Unit: number): boolean {
-    // FIXME: add Other_ID_Continue - https://docs.python.org/3/reference/lexical_analysis.html#identifiers
-    if (isNormalizedStartCharacter3(utf16Unit)) return true;
-    const category: string = unicode.getCategory(utf16Unit);
-    return ["Mn", "Mc", "Nd", "Pc"].indexOf(category) >= 0;
-}
+const legalizeName = legalizeCharacters(isPartCharacter);
 
-function isStartCharacter3(utf16Unit: number): boolean {
-    const s = String.fromCharCode(utf16Unit).normalize("NFKC");
-    const l = s.length;
-    if (l === 0 || !isNormalizedStartCharacter3(s.charCodeAt(0))) return false;
-    for (let i = 1; i < l; i++) {
-        if (!isNormalizedPartCharacter3(s.charCodeAt(i))) return false;
+function simpleNameStyle(original: string, uppercase: boolean): string {
+    if (/^[0-9]+$/.test(original)) {
+        original = original + "N";
     }
-    return true;
-}
-
-function isPartCharacter3(utf16Unit: number): boolean {
-    const s = String.fromCharCode(utf16Unit).normalize("NFKC");
-    const l = s.length;
-    for (let i = 0; i < l; i++) {
-        if (!isNormalizedPartCharacter3(s.charCodeAt(i))) return false;
-    }
-    return true;
-}
-
-const legalizeName3 = utf16LegalizeCharacters(isPartCharacter3);
-
-function classNameStyle(original: string): string {
     const words = splitIntoWords(original);
     return combineWords(
         words,
-        legalizeName3,
-        firstUpperWordStyle,
-        firstUpperWordStyle,
+        legalizeName,
+        uppercase ? firstUpperWordStyle : allLowerWordStyle,
+        uppercase ? firstUpperWordStyle : allLowerWordStyle,
         allUpperWordStyle,
         allUpperWordStyle,
         "",
-        isStartCharacter3
+        isStartCharacter
     );
 }
 
-function getWordStyle(uppercase: boolean, forceSnakeNameStyle: boolean) {
-    if (!forceSnakeNameStyle) {
-        return originalWord;
-    }
-    return uppercase ? allUpperWordStyle : allLowerWordStyle;
-}
-
-function snakeNameStyle(original: string, uppercase: boolean, forceSnakeNameStyle: boolean): string {
-    const wordStyle = getWordStyle(uppercase, forceSnakeNameStyle);
-    const separator = forceSnakeNameStyle ? "_" : "";
+function memberNameStyle(original: string): string {
     const words = splitIntoWords(original);
-    return combineWords(words, legalizeName3, wordStyle, wordStyle, wordStyle, wordStyle, separator, isStartCharacter3);
+    return combineWords(
+        words,
+        legalizeName,
+        allLowerWordStyle,
+        allLowerWordStyle,
+        allLowerWordStyle,
+        allLowerWordStyle,
+        "_",
+        isStartCharacter
+    );
 }
 
-export class ElixirRenderer extends ConvenienceRenderer {
-    private readonly imports: Map<string, Set<string>> = new Map();
-    private readonly declaredTypes: Set<Type> = new Set();
-
+export class RubyRenderer extends ConvenienceRenderer {
     constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        protected readonly pyOptions: OptionValues<typeof pythonOptions>
+        private readonly _options: OptionValues<typeof rubyOptions>
     ) {
         super(targetLanguage, renderContext);
     }
 
-    protected forbiddenNamesForGlobalNamespace(): string[] {
-        return forbiddenModuleNames;
-    }
-
-    protected forbiddenForObjectProperties(_: ClassType, _classNamed: Name): ForbiddenWordsInfo {
-        return {
-            names: forbiddenFieldNames,
-            includeGlobalForbidden: false
-        };
-    }
-
-    protected makeNamedTypeNamer(): Namer {
-        return funPrefixNamer("type", classNameStyle);
-    }
-
-    protected namerForObjectProperty(): Namer {
-        return funPrefixNamer("property", s => snakeNameStyle(s, false, this.pyOptions.nicePropertyNames));
-    }
-
-    protected makeUnionMemberNamer(): null {
-        return null;
-    }
-
-    protected makeEnumCaseNamer(): Namer {
-        return funPrefixNamer("enum-case", s => snakeNameStyle(s, true, this.pyOptions.nicePropertyNames));
-    }
-
     protected get commentLineStart(): string {
         return "# ";
-    }
-
-    protected emitDescriptionBlock(lines: Sourcelike[]): void {
-        if (lines.length === 1) {
-            const docstring = modifySource(content => {
-                if (content.endsWith('"')) {
-                    return content.slice(0, -1) + '\\"';
-                }
-
-                return content;
-            }, lines[0]);
-            this.emitComments([{ customLines: [docstring], lineStart: '"""', lineEnd: '"""' }]);
-        } else {
-            this.emitCommentLines(lines, {
-                firstLineStart: '"""',
-                lineStart: "",
-                afterComment: '"""'
-            });
-        }
     }
 
     protected get needsTypeDeclarationBeforeUse(): boolean {
@@ -341,983 +131,576 @@ export class ElixirRenderer extends ConvenienceRenderer {
     }
 
     protected canBeForwardDeclared(t: Type): boolean {
-        const kind = t.kind;
-        return kind === "class" || kind === "enum";
+        return "class" === t.kind;
     }
 
-    protected emitBlock(line: Sourcelike, f: () => void): void {
-        this.emitLine(line);
-        this.indent(f);
+    protected forbiddenNamesForGlobalNamespace(): string[] {
+        return keywords.globals.concat(["Types", "JSON", "Dry", "Constructor", "Self"]);
     }
 
-    protected string(s: string): Sourcelike {
-        const openQuote = '"';
-        return [openQuote, stringEscape(s), '"'];
+    protected forbiddenForObjectProperties(_c: ClassType, _classNamed: Name): ForbiddenWordsInfo {
+        return { names: forbiddenForObjectProperties, includeGlobalForbidden: true };
     }
 
-    protected withImport(module: string, name: string): Sourcelike {
-        if (this.pyOptions.features.typeHints || module !== "typing") {
-            // FIXME: This is ugly.  We should rather not generate that import in the first
-            // place, but right now we just make the type source and then throw it away.  It's
-            // not a performance issue, so it's fine, I just bemoan this special case, and
-            // potential others down the road.
-            mapUpdateInto(this.imports, module, s => (s ? setUnionInto(s, [name]) : new Set([name])));
+    protected makeNamedTypeNamer(): Namer {
+        return new Namer("types", n => simpleNameStyle(n, true), []);
+    }
+
+    protected namerForObjectProperty(): Namer {
+        return new Namer("properties", memberNameStyle, []);
+    }
+
+    protected makeUnionMemberNamer(): Namer {
+        return new Namer("properties", memberNameStyle, []);
+    }
+
+    protected makeEnumCaseNamer(): Namer {
+        return new Namer("enum-cases", n => simpleNameStyle(n, true), []);
+    }
+
+    private dryType(t: Type, isOptional = false): Sourcelike {
+        const optional = isOptional ? ".optional" : "";
+        return matchType<Sourcelike>(
+            t,
+            _anyType => ["Types::Any", optional],
+            _nullType => ["Types::Nil", optional],
+            _boolType => ["Types::Bool", optional],
+            _integerType => ["Types::Integer", optional],
+            _doubleType => ["Types::Double", optional],
+            _stringType => ["Types::String", optional],
+            arrayType => ["Types.Array(", this.dryType(arrayType.items), ")", optional],
+            classType => [this.nameForNamedType(classType), optional],
+            mapType => ["Types::Hash.meta(of: ", this.dryType(mapType.values), ")", optional],
+            enumType => ["Types::", this.nameForNamedType(enumType), optional],
+            unionType => {
+                const nullable = nullableFromUnion(unionType);
+                if (nullable !== null) {
+                    return [this.dryType(nullable), ".optional"];
+                }
+                return ["Types.Instance(", this.nameForNamedType(unionType), ")", optional];
+            }
+        );
+    }
+
+    private exampleUse(t: Type, exp: Sourcelike, depth = 6, optional = false): Sourcelike {
+        if (depth-- <= 0) {
+            return exp;
         }
-        return name;
-    }
 
-    protected withTyping(name: string): Sourcelike {
-        return this.withImport("typing", name);
-    }
-
-    protected namedType(t: Type): Sourcelike {
-        const name = this.nameForNamedType(t);
-        if (this.declaredTypes.has(t)) return name;
-        return ["'", name, "'"];
-    }
-
-    protected pythonType(t: Type, _isRootTypeDef = false): Sourcelike {
-        const actualType = followTargetType(t);
+        const safeNav = optional ? "&" : "";
 
         return matchType<Sourcelike>(
-            actualType,
-            _anyType => this.withTyping("Any"),
-            _nullType => "None",
-            _boolType => "bool",
-            _integerType => "int",
-            _doubletype => "float",
-            _stringType => "str",
-            arrayType => [this.withTyping("List"), "[", this.pythonType(arrayType.items), "]"],
-            classType => this.namedType(classType),
-            mapType => [this.withTyping("Dict"), "[str, ", this.pythonType(mapType.values), "]"],
-            enumType => this.namedType(enumType),
-            unionType => {
-                const [hasNull, nonNulls] = removeNullFromUnion(unionType);
-                const memberTypes = Array.from(nonNulls).map(m => this.pythonType(m));
-
-                if (hasNull !== null) {
-                    let rest: string[] = [];
-                    if (!this.getAlphabetizeProperties() && this.pyOptions.features.dataClasses && _isRootTypeDef) {
-                        // Only push "= None" if this is a root level type def
-                        //   otherwise we may get type defs like List[Optional[int] = None]
-                        //   which are invalid
-                        rest.push(" = None");
+            t,
+            _anyType => exp,
+            _nullType => [exp, ".nil?"],
+            _boolType => exp,
+            _integerType => [exp, ".even?"],
+            _doubleType => exp,
+            _stringType => exp,
+            arrayType => this.exampleUse(arrayType.items, [exp, safeNav, ".first"], depth),
+            classType => {
+                let info: { name: Name; prop: ClassProperty } | undefined;
+                this.forEachClassProperty(classType, "none", (name, _json, prop) => {
+                    if (["class", "map", "array"].indexOf(prop.type.kind) >= 0) {
+                        info = { name, prop };
+                    } else if (info === undefined) {
+                        info = { name, prop };
                     }
-
-                    if (nonNulls.size > 1) {
-                        this.withImport("typing", "Union");
-                        return [
-                            this.withTyping("Optional"),
-                            "[Union[",
-                            arrayIntercalate(", ", memberTypes),
-                            "]]",
-                            ...rest
-                        ];
-                    } else {
-                        return [this.withTyping("Optional"), "[", defined(iterableFirst(memberTypes)), "]", ...rest];
-                    }
-                } else {
-                    return [this.withTyping("Union"), "[", arrayIntercalate(", ", memberTypes), "]"];
+                });
+                if (info !== undefined) {
+                    return this.exampleUse(info.prop.type, [exp, safeNav, ".", info.name], depth, info.prop.isOptional);
                 }
+                return exp;
             },
-            transformedStringType => {
-                if (transformedStringType.kind === "date-time") {
-                    return this.withImport("datetime", "datetime");
+            mapType => this.exampleUse(mapType.values, [exp, safeNav, `["…"]`], depth),
+            enumType => {
+                let name: Name | undefined;
+                // FIXME: This is a terrible way to get the first enum case name.
+                this.forEachEnumCase(enumType, "none", theName => {
+                    if (name === undefined) {
+                        name = theName;
+                    }
+                });
+                if (name !== undefined) {
+                    return [exp, " == ", this.nameForNamedType(enumType), "::", name];
                 }
-                if (transformedStringType.kind === "uuid") {
-                    return this.withImport("uuid", "UUID");
+                return exp;
+            },
+            unionType => {
+                const nullable = nullableFromUnion(unionType);
+                if (nullable !== null) {
+                    if (["class", "map", "array"].indexOf(nullable.kind) >= 0) {
+                        return this.exampleUse(nullable, exp, depth, true);
+                    }
+                    return [exp, ".nil?"];
                 }
-                return panic(`Transformed type ${transformedStringType.kind} not supported`);
+                return exp;
             }
         );
     }
 
-    protected declarationLine(t: Type): Sourcelike {
-        if (t instanceof ClassType) {
-            return ["class ", this.nameForNamedType(t), ":"];
+    private jsonSample(t: Type): Sourcelike {
+        function inner() {
+            if (t instanceof ArrayType) {
+                return "[…]";
+            } else if (t instanceof MapType) {
+                return "{…}";
+            } else if (t instanceof ClassType) {
+                return "{…}";
+            } else {
+                return "…";
+            }
         }
-        if (t instanceof EnumType) {
-            return ["class ", this.nameForNamedType(t), "(", this.withImport("enum", "Enum"), "):"];
-        }
-        return panic(`Can't declare type ${t.kind}`);
+        return `"${inner()}"`;
     }
 
-    protected declareType<T extends Type>(t: T, emitter: () => void): void {
-        this.emitBlock(this.declarationLine(t), () => {
-            this.emitDescription(this.descriptionForType(t));
-            emitter();
-        });
-        this.declaredTypes.add(t);
-    }
-
-    protected emitClassMembers(t: ClassType): void {
-        if (this.pyOptions.features.dataClasses) return;
-
-        const args: Sourcelike[] = [];
-        this.forEachClassProperty(t, "none", (name, _, cp) => {
-            args.push([name, this.typeHint(": ", this.pythonType(cp.type))]);
-        });
-        this.emitBlock(
-            ["def __init__(self, ", arrayIntercalate(", ", args), ")", this.typeHint(" -> None"), ":"],
-            () => {
-                if (args.length === 0) {
-                    this.emitLine("pass");
-                } else {
-                    this.forEachClassProperty(t, "none", name => {
-                        this.emitLine("self.", name, " = ", name);
-                    });
+    private fromDynamic(t: Type, e: Sourcelike, optional = false, castPrimitives = false): Sourcelike {
+        const primitiveCast = [this.dryType(t, optional), "[", e, "]"];
+        const primitive = castPrimitives ? primitiveCast : e;
+        const safeAccess = optional ? "&" : "";
+        return matchType<Sourcelike>(
+            t,
+            _anyType => primitive,
+            _nullType => primitive,
+            _boolType => primitive,
+            _integerType => primitive,
+            _doubleType => primitive,
+            _stringType => primitive,
+            arrayType => [e, safeAccess, ".map { |x| ", this.fromDynamic(arrayType.items, "x", false, true), " }"],
+            classType => {
+                const expression = [this.nameForNamedType(classType), ".from_dynamic!(", e, ")"];
+                return optional ? [e, " ? ", expression, " : nil"] : expression;
+            },
+            mapType => [
+                ["Types::Hash", optional ? ".optional" : "", "[", e, "]"],
+                safeAccess,
+                ".map { |k, v| [k, ",
+                this.fromDynamic(mapType.values, "v", false, true),
+                "] }",
+                safeAccess,
+                ".to_h"
+            ],
+            enumType => {
+                const expression = ["Types::", this.nameForNamedType(enumType), "[", e, "]"];
+                return optional ? [e, ".nil? ? nil : ", expression] : expression;
+            },
+            unionType => {
+                const nullable = nullableFromUnion(unionType);
+                if (nullable !== null) {
+                    return this.fromDynamic(nullable, e, true);
                 }
+                const expression = [this.nameForNamedType(unionType), ".from_dynamic!(", e, ")"];
+                return optional ? [e, " ? ", expression, " : nil"] : expression;
             }
         );
     }
 
-    protected typeHint(...sl: Sourcelike[]): Sourcelike {
-        if (this.pyOptions.features.typeHints) {
-            return sl;
+    private toDynamic(t: Type, e: Sourcelike, optional = false): Sourcelike {
+        if (this.marshalsImplicitlyToDynamic(t)) {
+            return e;
         }
-        return [];
+        return matchType<Sourcelike>(
+            t,
+            _anyType => e,
+            _nullType => e,
+            _boolType => e,
+            _integerType => e,
+            _doubleType => e,
+            _stringType => e,
+            arrayType => [e, optional ? "&" : "", ".map { |x| ", this.toDynamic(arrayType.items, "x"), " }"],
+            _classType => [e, optional ? "&" : "", ".to_dynamic"],
+            mapType => [e, optional ? "&" : "", ".map { |k, v| [k, ", this.toDynamic(mapType.values, "v"), "] }.to_h"],
+            _enumType => e,
+            unionType => {
+                const nullable = nullableFromUnion(unionType);
+                if (nullable !== null) {
+                    return this.toDynamic(nullable, e, true);
+                }
+                if (this.marshalsImplicitlyToDynamic(unionType)) {
+                    return e;
+                }
+                return [e, optional ? "&" : "", ".to_dynamic"];
+            }
+        );
     }
 
-    protected typingDecl(name: Sourcelike, type: string): Sourcelike {
-        return [name, this.typeHint(": ", this.withTyping(type))];
+    private marshalsImplicitlyToDynamic(t: Type): boolean {
+        return matchType<boolean>(
+            t,
+            _anyType => true,
+            _nullType => true,
+            _boolType => true,
+            _integerType => true,
+            _doubleType => true,
+            _stringType => true,
+            arrayType => this.marshalsImplicitlyToDynamic(arrayType.items),
+            _classType => false,
+            mapType => this.marshalsImplicitlyToDynamic(mapType.values),
+            _enumType => true,
+            unionType => {
+                const nullable = nullableFromUnion(unionType);
+                if (nullable !== null) {
+                    return this.marshalsImplicitlyToDynamic(nullable);
+                }
+                return false;
+            }
+        );
     }
 
-    protected typingReturn(type: string): Sourcelike {
-        return this.typeHint(" -> ", this.withTyping(type));
+    // This is only to be used to allow class properties to possibly
+    // marshal implicitly. They are allowed to do this because they will
+    // be checked in Dry::Struct.new
+    private propertyTypeMarshalsImplicitlyFromDynamic(t: Type): boolean {
+        return matchType<boolean>(
+            t,
+            _anyType => true,
+            _nullType => true,
+            _boolType => true,
+            _integerType => true,
+            _doubleType => true,
+            _stringType => true,
+            arrayType => this.propertyTypeMarshalsImplicitlyFromDynamic(arrayType.items),
+            _classType => false,
+            // Map properties must be checked because Dry:Types doesn't have a generic Map
+            _mapType => false,
+            _enumType => true,
+            unionType => {
+                const nullable = nullableFromUnion(unionType);
+                if (nullable !== null) {
+                    return this.propertyTypeMarshalsImplicitlyFromDynamic(nullable);
+                }
+                return false;
+            }
+        );
     }
 
-    protected sortClassProperties(
-        properties: ReadonlyMap<string, ClassProperty>,
-        propertyNames: ReadonlyMap<string, Name>
-    ): ReadonlyMap<string, ClassProperty> {
-        if (this.pyOptions.features.dataClasses) {
-            return mapSortBy(properties, (p: ClassProperty) => {
-                return (p.type instanceof UnionType && nullableFromUnion(p.type) != null) || p.isOptional ? 1 : 0;
-            });
+    private emitBlock(source: Sourcelike, emit: () => void) {
+        this.emitLine(source);
+        this.indent(emit);
+        this.emitLine("end");
+    }
+
+    private emitModule(emit: () => void) {
+        const emitModuleInner = (moduleName: string) => {
+            const [firstModule, ...subModules] = moduleName.split("::");
+            if (subModules.length > 0) {
+                this.emitBlock(["module ", firstModule], () => {
+                    emitModuleInner(subModules.join("::"));
+                });
+            } else {
+                this.emitBlock(["module ", moduleName], emit);
+            }
+        };
+        if (this._options.namespace !== undefined && this._options.namespace !== "") {
+            emitModuleInner(this._options.namespace);
         } else {
-            return super.sortClassProperties(properties, propertyNames);
+            emit();
         }
     }
 
-    protected emitClass(t: ClassType): void {
-        if (this.pyOptions.features.dataClasses) {
-            this.emitLine("@", this.withImport("dataclasses", "dataclass"));
-        }
-        this.declareType(t, () => {
-            if (this.pyOptions.features.typeHints) {
-                if (t.getProperties().size === 0) {
-                    this.emitLine("pass");
+    private emitClass(c: ClassType, className: Name) {
+        this.emitDescription(this.descriptionForType(c));
+        this.emitBlock(["class ", className, " < Dry::Struct"], () => {
+            let table: Sourcelike[][] = [];
+            let count = c.getProperties().size;
+            this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+                const last = --count === 0;
+                const description = this.descriptionForClassProperty(c, jsonName);
+                const attribute = [
+                    ["attribute :", name, ","],
+                    [" ", this.dryType(p.type), p.isOptional ? ".optional" : ""]
+                ];
+                if (description !== undefined) {
+                    if (table.length > 0) {
+                        this.emitTable(table);
+                        table = [];
+                    }
+                    this.ensureBlankLine();
+                    this.emitDescriptionBlock(description);
+                    this.emitLine(attribute);
+                    if (!last) {
+                        this.ensureBlankLine();
+                    }
                 } else {
-                    this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
-                        this.emitLine(name, this.typeHint(": ", this.pythonType(cp.type, true)));
-                        this.emitDescription(this.descriptionForClassProperty(t, jsonName));
-                    });
+                    table.push(attribute);
                 }
-                this.ensureBlankLine();
+            });
+            if (table.length > 0) {
+                this.emitTable(table);
             }
-            this.emitClassMembers(t);
-        });
-    }
 
-    protected emitEnum(t: EnumType): void {
-        this.declareType(t, () => {
-            this.forEachEnumCase(t, "none", (name, jsonName) => {
-                this.emitLine([name, " = ", this.string(jsonName)]);
+            if (this._options.justTypes) {
+                return;
+            }
+
+            this.ensureBlankLine();
+            this.emitBlock(["def self.from_dynamic!(d)"], () => {
+                this.emitLine("d = Types::Hash[d]");
+                this.emitLine("new(");
+                this.indent(() => {
+                    const inits: Sourcelike[][] = [];
+                    this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+                        const dynamic = p.isOptional
+                            ? // If key is not found in hash, this will be nil
+                              `d["${stringEscape(jsonName)}"]`
+                            : // This will raise a runtime error if the key is not found in the hash
+                              `d.fetch("${stringEscape(jsonName)}")`;
+
+                        if (this.propertyTypeMarshalsImplicitlyFromDynamic(p.type)) {
+                            inits.push([
+                                [name, ": "],
+                                [dynamic, ","]
+                            ]);
+                        } else {
+                            const expression = this.fromDynamic(p.type, dynamic, p.isOptional);
+                            inits.push([
+                                [name, ": "],
+                                [expression, ","]
+                            ]);
+                        }
+                    });
+                    this.emitTable(inits);
+                });
+                this.emitLine(")");
+            });
+
+            this.ensureBlankLine();
+            this.emitBlock("def self.from_json!(json)", () => {
+                this.emitLine("from_dynamic!(JSON.parse(json))");
+            });
+
+            this.ensureBlankLine();
+            this.emitBlock(["def to_dynamic"], () => {
+                this.emitLine("{");
+                this.indent(() => {
+                    const inits: Sourcelike[][] = [];
+                    this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+                        const expression = this.toDynamic(p.type, name, p.isOptional);
+                        inits.push([[`"${stringEscape(jsonName)}"`], [" => ", expression, ","]]);
+                    });
+                    this.emitTable(inits);
+                });
+                this.emitLine("}");
+            });
+            this.ensureBlankLine();
+            this.emitBlock("def to_json(options = nil)", () => {
+                this.emitLine("JSON.generate(to_dynamic, options)");
             });
         });
     }
 
-    protected emitImports(): void {
-        this.imports.forEach((names, module) => {
-            this.emitLine("from ", module, " import ", Array.from(names).join(", "));
+    private emitEnum(e: EnumType, enumName: Name) {
+        this.emitDescription(this.descriptionForType(e));
+        this.emitBlock(["module ", enumName], () => {
+            const table: Sourcelike[][] = [];
+            this.forEachEnumCase(e, "none", (name, json) => {
+                table.push([[name], [` = "${stringEscape(json)}"`]]);
+            });
+            this.emitTable(table);
         });
     }
 
-    protected emitSupportCode(): void {
-        return;
-    }
+    private emitUnion(u: UnionType, unionName: Name) {
+        this.emitDescription(this.descriptionForType(u));
+        this.emitBlock(["class ", unionName, " < Dry::Struct"], () => {
+            const table: Sourcelike[][] = [];
+            this.forEachUnionMember(u, u.getChildren(), "none", null, (name, t) => {
+                table.push([["attribute :", name, ", "], [this.dryType(t, true)]]);
+            });
+            this.emitTable(table);
 
-    protected emitClosingCode(): void {
-        return;
-    }
+            if (this._options.justTypes) {
+                return;
+            }
 
-    protected emitSourceStructure(_givenOutputFilename: string): void {
-        const declarationLines = this.gatherSource(() => {
-            this.forEachNamedType(
-                ["interposing", 2],
-                (c: ClassType) => this.emitClass(c),
-                e => this.emitEnum(e),
-                _u => {
-                    return;
+            this.ensureBlankLine();
+            const [maybeNull, nonNulls] = removeNullFromUnion(u, false);
+            this.emitBlock("def self.from_dynamic!(d)", () => {
+                const memberNames = Array.from(u.getChildren()).map(member => this.nameForUnionMember(u, member));
+                this.forEachUnionMember(u, u.getChildren(), "none", null, (name, t) => {
+                    const nilMembers = memberNames
+                        .filter(n => n !== name)
+                        .map(memberName => [", ", memberName, ": nil"]);
+                    if (this.propertyTypeMarshalsImplicitlyFromDynamic(t)) {
+                        this.emitBlock(["if schema[:", name, "].right.valid? d"], () => {
+                            this.emitLine("return new(", name, ": d", nilMembers, ")");
+                        });
+                    } else {
+                        this.emitLine("begin");
+                        this.indent(() => {
+                            this.emitLine("value = ", this.fromDynamic(t, "d"));
+                            this.emitBlock(["if schema[:", name, "].right.valid? value"], () => {
+                                this.emitLine("return new(", name, ": value", nilMembers, ")");
+                            });
+                        });
+                        this.emitLine("rescue");
+                        this.emitLine("end");
+                    }
+                });
+                this.emitLine(`raise "Invalid union"`);
+            });
+
+            this.ensureBlankLine();
+            this.emitBlock("def self.from_json!(json)", () => {
+                this.emitLine("from_dynamic!(JSON.parse(json))");
+            });
+
+            this.ensureBlankLine();
+            this.emitBlock("def to_dynamic", () => {
+                let first = true;
+                this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
+                    this.emitLine(first ? "if" : "elsif", " ", name, " != nil");
+                    this.indent(() => {
+                        this.emitLine(this.toDynamic(t, name));
+                    });
+                    first = false;
+                });
+                if (maybeNull !== null) {
+                    this.emitLine("else");
+                    this.indent(() => {
+                        this.emitLine("nil");
+                    });
                 }
-            );
+                this.emitLine("end");
+            });
+
+            this.ensureBlankLine();
+            this.emitBlock("def to_json(options = nil)", () => {
+                this.emitLine("JSON.generate(to_dynamic, options)");
+            });
         });
+    }
 
-        const closingLines = this.gatherSource(() => this.emitClosingCode());
-        const supportLines = this.gatherSource(() => this.emitSupportCode());
+    private emitTypesModule() {
+        this.emitBlock(["module Types"], () => {
+            this.emitLine("include Dry.Types(default: :nominal)");
 
+            const declarations: Sourcelike[][] = [];
+
+            if (this._options.strictness !== Strictness.None) {
+                let has = { int: false, nil: false, bool: false, hash: false, string: false, double: false };
+                this.forEachType(t => {
+                    has = {
+                        int: has.int || t.kind === "integer",
+                        nil: has.nil || t.kind === "null",
+                        bool: has.bool || t.kind === "bool",
+                        hash: has.hash || t.kind === "map" || t.kind === "class",
+                        string: has.string || t.kind === "string" || t.kind === "enum",
+                        double: has.double || t.kind === "double"
+                    };
+                });
+                if (has.int) declarations.push([["Integer"], [` = ${this._options.strictness}Integer`]]);
+                if (this._options.strictness === Strictness.Strict) {
+                    if (has.nil) declarations.push([["Nil"], [` = ${this._options.strictness}Nil`]]);
+                }
+                if (has.bool) declarations.push([["Bool"], [` = ${this._options.strictness}Bool`]]);
+                if (has.hash) declarations.push([["Hash"], [` = ${this._options.strictness}Hash`]]);
+                if (has.string) declarations.push([["String"], [` = ${this._options.strictness}String`]]);
+                if (has.double)
+                    declarations.push([
+                        ["Double"],
+                        [` = ${this._options.strictness}Float | ${this._options.strictness}Integer`]
+                    ]);
+            }
+
+            this.forEachEnum("none", (enumType, enumName) => {
+                const cases: Sourcelike[][] = [];
+                this.forEachEnumCase(enumType, "none", (_name, json) => {
+                    cases.push([cases.length === 0 ? "" : ", ", `"${stringEscape(json)}"`]);
+                });
+                declarations.push([[enumName], [" = ", this._options.strictness, "String.enum(", ...cases, ")"]]);
+            });
+
+            if (declarations.length > 0) {
+                this.ensureBlankLine();
+                this.emitTable(declarations);
+            }
+        });
+    }
+
+    protected emitSourceStructure() {
         if (this.leadingComments !== undefined) {
             this.emitComments(this.leadingComments);
+        } else if (!this._options.justTypes) {
+            this.emitLine("# This code may look unusually verbose for Ruby (and it is), but");
+            this.emitLine("# it performs some subtle and complex validation of JSON data.");
+            this.emitLine("#");
+            this.emitLine("# To parse this JSON, add 'dry-struct' and 'dry-types' gems, then do:");
+            this.emitLine("#");
+            this.forEachTopLevel("none", (topLevel, name) => {
+                const variable = modifySource(snakeCase, name);
+                this.emitLine("#   ", variable, " = ", name, ".from_json! ", this.jsonSample(topLevel));
+                this.emitLine("#   puts ", this.exampleUse(topLevel, variable));
+                this.emitLine("#");
+            });
+            this.emitLine("# If from_json! succeeds, the value returned matches the schema.");
         }
         this.ensureBlankLine();
-        this.emitImports();
-        this.ensureBlankLine(2);
-        this.emitGatheredSource(supportLines);
-        this.ensureBlankLine(2);
-        this.emitGatheredSource(declarationLines);
-        this.ensureBlankLine(2);
-        this.emitGatheredSource(closingLines);
-    }
-}
 
-export type ConverterFunction =
-    | "none"
-    | "bool"
-    | "int"
-    | "from-float"
-    | "to-float"
-    | "str"
-    | "to-enum"
-    | "list"
-    | "to-class"
-    | "dict"
-    | "union"
-    | "from-datetime"
-    | "from-stringified-bool"
-    | "is-type";
+        this.emitLine("require 'json'");
+        this.emitLine("require 'dry-types'");
+        this.emitLine("require 'dry-struct'");
 
-type TopLevelConverterNames = {
-    fromDict: Name;
-    toDict: Name;
-};
-
-// A value or a lambda.  All four combinations are valid:
-//
-// * `value` and `lambda`: a value given by applying `value` to `lambda`, i.e. `lambda(value)`
-// * `lambda` only: a lambda given by `lambda`
-// * `value` only: a value given by `value`
-// * neither: the identity function, i.e. `lambda x: x`
-export type ValueOrLambda = {
-    value: Sourcelike | undefined;
-    lambda?: MultiWord;
-};
-
-// Return the result of composing `input` and `f`.  `input` can be a
-// value or a lambda, but `f` must be a lambda or a TypeScript function
-// (i.e. it can't be a value).
-//
-// * If `input` is a value, the result is `f(input)`.
-// * If `input` is a lambda, the result is `lambda x: f(input(x))`
-function compose(input: ValueOrLambda, f: (arg: Sourcelike) => Sourcelike): ValueOrLambda;
-function compose(input: ValueOrLambda, f: ValueOrLambda): ValueOrLambda;
-function compose(input: ValueOrLambda, f: ValueOrLambda | ((arg: Sourcelike) => Sourcelike)): ValueOrLambda {
-    if (typeof f === "function") {
-        if (input.value !== undefined) {
-            // `input` is a value, so just apply `f` to its source form.
-            return { value: f(makeValue(input)) };
-        }
-        if (input.lambda !== undefined) {
-            // `input` is a lambda, so build `lambda x: f(input(x))`.
-            return { lambda: multiWord(" ", "lambda x:", f([parenIfNeeded(input.lambda), "(x)"])), value: undefined };
-        }
-        // `input` is the identify function, so the composition is `lambda x: f(x)`.
-        return { lambda: multiWord(" ", "lambda x:", f("x")), value: undefined };
-    }
-
-    if (f.value !== undefined) {
-        return panic("Cannot compose into a value");
-    }
-    if (f.lambda === undefined) {
-        // `f` is the identity function, so the result is just `input`.
-        return input;
-    }
-
-    if (input.value === undefined) {
-        // `input` is a lambda
-        if (input.lambda === undefined) {
-            // `input` is the identity function, so the result is just `f`.
-            return f;
-        }
-        // `input` is a lambda, so the result is `lambda x: f(input(x))`.
-        return {
-            lambda: multiWord("", "lambda x: ", parenIfNeeded(f.lambda), "(", parenIfNeeded(input.lambda), "(x))"),
-            value: undefined
-        };
-    }
-
-    // `input` is a value, so return `f(input)`.
-    return { lambda: f.lambda, value: makeValue(input) };
-}
-
-const identity: ValueOrLambda = { value: undefined };
-
-// If `vol` is a lambda, return it in its source form.  If it's
-// a value, return a `lambda` that returns the value.
-function makeLambda(vol: ValueOrLambda): MultiWord {
-    if (vol.lambda !== undefined) {
-        if (vol.value === undefined) {
-            return vol.lambda;
-        }
-        return multiWord("", "lambda x: ", parenIfNeeded(vol.lambda), "(", vol.value, ")");
-    } else if (vol.value !== undefined) {
-        return multiWord(" ", "lambda x:", vol.value);
-    }
-    return multiWord(" ", "lambda x:", "x");
-}
-
-// If `vol` is a value, return the value in its source form.
-// Calling this with `vol` being a lambda is not allowed.
-function makeValue(vol: ValueOrLambda): Sourcelike {
-    if (vol.value === undefined) {
-        return panic("Cannot make value from lambda without value");
-    }
-    if (vol.lambda !== undefined) {
-        return [parenIfNeeded(vol.lambda), "(", vol.value, ")"];
-    }
-    return vol.value;
-}
-
-export class JSONPythonRenderer extends ElixirRenderer {
-    private readonly _deserializerFunctions = new Set<ConverterFunction>();
-    private readonly _converterNamer = funPrefixNamer("converter", s =>
-        snakeNameStyle(s, false, this.pyOptions.nicePropertyNames)
-    );
-    private readonly _topLevelConverterNames = new Map<Name, TopLevelConverterNames>();
-    private _haveTypeVar = false;
-    private _haveEnumTypeVar = false;
-    private _haveDateutil = false;
-
-    protected emitTypeVar(tvar: string, constraints: Sourcelike): void {
-        if (!this.pyOptions.features.typeHints) {
-            return;
-        }
-        this.emitLine(tvar, " = ", this.withTyping("TypeVar"), "(", this.string(tvar), constraints, ")");
-    }
-
-    protected typeVar(): string {
-        this._haveTypeVar = true;
-        // FIXME: This is ugly, but the code that requires the type variables, in
-        // `emitImports` actually runs after imports have been imported.  The proper
-        // solution would be to either allow more complex dependencies, or to
-        // gather-emit the type variable declarations, too.  Unfortunately the
-        // gather-emit is a bit buggy with blank lines, and I can't be bothered to
-        // fix it now.
-        this.withTyping("TypeVar");
-        return "T";
-    }
-
-    protected enumTypeVar(): string {
-        this._haveEnumTypeVar = true;
-        // See the comment above.
-        this.withTyping("TypeVar");
-        this.withImport("enum", "Enum");
-        return "EnumT";
-    }
-
-    protected cast(type: Sourcelike, v: Sourcelike): Sourcelike {
-        if (!this.pyOptions.features.typeHints) {
-            return v;
-        }
-        return [this.withTyping("cast"), "(", type, ", ", v, ")"];
-    }
-
-    protected emitNoneConverter(): void {
-        // FIXME: We can't return the None type here because mypy thinks that means
-        // We're not returning any value, when we're actually returning `None`.
-        this.emitBlock(
-            ["def from_none(", this.typingDecl("x", "Any"), ")", this.typeHint(" -> ", this.withTyping("Any")), ":"],
-            () => {
-                this.emitLine("assert x is None");
-                this.emitLine("return x");
-            }
-        );
-    }
-
-    protected emitBoolConverter(): void {
-        this.emitBlock(["def from_bool(", this.typingDecl("x", "Any"), ")", this.typeHint(" -> bool"), ":"], () => {
-            this.emitLine("assert isinstance(x, bool)");
-            this.emitLine("return x");
-        });
-    }
-
-    protected emitIntConverter(): void {
-        this.emitBlock(["def from_int(", this.typingDecl("x", "Any"), ")", this.typeHint(" -> int"), ":"], () => {
-            this.emitLine("assert isinstance(x, int) and not isinstance(x, bool)");
-            this.emitLine("return x");
-        });
-    }
-
-    protected emitFromFloatConverter(): void {
-        this.emitBlock(["def from_float(", this.typingDecl("x", "Any"), ")", this.typeHint(" -> float"), ":"], () => {
-            this.emitLine("assert isinstance(x, (float, int)) and not isinstance(x, bool)");
-            this.emitLine("return float(x)");
-        });
-    }
-
-    protected emitToFloatConverter(): void {
-        this.emitBlock(["def to_float(", this.typingDecl("x", "Any"), ")", this.typeHint(" -> float"), ":"], () => {
-            this.emitLine("assert isinstance(x, float)");
-            this.emitLine("return x");
-        });
-    }
-
-    protected emitStrConverter(): void {
-        this.emitBlock(["def from_str(", this.typingDecl("x", "Any"), ")", this.typeHint(" -> str"), ":"], () => {
-            const strType = "str";
-            this.emitLine("assert isinstance(x, ", strType, ")");
-            this.emitLine("return x");
-        });
-    }
-
-    protected emitToEnumConverter(): void {
-        const tvar = this.enumTypeVar();
-        this.emitBlock(
-            [
-                "def to_enum(c",
-                this.typeHint(": ", this.withTyping("Type"), "[", tvar, "]"),
-                ", ",
-                this.typingDecl("x", "Any"),
-                ")",
-                this.typeHint(" -> ", tvar),
-                ":"
-            ],
-            () => {
-                this.emitLine("assert isinstance(x, c)");
-                this.emitLine("return x.value");
-            }
-        );
-    }
-
-    protected emitListConverter(): void {
-        const tvar = this.typeVar();
-        this.emitBlock(
-            [
-                "def from_list(f",
-                this.typeHint(": ", this.withTyping("Callable"), "[[", this.withTyping("Any"), "], ", tvar, "]"),
-                ", ",
-                this.typingDecl("x", "Any"),
-                ")",
-                this.typeHint(" -> ", this.withTyping("List"), "[", tvar, "]"),
-                ":"
-            ],
-            () => {
-                this.emitLine("assert isinstance(x, list)");
-                this.emitLine("return [f(y) for y in x]");
-            }
-        );
-    }
-
-    protected emitToClassConverter(): void {
-        const tvar = this.typeVar();
-        this.emitBlock(
-            [
-                "def to_class(c",
-                this.typeHint(": ", this.withTyping("Type"), "[", tvar, "]"),
-                ", ",
-                this.typingDecl("x", "Any"),
-                ")",
-                this.typeHint(" -> dict"),
-                ":"
-            ],
-            () => {
-                this.emitLine("assert isinstance(x, c)");
-                this.emitLine("return ", this.cast(this.withTyping("Any"), "x"), ".to_dict()");
-            }
-        );
-    }
-
-    protected emitDictConverter(): void {
-        const tvar = this.typeVar();
-        this.emitBlock(
-            [
-                "def from_dict(f",
-                this.typeHint(": ", this.withTyping("Callable"), "[[", this.withTyping("Any"), "], ", tvar, "]"),
-                ", ",
-                this.typingDecl("x", "Any"),
-                ")",
-                this.typeHint(" -> ", this.withTyping("Dict"), "[str, ", tvar, "]"),
-                ":"
-            ],
-            () => {
-                this.emitLine("assert isinstance(x, dict)");
-                this.emitLine("return { k: f(v) for (k, v) in x.items() }");
-            }
-        );
-    }
-
-    // This is not easily idiomatically typeable in Python.  See
-    // https://stackoverflow.com/questions/51066468/computed-types-in-mypy/51084497
-    protected emitUnionConverter(): void {
-        this.emitMultiline(`def from_union(fs, x):
-    for f in fs:
-        try:
-            return f(x)
-        except:
-            pass
-    assert False`);
-    }
-
-    protected emitFromDatetimeConverter(): void {
-        this.emitBlock(
-            [
-                "def from_datetime(",
-                this.typingDecl("x", "Any"),
-                ")",
-                this.typeHint(" -> ", this.withImport("datetime", "datetime")),
-                ":"
-            ],
-            () => {
-                this._haveDateutil = true;
-                this.emitLine("return dateutil.parser.parse(x)");
-            }
-        );
-    }
-
-    protected emitFromStringifiedBoolConverter(): void {
-        this.emitBlock(
-            ["def from_stringified_bool(x", this.typeHint(": str"), ")", this.typeHint(" -> bool"), ":"],
-            () => {
-                this.emitBlock('if x == "true":', () => this.emitLine("return True"));
-                this.emitBlock('if x == "false":', () => this.emitLine("return False"));
-                this.emitLine("assert False");
-            }
-        );
-    }
-
-    protected emitIsTypeConverter(): void {
-        const tvar = this.typeVar();
-        this.emitBlock(
-            [
-                "def is_type(t",
-                this.typeHint(": ", this.withTyping("Type"), "[", tvar, "]"),
-                ", ",
-                this.typingDecl("x", "Any"),
-                ")",
-                this.typeHint(" -> ", tvar),
-                ":"
-            ],
-            () => {
-                this.emitLine("assert isinstance(x, t)");
-                this.emitLine("return x");
-            }
-        );
-    }
-
-    protected emitConverter(cf: ConverterFunction): void {
-        switch (cf) {
-            case "none":
-                return this.emitNoneConverter();
-            case "bool":
-                return this.emitBoolConverter();
-            case "int":
-                return this.emitIntConverter();
-            case "from-float":
-                return this.emitFromFloatConverter();
-            case "to-float":
-                return this.emitToFloatConverter();
-            case "str":
-                return this.emitStrConverter();
-            case "to-enum":
-                return this.emitToEnumConverter();
-            case "list":
-                return this.emitListConverter();
-            case "to-class":
-                return this.emitToClassConverter();
-            case "dict":
-                return this.emitDictConverter();
-            case "union":
-                return this.emitUnionConverter();
-            case "from-datetime":
-                return this.emitFromDatetimeConverter();
-            case "from-stringified-bool":
-                return this.emitFromStringifiedBoolConverter();
-            case "is-type":
-                return this.emitIsTypeConverter();
-            default:
-                return assertNever(cf);
-        }
-    }
-
-    // Return the name of the Python converter function `cf`.
-    protected conv(cf: ConverterFunction): Sourcelike {
-        this._deserializerFunctions.add(cf);
-        const name = cf.replace(/-/g, "_");
-        if (cf.startsWith("from-") || cf.startsWith("to-") || cf.startsWith("is-")) return name;
-        return ["from_", name];
-    }
-
-    // Applies the converter function to `arg`
-    protected convFn(cf: ConverterFunction, arg: ValueOrLambda): ValueOrLambda {
-        return compose(arg, { lambda: singleWord(this.conv(cf)), value: undefined });
-    }
-
-    protected typeObject(t: Type): Sourcelike {
-        const s = matchType<Sourcelike | undefined>(
-            t,
-            _anyType => undefined,
-            _nullType => "type(None)",
-            _boolType => "bool",
-            _integerType => "int",
-            _doubleType => "float",
-            _stringType => "str",
-            _arrayType => "List",
-            classType => this.nameForNamedType(classType),
-            _mapType => "dict",
-            enumType => this.nameForNamedType(enumType),
-            _unionType => undefined,
-            transformedStringType => {
-                if (transformedStringType.kind === "date-time") {
-                    return this.withImport("datetime", "datetime");
-                }
-                if (transformedStringType.kind === "uuid") {
-                    return this.withImport("uuid", "UUID");
-                }
-                return undefined;
-            }
-        );
-        if (s === undefined) {
-            return panic(`No type object for ${t.kind}`);
-        }
-        return s;
-    }
-
-    protected transformer(inputTransformer: ValueOrLambda, xfer: Transformer, targetType: Type): ValueOrLambda {
-        const consume = (consumer: Transformer | undefined, vol: ValueOrLambda) => {
-            if (consumer === undefined) {
-                return vol;
-            }
-            return this.transformer(vol, consumer, targetType);
-        };
-
-        const isType = (t: Type, valueToCheck: ValueOrLambda): ValueOrLambda => {
-            return compose(valueToCheck, v => [this.conv("is-type"), "(", this.typeObject(t), ", ", v, ")"]);
-        };
-
-        if (xfer instanceof DecodingChoiceTransformer || xfer instanceof ChoiceTransformer) {
-            const lambdas = xfer.transformers.map(x => makeLambda(this.transformer(identity, x, targetType)).source);
-            return compose(inputTransformer, v => [
-                this.conv("union"),
-                "([",
-                arrayIntercalate(", ", lambdas),
-                "], ",
-                v,
-                ")"
-            ]);
-        } else if (xfer instanceof DecodingTransformer) {
-            const consumer = xfer.consumer;
-            const vol = this.deserializer(inputTransformer, xfer.sourceType);
-            return consume(consumer, vol);
-        } else if (xfer instanceof EncodingTransformer) {
-            return this.serializer(inputTransformer, xfer.sourceType);
-        } else if (xfer instanceof UnionInstantiationTransformer) {
-            return inputTransformer;
-        } else if (xfer instanceof UnionMemberMatchTransformer) {
-            const consumer = xfer.transformer;
-            const vol = isType(xfer.memberType, inputTransformer);
-            return consume(consumer, vol);
-        } else if (xfer instanceof ParseStringTransformer) {
-            const consumer = xfer.consumer;
-            const immediateTargetType = consumer === undefined ? targetType : consumer.sourceType;
-            let vol: ValueOrLambda;
-            switch (immediateTargetType.kind) {
-                case "integer":
-                    vol = compose(inputTransformer, v => ["int(", v, ")"]);
-                    break;
-                case "bool":
-                    vol = this.convFn("from-stringified-bool", inputTransformer);
-                    break;
-                case "enum":
-                    vol = this.deserializer(inputTransformer, immediateTargetType);
-                    break;
-                case "date-time":
-                    vol = this.convFn("from-datetime", inputTransformer);
-                    break;
-                case "uuid":
-                    vol = compose(inputTransformer, v => [this.withImport("uuid", "UUID"), "(", v, ")"]);
-                    break;
-                default:
-                    return panic(`Parsing of ${immediateTargetType.kind} in a transformer is not supported`);
-            }
-            return consume(consumer, vol);
-        } else if (xfer instanceof StringifyTransformer) {
-            const consumer = xfer.consumer;
-            let vol: ValueOrLambda;
-            switch (xfer.sourceType.kind) {
-                case "integer":
-                    vol = compose(inputTransformer, v => ["str(", v, ")"]);
-                    break;
-                case "bool":
-                    vol = compose(inputTransformer, v => ["str(", v, ").lower()"]);
-                    break;
-                case "enum":
-                    vol = this.serializer(inputTransformer, xfer.sourceType);
-                    break;
-                case "date-time":
-                    vol = compose(inputTransformer, v => [v, ".isoformat()"]);
-                    break;
-                case "uuid":
-                    vol = compose(inputTransformer, v => ["str(", v, ")"]);
-                    break;
-                default:
-                    return panic(`Parsing of ${xfer.sourceType.kind} in a transformer is not supported`);
-            }
-            return consume(consumer, vol);
-        } else {
-            return panic(`Transformer ${xfer.kind} is not supported`);
-        }
-    }
-
-    // Returns the code to deserialize `value` as type `t`.  If `t` has
-    // an associated transformer, the code for that transformer is
-    // returned.
-    protected deserializer(value: ValueOrLambda, t: Type): ValueOrLambda {
-        const xf = transformationForType(t);
-        if (xf !== undefined) {
-            return this.transformer(value, xf.transformer, xf.targetType);
-        }
-        return matchType<ValueOrLambda>(
-            t,
-            _anyType => value,
-            _nullType => this.convFn("none", value),
-            _boolType => this.convFn("bool", value),
-            _integerType => this.convFn("int", value),
-            _doubleType => this.convFn("from-float", value),
-            _stringType => this.convFn("str", value),
-            arrayType =>
-                compose(value, v => [
-                    this.conv("list"),
-                    "(",
-                    makeLambda(this.deserializer(identity, arrayType.items)).source,
-                    ", ",
-                    v,
-                    ")"
-                ]),
-            classType =>
-                compose(value, {
-                    lambda: singleWord(this.nameForNamedType(classType), ".from_dict"),
-                    value: undefined
-                }),
-            mapType =>
-                compose(value, v => [
-                    this.conv("dict"),
-                    "(",
-                    makeLambda(this.deserializer(identity, mapType.values)).source,
-                    ", ",
-                    v,
-                    ")"
-                ]),
-            enumType => compose(value, { lambda: singleWord(this.nameForNamedType(enumType)), value: undefined }),
-            unionType => {
-                // FIXME: handle via transformers
-                const deserializers = Array.from(unionType.members).map(
-                    m => makeLambda(this.deserializer(identity, m)).source
-                );
-                return compose(value, v => [
-                    this.conv("union"),
-                    "([",
-                    arrayIntercalate(", ", deserializers),
-                    "], ",
-                    v,
-                    ")"
-                ]);
-            },
-            transformedStringType => {
-                // FIXME: handle via transformers
-                if (transformedStringType.kind === "date-time") {
-                    return this.convFn("from-datetime", value);
-                }
-                if (transformedStringType.kind === "uuid") {
-                    return compose(value, v => [this.withImport("uuid", "UUID"), "(", v, ")"]);
-                }
-                return panic(`Transformed type ${transformedStringType.kind} not supported`);
-            }
-        );
-    }
-
-    protected serializer(value: ValueOrLambda, t: Type): ValueOrLambda {
-        const xf = transformationForType(t);
-        if (xf !== undefined) {
-            const reverse = xf.reverse;
-            return this.transformer(value, reverse.transformer, reverse.targetType);
-        }
-        return matchType<ValueOrLambda>(
-            t,
-            _anyType => value,
-            _nullType => this.convFn("none", value),
-            _boolType => this.convFn("bool", value),
-            _integerType => this.convFn("int", value),
-            _doubleType => this.convFn("to-float", value),
-            _stringType => this.convFn("str", value),
-            arrayType =>
-                compose(value, v => [
-                    this.conv("list"),
-                    "(",
-                    makeLambda(this.serializer(identity, arrayType.items)).source,
-                    ", ",
-                    v,
-                    ")"
-                ]),
-            classType =>
-                compose(value, v => [this.conv("to-class"), "(", this.nameForNamedType(classType), ", ", v, ")"]),
-            mapType =>
-                compose(value, v => [
-                    this.conv("dict"),
-                    "(",
-                    makeLambda(this.serializer(identity, mapType.values)).source,
-                    ", ",
-                    v,
-                    ")"
-                ]),
-            enumType => compose(value, v => [this.conv("to-enum"), "(", this.nameForNamedType(enumType), ", ", v, ")"]),
-            unionType => {
-                const serializers = Array.from(unionType.members).map(
-                    m => makeLambda(this.serializer(identity, m)).source
-                );
-                return compose(value, v => [
-                    this.conv("union"),
-                    "([",
-                    arrayIntercalate(", ", serializers),
-                    "], ",
-                    v,
-                    ")"
-                ]);
-            },
-            transformedStringType => {
-                if (transformedStringType.kind === "date-time") {
-                    return compose(value, v => [v, ".isoformat()"]);
-                }
-                if (transformedStringType.kind === "uuid") {
-                    return compose(value, v => ["str(", v, ")"]);
-                }
-                return panic(`Transformed type ${transformedStringType.kind} not supported`);
-            }
-        );
-    }
-
-    protected emitClassMembers(t: ClassType): void {
-        super.emitClassMembers(t);
         this.ensureBlankLine();
 
-        const className = this.nameForNamedType(t);
+        this.emitModule(() => {
+            this.emitTypesModule();
 
-        this.emitLine("@staticmethod");
-        this.emitBlock(
-            ["def from_dict(", this.typingDecl("obj", "Any"), ")", this.typeHint(" -> ", this.namedType(t)), ":"],
-            () => {
-                const args: Sourcelike[] = [];
-                this.emitLine("assert isinstance(obj, dict)");
-                this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
-                    const property = { value: ["obj.get(", this.string(jsonName), ")"] };
-                    this.emitLine(name, " = ", makeValue(this.deserializer(property, cp.type)));
-                    args.push(name);
-                });
-                this.emitLine("return ", className, "(", arrayIntercalate(", ", args), ")");
-            }
-        );
-        this.ensureBlankLine();
-
-        this.emitBlock(["def to_dict(self)", this.typeHint(" -> dict"), ":"], () => {
-            this.emitLine("result", this.typeHint(": dict"), " = {}");
-            this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
-                const property = { value: ["self.", name] };
-                if (cp.isOptional) {
-                    this.emitBlock(["if self.", name, " is not None:"], () => {
-                        this.emitLine(
-                            "result[",
-                            this.string(jsonName),
-                            "] = ",
-                            makeValue(this.serializer(property, cp.type))
-                        );
+            this.forEachDeclaration("leading-and-interposing", decl => {
+                if (decl.kind === "forward") {
+                    this.emitCommentLines(["(forward declaration)"]);
+                    this.emitModule(() => {
+                        this.emitLine("class ", this.nameForNamedType(decl.type), " < Dry::Struct; end");
                     });
-                } else {
-                    this.emitLine(
-                        "result[",
-                        this.string(jsonName),
-                        "] = ",
-                        makeValue(this.serializer(property, cp.type))
-                    );
                 }
             });
-            this.emitLine("return result");
-        });
-    }
 
-    protected emitImports(): void {
-        super.emitImports();
-        if (this._haveDateutil) {
-            this.emitLine("import dateutil.parser");
-        }
-
-        if (!this._haveTypeVar && !this._haveEnumTypeVar) return;
-
-        this.ensureBlankLine(2);
-        if (this._haveTypeVar) {
-            this.emitTypeVar(this.typeVar(), []);
-        }
-        if (this._haveEnumTypeVar) {
-            this.emitTypeVar(this.enumTypeVar(), [", bound=", this.withImport("enum", "Enum")]);
-        }
-    }
-
-    protected emitSupportCode(): void {
-        const map = Array.from(this._deserializerFunctions).map(f => [f, f] as [ConverterFunction, ConverterFunction]);
-        this.forEachWithBlankLines(map, ["interposing", 2], cf => {
-            this.emitConverter(cf);
-        });
-    }
-
-    protected makeTopLevelDependencyNames(_t: Type, topLevelName: Name): DependencyName[] {
-        const fromDict = new DependencyName(
-            this._converterNamer,
-            topLevelNameOrder,
-            l => `${l(topLevelName)}_from_dict`
-        );
-        const toDict = new DependencyName(this._converterNamer, topLevelNameOrder, l => `${l(topLevelName)}_to_dict`);
-        this._topLevelConverterNames.set(topLevelName, { fromDict, toDict });
-        return [fromDict, toDict];
-    }
-
-    protected emitDefaultLeadingComments(): void {
-        this.ensureBlankLine();
-        if (this._haveDateutil) {
-            this.emitCommentLines([
-                "This code parses date/times, so please",
-                "",
-                "    pip install python-dateutil",
-                ""
-            ]);
-        }
-        this.emitCommentLines([
-            "To use this code, make sure you",
-            "",
-            "    import json",
-            "",
-            "and then, to convert JSON from a string, do",
-            ""
-        ]);
-        this.forEachTopLevel("none", (_, name) => {
-            const { fromDict } = defined(this._topLevelConverterNames.get(name));
-            this.emitLine(this.commentLineStart, "    result = ", fromDict, "(json.loads(json_string))");
-        });
-    }
-
-    protected emitClosingCode(): void {
-        this.forEachTopLevel(["interposing", 2], (t, name) => {
-            const { fromDict, toDict } = defined(this._topLevelConverterNames.get(name));
-            const pythonType = this.pythonType(t);
-            this.emitBlock(
-                ["def ", fromDict, "(", this.typingDecl("s", "Any"), ")", this.typeHint(" -> ", pythonType), ":"],
-                () => {
-                    this.emitLine("return ", makeValue(this.deserializer({ value: "s" }, t)));
-                }
+            this.forEachNamedType(
+                "leading-and-interposing",
+                (c: ClassType, n: Name) => this.emitClass(c, n),
+                (e, n) => this.emitEnum(e, n),
+                (u, n) => this.emitUnion(u, n)
             );
-            this.ensureBlankLine(2);
-            this.emitBlock(
-                ["def ", toDict, "(x", this.typeHint(": ", pythonType), ")", this.typingReturn("Any"), ":"],
-                () => {
-                    this.emitLine("return ", makeValue(this.serializer({ value: "x" }, t)));
-                }
-            );
+
+            if (!this._options.justTypes) {
+                this.forEachTopLevel(
+                    "leading-and-interposing",
+                    (topLevel, name) => {
+                        const self = modifySource(snakeCase, name);
+
+                        // The json gem defines to_json on maps and primitives, so we only need to supply
+                        // it for arrays.
+                        const needsToJsonDefined = "array" === topLevel.kind;
+
+                        const classDeclaration = () => {
+                            this.emitBlock(["class ", name], () => {
+                                this.emitBlock(["def self.from_json!(json)"], () => {
+                                    if (needsToJsonDefined) {
+                                        this.emitLine(
+                                            self,
+                                            " = ",
+                                            this.fromDynamic(topLevel, "JSON.parse(json, quirks_mode: true)")
+                                        );
+                                        this.emitBlock([self, ".define_singleton_method(:to_json) do"], () => {
+                                            this.emitLine("JSON.generate(", this.toDynamic(topLevel, "self"), ")");
+                                        });
+                                        this.emitLine(self);
+                                    } else {
+                                        this.emitLine(
+                                            this.fromDynamic(topLevel, "JSON.parse(json, quirks_mode: true)")
+                                        );
+                                    }
+                                });
+                            });
+                        };
+
+                        this.emitModule(() => {
+                            classDeclaration();
+                        });
+                    },
+                    t => this.namedTypeToNameForTopLevel(t) === undefined
+                );
+            }
         });
     }
 }
