@@ -41,7 +41,7 @@ export enum Strictness {
     None = "Types::"
 }
 
-export const rubyOptions = {
+export const elixirOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     strictness: new EnumOption("strictness", "Type strictness", [
         ["strict", Strictness.Strict],
@@ -51,13 +51,13 @@ export const rubyOptions = {
     namespace: new StringOption("namespace", "Specify a wrapping Namespace", "NAME", "", "secondary")
 };
 
-export class RubyTargetLanguage extends TargetLanguage {
+export class ElixirTargetLanguage extends TargetLanguage {
     constructor() {
-        super("Ruby", ["ruby"], "rb");
+        super("Elixir", ["elixir"], "ex");
     }
 
     protected getOptions(): Option<any>[] {
-        return [rubyOptions.justTypes, rubyOptions.strictness, rubyOptions.namespace];
+        return [elixirOptions.justTypes, elixirOptions.strictness, elixirOptions.namespace];
     }
 
     get supportsOptionalClassProperties(): boolean {
@@ -68,8 +68,8 @@ export class RubyTargetLanguage extends TargetLanguage {
         return "  ";
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): RubyRenderer {
-        return new RubyRenderer(this, renderContext, getOptionValues(rubyOptions, untypedOptionValues));
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): ElixirRenderer {
+        return new ElixirRenderer(this, renderContext, getOptionValues(elixirOptions, untypedOptionValues));
     }
 }
 
@@ -113,11 +113,11 @@ function memberNameStyle(original: string): string {
     );
 }
 
-export class RubyRenderer extends ConvenienceRenderer {
+export class ElixirRenderer extends ConvenienceRenderer {
     constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        private readonly _options: OptionValues<typeof rubyOptions>
+        private readonly _options: OptionValues<typeof elixirOptions>
     ) {
         super(targetLanguage, renderContext);
     }
