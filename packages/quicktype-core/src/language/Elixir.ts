@@ -130,9 +130,9 @@ export class ElixirRenderer extends ConvenienceRenderer {
         return true;
     }
 
-    protected canBeForwardDeclared(t: Type): boolean {
-        return "class" === t.kind;
-    }
+    // protected canBeForwardDeclared(t: Type): boolean {
+    //     return "class" === t.kind;
+    // }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
         return keywords.globals.concat(["Types", "JSON", "Dry", "Constructor", "Self"]);
@@ -380,7 +380,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
         this.emitLine("end");
     }
 
-    private emitModule(emit: () => void) {
+    private emitModule2(emit: () => void) {
         const emitModuleInner = (moduleName: string) => {
             const [firstModule, ...subModules] = moduleName.split("::");
             if (subModules.length > 0) {
@@ -398,11 +398,33 @@ export class ElixirRenderer extends ConvenienceRenderer {
         }
     }
 
-    private emitClass(c: ClassType, className: Name) {
-        this.emitDescription(this.descriptionForType(c));
-        this.emitBlock(["class ", className, " < Dry::Struct"], () => {
+    protected emitDescriptionBlock(lines: Sourcelike[]): void {
+        this.emitCommentLines(lines, {
+            firstLineStart: '@moduledoc """\n',
+            lineStart: "",
+            afterComment: '"""'
+        });
+    }
+
+    private emitModule(c: ClassType, moduleName: Name) {
+        this.emitBlock(["defmodule ", moduleName, " do"], () => {
+            const structDescription = this.descriptionForType(c) ?? [];
+            const attributeDescriptions: Sourcelike[][] = [];
+
+            this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+                const attributeDescription = this.descriptionForClassProperty(c, jsonName);
+                if (attributeDescription) {
+                    attributeDescriptions.push(["- `:", name, "` - ", attributeDescription]);
+                }
+            });
+            if (structDescription.length || attributeDescriptions.length) {
+                this.emitDescription([...structDescription, ...attributeDescriptions]);
+                this.ensureBlankLine();
+            }
+
             let table: Sourcelike[][] = [];
             let count = c.getProperties().size;
+
             this.forEachClassProperty(c, "none", (name, jsonName, p) => {
                 const last = --count === 0;
                 const description = this.descriptionForClassProperty(c, jsonName);
@@ -410,20 +432,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                     ["attribute :", name, ","],
                     [" ", this.dryType(p.type), p.isOptional ? ".optional" : ""]
                 ];
-                if (description !== undefined) {
-                    if (table.length > 0) {
-                        this.emitTable(table);
-                        table = [];
-                    }
-                    this.ensureBlankLine();
-                    this.emitDescriptionBlock(description);
-                    this.emitLine(attribute);
-                    if (!last) {
-                        this.ensureBlankLine();
-                    }
-                } else {
-                    table.push(attribute);
-                }
+                table.push(attribute);
             });
             if (table.length > 0) {
                 this.emitTable(table);
@@ -622,85 +631,70 @@ export class ElixirRenderer extends ConvenienceRenderer {
         if (this.leadingComments !== undefined) {
             this.emitComments(this.leadingComments);
         } else if (!this._options.justTypes) {
-            this.emitLine("# This code may look unusually verbose for Ruby (and it is), but");
-            this.emitLine("# it performs some subtle and complex validation of JSON data.");
-            this.emitLine("#");
-            this.emitLine("# To parse this JSON, add 'dry-struct' and 'dry-types' gems, then do:");
-            this.emitLine("#");
-            this.forEachTopLevel("none", (topLevel, name) => {
-                const variable = modifySource(snakeCase, name);
-                this.emitLine("#   ", variable, " = ", name, ".from_json! ", this.jsonSample(topLevel));
-                this.emitLine("#   puts ", this.exampleUse(topLevel, variable));
-                this.emitLine("#");
-            });
-            this.emitLine("# If from_json! succeeds, the value returned matches the schema.");
+            this.emitLine("# TODO: Add comments");
         }
         this.ensureBlankLine();
 
-        this.emitLine("require 'json'");
-        this.emitLine("require 'dry-types'");
-        this.emitLine("require 'dry-struct'");
-
         this.ensureBlankLine();
 
-        this.emitModule(() => {
-            this.emitTypesModule();
+        // this.emitModule2(() => {
+        // this.emitTypesModule();
 
-            this.forEachDeclaration("leading-and-interposing", decl => {
-                if (decl.kind === "forward") {
-                    this.emitCommentLines(["(forward declaration)"]);
-                    this.emitModule(() => {
-                        this.emitLine("class ", this.nameForNamedType(decl.type), " < Dry::Struct; end");
-                    });
-                }
-            });
+        // this.forEachDeclaration("leading-and-interposing", decl => {
+        //     if (decl.kind === "forward") {
+        //         this.emitCommentLines(["(forward declaration)"]);
+        //         this.emitModule2(() => {
+        //             this.emitLine("class ", this.nameForNamedType(decl.type), " < Dry::Struct; end");
+        //         });
+        //     }
+        // });
 
-            this.forEachNamedType(
-                "leading-and-interposing",
-                (c: ClassType, n: Name) => this.emitClass(c, n),
-                (e, n) => this.emitEnum(e, n),
-                (u, n) => this.emitUnion(u, n)
-            );
+        this.forEachNamedType(
+            "leading-and-interposing",
+            (c: ClassType, n: Name) => this.emitModule(c, n),
+            (e, n) => this.emitEnum(e, n),
+            (u, n) => this.emitUnion(u, n)
+        );
 
-            if (!this._options.justTypes) {
-                this.forEachTopLevel(
-                    "leading-and-interposing",
-                    (topLevel, name) => {
-                        const self = modifySource(snakeCase, name);
+        // if (!this._options.justTypes) {
+        //     this.forEachTopLevel(
+        //         "leading-and-interposing",
+        //         (topLevel, name) => {
+        //             const self = modifySource(snakeCase, name);
 
-                        // The json gem defines to_json on maps and primitives, so we only need to supply
-                        // it for arrays.
-                        const needsToJsonDefined = "array" === topLevel.kind;
+        //             // The json gem defines to_json on maps and primitives, so we only need to supply
+        //             // it for arrays.
+        //             const needsToJsonDefined = "array" === topLevel.kind;
 
-                        const classDeclaration = () => {
-                            this.emitBlock(["class ", name], () => {
-                                this.emitBlock(["def self.from_json!(json)"], () => {
-                                    if (needsToJsonDefined) {
-                                        this.emitLine(
-                                            self,
-                                            " = ",
-                                            this.fromDynamic(topLevel, "JSON.parse(json, quirks_mode: true)")
-                                        );
-                                        this.emitBlock([self, ".define_singleton_method(:to_json) do"], () => {
-                                            this.emitLine("JSON.generate(", this.toDynamic(topLevel, "self"), ")");
-                                        });
-                                        this.emitLine(self);
-                                    } else {
-                                        this.emitLine(
-                                            this.fromDynamic(topLevel, "JSON.parse(json, quirks_mode: true)")
-                                        );
-                                    }
-                                });
-                            });
-                        };
+        //             const classDeclaration = () => {
+        //                 this.emitBlock(["class ", name], () => {
+        //                     this.emitBlock(["def self.from_json!(json)"], () => {
+        //                         if (needsToJsonDefined) {
+        //                             this.emitLine(
+        //                                 self,
+        //                                 " = ",
+        //                                 this.fromDynamic(topLevel, "JSON.parse(json, quirks_mode: true)")
+        //                             );
+        //                             this.emitBlock([self, ".define_singleton_method(:to_json) do"], () => {
+        //                                 this.emitLine("JSON.generate(", this.toDynamic(topLevel, "self"), ")");
+        //                             });
+        //                             this.emitLine(self);
+        //                         } else {
+        //                             this.emitLine(
+        //                                 this.fromDynamic(topLevel, "JSON.parse(json, quirks_mode: true)")
+        //                             );
+        //                         }
+        //                     });
+        //                 });
+        //             };
 
-                        this.emitModule(() => {
-                            classDeclaration();
-                        });
-                    },
-                    t => this.namedTypeToNameForTopLevel(t) === undefined
-                );
-            }
-        });
+        //             this.emitModule2(() => {
+        //                 classDeclaration();
+        //             });
+        //         },
+        //         t => this.namedTypeToNameForTopLevel(t) === undefined
+        //     );
+        // }
+        // });
     }
 }
