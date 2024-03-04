@@ -437,6 +437,19 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 this.ensureBlankLine();
             }
 
+            const attributeNames: Sourcelike[] = [];
+            this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+                if (attributeNames.length === 0) {
+                    attributeNames.push([":", name]);
+                } else {
+                    attributeNames.push([", :", name]);
+                }
+            });
+            if (requiredAttributes.length) {
+                this.emitLine(["defstruct [", requiredAttributes, "]"]);
+                this.ensureBlankLine();
+            }
+
             let table: Sourcelike[][] = [];
             let count = c.getProperties().size;
 
