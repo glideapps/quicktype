@@ -158,27 +158,27 @@ export class ElixirRenderer extends ConvenienceRenderer {
         return new Namer("enum-cases", n => simpleNameStyle(n, true), []);
     }
 
-    private dryType(t: Type, isOptional = false): Sourcelike {
-        const optional = isOptional ? ".optional" : "";
+    private elixirType(t: Type, isOptional = false): Sourcelike {
+        const optional = isOptional ? " | nil" : "";
         return matchType<Sourcelike>(
             t,
-            _anyType => ["Types::Any", optional],
-            _nullType => ["Types::Nil", optional],
-            _boolType => ["Types::Bool", optional],
-            _integerType => ["Types::Integer", optional],
-            _doubleType => ["Types::Double", optional],
-            _stringType => ["Types::String", optional],
-            arrayType => ["Types.Array(", this.dryType(arrayType.items), ")", optional],
-            classType => [this.nameForNamedType(classType), optional],
-            mapType => ["Types::Hash.meta(of: ", this.dryType(mapType.values), ")", optional],
-            enumType => ["Types::", this.nameForNamedType(enumType), optional],
+            _anyType => ["any()", optional],
+            _nullType => ["nil"],
+            _boolType => ["boolean()", optional],
+            _integerType => ["integer()", optional],
+            _doubleType => ["float()", optional],
+            _stringType => ["String.t()", optional],
+            arrayType => ["Types.Array(", this.elixirType(arrayType.items), ")", optional], // ?
+            classType => [this.nameForNamedType(classType), optional], // ?
+            mapType => ["Types::Hash.meta(of: ", this.elixirType(mapType.values), ")", optional], // ?
+            enumType => ["Types::", this.nameForNamedType(enumType), optional], // ?
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
-                    return [this.dryType(nullable), ".optional"];
+                    return [this.elixirType(nullable), ".optional"];
                 }
                 return ["Types.Instance(", this.nameForNamedType(unionType), ")", optional];
-            }
+            } // ?
         );
     }
 
@@ -255,7 +255,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
     }
 
     private fromDynamic(t: Type, e: Sourcelike, optional = false, castPrimitives = false): Sourcelike {
-        const primitiveCast = [this.dryType(t, optional), "[", e, "]"];
+        const primitiveCast = [this.elixirType(t, optional), "[", e, "]"];
         const primitive = castPrimitives ? primitiveCast : e;
         const safeAccess = optional ? "&" : "";
         return matchType<Sourcelike>(
@@ -434,7 +434,6 @@ export class ElixirRenderer extends ConvenienceRenderer {
             });
             if (requiredAttributes.length) {
                 this.emitLine(["@enforce_keys [", requiredAttributes, "]"]);
-                this.ensureBlankLine();
             }
 
             const attributeNames: Sourcelike[] = [];
@@ -445,26 +444,25 @@ export class ElixirRenderer extends ConvenienceRenderer {
                     attributeNames.push([", :", name]);
                 }
             });
-            if (requiredAttributes.length) {
-                this.emitLine(["defstruct [", requiredAttributes, "]"]);
+            if (attributeNames.length) {
+                this.emitLine(["defstruct [", attributeNames, "]"]);
                 this.ensureBlankLine();
             }
 
-            let table: Sourcelike[][] = [];
+            let typeDefinitionTable: Sourcelike[][] = [[["@type "], ["t :: %__MODULE__{"]]];
             let count = c.getProperties().size;
 
             this.forEachClassProperty(c, "none", (name, jsonName, p) => {
                 const last = --count === 0;
-                const description = this.descriptionForClassProperty(c, jsonName);
-                const attribute = [
-                    ["attribute :", name, ","],
-                    [" ", this.dryType(p.type), p.isOptional ? ".optional" : ""]
+                const attributeRow = [
+                    [],
+                    ["  ", name, ": ", this.elixirType(p.type), p.isOptional ? " | nil" : "", last ? "" : ","]
                 ];
-                table.push(attribute);
+                typeDefinitionTable.push(attributeRow);
             });
-            if (table.length > 0) {
-                this.emitTable(table);
-            }
+
+            typeDefinitionTable.push([[], ["}"]]);
+            this.emitTable(typeDefinitionTable);
 
             if (this._options.justTypes) {
                 return;
@@ -542,7 +540,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
         this.emitBlock(["class ", unionName, " < Dry::Struct"], () => {
             const table: Sourcelike[][] = [];
             this.forEachUnionMember(u, u.getChildren(), "none", null, (name, t) => {
-                table.push([["attribute :", name, ", "], [this.dryType(t, true)]]);
+                table.push([["attribute :", name, ", "], [this.elixirType(t, true)]]);
             });
             this.emitTable(table);
 
