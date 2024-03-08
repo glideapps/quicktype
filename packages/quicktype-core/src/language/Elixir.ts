@@ -168,16 +168,16 @@ export class ElixirRenderer extends ConvenienceRenderer {
             _integerType => ["integer()", optional],
             _doubleType => ["float()", optional],
             _stringType => ["String.t()", optional],
-            arrayType => ["Types.Array(", this.elixirType(arrayType.items), ")", optional], // ?
-            classType => [this.nameForNamedType(classType), optional], // ?
-            mapType => ["Types::Hash.meta(of: ", this.elixirType(mapType.values), ")", optional], // ?
-            enumType => ["Types::", this.nameForNamedType(enumType), optional], // ?
+            arrayType => ["[", this.elixirType(arrayType.items), "]", optional],
+            classType => [this.nameForNamedType(classType), ".t()", optional],
+            mapType => ["%{key", ": ", this.elixirType(mapType.values), "}", optional], // TODO: consider improving this https://github.com/Qqwy/elixir-type_check/blob/main/Comparing%20TypeCheck%20and%20Elixir%20Typespecs.md#:~:text=%25%7B%7D,optional%20pairs%20of%20key_type%20and%20value_type
+            enumType => [this.nameForNamedType(enumType), ".t()", optional],
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
-                    return [this.elixirType(nullable), ".optional"];
+                    return [this.elixirType(nullable), " | nil"];
                 }
-                return ["Types.Instance(", this.nameForNamedType(unionType), ")", optional];
+                return [this.nameForNamedType(unionType), ".t()", optional];
             } // ?
         );
     }
@@ -499,28 +499,28 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 this.emitLine(")");
             });
 
-            this.ensureBlankLine();
-            this.emitBlock("def self.from_json!(json)", () => {
-                this.emitLine("from_dynamic!(JSON.parse(json))");
-            });
+            // this.ensureBlankLine();
+            // this.emitBlock("def self.from_json!(json)", () => {
+            //     this.emitLine("from_dynamic!(JSON.parse(json))");
+            // });
 
-            this.ensureBlankLine();
-            this.emitBlock(["def to_dynamic"], () => {
-                this.emitLine("{");
-                this.indent(() => {
-                    const inits: Sourcelike[][] = [];
-                    this.forEachClassProperty(c, "none", (name, jsonName, p) => {
-                        const expression = this.toDynamic(p.type, name, p.isOptional);
-                        inits.push([[`"${stringEscape(jsonName)}"`], [" => ", expression, ","]]);
-                    });
-                    this.emitTable(inits);
-                });
-                this.emitLine("}");
-            });
-            this.ensureBlankLine();
-            this.emitBlock("def to_json(options = nil)", () => {
-                this.emitLine("JSON.generate(to_dynamic, options)");
-            });
+            // this.ensureBlankLine();
+            // this.emitBlock(["def to_dynamic"], () => {
+            //     this.emitLine("{");
+            //     this.indent(() => {
+            //         const inits: Sourcelike[][] = [];
+            //         this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+            //             const expression = this.toDynamic(p.type, name, p.isOptional);
+            //             inits.push([[`"${stringEscape(jsonName)}"`], [" => ", expression, ","]]);
+            //         });
+            //         this.emitTable(inits);
+            //     });
+            //     this.emitLine("}");
+            // });
+            // this.ensureBlankLine();
+            // this.emitBlock("def to_json(options = nil)", () => {
+            //     this.emitLine("JSON.generate(to_dynamic, options)");
+            // });
         });
     }
 
