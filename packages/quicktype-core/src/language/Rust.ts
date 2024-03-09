@@ -46,6 +46,7 @@ export const rustOptions = {
         ["crate", Visibility.Crate],
         ["public", Visibility.Public]
     ]),
+    useCow: new BooleanOption("use-cow", "Use Cow<'_, str> instead of String", false),
     deriveDebug: new BooleanOption("derive-debug", "Derive Debug impl", false),
     deriveClone: new BooleanOption("derive-clone", "Derive Clone impl", false),
     derivePartialEq: new BooleanOption("derive-partial-eq", "Derive PartialEq impl", false),
@@ -124,6 +125,7 @@ export class RustTargetLanguage extends TargetLanguage {
         return [
             rustOptions.density,
             rustOptions.visibility,
+            rustOptions.useCow,
             rustOptions.deriveDebug,
             rustOptions.deriveClone,
             rustOptions.derivePartialEq,
@@ -315,6 +317,13 @@ export class RustRenderer extends ConvenienceRenderer {
         return kind === "array" || kind === "map";
     }
 
+    private nameForNamedTypeWithLifetimes(t: Type): Sourcelike {
+         return [
+            this.nameForNamedType(t),
+            this.lifetimeTagForType(t)
+        ]
+    }
+
     private rustType(t: Type, withIssues = false): Sourcelike {
         return matchType<Sourcelike>(
             t,
@@ -323,9 +332,9 @@ export class RustRenderer extends ConvenienceRenderer {
             _boolType => "bool",
             _integerType => "i64",
             _doubleType => "f64",
-            _stringType => "String",
+            _stringType => this.stringType(),
             arrayType => ["Vec<", this.rustType(arrayType.items, withIssues), ">"],
-            classType => this.nameForNamedType(classType),
+            classType => this.nameForNamedTypeWithLifetimes(classType),
             mapType => ["HashMap<String, ", this.rustType(mapType.values, withIssues), ">"],
             enumType => this.nameForNamedType(enumType),
             unionType => {
@@ -338,8 +347,8 @@ export class RustRenderer extends ConvenienceRenderer {
                 const isCycleBreaker = this.isCycleBreakerType(unionType);
 
                 const name = isCycleBreaker
-                    ? ["Box<", this.nameForNamedType(unionType), ">"]
-                    : this.nameForNamedType(unionType);
+                    ? ["Box<", this.nameForNamedTypeWithLifetimes(unionType), ">"]
+                    : this.nameForNamedTypeWithLifetimes(unionType);
 
                 return hasNull !== null ? (["Option<", name, ">"] as Sourcelike) : name;
             }
@@ -373,6 +382,13 @@ export class RustRenderer extends ConvenienceRenderer {
             const nullable = nullableFromUnion(t);
             if (nullable !== null) this.emitLine('#[serde(skip_serializing_if = "Option::is_none")]');
         }
+    }
+            
+    private stringType(): string {
+        if(this._options.useCow) {
+            return "Cow<'a, str>";
+        }
+        return "String";
     }
 
     private get visibility(): string {
@@ -416,8 +432,26 @@ export class RustRenderer extends ConvenienceRenderer {
                 this.emitLine(this.visibility, name, ": ", this.breakCycle(prop.type, true), ",");
             });
 
-        this.emitBlock(["pub struct ", className], structBody);
+        this.emitBlock(["pub struct ", className, this.lifetimeTagForType(c)], structBody);
     }
+
+    protected lifetimeTagForType(t: Type): Sourcelike{
+        const lifetimes = this.lifetimesForType(t);
+        if(lifetimes.size <= 0) return [];
+        return `<${[...lifetimes].join(", ")}>`;
+    }
+    
+    protected lifetimesForType(t: Type): Set<string> {
+        if(t.isPrimitive() && t.kind == "string") return new Set(["'a"]);
+        const lifetimes = new Set<string>();
+        for(const child of t.getChildren()) {
+            for(const child_lifetime of this.lifetimesForType(child)) {
+                lifetimes.add(child_lifetime);
+            }
+        }
+        return lifetimes;
+    }
+
 
     protected emitBlock(line: Sourcelike, f: () => void): void {
         this.emitLine(line, " {");
@@ -525,6 +559,10 @@ export class RustRenderer extends ConvenienceRenderer {
 
         if (this.haveMaps) {
             this.emitLine("use std::collections::HashMap;");
+        }
+
+        if (this._options.useCow) {
+            this.emitLine("use std::borrow::Cow;");
         }
 
         this.forEachTopLevel(
