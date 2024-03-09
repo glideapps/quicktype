@@ -914,10 +914,9 @@ async function addTypesInSchema(
 
         const includeObject = enumArray === undefined && !isConst && (typeSet === undefined || typeSet.has("object"));
         const includeArray = enumArray === undefined && !isConst && (typeSet === undefined || typeSet.has("array"));
-        const needStringEnum =
-            includedTypes.has("string") &&
-            enumArray !== undefined &&
-            enumArray.find((x: any) => typeof x === "string") !== undefined;
+        const enumArrayHasString =
+            enumArray !== undefined && enumArray.find((x: any) => typeof x === "string") !== undefined;
+        const needStringEnum = includedTypes.has("string") && (enumArrayHasString || isConst);
         const needUnion =
             typeSet !== undefined ||
             schema.properties !== undefined ||
@@ -952,7 +951,9 @@ async function addTypesInSchema(
                 combineProducedAttributes(({ forString }) => forString)
             );
 
-            if (needStringEnum || isConst) {
+            if (needStringEnum) {
+                // FIXME: Currently isConst only works for string values because the name generation only works with strings
+                // to fix this issue the cases below have to support all types.
                 const cases = isConst
                     ? [schema.const]
                     : ((enumArray as any[]).filter(x => typeof x === "string") as string[]);
