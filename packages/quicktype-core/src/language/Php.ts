@@ -56,7 +56,7 @@ export class PhpTargetLanguage extends TargetLanguage {
         const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
         mapping.set("date", "date"); // TODO is not implemented yet
         mapping.set("time", "time"); // TODO is not implemented yet
-        mapping.set("uuid", "uuid"); // TODO is not implemented yet
+        mapping.set("uuid", "uuid");
         mapping.set("date-time", "date-time");
         return mapping;
     }
@@ -286,9 +286,6 @@ export class PhpRenderer extends ConvenienceRenderer {
                 if (transformedStringType.kind === "date-time") {
                     return "DateTime";
                 }
-                if (transformedStringType.kind === "uuid") {
-                    throw Error('transformedStringType.kind === "uuid"');
-                }
                 return "string";
             }
         );
@@ -318,6 +315,9 @@ export class PhpRenderer extends ConvenienceRenderer {
                 if (transformedStringType.kind === "date-time") {
                     return "DateTime";
                 }
+                if (transformedStringType.kind === "uuid") {
+                    return "string";
+                }
                 throw Error('transformedStringType.kind === "unknown"');
             }
         );
@@ -345,6 +345,9 @@ export class PhpRenderer extends ConvenienceRenderer {
             },
             transformedStringType => {
                 if (transformedStringType.kind === "date-time") {
+                    return "string";
+                }
+                if (transformedStringType.kind === "uuid") {
                     return "string";
                 }
                 throw Error('transformedStringType.kind === "unknown"');
@@ -396,6 +399,10 @@ export class PhpRenderer extends ConvenienceRenderer {
             transformedStringType => {
                 if (transformedStringType.kind === "date-time") {
                     this.emitLine(...lhs, ...args, "->format(DateTimeInterface::ISO8601);");
+                    return;
+                }
+                if (transformedStringType.kind === "uuid") {
+                    this.emitLine(...lhs, ...args, "; /*string*/");
                     return;
                 }
                 throw Error('transformedStringType.kind === "unknown"');
@@ -459,6 +466,10 @@ export class PhpRenderer extends ConvenienceRenderer {
                     this.emitLine("$tmp = ", "DateTime::createFromFormat(DateTimeInterface::ISO8601, ", args, ");");
                     this.transformDateTime(className, "", ["$tmp"]);
                     this.emitLine("return $tmp;");
+                    return;
+                }
+                if (transformedStringType.kind === "uuid") {
+                    this.emitLine(...lhs, ...args, "; /*string*/");
                     return;
                 }
                 throw Error('transformedStringType.kind === "unknown"');
@@ -561,6 +572,21 @@ export class PhpRenderer extends ConvenienceRenderer {
                     // this.emitLine("return sample();");
                     return;
                 }
+                if (transformedStringType.kind === "uuid") {
+                    this.emitLine(
+                        ...lhs,
+                        "'",
+                        "9277b8fb-2a65-4663-a36c-8d417e2d284b",
+                        "'",
+                        suffix,
+                        " /*",
+                        "" + idx,
+                        ":",
+                        args,
+                        " */"
+                    );
+                    return;
+                }
                 throw Error('transformedStringType.kind === "unknown"');
             }
         );
@@ -614,6 +640,19 @@ export class PhpRenderer extends ConvenienceRenderer {
             transformedStringType => {
                 if (transformedStringType.kind === "date-time") {
                     this.transformDateTime(className, attrName, [scopeAttrName]);
+                    return;
+                }
+                if (transformedStringType.kind === "uuid") {
+                    is("is_string");
+                    this.emitLine(
+                        "$uuidPattern = ",
+                        '"',
+                        "/^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$/",
+                        '";'
+                    );
+                    this.emitBlock(["if (!preg_match($uuidPattern, ", scopeAttrName, "))"], () =>
+                        this.emitLine('throw new Exception("Attribute Error:', className, "::", attrName, '");')
+                    );
                     return;
                 }
                 throw Error(`transformedStringType.kind === ${transformedStringType.kind}`);
