@@ -301,7 +301,11 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
             let items = "";
             e.cases.forEach(item => {
                 if (items === "") {
+                    if (typeof item == "number") {
+                        items += `${utf16StringEscape(item)}`;
+                    } else {
                     items += `"${utf16StringEscape(item)}"`;
+                    }
                     return;
                 }
                 items += ` | "${utf16StringEscape(item)}"`;

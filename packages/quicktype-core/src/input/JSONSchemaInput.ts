@@ -943,7 +943,9 @@ async function addTypesInSchema(
                 if (!includedTypes.has(name)) continue;
 
                 const attributes = isNumberTypeKind(kind) ? numberAttributes : undefined;
+                if (!isConst) {
                 unionTypes.push(typeBuilder.getPrimitiveType(kind, attributes));
+                }
             }
 
             const stringAttributes = combineTypeAttributes(
@@ -956,7 +958,12 @@ async function addTypesInSchema(
                 const cases = isConst
                     ? [schema.const]
                     : ((enumArray as any[]).filter(x => typeof x === "string") as string[]);
+                if (isConst && typeof schema.const === "number") {
+                    //TODO: extract number type
                 unionTypes.push(typeBuilder.getStringType(stringAttributes, StringTypes.fromCases(cases)));
+                } else {
+                    unionTypes.push(typeBuilder.getStringType(stringAttributes, StringTypes.fromCases(cases)));
+                }
             } else if (includedTypes.has("string")) {
                 unionTypes.push(makeStringType(stringAttributes));
             }

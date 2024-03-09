@@ -118,6 +118,9 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
     }
 
     protected nameStyle(original: string, upper: boolean): string {
+        if (typeof original === "number") {
+            return original
+        }
         const acronyms = acronymStyle(this._jsOptions.acronymStyle);
         const words = splitIntoWords(original);
         return combineWords(
