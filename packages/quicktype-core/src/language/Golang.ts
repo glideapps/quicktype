@@ -307,7 +307,9 @@ export class GoRenderer extends ConvenienceRenderer {
 
         this.emitPackageDefinitons(
             false,
-            usedTypes.has("time.Time") || usedTypes.has("*,time.Time") || usedTypes.has("[],time.Time") ? new Set<string>(["time"]) : undefined
+            usedTypes.has("time.Time") || usedTypes.has("*,time.Time") || usedTypes.has("[],time.Time")
+                ? new Set<string>(["time"])
+                : undefined
         );
         this.emitDescription(this.descriptionForType(c));
         this.emitStruct(className, columns);
