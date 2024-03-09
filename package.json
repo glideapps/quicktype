@@ -48,7 +48,7 @@
         "@types/semver": "^7.5.0",
         "@types/shelljs": "^0.8.12",
         "@types/stream-json": "^1.7.3",
-        "@types/urijs": "^1.19.19",
+        "@types/urijs": "^1.19.25",
         "ajv": "^5.5.2",
         "deep-equal": "^2.2.2",
         "exit": "^0.1.2",
