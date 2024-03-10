@@ -1637,10 +1637,10 @@ export const TypeScriptEffectSchemaLanguage: Language = {
 export const ElixirLanguage: Language = {
     name: "elixir",
     base: "test/fixtures/elixir",
-    setupCommand: "",
-    compileCommand: "",
+    setupCommand: "mix deps.get && mix deps.compile",
+    // compileCommand: "mix deps.compile",
     runCommand(sample: string) {
-        return `${sample}`;
+        return `mix run main.exs "${sample}"`;
     },
     diffViaSchema: true,
     skipDiffViaSchema: [
@@ -1662,7 +1662,7 @@ export const ElixirLanguage: Language = {
     ],
     allowMissingNull: true,
     features: ["enum", "no-defaults", "date-time"],
-    output: "QuickType.exs",
+    output: "QuickType.ex",
     topLevel: "TopLevel",
     skipJSON: [
         // "00c36.json",
@@ -1719,8 +1719,6 @@ export const ElixirLanguage: Language = {
         // "required-non-properties.schema"
     ],
     rendererOptions: {},
-    quickTestRendererOptions: [
-        // { "array-type": "list" }
-    ],
+    quickTestRendererOptions: [],
     sourceFiles: ["src/language/Elixir.ts"]
 };

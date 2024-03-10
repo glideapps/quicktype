@@ -1,16 +1,13 @@
 defmodule Main do
   def run do
-    [file | _] = System.argv()
+    [file_path | _] = System.argv()
 
-    file
+    file_path
     |> File.read!()
-    |> Jason.decode!()
-    # TODO: Test generated code
+    |> Jason.decode!(%{objects: :ordered_objects})
     |> Jason.encode!()
     |> IO.puts()
   end
 end
 
 Main.run()
-
-# mix run main.exs ../../inputs/schema/any.1.json
