@@ -169,15 +169,15 @@ export class ElixirRenderer extends ConvenienceRenderer {
             _doubleType => ["float()", optional],
             _stringType => ["String.t()", optional],
             arrayType => ["[", this.elixirType(arrayType.items), "]", optional],
-            classType => [this.nameForNamedType(classType), ".t()", optional],
-            mapType => ["%{key", ": ", this.elixirType(mapType.values), "}", optional], // TODO: consider improving this https://github.com/Qqwy/elixir-type_check/blob/main/Comparing%20TypeCheck%20and%20Elixir%20Typespecs.md#:~:text=%25%7B%7D,optional%20pairs%20of%20key_type%20and%20value_type
-            enumType => [this.nameForNamedType(enumType), ".t()", optional],
+            classType => [this.nameForNamedType(classType), ".thh()", optional],
+            mapType => ["%{String.t() => ", this.elixirType(mapType.values), "}", optional],
+            enumType => [this.nameForNamedType(enumType), ".thhh()", optional],
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
                     return [this.elixirType(nullable), " | nil"];
                 }
-                return [this.nameForNamedType(unionType), ".t()", optional];
+                return [this.nameForNamedType(unionType), ".thhhh()", optional];
             } // ?
         );
     }
@@ -254,10 +254,9 @@ export class ElixirRenderer extends ConvenienceRenderer {
         return `"${inner()}"`;
     }
 
-    private fromDynamic(t: Type, e: Sourcelike, optional = false, castPrimitives = false): Sourcelike {
-        const primitiveCast = [this.elixirType(t, optional), "[", e, "]"];
-        const primitive = castPrimitives ? primitiveCast : e;
-        const safeAccess = optional ? "&" : "";
+    private fromDynamic(t: Type, jsonName: string): Sourcelike {
+        const primitive = ['m["', jsonName, '"],'];
+        // const safeAccess = optional ? "&" : "";
         return matchType<Sourcelike>(
             t,
             _anyType => primitive,
@@ -266,19 +265,22 @@ export class ElixirRenderer extends ConvenienceRenderer {
             _integerType => primitive,
             _doubleType => primitive,
             _stringType => primitive,
-            arrayType => [e, safeAccess, ".map { |x| ", this.fromDynamic(arrayType.items, "x", false, true), " }"],
-            classType => {
-                const expression = [this.nameForNamedType(classType), ".from_dynamic!(", e, ")"];
-                return optional ? [e, " ? ", expression, " : nil"] : expression;
-            },
+            arrayType => [
+                arrayType.isPrimitive()
+                    ? [primitive]
+                    : ["Enum.map(", primitive, ", ", "&", this.nameForNamedType(arrayType), ".from_map/1)"]
+            ],
+            classType => [this.nameForNamedType(classType), ".from_map(", primitive, ")"],
             mapType => [
-                ["Types::Hash", optional ? ".optional" : "", "[", e, "]"],
-                safeAccess,
-                ".map { |k, v| [k, ",
-                this.fromDynamic(mapType.values, "v", false, true),
-                "] }",
-                safeAccess,
-                ".to_h"
+                mapType.isPrimitive()
+                    ? [primitive]
+                    : [
+                          "Map.new(",
+                          primitive,
+                          ", fn {key, value} -> {key,",
+                          this.nameForNamedType(mapType),
+                          ".from_map(value)} end)"
+                      ]
             ],
             enumType => {
                 const expression = ["Types::", this.nameForNamedType(enumType), "[", e, "]"];
@@ -347,32 +349,32 @@ export class ElixirRenderer extends ConvenienceRenderer {
         );
     }
 
-    // This is only to be used to allow class properties to possibly
-    // marshal implicitly. They are allowed to do this because they will
-    // be checked in Dry::Struct.new
-    private propertyTypeMarshalsImplicitlyFromDynamic(t: Type): boolean {
-        return matchType<boolean>(
-            t,
-            _anyType => true,
-            _nullType => true,
-            _boolType => true,
-            _integerType => true,
-            _doubleType => true,
-            _stringType => true,
-            arrayType => this.propertyTypeMarshalsImplicitlyFromDynamic(arrayType.items),
-            _classType => false,
-            // Map properties must be checked because Dry:Types doesn't have a generic Map
-            _mapType => false,
-            _enumType => true,
-            unionType => {
-                const nullable = nullableFromUnion(unionType);
-                if (nullable !== null) {
-                    return this.propertyTypeMarshalsImplicitlyFromDynamic(nullable);
-                }
-                return false;
-            }
-        );
-    }
+    // // This is only to be used to allow class properties to possibly
+    // // marshal implicitly. They are allowed to do this because they will
+    // // be checked in Dry::Struct.new
+    // private propertyTypeMarshalsImplicitlyFromDynamic(t: Type): boolean {
+    //     return matchType<boolean>(
+    //         t,
+    //         _anyType => true,
+    //         _nullType => true,
+    //         _boolType => true,
+    //         _integerType => true,
+    //         _doubleType => true,
+    //         _stringType => true,
+    //         arrayType => this.propertyTypeMarshalsImplicitlyFromDynamic(arrayType.items),
+    //         _classType => false,
+    //         // Map properties must be checked because Dry:Types doesn't have a generic Map
+    //         _mapType => false,
+    //         _enumType => true,
+    //         unionType => {
+    //             const nullable = nullableFromUnion(unionType);
+    //             if (nullable !== null) {
+    //                 return this.propertyTypeMarshalsImplicitlyFromDynamic(nullable);
+    //             }
+    //             return false;
+    //         }
+    //     );
+    // }
 
     private emitBlock(source: Sourcelike, emit: () => void) {
         this.emitLine(source);
@@ -469,58 +471,47 @@ export class ElixirRenderer extends ConvenienceRenderer {
             }
 
             this.ensureBlankLine();
-            this.emitBlock(["def self.from_dynamic!(d)"], () => {
-                this.emitLine("d = Types::Hash[d]");
-                this.emitLine("new(");
+            this.emitBlock(["def from_map(m) do"], () => {
+                this.emitLine("# TODO: Implement from_map");
+
+                this.emitLine("%", moduleName, "{");
+                this.indent(() => {
+                    this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+                        const expression = this.fromDynamic(p.type, jsonName);
+                        this.emitLine(name, ": ", expression);
+                    });
+                });
+                this.emitLine("}");
+            });
+
+            this.ensureBlankLine();
+            this.emitBlock("def from_json(json) do", () => {
+                this.emitMultiline(`json
+|> Jason.decode()
+|> from_map()`);
+            });
+
+            this.ensureBlankLine();
+            this.emitBlock(["def to_map(struct) do"], () => {
+                this.emitLine("# TODO: Implement to_map");
+                return;
+                this.emitLine("{");
                 this.indent(() => {
                     const inits: Sourcelike[][] = [];
                     this.forEachClassProperty(c, "none", (name, jsonName, p) => {
-                        const dynamic = p.isOptional
-                            ? // If key is not found in hash, this will be nil
-                              `d["${stringEscape(jsonName)}"]`
-                            : // This will raise a runtime error if the key is not found in the hash
-                              `d.fetch("${stringEscape(jsonName)}")`;
-
-                        if (this.propertyTypeMarshalsImplicitlyFromDynamic(p.type)) {
-                            inits.push([
-                                [name, ": "],
-                                [dynamic, ","]
-                            ]);
-                        } else {
-                            const expression = this.fromDynamic(p.type, dynamic, p.isOptional);
-                            inits.push([
-                                [name, ": "],
-                                [expression, ","]
-                            ]);
-                        }
+                        const expression = this.toDynamic(p.type, name, p.isOptional);
+                        inits.push([[`"${stringEscape(jsonName)}"`], [" => ", expression, ","]]);
                     });
                     this.emitTable(inits);
                 });
-                this.emitLine(")");
+                this.emitLine("}");
             });
-
-            // this.ensureBlankLine();
-            // this.emitBlock("def self.from_json!(json)", () => {
-            //     this.emitLine("from_dynamic!(JSON.parse(json))");
-            // });
-
-            // this.ensureBlankLine();
-            // this.emitBlock(["def to_dynamic"], () => {
-            //     this.emitLine("{");
-            //     this.indent(() => {
-            //         const inits: Sourcelike[][] = [];
-            //         this.forEachClassProperty(c, "none", (name, jsonName, p) => {
-            //             const expression = this.toDynamic(p.type, name, p.isOptional);
-            //             inits.push([[`"${stringEscape(jsonName)}"`], [" => ", expression, ","]]);
-            //         });
-            //         this.emitTable(inits);
-            //     });
-            //     this.emitLine("}");
-            // });
-            // this.ensureBlankLine();
-            // this.emitBlock("def to_json(options = nil)", () => {
-            //     this.emitLine("JSON.generate(to_dynamic, options)");
-            // });
+            this.ensureBlankLine();
+            this.emitBlock("def to_json(struct) do", () => {
+                this.emitMultiline(`struct
+|> to_map()
+|> Jason.encode!()`);
+            });
         });
     }
 
@@ -600,7 +591,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
             });
 
             this.ensureBlankLine();
-            this.emitBlock("def to_json(options = nil)", () => {
+            this.emitBlock("def to_json(options = nil) do", () => {
                 this.emitLine("JSON.generate(to_dynamic, options)");
             });
         });
