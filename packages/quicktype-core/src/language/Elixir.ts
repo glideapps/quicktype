@@ -169,15 +169,15 @@ export class ElixirRenderer extends ConvenienceRenderer {
             _doubleType => ["float()", optional],
             _stringType => ["String.t()", optional],
             arrayType => ["[", this.elixirType(arrayType.items), "]", optional],
-            classType => [this.nameForNamedType(classType), ".thh()", optional],
+            classType => [this.nameForNamedType(classType), ".t()", optional],
             mapType => ["%{String.t() => ", this.elixirType(mapType.values), "}", optional],
-            enumType => [this.nameForNamedType(enumType), ".thhh()", optional],
+            enumType => [this.nameForNamedType(enumType), ".t()", optional],
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
                     return [this.elixirType(nullable), " | nil"];
                 }
-                return [this.nameForNamedType(unionType), ".thhhh()", optional];
+                return [this.nameForNamedType(unionType), ".t()", optional];
             } // ?
         );
     }
@@ -254,48 +254,48 @@ export class ElixirRenderer extends ConvenienceRenderer {
         return `"${inner()}"`;
     }
 
-    private fromDynamic(t: Type, jsonName: string): Sourcelike {
-        const primitive = ['m["', jsonName, '"],'];
-        // const safeAccess = optional ? "&" : "";
-        return matchType<Sourcelike>(
-            t,
-            _anyType => primitive,
-            _nullType => primitive,
-            _boolType => primitive,
-            _integerType => primitive,
-            _doubleType => primitive,
-            _stringType => primitive,
-            arrayType => [
-                arrayType.isPrimitive()
-                    ? [primitive]
-                    : ["Enum.map(", primitive, ", ", "&", this.nameForNamedType(arrayType), ".from_map/1)"]
-            ],
-            classType => [this.nameForNamedType(classType), ".from_map(", primitive, ")"],
-            mapType => [
-                mapType.isPrimitive()
-                    ? [primitive]
-                    : [
-                          "Map.new(",
-                          primitive,
-                          ", fn {key, value} -> {key,",
-                          this.nameForNamedType(mapType),
-                          ".from_map(value)} end)"
-                      ]
-            ],
-            enumType => {
-                const expression = ["Types::", this.nameForNamedType(enumType), "[", e, "]"];
-                return optional ? [e, ".nil? ? nil : ", expression] : expression;
-            },
-            unionType => {
-                const nullable = nullableFromUnion(unionType);
-                if (nullable !== null) {
-                    return this.fromDynamic(nullable, e, true);
-                }
-                const expression = [this.nameForNamedType(unionType), ".from_dynamic!(", e, ")"];
-                return optional ? [e, " ? ", expression, " : nil"] : expression;
-            }
-        );
-    }
+    // private fromDynamic(t: Type, jsonName: string): Sourcelike {
+    //     const primitive = ['m["', jsonName, '"],'];
+    //     // const safeAccess = optional ? "&" : "";
+    //     return matchType<Sourcelike>(
+    //         t,
+    //         _anyType => primitive,
+    //         _nullType => primitive,
+    //         _boolType => primitive,
+    //         _integerType => primitive,
+    //         _doubleType => primitive,
+    //         _stringType => primitive,
+    //         arrayType => [
+    //             arrayType.isPrimitive()
+    //                 ? [primitive]
+    //                 : ["Enum.map(", primitive, ", ", "&", this.nameForNamedType(arrayType), ".from_map/1)"]
+    //         ],
+    //         classType => [this.nameForNamedType(classType), ".from_map(", primitive, ")"],
+    //         mapType => [
+    //             mapType.isPrimitive()
+    //                 ? [primitive]
+    //                 : [
+    //                       "Map.new(",
+    //                       primitive,
+    //                       ", fn {key, value} -> {key,",
+    //                       this.nameForNamedType(mapType),
+    //                       ".from_map(value)} end)"
+    //                   ]
+    //         ],
+    //         enumType => {
+    //             const expression = ["Types::", this.nameForNamedType(enumType), "[", e, "]"];
+    //             return optional ? [e, ".nil? ? nil : ", expression] : expression;
+    //         },
+    //         unionType => {
+    //             const nullable = nullableFromUnion(unionType);
+    //             if (nullable !== null) {
+    //                 return this.fromDynamic(nullable, e, true);
+    //             }
+    //             const expression = [this.nameForNamedType(unionType), ".from_dynamic!(", e, ")"];
+    //             return optional ? [e, " ? ", expression, " : nil"] : expression;
+    //         }
+    //     );
+    // }
 
     private toDynamic(t: Type, e: Sourcelike, optional = false): Sourcelike {
         if (this.marshalsImplicitlyToDynamic(t)) {
@@ -474,14 +474,14 @@ export class ElixirRenderer extends ConvenienceRenderer {
             this.emitBlock(["def from_map(m) do"], () => {
                 this.emitLine("# TODO: Implement from_map");
 
-                this.emitLine("%", moduleName, "{");
-                this.indent(() => {
-                    this.forEachClassProperty(c, "none", (name, jsonName, p) => {
-                        const expression = this.fromDynamic(p.type, jsonName);
-                        this.emitLine(name, ": ", expression);
-                    });
-                });
-                this.emitLine("}");
+                // this.emitLine("%", moduleName, "{");
+                // this.indent(() => {
+                //     this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+                //         const expression = this.fromDynamic(p.type, jsonName);
+                //         this.emitLine(name, ": ", expression);
+                //     });
+                // });
+                // this.emitLine("}");
             });
 
             this.ensureBlankLine();
@@ -517,84 +517,120 @@ export class ElixirRenderer extends ConvenienceRenderer {
 
     private emitEnum(e: EnumType, enumName: Name) {
         this.emitDescription(this.descriptionForType(e));
-        this.emitBlock(["module ", enumName], () => {
-            const table: Sourcelike[][] = [];
-            this.forEachEnumCase(e, "none", (name, json) => {
-                table.push([[name], [` = "${stringEscape(json)}"`]]);
+        this.emitBlock(["defmodule ", enumName, " do"], () => {
+            this.emitLine("@valid_enums [");
+            this.indent(() => {
+                this.forEachEnumCase(e, "none", (name, json) => {
+                    this.emitLine(":", json, ",");
+                    // table.push([[name], [` = "${stringEscape(json)}"`]]);
+                });
             });
-            this.emitTable(table);
+
+            this.emitLine("]");
+
+            this.emitMultiline(`@valid_strings MapSet.new(Enum.map(@valid_enums, &Atom.to_string/1))
+
+def valid_atom?(value), do: value in @valid_enums
+
+def valid_atom_string?(string) do
+    MapSet.member?(@valid_strings, string)
+end
+
+def valid_atom?(value), do: value in @valid_enums
+
+def valid_atom_string?(string) do
+    MapSet.member?(@valid_strings, string)
+end
+
+def serialize(value) do
+    if valid_atom?(value) do
+        Atom.to_string(value)
+    else
+        value
+    end
+end
+
+def deserialize(value) do
+    if valid_atom_string?(value) do
+        String.to_atom(value)
+    else
+        value
+    end
+end`);
+            // this.emitTable(table);
         });
     }
 
     private emitUnion(u: UnionType, unionName: Name) {
-        this.emitDescription(this.descriptionForType(u));
-        this.emitBlock(["class ", unionName, " < Dry::Struct"], () => {
-            const table: Sourcelike[][] = [];
-            this.forEachUnionMember(u, u.getChildren(), "none", null, (name, t) => {
-                table.push([["attribute :", name, ", "], [this.elixirType(t, true)]]);
-            });
-            this.emitTable(table);
+        this.emitLine("# TODO");
+        // this.emitDescription(this.descriptionForType(u));
+        // this.emitBlock(["class ", unionName, " < Dry::Struct"], () => {
+        //     const table: Sourcelike[][] = [];
+        //     this.forEachUnionMember(u, u.getChildren(), "none", null, (name, t) => {
+        //         table.push([["attribute :", name, ", "], [this.elixirType(t, true)]]);
+        //     });
+        //     this.emitTable(table);
 
-            if (this._options.justTypes) {
-                return;
-            }
+        //     if (this._options.justTypes) {
+        //         return;
+        //     }
 
-            this.ensureBlankLine();
-            const [maybeNull, nonNulls] = removeNullFromUnion(u, false);
-            this.emitBlock("def self.from_dynamic!(d)", () => {
-                const memberNames = Array.from(u.getChildren()).map(member => this.nameForUnionMember(u, member));
-                this.forEachUnionMember(u, u.getChildren(), "none", null, (name, t) => {
-                    const nilMembers = memberNames
-                        .filter(n => n !== name)
-                        .map(memberName => [", ", memberName, ": nil"]);
-                    if (this.propertyTypeMarshalsImplicitlyFromDynamic(t)) {
-                        this.emitBlock(["if schema[:", name, "].right.valid? d"], () => {
-                            this.emitLine("return new(", name, ": d", nilMembers, ")");
-                        });
-                    } else {
-                        this.emitLine("begin");
-                        this.indent(() => {
-                            this.emitLine("value = ", this.fromDynamic(t, "d"));
-                            this.emitBlock(["if schema[:", name, "].right.valid? value"], () => {
-                                this.emitLine("return new(", name, ": value", nilMembers, ")");
-                            });
-                        });
-                        this.emitLine("rescue");
-                        this.emitLine("end");
-                    }
-                });
-                this.emitLine(`raise "Invalid union"`);
-            });
+        //     this.ensureBlankLine();
+        //     const [maybeNull, nonNulls] = removeNullFromUnion(u, false);
+        //     this.emitBlock("def self.from_dynamic!(d)", () => {
+        //         const memberNames = Array.from(u.getChildren()).map(member => this.nameForUnionMember(u, member));
+        //         this.forEachUnionMember(u, u.getChildren(), "none", null, (name, t) => {
+        //             const nilMembers = memberNames
+        //                 .filter(n => n !== name)
+        //                 .map(memberName => [", ", memberName, ": nil"]);
+        //             if (this.propertyTypeMarshalsImplicitlyFromDynamic(t)) {
+        //                 this.emitBlock(["if schema[:", name, "].right.valid? d"], () => {
+        //                     this.emitLine("return new(", name, ": d", nilMembers, ")");
+        //                 });
+        //             } else {
+        //                 this.emitLine("begin");
+        //                 this.indent(() => {
+        //                     this.emitLine("value = ", this.fromDynamic(t, "d"));
+        //                     this.emitBlock(["if schema[:", name, "].right.valid? value"], () => {
+        //                         this.emitLine("return new(", name, ": value", nilMembers, ")");
+        //                     });
+        //                 });
+        //                 this.emitLine("rescue");
+        //                 this.emitLine("end");
+        //             }
+        //         });
+        //         this.emitLine(`raise "Invalid union"`);
+        //     });
 
-            this.ensureBlankLine();
-            this.emitBlock("def self.from_json!(json)", () => {
-                this.emitLine("from_dynamic!(JSON.parse(json))");
-            });
+        //     this.ensureBlankLine();
+        //     this.emitBlock("def self.from_json!(json)", () => {
+        //         this.emitLine("from_dynamic!(JSON.parse(json))");
+        //     });
 
-            this.ensureBlankLine();
-            this.emitBlock("def to_dynamic", () => {
-                let first = true;
-                this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
-                    this.emitLine(first ? "if" : "elsif", " ", name, " != nil");
-                    this.indent(() => {
-                        this.emitLine(this.toDynamic(t, name));
-                    });
-                    first = false;
-                });
-                if (maybeNull !== null) {
-                    this.emitLine("else");
-                    this.indent(() => {
-                        this.emitLine("nil");
-                    });
-                }
-                this.emitLine("end");
-            });
+        //     this.ensureBlankLine();
+        //     this.emitBlock("def to_dynamic", () => {
+        //         let first = true;
+        //         this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
+        //             this.emitLine(first ? "if" : "elsif", " ", name, " != nil");
+        //             this.indent(() => {
+        //                 this.emitLine(this.toDynamic(t, name));
+        //             });
+        //             first = false;
+        //         });
+        //         if (maybeNull !== null) {
+        //             this.emitLine("else");
+        //             this.indent(() => {
+        //                 this.emitLine("nil");
+        //             });
+        //         }
+        //         this.emitLine("end");
+        //     });
 
-            this.ensureBlankLine();
-            this.emitBlock("def to_json(options = nil) do", () => {
-                this.emitLine("JSON.generate(to_dynamic, options)");
-            });
-        });
+        //     this.ensureBlankLine();
+        //     this.emitBlock("def to_json(options = nil) do", () => {
+        //         this.emitLine("JSON.generate(to_dynamic, options)");
+        //     });
+        // });
     }
 
     private emitTypesModule() {
