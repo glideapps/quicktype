@@ -518,7 +518,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
     private emitEnum(e: EnumType, enumName: Name) {
         this.emitDescription(this.descriptionForType(e));
         this.emitBlock(["defmodule ", enumName, " do"], () => {
-            this.emitLine("@valid_enums [");
+            this.emitLine("@valid_members [");
             this.indent(() => {
                 this.forEachEnumCase(e, "none", (name, json) => {
                     this.emitLine(":", json, ",");
@@ -528,34 +528,25 @@ export class ElixirRenderer extends ConvenienceRenderer {
 
             this.emitLine("]");
 
-            this.emitMultiline(`@valid_strings MapSet.new(Enum.map(@valid_enums, &Atom.to_string/1))
+            this.ensureBlankLine();
 
-def valid_atom?(value), do: value in @valid_enums
+            this.emitMultiline(`def valid_atom?(value), do: value in @valid_members
 
-def valid_atom_string?(string) do
-    MapSet.member?(@valid_strings, string)
-end
-
-def valid_atom?(value), do: value in @valid_enums
-
-def valid_atom_string?(string) do
-    MapSet.member?(@valid_strings, string)
+def valid_atom_string?(value) do
+    try do
+        atom = String.to_existing_atom(value)
+        atom in @valid_members
+    rescue
+        ArgumentError -> false
+    end
 end
 
 def serialize(value) do
-    if valid_atom?(value) do
-        Atom.to_string(value)
-    else
-        value
-    end
+    if valid_atom?(value), do: Atom.to_string(value), else: value
 end
 
 def deserialize(value) do
-    if valid_atom_string?(value) do
-        String.to_atom(value)
-    else
-        value
-    end
+    if valid_atom_string?(value), do: String.to_existing_atom(value), else: value
 end`);
             // this.emitTable(table);
         });
