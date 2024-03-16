@@ -27,6 +27,11 @@ export const tsFlowOptions = Object.assign({}, javaScriptOptions, {
         "prefer-const-values",
         "Use string instead of enum for string enums with single value",
         false
+    ),
+    preferReadonly: new BooleanOption(
+        "prefer-readonly-interface",
+        "Use readonly interface members",
+        false
     )
 });
 
@@ -167,8 +172,16 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
     protected emitClassBlockBody(c: ClassType): void {
         this.emitPropertyTable(c, (name, _jsonName, p) => {
             const t = p.type;
+
+						let propertyName: Sourcelike = name;
+						propertyName = modifySource(quotePropertyName, name);
+
+						if(this._tsFlowOptions.preferReadonly) {
+							propertyName = 'readonly ' + propertyName;
+						}
+
             return [
-                [modifySource(quotePropertyName, name), p.isOptional ? "?" : "", ": "],
+                [propertyName, p.isOptional ? "?" : "", ": "],
                 [this.sourceFor(t).source, ";"]
             ];
         });
