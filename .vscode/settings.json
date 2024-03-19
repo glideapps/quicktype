@@ -1,7 +1,6 @@
 {
     // Place your settings in this file to overwrite default and user settings.
     "editor.formatOnSave": true,
-    "spellright.ignoreFiles": ["**/.gitignore", "**/.spellignore"],
     "search.exclude": {
         "**/.git": true,
         "**/node_modules": true,
@@ -17,8 +16,11 @@
         "dist": true
     },
     "explorer.excludeGitIgnore": false,
-    "spellright.documentTypes": [],
     "java.configuration.updateBuildConfiguration": "automatic",
+
+    "files.associations": {
+        "*.schema": "jsonc"
+    },
 
     "[json]": {
         "editor.defaultFormatter": "esbenp.prettier-vscode",
