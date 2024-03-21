@@ -25,11 +25,11 @@ if (!schema) {
 let backToJson: string;
 if (Array.isArray(value)) {
     const parsedValue = value.map(v => {
-        return Schema.parseSync(schema)(v);
+        return Schema.decodeUnknownSync(schema)(v);
     });
     backToJson = JSON.stringify(parsedValue, null, 2);
 } else {
-    const parsedValue = Schema.parseSync(schema)(value);
+    const parsedValue = Schema.decodeUnknownSync(schema)(value);
     backToJson = JSON.stringify(parsedValue, null, 2);
 }
 
