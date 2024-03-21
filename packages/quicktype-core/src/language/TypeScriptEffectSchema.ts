@@ -162,6 +162,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
     }
 
     private emitEnum(e: EnumType, enumName: Name): void {
+        this.emittedObjects.add(enumName);
         this.ensureBlankLine();
         this.emitDescription(this.descriptionForType(e));
         this.emitLine("\nexport const ", enumName, " = ", "S.literal(");
