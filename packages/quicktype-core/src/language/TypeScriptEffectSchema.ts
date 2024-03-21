@@ -110,7 +110,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
 
     typeMapTypeFor(t: Type, required: boolean = true): Sourcelike {
         if (["class", "object", "enum"].indexOf(t.kind) >= 0) {
-            return ["S.lazy(() => ", this.nameForNamedType(t), ")"];
+            return ["S.suspend(() => ", this.nameForNamedType(t), ")"];
         }
 
         const match = matchType<Sourcelike>(
@@ -145,31 +145,13 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
 
     private emitObject(name: Name, t: ObjectType) {
         this.ensureBlankLine();
-        if (this._options.justSchema) {
-            this.emitLine("\nexport const ", name, " = S.struct({");
-        } else {
-            this.emitLine("\nconst ", name, "_ = S.struct({");
-        }
+        this.emitLine("\nexport class ", name, " extends S.Class<", name, '>("', name, '")({');
         this.indent(() => {
             this.forEachClassProperty(t, "none", (_, jsonName, property) => {
                 this.emitLine(`"${utf16StringEscape(jsonName)}"`, ": ", this.typeMapTypeForProperty(property), ",");
             });
         });
-        this.emitLine("});");
-        if (!this._options.justSchema) {
-            this.emitLine("export interface ", name, " extends S.Schema.To<typeof ", name, "_> {}");
-            this.emitLine(
-                "export const ",
-                name,
-                ": S.Schema<S.Schema.From<typeof ",
-                name,
-                "_>, ",
-                name,
-                "> = ",
-                name,
-                "_;"
-            );
-        }
+        this.emitLine("}) {}");
     }
 
     private emitEnum(e: EnumType, enumName: Name): void {
@@ -184,7 +166,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
         );
         this.emitLine("});");
         if (!this._options.justSchema) {
-            this.emitLine("export type ", enumName, " = S.Schema.To<typeof ", enumName, ">;");
+            this.emitLine("export type ", enumName, " = S.Schema.Type<typeof ", enumName, ">;");
         }
     }
 
