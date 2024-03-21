@@ -108,8 +108,14 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
         return p.isOptional ? ["S.optional(", typeMap, ")"] : typeMap;
     }
 
+    emittedNames = new Set<Name>();
+
     typeMapTypeFor(t: Type, required: boolean = true): Sourcelike {
         if (["class", "object", "enum"].indexOf(t.kind) >= 0) {
+            const name = this.nameForNamedType(t);
+            if (this.emittedNames.has(name)) {
+                return [name];
+            }
             return ["S.suspend(() => ", this.nameForNamedType(t), ")"];
         }
 
@@ -144,6 +150,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
     }
 
     private emitObject(name: Name, t: ObjectType) {
+        this.emittedNames.add(name);
         this.ensureBlankLine();
         this.emitLine("\nexport class ", name, " extends S.Class<", name, '>("', name, '")({');
         this.indent(() => {
@@ -155,6 +162,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
     }
 
     private emitEnum(e: EnumType, enumName: Name): void {
+        this.emittedNames.add(enumName);
         this.ensureBlankLine();
         this.emitDescription(this.descriptionForType(e));
         this.emitLine("\nexport const ", enumName, " = ", "S.enums({");
@@ -170,6 +178,52 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
         }
     }
 
+    protected walkNames(type: ObjectType) {
+        const names: Array<Name> = [];
+
+        const recurse = (type: Type) => {
+            const name: Name = (this as any).nameStoreView.tryGet(type);
+            if (name === undefined) {
+                return;
+            }
+
+            names.push(name);
+
+            if (type instanceof ObjectType) {
+                recurseObject(type);
+            } else {
+                matchType<void>(
+                    type,
+                    _ => {},
+                    _ => {},
+                    _ => {},
+                    _ => {},
+                    _ => {},
+                    _ => {},
+                    _ => recurse(_.items),
+                    _ => {},
+                    _ => recurse(_.values),
+                    _ => {},
+                    _ => {
+                        for (const t of _.getChildren()) {
+                            recurse(t);
+                        }
+                    }
+                );
+            }
+        };
+
+        const recurseObject = (type: ObjectType) => {
+            this.forEachClassProperty(type, "none", (_, __, prop) => {
+                recurse(prop.type);
+            });
+        };
+
+        recurseObject(type);
+
+        return names;
+    }
+
     protected emitSchemas(): void {
         this.ensureBlankLine();
 
@@ -179,10 +233,10 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
 
         const order: number[] = [];
         const mapKey: Name[] = [];
-        const mapValue: Sourcelike[][] = [];
+        const mapValue: ObjectType[] = [];
         this.forEachObject("none", (type: ObjectType, name: Name) => {
             mapKey.push(name);
-            mapValue.push(this.gatherSource(() => this.emitObject(name, type)));
+            mapValue.push(type);
         });
 
         mapKey.forEach((_, index) => {
@@ -191,7 +245,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
 
             // pull out all names
             const source = mapValue[index];
-            const names = source.filter(value => value as Name);
+            const names = this.walkNames(source);
 
             // must be behind all these names
             for (let i = 0; i < names.length; i++) {
@@ -212,7 +266,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
         });
 
         // now emit ordered source
-        order.forEach(i => this.emitGatheredSource(mapValue[i]));
+        order.forEach(i => this.emitGatheredSource(this.gatherSource(() => this.emitObject(mapKey[i], mapValue[i]))));
     }
 
     protected emitSourceStructure(): void {
