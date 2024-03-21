@@ -1,5 +1,5 @@
 import { arrayIntercalate } from "collection-utils";
-import { ClassProperty, EnumType, ObjectType, Type } from "../Type";
+import { ArrayType, ClassProperty, EnumType, MapType, ObjectType, Type } from "../Type";
 import { matchType } from "../TypeUtils";
 import { funPrefixNamer, Name, Namer } from "../Naming";
 import { RenderContext } from "../Renderer";
@@ -111,12 +111,12 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
     emittedObjects = new Set<Name>();
 
     typeMapTypeFor(t: Type, required: boolean = true): Sourcelike {
-        if (["class", "object", "enum"].indexOf(t.kind) >= 0) {
+        if (t.kind === "class" || t.kind === "object" || t.kind === "enum") {
             const name = this.nameForNamedType(t);
             if (this.emittedObjects.has(name)) {
                 return [name];
             }
-            return ["S.suspend(() => ", this.nameForNamedType(t), ")"];
+            return ["S.suspend(() => ", name, ")"];
         }
 
         const match = matchType<Sourcelike>(
@@ -180,44 +180,26 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
         const names: Array<Name> = [];
 
         const recurse = (type: Type) => {
-            const name: Name = (this as any).nameStoreView.tryGet(type);
-            if (name === undefined) {
-                return;
-            }
-
-            names.push(name);
-
-            if (type instanceof ObjectType) {
-                recurseObject(type);
-            } else {
-                matchType<void>(
-                    type,
-                    _ => {},
-                    _ => {},
-                    _ => {},
-                    _ => {},
-                    _ => {},
-                    _ => {},
-                    _ => recurse(_.items),
-                    _ => {},
-                    _ => recurse(_.values),
-                    _ => {},
-                    _ => {
-                        for (const t of _.getChildren()) {
-                            recurse(t);
-                        }
-                    }
-                );
+            if (type.kind === "object" || type.kind === "class") {
+                names.push(this.nameForNamedType(type));
+                this.forEachClassProperty(type as ObjectType, "none", (_, __, prop) => {
+                    recurse(prop.type);
+                });
+            } else if (type instanceof ArrayType) {
+                recurse(type.items);
+            } else if (type instanceof MapType) {
+                recurse(type.values);
+            } else if (type instanceof EnumType) {
+                names.push(this.nameForNamedType(type));
+                for (const t of type.getChildren()) {
+                    recurse(t);
+                }
             }
         };
 
-        const recurseObject = (type: ObjectType) => {
-            this.forEachClassProperty(type, "none", (_, __, prop) => {
-                recurse(prop.type);
-            });
-        };
-
-        recurseObject(type);
+        this.forEachClassProperty(type, "none", (_, __, prop) => {
+            recurse(prop.type);
+        });
 
         return names;
     }
