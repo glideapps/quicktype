@@ -108,12 +108,12 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
         return p.isOptional ? ["S.optional(", typeMap, ")"] : typeMap;
     }
 
-    emittedNames = new Set<Name>();
+    emittedObjects = new Set<Name>();
 
     typeMapTypeFor(t: Type, required: boolean = true): Sourcelike {
         if (["class", "object", "enum"].indexOf(t.kind) >= 0) {
             const name = this.nameForNamedType(t);
-            if (this.emittedNames.has(name)) {
+            if (this.emittedObjects.has(name)) {
                 return [name];
             }
             return ["S.suspend(() => ", this.nameForNamedType(t), ")"];
@@ -150,7 +150,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
     }
 
     private emitObject(name: Name, t: ObjectType) {
-        this.emittedNames.add(name);
+        this.emittedObjects.add(name);
         this.ensureBlankLine();
         this.emitLine("\nexport class ", name, " extends S.Class<", name, '>("', name, '")({');
         this.indent(() => {
@@ -162,17 +162,15 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
     }
 
     private emitEnum(e: EnumType, enumName: Name): void {
-        this.emittedNames.add(enumName);
         this.ensureBlankLine();
         this.emitDescription(this.descriptionForType(e));
-        this.emitLine("\nexport const ", enumName, " = ", "S.enums({");
+        this.emitLine("\nexport const ", enumName, " = ", "S.literal(");
         this.indent(() =>
             this.forEachEnumCase(e, "none", (_, jsonName) => {
-                const name = stringEscape(jsonName);
-                this.emitLine('"', name, '": "', name, '",');
+                this.emitLine('"', stringEscape(jsonName), '",');
             })
         );
-        this.emitLine("});");
+        this.emitLine(");");
         if (!this._options.justSchema) {
             this.emitLine("export type ", enumName, " = S.Schema.Type<typeof ", enumName, ">;");
         }
