@@ -177,7 +177,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
         }
     }
 
-    protected walkNames(type: ObjectType) {
+    protected walkObjectNames(type: ObjectType) {
         const names: Array<Name> = [];
 
         const recurse = (type: Type) => {
@@ -191,7 +191,6 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
             } else if (type instanceof MapType) {
                 recurse(type.values);
             } else if (type instanceof EnumType) {
-                names.push(this.nameForNamedType(type));
                 for (const t of type.getChildren()) {
                     recurse(t);
                 }
@@ -226,7 +225,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
 
             // pull out all names
             const source = mapValue[index];
-            const names = this.walkNames(source);
+            const names = this.walkObjectNames(source);
 
             // must be behind all these names
             for (let i = 0; i < names.length; i++) {
