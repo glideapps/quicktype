@@ -28,11 +28,8 @@ export const tsFlowOptions = Object.assign({}, javaScriptOptions, {
         "Use string instead of enum for string enums with single value",
         false
     ),
-    preferReadonly: new BooleanOption(
-        "prefer-readonly-interface",
-        "Use readonly interface members",
-        false
-    )
+    // TODO: add snapshot unit tests for cli option
+    preferReadonly: new BooleanOption("prefer-readonly-interface", "Use readonly type members", false)
 });
 
 const tsFlowTypeAnnotations = {
@@ -173,12 +170,12 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
         this.emitPropertyTable(c, (name, _jsonName, p) => {
             const t = p.type;
 
-						let propertyName: Sourcelike = name;
-						propertyName = modifySource(quotePropertyName, name);
+            let propertyName: Sourcelike = name;
+            propertyName = modifySource(quotePropertyName, name);
 
-						if(this._tsFlowOptions.preferReadonly) {
-							propertyName = 'readonly ' + propertyName;
-						}
+            if (this._tsFlowOptions.preferReadonly) {
+                propertyName = "readonly " + propertyName;
+            }
 
             return [
                 [propertyName, p.isOptional ? "?" : "", ": "],
