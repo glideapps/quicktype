@@ -28,8 +28,7 @@ export const tsFlowOptions = Object.assign({}, javaScriptOptions, {
         "Use string instead of enum for string enums with single value",
         false
     ),
-    // TODO: add snapshot unit tests for cli option
-    preferReadonly: new BooleanOption("prefer-readonly-interface", "Use readonly type members", false)
+    preferReadonly: new BooleanOption("prefer-readonly", "Use readonly type members", false)
 });
 
 const tsFlowTypeAnnotations = {
