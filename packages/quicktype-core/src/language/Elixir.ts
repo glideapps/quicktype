@@ -28,6 +28,7 @@ import {
     isLetterOrUnderscore
 } from "../support/Strings";
 import { RenderContext } from "../Renderer";
+import { json } from "stream/consumers";
 
 function unicodeEscape(codePoint: number): string {
     return "\\u{" + intToHex(codePoint, 0) + "}";
@@ -254,100 +255,198 @@ export class ElixirRenderer extends ConvenienceRenderer {
         return `"${inner()}"`;
     }
 
-    // private fromDynamic(t: Type, jsonName: string): Sourcelike {
-    //     const primitive = ['m["', jsonName, '"],'];
-    //     // const safeAccess = optional ? "&" : "";
-    //     return matchType<Sourcelike>(
-    //         t,
-    //         _anyType => primitive,
-    //         _nullType => primitive,
-    //         _boolType => primitive,
-    //         _integerType => primitive,
-    //         _doubleType => primitive,
-    //         _stringType => primitive,
-    //         arrayType => [
-    //             arrayType.isPrimitive()
-    //                 ? [primitive]
-    //                 : ["Enum.map(", primitive, ", ", "&", this.nameForNamedType(arrayType), ".from_map/1)"]
-    //         ],
-    //         classType => [this.nameForNamedType(classType), ".from_map(", primitive, ")"],
-    //         mapType => [
-    //             mapType.isPrimitive()
-    //                 ? [primitive]
-    //                 : [
-    //                       "Map.new(",
-    //                       primitive,
-    //                       ", fn {key, value} -> {key,",
-    //                       this.nameForNamedType(mapType),
-    //                       ".from_map(value)} end)"
-    //                   ]
-    //         ],
-    //         enumType => {
-    //             const expression = ["Types::", this.nameForNamedType(enumType), "[", e, "]"];
-    //             return optional ? [e, ".nil? ? nil : ", expression] : expression;
-    //         },
-    //         unionType => {
-    //             const nullable = nullableFromUnion(unionType);
-    //             if (nullable !== null) {
-    //                 return this.fromDynamic(nullable, e, true);
-    //             }
-    //             const expression = [this.nameForNamedType(unionType), ".from_dynamic!(", e, ")"];
-    //             return optional ? [e, " ? ", expression, " : nil"] : expression;
+    private patternMatchClause(): Sourcelike {
+        return [""];
+    }
+
+    // protected implicitlyConvertsFromJSON(t: Type): boolean {
+    //     if (t instanceof ClassType) {
+    //         return false;
+    //     } else if (t instanceof EnumType) {
+    //         return false;
+    //     } else if (t instanceof ArrayType) {
+    //         return this.implicitlyConvertsFromJSON(t.items);
+    //     } else if (t instanceof MapType) {
+    //         return this.implicitlyConvertsFromJSON(t.values);
+    //     } else if (t.isPrimitive()) {
+    //         return true;
+    //     } else if (t instanceof UnionType) {
+    //         const nullable = nullableFromUnion(t);
+    //         if (nullable !== null) {
+    //             return this.implicitlyConvertsFromJSON(nullable);
+    //         } else {
+    //             // We don't support unions yet, so this is just untyped
+    //             return true;
     //         }
-    //     );
+    //     } else {
+    //         return false;
+    //     }
     // }
 
-    private toDynamic(t: Type, e: Sourcelike, optional = false): Sourcelike {
-        if (this.marshalsImplicitlyToDynamic(t)) {
-            return e;
-        }
+    // protected implicitlyConvertsToJSON(t: Type): boolean {
+    //     return this.implicitlyConvertsFromJSON(t) && "bool" !== t.kind;
+    // }
+
+    private fromDynamic(t: Type, jsonName: string): Sourcelike {
+        const primitive = ['m["', jsonName, '"]'];
+        // const safeAccess = optional ? "&" : "";
         return matchType<Sourcelike>(
             t,
-            _anyType => e,
-            _nullType => e,
-            _boolType => e,
-            _integerType => e,
-            _doubleType => e,
-            _stringType => e,
-            arrayType => [e, optional ? "&" : "", ".map { |x| ", this.toDynamic(arrayType.items, "x"), " }"],
-            _classType => [e, optional ? "&" : "", ".to_dynamic"],
-            mapType => [e, optional ? "&" : "", ".map { |k, v| [k, ", this.toDynamic(mapType.values, "v"), "] }.to_h"],
-            _enumType => e,
+            _anyType => primitive,
+            _nullType => primitive,
+            _boolType => primitive,
+            _integerType => primitive,
+            _doubleType => primitive,
+            _stringType => primitive,
+            arrayType => {
+                let ans = arrayType.items;
+                // if (this.implicitlyConvertsFromJSON(arrayType)) {
+                if (arrayType.items.isPrimitive()) {
+                    return primitive;
+                } else {
+                    return ["Enum.map(", primitive, ", ", "&", this.nameForNamedType(arrayType.items), ".from_map/1)"];
+                }
+                // const testPrim = arrayType.isPrimitive();
+                // const testName = this.nameForNamedType(arrayType);
+
+                // return [
+                //     arrayType.isPrimitive()
+                //         ? [primitive]
+                //         : ["Enum.map(", primitive, ", ", "&", this.nameForNamedType(arrayType), ".from_map/1)"]
+                // ];
+            },
+            classType => [this.nameForNamedType(classType), ".from_map(", primitive, ")"],
+            mapType => [
+                mapType.isPrimitive()
+                    ? [primitive]
+                    : [
+                          "Map.new(",
+                          primitive,
+                          ", fn {key, value} -> {key,",
+                          this.nameForNamedType(mapType),
+                          ".from_map(value)} end)"
+                      ]
+            ],
+            enumType => {
+                return [this.nameForNamedType(enumType), ".deserialize(", primitive, ")"];
+            },
+            // unionType => {
+            //     if (!this._tsFlowOptions.declareUnions || nullableFromUnion(unionType) !== null) {
+            //         const children = Array.from(unionType.getChildren()).map(c => parenIfNeeded(this.sourceFor(c)));
+            //         return multiWord(" | ", ...children);
+            //     } else {
+            //         return singleWord(this.nameForNamedType(unionType));
+            //     }
+            // },
+            unionType => {
+                const nullable = nullableFromUnion(unionType);
+                // return [];
+                // return [""];
+                if (nullable !== null) {
+                    return this.fromDynamic(nullable, jsonName);
+                }
+                return [];
+                // const expression = [this.nameForNamedType(unionType), ".from_dynamic!(", e, ")"];
+                // return optional ? [e, " ? ", expression, " : nil"] : expression;
+            }
+        );
+    }
+
+    private toDynamic(t: Type, e: Sourcelike, optional = false): Sourcelike {
+        // if (this.marshalsImplicitlyToDynamic(t)) {
+        //     return e;
+        // }
+
+        const expression = ["struct.", e, optional ? " || nil" : ""];
+        return matchType<Sourcelike>(
+            t,
+            _anyType => expression,
+            _nullType => expression,
+            _boolType => expression,
+            _integerType => expression,
+            _doubleType => expression,
+            _stringType => expression,
+            arrayType => {
+                if (arrayType.items.isPrimitive()) {
+                    return expression;
+                } else {
+                    return [
+                        "Enum.map(",
+                        "struct.",
+                        e,
+                        ", ",
+                        "&",
+                        this.nameForNamedType(arrayType.items),
+                        ".to_map/1)",
+                        optional ? " || nil" : ""
+                    ];
+                }
+                // return [
+                //     arrayType.isPrimitive()
+                //         ? [expression]
+                //         : [
+                //               "Enum.map(",
+                //               "struct.",
+                //               e,
+                //               ", ",
+                //               "&",
+                //               this.nameForNamedType(arrayType),
+                //               ".from_map/1)",
+                //               optional ? " || nil" : ""
+                //           ]
+                // ];
+            },
+            classType => [this.nameForNamedType(classType), ".to_map(", "struct.", e, ")", optional ? " || nil" : ""],
+            mapType => [
+                mapType.isPrimitive()
+                    ? [expression]
+                    : [
+                          "Map.new(",
+                          "struct.",
+                          e,
+                          ", fn {key, value} -> {key,",
+                          this.nameForNamedType(mapType),
+                          ".to_map(value)} end)"
+                      ]
+            ],
+            enumType => {
+                return [this.nameForNamedType(enumType), ".serialize(struct.", e, ")", optional ? " || nil" : ""];
+            },
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
                     return this.toDynamic(nullable, e, true);
                 }
-                if (this.marshalsImplicitlyToDynamic(unionType)) {
-                    return e;
-                }
+                // if (this.marshalsImplicitlyToDynamic(unionType)) {
+                //     return e;
+                // }
                 return [e, optional ? "&" : "", ".to_dynamic"];
             }
         );
     }
 
-    private marshalsImplicitlyToDynamic(t: Type): boolean {
-        return matchType<boolean>(
-            t,
-            _anyType => true,
-            _nullType => true,
-            _boolType => true,
-            _integerType => true,
-            _doubleType => true,
-            _stringType => true,
-            arrayType => this.marshalsImplicitlyToDynamic(arrayType.items),
-            _classType => false,
-            mapType => this.marshalsImplicitlyToDynamic(mapType.values),
-            _enumType => true,
-            unionType => {
-                const nullable = nullableFromUnion(unionType);
-                if (nullable !== null) {
-                    return this.marshalsImplicitlyToDynamic(nullable);
-                }
-                return false;
-            }
-        );
-    }
+    // private marshalsImplicitlyToDynamic(t: Type): boolean {
+    //     return matchType<boolean>(
+    //         t,
+    //         _anyType => true,
+    //         _nullType => true,
+    //         _boolType => true,
+    //         _integerType => true,
+    //         _doubleType => true,
+    //         _stringType => true,
+    //         arrayType => this.marshalsImplicitlyToDynamic(arrayType.items),
+    //         _classType => false,
+    //         mapType => this.marshalsImplicitlyToDynamic(mapType.values),
+    //         _enumType => true,
+    //         unionType => {
+    //             const nullable = nullableFromUnion(unionType);
+    //             if (nullable !== null) {
+    //                 return this.marshalsImplicitlyToDynamic(nullable);
+    //             }
+    //             return false;
+    //         }
+    //     );
+    // }
 
     // // This is only to be used to allow class properties to possibly
     // // marshal implicitly. They are allowed to do this because they will
@@ -472,56 +571,96 @@ export class ElixirRenderer extends ConvenienceRenderer {
 
             this.ensureBlankLine();
             this.emitBlock(["def from_map(m) do"], () => {
-                this.emitLine("# TODO: Implement from_map");
+                // this.emitLine("# TODO: Implement from_map");
 
-                // this.emitLine("%", moduleName, "{");
-                // this.indent(() => {
-                //     this.forEachClassProperty(c, "none", (name, jsonName, p) => {
-                //         const expression = this.fromDynamic(p.type, jsonName);
-                //         this.emitLine(name, ": ", expression);
-                //     });
-                // });
-                // this.emitLine("}");
+                this.emitLine("%", moduleName, "{");
+                this.indent(() => {
+                    this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+                        const expression = this.fromDynamic(p.type, jsonName);
+                        this.emitLine(name, ": ", expression, ",");
+                    });
+                });
+                this.emitLine("}");
             });
 
             this.ensureBlankLine();
             this.emitBlock("def from_json(json) do", () => {
                 this.emitMultiline(`json
-|> Jason.decode()
+|> Jason.decode(%{objects: :ordered_objects})
 |> from_map()`);
             });
 
             this.ensureBlankLine();
             this.emitBlock(["def to_map(struct) do"], () => {
-                this.emitLine("# TODO: Implement to_map");
-                return;
-                this.emitLine("{");
+                // return;
+                this.emitLine("%{");
                 this.indent(() => {
-                    const inits: Sourcelike[][] = [];
+                    // const inits: Sourcelike[][] = [];
                     this.forEachClassProperty(c, "none", (name, jsonName, p) => {
                         const expression = this.toDynamic(p.type, name, p.isOptional);
-                        inits.push([[`"${stringEscape(jsonName)}"`], [" => ", expression, ","]]);
+                        this.emitLine([[`"${stringEscape(jsonName)}"`], [" => ", expression, ","]]);
                     });
-                    this.emitTable(inits);
+                    // this.emitTable(inits);
                 });
                 this.emitLine("}");
             });
+
             this.ensureBlankLine();
+
             this.emitBlock("def to_json(struct) do", () => {
                 this.emitMultiline(`struct
 |> to_map()
-|> Jason.encode!()`);
+|> Jason.encode()`);
             });
         });
+    }
+
+    private isValidAtom(str: string): boolean {
+        function isLetter(char: string): boolean {
+            return /^[A-Za-z]$/.test(char);
+        }
+
+        function isLetterOrDigit(char: string): boolean {
+            return /^[A-Za-z0-9]$/.test(char);
+        }
+
+        if (!str.startsWith(":") || str.length < 2) {
+            return false;
+        }
+
+        const firstChar = str[1];
+        if (!isLetter(firstChar) && firstChar !== "_") {
+            return false;
+        }
+
+        for (let i = 2; i < str.length; i++) {
+            const char = str[i];
+
+            if (
+                !isLetterOrDigit(char) &&
+                char !== "_" &&
+                char !== "@" &&
+                !(i === str.length - 1 && (char === "!" || char === "?"))
+            ) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private emitEnum(e: EnumType, enumName: Name) {
         this.emitDescription(this.descriptionForType(e));
         this.emitBlock(["defmodule ", enumName, " do"], () => {
-            this.emitLine("@valid_members [");
+            this.emitLine("@valid_enum_members [");
             this.indent(() => {
                 this.forEachEnumCase(e, "none", (name, json) => {
-                    this.emitLine(":", json, ",");
+                    if (this.isValidAtom(json)) {
+                        this.emitLine(":", json, ",");
+                    } else {
+                        this.emitLine(":", `"${json}"`, ",");
+                    }
+
                     // table.push([[name], [` = "${stringEscape(json)}"`]]);
                 });
             });
@@ -530,12 +669,12 @@ export class ElixirRenderer extends ConvenienceRenderer {
 
             this.ensureBlankLine();
 
-            this.emitMultiline(`def valid_atom?(value), do: value in @valid_members
+            this.emitMultiline(`def valid_atom?(value), do: value in @valid_enum_members
 
 def valid_atom_string?(value) do
     try do
         atom = String.to_existing_atom(value)
-        atom in @valid_members
+        atom in @valid_enum_members
     rescue
         ArgumentError -> false
     end
