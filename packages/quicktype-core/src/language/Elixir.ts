@@ -1,6 +1,6 @@
 import unicode from "unicode-properties";
 
-import { Sourcelike, modifySource } from "../Source";
+import { Sourcelike, modifySource, multiWord } from "../Source";
 import { Namer, Name } from "../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
@@ -174,12 +174,12 @@ export class ElixirRenderer extends ConvenienceRenderer {
             mapType => ["%{String.t() => ", this.elixirType(mapType.values), "}", optional],
             enumType => [this.nameForNamedType(enumType), ".t()", optional],
             unionType => {
-                const nullable = nullableFromUnion(unionType);
-                if (nullable !== null) {
-                    return [this.elixirType(nullable), " | nil"];
-                }
-                return [this.nameForNamedType(unionType), ".t()", optional];
-            } // ?
+                const children = Array.from(unionType.getChildren()).map(t => this.elixirType(t));
+                return [
+                    children.flatMap((element, index) => (index === children.length - 1 ? element : [element, " | "])),
+                    optional
+                ];
+            }
         );
     }
 
@@ -259,33 +259,33 @@ export class ElixirRenderer extends ConvenienceRenderer {
         return [""];
     }
 
-    // protected implicitlyConvertsFromJSON(t: Type): boolean {
-    //     if (t instanceof ClassType) {
-    //         return false;
-    //     } else if (t instanceof EnumType) {
-    //         return false;
-    //     } else if (t instanceof ArrayType) {
-    //         return this.implicitlyConvertsFromJSON(t.items);
-    //     } else if (t instanceof MapType) {
-    //         return this.implicitlyConvertsFromJSON(t.values);
-    //     } else if (t.isPrimitive()) {
-    //         return true;
-    //     } else if (t instanceof UnionType) {
-    //         const nullable = nullableFromUnion(t);
-    //         if (nullable !== null) {
-    //             return this.implicitlyConvertsFromJSON(nullable);
-    //         } else {
-    //             // We don't support unions yet, so this is just untyped
-    //             return true;
-    //         }
-    //     } else {
-    //         return false;
-    //     }
-    // }
+    protected implicitlyConvertsFromJSON(t: Type): boolean {
+        if (t instanceof ClassType) {
+            return false;
+        } else if (t instanceof EnumType) {
+            return false;
+        } else if (t instanceof ArrayType) {
+            return this.implicitlyConvertsFromJSON(t.items);
+        } else if (t instanceof MapType) {
+            return this.implicitlyConvertsFromJSON(t.values);
+        } else if (t.isPrimitive()) {
+            return true;
+        } else if (t instanceof UnionType) {
+            const nullable = nullableFromUnion(t);
+            if (nullable !== null) {
+                return this.implicitlyConvertsFromJSON(nullable);
+            } else {
+                // We don't support unions yet, so this is just untyped
+                return true;
+            }
+        } else {
+            return false;
+        }
+    }
 
-    // protected implicitlyConvertsToJSON(t: Type): boolean {
-    //     return this.implicitlyConvertsFromJSON(t) && "bool" !== t.kind;
-    // }
+    protected implicitlyConvertsToJSON(t: Type): boolean {
+        return this.implicitlyConvertsFromJSON(t) && "bool" !== t.kind;
+    }
 
     private fromDynamic(t: Type, jsonName: string): Sourcelike {
         const primitive = ['m["', jsonName, '"]'];
@@ -300,11 +300,15 @@ export class ElixirRenderer extends ConvenienceRenderer {
             _stringType => primitive,
             arrayType => {
                 let ans = arrayType.items;
-                // if (this.implicitlyConvertsFromJSON(arrayType)) {
-                if (arrayType.items.isPrimitive()) {
+                if (ans.kind === "array") {
+                    // console.log(ans);
+                }
+                if (this.implicitlyConvertsFromJSON(arrayType)) {
+                    // if (arrayType.items.isPrimitive()) {
                     return primitive;
                 } else {
-                    return ["Enum.map(", primitive, ", ", "&", this.nameForNamedType(arrayType.items), ".from_map/1)"];
+                    return [":todo"];
+                    // return ["Enum.map(", primitive, ", ", "&", this.nameForNamedType(arrayType.items), ".from_map/1)"];
                 }
                 // const testPrim = arrayType.isPrimitive();
                 // const testName = this.nameForNamedType(arrayType);
@@ -317,15 +321,14 @@ export class ElixirRenderer extends ConvenienceRenderer {
             },
             classType => [this.nameForNamedType(classType), ".from_map(", primitive, ")"],
             mapType => [
-                mapType.isPrimitive()
-                    ? [primitive]
-                    : [
-                          "Map.new(",
-                          primitive,
-                          ", fn {key, value} -> {key,",
-                          this.nameForNamedType(mapType),
-                          ".from_map(value)} end)"
-                      ]
+                mapType.isPrimitive() ? [primitive] : [":todo"]
+                // : [
+                //       "Map.new(",
+                //       primitive,
+                //       ", fn {key, value} -> {key,",
+                //       this.nameForNamedType(mapType.values),
+                //       ".from_map(value)} end)"
+                //   ]
             ],
             enumType => {
                 return [this.nameForNamedType(enumType), ".deserialize(", primitive, ")"];
@@ -370,16 +373,17 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 if (arrayType.items.isPrimitive()) {
                     return expression;
                 } else {
-                    return [
-                        "Enum.map(",
-                        "struct.",
-                        e,
-                        ", ",
-                        "&",
-                        this.nameForNamedType(arrayType.items),
-                        ".to_map/1)",
-                        optional ? " || nil" : ""
-                    ];
+                    return [":todo"];
+                    // return [
+                    //     "Enum.map(",
+                    //     "struct.",
+                    //     e,
+                    //     ", ",
+                    //     "&",
+                    //     this.nameForNamedType(arrayType.items),
+                    //     ".to_map/1)",
+                    //     optional ? " || nil" : ""
+                    // ];
                 }
                 // return [
                 //     arrayType.isPrimitive()
@@ -398,16 +402,15 @@ export class ElixirRenderer extends ConvenienceRenderer {
             },
             classType => [this.nameForNamedType(classType), ".to_map(", "struct.", e, ")", optional ? " || nil" : ""],
             mapType => [
-                mapType.isPrimitive()
-                    ? [expression]
-                    : [
-                          "Map.new(",
-                          "struct.",
-                          e,
-                          ", fn {key, value} -> {key,",
-                          this.nameForNamedType(mapType),
-                          ".to_map(value)} end)"
-                      ]
+                mapType.isPrimitive() ? [expression] : ["todo"]
+                // : [
+                //       "Map.new(",
+                //       "struct.",
+                //       e,
+                //       ", fn {key, value} -> {key,",
+                //       this.nameForNamedType(mapType.values),
+                //       ".to_map(value)} end)"
+                //   ]
             ],
             enumType => {
                 return [this.nameForNamedType(enumType), ".serialize(struct.", e, ")", optional ? " || nil" : ""];
