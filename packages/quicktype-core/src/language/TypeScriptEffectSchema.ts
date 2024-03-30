@@ -26,16 +26,16 @@ export const typeScriptEffectSchemaOptions = {
 };
 
 export class TypeScriptEffectSchemaTargetLanguage extends TargetLanguage {
-    protected getOptions(): Option<any>[] {
-        return [];
-    }
-
     constructor(
         displayName: string = "TypeScript Effect Schema",
         names: string[] = ["typescript-effect-schema"],
         extension: string = "ts"
     ) {
         super(displayName, names, extension);
+    }
+
+    protected getOptions(): Option<any>[] {
+        return [];
     }
 
     protected makeRenderer(

@@ -40,12 +40,12 @@ export const javaScriptPropTypesOptions = {
 };
 
 export class JavaScriptPropTypesTargetLanguage extends TargetLanguage {
-    protected getOptions(): Option<any>[] {
-        return [javaScriptPropTypesOptions.acronymStyle, javaScriptPropTypesOptions.converters];
-    }
-
     constructor(displayName = "JavaScript PropTypes", names: string[] = ["javascript-prop-types"], extension = "js") {
         super(displayName, names, extension);
+    }
+
+    protected getOptions(): Option<any>[] {
+        return [javaScriptPropTypesOptions.acronymStyle, javaScriptPropTypesOptions.converters];
     }
 
     protected makeRenderer(

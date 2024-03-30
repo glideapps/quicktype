@@ -37,16 +37,16 @@ export const typeScriptZodOptions = {
 };
 
 export class TypeScriptZodTargetLanguage extends TargetLanguage {
-    protected getOptions(): Option<any>[] {
-        return [];
-    }
-
     constructor(
         displayName: string = "TypeScript Zod",
         names: string[] = ["typescript-zod"],
         extension: string = "ts"
     ) {
         super(displayName, names, extension);
+    }
+
+    protected getOptions(): Option<any>[] {
+        return [];
     }
 
     get stringTypeMapping(): StringTypeMapping {
@@ -328,7 +328,9 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
             if (passNum > MAX_PASSES) {
                 //giving up
                 order.push(...deferredIndices);
-                console.warn("Exceeded maximum number of passes when determining output order, output may contain forward references");
+                console.warn(
+                    "Exceeded maximum number of passes when determining output order, output may contain forward references"
+                );
             }
         } while (indices.length > 0 && passNum <= MAX_PASSES);
 

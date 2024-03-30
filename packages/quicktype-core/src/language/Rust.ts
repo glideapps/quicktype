@@ -112,12 +112,12 @@ const namingStyles: Record<string, NamingStyle> = {
 };
 
 export class RustTargetLanguage extends TargetLanguage {
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): RustRenderer {
-        return new RustRenderer(this, renderContext, getOptionValues(rustOptions, untypedOptionValues));
-    }
-
     constructor() {
         super("Rust", ["rust", "rs", "rustlang"], "rs");
+    }
+
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): RustRenderer {
+        return new RustRenderer(this, renderContext, getOptionValues(rustOptions, untypedOptionValues));
     }
 
     protected getOptions(): Option<any>[] {

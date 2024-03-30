@@ -23,12 +23,12 @@ import { Option } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
 
 export class CrystalTargetLanguage extends TargetLanguage {
-    protected makeRenderer(renderContext: RenderContext): CrystalRenderer {
-        return new CrystalRenderer(this, renderContext);
-    }
-
     constructor() {
         super("Crystal", ["crystal", "cr", "crystallang"], "cr");
+    }
+
+    protected makeRenderer(renderContext: RenderContext): CrystalRenderer {
+        return new CrystalRenderer(this, renderContext);
     }
 
     protected get defaultIndentation(): string {
