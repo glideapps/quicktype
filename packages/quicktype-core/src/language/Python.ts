@@ -130,6 +130,10 @@ export const pythonOptions = {
 };
 
 export class PythonTargetLanguage extends TargetLanguage {
+    constructor() {
+        super("Python", ["python", "py"], "py");
+    }
+
     protected getOptions(): Option<any>[] {
         return [pythonOptions.features, pythonOptions.justTypes, pythonOptions.nicePropertyNames];
     }

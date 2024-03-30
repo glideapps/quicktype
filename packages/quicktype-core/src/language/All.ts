@@ -49,7 +49,7 @@ export const all = [
     new JSONSchemaTargetLanguage(),
     new RubyTargetLanguage(),
     new DartTargetLanguage(),
-    new PythonTargetLanguage("Python", ["python", "py"], "py"),
+    new PythonTargetLanguage(),
     new PikeTargetLanguage(),
     new HaskellTargetLanguage(),
     new TypeScriptZodTargetLanguage(),
