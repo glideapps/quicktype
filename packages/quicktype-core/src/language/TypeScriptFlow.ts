@@ -40,7 +40,15 @@ const tsFlowTypeAnnotations = {
     boolean: ": boolean"
 };
 
-export abstract class TypeScriptFlowBaseTargetLanguage extends JavaScriptTargetLanguage {
+export abstract class TypeScriptFlowBaseTargetLanguage<
+    DisplayName extends string,
+    Names extends readonly string[],
+    Extension extends string
+> extends JavaScriptTargetLanguage<DisplayName, Names, Extension> {
+    protected constructor(displayName: DisplayName, names: Names, extension: Extension) {
+        super(displayName, names, extension);
+    }
+
     protected getOptions(): Option<any>[] {
         return [
             tsFlowOptions.justTypes,
@@ -68,7 +76,11 @@ export abstract class TypeScriptFlowBaseTargetLanguage extends JavaScriptTargetL
     ): JavaScriptRenderer;
 }
 
-export class TypeScriptTargetLanguage extends TypeScriptFlowBaseTargetLanguage {
+export class TypeScriptTargetLanguage extends TypeScriptFlowBaseTargetLanguage<
+    "TypeScript",
+    ["typescript", "ts", "tsx"],
+    "ts"
+> {
     constructor() {
         super("TypeScript", ["typescript", "ts", "tsx"], "ts");
     }
@@ -339,7 +351,7 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
     }
 }
 
-export class FlowTargetLanguage extends TypeScriptFlowBaseTargetLanguage {
+export class FlowTargetLanguage extends TypeScriptFlowBaseTargetLanguage<"Flow", ["flow"], "js"> {
     constructor() {
         super("Flow", ["flow"], "js");
     }
