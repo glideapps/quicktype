@@ -174,7 +174,7 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
             propertyName = modifySource(quotePropertyName, name);
 
             if (this._tsFlowOptions.preferReadonly) {
-                propertyName = "readonly " + propertyName;
+                propertyName = modifySource(_propertyName => "readonly " + _propertyName, propertyName);
             }
 
             return [
