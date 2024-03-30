@@ -111,7 +111,7 @@ const namingStyles: Record<string, NamingStyle> = {
     }
 };
 
-export class RustTargetLanguage extends TargetLanguage {
+export class RustTargetLanguage extends TargetLanguage<"Rust", ["rust", "rs", "rustlang"], "rs"> {
     constructor() {
         super("Rust", ["rust", "rs", "rustlang"], "rs");
     }

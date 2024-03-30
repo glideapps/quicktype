@@ -128,15 +128,9 @@ export const cJSONOptions = {
 };
 
 /* cJSON generator target language */
-export class CJSONTargetLanguage extends TargetLanguage {
-    /**
-     * Constructor
-     * @param displayName: display name
-     * @params names: names
-     * @param extension: extension of files
-     */
-    constructor(displayName = "C (cJSON)", names: string[] = ["cjson", "cJSON"], extension = "h") {
-        super(displayName, names, extension);
+export class CJSONTargetLanguage extends TargetLanguage<"C (cJSON)", ["cjson", "cJSON"], "h"> {
+    constructor() {
+        super("C (cJSON)", ["cjson", "cJSON"], "h");
     }
 
     /**

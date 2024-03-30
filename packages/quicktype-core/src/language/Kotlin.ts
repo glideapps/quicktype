@@ -61,7 +61,7 @@ export const kotlinOptions = {
     packageName: new StringOption("package", "Package", "PACKAGE", "quicktype")
 };
 
-export class KotlinTargetLanguage extends TargetLanguage {
+export class KotlinTargetLanguage extends TargetLanguage<"Kotlin", ["kotlin"], "kt"> {
     constructor() {
         super("Kotlin", ["kotlin"], "kt");
     }

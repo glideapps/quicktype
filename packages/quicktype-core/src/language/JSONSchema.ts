@@ -18,7 +18,7 @@ import { addDescriptionToSchema } from "../attributes/Description";
 import { Option } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
 
-export class JSONSchemaTargetLanguage extends TargetLanguage {
+export class JSONSchemaTargetLanguage extends TargetLanguage<"JSON Schema", ["schema", "json-schema"], "schema"> {
     constructor() {
         super("JSON Schema", ["schema", "json-schema"], "schema");
     }

@@ -34,7 +34,7 @@ export const elmOptions = {
     moduleName: new StringOption("module", "Generated module name", "NAME", "QuickType")
 };
 
-export class ElmTargetLanguage extends TargetLanguage {
+export class ElmTargetLanguage extends TargetLanguage<"Elm", ["elm"], "elm"> {
     constructor() {
         super("Elm", ["elm"], "elm");
     }

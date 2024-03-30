@@ -118,9 +118,9 @@ export const cPlusPlusOptions = {
     hideNullOptional: new BooleanOption("hide-null-optional", "Hide null value for optional field", false)
 };
 
-export class CPlusPlusTargetLanguage extends TargetLanguage {
-    constructor(displayName = "C++", names: string[] = ["c++", "cpp", "cplusplus"], extension = "cpp") {
-        super(displayName, names, extension);
+export class CPlusPlusTargetLanguage extends TargetLanguage<"C++", ["c++", "cpp", "cplusplus"], "cpp"> {
+    constructor() {
+        super("C++", ["c++", "cpp", "cplusplus"], "cpp");
     }
 
     protected getOptions(): Option<any>[] {

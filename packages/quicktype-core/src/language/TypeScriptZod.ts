@@ -36,13 +36,9 @@ export const typeScriptZodOptions = {
     justSchema: new BooleanOption("just-schema", "Schema only", false)
 };
 
-export class TypeScriptZodTargetLanguage extends TargetLanguage {
-    constructor(
-        displayName: string = "TypeScript Zod",
-        names: string[] = ["typescript-zod"],
-        extension: string = "ts"
-    ) {
-        super(displayName, names, extension);
+export class TypeScriptZodTargetLanguage extends TargetLanguage<"TypeScript Zod", ["typescript-zod"], "ts"> {
+    constructor() {
+        super("TypeScript Zod", ["typescript-zod"], "ts");
     }
 
     protected getOptions(): Option<any>[] {

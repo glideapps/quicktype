@@ -53,7 +53,7 @@ export const javaOptions = {
     lombokCopyAnnotations: new BooleanOption("lombok-copy-annotations", "Copy accessor annotations", true, "secondary")
 };
 
-export class JavaTargetLanguage extends TargetLanguage {
+export class JavaTargetLanguage extends TargetLanguage<"Java", ["java"], "java"> {
     constructor() {
         super("Java", ["java"], "java");
     }

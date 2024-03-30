@@ -130,7 +130,7 @@ export interface SwiftProperty {
     position: ForEachPosition;
 }
 
-export class SwiftTargetLanguage extends TargetLanguage {
+export class SwiftTargetLanguage extends TargetLanguage<"Swift", ["swift", "swift4"], "swift"> {
     constructor() {
         super("Swift", ["swift", "swift4"], "swift");
     }
