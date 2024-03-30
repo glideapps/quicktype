@@ -28,7 +28,7 @@ import { TypeScriptZodTargetLanguage } from "./TypeScriptZod";
 import { PhpTargetLanguage } from "./Php";
 import { TypeScriptEffectSchemaTargetLanguage } from "./TypeScriptEffectSchema";
 
-export const all: TargetLanguage[] = [
+export const all = [
     new CSharpTargetLanguage(),
     new GoTargetLanguage(),
     new RustTargetLanguage(),
@@ -55,12 +55,14 @@ export const all: TargetLanguage[] = [
     new TypeScriptZodTargetLanguage(),
     new TypeScriptEffectSchemaTargetLanguage(),
     new PhpTargetLanguage()
-];
+] as const;
 
-export function languageNamed(name: string, targetLanguages?: TargetLanguage[]): TargetLanguage | undefined {
-    if (targetLanguages === undefined) {
-        targetLanguages = all;
-    }
+all satisfies readonly TargetLanguage[];
+
+export function languageNamed(
+    name: string,
+    targetLanguages: readonly TargetLanguage[] = all
+): TargetLanguage | undefined {
     const maybeTargetLanguage = iterableFind(
         targetLanguages,
         l => l.names.indexOf(name) >= 0 || l.displayName === name
