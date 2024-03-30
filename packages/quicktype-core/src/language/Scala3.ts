@@ -245,10 +245,10 @@ export class Scala3Renderer extends ConvenienceRenderer {
             delimiter === "curly"
                 ? ["{", "}"]
                 : delimiter === "paren"
-                  ? ["(", ")"]
-                  : delimiter === "none"
-                    ? ["", ""]
-                    : ["{", "})"];
+                ? ["(", ")"]
+                : delimiter === "none"
+                ? ["", ""]
+                : ["{", "})"];
         this.emitLine(line, " ", open);
         this.indent(f);
         this.emitLine(close);
@@ -724,7 +724,7 @@ export class CirceRenderer extends Scala3Renderer {
     }
 }
 
-export class Scala3TargetLanguage extends TargetLanguage {
+export class Scala3TargetLanguage extends TargetLanguage<"Scala3", ["scala3"], "scala"> {
     constructor() {
         super("Scala3", ["scala3"], "scala");
     }

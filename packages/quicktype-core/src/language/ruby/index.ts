@@ -51,7 +51,7 @@ export const rubyOptions = {
     namespace: new StringOption("namespace", "Specify a wrapping Namespace", "NAME", "", "secondary")
 };
 
-export class RubyTargetLanguage extends TargetLanguage {
+export class RubyTargetLanguage extends TargetLanguage<"Ruby", ["ruby"], "rb"> {
     constructor() {
         super("Ruby", ["ruby"], "rb");
     }

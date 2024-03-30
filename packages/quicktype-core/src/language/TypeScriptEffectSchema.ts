@@ -25,13 +25,13 @@ export const typeScriptEffectSchemaOptions = {
     justSchema: new BooleanOption("just-schema", "Schema only", false)
 };
 
-export class TypeScriptEffectSchemaTargetLanguage extends TargetLanguage {
-    constructor(
-        displayName: string = "TypeScript Effect Schema",
-        names: string[] = ["typescript-effect-schema"],
-        extension: string = "ts"
-    ) {
-        super(displayName, names, extension);
+export class TypeScriptEffectSchemaTargetLanguage extends TargetLanguage<
+    "TypeScript Effect Schema",
+    ["typescript-effect-schema"],
+    "ts"
+> {
+    constructor() {
+        super("TypeScript Effect Schema", ["typescript-effect-schema"], "ts");
     }
 
     protected getOptions(): Option<any>[] {

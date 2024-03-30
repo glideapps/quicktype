@@ -34,7 +34,7 @@ export const goOptions = {
     )
 };
 
-export class GoTargetLanguage extends TargetLanguage {
+export class GoTargetLanguage extends TargetLanguage<"Go", ["go", "golang"], "go"> {
     constructor() {
         super("Go", ["go", "golang"], "go");
     }

@@ -43,7 +43,11 @@ export const objcOptions = {
     extraComments: new BooleanOption("extra-comments", "Extra comments", false)
 };
 
-export class ObjectiveCTargetLanguage extends TargetLanguage {
+export class ObjectiveCTargetLanguage extends TargetLanguage<
+    "Objective-C",
+    ["objc", "objective-c", "objectivec"],
+    "m"
+> {
     constructor() {
         super("Objective-C", ["objc", "objective-c", "objectivec"], "m");
     }

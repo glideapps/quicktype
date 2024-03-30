@@ -34,7 +34,7 @@ export const phpOptions = {
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal)
 };
 
-export class PhpTargetLanguage extends TargetLanguage {
+export class PhpTargetLanguage extends TargetLanguage<"PHP", ["php"], "php"> {
     constructor() {
         super("PHP", ["php"], "php");
     }

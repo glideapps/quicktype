@@ -70,7 +70,7 @@ const enumNamingFunction = funPrefixNamer("enumNamer", makeNameStyle("upper-unde
 const namingFunction = funPrefixNamer("genericNamer", makeNameStyle("underscore", legalizeName));
 const namedTypeNamingFunction = funPrefixNamer("typeNamer", makeNameStyle("pascal", legalizeName));
 
-export class PikeTargetLanguage extends TargetLanguage {
+export class PikeTargetLanguage extends TargetLanguage<"Pike", ["pike", "pikelang"], "pmod"> {
     constructor() {
         super("Pike", ["pike", "pikelang"], "pmod");
     }

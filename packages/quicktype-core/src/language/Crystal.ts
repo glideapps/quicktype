@@ -22,7 +22,7 @@ import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { Option } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
 
-export class CrystalTargetLanguage extends TargetLanguage {
+export class CrystalTargetLanguage extends TargetLanguage<"Crystal", ["crystal", "cr", "crystallang"], "cr"> {
     constructor() {
         super("Crystal", ["crystal", "cr", "crystallang"], "cr");
     }

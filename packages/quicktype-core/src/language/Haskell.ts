@@ -29,7 +29,7 @@ export const haskellOptions = {
     moduleName: new StringOption("module", "Generated module name", "NAME", "QuickType")
 };
 
-export class HaskellTargetLanguage extends TargetLanguage {
+export class HaskellTargetLanguage extends TargetLanguage<"Haskell", ["haskell"], "haskell"> {
     constructor() {
         super("Haskell", ["haskell"], "haskell");
     }

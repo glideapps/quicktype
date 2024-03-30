@@ -65,9 +65,9 @@ export type JavaScriptTypeAnnotations = {
     never: string;
 };
 
-export class JavaScriptTargetLanguage extends TargetLanguage {
-    constructor(displayName = "JavaScript", names: string[] = ["javascript", "js", "jsx"], extension = "js") {
-        super(displayName, names, extension);
+export class JavaScriptTargetLanguage extends TargetLanguage<"JavaScript", ["javascript", "js", "jsx"], "js"> {
+    constructor() {
+        super("JavaScript", ["javascript", "js", "jsx"], "js");
     }
 
     protected getOptions(): Option<any>[] {

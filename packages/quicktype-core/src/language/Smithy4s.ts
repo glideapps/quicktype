@@ -205,10 +205,10 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
             delimiter === "curly"
                 ? ["{", "}"]
                 : delimiter === "paren"
-                  ? ["(", ")"]
-                  : delimiter === "none"
-                    ? ["", ""]
-                    : ["{", "})"];
+                ? ["(", ")"]
+                : delimiter === "none"
+                ? ["", ""]
+                : ["{", "})"];
         this.emitLine(line, " ", open);
         this.indent(f);
         this.emitLine(close);
@@ -510,7 +510,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
     }
 }
 
-export class SmithyTargetLanguage extends TargetLanguage {
+export class SmithyTargetLanguage extends TargetLanguage<"Smithy", ["Smithy"], "smithy"> {
     constructor() {
         super("Smithy", ["Smithy"], "smithy");
     }
