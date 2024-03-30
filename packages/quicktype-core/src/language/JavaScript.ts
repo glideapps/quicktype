@@ -67,7 +67,7 @@ export type JavaScriptTypeAnnotations = {
 
 export class JavaScriptTargetLanguage<
     DisplayName extends string = "JavaScript",
-    Names extends readonly string[] = ["javascript", "js", "jsx"],
+    Names extends readonly string[] = readonly ["javascript", "js", "jsx"],
     Extension extends string = "js"
 > extends TargetLanguage<DisplayName, Names, Extension> {
     constructor(

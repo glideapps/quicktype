@@ -1,5 +1,3 @@
-import { iterableFind } from "collection-utils";
-
 import { TargetLanguage } from "../TargetLanguage";
 
 import { CSharpTargetLanguage } from "./CSharp";
@@ -27,6 +25,8 @@ import { HaskellTargetLanguage } from "./Haskell";
 import { TypeScriptZodTargetLanguage } from "./TypeScriptZod";
 import { PhpTargetLanguage } from "./Php";
 import { TypeScriptEffectSchemaTargetLanguage } from "./TypeScriptEffectSchema";
+
+import { type LanguageNameMap, type LanguageName } from "../types";
 
 export const all = [
     new CSharpTargetLanguage(),
@@ -59,14 +59,14 @@ export const all = [
 
 all satisfies readonly TargetLanguage[];
 
-export function languageNamed(
-    name: string,
+export function languageNamed<Name extends LanguageName>(
+    name: Name,
     targetLanguages: readonly TargetLanguage[] = all
-): TargetLanguage | undefined {
-    const maybeTargetLanguage = iterableFind(
-        targetLanguages,
-        l => l.names.indexOf(name) >= 0 || l.displayName === name
-    );
-    if (maybeTargetLanguage !== undefined) return maybeTargetLanguage;
-    return iterableFind(targetLanguages, l => l.extension === name);
+): LanguageNameMap[Name] {
+    const foundLanguage = targetLanguages.find(language => language.names.includes(name));
+    if (!foundLanguage) {
+        throw new Error(`Unknown language name: ${name}`);
+    }
+
+    return foundLanguage as LanguageNameMap[Name];
 }

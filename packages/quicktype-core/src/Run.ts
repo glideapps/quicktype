@@ -21,7 +21,9 @@ import { makeTransformations } from "./MakeTransformations";
 import { TransformedStringTypeKind } from "./Type";
 import { type Comment } from "./support/Comments";
 
-export function getTargetLanguage(nameOrInstance: string | TargetLanguage): TargetLanguage {
+import { type LanguageName } from "types";
+
+export function getTargetLanguage(nameOrInstance: LanguageName | TargetLanguage): TargetLanguage {
     if (typeof nameOrInstance === "object") {
         return nameOrInstance;
     }
@@ -123,7 +125,7 @@ export type NonInferenceOptions = {
      * or a string specifying one of the names for quicktype's built-in target languages.  For example,
      * both `cs` and `csharp` will generate C#.
      */
-    lang: string | TargetLanguage;
+    lang: LanguageName | TargetLanguage;
     /** The input data from which to produce types */
     inputData: InputData;
     /** Put class properties in alphabetical order, instead of in the order found in the JSON */
