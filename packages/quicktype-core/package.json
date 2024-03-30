@@ -13,7 +13,6 @@
     },
     "dependencies": {
         "@glideapps/ts-necessities": "2.1.3",
-        "@types/urijs": "^1.19.19",
         "browser-or-node": "^2.1.1",
         "collection-utils": "^1.0.1",
         "is-url": "^1.2.4",
@@ -36,6 +35,7 @@
         "@types/pluralize": "0.0.30",
         "@types/readable-stream": "2.3.15",
         "@types/unicode-properties": "^1.3.0",
+        "@types/urijs": "^1.19.19",
         "@types/yaml": "^1.9.7",
         "tslint": "^6.1.3",
         "typescript": "4.9.5"
