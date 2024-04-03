@@ -473,12 +473,9 @@ export class ElixirRenderer extends ConvenienceRenderer {
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
-                    return this.toDynamic(nullable, e, true);
+                    return ["(", e, " && encode_", e, "(struct.", e, ")) || nil"];
                 }
-                // if (this.marshalsImplicitlyToDynamic(unionType)) {
-                //     return e;
-                // }
-                return [e, optional ? "&" : "", ".to_dynamic"];
+                return ["encode_", e, "(struct.", e, ")"];
             }
         );
     }
