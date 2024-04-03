@@ -444,7 +444,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 //   ]
             ],
             enumType => {
-                return [this.nameForNamedType(enumType), ".serialize(struct.", e, ")", optional ? " || nil" : ""];
+                return [this.nameForNamedType(enumType), ".encode(struct.", e, ")", optional ? " || nil" : ""];
             },
             unionType => {
                 const nullable = nullableFromUnion(unionType);
@@ -610,7 +610,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 this.emitLine("%", moduleName, "{");
                 this.indent(() => {
                     this.forEachClassProperty(c, "none", (name, jsonName, p) => {
-                        const expression = this.fromDynamic(p.type, jsonName);
+                        const expression = this.fromDynamic(p.type, jsonName, name);
                         this.emitLine(name, ": ", expression, ",");
                     });
                 });
@@ -620,7 +620,8 @@ export class ElixirRenderer extends ConvenienceRenderer {
             this.ensureBlankLine();
             this.emitBlock("def from_json(json) do", () => {
                 this.emitMultiline(`json
-|> Jason.decode(%{objects: :ordered_objects})
+# TODO: decide if this should be ! or not
+|> Jason.decode!()
 |> from_map()`);
             });
 
@@ -644,7 +645,8 @@ export class ElixirRenderer extends ConvenienceRenderer {
             this.emitBlock("def to_json(struct) do", () => {
                 this.emitMultiline(`struct
 |> to_map()
-|> Jason.encode()`);
+# TODO: decide if this should be ! or not
+|> Jason.encode!()`);
             });
         });
     }
@@ -714,11 +716,11 @@ def valid_atom_string?(value) do
     end
 end
 
-def serialize(value) do
+def encode(value) do
     if valid_atom?(value), do: Atom.to_string(value), else: value
 end
 
-def deserialize(value) do
+def decode(value) do
     if valid_atom_string?(value), do: String.to_existing_atom(value), else: value
 end`);
             // this.emitTable(table);
