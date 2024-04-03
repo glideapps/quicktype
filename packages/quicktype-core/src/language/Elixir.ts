@@ -259,6 +259,10 @@ export class ElixirRenderer extends ConvenienceRenderer {
         return [""];
     }
 
+    private emitPatternMatch(p: ClassProperty, jsonName: string, name: Name): Sourcelike {
+        return [];
+    }
+
     protected implicitlyConvertsFromJSON(t: Type): boolean {
         if (t instanceof ClassType) {
             return false;
@@ -275,7 +279,6 @@ export class ElixirRenderer extends ConvenienceRenderer {
             if (nullable !== null) {
                 return this.implicitlyConvertsFromJSON(nullable);
             } else {
-                // We don't support unions yet, so this is just untyped
                 return true;
             }
         } else {
@@ -302,9 +305,9 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 let arrayElement = arrayType.items;
                 if (arrayElement.isPrimitive()) {
                     return primitive;
-                } else if (this.implicitlyConvertsFromJSON(arrayElement)) {
+                    // } else if (this.implicitlyConvertsFromJSON(arrayElement)) {
                     // if (arrayType.items.isPrimitive()) {
-                    return primitive;
+                    // return primitive;
                 } else {
                     if (arrayElement.isNullable) {
                         return [
@@ -352,6 +355,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 if (mapType.values.isPrimitive()) {
                     return [primitive];
                 } else {
+                    // TODO: Handle union enum and class conditionally
                     return [
                         'm["',
                         jsonName,
@@ -377,9 +381,10 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 // return [];
                 // return [""];
                 if (nullable !== null) {
-                    return this.fromDynamic(nullable, jsonName, name);
+                    return ['(m["', jsonName, '"] && decode_', name, '(m["', jsonName, '"])) || nil'];
+                    // return this.fromDynamic(nullable, jsonName, name);
                 }
-                return [];
+                return ["decode_", name, '(m["', jsonName, '"])'];
                 // const expression = [this.nameForNamedType(unionType), ".from_dynamic!(", e, ")"];
                 // return optional ? [e, " ? ", expression, " : nil"] : expression;
             }
@@ -401,39 +406,58 @@ export class ElixirRenderer extends ConvenienceRenderer {
             _doubleType => expression,
             _stringType => expression,
             arrayType => {
-                if (arrayType.items.isPrimitive()) {
+                let arrayElement = arrayType.items;
+                if (arrayElement.isPrimitive()) {
                     return expression;
                 } else {
-                    return [":todo"];
-                    // return [
-                    //     "Enum.map(",
-                    //     "struct.",
-                    //     e,
-                    //     ", ",
-                    //     "&",
-                    //     this.nameForNamedType(arrayType.items),
-                    //     ".to_map/1)",
-                    //     optional ? " || nil" : ""
-                    // ];
+                    if (arrayElement.kind === "array") {
+                        return expression;
+                    } else if (arrayElement.kind === "enum") {
+                        [this.nameForNamedType(arrayElement), ".decode(", expression, ")"];
+                    } else if (arrayElement.kind === "union") {
+                        if (arrayElement.isNullable) {
+                            return ["(struct.", e, '"] && Enum.map(struct.', e, ", &encode", e, "/1)) || nil"];
+                        } else {
+                            return ["Enum.map(struct.", e, ", &encode_", e, "/1)"];
+                        }
+                    }
+                    return [expression];
                 }
-                // return [
-                //     arrayType.isPrimitive()
-                //         ? [expression]
-                //         : [
-                //               "Enum.map(",
-                //               "struct.",
-                //               e,
-                //               ", ",
-                //               "&",
-                //               this.nameForNamedType(arrayType),
-                //               ".from_map/1)",
-                //               optional ? " || nil" : ""
-                //           ]
-                // ];
             },
             classType => [this.nameForNamedType(classType), ".to_map(", "struct.", e, ")", optional ? " || nil" : ""],
-            mapType => [
-                mapType.isPrimitive() ? [expression] : ["todo"]
+            mapType => {
+                if (mapType.isPrimitive()) {
+                    return [expression];
+                } else {
+                    if (mapType.values.kind === "union") {
+                        return [
+                            "struct.",
+                            e,
+                            "\n|> Map.new(fn {key, value} -> {key, encode_",
+                            e,
+                            "(value)} end)\n|| nil"
+                        ];
+                    } else if (mapType.values.kind === "enum") {
+                        return [
+                            "struct.",
+                            e,
+                            "\n|> Map.new(fn {key, value} -> {key, ",
+                            this.nameForNamedType(mapType.values),
+                            ".encode",
+                            "(value)} end)\n|| nil"
+                        ];
+                    } else if (mapType.values.kind === "class") {
+                        return [
+                            "struct.",
+                            e,
+                            "\n|> Map.new(fn {key, value} -> {key, ",
+                            this.nameForNamedType(mapType.values),
+                            ".encode",
+                            "(value)} end)\n|| nil"
+                        ];
+                    }
+                    return [expression];
+                }
                 // : [
                 //       "Map.new(",
                 //       "struct.",
@@ -442,7 +466,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 //       this.nameForNamedType(mapType.values),
                 //       ".to_map(value)} end)"
                 //   ]
-            ],
+            },
             enumType => {
                 return [this.nameForNamedType(enumType), ".encode(struct.", e, ")", optional ? " || nil" : ""];
             },
@@ -602,6 +626,14 @@ export class ElixirRenderer extends ConvenienceRenderer {
             if (this._options.justTypes) {
                 return;
             }
+
+            this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+                // const expression = this.fromDynamic(p.type, jsonName, name);
+                // this.emitLine(name, ": ", expression, ",");
+                if (p.type.kind === "union") {
+                    this.emitPatternMatch(p, jsonName, name);
+                }
+            });
 
             this.ensureBlankLine();
             this.emitBlock(["def from_map(m) do"], () => {
