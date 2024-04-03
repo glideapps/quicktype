@@ -266,20 +266,22 @@ export class ElixirRenderer extends ConvenienceRenderer {
             _stringType => ["def decode_", attributeName, suffix, "(value) when is_binary(value), do: value"],
             arrayType => [],
             classType => {
-                // console.log(t);
-                // def decode_different_things(%{"name" => _} = value), do: DifferentThingClass.from_map(value)
-                // def decode_different_things(%{"stringValue" => _, "dateValue" => _, "differentThings" => _} = value), do: Temp.from_map(value)
-                // this.forEachClassProperty(t, "none", (name, jsonName, p) => {
-                //     if (!p.isOptional) {
-                //         if (requiredAttributes.length === 0) {
-                //             requiredAttributes.push([":", name]);
-                //         } else {
-                //             requiredAttributes.push([", :", name]);
-                //         }
-                //     }
-                // });
-                return [];
-                // this.nameForNamedType(classType), ".to_map(", "struct.", e, ")", optional ? " || nil" : ""]
+                let requiredAttributeArgs: Sourcelike[] = [];
+                this.forEachClassProperty(classType, "none", (name, jsonName, p) => {
+                    if (!p.isOptional) {
+                        requiredAttributeArgs.push(['"', jsonName, '" => _,']);
+                    }
+                });
+                return [
+                    "def decode_",
+                    attributeName,
+                    suffix,
+                    "(%{",
+                    requiredAttributeArgs,
+                    "} = value), do: ",
+                    this.nameForNamedType(classType),
+                    ".from_map(value)"
+                ];
             },
             mapType => [],
             enumType => {
@@ -308,20 +310,22 @@ export class ElixirRenderer extends ConvenienceRenderer {
             _stringType => ["def encode_", attributeName, suffix, "(value) when is_binary(value), do: value"],
             arrayType => [],
             classType => {
-                // console.log(t);
-                // def decode_different_things(%{"name" => _} = value), do: DifferentThingClass.from_map(value)
-                // def decode_different_things(%{"stringValue" => _, "dateValue" => _, "differentThings" => _} = value), do: Temp.from_map(value)
-                // this.forEachClassProperty(t, "none", (name, jsonName, p) => {
-                //     if (!p.isOptional) {
-                //         if (requiredAttributes.length === 0) {
-                //             requiredAttributes.push([":", name]);
-                //         } else {
-                //             requiredAttributes.push([", :", name]);
-                //         }
-                //     }
-                // });
-                return [];
-                // this.nameForNamedType(classType), ".to_map(", "struct.", e, ")", optional ? " || nil" : ""]
+                let requiredAttributeArgs: Sourcelike[] = [];
+                this.forEachClassProperty(classType, "none", (name, jsonName, p) => {
+                    if (!p.isOptional) {
+                        requiredAttributeArgs.push(['"', jsonName, '" => _,']);
+                    }
+                });
+                return [
+                    "def encode_",
+                    attributeName,
+                    suffix,
+                    "(%",
+                    this.nameForNamedType(classType),
+                    "{} = value), do: ",
+                    this.nameForNamedType(classType),
+                    ".to_map(value)"
+                ];
             },
             mapType => [],
             enumType => {
@@ -371,6 +375,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
         this.emitLine(
             "def decode_",
             name,
+            suffix,
             '(_), do: {:error, "Unexpected type when decoding ',
             parentName,
             ".",
@@ -386,6 +391,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
         this.emitLine(
             "def encode_",
             name,
+            suffix,
             '(_), do: {:error, "Unexpected type when encoding ',
             parentName,
             ".",
@@ -836,23 +842,27 @@ export class ElixirRenderer extends ConvenienceRenderer {
                     let mapValueTypes = [...mapType.values.getChildren()];
                     let mapValueTypesNotPrimitive = mapValueTypes.filter(type => !(type instanceof PrimitiveType));
                     if (mapValueTypesNotPrimitive.length) {
-                        // this.emitPatternMatches(p, name, this.nameForNamedType(c));
                         this.emitLine("# TODO: pattern match for map values");
                     }
                 } else if (p.type.kind === "array") {
                     let arrayType = p.type as ArrayType;
                     if (arrayType.items instanceof ArrayType) {
                         return;
-                    }
-                    if (arrayType.items instanceof ClassType) {
+                    } else if (arrayType.items instanceof ClassType) {
                         return;
-                    }
-                    let arrayElementTypes = [...arrayType.getChildren()];
-                    let arrayElementTypesNotPrimitive = arrayElementTypes.filter(
-                        type => !(type instanceof PrimitiveType && type instanceof ArrayType)
-                    );
-                    if (arrayElementTypesNotPrimitive.length) {
-                        this.emitPatternMatches(arrayElementTypes, name, this.nameForNamedType(c), "_element");
+                    } else if (arrayType.items instanceof UnionType) {
+                        let unionType = arrayType.items;
+                        let typesInUnion = [...unionType.getChildren()];
+                        this.emitPatternMatches(typesInUnion, name, this.nameForNamedType(c), "_element");
+                    } else {
+                        // TODO: Do I need to do this stuff here
+                        // let arrayElementTypes = [...arrayType.getChildren()];
+                        // let arrayElementTypesNotPrimitive = arrayElementTypes.filter(
+                        //     type => !(type instanceof PrimitiveType && type instanceof ArrayType)
+                        // );
+                        // if (arrayElementTypesNotPrimitive.length) {
+                        //     this.emitPatternMatches(arrayElementTypes, name, this.nameForNamedType(c), "_element");
+                        // }
                     }
                 }
             });
