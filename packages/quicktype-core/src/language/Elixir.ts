@@ -287,7 +287,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
         return this.implicitlyConvertsFromJSON(t) && "bool" !== t.kind;
     }
 
-    private fromDynamic(t: Type, jsonName: string): Sourcelike {
+    private fromDynamic(t: Type, jsonName: string, name: Name): Sourcelike {
         const primitive = ['m["', jsonName, '"]'];
         // const safeAccess = optional ? "&" : "";
         return matchType<Sourcelike>(
@@ -299,17 +299,45 @@ export class ElixirRenderer extends ConvenienceRenderer {
             _doubleType => primitive,
             _stringType => primitive,
             arrayType => {
-                let ans = arrayType.items;
-                if (ans.kind === "array") {
-                    // console.log(ans);
-                }
-                if (this.implicitlyConvertsFromJSON(arrayType)) {
+                let arrayElement = arrayType.items;
+                if (arrayElement.isPrimitive()) {
+                    return primitive;
+                } else if (this.implicitlyConvertsFromJSON(arrayElement)) {
                     // if (arrayType.items.isPrimitive()) {
                     return primitive;
                 } else {
-                    return [":todo"];
+                    if (arrayElement.isNullable) {
+                        return [
+                            "(m",
+                            '["',
+                            jsonName,
+                            '"] && Enum.map(m["',
+                            jsonName,
+                            '"], &decode_',
+                            name,
+                            "/1)) || nil"
+                        ];
+                    } else {
+                        return ['Enum.map(m["', jsonName, '"], &decode_', name, "/1)"];
+                    }
+
                     // return ["Enum.map(", primitive, ", ", "&", this.nameForNamedType(arrayType.items), ".from_map/1)"];
                 }
+                // list = [
+                //     [0, "zero"],
+                //     [1, "one"],
+                //     [2, "two"]
+                // ];
+
+                // mapped = Enum.map(list, fn item_x ->
+                // Enum.map(item_x, fn item_y ->
+                //     # Apply mapping logic to each item here
+                //     item_y
+                // end)
+                // end)
+                // if (ans.kind === "array") {
+                //     // console.log(ans);
+                // }
                 // const testPrim = arrayType.isPrimitive();
                 // const testName = this.nameForNamedType(arrayType);
 
@@ -320,18 +348,21 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 // ];
             },
             classType => [this.nameForNamedType(classType), ".from_map(", primitive, ")"],
-            mapType => [
-                mapType.isPrimitive() ? [primitive] : [":todo"]
-                // : [
-                //       "Map.new(",
-                //       primitive,
-                //       ", fn {key, value} -> {key,",
-                //       this.nameForNamedType(mapType.values),
-                //       ".from_map(value)} end)"
-                //   ]
-            ],
+            mapType => {
+                if (mapType.values.isPrimitive()) {
+                    return [primitive];
+                } else {
+                    return [
+                        'm["',
+                        jsonName,
+                        '"]\n|> Map.new(fn {key, value} -> {key, decode_',
+                        name,
+                        "(value)} end)\n|| nil"
+                    ];
+                }
+            },
             enumType => {
-                return [this.nameForNamedType(enumType), ".deserialize(", primitive, ")"];
+                return [this.nameForNamedType(enumType), ".decode(", primitive, ")"];
             },
             // unionType => {
             //     if (!this._tsFlowOptions.declareUnions || nullableFromUnion(unionType) !== null) {
@@ -346,7 +377,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 // return [];
                 // return [""];
                 if (nullable !== null) {
-                    return this.fromDynamic(nullable, jsonName);
+                    return this.fromDynamic(nullable, jsonName, name);
                 }
                 return [];
                 // const expression = [this.nameForNamedType(unionType), ".from_dynamic!(", e, ")"];
