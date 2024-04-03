@@ -255,12 +255,77 @@ export class ElixirRenderer extends ConvenienceRenderer {
         return `"${inner()}"`;
     }
 
-    private patternMatchClause(): Sourcelike {
-        return [""];
+    private patternMatchClause(t: Type, attributeName: Name): Sourcelike {
+        return matchType<Sourcelike>(
+            t,
+            _anyType => [],
+            _nullType => [],
+            _boolType => ["def decode_", attributeName, "(value) when is_boolean(value), do: value"],
+            _integerType => ["def decode_", attributeName, "(value) when is_integer(value), do: value"],
+            _doubleType => ["def decode_", attributeName, "(value) when is_float(value), do: value"],
+            _stringType => ["def decode_", attributeName, "(value) when is_binary(value), do: value"],
+            arrayType => [],
+            classType => {
+                console.log(t);
+                // def decode_different_things(%{"name" => _} = value), do: DifferentThingClass.from_map(value)
+                // def decode_different_things(%{"stringValue" => _, "dateValue" => _, "differentThings" => _} = value), do: Temp.from_map(value)
+                // this.forEachClassProperty(t, "none", (name, jsonName, p) => {
+                //     if (!p.isOptional) {
+                //         if (requiredAttributes.length === 0) {
+                //             requiredAttributes.push([":", name]);
+                //         } else {
+                //             requiredAttributes.push([", :", name]);
+                //         }
+                //     }
+                // });
+                return [];
+                // this.nameForNamedType(classType), ".to_map(", "struct.", e, ")", optional ? " || nil" : ""]
+            },
+            mapType => [],
+            enumType => {
+                return [];
+                // return [this.nameForNamedType(enumType), ".encode(struct.", e, ")", optional ? " || nil" : ""];
+            },
+            unionType => {
+                return [];
+                // const nullable = nullableFromUnion(unionType);
+                // if (nullable !== null) {
+                //     return ["(", e, " && encode_", e, "(struct.", e, ")) || nil"];
+                // }
+                // return ["encode_", e, "(struct.", e, ")"];
+            }
+        );
     }
 
-    private emitPatternMatch(p: ClassProperty, jsonName: string, name: Name): Sourcelike {
-        return [];
+    private sortAndFilterPatternMatchTypes(types: Type[]): Type[] {
+        return types
+            .filter(type => !(type instanceof ArrayType || type instanceof MapType || type instanceof UnionType))
+            .sort((a, b) => {
+                if (a instanceof ClassType && !(b instanceof ClassType)) {
+                    return -1;
+                } else if (b instanceof ClassType && !(a instanceof ClassType)) {
+                    return 1;
+                } else if (a instanceof EnumType && !(b instanceof EnumType)) {
+                    return -1;
+                } else if (b instanceof EnumType && !(a instanceof EnumType)) {
+                    return 1;
+                } else if (a.isPrimitive() && !b.isPrimitive()) {
+                    return -1;
+                } else if (b.isPrimitive() && !a.isPrimitive()) {
+                    return 1;
+                } else {
+                    return 0;
+                }
+            });
+    }
+
+    private emitPatternMatches(p: ClassProperty, jsonName: string, name: Name, parentName: Name) {
+        let types = p.type.getChildren();
+        let typesToMatch = this.sortAndFilterPatternMatchTypes([...types]);
+        typesToMatch.forEach(type => {
+            this.emitLine(this.patternMatchClause(type, name));
+        });
+        this.emitLine("def decode_", name, '(_), do: {:error, "Unsupported type for ', parentName, ".", name, '"}');
     }
 
     protected implicitlyConvertsFromJSON(t: Type): boolean {
@@ -628,7 +693,9 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 // const expression = this.fromDynamic(p.type, jsonName, name);
                 // this.emitLine(name, ": ", expression, ",");
                 if (p.type.kind === "union") {
-                    this.emitPatternMatch(p, jsonName, name);
+                    this.ensureBlankLine();
+                    this.emitPatternMatches(p, jsonName, name, this.nameForNamedType(c));
+                    this.ensureBlankLine();
                 }
             });
 
