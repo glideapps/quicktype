@@ -10,7 +10,7 @@ import * as keywords from "./ruby/keywords";
 
 const forbiddenForObjectProperties = Array.from(new Set([...keywords.keywords, ...keywords.reservedProperties]));
 
-import { Type, EnumType, ClassType, UnionType, ArrayType, MapType, ClassProperty } from "../Type";
+import { Type, EnumType, ClassType, UnionType, ArrayType, MapType, ClassProperty, PrimitiveType } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
 import {
@@ -255,18 +255,60 @@ export class ElixirRenderer extends ConvenienceRenderer {
         return `"${inner()}"`;
     }
 
-    private patternMatchClause(t: Type, attributeName: Name): Sourcelike {
+    private patternMatchClauseDecode(t: Type, attributeName: Name, suffix: string = ""): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => [],
             _nullType => [],
-            _boolType => ["def decode_", attributeName, "(value) when is_boolean(value), do: value"],
-            _integerType => ["def decode_", attributeName, "(value) when is_integer(value), do: value"],
-            _doubleType => ["def decode_", attributeName, "(value) when is_float(value), do: value"],
-            _stringType => ["def decode_", attributeName, "(value) when is_binary(value), do: value"],
+            _boolType => ["def decode_", attributeName, suffix, "(value) when is_boolean(value), do: value"],
+            _integerType => ["def decode_", attributeName, suffix, "(value) when is_integer(value), do: value"],
+            _doubleType => ["def decode_", attributeName, suffix, "(value) when is_float(value), do: value"],
+            _stringType => ["def decode_", attributeName, suffix, "(value) when is_binary(value), do: value"],
             arrayType => [],
             classType => {
-                console.log(t);
+                // console.log(t);
+                // def decode_different_things(%{"name" => _} = value), do: DifferentThingClass.from_map(value)
+                // def decode_different_things(%{"stringValue" => _, "dateValue" => _, "differentThings" => _} = value), do: Temp.from_map(value)
+                // this.forEachClassProperty(t, "none", (name, jsonName, p) => {
+                //     if (!p.isOptional) {
+                //         if (requiredAttributes.length === 0) {
+                //             requiredAttributes.push([":", name]);
+                //         } else {
+                //             requiredAttributes.push([", :", name]);
+                //         }
+                //     }
+                // });
+                return [];
+                // this.nameForNamedType(classType), ".to_map(", "struct.", e, ")", optional ? " || nil" : ""]
+            },
+            mapType => [],
+            enumType => {
+                return [];
+                // return [this.nameForNamedType(enumType), ".encode(struct.", e, ")", optional ? " || nil" : ""];
+            },
+            unionType => {
+                return [];
+                // const nullable = nullableFromUnion(unionType);
+                // if (nullable !== null) {
+                //     return ["(", e, " && encode_", e, "(struct.", e, ")) || nil"];
+                // }
+                // return ["encode_", e, "(struct.", e, ")"];
+            }
+        );
+    }
+
+    private patternMatchClauseEncode(t: Type, attributeName: Name, suffix: string = ""): Sourcelike {
+        return matchType<Sourcelike>(
+            t,
+            _anyType => [],
+            _nullType => [],
+            _boolType => ["def encode_", attributeName, suffix, "(value) when is_boolean(value), do: value"],
+            _integerType => ["def encode_", attributeName, suffix, "(value) when is_integer(value), do: value"],
+            _doubleType => ["def encode_", attributeName, suffix, "(value) when is_float(value), do: value"],
+            _stringType => ["def encode_", attributeName, suffix, "(value) when is_binary(value), do: value"],
+            arrayType => [],
+            classType => {
+                // console.log(t);
                 // def decode_different_things(%{"name" => _} = value), do: DifferentThingClass.from_map(value)
                 // def decode_different_things(%{"stringValue" => _, "dateValue" => _, "differentThings" => _} = value), do: Temp.from_map(value)
                 // this.forEachClassProperty(t, "none", (name, jsonName, p) => {
@@ -319,13 +361,39 @@ export class ElixirRenderer extends ConvenienceRenderer {
             });
     }
 
-    private emitPatternMatches(p: ClassProperty, jsonName: string, name: Name, parentName: Name) {
-        let types = p.type.getChildren();
-        let typesToMatch = this.sortAndFilterPatternMatchTypes([...types]);
+    private emitPatternMatches(types: Type[], name: Name, parentName: Name, suffix: string = "") {
+        this.ensureBlankLine();
+
+        let typesToMatch = this.sortAndFilterPatternMatchTypes(types);
         typesToMatch.forEach(type => {
-            this.emitLine(this.patternMatchClause(type, name));
+            this.emitLine(this.patternMatchClauseDecode(type, name, suffix));
         });
-        this.emitLine("def decode_", name, '(_), do: {:error, "Unsupported type for ', parentName, ".", name, '"}');
+        this.emitLine(
+            "def decode_",
+            name,
+            '(_), do: {:error, "Unexpected type when decoding ',
+            parentName,
+            ".",
+            name,
+            '"}'
+        );
+
+        this.ensureBlankLine();
+
+        typesToMatch.forEach(type => {
+            this.emitLine(this.patternMatchClauseEncode(type, name, suffix));
+        });
+        this.emitLine(
+            "def encode_",
+            name,
+            '(_), do: {:error, "Unexpected type when encoding ',
+            parentName,
+            ".",
+            name,
+            '"}'
+        );
+
+        this.ensureBlankLine();
     }
 
     protected implicitlyConvertsFromJSON(t: Type): boolean {
@@ -355,6 +423,36 @@ export class ElixirRenderer extends ConvenienceRenderer {
         return this.implicitlyConvertsFromJSON(t) && "bool" !== t.kind;
     }
 
+    private nameOfTransformFunction(
+        t: Type,
+        name: Name | Sourcelike,
+        encode: boolean = false,
+        prefix: string = ""
+    ): Sourcelike {
+        let mode = "decode";
+        if (encode) {
+            mode = "encode";
+        }
+        return matchType<Sourcelike>(
+            t,
+            _anyType => [],
+            _nullType => [],
+            _boolType => [],
+            _integerType => [],
+            _doubleType => [],
+            _stringType => [],
+            _arrayType => [],
+            classType => [this.nameForNamedType(classType), ".from_map"],
+            _mapType => [],
+            enumType => {
+                return [this.nameForNamedType(enumType), `.${mode}`];
+            },
+            _unionType => {
+                return [`${mode}_`, name, prefix];
+            }
+        );
+    }
+
     private fromDynamic(t: Type, jsonName: string, name: Name): Sourcelike {
         const primitive = ['m["', jsonName, '"]'];
         // const safeAccess = optional ? "&" : "";
@@ -368,12 +466,22 @@ export class ElixirRenderer extends ConvenienceRenderer {
             _stringType => primitive,
             arrayType => {
                 let arrayElement = arrayType.items;
-                if (arrayElement.isPrimitive()) {
+                if (arrayElement instanceof ArrayType) {
+                    return primitive;
+                } else if (arrayElement.isPrimitive()) {
                     return primitive;
                     // } else if (this.implicitlyConvertsFromJSON(arrayElement)) {
                     // if (arrayType.items.isPrimitive()) {
                     // return primitive;
                 } else {
+                    if (arrayElement instanceof UnionType) {
+                        let arrayElementTypes = [...arrayElement.getChildren()];
+                        let arrayElementTypesNotPrimitive = arrayElementTypes.filter(
+                            type => !(type instanceof PrimitiveType)
+                        );
+                        if (arrayElementTypesNotPrimitive.length) {
+                        }
+                    }
                     if (arrayElement.isNullable) {
                         return [
                             "(m",
@@ -381,12 +489,18 @@ export class ElixirRenderer extends ConvenienceRenderer {
                             jsonName,
                             '"] && Enum.map(m["',
                             jsonName,
-                            '"], &decode_',
-                            name,
+                            '"], &',
+                            this.nameOfTransformFunction(arrayElement, name, false, "_element"),
                             "/1)) || nil"
                         ];
                     } else {
-                        return ['Enum.map(m["', jsonName, '"], &decode_', name, "/1)"];
+                        return [
+                            'Enum.map(m["',
+                            jsonName,
+                            '"], &',
+                            this.nameOfTransformFunction(arrayElement, name, false, "_element"),
+                            "/1)"
+                        ];
                     }
 
                     // return ["Enum.map(", primitive, ", ", "&", this.nameForNamedType(arrayType.items), ".from_map/1)"];
@@ -417,21 +531,23 @@ export class ElixirRenderer extends ConvenienceRenderer {
             },
             classType => [this.nameForNamedType(classType), ".from_map(", primitive, ")"],
             mapType => {
-                if (mapType.values.isPrimitive()) {
+                let mapValueTypes = [...mapType.values.getChildren()];
+                let mapValueTypesNotPrimitive = mapValueTypes.filter(type => !(type instanceof PrimitiveType));
+                if (mapValueTypesNotPrimitive.length === 0) {
                     return [primitive];
                 } else {
                     // TODO: Handle union enum and class conditionally
                     return [
                         'm["',
                         jsonName,
-                        '"]\n|> Map.new(fn {key, value} -> {key, decode_',
-                        name,
+                        '"]\n|> Map.new(fn {key, value} -> {key, ',
+                        this.nameOfTransformFunction(mapType, name, false, "_value"),
                         "(value)} end)\n|| nil"
                     ];
                 }
             },
             enumType => {
-                return [this.nameForNamedType(enumType), ".decode(", primitive, ")"];
+                return [this.nameOfTransformFunction(enumType, name), "(", primitive, ")"];
             },
             // unionType => {
             //     if (!this._tsFlowOptions.declareUnions || nullableFromUnion(unionType) !== null) {
@@ -471,6 +587,9 @@ export class ElixirRenderer extends ConvenienceRenderer {
             _doubleType => expression,
             _stringType => expression,
             arrayType => {
+                if (arrayType.items instanceof ArrayType) {
+                    return expression;
+                }
                 let arrayElement = arrayType.items;
                 if (arrayElement.isPrimitive()) {
                     return expression;
@@ -478,12 +597,26 @@ export class ElixirRenderer extends ConvenienceRenderer {
                     if (arrayElement.kind === "array") {
                         return expression;
                     } else if (arrayElement.kind === "enum") {
-                        [this.nameForNamedType(arrayElement), ".decode(", expression, ")"];
+                        [this.nameOfTransformFunction(arrayElement, e, true, "_element"), "(", expression, ")"];
                     } else if (arrayElement.kind === "union") {
                         if (arrayElement.isNullable) {
-                            return ["(struct.", e, '"] && Enum.map(struct.', e, ", &encode", e, "/1)) || nil"];
+                            return [
+                                "(struct.",
+                                e,
+                                '"] && Enum.map(struct.',
+                                e,
+                                ", &",
+                                this.nameOfTransformFunction(arrayElement, e, true, "_element"),
+                                "/1)) || nil"
+                            ];
                         } else {
-                            return ["Enum.map(struct.", e, ", &encode_", e, "/1)"];
+                            return [
+                                "Enum.map(struct.",
+                                e,
+                                ", &",
+                                this.nameOfTransformFunction(arrayElement, e, true, "_element"),
+                                "/1)"
+                            ];
                         }
                     }
                     return [expression];
@@ -491,7 +624,9 @@ export class ElixirRenderer extends ConvenienceRenderer {
             },
             classType => [this.nameForNamedType(classType), ".to_map(", "struct.", e, ")", optional ? " || nil" : ""],
             mapType => {
-                if (mapType.isPrimitive()) {
+                let mapValueTypes = [...mapType.values.getChildren()];
+                let mapValueTypesNotPrimitive = mapValueTypes.filter(type => !(type instanceof PrimitiveType));
+                if (mapValueTypesNotPrimitive.length === 0) {
                     return [expression];
                 } else {
                     if (mapType.values.kind === "union") {
@@ -500,6 +635,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                             e,
                             "\n|> Map.new(fn {key, value} -> {key, encode_",
                             e,
+                            "_value",
                             "(value)} end)\n|| nil"
                         ];
                     } else if (mapType.values.kind === "enum") {
@@ -693,9 +829,31 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 // const expression = this.fromDynamic(p.type, jsonName, name);
                 // this.emitLine(name, ": ", expression, ",");
                 if (p.type.kind === "union") {
-                    this.ensureBlankLine();
-                    this.emitPatternMatches(p, jsonName, name, this.nameForNamedType(c));
-                    this.ensureBlankLine();
+                    let unionTypes = [...p.type.getChildren()];
+                    this.emitPatternMatches(unionTypes, name, this.nameForNamedType(c));
+                } else if (p.type.kind === "map") {
+                    let mapType = p.type as MapType;
+                    let mapValueTypes = [...mapType.values.getChildren()];
+                    let mapValueTypesNotPrimitive = mapValueTypes.filter(type => !(type instanceof PrimitiveType));
+                    if (mapValueTypesNotPrimitive.length) {
+                        // this.emitPatternMatches(p, name, this.nameForNamedType(c));
+                        this.emitLine("# TODO: pattern match for map values");
+                    }
+                } else if (p.type.kind === "array") {
+                    let arrayType = p.type as ArrayType;
+                    if (arrayType.items instanceof ArrayType) {
+                        return;
+                    }
+                    if (arrayType.items instanceof ClassType) {
+                        return;
+                    }
+                    let arrayElementTypes = [...arrayType.getChildren()];
+                    let arrayElementTypesNotPrimitive = arrayElementTypes.filter(
+                        type => !(type instanceof PrimitiveType && type instanceof ArrayType)
+                    );
+                    if (arrayElementTypesNotPrimitive.length) {
+                        this.emitPatternMatches(arrayElementTypes, name, this.nameForNamedType(c), "_element");
+                    }
                 }
             });
 
