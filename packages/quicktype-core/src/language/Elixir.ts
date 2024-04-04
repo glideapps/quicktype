@@ -853,8 +853,8 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 }
             });
             // if (attributeNames.length) {
-                this.emitLine(["defstruct [", attributeNames, "]"]);
-                this.ensureBlankLine();
+            this.emitLine(["defstruct [", attributeNames, "]"]);
+            this.ensureBlankLine();
             // }
 
             let typeDefinitionTable: Sourcelike[][] = [[["@type "], ["t :: %__MODULE__{"]]];
@@ -975,31 +975,26 @@ export class ElixirRenderer extends ConvenienceRenderer {
 
     private isValidAtom(str: string): boolean {
         function isLetter(char: string): boolean {
-            return /^[A-Za-z]$/.test(char);
+            return /^[A-Za-z_]$/.test(char);
         }
 
         function isLetterOrDigit(char: string): boolean {
-            return /^[A-Za-z0-9]$/.test(char);
+            return /^[A-Za-z0-9_]$/.test(char);
         }
 
-        if (!str.startsWith(":") || str.length < 2) {
+        if (str.length < 2) {
             return false;
         }
 
-        const firstChar = str[1];
-        if (!isLetter(firstChar) && firstChar !== "_") {
+        const firstChar = str[0];
+        if (!isLetter(firstChar)) {
             return false;
         }
 
-        for (let i = 2; i < str.length; i++) {
+        for (let i = 1; i < str.length; i++) {
             const char = str[i];
 
-            if (
-                !isLetterOrDigit(char) &&
-                char !== "_" &&
-                char !== "@" &&
-                !(i === str.length - 1 && (char === "!" || char === "?"))
-            ) {
+            if (!isLetterOrDigit(char) && char !== "@" && !(i === str.length - 1 && (char === "!" || char === "?"))) {
                 return false;
             }
         }
