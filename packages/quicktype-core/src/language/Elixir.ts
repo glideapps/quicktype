@@ -345,7 +345,15 @@ export class ElixirRenderer extends ConvenienceRenderer {
 
     private sortAndFilterPatternMatchTypes(types: Type[]): Type[] {
         return types
-            .filter(type => !(type instanceof ArrayType || type instanceof MapType || type instanceof UnionType))
+            .filter(
+                type =>
+                    !(
+                        type.kind === "null" ||
+                        type instanceof ArrayType ||
+                        type instanceof MapType ||
+                        type instanceof UnionType
+                    )
+            )
             .sort((a, b) => {
                 if (a instanceof ClassType && !(b instanceof ClassType)) {
                     return -1;
@@ -369,6 +377,10 @@ export class ElixirRenderer extends ConvenienceRenderer {
         this.ensureBlankLine();
 
         let typesToMatch = this.sortAndFilterPatternMatchTypes(types);
+        if (typesToMatch.length < 2) {
+            return;
+        }
+
         typesToMatch.forEach(type => {
             this.emitLine(this.patternMatchClauseDecode(type, name, suffix));
         });
@@ -476,9 +488,6 @@ export class ElixirRenderer extends ConvenienceRenderer {
                     return primitive;
                 } else if (arrayElement.isPrimitive()) {
                     return primitive;
-                    // } else if (this.implicitlyConvertsFromJSON(arrayElement)) {
-                    // if (arrayType.items.isPrimitive()) {
-                    // return primitive;
                 } else {
                     if (arrayElement instanceof UnionType) {
                         let arrayElementTypes = [...arrayElement.getChildren()];
@@ -488,16 +497,16 @@ export class ElixirRenderer extends ConvenienceRenderer {
                         if (arrayElementTypesNotPrimitive.length) {
                         }
                     }
-                    if (arrayElement.isNullable) {
+                    if (optional) {
                         return [
-                            "(m",
+                            "m",
                             '["',
                             jsonName,
                             '"] && Enum.map(m["',
                             jsonName,
                             '"], &',
                             this.nameOfTransformFunction(arrayElement, name, false, "_element"),
-                            "/1)) || nil"
+                            "/1)"
                         ];
                     } else {
                         return [
@@ -559,7 +568,13 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 }
             },
             enumType => {
-                return [this.nameOfTransformFunction(enumType, name), "(", primitive, ")"];
+                return [
+                    optional ? [primitive, " && "] : "",
+                    this.nameOfTransformFunction(enumType, name),
+                    "(",
+                    primitive,
+                    ")"
+                ];
             },
             // unionType => {
             //     if (!this._tsFlowOptions.declareUnions || nullableFromUnion(unionType) !== null) {
@@ -580,6 +595,14 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 // return [];
                 // return [""];
                 if (nullable !== null) {
+                    if (nullable instanceof ClassType) {
+                        return this.fromDynamic(nullable, jsonName, name, true);
+                    }
+
+                    let nullableTypes = [...nullable.getChildren()];
+                    if (nullableTypes.length < 2) {
+                        return this.fromDynamic(nullable, jsonName, name, true);
+                    }
                     return ['m["', jsonName, '"] && decode_', name, '(m["', jsonName, '"])'];
                     // return this.fromDynamic(nullable, jsonName, name);
                 }
@@ -605,10 +628,10 @@ export class ElixirRenderer extends ConvenienceRenderer {
             _doubleType => expression,
             _stringType => expression,
             arrayType => {
-                if (arrayType.items instanceof ArrayType) {
+                let arrayElement = arrayType.items;
+                if (arrayElement instanceof ArrayType) {
                     return expression;
                 }
-                let arrayElement = arrayType.items;
                 if (arrayElement.isPrimitive()) {
                     return expression;
                 } else {
@@ -617,15 +640,15 @@ export class ElixirRenderer extends ConvenienceRenderer {
                     } else if (arrayElement.kind === "enum") {
                         [this.nameOfTransformFunction(arrayElement, e, true, "_element"), "(", expression, ")"];
                     } else if (arrayElement.kind === "union") {
-                        if (arrayElement.isNullable) {
+                        if (optional) {
                             return [
-                                "(struct.",
+                                "struct.",
                                 e,
                                 '"] && Enum.map(struct.',
                                 e,
                                 ", &",
                                 this.nameOfTransformFunction(arrayElement, e, true, "_element"),
-                                "/1)) || nil"
+                                "/1)"
                             ];
                         } else {
                             return [
@@ -637,15 +660,15 @@ export class ElixirRenderer extends ConvenienceRenderer {
                             ];
                         }
                     } else if (arrayElement.kind === "class") {
-                        if (arrayElement.isNullable) {
+                        if (optional) {
                             return [
-                                "(struct.",
+                                "struct.",
                                 e,
-                                '"] && Enum.map(struct.',
+                                " && Enum.map(struct.",
                                 e,
                                 ", &",
                                 this.nameOfTransformFunction(arrayElement, e, true, "_element"),
-                                "/1)) || nil"
+                                "/1)"
                             ];
                         } else {
                             return [
@@ -714,7 +737,13 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 //   ]
             },
             enumType => {
-                return [this.nameForNamedType(enumType), ".encode(struct.", e, ")", optional ? " || nil" : ""];
+                return [
+                    optional ? ["struct.", e, " && "] : "",
+                    this.nameForNamedType(enumType),
+                    ".encode(struct.",
+                    e,
+                    ")"
+                ];
             },
             unionType => {
                 let unionTypes = [...unionType.getChildren()];
@@ -725,7 +754,16 @@ export class ElixirRenderer extends ConvenienceRenderer {
 
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
-                    return ["(struct.", e, " && encode_", e, "(struct.", e, ")) || nil"];
+                    if (nullable instanceof ClassType) {
+                        return this.toDynamic(nullable, e, true);
+                    }
+
+                    let nullableTypes = [...nullable.getChildren()];
+                    if (nullableTypes.length < 2) {
+                        return this.toDynamic(nullable, e, true);
+                    }
+
+                    return ["struct.", e, " && encode_", e, "(struct.", e, ")"];
                 }
                 return ["encode_", e, "(struct.", e, ")"];
             }
@@ -788,7 +826,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
         this.emitLine("end");
     }
 
-    private emitModule2(emit: () => void) {
+    private emitTopLevelModule(emit: () => void) {
         const emitModuleInner = (moduleName: string) => {
             const [firstModule, ...subModules] = moduleName.split("::");
             if (subModules.length > 0) {
@@ -1192,45 +1230,60 @@ end`);
             (u, n) => this.emitUnion(u, n)
         );
 
-        // if (!this._options.justTypes) {
-        //     this.forEachTopLevel(
-        //         "leading-and-interposing",
-        //         (topLevel, name) => {
-        //             const self = modifySource(snakeCase, name);
+        if (!this._options.justTypes) {
+            this.forEachTopLevel(
+                "leading-and-interposing",
+                (topLevel, name) => {
+                    // The json gem defines to_json on maps and primitives, so we only need to supply
+                    // it for arrays.
+                    const needsToJsonDefined = "array" === topLevel.kind;
 
-        //             // The json gem defines to_json on maps and primitives, so we only need to supply
-        //             // it for arrays.
-        //             const needsToJsonDefined = "array" === topLevel.kind;
+                    const moduleDeclaration = () => {
+                        this.emitBlock(["defmodule ", name, " do"], () => {
+                            this.emitBlock("def from_json(json) do", () => {
+                                this.emitLine("json");
+                                this.emitLine("# TODO: decide if this should be ! or not");
+                                this.emitLine("|> Jason.decode!()");
+                                this.emitLine("|> Enum.map(&", name, "Element.from_map/1)");
+                            });
 
-        //             const classDeclaration = () => {
-        //                 this.emitBlock(["class ", name], () => {
-        //                     this.emitBlock(["def self.from_json!(json)"], () => {
-        //                         if (needsToJsonDefined) {
-        //                             this.emitLine(
-        //                                 self,
-        //                                 " = ",
-        //                                 this.fromDynamic(topLevel, "JSON.parse(json, quirks_mode: true)")
-        //                             );
-        //                             this.emitBlock([self, ".define_singleton_method(:to_json) do"], () => {
-        //                                 this.emitLine("JSON.generate(", this.toDynamic(topLevel, "self"), ")");
-        //                             });
-        //                             this.emitLine(self);
-        //                         } else {
-        //                             this.emitLine(
-        //                                 this.fromDynamic(topLevel, "JSON.parse(json, quirks_mode: true)")
-        //                             );
-        //                         }
-        //                     });
-        //                 });
-        //             };
+                            this.ensureBlankLine();
 
-        //             this.emitModule2(() => {
-        //                 classDeclaration();
-        //             });
-        //         },
-        //         t => this.namedTypeToNameForTopLevel(t) === undefined
-        //     );
-        // }
+                            this.emitBlock("def to_json(list) do", () => {
+                                this.emitLine("Enum.map(list, &", name, "Element.to_map/1)");
+                                this.emitLine("# TODO: decide if this should be ! or not");
+                                this.emitLine("|> Jason.encode!()");
+
+                                //                                 this.emitMultiline(`struct
+                                // |> Enum.map(list, &``.from_map/1)
+                                // # TODO: decide if this should be ! or not
+                                // |> Jason.encode!()`);
+                            });
+                            // this.emitBlock(["def self.from_json!(json)"], () => {
+                            //     if (needsToJsonDefined) {
+                            //         this.emitLine(
+                            //             self,
+                            //             " = ",
+                            //             this.fromDynamic(topLevel, "JSON.parse(json, quirks_mode: true)")
+                            //         );
+                            //         this.emitBlock([self, ".define_singleton_method(:to_json) do"], () => {
+                            //             this.emitLine("JSON.generate(", this.toDynamic(topLevel, "self"), ")");
+                            //         });
+                            //         this.emitLine(self);
+                            //     } else {
+                            //         this.emitLine(this.fromDynamic(topLevel, "JSON.parse(json, quirks_mode: true)"));
+                            //     }
+                            // });
+                        });
+                    };
+
+                    this.emitTopLevelModule(() => {
+                        moduleDeclaration();
+                    });
+                },
+                t => this.namedTypeToNameForTopLevel(t) === undefined
+            );
+        }
         // });
     }
 }
