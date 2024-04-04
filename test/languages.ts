@@ -688,7 +688,8 @@ export const SwiftLanguage: Language = {
         "date-time.schema",
         "class-with-additional.schema",
         "class-map-union.schema",
-        "vega-lite.schema"
+        "vega-lite.schema",
+        "top-level-primitive.schema"
     ],
     rendererOptions: { "support-linux": "true" },
     quickTestRendererOptions: [
