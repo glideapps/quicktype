@@ -78,7 +78,7 @@ export function schemaForTypeScriptSources(sourceFileNames: string[]): JSONSchem
     }
     if (topLevelName === "default") {
         const matchingDefaultName = Object.entries(schema?.definitions ?? {}).find(
-            ([name, definition]) => (definition as Record<string, unknown>)["$ref"] === "#/definitions/default"
+            ([_name, definition]) => (definition as Record<string, unknown>)["$ref"] === "#/definitions/default"
         )?.[0];
 
         if (matchingDefaultName) {
