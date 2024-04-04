@@ -1,5 +1,5 @@
 import * as ts from "typescript";
-import { PartialArgs, generateSchema } from "@mark.probst/typescript-json-schema";
+import { PartialArgs, generateSchema } from "typescript-json-schema";
 
 import { defined, JSONSchemaSourceData, messageError } from "quicktype-core";
 
@@ -35,7 +35,24 @@ export function schemaForTypeScriptSources(sourceFileNames: string[]): JSONSchem
 
     const schema = generateSchema(program, "*", settings);
     const uris: string[] = [];
-    let topLevelName: string | undefined = undefined;
+    let topLevelName: string = "";
+
+    // if there is a type that is `export default`, swap the corresponding ref
+    if (schema?.definitions?.default) {
+        const defaultDefinition = schema?.definitions?.default;
+        const matchingDefaultName = Object.entries(schema?.definitions ?? {}).find(
+            ([_name, definition]) => (definition as Record<string, unknown>)["$ref"] === "#/definitions/default"
+        )?.[0];
+
+        if (matchingDefaultName) {
+            topLevelName = matchingDefaultName;
+            (defaultDefinition as Record<string, unknown>).title = topLevelName;
+
+            schema.definitions[matchingDefaultName] = defaultDefinition;
+            schema.definitions.default = { $ref: `#/definitions/${matchingDefaultName}` };
+        }
+    }
+
     if (schema !== null && typeof schema === "object" && typeof schema.definitions === "object") {
         for (const name of Object.getOwnPropertyNames(schema.definitions)) {
             const definition = schema.definitions[name];
@@ -59,31 +76,18 @@ export function schemaForTypeScriptSources(sourceFileNames: string[]): JSONSchem
 
             uris.push(`#/definitions/${name}`);
 
-            if (topLevelName === undefined) {
+            if (!topLevelName) {
                 if (typeof definition.title === "string") {
                     topLevelName = definition.title;
                 } else {
                     topLevelName = name;
                 }
-            } else {
-                topLevelName = "";
             }
         }
     }
     if (uris.length === 0) {
         uris.push("#/definitions/");
     }
-    if (topLevelName === undefined) {
-        topLevelName = "";
-    }
-    if (topLevelName === "default") {
-        const matchingDefaultName = Object.entries(schema?.definitions ?? {}).find(
-            ([_name, definition]) => (definition as Record<string, unknown>)["$ref"] === "#/definitions/default"
-        )?.[0];
 
-        if (matchingDefaultName) {
-            topLevelName = matchingDefaultName;
-        }
-    }
     return { schema: JSON.stringify(schema), name: topLevelName, uris, isConverted: true };
 }
