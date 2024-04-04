@@ -76,5 +76,14 @@ export function schemaForTypeScriptSources(sourceFileNames: string[]): JSONSchem
     if (topLevelName === undefined) {
         topLevelName = "";
     }
+    if (topLevelName === "default") {
+        const matchingDefaultName = Object.entries(schema?.definitions ?? {}).find(
+            ([name, definition]) => (definition as Record<string, unknown>)["$ref"] === "#/definitions/default"
+        )?.[0];
+
+        if (matchingDefaultName) {
+            topLevelName = matchingDefaultName;
+        }
+    }
     return { schema: JSON.stringify(schema), name: topLevelName, uris, isConverted: true };
 }
