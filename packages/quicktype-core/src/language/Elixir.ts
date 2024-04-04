@@ -448,7 +448,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
             _doubleType => [],
             _stringType => [],
             _arrayType => [],
-            classType => [this.nameForNamedType(classType), ".from_map"],
+            classType => [this.nameForNamedType(classType), `.${encode ? "to" : "from"}_map`],
             _mapType => [],
             enumType => {
                 return [this.nameForNamedType(enumType), `.${mode}`];
@@ -459,7 +459,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
         );
     }
 
-    private fromDynamic(t: Type, jsonName: string, name: Name): Sourcelike {
+    private fromDynamic(t: Type, jsonName: string, name: Name, optional = false): Sourcelike {
         const primitive = ['m["', jsonName, '"]'];
         // const safeAccess = optional ? "&" : "";
         return matchType<Sourcelike>(
@@ -535,7 +535,13 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 //         : ["Enum.map(", primitive, ", ", "&", this.nameForNamedType(arrayType), ".from_map/1)"]
                 // ];
             },
-            classType => [this.nameForNamedType(classType), ".from_map(", primitive, ")"],
+            classType => [
+                optional ? [primitive, " && "] : "",
+                this.nameForNamedType(classType),
+                ".from_map(",
+                primitive,
+                ")"
+            ],
             mapType => {
                 let mapValueTypes = [...mapType.values.getChildren()];
                 let mapValueTypesNotPrimitive = mapValueTypes.filter(type => !(type instanceof PrimitiveType));
@@ -564,11 +570,17 @@ export class ElixirRenderer extends ConvenienceRenderer {
             //     }
             // },
             unionType => {
+                let unionTypes = [...unionType.getChildren()];
+                let unionPrimitiveTypes = unionTypes.filter(type => type.isPrimitive());
+                if (unionTypes.length === unionPrimitiveTypes.length) {
+                    return ['m["', jsonName, '"]'];
+                }
+
                 const nullable = nullableFromUnion(unionType);
                 // return [];
                 // return [""];
                 if (nullable !== null) {
-                    return ['(m["', jsonName, '"] && decode_', name, '(m["', jsonName, '"])) || nil'];
+                    return ['m["', jsonName, '"] && decode_', name, '(m["', jsonName, '"])'];
                     // return this.fromDynamic(nullable, jsonName, name);
                 }
                 return ["decode_", name, '(m["', jsonName, '"])'];
@@ -583,7 +595,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
         //     return e;
         // }
 
-        const expression = ["struct.", e, optional ? " || nil" : ""];
+        const expression = ["struct.", e];
         return matchType<Sourcelike>(
             t,
             _anyType => expression,
@@ -624,11 +636,38 @@ export class ElixirRenderer extends ConvenienceRenderer {
                                 "/1)"
                             ];
                         }
+                    } else if (arrayElement.kind === "class") {
+                        if (arrayElement.isNullable) {
+                            return [
+                                "(struct.",
+                                e,
+                                '"] && Enum.map(struct.',
+                                e,
+                                ", &",
+                                this.nameOfTransformFunction(arrayElement, e, true, "_element"),
+                                "/1)) || nil"
+                            ];
+                        } else {
+                            return [
+                                "Enum.map(struct.",
+                                e,
+                                ", &",
+                                this.nameOfTransformFunction(arrayElement, e, true, "_element"),
+                                "/1)"
+                            ];
+                        }
                     }
                     return [expression];
                 }
             },
-            classType => [this.nameForNamedType(classType), ".to_map(", "struct.", e, ")", optional ? " || nil" : ""],
+            classType => [
+                optional ? ["struct.", e, " && "] : "",
+                this.nameForNamedType(classType),
+                ".to_map(",
+                "struct.",
+                e,
+                ")"
+            ],
             mapType => {
                 let mapValueTypes = [...mapType.values.getChildren()];
                 let mapValueTypesNotPrimitive = mapValueTypes.filter(type => !(type instanceof PrimitiveType));
@@ -678,9 +717,15 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 return [this.nameForNamedType(enumType), ".encode(struct.", e, ")", optional ? " || nil" : ""];
             },
             unionType => {
+                let unionTypes = [...unionType.getChildren()];
+                let unionPrimitiveTypes = unionTypes.filter(type => type.isPrimitive());
+                if (unionTypes.length === unionPrimitiveTypes.length) {
+                    return ["struct.", e];
+                }
+
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
-                    return ["(", e, " && encode_", e, "(struct.", e, ")) || nil"];
+                    return ["(struct.", e, " && encode_", e, "(struct.", e, ")) || nil"];
                 }
                 return ["encode_", e, "(struct.", e, ")"];
             }
@@ -807,10 +852,10 @@ export class ElixirRenderer extends ConvenienceRenderer {
                     attributeNames.push([", :", name]);
                 }
             });
-            if (attributeNames.length) {
+            // if (attributeNames.length) {
                 this.emitLine(["defstruct [", attributeNames, "]"]);
                 this.ensureBlankLine();
-            }
+            // }
 
             let typeDefinitionTable: Sourcelike[][] = [[["@type "], ["t :: %__MODULE__{"]]];
             let count = c.getProperties().size;
@@ -836,6 +881,12 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 // this.emitLine(name, ": ", expression, ",");
                 if (p.type.kind === "union") {
                     let unionTypes = [...p.type.getChildren()];
+
+                    let unionPrimitiveTypes = unionTypes.filter(type => type.isPrimitive());
+                    if (unionTypes.length === unionPrimitiveTypes.length) {
+                        return;
+                    }
+
                     this.emitPatternMatches(unionTypes, name, this.nameForNamedType(c));
                 } else if (p.type.kind === "map") {
                     let mapType = p.type as MapType;
@@ -867,14 +918,21 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 }
             });
 
+            let propCount = 0;
+            this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+                propCount++;
+            });
+
+            let isEmpty = propCount ? false : true;
+
             this.ensureBlankLine();
-            this.emitBlock(["def from_map(m) do"], () => {
+            this.emitBlock([`def from_map(${isEmpty ? "_" : ""}m) do`], () => {
                 // this.emitLine("# TODO: Implement from_map");
 
                 this.emitLine("%", moduleName, "{");
                 this.indent(() => {
                     this.forEachClassProperty(c, "none", (name, jsonName, p) => {
-                        const expression = this.fromDynamic(p.type, jsonName, name);
+                        const expression = this.fromDynamic(p.type, jsonName, name, p.isOptional);
                         this.emitLine(name, ": ", expression, ",");
                     });
                 });
@@ -890,7 +948,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
             });
 
             this.ensureBlankLine();
-            this.emitBlock(["def to_map(struct) do"], () => {
+            this.emitBlock([`def to_map(${isEmpty ? "_" : ""}struct) do`], () => {
                 // return;
                 this.emitLine("%{");
                 this.indent(() => {
