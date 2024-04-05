@@ -693,14 +693,26 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 if (mapValueTypesNotPrimitive.length === 0) {
                     return [primitive];
                 } else {
-                    // TODO: Handle union enum and class conditionally
+                    // 'm["',
+                    // jsonName,
+                    if (mapType.values.kind === "union") {
                     return [
                         'm["',
                         jsonName,
                         '"]\n|> Map.new(fn {key, value} -> {key, ',
-                        this.nameOfTransformFunction(mapType, name, false, "_value"),
-                        "(value)} end)\n|| nil"
+                            this.nameOfTransformFunction(mapType.values, jsonName, false),
+                            "_value(value)} end)"
+                        ];
+                    } else if (mapType.values instanceof EnumType || mapType.values instanceof ClassType) {
+                        return [
+                            'm["',
+                            jsonName,
+                            '"]\n|> Map.new(fn {key, value} -> {key, ',
+                            this.nameOfTransformFunction(mapType.values, jsonName, false),
+                            "(value)} end)"
                     ];
+                    }
+                    return [primitive];
                 }
             },
             enumType => {
@@ -839,28 +851,17 @@ export class ElixirRenderer extends ConvenienceRenderer {
                         return [
                             "struct.",
                             e,
-                            "\n|> Map.new(fn {key, value} -> {key, encode_",
-                            e,
-                            "_value",
-                            "(value)} end)\n|| nil"
+                            "\n|> Map.new(fn {key, value} -> {key, ",
+                            this.nameOfTransformFunction(mapType.values, e, true),
+                            "_value(value)} end)"
                         ];
-                    } else if (mapType.values.kind === "enum") {
+                    } else if (mapType.values instanceof EnumType || mapType.values instanceof ClassType) {
                         return [
                             "struct.",
                             e,
                             "\n|> Map.new(fn {key, value} -> {key, ",
-                            this.nameForNamedType(mapType.values),
-                            ".encode",
-                            "(value)} end)\n|| nil"
-                        ];
-                    } else if (mapType.values.kind === "class") {
-                        return [
-                            "struct.",
-                            e,
-                            "\n|> Map.new(fn {key, value} -> {key, ",
-                            this.nameForNamedType(mapType.values),
-                            ".encode",
-                            "(value)} end)\n|| nil"
+                            this.nameOfTransformFunction(mapType.values, e, true),
+                            "(value)} end)"
                         ];
                     }
                     return [expression];
