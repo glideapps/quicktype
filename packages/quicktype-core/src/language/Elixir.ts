@@ -8,8 +8,6 @@ import { Option, BooleanOption, EnumOption, OptionValues, getOptionValues, Strin
 
 import * as keywords from "./ruby/keywords";
 
-const forbiddenForObjectProperties = Array.from(new Set([...keywords.keywords, ...keywords.reservedProperties]));
-
 import { Type, EnumType, ClassType, UnionType, ArrayType, MapType, ClassProperty, PrimitiveType } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
@@ -30,11 +28,124 @@ import {
 import { RenderContext } from "../Renderer";
 import { json } from "stream/consumers";
 
+const forbiddenModuleNames = [
+    "Access",
+    "Agent",
+    "Any",
+    "Application",
+    "ArgumentError",
+    "ArithmeticError",
+    "Atom",
+    "BadArityError",
+    "BadBooleanError",
+    "BadFunctionError",
+    "BadMapError",
+    "BadStructError",
+    "Base",
+    "Behaviour",
+    "Bitwise",
+    "Calendar",
+    "CaseClauseError",
+    "Code",
+    "Collectable",
+    "CondClauseError",
+    "Config",
+    "Date",
+    "DateTime",
+    "Dict",
+    "DynamicSupervisor",
+    "Enum",
+    "ErlangError",
+    "Exception",
+    "File",
+    "Float",
+    "Function",
+    "FunctionClauseError",
+    "GenEvent",
+    "GenServer",
+    "HashDict",
+    "HashSet",
+    "IO",
+    "Inspect",
+    "Integer",
+    "Kernel",
+    "KeyError",
+    "Keyword",
+    "List",
+    "Macro",
+    "Map",
+    "MapSet",
+    "MatchError",
+    "Module",
+    "Node",
+    "OptionParser",
+    "Path",
+    "Port",
+    "Process",
+    "Protocol",
+    "Range",
+    "Record",
+    "Regex",
+    "Registry",
+    "RuntimeError",
+    "Set",
+    "Stream",
+    "String",
+    "StringIO",
+    "Supervisor",
+    "SyntaxError",
+    "System",
+    "SystemLimitError",
+    "Task",
+    "Time",
+    "TokenMissingError",
+    "Tuple",
+    "URI",
+    "UndefinedFunctionError",
+    "UnicodeConversionError",
+    "Version",
+    "WithClauseError"
+];
+const reservedWords = [
+    "def",
+    "defmodule",
+    "use",
+    "import",
+    "alias",
+    "true",
+    "false",
+    "nil",
+    "when",
+    "and",
+    "or",
+    "not",
+    "in",
+    "fn",
+    "do",
+    "end",
+    "catch",
+    "rescue",
+    "after",
+    "else"
+];
+
 function unicodeEscape(codePoint: number): string {
     return "\\u{" + intToHex(codePoint, 0) + "}";
 }
 
+function capitalizeFirstLetter(str: string) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
 const stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
+
+function escapeDoubleQuotes(str: string) {
+    return str.replace(/"/g, '\\"');
+}
+
+function escapeNewLines(str: string) {
+    return str.replace(/\n/g, "\\n");
+}
 
 export enum Strictness {
     Strict = "Strict::",
@@ -131,16 +242,17 @@ export class ElixirRenderer extends ConvenienceRenderer {
         return true;
     }
 
-    // protected canBeForwardDeclared(t: Type): boolean {
-    //     return "class" === t.kind;
-    // }
+    protected canBeForwardDeclared(t: Type): boolean {
+        return "class" === t.kind;
+        // return true;
+    }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
-        return keywords.globals.concat(["Types", "JSON", "Dry", "Constructor", "Self"]);
+        return [...forbiddenModuleNames, ...reservedWords.map(word => capitalizeFirstLetter(word))];
     }
 
     protected forbiddenForObjectProperties(_c: ClassType, _classNamed: Name): ForbiddenWordsInfo {
-        return { names: forbiddenForObjectProperties, includeGlobalForbidden: true };
+        return { names: reservedWords, includeGlobalForbidden: true };
     }
 
     protected makeNamedTypeNamer(): Namer {
