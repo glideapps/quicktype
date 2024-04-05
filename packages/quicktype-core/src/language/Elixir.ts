@@ -286,7 +286,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
             mapType => ["%{String.t() => ", this.elixirType(mapType.values), "}", optional],
             enumType => [this.nameForNamedType(enumType), ".t()", optional],
             unionType => {
-                const children = Array.from(unionType.getChildren()).map(t => this.elixirType(t));
+                const children = [...unionType.getChildren()].map(t => this.elixirType(t));
                 return [
                     children.flatMap((element, index) => (index === children.length - 1 ? element : [element, " | "])),
                     optional
@@ -371,12 +371,21 @@ export class ElixirRenderer extends ConvenienceRenderer {
         return matchType<Sourcelike>(
             t,
             _anyType => [],
-            _nullType => [],
+            _nullType => ["def decode_", attributeName, suffix, "(value) when is_nil(value), do: value"],
             _boolType => ["def decode_", attributeName, suffix, "(value) when is_boolean(value), do: value"],
             _integerType => ["def decode_", attributeName, suffix, "(value) when is_integer(value), do: value"],
-            _doubleType => ["def decode_", attributeName, suffix, "(value) when is_float(value), do: value"],
+            _doubleType => [
+                "def decode_",
+                attributeName,
+                suffix,
+                "(value) when is_float(value), do: value\n",
+                "def decode_",
+                attributeName,
+                suffix,
+                "(value) when is_integer(value), do: value"
+            ],
             _stringType => ["def decode_", attributeName, suffix, "(value) when is_binary(value), do: value"],
-            arrayType => [],
+            _arrayType => ["def decode_", attributeName, suffix, "(value) when is_list(value), do: value"],
             classType => {
                 let requiredAttributeArgs: Sourcelike[] = [];
                 this.forEachClassProperty(classType, "none", (name, jsonName, p) => {
@@ -395,7 +404,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                     ".from_map(value)"
                 ];
             },
-            mapType => [],
+            _mapType => ["def decode_", attributeName, suffix, "(value) when is_map(value), do: value"],
             enumType => {
                 return [];
                 // return [this.nameForNamedType(enumType), ".encode(struct.", e, ")", optional ? " || nil" : ""];
@@ -415,12 +424,21 @@ export class ElixirRenderer extends ConvenienceRenderer {
         return matchType<Sourcelike>(
             t,
             _anyType => [],
-            _nullType => [],
+            _nullType => ["def encode_", attributeName, suffix, "(value) when is_nil(value), do: value"],
             _boolType => ["def encode_", attributeName, suffix, "(value) when is_boolean(value), do: value"],
             _integerType => ["def encode_", attributeName, suffix, "(value) when is_integer(value), do: value"],
-            _doubleType => ["def encode_", attributeName, suffix, "(value) when is_float(value), do: value"],
+            _doubleType => [
+                "def encode_",
+                attributeName,
+                suffix,
+                "(value) when is_float(value), do: value\n",
+                "def encode_",
+                attributeName,
+                suffix,
+                "(value) when is_integer(value), do: value"
+            ],
             _stringType => ["def encode_", attributeName, suffix, "(value) when is_binary(value), do: value"],
-            arrayType => [],
+            _arrayType => ["def encode_", attributeName, suffix, "(value) when is_list(value), do: value"],
             classType => {
                 let requiredAttributeArgs: Sourcelike[] = [];
                 this.forEachClassProperty(classType, "none", (name, jsonName, p) => {
@@ -439,7 +457,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                     ".to_map(value)"
                 ];
             },
-            mapType => [],
+            _mapType => ["def encode_", attributeName, suffix, "(value) when is_map(value), do: value"],
             enumType => {
                 return [];
                 // return [this.nameForNamedType(enumType), ".encode(struct.", e, ")", optional ? " || nil" : ""];
@@ -460,10 +478,10 @@ export class ElixirRenderer extends ConvenienceRenderer {
             .filter(
                 type =>
                     !(
-                        type.kind === "null" ||
-                        type instanceof ArrayType ||
-                        type instanceof MapType ||
-                        type instanceof UnionType
+                        // type.kind === "null" ||
+                        // type instanceof ArrayType ||
+                        // type instanceof MapType ||
+                        (type instanceof UnionType)
                     )
             )
             .sort((a, b) => {
@@ -491,6 +509,10 @@ export class ElixirRenderer extends ConvenienceRenderer {
         let typesToMatch = this.sortAndFilterPatternMatchTypes(types);
         if (typesToMatch.length < 2) {
             return;
+        }
+
+        if (typesToMatch.find(type => type.kind === "double")) {
+            typesToMatch = typesToMatch.filter(type => type.kind !== "integer");
         }
 
         typesToMatch.forEach(type => {
@@ -526,32 +548,32 @@ export class ElixirRenderer extends ConvenienceRenderer {
         this.ensureBlankLine();
     }
 
-    protected implicitlyConvertsFromJSON(t: Type): boolean {
-        if (t instanceof ClassType) {
-            return false;
-        } else if (t instanceof EnumType) {
-            return false;
-        } else if (t instanceof ArrayType) {
-            return this.implicitlyConvertsFromJSON(t.items);
-        } else if (t instanceof MapType) {
-            return this.implicitlyConvertsFromJSON(t.values);
-        } else if (t.isPrimitive()) {
-            return true;
-        } else if (t instanceof UnionType) {
-            const nullable = nullableFromUnion(t);
-            if (nullable !== null) {
-                return this.implicitlyConvertsFromJSON(nullable);
-            } else {
-                return true;
-            }
-        } else {
-            return false;
-        }
-    }
+    // protected implicitlyConvertsFromJSON(t: Type): boolean {
+    //     if (t instanceof ClassType) {
+    //         return false;
+    //     } else if (t instanceof EnumType) {
+    //         return false;
+    //     } else if (t instanceof ArrayType) {
+    //         return this.implicitlyConvertsFromJSON(t.items);
+    //     } else if (t instanceof MapType) {
+    //         return this.implicitlyConvertsFromJSON(t.values);
+    //     } else if (t.isPrimitive()) {
+    //         return true;
+    //     } else if (t instanceof UnionType) {
+    //         const nullable = nullableFromUnion(t);
+    //         if (nullable !== null) {
+    //             return this.implicitlyConvertsFromJSON(nullable);
+    //         } else {
+    //             return true;
+    //         }
+    //     } else {
+    //         return false;
+    //     }
+    // }
 
-    protected implicitlyConvertsToJSON(t: Type): boolean {
-        return this.implicitlyConvertsFromJSON(t) && "bool" !== t.kind;
-    }
+    // protected implicitlyConvertsToJSON(t: Type): boolean {
+    //     return this.implicitlyConvertsFromJSON(t) && "bool" !== t.kind;
+    // }
 
     private nameOfTransformFunction(
         t: Type,
@@ -600,15 +622,17 @@ export class ElixirRenderer extends ConvenienceRenderer {
                     return primitive;
                 } else if (arrayElement.isPrimitive()) {
                     return primitive;
+                } else if (arrayElement instanceof MapType) {
+                    return primitive;
                 } else {
-                    if (arrayElement instanceof UnionType) {
-                        let arrayElementTypes = [...arrayElement.getChildren()];
-                        let arrayElementTypesNotPrimitive = arrayElementTypes.filter(
-                            type => !(type instanceof PrimitiveType)
-                        );
-                        if (arrayElementTypesNotPrimitive.length) {
-                        }
-                    }
+                    // if (arrayElement instanceof UnionType) {
+                    //     let arrayElementTypes = [...arrayElement.getChildren()];
+                    //     let arrayElementTypesNotPrimitive = arrayElementTypes.filter(
+                    //         type => !(type instanceof PrimitiveType)
+                    //     );
+                    //     if (arrayElementTypesNotPrimitive.length) {
+                    //     }
+                    // }
                     if (optional) {
                         return [
                             "m",
@@ -745,6 +769,8 @@ export class ElixirRenderer extends ConvenienceRenderer {
                     return expression;
                 }
                 if (arrayElement.isPrimitive()) {
+                    return expression;
+                } else if (arrayElement instanceof MapType) {
                     return expression;
                 } else {
                     if (arrayElement.kind === "array") {
@@ -939,21 +965,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
     }
 
     private emitTopLevelModule(emit: () => void) {
-        const emitModuleInner = (moduleName: string) => {
-            const [firstModule, ...subModules] = moduleName.split("::");
-            if (subModules.length > 0) {
-                this.emitBlock(["module ", firstModule], () => {
-                    emitModuleInner(subModules.join("::"));
-                });
-            } else {
-                this.emitBlock(["module ", moduleName], emit);
-            }
-        };
-        if (this._options.namespace !== undefined && this._options.namespace !== "") {
-            emitModuleInner(this._options.namespace);
-        } else {
             emit();
-        }
     }
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
@@ -968,7 +980,6 @@ export class ElixirRenderer extends ConvenienceRenderer {
         this.emitBlock(["defmodule ", moduleName, " do"], () => {
             const structDescription = this.descriptionForType(c) ?? [];
             const attributeDescriptions: Sourcelike[][] = [];
-
             this.forEachClassProperty(c, "none", (name, jsonName, p) => {
                 const attributeDescription = this.descriptionForClassProperty(c, jsonName);
                 if (attributeDescription) {
@@ -979,7 +990,6 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 this.emitDescription([...structDescription, ...attributeDescriptions]);
                 this.ensureBlankLine();
             }
-
             const requiredAttributes: Sourcelike[] = [];
             this.forEachClassProperty(c, "none", (name, jsonName, p) => {
                 if (!p.isOptional) {
@@ -993,7 +1003,6 @@ export class ElixirRenderer extends ConvenienceRenderer {
             if (requiredAttributes.length) {
                 this.emitLine(["@enforce_keys [", requiredAttributes, "]"]);
             }
-
             const attributeNames: Sourcelike[] = [];
             this.forEachClassProperty(c, "none", (name, jsonName, p) => {
                 if (attributeNames.length === 0) {
@@ -1006,10 +1015,8 @@ export class ElixirRenderer extends ConvenienceRenderer {
             this.emitLine(["defstruct [", attributeNames, "]"]);
             this.ensureBlankLine();
             // }
-
             let typeDefinitionTable: Sourcelike[][] = [[["@type "], ["t :: %__MODULE__{"]]];
             let count = c.getProperties().size;
-
             this.forEachClassProperty(c, "none", (name, jsonName, p) => {
                 const last = --count === 0;
                 const attributeRow = [
@@ -1018,25 +1025,20 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 ];
                 typeDefinitionTable.push(attributeRow);
             });
-
             typeDefinitionTable.push([[], ["}"]]);
             this.emitTable(typeDefinitionTable);
-
             if (this._options.justTypes) {
                 return;
             }
-
             this.forEachClassProperty(c, "none", (name, jsonName, p) => {
                 // const expression = this.fromDynamic(p.type, jsonName, name);
                 // this.emitLine(name, ": ", expression, ",");
                 if (p.type.kind === "union") {
                     let unionTypes = [...p.type.getChildren()];
-
                     let unionPrimitiveTypes = unionTypes.filter(type => type.isPrimitive());
                     if (unionTypes.length === unionPrimitiveTypes.length) {
                         return;
                     }
-
                     this.emitPatternMatches(unionTypes, name, this.nameForNamedType(c));
                 } else if (p.type.kind === "map") {
                     let mapType = p.type as MapType;
@@ -1067,7 +1069,6 @@ export class ElixirRenderer extends ConvenienceRenderer {
                     }
                 }
             });
-
             let propCount = 0;
             this.forEachClassProperty(c, "none", (name, jsonName, p) => {
                 propCount++;
