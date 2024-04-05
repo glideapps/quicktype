@@ -367,7 +367,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
         return `"${inner()}"`;
     }
 
-    private patternMatchClauseDecode(t: Type, attributeName: Name, suffix: string = ""): Sourcelike {
+    private patternMatchClauseDecode(t: Type, attributeName: Name | string, suffix: string = ""): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => [],
@@ -420,7 +420,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
         );
     }
 
-    private patternMatchClauseEncode(t: Type, attributeName: Name, suffix: string = ""): Sourcelike {
+    private patternMatchClauseEncode(t: Type, attributeName: Name | string, suffix: string = ""): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => [],
@@ -503,7 +503,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
             });
     }
 
-    private emitPatternMatches(types: Type[], name: Name, parentName: Name, suffix: string = "") {
+    private emitPatternMatches(types: Type[], name: Name | string, parentName: Name | string, suffix: string = "") {
         this.ensureBlankLine();
 
         let typesToMatch = this.sortAndFilterPatternMatchTypes(types);
@@ -1350,50 +1350,61 @@ end`);
                 (topLevel, name) => {
                     // The json gem defines to_json on maps and primitives, so we only need to supply
                     // it for arrays.
-                    const needsToJsonDefined = "array" === topLevel.kind;
+                    const isTopLevelArray = "array" === topLevel.kind;
 
-                    const moduleDeclaration = () => {
+                    // const moduleDeclaration = () => {
+
                         this.emitBlock(["defmodule ", name, " do"], () => {
+                        if (isTopLevelArray) {
+                            let arrayElement = (topLevel as ArrayType).items;
+
+                            let isUnion = false;
+
+                            if (arrayElement instanceof UnionType) {
+                                this.emitPatternMatches([...arrayElement.getChildren()], "element", name);
+                                isUnion = true;
+                            }
+
                             this.emitBlock("def from_json(json) do", () => {
                                 this.emitLine("json");
                                 this.emitLine("# TODO: decide if this should be ! or not");
                                 this.emitLine("|> Jason.decode!()");
-                                this.emitLine("|> Enum.map(&", name, "Element.from_map/1)");
+                                this.emitLine(
+                                    "|> Enum.map(&",
+                                    isUnion ? ["decode_element/1)"] : [name, "Element.from_map/1)"]
+                                );
                             });
 
                             this.ensureBlankLine();
 
                             this.emitBlock("def to_json(list) do", () => {
-                                this.emitLine("Enum.map(list, &", name, "Element.to_map/1)");
+                                this.emitLine(
+                                    "Enum.map(list, &",
+                                    isUnion ? ["encode_element/1)"] : [name, "Element.to_map/1)"]
+                                );
                                 this.emitLine("# TODO: decide if this should be ! or not");
                                 this.emitLine("|> Jason.encode!()");
-
-                                //                                 this.emitMultiline(`struct
-                                // |> Enum.map(list, &``.from_map/1)
-                                // # TODO: decide if this should be ! or not
-                                // |> Jason.encode!()`);
                             });
-                            // this.emitBlock(["def self.from_json!(json)"], () => {
-                            //     if (needsToJsonDefined) {
-                            //         this.emitLine(
-                            //             self,
-                            //             " = ",
-                            //             this.fromDynamic(topLevel, "JSON.parse(json, quirks_mode: true)")
-                            //         );
-                            //         this.emitBlock([self, ".define_singleton_method(:to_json) do"], () => {
-                            //             this.emitLine("JSON.generate(", this.toDynamic(topLevel, "self"), ")");
-                            //         });
-                            //         this.emitLine(self);
-                            //     } else {
-                            //         this.emitLine(this.fromDynamic(topLevel, "JSON.parse(json, quirks_mode: true)"));
-                            //     }
-                            // });
-                        });
-                    };
+                        } else {
+                            this.emitBlock("def from_json(json) do", () => {
+                                this.emitLine("# TODO: decide if this should be ! or not");
+                                this.emitLine("Jason.decode!(json)");
+                            });
 
-                    this.emitTopLevelModule(() => {
-                        moduleDeclaration();
+                            this.ensureBlankLine();
+
+                            this.emitBlock("def to_json(data) do", () => {
+                                this.emitLine("# TODO: decide if this should be ! or not");
+                                this.emitLine("Jason.encode!(data)");
+                            });
+                        }
                     });
+
+                    // };
+
+                    // this.emitTopLevelModule(() => {
+                    //     moduleDeclaration();
+                    // });
                 },
                 t => this.namedTypeToNameForTopLevel(t) === undefined
             );
