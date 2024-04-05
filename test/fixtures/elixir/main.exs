@@ -4,8 +4,8 @@ defmodule Main do
 
     file_path
     |> File.read!()
-    |> Jason.decode!(%{objects: :ordered_objects})
-    |> Jason.encode!()
+    |> TopLevel.from_json()
+    |> TopLevel.to_json()
     |> IO.puts()
   end
 end

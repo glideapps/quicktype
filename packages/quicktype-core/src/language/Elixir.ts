@@ -696,10 +696,10 @@ export class ElixirRenderer extends ConvenienceRenderer {
                     // 'm["',
                     // jsonName,
                     if (mapType.values.kind === "union") {
-                    return [
-                        'm["',
-                        jsonName,
-                        '"]\n|> Map.new(fn {key, value} -> {key, ',
+                        return [
+                            'm["',
+                            jsonName,
+                            '"]\n|> Map.new(fn {key, value} -> {key, ',
                             this.nameOfTransformFunction(mapType.values, jsonName, false),
                             "_value(value)} end)"
                         ];
@@ -710,7 +710,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                             '"]\n|> Map.new(fn {key, value} -> {key, ',
                             this.nameOfTransformFunction(mapType.values, jsonName, false),
                             "(value)} end)"
-                    ];
+                        ];
                     }
                     return [primitive];
                 }
@@ -966,7 +966,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
     }
 
     private emitTopLevelModule(emit: () => void) {
-            emit();
+        emit();
     }
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
@@ -1041,13 +1041,6 @@ export class ElixirRenderer extends ConvenienceRenderer {
                         return;
                     }
                     this.emitPatternMatches(unionTypes, name, this.nameForNamedType(c));
-                } else if (p.type.kind === "map") {
-                    let mapType = p.type as MapType;
-                    let mapValueTypes = [...mapType.values.getChildren()];
-                    let mapValueTypesNotPrimitive = mapValueTypes.filter(type => !(type instanceof PrimitiveType));
-                    if (mapValueTypesNotPrimitive.length) {
-                        this.emitLine("# TODO: pattern match for map values");
-                    }
                 } else if (p.type.kind === "array") {
                     let arrayType = p.type as ArrayType;
                     if (arrayType.items instanceof ArrayType) {
@@ -1074,31 +1067,28 @@ export class ElixirRenderer extends ConvenienceRenderer {
             this.forEachClassProperty(c, "none", (name, jsonName, p) => {
                 propCount++;
             });
-
             let isEmpty = propCount ? false : true;
-
             this.ensureBlankLine();
             this.emitBlock([`def from_map(${isEmpty ? "_" : ""}m) do`], () => {
                 // this.emitLine("# TODO: Implement from_map");
-
                 this.emitLine("%", moduleName, "{");
                 this.indent(() => {
                     this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+                        jsonName = escapeDoubleQuotes(jsonName);
+                        jsonName = escapeNewLines(jsonName);
                         const expression = this.fromDynamic(p.type, jsonName, name, p.isOptional);
                         this.emitLine(name, ": ", expression, ",");
                     });
                 });
                 this.emitLine("}");
             });
-
             this.ensureBlankLine();
             this.emitBlock("def from_json(json) do", () => {
                 this.emitMultiline(`json
-# TODO: decide if this should be ! or not
-|> Jason.decode!()
-|> from_map()`);
+        # TODO: decide if this should be ! or not
+        |> Jason.decode!()
+        |> from_map()`);
             });
-
             this.ensureBlankLine();
             this.emitBlock([`def to_map(${isEmpty ? "_" : ""}struct) do`], () => {
                 // return;
@@ -1113,14 +1103,12 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 });
                 this.emitLine("}");
             });
-
             this.ensureBlankLine();
-
             this.emitBlock("def to_json(struct) do", () => {
                 this.emitMultiline(`struct
-|> to_map()
-# TODO: decide if this should be ! or not
-|> Jason.encode!()`);
+        |> to_map()
+        # TODO: decide if this should be ! or not
+        |> Jason.encode!()`);
             });
         });
     }
@@ -1134,7 +1122,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
             return /^[A-Za-z0-9_]$/.test(char);
         }
 
-        if (str.length < 2) {
+        if (str.length === 0) {
             return false;
         }
 
@@ -1354,7 +1342,7 @@ end`);
 
                     // const moduleDeclaration = () => {
 
-                        this.emitBlock(["defmodule ", name, " do"], () => {
+                    this.emitBlock(["defmodule ", name, " do"], () => {
                         if (isTopLevelArray) {
                             let arrayElement = (topLevel as ArrayType).items;
 
