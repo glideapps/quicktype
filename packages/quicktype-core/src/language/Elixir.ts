@@ -1,15 +1,12 @@
 import unicode from "unicode-properties";
 
-import { Sourcelike, modifySource, multiWord } from "../Source";
+import { Sourcelike } from "../Source";
 import { Namer, Name } from "../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
 import { Option, BooleanOption, EnumOption, OptionValues, getOptionValues, StringOption } from "../RendererOptions";
-
-import * as keywords from "./ruby/keywords";
-
-import { Type, EnumType, ClassType, UnionType, ArrayType, MapType, ClassProperty, PrimitiveType } from "../Type";
-import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
+import { Type, EnumType, ClassType, UnionType, ArrayType, MapType, PrimitiveType } from "../Type";
+import { matchType, nullableFromUnion } from "../TypeUtils";
 
 import {
     legalizeCharacters,
@@ -22,11 +19,9 @@ import {
     isPrintable,
     escapeNonPrintableMapper,
     intToHex,
-    snakeCase,
     isLetterOrUnderscore
 } from "../support/Strings";
 import { RenderContext } from "../Renderer";
-import { json } from "stream/consumers";
 
 const forbiddenModuleNames = [
     "Access",
@@ -315,7 +310,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
             _arrayType => ["def decode_", attributeName, suffix, "(value) when is_list(value), do: value"],
             classType => {
                 let requiredAttributeArgs: Sourcelike[] = [];
-                this.forEachClassProperty(classType, "none", (name, jsonName, p) => {
+                this.forEachClassProperty(classType, "none", (_name, jsonName, p) => {
                     if (!p.isOptional) {
                         requiredAttributeArgs.push(['"', jsonName, '" => _,']);
                     }
@@ -358,7 +353,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
             _arrayType => ["def encode_", attributeName, suffix, "(value) when is_list(value), do: value"],
             classType => {
                 let requiredAttributeArgs: Sourcelike[] = [];
-                this.forEachClassProperty(classType, "none", (name, jsonName, p) => {
+                this.forEachClassProperty(classType, "none", (_name, jsonName, p) => {
                     if (!p.isOptional) {
                         requiredAttributeArgs.push(['"', jsonName, '" => _,']);
                     }
@@ -728,10 +723,6 @@ export class ElixirRenderer extends ConvenienceRenderer {
         this.emitLine("end");
     }
 
-    private emitTopLevelModule(emit: () => void) {
-        emit();
-    }
-
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
         this.emitCommentLines(lines, {
             firstLineStart: '@moduledoc """\n',
@@ -744,7 +735,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
         this.emitBlock(["defmodule ", moduleName, " do"], () => {
             const structDescription = this.descriptionForType(c) ?? [];
             const attributeDescriptions: Sourcelike[][] = [];
-            this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+            this.forEachClassProperty(c, "none", (name, jsonName, _p) => {
                 const attributeDescription = this.descriptionForClassProperty(c, jsonName);
                 if (attributeDescription) {
                     attributeDescriptions.push(["- `:", name, "` - ", attributeDescription]);
@@ -755,7 +746,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 this.ensureBlankLine();
             }
             const requiredAttributes: Sourcelike[] = [];
-            this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+            this.forEachClassProperty(c, "none", (name, _jsonName, p) => {
                 if (!p.isOptional) {
                     if (requiredAttributes.length === 0) {
                         requiredAttributes.push([":", name]);
@@ -768,7 +759,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 this.emitLine(["@enforce_keys [", requiredAttributes, "]"]);
             }
             const attributeNames: Sourcelike[] = [];
-            this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+            this.forEachClassProperty(c, "none", (name, _jsonName, _p) => {
                 if (attributeNames.length === 0) {
                     attributeNames.push([":", name]);
                 } else {
@@ -781,7 +772,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
 
             let typeDefinitionTable: Sourcelike[][] = [[["@type "], ["t :: %__MODULE__{"]]];
             let count = c.getProperties().size;
-            this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+            this.forEachClassProperty(c, "none", (name, _jsonName, p) => {
                 const last = --count === 0;
                 const attributeRow = [
                     [],
@@ -794,7 +785,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
             if (this._options.justTypes) {
                 return;
             }
-            this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+            this.forEachClassProperty(c, "none", (name, _jsonName, p) => {
                 if (p.type.kind === "union") {
                     let unionTypes = [...p.type.getChildren()];
                     let unionPrimitiveTypes = unionTypes.filter(type => type.isPrimitive());
@@ -817,7 +808,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 }
             });
             let propCount = 0;
-            this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+            this.forEachClassProperty(c, "none", (_name, _jsonName, _p) => {
                 propCount++;
             });
             let isEmpty = propCount ? false : true;
@@ -896,7 +887,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
         this.emitBlock(["defmodule ", enumName, " do"], () => {
             this.emitLine("@valid_enum_members [");
             this.indent(() => {
-                this.forEachEnumCase(e, "none", (name, json) => {
+                this.forEachEnumCase(e, "none", (_name, json) => {
                     if (this.isValidAtom(json)) {
                         this.emitLine(":", json, ",");
                     } else {
@@ -930,7 +921,7 @@ end`);
         });
     }
 
-    private emitUnion(u: UnionType, unionName: Name) {
+    private emitUnion(_u: UnionType, _unionName: Name) {
         return;
     }
 
