@@ -1,5 +1,5 @@
 import * as ts from "typescript";
-import { PartialArgs, generateSchema } from "typescript-json-schema";
+import { PartialArgs, generateSchema } from "@mark.probst/typescript-json-schema";
 
 import { defined, JSONSchemaSourceData, messageError } from "quicktype-core";
 
