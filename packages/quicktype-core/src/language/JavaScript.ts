@@ -27,7 +27,7 @@ import { panic } from "../support/Support";
 import { Sourcelike, modifySource } from "../Source";
 import { Namer, Name, funPrefixNamer } from "../Naming";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { type LanguageConfig, TargetLanguage } from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import { StringTypeMapping } from "../TypeBuilder";
 import { BooleanOption, Option, OptionValues, getOptionValues, EnumOption } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
@@ -65,10 +65,10 @@ export type JavaScriptTypeAnnotations = {
     never: string;
 };
 
-export class JavaScriptTargetLanguage extends TargetLanguage implements LanguageConfig {
-    readonly displayName = "JavaScript" as const;
-    readonly names = ["javascript", "js", "jsx"] as const;
-    readonly extension = "js" as const;
+export class JavaScriptTargetLanguage extends TargetLanguage {
+    constructor(displayName = "JavaScript", names: string[] = ["javascript", "js", "jsx"], extension = "js") {
+        super(displayName, names, extension);
+    }
 
     protected getOptions(): Option<any>[] {
         return [

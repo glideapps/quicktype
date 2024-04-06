@@ -13,16 +13,12 @@ import { type Comment } from "./support/Comments";
 
 export type MultiFileRenderResult = ReadonlyMap<string, SerializedRenderResult>;
 
-export interface LanguageConfig {
-    readonly displayName: string;
-    readonly names: readonly string[];
-    readonly extension: string;
-}
-
-export abstract class TargetLanguage implements LanguageConfig {
-    abstract readonly displayName: string;
-    abstract readonly names: readonly string[];
-    abstract readonly extension: string;
+export abstract class TargetLanguage {
+    constructor(
+        readonly displayName: string,
+        readonly names: string[],
+        readonly extension: string
+    ) {}
 
     protected abstract getOptions(): Option<any>[];
 
@@ -40,7 +36,7 @@ export abstract class TargetLanguage implements LanguageConfig {
         return { actual, display };
     }
 
-    get name() {
+    get name(): string {
         return defined(this.names[0]);
     }
 

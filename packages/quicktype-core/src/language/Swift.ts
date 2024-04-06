@@ -1,7 +1,7 @@
 import { arrayIntercalate } from "collection-utils";
 import { assert, defined } from "../support/Support";
 
-import { type LanguageConfig, TargetLanguage } from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import {
     Type,
     ClassType,
@@ -130,10 +130,10 @@ export interface SwiftProperty {
     position: ForEachPosition;
 }
 
-export class SwiftTargetLanguage extends TargetLanguage implements LanguageConfig {
-    readonly displayName = "Swift" as const;
-    readonly names = ["swift", "swift4"] as const;
-    readonly extension = "swift" as const;
+export class SwiftTargetLanguage extends TargetLanguage {
+    constructor() {
+        super("Swift", ["swift", "swift4"], "swift");
+    }
 
     protected getOptions(): Option<any>[] {
         return [

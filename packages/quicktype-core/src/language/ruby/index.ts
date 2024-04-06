@@ -3,8 +3,12 @@ import unicode from "unicode-properties";
 import { Sourcelike, modifySource } from "../../Source";
 import { Namer, Name } from "../../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../../ConvenienceRenderer";
-import { type LanguageConfig, TargetLanguage } from "../../TargetLanguage";
+import { TargetLanguage } from "../../TargetLanguage";
 import { Option, BooleanOption, EnumOption, OptionValues, getOptionValues, StringOption } from "../../RendererOptions";
+
+import * as keywords from "./keywords";
+
+const forbiddenForObjectProperties = Array.from(new Set([...keywords.keywords, ...keywords.reservedProperties]));
 
 import { Type, EnumType, ClassType, UnionType, ArrayType, MapType, ClassProperty } from "../../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
@@ -24,10 +28,6 @@ import {
     isLetterOrUnderscore
 } from "../../support/Strings";
 import { RenderContext } from "../../Renderer";
-
-import * as keywords from "./keywords";
-
-const forbiddenForObjectProperties = Array.from(new Set([...keywords.keywords, ...keywords.reservedProperties]));
 
 function unicodeEscape(codePoint: number): string {
     return "\\u{" + intToHex(codePoint, 0) + "}";
@@ -51,10 +51,10 @@ export const rubyOptions = {
     namespace: new StringOption("namespace", "Specify a wrapping Namespace", "NAME", "", "secondary")
 };
 
-export class RubyTargetLanguage extends TargetLanguage implements LanguageConfig {
-    readonly displayName = "Ruby" as const;
-    readonly names = ["ruby"] as const;
-    readonly extension = "rb" as const;
+export class RubyTargetLanguage extends TargetLanguage {
+    constructor() {
+        super("Ruby", ["ruby"], "rb");
+    }
 
     protected getOptions(): Option<any>[] {
         return [rubyOptions.justTypes, rubyOptions.strictness, rubyOptions.namespace];

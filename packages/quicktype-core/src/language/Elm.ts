@@ -1,6 +1,6 @@
 import { mapContains, arrayIntercalate } from "collection-utils";
 
-import { type LanguageConfig, TargetLanguage } from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import { EnumOption, StringOption, BooleanOption, Option, getOptionValues, OptionValues } from "../RendererOptions";
 import { Type, ClassType, UnionType, EnumType, ClassProperty } from "../Type";
 import { matchType, nullableFromUnion } from "../TypeUtils";
@@ -34,10 +34,10 @@ export const elmOptions = {
     moduleName: new StringOption("module", "Generated module name", "NAME", "QuickType")
 };
 
-export class ElmTargetLanguage extends TargetLanguage implements LanguageConfig {
-    readonly displayName = "Elm" as const;
-    readonly names = ["elm"] as const;
-    readonly extension = "elm" as const;
+export class ElmTargetLanguage extends TargetLanguage {
+    constructor() {
+        super("Elm", ["elm"], "elm");
+    }
 
     protected getOptions(): Option<any>[] {
         return [elmOptions.justTypes, elmOptions.moduleName, elmOptions.useList];

@@ -20,7 +20,7 @@ import {
     utf16LegalizeCharacters
 } from "../support/Strings";
 import { defined } from "../support/Support";
-import { type LanguageConfig, TargetLanguage } from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import { ClassProperty, ClassType, EnumType, Type, UnionType } from "../Type";
 import { directlyReachableSingleNamedType, matchType, nullableFromUnion } from "../TypeUtils";
 import { StringTypeMapping, TransformedStringTypeKind, PrimitiveStringTypeKind } from "..";
@@ -34,10 +34,10 @@ export const phpOptions = {
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal)
 };
 
-export class PhpTargetLanguage extends TargetLanguage implements LanguageConfig {
-    readonly displayName = "PHP" as const;
-    readonly names = ["php"] as const;
-    readonly extension = "php" as const;
+export class PhpTargetLanguage extends TargetLanguage {
+    constructor() {
+        super("PHP", ["php"], "php");
+    }
 
     protected getOptions(): Option<any>[] {
         return _.values(phpOptions);

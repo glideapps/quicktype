@@ -6,7 +6,7 @@ import { Name, Namer, funPrefixNamer } from "../Naming";
 import { RenderContext } from "../Renderer";
 import { BooleanOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
 import { Sourcelike } from "../Source";
-import { type LanguageConfig, TargetLanguage } from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import {
     ArrayType,
     ClassProperty,
@@ -37,10 +37,14 @@ export const typeScriptZodOptions = {
     justSchema: new BooleanOption("just-schema", "Schema only", false)
 };
 
-export class TypeScriptZodTargetLanguage extends TargetLanguage implements LanguageConfig {
-    readonly displayName = "TypeScript Zod" as const;
-    readonly names = ["typescript-zod"] as const;
-    readonly extension = "ts" as const;
+export class TypeScriptZodTargetLanguage extends TargetLanguage {
+    constructor(
+        displayName: string = "TypeScript Zod",
+        names: string[] = ["typescript-zod"],
+        extension: string = "ts"
+    ) {
+        super(displayName, names, extension);
+    }
 
     protected getOptions(): Option<any>[] {
         return [];

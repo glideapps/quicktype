@@ -21,7 +21,7 @@ import {
     utf16LegalizeCharacters
 } from "../support/Strings";
 import { assert, assertNever, defined, panic } from "../support/Support";
-import { type LanguageConfig, TargetLanguage } from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import { ArrayType, ClassProperty, ClassType, EnumType, MapType, Type, TypeKind, UnionType } from "../Type";
 import { directlyReachableSingleNamedType, matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 import { StringTypeMapping, TransformedStringTypeKind, PrimitiveStringTypeKind } from "..";
@@ -53,10 +53,10 @@ export const javaOptions = {
     lombokCopyAnnotations: new BooleanOption("lombok-copy-annotations", "Copy accessor annotations", true, "secondary")
 };
 
-export class JavaTargetLanguage extends TargetLanguage implements LanguageConfig {
-    readonly displayName = "Java" as const;
-    readonly names = ["java"] as const;
-    readonly extension = "java" as const;
+export class JavaTargetLanguage extends TargetLanguage {
+    constructor() {
+        super("Java", ["java"], "java");
+    }
 
     protected getOptions(): Option<any>[] {
         return [

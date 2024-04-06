@@ -15,7 +15,7 @@ import {
     splitIntoWords
 } from "../support/Strings";
 import { assertNever } from "../support/Support";
-import { type LanguageConfig, TargetLanguage } from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import { ArrayType, ClassProperty, ClassType, EnumType, MapType, ObjectType, Type, UnionType } from "../Type";
 import { matchCompoundType, matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 import { RenderContext } from "../Renderer";
@@ -205,10 +205,10 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
             delimiter === "curly"
                 ? ["{", "}"]
                 : delimiter === "paren"
-                ? ["(", ")"]
-                : delimiter === "none"
-                ? ["", ""]
-                : ["{", "})"];
+                  ? ["(", ")"]
+                  : delimiter === "none"
+                    ? ["", ""]
+                    : ["{", "})"];
         this.emitLine(line, " ", open);
         this.indent(f);
         this.emitLine(close);
@@ -510,10 +510,10 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
     }
 }
 
-export class SmithyTargetLanguage extends TargetLanguage implements LanguageConfig {
-    readonly displayName = "Smithy" as const;
-    readonly names = ["Smithy"] as const;
-    readonly extension = "smithy" as const;
+export class SmithyTargetLanguage extends TargetLanguage {
+    constructor() {
+        super("Smithy", ["Smithy"], "smithy");
+    }
 
     protected getOptions(): Option<any>[] {
         return [SmithyOptions.framework, SmithyOptions.packageName];

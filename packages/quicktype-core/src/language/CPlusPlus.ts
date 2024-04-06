@@ -8,7 +8,7 @@ import {
     withDefault
 } from "collection-utils";
 
-import { type LanguageConfig, TargetLanguage } from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import { Type, TypeKind, ClassType, ClassProperty, ArrayType, MapType, EnumType, UnionType } from "../Type";
 import { nullableFromUnion, matchType, removeNullFromUnion, isNamedType, directlyReachableTypes } from "../TypeUtils";
 import { NameStyle, Name, Namer, funPrefixNamer, DependencyName } from "../Naming";
@@ -118,10 +118,10 @@ export const cPlusPlusOptions = {
     hideNullOptional: new BooleanOption("hide-null-optional", "Hide null value for optional field", false)
 };
 
-export class CPlusPlusTargetLanguage extends TargetLanguage implements LanguageConfig {
-    readonly displayName = "C++" as const;
-    readonly names = ["c++", "cpp", "cplusplus"] as const;
-    readonly extension = "cpp" as const;
+export class CPlusPlusTargetLanguage extends TargetLanguage {
+    constructor(displayName = "C++", names: string[] = ["c++", "cpp", "cplusplus"], extension = "cpp") {
+        super(displayName, names, extension);
+    }
 
     protected getOptions(): Option<any>[] {
         return [

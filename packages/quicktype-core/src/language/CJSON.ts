@@ -13,7 +13,7 @@
  * To print json string from json data use the following: char * string = cJSON_Print<type>(<data>);
  * To delete json data use the following: cJSON_Delete<type>(<data>);
  *
- * TODO list for future enhancements:
+ * TODO list for futur enhancements:
  * - Management of Class, Union and TopLevel should be mutualized to reduce code size and to permit Union and TopLevel having recursive Array/Map
  * - Types check should be added to verify unwanted inputs (for example a Number passed while a String is expected, etc)
  * - Constraints should be implemented (verification of Enum values, min/max values for Numbers and min/max length for Strings, regex)
@@ -22,7 +22,7 @@
  */
 
 /* Imports */
-import { type LanguageConfig, TargetLanguage } from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import { Type, TypeKind, ClassType, ArrayType, MapType, EnumType, UnionType } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 import { NameStyle, Name, Namer, funPrefixNamer } from "../Naming";
@@ -128,10 +128,16 @@ export const cJSONOptions = {
 };
 
 /* cJSON generator target language */
-export class CJSONTargetLanguage extends TargetLanguage implements LanguageConfig {
-    readonly displayName = "C (cJSON)" as const;
-    readonly names = ["cjson", "cJSON"] as const;
-    readonly extension = "h" as const;
+export class CJSONTargetLanguage extends TargetLanguage {
+    /**
+     * Constructor
+     * @param displayName: display name
+     * @params names: names
+     * @param extension: extension of files
+     */
+    constructor(displayName = "C (cJSON)", names: string[] = ["cjson", "cJSON"], extension = "h") {
+        super(displayName, names, extension);
+    }
 
     /**
      * Return cJSON generator options

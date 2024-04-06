@@ -25,7 +25,7 @@ import {
 import { defined, assert, panic, assertNever } from "../support/Support";
 import { Name, DependencyName, Namer, funPrefixNamer, SimpleName } from "../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo, inferredNameOrder } from "../ConvenienceRenderer";
-import { type LanguageConfig, TargetLanguage } from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import { StringOption, EnumOption, Option, BooleanOption, OptionValues, getOptionValues } from "../RendererOptions";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { StringTypeMapping } from "../TypeBuilder";
@@ -194,10 +194,10 @@ export const cSharpOptions = {
     keepPropertyName: new BooleanOption("keep-property-name", "Keep original field name generate", false)
 };
 
-export class CSharpTargetLanguage extends TargetLanguage implements LanguageConfig {
-    readonly displayName = "C#" as const;
-    readonly names = ["cs", "csharp"] as const;
-    readonly extension = "cs" as const;
+export class CSharpTargetLanguage extends TargetLanguage {
+    constructor() {
+        super("C#", ["cs", "csharp"], "cs");
+    }
 
     protected getOptions(): Option<any>[] {
         return [

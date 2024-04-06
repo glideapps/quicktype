@@ -16,7 +16,7 @@ import { assert, defined } from "../support/Support";
 import { StringOption, BooleanOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { type LanguageConfig, TargetLanguage } from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { RenderContext } from "../Renderer";
 import { StringTypeMapping, TransformedStringTypeKind, PrimitiveStringTypeKind } from "..";
@@ -34,10 +34,10 @@ export const goOptions = {
     )
 };
 
-export class GoTargetLanguage extends TargetLanguage implements LanguageConfig {
-    readonly displayName = "Go" as const;
-    readonly names = ["go", "golang"] as const;
-    readonly extension = "go" as const;
+export class GoTargetLanguage extends TargetLanguage {
+    constructor() {
+        super("Go", ["go", "golang"], "go");
+    }
 
     protected getOptions(): Option<any>[] {
         return [

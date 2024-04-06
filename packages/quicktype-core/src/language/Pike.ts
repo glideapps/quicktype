@@ -3,7 +3,7 @@ import { Name, Namer, funPrefixNamer } from "../Naming";
 import { Option } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
 import { MultiWord, Sourcelike, multiWord, parenIfNeeded, singleWord } from "../Source";
-import { type LanguageConfig, TargetLanguage } from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import { Type, ClassType, EnumType, UnionType, ArrayType, MapType, PrimitiveType } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 import { legalizeCharacters, isLetterOrUnderscoreOrDigit, stringEscape, makeNameStyle } from "../support/Strings";
@@ -70,10 +70,10 @@ const enumNamingFunction = funPrefixNamer("enumNamer", makeNameStyle("upper-unde
 const namingFunction = funPrefixNamer("genericNamer", makeNameStyle("underscore", legalizeName));
 const namedTypeNamingFunction = funPrefixNamer("typeNamer", makeNameStyle("pascal", legalizeName));
 
-export class PikeTargetLanguage extends TargetLanguage implements LanguageConfig {
-    readonly displayName = "Pike" as const;
-    readonly names = ["pike", "pikelang"] as const;
-    readonly extension = "pmod" as const;
+export class PikeTargetLanguage extends TargetLanguage {
+    constructor() {
+        super("Pike", ["pike", "pikelang"], "pmod");
+    }
     protected getOptions(): Option<any>[] {
         return [];
     }

@@ -1,4 +1,4 @@
-import { type LanguageConfig, TargetLanguage } from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import { getOptionValues, Option, OptionValues, EnumOption } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
@@ -39,10 +39,10 @@ export const javaScriptPropTypesOptions = {
     )
 };
 
-export class JavaScriptPropTypesTargetLanguage extends TargetLanguage implements LanguageConfig {
-    readonly displayName = "JavaScript PropTypes" as const;
-    readonly names = ["javascript-prop-types"] as const;
-    readonly extension = "js" as const;
+export class JavaScriptPropTypesTargetLanguage extends TargetLanguage {
+    constructor(displayName = "JavaScript PropTypes", names: string[] = ["javascript-prop-types"], extension = "js") {
+        super(displayName, names, extension);
+    }
 
     protected getOptions(): Option<any>[] {
         return [javaScriptPropTypesOptions.acronymStyle, javaScriptPropTypesOptions.converters];

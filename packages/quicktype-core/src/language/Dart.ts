@@ -31,7 +31,7 @@ import { StringTypeMapping } from "../TypeBuilder";
 
 import { DependencyName, funPrefixNamer, Name, Namer } from "../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { type LanguageConfig, TargetLanguage } from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import { BooleanOption, getOptionValues, Option, OptionValues, StringOption } from "../RendererOptions";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { defined } from "../support/Support";
@@ -61,10 +61,10 @@ export const dartOptions = {
     partName: new StringOption("part-name", "Use this name in `part` directive", "NAME", "", "secondary")
 };
 
-export class DartTargetLanguage extends TargetLanguage implements LanguageConfig {
-    readonly displayName = "Dart" as const;
-    readonly names = ["dart"] as const;
-    readonly extension = "dart" as const;
+export class DartTargetLanguage extends TargetLanguage {
+    constructor() {
+        super("Dart", ["dart"], "dart");
+    }
 
     protected getOptions(): Option<any>[] {
         return [
@@ -200,8 +200,8 @@ function dartNameStyle(startWithUpper: boolean, upperUnderscore: boolean, origin
     const firstWordStyle = upperUnderscore
         ? allUpperWordStyle
         : startWithUpper
-        ? firstUpperWordStyle
-        : allLowerWordStyle;
+          ? firstUpperWordStyle
+          : allLowerWordStyle;
     const restWordStyle = upperUnderscore ? allUpperWordStyle : firstUpperWordStyle;
     return combineWords(
         words,
