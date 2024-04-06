@@ -4,7 +4,7 @@ import { Sourcelike } from "../Source";
 import { Namer, Name } from "../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
-import { Option, BooleanOption, EnumOption, OptionValues, getOptionValues, StringOption } from "../RendererOptions";
+import { Option, BooleanOption, OptionValues, getOptionValues, StringOption } from "../RendererOptions";
 import { Type, EnumType, ClassType, UnionType, ArrayType, MapType, PrimitiveType } from "../Type";
 import { matchType, nullableFromUnion } from "../TypeUtils";
 
@@ -142,20 +142,9 @@ function escapeNewLines(str: string) {
     return str.replace(/\n/g, "\\n");
 }
 
-export enum Strictness {
-    Strict = "Strict::",
-    Coercible = "Coercible::",
-    None = "Types::"
-}
-
 export const elixirOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
-    strictness: new EnumOption("strictness", "Type strictness", [
-        ["strict", Strictness.Strict],
-        ["coercible", Strictness.Coercible],
-        ["none", Strictness.None]
-    ]),
-    namespace: new StringOption("namespace", "Specify a wrapping Namespace", "NAME", "", "secondary")
+    namespace: new StringOption("namespace", "Specify a module namespace", "NAME", "")
 };
 
 export class ElixirTargetLanguage extends TargetLanguage {
@@ -164,7 +153,7 @@ export class ElixirTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [elixirOptions.justTypes, elixirOptions.strictness, elixirOptions.namespace];
+        return [elixirOptions.justTypes, elixirOptions.namespace];
     }
 
     get supportsOptionalClassProperties(): boolean {
@@ -265,6 +254,22 @@ export class ElixirRenderer extends ConvenienceRenderer {
         return new Namer("enum-cases", n => simpleNameStyle(n, true), []);
     }
 
+    private nameForNamedTypeWithNamespace(t: Type): Sourcelike {
+        if (this._options.namespace) {
+            return [this._options.namespace, ".", this.nameForNamedType(t)];
+        } else {
+            return [this.nameForNamedType(t)];
+        }
+    }
+
+    private nameWithNamespace(n: Name): Sourcelike {
+        if (this._options.namespace) {
+            return [this._options.namespace, ".", n];
+        } else {
+            return [n];
+        }
+    }
+
     private elixirType(t: Type, isOptional = false): Sourcelike {
         const optional = isOptional ? " | nil" : "";
         return matchType<Sourcelike>(
@@ -276,9 +281,9 @@ export class ElixirRenderer extends ConvenienceRenderer {
             _doubleType => ["float()", optional],
             _stringType => ["String.t()", optional],
             arrayType => ["[", this.elixirType(arrayType.items), "]", optional],
-            classType => [this.nameForNamedType(classType), ".t()", optional],
+            classType => [this.nameForNamedTypeWithNamespace(classType), ".t()", optional],
             mapType => ["%{String.t() => ", this.elixirType(mapType.values), "}", optional],
-            enumType => [this.nameForNamedType(enumType), ".t()", optional],
+            enumType => [this.nameForNamedTypeWithNamespace(enumType), ".t()", optional],
             unionType => {
                 const children = [...unionType.getChildren()].map(t => this.elixirType(t));
                 return [
@@ -289,7 +294,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
         );
     }
 
-    private patternMatchClauseDecode(t: Type, attributeName: Name | string, suffix: string = ""): Sourcelike {
+    private patternMatchClauseDecode(t: Type, attributeName: Sourcelike, suffix: string = ""): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => [],
@@ -322,7 +327,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                     "(%{",
                     requiredAttributeArgs,
                     "} = value), do: ",
-                    this.nameForNamedType(classType),
+                    this.nameForNamedTypeWithNamespace(classType),
                     ".from_map(value)"
                 ];
             },
@@ -332,7 +337,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
         );
     }
 
-    private patternMatchClauseEncode(t: Type, attributeName: Name | string, suffix: string = ""): Sourcelike {
+    private patternMatchClauseEncode(t: Type, attributeName: Sourcelike, suffix: string = ""): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => [],
@@ -363,9 +368,9 @@ export class ElixirRenderer extends ConvenienceRenderer {
                     attributeName,
                     suffix,
                     "(%",
-                    this.nameForNamedType(classType),
+                    this.nameForNamedTypeWithNamespace(classType),
                     "{} = value), do: ",
-                    this.nameForNamedType(classType),
+                    this.nameForNamedTypeWithNamespace(classType),
                     ".to_map(value)"
                 ];
             },
@@ -397,7 +402,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
             });
     }
 
-    private emitPatternMatches(types: Type[], name: Name | string, parentName: Name | string, suffix: string = "") {
+    private emitPatternMatches(types: Type[], name: Sourcelike, parentName: Sourcelike, suffix: string = "") {
         this.ensureBlankLine();
 
         let typesToMatch = this.sortAndFilterPatternMatchTypes(types);
@@ -461,10 +466,10 @@ export class ElixirRenderer extends ConvenienceRenderer {
             _doubleType => [],
             _stringType => [],
             _arrayType => [],
-            classType => [this.nameForNamedType(classType), `.${encode ? "to" : "from"}_map`],
+            classType => [this.nameForNamedTypeWithNamespace(classType), `.${encode ? "to" : "from"}_map`],
             _mapType => [],
             enumType => {
-                return [this.nameForNamedType(enumType), `.${mode}`];
+                return [this.nameForNamedTypeWithNamespace(enumType), `.${mode}`];
             },
             _unionType => {
                 return [`${mode}_`, name, prefix];
@@ -516,7 +521,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
             },
             classType => [
                 optional ? [primitive, " && "] : "",
-                this.nameForNamedType(classType),
+                this.nameForNamedTypeWithNamespace(classType),
                 ".from_map(",
                 primitive,
                 ")"
@@ -651,7 +656,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
             },
             classType => [
                 optional ? ["struct.", e, " && "] : "",
-                this.nameForNamedType(classType),
+                this.nameForNamedTypeWithNamespace(classType),
                 ".to_map(",
                 "struct.",
                 e,
@@ -686,7 +691,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
             enumType => {
                 return [
                     optional ? ["struct.", e, " && "] : "",
-                    this.nameForNamedType(enumType),
+                    this.nameForNamedTypeWithNamespace(enumType),
                     ".encode(struct.",
                     e,
                     ")"
@@ -732,7 +737,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
     }
 
     private emitModule(c: ClassType, moduleName: Name) {
-        this.emitBlock(["defmodule ", moduleName, " do"], () => {
+        this.emitBlock(["defmodule ", this.nameWithNamespace(moduleName), " do"], () => {
             const structDescription = this.descriptionForType(c) ?? [];
             const attributeDescriptions: Sourcelike[][] = [];
             this.forEachClassProperty(c, "none", (name, jsonName, _p) => {
@@ -792,7 +797,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                     if (unionTypes.length === unionPrimitiveTypes.length) {
                         return;
                     }
-                    this.emitPatternMatches(unionTypes, name, this.nameForNamedType(c));
+                    this.emitPatternMatches(unionTypes, name, this.nameForNamedTypeWithNamespace(c));
                 } else if (p.type.kind === "array") {
                     let arrayType = p.type as ArrayType;
                     if (arrayType.items instanceof ArrayType) {
@@ -802,7 +807,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                     } else if (arrayType.items instanceof UnionType) {
                         let unionType = arrayType.items;
                         let typesInUnion = [...unionType.getChildren()];
-                        this.emitPatternMatches(typesInUnion, name, this.nameForNamedType(c), "_element");
+                        this.emitPatternMatches(typesInUnion, name, this.nameForNamedTypeWithNamespace(c), "_element");
                     } else {
                     }
                 }
@@ -814,7 +819,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
             let isEmpty = propCount ? false : true;
             this.ensureBlankLine();
             this.emitBlock([`def from_map(${isEmpty ? "_" : ""}m) do`], () => {
-                this.emitLine("%", moduleName, "{");
+                this.emitLine("%", this.nameWithNamespace(moduleName), "{");
                 this.indent(() => {
                     this.forEachClassProperty(c, "none", (name, jsonName, p) => {
                         jsonName = escapeDoubleQuotes(jsonName);
@@ -828,7 +833,6 @@ export class ElixirRenderer extends ConvenienceRenderer {
             this.ensureBlankLine();
             this.emitBlock("def from_json(json) do", () => {
                 this.emitMultiline(`json
-        # TODO: decide if this should be ! or not
         |> Jason.decode!()
         |> from_map()`);
             });
@@ -847,7 +851,6 @@ export class ElixirRenderer extends ConvenienceRenderer {
             this.emitBlock("def to_json(struct) do", () => {
                 this.emitMultiline(`struct
         |> to_map()
-        # TODO: decide if this should be ! or not
         |> Jason.encode!()`);
             });
         });
@@ -884,7 +887,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
 
     private emitEnum(e: EnumType, enumName: Name) {
         this.emitDescription(this.descriptionForType(e));
-        this.emitBlock(["defmodule ", enumName, " do"], () => {
+        this.emitBlock(["defmodule ", this.nameWithNamespace(enumName), " do"], () => {
             this.emitLine("@valid_enum_members [");
             this.indent(() => {
                 this.forEachEnumCase(e, "none", (_name, json) => {
@@ -948,7 +951,7 @@ end`);
                 (topLevel, name) => {
                     const isTopLevelArray = "array" === topLevel.kind;
 
-                    this.emitBlock(["defmodule ", name, " do"], () => {
+                    this.emitBlock(["defmodule ", this.nameWithNamespace(name), " do"], () => {
                         if (isTopLevelArray) {
                             let arrayElement = (topLevel as ArrayType).items;
 
@@ -961,11 +964,12 @@ end`);
 
                             this.emitBlock("def from_json(json) do", () => {
                                 this.emitLine("json");
-                                this.emitLine("# TODO: decide if this should be ! or not");
                                 this.emitLine("|> Jason.decode!()");
                                 this.emitLine(
                                     "|> Enum.map(&",
-                                    isUnion ? ["decode_element/1)"] : [name, "Element.from_map/1)"]
+                                    isUnion
+                                        ? ["decode_element/1)"]
+                                        : [this.nameWithNamespace(name), "Element.from_map/1)"]
                                 );
                             });
 
@@ -974,21 +978,20 @@ end`);
                             this.emitBlock("def to_json(list) do", () => {
                                 this.emitLine(
                                     "Enum.map(list, &",
-                                    isUnion ? ["encode_element/1)"] : [name, "Element.to_map/1)"]
+                                    isUnion
+                                        ? ["encode_element/1)"]
+                                        : [this.nameWithNamespace(name), "Element.to_map/1)"]
                                 );
-                                this.emitLine("# TODO: decide if this should be ! or not");
                                 this.emitLine("|> Jason.encode!()");
                             });
                         } else {
                             this.emitBlock("def from_json(json) do", () => {
-                                this.emitLine("# TODO: decide if this should be ! or not");
                                 this.emitLine("Jason.decode!(json)");
                             });
 
                             this.ensureBlankLine();
 
                             this.emitBlock("def to_json(data) do", () => {
-                                this.emitLine("# TODO: decide if this should be ! or not");
                                 this.emitLine("Jason.encode!(data)");
                             });
                         }
