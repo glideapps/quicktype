@@ -307,7 +307,9 @@ export class GoRenderer extends ConvenienceRenderer {
 
         this.emitPackageDefinitons(
             false,
-            usedTypes.has("time.Time") || usedTypes.has("*,time.Time") ? new Set<string>(["time"]) : undefined
+            usedTypes.has("time.Time") || usedTypes.has("*,time.Time") || usedTypes.has("[],time.Time")
+                ? new Set<string>(["time"])
+                : undefined
         );
         this.emitDescription(this.descriptionForType(c));
         this.emitStruct(className, columns);
@@ -648,6 +650,7 @@ func marshalUnion(pi *int64, pf *float64, pb *bool, ps *string, haveArray bool, 
         const mapping: Map<string, string> = new Map();
         mapping.set("time.Time", "time");
         mapping.set("*,time.Time", "time");
+        mapping.set("[],time.Time", "time");
 
         this.forEachClassProperty(c, "none", (_name, _jsonName, p) => {
             const goType = this.propertyGoType(p);
