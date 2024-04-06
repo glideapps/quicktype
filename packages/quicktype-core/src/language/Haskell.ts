@@ -1,5 +1,5 @@
 import { mapContains } from "collection-utils";
-import { TargetLanguage } from "../TargetLanguage";
+import { type LanguageConfig, TargetLanguage } from "../TargetLanguage";
 import { EnumOption, StringOption, BooleanOption, Option, getOptionValues, OptionValues } from "../RendererOptions";
 import { Type, ClassType, UnionType, EnumType, ClassProperty } from "../Type";
 import { matchType, nullableFromUnion } from "../TypeUtils";
@@ -29,10 +29,10 @@ export const haskellOptions = {
     moduleName: new StringOption("module", "Generated module name", "NAME", "QuickType")
 };
 
-export class HaskellTargetLanguage extends TargetLanguage {
-    constructor() {
-        super("Haskell", ["haskell"], "haskell");
-    }
+export class HaskellTargetLanguage extends TargetLanguage implements LanguageConfig {
+    readonly displayName = "Haskell" as const;
+    readonly names = ["haskell"] as const;
+    readonly extension = "haskell" as const;
 
     protected getOptions(): Option<any>[] {
         return [haskellOptions.justTypes, haskellOptions.moduleName, haskellOptions.useList];

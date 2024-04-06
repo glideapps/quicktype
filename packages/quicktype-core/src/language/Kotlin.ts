@@ -22,7 +22,7 @@ import {
     utf32ConcatMap
 } from "../support/Strings";
 import { assertNever, mustNotHappen } from "../support/Support";
-import { TargetLanguage } from "../TargetLanguage";
+import { type LanguageConfig, TargetLanguage } from "../TargetLanguage";
 import {
     ArrayType,
     ClassProperty,
@@ -61,10 +61,10 @@ export const kotlinOptions = {
     packageName: new StringOption("package", "Package", "PACKAGE", "quicktype")
 };
 
-export class KotlinTargetLanguage extends TargetLanguage {
-    constructor() {
-        super("Kotlin", ["kotlin"], "kt");
-    }
+export class KotlinTargetLanguage extends TargetLanguage implements LanguageConfig {
+    readonly displayName = "Kotlin" as const;
+    readonly names = ["kotlin"] as const;
+    readonly extension = "kt" as const;
 
     protected getOptions(): Option<any>[] {
         return [kotlinOptions.framework, kotlinOptions.acronymStyle, kotlinOptions.packageName];

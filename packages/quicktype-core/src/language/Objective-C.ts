@@ -1,6 +1,6 @@
 import { iterableSome, iterableFirst, mapContains, mapFirst, mapSome } from "collection-utils";
 
-import { TargetLanguage } from "../TargetLanguage";
+import { type LanguageConfig, TargetLanguage } from "../TargetLanguage";
 import { Type, ClassType, EnumType, ArrayType, MapType, UnionType, ClassProperty } from "../Type";
 import { matchType, nullableFromUnion, isAnyOrNull } from "../TypeUtils";
 import { Name, Namer, funPrefixNamer } from "../Naming";
@@ -43,10 +43,10 @@ export const objcOptions = {
     extraComments: new BooleanOption("extra-comments", "Extra comments", false)
 };
 
-export class ObjectiveCTargetLanguage extends TargetLanguage {
-    constructor() {
-        super("Objective-C", ["objc", "objective-c", "objectivec"], "m");
-    }
+export class ObjectiveCTargetLanguage extends TargetLanguage implements LanguageConfig {
+    readonly displayName = "Objective-C" as const;
+    readonly names = ["objc", "objective-c", "objectivec"] as const;
+    readonly extension = "m" as const;
 
     protected getOptions(): Option<any>[] {
         return [

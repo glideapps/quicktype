@@ -1,4 +1,4 @@
-import { TargetLanguage } from "../TargetLanguage";
+import { type LanguageConfig, TargetLanguage } from "../TargetLanguage";
 import { StringTypeMapping } from "../TypeBuilder";
 import {
     TransformedStringTypeKind,
@@ -129,10 +129,10 @@ export const pythonOptions = {
     nicePropertyNames: new BooleanOption("nice-property-names", "Transform property names to be Pythonic", true)
 };
 
-export class PythonTargetLanguage extends TargetLanguage {
-    constructor() {
-        super("Python", ["python", "py"], "py");
-    }
+export class PythonTargetLanguage extends TargetLanguage implements LanguageConfig {
+    readonly displayName = "Python" as const;
+    readonly names = ["python", "py"] as const;
+    readonly extension = "py" as const;
 
     protected getOptions(): Option<any>[] {
         return [pythonOptions.features, pythonOptions.justTypes, pythonOptions.nicePropertyNames];

@@ -1,6 +1,6 @@
 import { mapFirst } from "collection-utils";
 
-import { TargetLanguage } from "../TargetLanguage";
+import { type LanguageConfig, TargetLanguage } from "../TargetLanguage";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import {
     legalizeCharacters,
@@ -111,10 +111,10 @@ const namingStyles: Record<string, NamingStyle> = {
     }
 };
 
-export class RustTargetLanguage extends TargetLanguage {
-    constructor() {
-        super("Rust", ["rust", "rs", "rustlang"], "rs");
-    }
+export class RustTargetLanguage extends TargetLanguage implements LanguageConfig {
+    readonly displayName = "Rust" as const;
+    readonly names = ["rust", "rs", "rustlang"] as const;
+    readonly extension = "rs" as const;
 
     protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): RustRenderer {
         return new RustRenderer(this, renderContext, getOptionValues(rustOptions, untypedOptionValues));

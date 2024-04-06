@@ -15,7 +15,7 @@ import {
     splitIntoWords
 } from "../support/Strings";
 import { assertNever } from "../support/Support";
-import { TargetLanguage } from "../TargetLanguage";
+import { type LanguageConfig, TargetLanguage } from "../TargetLanguage";
 import { ArrayType, ClassProperty, ClassType, EnumType, MapType, ObjectType, Type, UnionType } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 import { RenderContext } from "../Renderer";
@@ -245,10 +245,10 @@ export class Scala3Renderer extends ConvenienceRenderer {
             delimiter === "curly"
                 ? ["{", "}"]
                 : delimiter === "paren"
-                  ? ["(", ")"]
-                  : delimiter === "none"
-                    ? ["", ""]
-                    : ["{", "})"];
+                ? ["(", ")"]
+                : delimiter === "none"
+                ? ["", ""]
+                : ["{", "})"];
         this.emitLine(line, " ", open);
         this.indent(f);
         this.emitLine(close);
@@ -724,10 +724,10 @@ export class CirceRenderer extends Scala3Renderer {
     }
 }
 
-export class Scala3TargetLanguage extends TargetLanguage {
-    constructor() {
-        super("Scala3", ["scala3"], "scala");
-    }
+export class Scala3TargetLanguage extends TargetLanguage implements LanguageConfig {
+    readonly displayName = "Scala3" as const;
+    readonly names = ["scala3"] as const;
+    readonly extension = "scala" as const;
 
     protected getOptions(): Option<any>[] {
         return [scala3Options.framework, scala3Options.packageName];

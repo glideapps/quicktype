@@ -13,7 +13,7 @@ import {
     legalizeName
 } from "./JavaScript";
 import { defined, panic } from "../support/Support";
-import { TargetLanguage } from "../TargetLanguage";
+import { type LanguageConfig, TargetLanguage } from "../TargetLanguage";
 import { RenderContext } from "../Renderer";
 import { isES3IdentifierStart } from "./JavaScriptUnicodeMaps";
 
@@ -66,10 +66,13 @@ export abstract class TypeScriptFlowBaseTargetLanguage extends JavaScriptTargetL
     ): JavaScriptRenderer;
 }
 
-export class TypeScriptTargetLanguage extends TypeScriptFlowBaseTargetLanguage {
-    constructor() {
-        super("TypeScript", ["typescript", "ts", "tsx"], "ts");
-    }
+export class TypeScriptTargetLanguage extends TypeScriptFlowBaseTargetLanguage implements LanguageConfig {
+    // @ts-expect-error
+    readonly displayName = "TypeScript" as const;
+    // @ts-expect-error
+    readonly names = ["typescript", "ts", "tsx"] as const;
+    // @ts-expect-error
+    readonly extension = "ts" as const;
 
     protected makeRenderer(
         renderContext: RenderContext,
@@ -330,9 +333,11 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
 }
 
 export class FlowTargetLanguage extends TypeScriptFlowBaseTargetLanguage {
-    constructor() {
-        super("Flow", ["flow"], "js");
-    }
+    // @ts-expect-error
+    readonly displayName = "Flow" as const;
+    // @ts-expect-error
+    readonly names = ["flow"] as const;
+    readonly extension = "js" as const;
 
     protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): FlowRenderer {
         return new FlowRenderer(this, renderContext, getOptionValues(tsFlowOptions, untypedOptionValues));

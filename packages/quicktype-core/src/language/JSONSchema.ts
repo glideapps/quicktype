@@ -1,6 +1,6 @@
 import { mapFirst, iterableFirst } from "collection-utils";
 
-import { TargetLanguage } from "../TargetLanguage";
+import { type LanguageConfig, TargetLanguage } from "../TargetLanguage";
 import { Type, UnionType, EnumType, ObjectType, transformedStringTypeTargetTypeKindsMap } from "../Type";
 import { matchTypeExhaustive } from "../TypeUtils";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
@@ -18,10 +18,10 @@ import { addDescriptionToSchema } from "../attributes/Description";
 import { Option } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
 
-export class JSONSchemaTargetLanguage extends TargetLanguage {
-    constructor() {
-        super("JSON Schema", ["schema", "json-schema"], "schema");
-    }
+export class JSONSchemaTargetLanguage extends TargetLanguage implements LanguageConfig {
+    readonly displayName = "JSON Schema" as const;
+    readonly names = ["schema", "json-schema"] as const;
+    readonly extension = "schema" as const;
 
     protected getOptions(): Option<any>[] {
         return [];

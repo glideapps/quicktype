@@ -1,4 +1,4 @@
-import { TargetLanguage } from "../TargetLanguage";
+import { type LanguageConfig, TargetLanguage } from "../TargetLanguage";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import {
     legalizeCharacters,
@@ -22,10 +22,10 @@ import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { Option } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
 
-export class CrystalTargetLanguage extends TargetLanguage {
-    constructor() {
-        super("Crystal", ["crystal", "cr", "crystallang"], "cr");
-    }
+export class CrystalTargetLanguage extends TargetLanguage implements LanguageConfig {
+    readonly displayName = "Crystal" as const;
+    readonly names = ["crystal", "cr", "crystallang"] as const;
+    readonly extension = "cr" as const;
 
     protected makeRenderer(renderContext: RenderContext): CrystalRenderer {
         return new CrystalRenderer(this, renderContext);

@@ -15,7 +15,7 @@ import {
     stringEscape,
     utf16StringEscape
 } from "../support/Strings";
-import { TargetLanguage } from "../TargetLanguage";
+import { type LanguageConfig, TargetLanguage } from "../TargetLanguage";
 import { legalizeName } from "./JavaScript";
 import { Sourcelike } from "../Source";
 import { panic } from "../support/Support";
@@ -25,14 +25,10 @@ export const typeScriptEffectSchemaOptions = {
     justSchema: new BooleanOption("just-schema", "Schema only", false)
 };
 
-export class TypeScriptEffectSchemaTargetLanguage extends TargetLanguage {
-    constructor(
-        displayName: string = "TypeScript Effect Schema",
-        names: string[] = ["typescript-effect-schema"],
-        extension: string = "ts"
-    ) {
-        super(displayName, names, extension);
-    }
+export class TypeScriptEffectSchemaTargetLanguage extends TargetLanguage implements LanguageConfig {
+    readonly displayName = "TypeScript Effect Schema" as const;
+    readonly names = ["typescript-effect-schema"] as const;
+    readonly extension = "ts" as const;
 
     protected getOptions(): Option<any>[] {
         return [];
