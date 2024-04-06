@@ -1078,7 +1078,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         const result: TypeRecord[] = [];
         const recur = (forceInclude: boolean, isVariant: boolean, l: number, t: Type) => {
             if (t instanceof ArrayType) {
-                recur(forceInclude, isVariant, l + 1, t.items);
+                recur(true, isVariant, l + 1, t.items);
             } else if (t instanceof ClassType) {
                 result.push({
                     name: this.nameForNamedType(t),
@@ -1088,7 +1088,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     forceInclude
                 });
             } else if (t instanceof MapType) {
-                recur(forceInclude, isVariant, l + 1, t.values);
+                recur(true, isVariant, l + 1, t.values);
             } else if (t instanceof EnumType) {
                 result.push({
                     name: this.nameForNamedType(t),

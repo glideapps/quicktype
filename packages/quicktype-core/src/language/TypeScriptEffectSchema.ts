@@ -1,5 +1,5 @@
 import { arrayIntercalate } from "collection-utils";
-import { ClassProperty, EnumType, ObjectType, Type } from "../Type";
+import { ArrayType, ClassProperty, EnumType, MapType, ObjectType, Type } from "../Type";
 import { matchType } from "../TypeUtils";
 import { funPrefixNamer, Name, Namer } from "../Naming";
 import { RenderContext } from "../Renderer";
@@ -104,9 +104,15 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
         return p.isOptional ? ["S.optional(", typeMap, ")"] : typeMap;
     }
 
+    emittedObjects = new Set<Name>();
+
     typeMapTypeFor(t: Type, required: boolean = true): Sourcelike {
-        if (["class", "object", "enum"].indexOf(t.kind) >= 0) {
-            return ["S.lazy(() => ", this.nameForNamedType(t), ")"];
+        if (t.kind === "class" || t.kind === "object" || t.kind === "enum") {
+            const name = this.nameForNamedType(t);
+            if (this.emittedObjects.has(name)) {
+                return [name];
+            }
+            return ["S.suspend(() => ", name, ")"];
         }
 
         const match = matchType<Sourcelike>(
@@ -140,48 +146,58 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
     }
 
     private emitObject(name: Name, t: ObjectType) {
+        this.emittedObjects.add(name);
         this.ensureBlankLine();
-        if (this._options.justSchema) {
-            this.emitLine("\nexport const ", name, " = S.struct({");
-        } else {
-            this.emitLine("\nconst ", name, "_ = S.struct({");
-        }
+        this.emitLine("\nexport class ", name, " extends S.Class<", name, '>("', name, '")({');
         this.indent(() => {
             this.forEachClassProperty(t, "none", (_, jsonName, property) => {
                 this.emitLine(`"${utf16StringEscape(jsonName)}"`, ": ", this.typeMapTypeForProperty(property), ",");
             });
         });
-        this.emitLine("});");
-        if (!this._options.justSchema) {
-            this.emitLine("export interface ", name, " extends S.Schema.To<typeof ", name, "_> {}");
-            this.emitLine(
-                "export const ",
-                name,
-                ": S.Schema<S.Schema.From<typeof ",
-                name,
-                "_>, ",
-                name,
-                "> = ",
-                name,
-                "_;"
-            );
-        }
+        this.emitLine("}) {}");
     }
 
     private emitEnum(e: EnumType, enumName: Name): void {
+        this.emittedObjects.add(enumName);
         this.ensureBlankLine();
         this.emitDescription(this.descriptionForType(e));
-        this.emitLine("\nexport const ", enumName, " = ", "S.enums({");
+        this.emitLine("\nexport const ", enumName, " = ", "S.literal(");
         this.indent(() =>
             this.forEachEnumCase(e, "none", (_, jsonName) => {
-                const name = stringEscape(jsonName);
-                this.emitLine('"', name, '": "', name, '",');
+                this.emitLine('"', stringEscape(jsonName), '",');
             })
         );
-        this.emitLine("});");
+        this.emitLine(");");
         if (!this._options.justSchema) {
-            this.emitLine("export type ", enumName, " = S.Schema.To<typeof ", enumName, ">;");
+            this.emitLine("export type ", enumName, " = S.Schema.Type<typeof ", enumName, ">;");
         }
+    }
+
+    protected walkObjectNames(type: ObjectType) {
+        const names: Array<Name> = [];
+
+        const recurse = (type: Type) => {
+            if (type.kind === "object" || type.kind === "class") {
+                names.push(this.nameForNamedType(type));
+                this.forEachClassProperty(type as ObjectType, "none", (_, __, prop) => {
+                    recurse(prop.type);
+                });
+            } else if (type instanceof ArrayType) {
+                recurse(type.items);
+            } else if (type instanceof MapType) {
+                recurse(type.values);
+            } else if (type instanceof EnumType) {
+                for (const t of type.getChildren()) {
+                    recurse(t);
+                }
+            }
+        };
+
+        this.forEachClassProperty(type, "none", (_, __, prop) => {
+            recurse(prop.type);
+        });
+
+        return names;
     }
 
     protected emitSchemas(): void {
@@ -193,10 +209,10 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
 
         const order: number[] = [];
         const mapKey: Name[] = [];
-        const mapValue: Sourcelike[][] = [];
+        const mapValue: ObjectType[] = [];
         this.forEachObject("none", (type: ObjectType, name: Name) => {
             mapKey.push(name);
-            mapValue.push(this.gatherSource(() => this.emitObject(name, type)));
+            mapValue.push(type);
         });
 
         mapKey.forEach((_, index) => {
@@ -205,7 +221,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
 
             // pull out all names
             const source = mapValue[index];
-            const names = source.filter(value => value as Name);
+            const names = this.walkObjectNames(source);
 
             // must be behind all these names
             for (let i = 0; i < names.length; i++) {
@@ -226,7 +242,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
         });
 
         // now emit ordered source
-        order.forEach(i => this.emitGatheredSource(mapValue[i]));
+        order.forEach(i => this.emitGatheredSource(this.gatherSource(() => this.emitObject(mapKey[i], mapValue[i]))));
     }
 
     protected emitSourceStructure(): void {
