@@ -10,6 +10,7 @@ import { TypeInference } from "./Inference";
 import { TargetLanguage } from "../TargetLanguage";
 import { RunContext } from "../Run";
 import { languageNamed } from "../language/All";
+import type { LanguageName } from "../types";
 
 export interface Input<T> {
     readonly kind: string;
@@ -144,7 +145,7 @@ export class JSONInput<T> implements Input<JSONSourceData<T>> {
 }
 
 export function jsonInputForTargetLanguage(
-    targetLanguage: string | TargetLanguage,
+    targetLanguage: LanguageName | TargetLanguage,
     languages?: TargetLanguage[],
     handleJSONRefs = false
 ): JSONInput<string> {

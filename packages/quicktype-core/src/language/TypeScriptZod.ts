@@ -1,5 +1,6 @@
-import { StringTypeMapping } from "TypeBuilder";
 import { arrayIntercalate } from "collection-utils";
+
+import { StringTypeMapping } from "../TypeBuilder";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { Name, Namer, funPrefixNamer } from "../Naming";
 import { RenderContext } from "../Renderer";
