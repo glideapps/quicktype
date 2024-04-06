@@ -1,5 +1,3 @@
-import { iterableFind } from "collection-utils";
-
 import { TargetLanguage } from "../TargetLanguage";
 
 import { CSharpTargetLanguage } from "./CSharp";
@@ -28,45 +26,47 @@ import { TypeScriptZodTargetLanguage } from "./TypeScriptZod";
 import { PhpTargetLanguage } from "./Php";
 import { TypeScriptEffectSchemaTargetLanguage } from "./TypeScriptEffectSchema";
 
+import type { LanguageName, LanguageNameMap } from "../types";
+
 export const all = [
-    new CSharpTargetLanguage(),
-    new GoTargetLanguage(),
-    new RustTargetLanguage(),
-    new CrystalTargetLanguage(),
     new CJSONTargetLanguage(),
     new CPlusPlusTargetLanguage(),
-    new ObjectiveCTargetLanguage(),
+    new CrystalTargetLanguage(),
+    new CSharpTargetLanguage(),
+    new ElmTargetLanguage(),
+    new DartTargetLanguage(),
+    new FlowTargetLanguage(),
+    new GoTargetLanguage(),
+    new HaskellTargetLanguage(),
     new JavaTargetLanguage(),
-    new TypeScriptTargetLanguage(),
     new JavaScriptTargetLanguage(),
     new JavaScriptPropTypesTargetLanguage(),
-    new FlowTargetLanguage(),
-    new SwiftTargetLanguage(),
+    new JSONSchemaTargetLanguage(),
+    new KotlinTargetLanguage(),
+    new ObjectiveCTargetLanguage(),
+    new PhpTargetLanguage(),
+    new PikeTargetLanguage(),
+    new PythonTargetLanguage(),
+    new RubyTargetLanguage(),
+    new RustTargetLanguage(),
     new Scala3TargetLanguage(),
     new SmithyTargetLanguage(),
-    new KotlinTargetLanguage(),
-    new ElmTargetLanguage(),
-    new JSONSchemaTargetLanguage(),
-    new RubyTargetLanguage(),
-    new DartTargetLanguage(),
-    new PythonTargetLanguage(),
-    new PikeTargetLanguage(),
-    new HaskellTargetLanguage(),
-    new TypeScriptZodTargetLanguage(),
+    new SwiftTargetLanguage(),
+    new TypeScriptTargetLanguage(),
     new TypeScriptEffectSchemaTargetLanguage(),
-    new PhpTargetLanguage()
+    new TypeScriptZodTargetLanguage()
 ] as const;
 
 all satisfies readonly TargetLanguage[];
 
-export function languageNamed(
-    name: string,
+export function languageNamed<Name extends LanguageName>(
+    name: Name,
     targetLanguages: readonly TargetLanguage[] = all
-): TargetLanguage | undefined {
-    const maybeTargetLanguage = iterableFind(
-        targetLanguages,
-        l => l.names.indexOf(name) >= 0 || l.displayName === name
-    );
-    if (maybeTargetLanguage !== undefined) return maybeTargetLanguage;
-    return iterableFind(targetLanguages, l => l.extension === name);
+): LanguageNameMap[Name] {
+    const foundLanguage = targetLanguages.find(language => language.names.includes(name));
+    if (!foundLanguage) {
+        throw new Error(`Unknown language name: ${name}`);
+    }
+
+    return foundLanguage as LanguageNameMap[Name];
 }
