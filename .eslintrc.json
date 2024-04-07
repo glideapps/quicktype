@@ -1,0 +1,44 @@
+{
+    "overrides": [
+        {
+            "extends": ["canonical/json"],
+            "files": "*.json"
+        },
+        {
+            "extends": ["eslint:recommended", "canonical/typescript", "canonical/typescript-type-checking"],
+            "parserOptions": {
+                "tsconfigRootDir": "./",
+                "project": ["./tsconfig.json", "./packages/*/tsconfig.json"]
+            },
+            "plugins": ["canonical"],
+            "rules": {
+                "canonical/prefer-inline-type-import": "error",
+                "@typescript-eslint/consistent-type-definitions": ["error", "interface"],
+                "@typescript-eslint/consistent-type-imports": ["error", { "prefer": "type-imports" }],
+                "@typescript-eslint/explicit-function-return-type": "warn",
+                "@typescript-eslint/indent": ["error", 4],
+                "@typescript-eslint/quotes": ["error", "double"],
+                "@typescript-eslint/no-misused-promises": ["error", { "checksVoidReturn": false }],
+                "@typescript-eslint/naming-convention": "error",
+                "@typescript-eslint/no-empty-interface": "warn",
+                "@typescript-eslint/no-unused-vars": ["error", { "vars": "local", "args": "none" }],
+                "@typescript-eslint/no-use-before-define": "warn",
+                "@typescript-eslint/no-useless-empty-export": "error",
+                "@typescript-eslint/prefer-readonly": "warn",
+                "@typescript-eslint/prefer-reduce-type-parameter": "off",
+                "@typescript-eslint/switch-exhaustiveness-check": "error",
+                "@typescript-eslint/unified-signatures": "error"
+            },
+            "overrides": [
+                {
+                    "files": "*.d.ts",
+                    "rules": {
+                        "no-var": "off"
+                    }
+                }
+            ],
+            "files": "*.ts"
+        }
+    ],
+    "root": true
+}
