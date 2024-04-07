@@ -290,7 +290,6 @@ export function matchType<U>(
         return panic(`Unsupported type ${t.kind} in non-exhaustive match`);
     }
 
-    /* tslint:disable:strict-boolean-expressions */
     return matchTypeExhaustive(
         type,
         typeNotSupported,
@@ -308,7 +307,6 @@ export function matchType<U>(
         unionType,
         transformedStringType || typeNotSupported
     );
-    /* tslint:enable */
 }
 
 export function matchCompoundType(

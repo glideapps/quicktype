@@ -60,7 +60,6 @@ export class JSONInput<T> implements Input<JSONSourceData<T>> {
 
     private readonly _topLevels: Map<string, JSONTopLevel> = new Map();
 
-    /* tslint:disable:no-unused-variable */
     constructor(private readonly _compressedJSON: CompressedJSON<T>) {}
 
     private addSample(topLevelName: string, sample: Value): void {

@@ -1,4 +1,4 @@
-/* tslint:disable */
+/* eslint-disable */
 //  This file was automatically generated and should not be edited.
 
 // A Directive can be adjacent to many parts of the GraphQL language, a __DirectiveLocation describes one such possible adjacencies.
