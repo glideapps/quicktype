@@ -14,7 +14,8 @@
         "test": "script/test",
         "start": "script/watch",
         "clean": "rm -rf dist node_modules *~ packages/*/{dist,node_modules}",
-        "debug": "node --inspect-brk --max-old-space-size=4096 ./dist/index.js"
+        "debug": "node --inspect-brk --max-old-space-size=4096 ./dist/index.js",
+        "lint": "eslint src/** packages/*/src/**"
     },
     "workspaces": [
         "./packages/quicktype-core",
@@ -49,8 +50,18 @@
         "@types/shelljs": "^0.8.12",
         "@types/stream-json": "^1.7.3",
         "@types/urijs": "^1.19.25",
+        "@typescript-eslint/eslint-plugin": "^6.3.0",
+        "@typescript-eslint/parser": "^6.3.0",
         "ajv": "^5.5.2",
         "deep-equal": "^2.2.2",
+        "eslint": "^8.57.0",
+        "eslint-config-canonical": "^41.1.7",
+        "eslint-config-prettier": "^6.10.0",
+        "eslint-import-resolver-typescript": "^3.5.2",
+        "eslint-plugin-canonical": "^3.4.0",
+        "eslint-plugin-import": "^2.26.0",
+        "eslint-plugin-json": "^3.1.0",
+        "eslint-plugin-prettier": "^4.2.1",
         "exit": "^0.1.2",
         "prettier": "^3.0.1",
         "promise-timeout": "^1.3.0",
