@@ -1,6 +1,6 @@
 export {
-    Options,
-    RendererOptions,
+    type Options,
+    type RendererOptions,
     getTargetLanguage,
     quicktypeMultiFile,
     quicktypeMultiFileSync,
@@ -10,26 +10,26 @@ export {
     inferenceFlagNames,
     defaultInferenceFlags,
     inferenceFlagsObject,
-    InferenceFlags,
-    InferenceFlagName,
-    RunContext
+    type InferenceFlags,
+    type InferenceFlagName,
+    type RunContext,
 } from "./Run";
-export { CompressedJSON, Value } from "./input/CompressedJSON";
-export { Input, InputData, JSONInput, JSONSourceData, jsonInputForTargetLanguage } from "./input/Inputs";
-export { JSONSchemaInput, JSONSchemaSourceData } from "./input/JSONSchemaInput";
-export { Ref, JSONSchemaType, JSONSchemaAttributes } from "./input/JSONSchemaInput";
-export { RenderContext } from "./Renderer";
-export { Option, OptionDefinition, getOptionValues, OptionValues } from "./RendererOptions";
-export { TargetLanguage, MultiFileRenderResult } from "./TargetLanguage";
+export { CompressedJSON, type Value } from "./input/CompressedJSON";
+export { type Input, InputData, JSONInput, type JSONSourceData, jsonInputForTargetLanguage } from "./input/Inputs";
+export { JSONSchemaInput, type JSONSchemaSourceData } from "./input/JSONSchemaInput";
+export { Ref, type JSONSchemaType, type JSONSchemaAttributes } from "./input/JSONSchemaInput";
+export type { RenderContext } from "./Renderer";
+export { Option, type OptionDefinition, getOptionValues, type OptionValues } from "./RendererOptions";
+export { TargetLanguage, type MultiFileRenderResult } from "./TargetLanguage";
 export { all as defaultTargetLanguages, languageNamed } from "./language/All";
 export {
-    MultiWord,
-    Sourcelike,
-    SerializedRenderResult,
-    Annotation,
+    type MultiWord,
+    type Sourcelike,
+    type SerializedRenderResult,
+    type Annotation,
     modifySource,
     singleWord,
-    parenIfNeeded
+    parenIfNeeded,
 } from "./Source";
 export { Name, funPrefixNamer, Namer } from "./Naming";
 export { IssueAnnotationData } from "./Annotation";
@@ -41,7 +41,7 @@ export {
     parseJSON,
     checkStringMap,
     checkArray,
-    inflateBase64
+    inflateBase64,
 } from "./support/Support";
 export {
     splitIntoWords,
@@ -50,7 +50,7 @@ export {
     firstUpperWordStyle,
     allUpperWordStyle,
     legalizeCharacters,
-    isLetterOrDigit
+    isLetterOrDigit,
 } from "./support/Strings";
 export { train as trainMarkovChain } from "./MarkovChain";
 export { QuickTypeError, messageError, messageAssert } from "./Messages";
@@ -63,19 +63,19 @@ export {
     EnumType,
     MapType,
     UnionType,
-    TypeKind,
+    type TypeKind,
     ObjectType,
-    TransformedStringTypeKind,
-    PrimitiveStringTypeKind
+    type TransformedStringTypeKind,
+    type PrimitiveStringTypeKind,
 } from "./Type";
 export { getStream } from "./input/io/get-stream";
 export { readableFromFileOrURL, readFromFileOrURL } from "./input/io/NodeIO";
 export { FetchingJSONSchemaStore } from "./input/FetchingJSONSchemaStore";
-export { JSONSchemaStore, JSONSchema } from "./input/JSONSchemaStore";
+export { JSONSchemaStore, type JSONSchema } from "./input/JSONSchemaStore";
 export { sourcesFromPostmanCollection } from "./input/PostmanCollection";
-export { TypeBuilder, StringTypeMapping } from "./TypeBuilder";
-export { TypeRef, derefTypeRef } from "./TypeGraph";
-export { TypeAttributeKind, TypeAttributes, emptyTypeAttributes } from "./attributes/TypeAttributes";
+export { TypeBuilder, type StringTypeMapping } from "./TypeBuilder";
+export { type TypeRef, derefTypeRef } from "./TypeGraph";
+export { TypeAttributeKind, type TypeAttributes, emptyTypeAttributes } from "./attributes/TypeAttributes";
 export { TypeNames, makeNamesTypeAttributes, namesTypeAttributeKind } from "./attributes/TypeNames";
 export { StringTypes } from "./attributes/StringTypes";
 export { removeNullFromUnion, matchType, nullableFromUnion } from "./TypeUtils";
@@ -93,14 +93,14 @@ export { JavaScriptTargetLanguage, JavaScriptRenderer, javaScriptOptions } from 
 export {
     JavaScriptPropTypesTargetLanguage,
     JavaScriptPropTypesRenderer,
-    javaScriptPropTypesOptions
+    javaScriptPropTypesOptions,
 } from "./language/JavaScriptPropTypes";
 export {
     TypeScriptTargetLanguage,
     TypeScriptRenderer,
     FlowTargetLanguage,
     FlowRenderer,
-    tsFlowOptions
+    tsFlowOptions,
 } from "./language/TypeScriptFlow";
 export { SwiftTargetLanguage, SwiftRenderer, swiftOptions } from "./language/Swift";
 export { KotlinTargetLanguage, KotlinRenderer, kotlinOptions } from "./language/Kotlin";

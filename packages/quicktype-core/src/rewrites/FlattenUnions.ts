@@ -1,31 +1,34 @@
 import { setFilter, iterableSome } from "collection-utils";
 
-import { TypeGraph, TypeRef, derefTypeRef } from "../TypeGraph";
-import { Type, UnionType, IntersectionType } from "../Type";
+import { type TypeGraph, type TypeRef} from "../TypeGraph";
+import { derefTypeRef } from "../TypeGraph";
+import { type Type} from "../Type";
+import { UnionType, IntersectionType } from "../Type";
 import { makeGroupsToFlatten } from "../TypeUtils";
 import { assert } from "../support/Support";
-import { StringTypeMapping } from "../TypeBuilder";
-import { GraphRewriteBuilder } from "../GraphRewriting";
+import { type StringTypeMapping } from "../TypeBuilder";
+import { type GraphRewriteBuilder } from "../GraphRewriting";
 import { unifyTypes, UnifyUnionBuilder } from "../UnifyClasses";
 import { messageAssert } from "../Messages";
 import { emptyTypeAttributes } from "../attributes/TypeAttributes";
 
-export function flattenUnions(
+export function flattenUnions (
     graph: TypeGraph,
     stringTypeMapping: StringTypeMapping,
     conflateNumbers: boolean,
     makeObjectTypes: boolean,
-    debugPrintReconstitution: boolean
+    debugPrintReconstitution: boolean,
 ): [TypeGraph, boolean] {
     let needsRepeat = false;
 
-    function replace(types: ReadonlySet<Type>, builder: GraphRewriteBuilder<Type>, forwardingRef: TypeRef): TypeRef {
+    function replace (types: ReadonlySet<Type>, builder: GraphRewriteBuilder<Type>, forwardingRef: TypeRef): TypeRef {
         const unionBuilder = new UnifyUnionBuilder(builder, makeObjectTypes, true, trefs => {
             assert(trefs.length > 0, "Must have at least one type to build union");
             trefs = trefs.map(tref => builder.reconstituteType(derefTypeRef(tref, graph)));
             if (trefs.length === 1) {
                 return trefs[0];
             }
+
             needsRepeat = true;
             return builder.getUnionType(emptyTypeAttributes, new Set(trefs));
         });

@@ -2,51 +2,57 @@ import { setFilter, setSortBy, iterableFirst, setUnion, EqualityMap } from "coll
 
 import { defined, panic, assert, assertNever } from "./support/Support";
 import {
-    TypeAttributes,
-    combineTypeAttributes,
-    emptyTypeAttributes,
-    CombinationKind
+    type TypeAttributes,
+    type CombinationKind,
 } from "./attributes/TypeAttributes";
 import {
-    Type,
-    PrimitiveType,
+    combineTypeAttributes,
+    emptyTypeAttributes,
+} from "./attributes/TypeAttributes";
+import {
+    type Type,
+    type PrimitiveType,
+    type ClassProperty,
+    type SetOperationType} from "./Type";
+import {
     ArrayType,
     EnumType,
     ObjectType,
     MapType,
     ClassType,
-    ClassProperty,
-    SetOperationType,
     UnionType,
-    isPrimitiveStringTypeKind
+    isPrimitiveStringTypeKind,
 } from "./Type";
-import { stringTypesTypeAttributeKind, StringTypes } from "./attributes/StringTypes";
+import { type StringTypes } from "./attributes/StringTypes";
+import { stringTypesTypeAttributeKind } from "./attributes/StringTypes";
 
-export function assertIsObject(t: Type): ObjectType {
+export function assertIsObject (t: Type): ObjectType {
     if (t instanceof ObjectType) {
         return t;
     }
+
     return panic("Supposed object type is not an object type");
 }
 
-export function assertIsClass(t: Type): ClassType {
+export function assertIsClass (t: Type): ClassType {
     if (!(t instanceof ClassType)) {
         return panic("Supposed class type is not a class type");
     }
+
     return t;
 }
 
-export function setOperationMembersRecursively<T extends SetOperationType>(
+export function setOperationMembersRecursively<T extends SetOperationType> (
     setOperation: T,
     combinationKind: CombinationKind | undefined
 ): [ReadonlySet<Type>, TypeAttributes];
-export function setOperationMembersRecursively<T extends SetOperationType>(
+export function setOperationMembersRecursively<T extends SetOperationType> (
     setOperations: T[],
     combinationKind: CombinationKind | undefined
 ): [ReadonlySet<Type>, TypeAttributes];
-export function setOperationMembersRecursively<T extends SetOperationType>(
+export function setOperationMembersRecursively<T extends SetOperationType> (
     oneOrMany: T | T[],
-    combinationKind: CombinationKind | undefined
+    combinationKind: CombinationKind | undefined,
 ): [ReadonlySet<Type>, TypeAttributes] {
     const setOperations = Array.isArray(oneOrMany) ? oneOrMany : [oneOrMany];
     const kind = setOperations[0].kind;
@@ -55,7 +61,7 @@ export function setOperationMembersRecursively<T extends SetOperationType>(
     const members = new Set<Type>();
     let attributes = emptyTypeAttributes;
 
-    function process(t: Type): void {
+    function process (t: Type): void {
         if (t.kind === kind) {
             const so = t as T;
             if (processedSetOperations.has(so)) return;
@@ -63,6 +69,7 @@ export function setOperationMembersRecursively<T extends SetOperationType>(
             if (combinationKind !== undefined) {
                 attributes = combineTypeAttributes(combinationKind, attributes, t.getAttributes());
             }
+
             for (const m of so.members) {
                 process(m);
             }
@@ -78,12 +85,13 @@ export function setOperationMembersRecursively<T extends SetOperationType>(
     for (const so of setOperations) {
         process(so);
     }
+
     return [members, attributes];
 }
 
-export function makeGroupsToFlatten<T extends SetOperationType>(
+export function makeGroupsToFlatten<T extends SetOperationType> (
     setOperations: Iterable<T>,
-    include: ((members: ReadonlySet<Type>) => boolean) | undefined
+    include: ((members: ReadonlySet<Type>) => boolean) | undefined,
 ): Type[][] {
     const typeGroups = new EqualityMap<Set<Type>, Set<Type>>();
     for (const u of setOperations) {
@@ -102,6 +110,7 @@ export function makeGroupsToFlatten<T extends SetOperationType>(
                 maybeSet.add(defined(iterableFirst(members)));
             }
         }
+
         maybeSet.add(u);
         typeGroups.set(members, maybeSet);
     }
@@ -109,25 +118,25 @@ export function makeGroupsToFlatten<T extends SetOperationType>(
     return Array.from(typeGroups.values()).map(ts => Array.from(ts));
 }
 
-export function combineTypeAttributesOfTypes(combinationKind: CombinationKind, types: Iterable<Type>): TypeAttributes {
+export function combineTypeAttributesOfTypes (combinationKind: CombinationKind, types: Iterable<Type>): TypeAttributes {
     return combineTypeAttributes(
         combinationKind,
-        Array.from(types).map(t => t.getAttributes())
+        Array.from(types).map(t => t.getAttributes()),
     );
 }
 
-export function isAnyOrNull(t: Type): boolean {
+export function isAnyOrNull (t: Type): boolean {
     return t.kind === "any" || t.kind === "null";
 }
 
 // FIXME: We shouldn't have to sort here.  This is just because we're not getting
 // back the right order from JSON Schema, due to the changes the intersection types
 // introduced.
-export function removeNullFromUnion(
+export function removeNullFromUnion (
     t: UnionType,
-    sortBy: boolean | ((t: Type) => any) = false
+    sortBy: boolean | ((t: Type) => any) = false,
 ): [PrimitiveType | null, ReadonlySet<Type>] {
-    function sort(s: ReadonlySet<Type>): ReadonlySet<Type> {
+    function sort (s: ReadonlySet<Type>): ReadonlySet<Type> {
         if (sortBy === false) return s;
         if (sortBy === true) return setSortBy(s, m => m.kind);
         return setSortBy(s, sortBy);
@@ -137,54 +146,58 @@ export function removeNullFromUnion(
     if (nullType === undefined) {
         return [null, sort(t.members)];
     }
+
     return [nullType as PrimitiveType, sort(setFilter(t.members, m => m.kind !== "null"))];
 }
 
-export function removeNullFromType(t: Type): [PrimitiveType | null, ReadonlySet<Type>] {
+export function removeNullFromType (t: Type): [PrimitiveType | null, ReadonlySet<Type>] {
     if (t.kind === "null") {
         return [t as PrimitiveType, new Set()];
     }
+
     if (!(t instanceof UnionType)) {
         return [null, new Set([t])];
     }
+
     return removeNullFromUnion(t);
 }
 
-export function nullableFromUnion(t: UnionType): Type | null {
+export function nullableFromUnion (t: UnionType): Type | null {
     const [hasNull, nonNulls] = removeNullFromUnion(t);
     if (hasNull === null) return null;
     if (nonNulls.size !== 1) return null;
     return defined(iterableFirst(nonNulls));
 }
 
-export function nonNullTypeCases(t: Type): ReadonlySet<Type> {
+export function nonNullTypeCases (t: Type): ReadonlySet<Type> {
     return removeNullFromType(t)[1];
 }
 
-export function getNullAsOptional(cp: ClassProperty): [boolean, ReadonlySet<Type>] {
+export function getNullAsOptional (cp: ClassProperty): [boolean, ReadonlySet<Type>] {
     const [maybeNull, nonNulls] = removeNullFromType(cp.type);
     if (cp.isOptional) {
         return [true, nonNulls];
     }
+
     return [maybeNull !== null, nonNulls];
 }
 
 // FIXME: Give this an appropriate name, considering that we don't distinguish
 // between named and non-named types anymore.
-export function isNamedType(t: Type): boolean {
-    return ["class", "union", "enum", "object"].indexOf(t.kind) >= 0;
+export function isNamedType (t: Type): boolean {
+    return ["class", "union", "enum", "object"].includes(t.kind);
 }
 
-export type SeparatedNamedTypes = {
-    objects: ReadonlySet<ObjectType>;
+export interface SeparatedNamedTypes {
     enums: ReadonlySet<EnumType>;
+    objects: ReadonlySet<ObjectType>;
     unions: ReadonlySet<UnionType>;
-};
+}
 
-export function separateNamedTypes(types: Iterable<Type>): SeparatedNamedTypes {
+export function separateNamedTypes (types: Iterable<Type>): SeparatedNamedTypes {
     const objects = setFilter(
         types,
-        t => t.kind === "object" || t.kind === "class"
+        t => t.kind === "object" || t.kind === "class",
     ) as Set<ObjectType> as ReadonlySet<ObjectType>;
     const enums = setFilter(types, t => t instanceof EnumType) as Set<EnumType> as ReadonlySet<EnumType>;
     const unions = setFilter(types, t => t instanceof UnionType) as Set<UnionType> as ReadonlySet<UnionType>;
@@ -192,42 +205,44 @@ export function separateNamedTypes(types: Iterable<Type>): SeparatedNamedTypes {
     return { objects, enums, unions };
 }
 
-export function directlyReachableTypes<T>(t: Type, setForType: (t: Type) => ReadonlySet<T> | null): ReadonlySet<T> {
+export function directlyReachableTypes<T> (t: Type, setForType: (t: Type) => ReadonlySet<T> | null): ReadonlySet<T> {
     const set = setForType(t);
     if (set !== null) return set;
     return setUnion(...Array.from(t.getNonAttributeChildren()).map(c => directlyReachableTypes(c, setForType)));
 }
 
-export function directlyReachableSingleNamedType(type: Type): Type | undefined {
+export function directlyReachableSingleNamedType (type: Type): Type | undefined {
     const definedTypes = directlyReachableTypes(type, t => {
         if (
-            (!(t instanceof UnionType) && isNamedType(t)) ||
-            (t instanceof UnionType && nullableFromUnion(t) === null)
+            !(t instanceof UnionType) && isNamedType(t) ||
+            t instanceof UnionType && nullableFromUnion(t) === null
         ) {
             return new Set([t]);
         }
+
         return null;
     });
     assert(definedTypes.size <= 1, "Cannot have more than one defined type per top-level");
     return iterableFirst(definedTypes);
 }
 
-export function stringTypesForType(t: PrimitiveType): StringTypes {
+export function stringTypesForType (t: PrimitiveType): StringTypes {
     assert(t.kind === "string", "Only strings can have string types");
     const stringTypes = stringTypesTypeAttributeKind.tryGetInAttributes(t.getAttributes());
     if (stringTypes === undefined) {
         return panic("All strings must have a string type attribute");
     }
+
     return stringTypes;
 }
 
-export type StringTypeMatchers<U> = {
+export interface StringTypeMatchers<U> {
+    dateTimeType?: (dateTimeType: PrimitiveType) => U;
     dateType?: (dateType: PrimitiveType) => U;
     timeType?: (timeType: PrimitiveType) => U;
-    dateTimeType?: (dateTimeType: PrimitiveType) => U;
-};
+}
 
-export function matchTypeExhaustive<U>(
+export function matchTypeExhaustive<U> (
     t: Type,
     noneType: (noneType: PrimitiveType) => U,
     anyType: (anyType: PrimitiveType) => U,
@@ -242,15 +257,17 @@ export function matchTypeExhaustive<U>(
     objectType: (objectType: ObjectType) => U,
     enumType: (enumType: EnumType) => U,
     unionType: (unionType: UnionType) => U,
-    transformedStringType: (transformedStringType: PrimitiveType) => U
+    transformedStringType: (transformedStringType: PrimitiveType) => U,
 ): U {
     if (t.isPrimitive()) {
         if (isPrimitiveStringTypeKind(t.kind)) {
             if (t.kind === "string") {
                 return stringType(t);
             }
+
             return transformedStringType(t);
         }
+
         const kind = t.kind;
         const f = {
             none: noneType,
@@ -258,7 +275,7 @@ export function matchTypeExhaustive<U>(
             null: nullType,
             bool: boolType,
             integer: integerType,
-            double: doubleType
+            double: doubleType,
         }[kind];
         if (f !== undefined) return f(t);
         return assertNever(f);
@@ -271,7 +288,7 @@ export function matchTypeExhaustive<U>(
     return panic(`Unknown type ${t.kind}`);
 }
 
-export function matchType<U>(
+export function matchType<U> (
     type: Type,
     anyType: (anyType: PrimitiveType) => U,
     nullType: (nullType: PrimitiveType) => U,
@@ -284,9 +301,9 @@ export function matchType<U>(
     mapType: (mapType: MapType) => U,
     enumType: (enumType: EnumType) => U,
     unionType: (unionType: UnionType) => U,
-    transformedStringType?: (transformedStringType: PrimitiveType) => U
+    transformedStringType?: (transformedStringType: PrimitiveType) => U,
 ): U {
-    function typeNotSupported(t: Type) {
+    function typeNotSupported (t: Type) {
         return panic(`Unsupported type ${t.kind} in non-exhaustive match`);
     }
 
@@ -305,23 +322,23 @@ export function matchType<U>(
         typeNotSupported,
         enumType,
         unionType,
-        transformedStringType || typeNotSupported
+        transformedStringType || typeNotSupported,
     );
 }
 
-export function matchCompoundType(
+export function matchCompoundType (
     t: Type,
     arrayType: (arrayType: ArrayType) => void,
     classType: (classType: ClassType) => void,
     mapType: (mapType: MapType) => void,
     objectType: (objectType: ObjectType) => void,
-    unionType: (unionType: UnionType) => void
+    unionType: (unionType: UnionType) => void,
 ): void {
-    function ignore<T extends Type>(_: T): void {
+    function ignore<T extends Type> (_: T): void {
         return;
     }
 
-    return matchTypeExhaustive(
+    matchTypeExhaustive(
         t,
         ignore,
         ignore,
@@ -336,6 +353,6 @@ export function matchCompoundType(
         objectType,
         ignore,
         unionType,
-        ignore
+        ignore,
     );
 }

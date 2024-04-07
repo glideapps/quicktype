@@ -1,18 +1,23 @@
 import { TargetLanguage } from "../TargetLanguage";
-import { StringTypeMapping } from "../TypeBuilder";
+import { type StringTypeMapping } from "../TypeBuilder";
 import {
-    TransformedStringTypeKind,
-    PrimitiveStringTypeKind,
-    Type,
+    type TransformedStringTypeKind,
+    type PrimitiveStringTypeKind,
+    type Type,
+    type ClassProperty,
+} from "../Type";
+import {
     EnumType,
     ClassType,
     UnionType,
-    ClassProperty
 } from "../Type";
-import { RenderContext } from "../Renderer";
-import { Option, getOptionValues, OptionValues, EnumOption, BooleanOption } from "../RendererOptions";
-import { ConvenienceRenderer, ForbiddenWordsInfo, topLevelNameOrder } from "../ConvenienceRenderer";
-import { Namer, funPrefixNamer, Name, DependencyName } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import { type Option, type OptionValues} from "../RendererOptions";
+import { getOptionValues, EnumOption, BooleanOption } from "../RendererOptions";
+import { type ForbiddenWordsInfo} from "../ConvenienceRenderer";
+import { ConvenienceRenderer, topLevelNameOrder } from "../ConvenienceRenderer";
+import { type Namer, type Name} from "../Naming";
+import { funPrefixNamer, DependencyName } from "../Naming";
 import {
     splitIntoWords,
     combineWords,
@@ -21,15 +26,17 @@ import {
     allUpperWordStyle,
     allLowerWordStyle,
     stringEscape,
-    originalWord
+    originalWord,
 } from "../support/Strings";
 import { assertNever, panic, defined } from "../support/Support";
-import { Sourcelike, MultiWord, multiWord, singleWord, parenIfNeeded, modifySource } from "../Source";
+import { type Sourcelike, type MultiWord} from "../Source";
+import { multiWord, singleWord, parenIfNeeded, modifySource } from "../Source";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
+import {
+    type Transformer} from "../Transformers";
 import {
     followTargetType,
     transformationForType,
-    Transformer,
     DecodingChoiceTransformer,
     ChoiceTransformer,
     DecodingTransformer,
@@ -37,7 +44,7 @@ import {
     ParseStringTransformer,
     UnionMemberMatchTransformer,
     StringifyTransformer,
-    EncodingTransformer
+    EncodingTransformer,
 } from "../Transformers";
 import {
     arrayIntercalate,
@@ -45,7 +52,7 @@ import {
     mapUpdateInto,
     iterableSome,
     mapSortBy,
-    iterableFirst
+    iterableFirst,
 } from "collection-utils";
 
 import unicode from "unicode-properties";
@@ -64,7 +71,7 @@ const forbiddenTypeNames = [
     "Type",
     "TypeVar",
     "T",
-    "EnumT"
+    "EnumT",
 ];
 const forbiddenPropertyNames = [
     "and",
@@ -106,13 +113,13 @@ const forbiddenPropertyNames = [
     "try",
     "while",
     "with",
-    "yield"
+    "yield",
 ];
 
-export type PythonFeatures = {
-    typeHints: boolean;
+export interface PythonFeatures {
     dataClasses: boolean;
-};
+    typeHints: boolean;
+}
 
 export const pythonOptions = {
     features: new EnumOption<PythonFeatures>(
@@ -121,20 +128,20 @@ export const pythonOptions = {
         [
             ["3.5", { typeHints: false, dataClasses: false }],
             ["3.6", { typeHints: true, dataClasses: false }],
-            ["3.7", { typeHints: true, dataClasses: true }]
+            ["3.7", { typeHints: true, dataClasses: true }],
         ],
-        "3.6"
+        "3.6",
     ),
     justTypes: new BooleanOption("just-types", "Classes only", false),
-    nicePropertyNames: new BooleanOption("nice-property-names", "Transform property names to be Pythonic", true)
+    nicePropertyNames: new BooleanOption("nice-property-names", "Transform property names to be Pythonic", true),
 };
 
 export class PythonTargetLanguage extends TargetLanguage {
-    protected getOptions(): Option<any>[] {
+    protected getOptions (): Array<Option<any>> {
         return [pythonOptions.features, pythonOptions.justTypes, pythonOptions.nicePropertyNames];
     }
 
-    get stringTypeMapping(): StringTypeMapping {
+    get stringTypeMapping (): StringTypeMapping {
         const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
         const dateTimeType = "date-time";
         mapping.set("date", dateTimeType);
@@ -146,22 +153,23 @@ export class PythonTargetLanguage extends TargetLanguage {
         return mapping;
     }
 
-    get supportsUnionsWithBothNumberTypes(): boolean {
+    get supportsUnionsWithBothNumberTypes (): boolean {
         return true;
     }
 
-    get supportsOptionalClassProperties(): boolean {
+    get supportsOptionalClassProperties (): boolean {
         return false;
     }
 
-    needsTransformerForType(t: Type): boolean {
+    needsTransformerForType (t: Type): boolean {
         if (t instanceof UnionType) {
             return iterableSome(t.members, m => this.needsTransformerForType(m));
         }
+
         return t.kind === "integer-string" || t.kind === "bool-string";
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): PythonRenderer {
+    protected makeRenderer (renderContext: RenderContext, untypedOptionValues: { [name: string]: any, }): PythonRenderer {
         const options = getOptionValues(pythonOptions, untypedOptionValues);
         if (options.justTypes) {
             return new PythonRenderer(this, renderContext, options);
@@ -171,41 +179,43 @@ export class PythonTargetLanguage extends TargetLanguage {
     }
 }
 
-function isNormalizedStartCharacter3(utf16Unit: number): boolean {
+function isNormalizedStartCharacter3 (utf16Unit: number): boolean {
     // FIXME: add Other_ID_Start - https://docs.python.org/3/reference/lexical_analysis.html#identifiers
     const category: string = unicode.getCategory(utf16Unit);
-    return ["Lu", "Ll", "Lt", "Lm", "Lo", "Nl"].indexOf(category) >= 0;
+    return ["Lu", "Ll", "Lt", "Lm", "Lo", "Nl"].includes(category);
 }
 
-function isNormalizedPartCharacter3(utf16Unit: number): boolean {
+function isNormalizedPartCharacter3 (utf16Unit: number): boolean {
     // FIXME: add Other_ID_Continue - https://docs.python.org/3/reference/lexical_analysis.html#identifiers
     if (isNormalizedStartCharacter3(utf16Unit)) return true;
     const category: string = unicode.getCategory(utf16Unit);
-    return ["Mn", "Mc", "Nd", "Pc"].indexOf(category) >= 0;
+    return ["Mn", "Mc", "Nd", "Pc"].includes(category);
 }
 
-function isStartCharacter3(utf16Unit: number): boolean {
+function isStartCharacter3 (utf16Unit: number): boolean {
     const s = String.fromCharCode(utf16Unit).normalize("NFKC");
     const l = s.length;
     if (l === 0 || !isNormalizedStartCharacter3(s.charCodeAt(0))) return false;
     for (let i = 1; i < l; i++) {
         if (!isNormalizedPartCharacter3(s.charCodeAt(i))) return false;
     }
+
     return true;
 }
 
-function isPartCharacter3(utf16Unit: number): boolean {
+function isPartCharacter3 (utf16Unit: number): boolean {
     const s = String.fromCharCode(utf16Unit).normalize("NFKC");
     const l = s.length;
     for (let i = 0; i < l; i++) {
         if (!isNormalizedPartCharacter3(s.charCodeAt(i))) return false;
     }
+
     return true;
 }
 
 const legalizeName3 = utf16LegalizeCharacters(isPartCharacter3);
 
-function classNameStyle(original: string): string {
+function classNameStyle (original: string): string {
     const words = splitIntoWords(original);
     return combineWords(
         words,
@@ -215,18 +225,19 @@ function classNameStyle(original: string): string {
         allUpperWordStyle,
         allUpperWordStyle,
         "",
-        isStartCharacter3
+        isStartCharacter3,
     );
 }
 
-function getWordStyle(uppercase: boolean, forceSnakeNameStyle: boolean) {
+function getWordStyle (uppercase: boolean, forceSnakeNameStyle: boolean) {
     if (!forceSnakeNameStyle) {
         return originalWord;
     }
+
     return uppercase ? allUpperWordStyle : allLowerWordStyle;
 }
 
-function snakeNameStyle(original: string, uppercase: boolean, forceSnakeNameStyle: boolean): string {
+function snakeNameStyle (original: string, uppercase: boolean, forceSnakeNameStyle: boolean): string {
     const wordStyle = getWordStyle(uppercase, forceSnakeNameStyle);
     const separator = forceSnakeNameStyle ? "_" : "";
     const words = splitIntoWords(original);
@@ -235,104 +246,106 @@ function snakeNameStyle(original: string, uppercase: boolean, forceSnakeNameStyl
 
 export class PythonRenderer extends ConvenienceRenderer {
     private readonly imports: Map<string, Set<string>> = new Map();
+
     private readonly declaredTypes: Set<Type> = new Set();
 
-    constructor(
+    constructor (
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        protected readonly pyOptions: OptionValues<typeof pythonOptions>
+        protected readonly pyOptions: OptionValues<typeof pythonOptions>,
     ) {
         super(targetLanguage, renderContext);
     }
 
-    protected forbiddenNamesForGlobalNamespace(): string[] {
+    protected forbiddenNamesForGlobalNamespace (): string[] {
         return forbiddenTypeNames;
     }
 
-    protected forbiddenForObjectProperties(_: ClassType, _classNamed: Name): ForbiddenWordsInfo {
+    protected forbiddenForObjectProperties (_: ClassType, _classNamed: Name): ForbiddenWordsInfo {
         return { names: forbiddenPropertyNames, includeGlobalForbidden: false };
     }
 
-    protected makeNamedTypeNamer(): Namer {
+    protected makeNamedTypeNamer (): Namer {
         return funPrefixNamer("type", classNameStyle);
     }
 
-    protected namerForObjectProperty(): Namer {
+    protected namerForObjectProperty (): Namer {
         return funPrefixNamer("property", s => snakeNameStyle(s, false, this.pyOptions.nicePropertyNames));
     }
 
-    protected makeUnionMemberNamer(): null {
+    protected makeUnionMemberNamer (): null {
         return null;
     }
 
-    protected makeEnumCaseNamer(): Namer {
+    protected makeEnumCaseNamer (): Namer {
         return funPrefixNamer("enum-case", s => snakeNameStyle(s, true, this.pyOptions.nicePropertyNames));
     }
 
-    protected get commentLineStart(): string {
+    protected get commentLineStart (): string {
         return "# ";
     }
 
-    protected emitDescriptionBlock(lines: Sourcelike[]): void {
+    protected emitDescriptionBlock (lines: Sourcelike[]): void {
         if (lines.length === 1) {
             const docstring = modifySource(content => {
-                if (content.endsWith('"')) {
-                    return content.slice(0, -1) + '\\"';
+                if (content.endsWith("\"")) {
+                    return content.slice(0, -1) + "\\\"";
                 }
 
                 return content;
             }, lines[0]);
-            this.emitComments([{ customLines: [docstring], lineStart: '"""', lineEnd: '"""' }]);
+            this.emitComments([{ customLines: [docstring], lineStart: "\"\"\"", lineEnd: "\"\"\"" }]);
         } else {
             this.emitCommentLines(lines, {
-                firstLineStart: '"""',
+                firstLineStart: "\"\"\"",
                 lineStart: "",
-                afterComment: '"""'
+                afterComment: "\"\"\"",
             });
         }
     }
 
-    protected get needsTypeDeclarationBeforeUse(): boolean {
+    protected get needsTypeDeclarationBeforeUse (): boolean {
         return true;
     }
 
-    protected canBeForwardDeclared(t: Type): boolean {
+    protected canBeForwardDeclared (t: Type): boolean {
         const kind = t.kind;
         return kind === "class" || kind === "enum";
     }
 
-    protected emitBlock(line: Sourcelike, f: () => void): void {
+    protected emitBlock (line: Sourcelike, f: () => void): void {
         this.emitLine(line);
         this.indent(f);
     }
 
-    protected string(s: string): Sourcelike {
-        const openQuote = '"';
-        return [openQuote, stringEscape(s), '"'];
+    protected string (s: string): Sourcelike {
+        const openQuote = "\"";
+        return [openQuote, stringEscape(s), "\""];
     }
 
-    protected withImport(module: string, name: string): Sourcelike {
+    protected withImport (module: string, name: string): Sourcelike {
         if (this.pyOptions.features.typeHints || module !== "typing") {
             // FIXME: This is ugly.  We should rather not generate that import in the first
             // place, but right now we just make the type source and then throw it away.  It's
             // not a performance issue, so it's fine, I just bemoan this special case, and
             // potential others down the road.
-            mapUpdateInto(this.imports, module, s => (s ? setUnionInto(s, [name]) : new Set([name])));
+            mapUpdateInto(this.imports, module, s => s ? setUnionInto(s, [name]) : new Set([name]));
         }
+
         return name;
     }
 
-    protected withTyping(name: string): Sourcelike {
+    protected withTyping (name: string): Sourcelike {
         return this.withImport("typing", name);
     }
 
-    protected namedType(t: Type): Sourcelike {
+    protected namedType (t: Type): Sourcelike {
         const name = this.nameForNamedType(t);
         if (this.declaredTypes.has(t)) return name;
         return ["'", name, "'"];
     }
 
-    protected pythonType(t: Type, _isRootTypeDef = false): Sourcelike {
+    protected pythonType (t: Type, _isRootTypeDef = false): Sourcelike {
         const actualType = followTargetType(t);
 
         return matchType<Sourcelike>(
@@ -367,7 +380,7 @@ export class PythonRenderer extends ConvenienceRenderer {
                             "[Union[",
                             arrayIntercalate(", ", memberTypes),
                             "]]",
-                            ...rest
+                            ...rest,
                         ];
                     } else {
                         return [this.withTyping("Optional"), "[", defined(iterableFirst(memberTypes)), "]", ...rest];
@@ -380,21 +393,25 @@ export class PythonRenderer extends ConvenienceRenderer {
                 if (transformedStringType.kind === "date-time") {
                     return this.withImport("datetime", "datetime");
                 }
+
                 if (transformedStringType.kind === "uuid") {
                     return this.withImport("uuid", "UUID");
                 }
+
                 return panic(`Transformed type ${transformedStringType.kind} not supported`);
-            }
+            },
         );
     }
 
-    protected declarationLine(t: Type): Sourcelike {
+    protected declarationLine (t: Type): Sourcelike {
         if (t instanceof ClassType) {
             return ["class ", this.nameForNamedType(t), ":"];
         }
+
         if (t instanceof EnumType) {
             return ["class ", this.nameForNamedType(t), "(", this.withImport("enum", "Enum"), "):"];
         }
+
         return panic(`Can't declare type ${t.kind}`);
     }
 
@@ -406,7 +423,7 @@ export class PythonRenderer extends ConvenienceRenderer {
         this.declaredTypes.add(t);
     }
 
-    protected emitClassMembers(t: ClassType): void {
+    protected emitClassMembers (t: ClassType): void {
         if (this.pyOptions.features.dataClasses) return;
 
         const args: Sourcelike[] = [];
@@ -423,42 +440,44 @@ export class PythonRenderer extends ConvenienceRenderer {
                         this.emitLine("self.", name, " = ", name);
                     });
                 }
-            }
+            },
         );
     }
 
-    protected typeHint(...sl: Sourcelike[]): Sourcelike {
+    protected typeHint (...sl: Sourcelike[]): Sourcelike {
         if (this.pyOptions.features.typeHints) {
             return sl;
         }
+
         return [];
     }
 
-    protected typingDecl(name: Sourcelike, type: string): Sourcelike {
+    protected typingDecl (name: Sourcelike, type: string): Sourcelike {
         return [name, this.typeHint(": ", this.withTyping(type))];
     }
 
-    protected typingReturn(type: string): Sourcelike {
+    protected typingReturn (type: string): Sourcelike {
         return this.typeHint(" -> ", this.withTyping(type));
     }
 
-    protected sortClassProperties(
+    protected sortClassProperties (
         properties: ReadonlyMap<string, ClassProperty>,
-        propertyNames: ReadonlyMap<string, Name>
+        propertyNames: ReadonlyMap<string, Name>,
     ): ReadonlyMap<string, ClassProperty> {
         if (this.pyOptions.features.dataClasses) {
             return mapSortBy(properties, (p: ClassProperty) => {
-                return (p.type instanceof UnionType && nullableFromUnion(p.type) != null) || p.isOptional ? 1 : 0;
+                return p.type instanceof UnionType && nullableFromUnion(p.type) != null || p.isOptional ? 1 : 0;
             });
         } else {
             return super.sortClassProperties(properties, propertyNames);
         }
     }
 
-    protected emitClass(t: ClassType): void {
+    protected emitClass (t: ClassType): void {
         if (this.pyOptions.features.dataClasses) {
             this.emitLine("@", this.withImport("dataclasses", "dataclass"));
         }
+
         this.declareType(t, () => {
             if (this.pyOptions.features.typeHints) {
                 if (t.getProperties().size === 0) {
@@ -469,13 +488,15 @@ export class PythonRenderer extends ConvenienceRenderer {
                         this.emitDescription(this.descriptionForClassProperty(t, jsonName));
                     });
                 }
+
                 this.ensureBlankLine();
             }
+
             this.emitClassMembers(t);
         });
     }
 
-    protected emitEnum(t: EnumType): void {
+    protected emitEnum (t: EnumType): void {
         this.declareType(t, () => {
             this.forEachEnumCase(t, "none", (name, jsonName) => {
                 this.emitLine([name, " = ", this.string(jsonName)]);
@@ -483,21 +504,21 @@ export class PythonRenderer extends ConvenienceRenderer {
         });
     }
 
-    protected emitImports(): void {
+    protected emitImports (): void {
         this.imports.forEach((names, module) => {
             this.emitLine("from ", module, " import ", Array.from(names).join(", "));
         });
     }
 
-    protected emitSupportCode(): void {
+    protected emitSupportCode (): void {
         return;
     }
 
-    protected emitClosingCode(): void {
+    protected emitClosingCode (): void {
         return;
     }
 
-    protected emitSourceStructure(_givenOutputFilename: string): void {
+    protected emitSourceStructure (_givenOutputFilename: string): void {
         const declarationLines = this.gatherSource(() => {
             this.forEachNamedType(
                 ["interposing", 2],
@@ -505,7 +526,7 @@ export class PythonRenderer extends ConvenienceRenderer {
                 e => this.emitEnum(e),
                 _u => {
                     return;
-                }
+                },
             );
         });
 
@@ -515,6 +536,7 @@ export class PythonRenderer extends ConvenienceRenderer {
         if (this.leadingComments !== undefined) {
             this.emitComments(this.leadingComments);
         }
+
         this.ensureBlankLine();
         this.emitImports();
         this.ensureBlankLine(2);
@@ -542,10 +564,10 @@ export type ConverterFunction =
     | "from-stringified-bool"
     | "is-type";
 
-type TopLevelConverterNames = {
+interface TopLevelConverterNames {
     fromDict: Name;
     toDict: Name;
-};
+}
 
 // A value or a lambda.  All four combinations are valid:
 //
@@ -553,10 +575,10 @@ type TopLevelConverterNames = {
 // * `lambda` only: a lambda given by `lambda`
 // * `value` only: a value given by `value`
 // * neither: the identity function, i.e. `lambda x: x`
-export type ValueOrLambda = {
-    value: Sourcelike | undefined;
+export interface ValueOrLambda {
     lambda?: MultiWord;
-};
+    value: Sourcelike | undefined;
+}
 
 // Return the result of composing `input` and `f`.  `input` can be a
 // value or a lambda, but `f` must be a lambda or a TypeScript function
@@ -564,18 +586,20 @@ export type ValueOrLambda = {
 //
 // * If `input` is a value, the result is `f(input)`.
 // * If `input` is a lambda, the result is `lambda x: f(input(x))`
-function compose(input: ValueOrLambda, f: (arg: Sourcelike) => Sourcelike): ValueOrLambda;
-function compose(input: ValueOrLambda, f: ValueOrLambda): ValueOrLambda;
-function compose(input: ValueOrLambda, f: ValueOrLambda | ((arg: Sourcelike) => Sourcelike)): ValueOrLambda {
+function compose (input: ValueOrLambda, f: (arg: Sourcelike) => Sourcelike): ValueOrLambda;
+function compose (input: ValueOrLambda, f: ValueOrLambda): ValueOrLambda;
+function compose (input: ValueOrLambda, f: ValueOrLambda | ((arg: Sourcelike) => Sourcelike)): ValueOrLambda {
     if (typeof f === "function") {
         if (input.value !== undefined) {
             // `input` is a value, so just apply `f` to its source form.
             return { value: f(makeValue(input)) };
         }
+
         if (input.lambda !== undefined) {
             // `input` is a lambda, so build `lambda x: f(input(x))`.
             return { lambda: multiWord(" ", "lambda x:", f([parenIfNeeded(input.lambda), "(x)"])), value: undefined };
         }
+
         // `input` is the identify function, so the composition is `lambda x: f(x)`.
         return { lambda: multiWord(" ", "lambda x:", f("x")), value: undefined };
     }
@@ -583,6 +607,7 @@ function compose(input: ValueOrLambda, f: ValueOrLambda | ((arg: Sourcelike) => 
     if (f.value !== undefined) {
         return panic("Cannot compose into a value");
     }
+
     if (f.lambda === undefined) {
         // `f` is the identity function, so the result is just `input`.
         return input;
@@ -594,10 +619,11 @@ function compose(input: ValueOrLambda, f: ValueOrLambda | ((arg: Sourcelike) => 
             // `input` is the identity function, so the result is just `f`.
             return f;
         }
+
         // `input` is a lambda, so the result is `lambda x: f(input(x))`.
         return {
             lambda: multiWord("", "lambda x: ", parenIfNeeded(f.lambda), "(", parenIfNeeded(input.lambda), "(x))"),
-            value: undefined
+            value: undefined,
         };
     }
 
@@ -609,48 +635,58 @@ const identity: ValueOrLambda = { value: undefined };
 
 // If `vol` is a lambda, return it in its source form.  If it's
 // a value, return a `lambda` that returns the value.
-function makeLambda(vol: ValueOrLambda): MultiWord {
+function makeLambda (vol: ValueOrLambda): MultiWord {
     if (vol.lambda !== undefined) {
         if (vol.value === undefined) {
             return vol.lambda;
         }
+
         return multiWord("", "lambda x: ", parenIfNeeded(vol.lambda), "(", vol.value, ")");
     } else if (vol.value !== undefined) {
         return multiWord(" ", "lambda x:", vol.value);
     }
+
     return multiWord(" ", "lambda x:", "x");
 }
 
 // If `vol` is a value, return the value in its source form.
 // Calling this with `vol` being a lambda is not allowed.
-function makeValue(vol: ValueOrLambda): Sourcelike {
+function makeValue (vol: ValueOrLambda): Sourcelike {
     if (vol.value === undefined) {
         return panic("Cannot make value from lambda without value");
     }
+
     if (vol.lambda !== undefined) {
         return [parenIfNeeded(vol.lambda), "(", vol.value, ")"];
     }
+
     return vol.value;
 }
 
 export class JSONPythonRenderer extends PythonRenderer {
     private readonly _deserializerFunctions = new Set<ConverterFunction>();
+
     private readonly _converterNamer = funPrefixNamer("converter", s =>
-        snakeNameStyle(s, false, this.pyOptions.nicePropertyNames)
+        snakeNameStyle(s, false, this.pyOptions.nicePropertyNames),
     );
+
     private readonly _topLevelConverterNames = new Map<Name, TopLevelConverterNames>();
+
     private _haveTypeVar = false;
+
     private _haveEnumTypeVar = false;
+
     private _haveDateutil = false;
 
-    protected emitTypeVar(tvar: string, constraints: Sourcelike): void {
+    protected emitTypeVar (tvar: string, constraints: Sourcelike): void {
         if (!this.pyOptions.features.typeHints) {
             return;
         }
+
         this.emitLine(tvar, " = ", this.withTyping("TypeVar"), "(", this.string(tvar), constraints, ")");
     }
 
-    protected typeVar(): string {
+    protected typeVar (): string {
         this._haveTypeVar = true;
         // FIXME: This is ugly, but the code that requires the type variables, in
         // `emitImports` actually runs after imports have been imported.  The proper
@@ -662,7 +698,7 @@ export class JSONPythonRenderer extends PythonRenderer {
         return "T";
     }
 
-    protected enumTypeVar(): string {
+    protected enumTypeVar (): string {
         this._haveEnumTypeVar = true;
         // See the comment above.
         this.withTyping("TypeVar");
@@ -670,14 +706,15 @@ export class JSONPythonRenderer extends PythonRenderer {
         return "EnumT";
     }
 
-    protected cast(type: Sourcelike, v: Sourcelike): Sourcelike {
+    protected cast (type: Sourcelike, v: Sourcelike): Sourcelike {
         if (!this.pyOptions.features.typeHints) {
             return v;
         }
+
         return [this.withTyping("cast"), "(", type, ", ", v, ")"];
     }
 
-    protected emitNoneConverter(): void {
+    protected emitNoneConverter (): void {
         // FIXME: We can't return the None type here because mypy thinks that means
         // We're not returning any value, when we're actually returning `None`.
         this.emitBlock(
@@ -685,39 +722,39 @@ export class JSONPythonRenderer extends PythonRenderer {
             () => {
                 this.emitLine("assert x is None");
                 this.emitLine("return x");
-            }
+            },
         );
     }
 
-    protected emitBoolConverter(): void {
+    protected emitBoolConverter (): void {
         this.emitBlock(["def from_bool(", this.typingDecl("x", "Any"), ")", this.typeHint(" -> bool"), ":"], () => {
             this.emitLine("assert isinstance(x, bool)");
             this.emitLine("return x");
         });
     }
 
-    protected emitIntConverter(): void {
+    protected emitIntConverter (): void {
         this.emitBlock(["def from_int(", this.typingDecl("x", "Any"), ")", this.typeHint(" -> int"), ":"], () => {
             this.emitLine("assert isinstance(x, int) and not isinstance(x, bool)");
             this.emitLine("return x");
         });
     }
 
-    protected emitFromFloatConverter(): void {
+    protected emitFromFloatConverter (): void {
         this.emitBlock(["def from_float(", this.typingDecl("x", "Any"), ")", this.typeHint(" -> float"), ":"], () => {
             this.emitLine("assert isinstance(x, (float, int)) and not isinstance(x, bool)");
             this.emitLine("return float(x)");
         });
     }
 
-    protected emitToFloatConverter(): void {
+    protected emitToFloatConverter (): void {
         this.emitBlock(["def to_float(", this.typingDecl("x", "Any"), ")", this.typeHint(" -> float"), ":"], () => {
             this.emitLine("assert isinstance(x, float)");
             this.emitLine("return x");
         });
     }
 
-    protected emitStrConverter(): void {
+    protected emitStrConverter (): void {
         this.emitBlock(["def from_str(", this.typingDecl("x", "Any"), ")", this.typeHint(" -> str"), ":"], () => {
             const strType = "str";
             this.emitLine("assert isinstance(x, ", strType, ")");
@@ -725,7 +762,7 @@ export class JSONPythonRenderer extends PythonRenderer {
         });
     }
 
-    protected emitToEnumConverter(): void {
+    protected emitToEnumConverter (): void {
         const tvar = this.enumTypeVar();
         this.emitBlock(
             [
@@ -735,16 +772,16 @@ export class JSONPythonRenderer extends PythonRenderer {
                 this.typingDecl("x", "Any"),
                 ")",
                 this.typeHint(" -> ", tvar),
-                ":"
+                ":",
             ],
             () => {
                 this.emitLine("assert isinstance(x, c)");
                 this.emitLine("return x.value");
-            }
+            },
         );
     }
 
-    protected emitListConverter(): void {
+    protected emitListConverter (): void {
         const tvar = this.typeVar();
         this.emitBlock(
             [
@@ -754,16 +791,16 @@ export class JSONPythonRenderer extends PythonRenderer {
                 this.typingDecl("x", "Any"),
                 ")",
                 this.typeHint(" -> ", this.withTyping("List"), "[", tvar, "]"),
-                ":"
+                ":",
             ],
             () => {
                 this.emitLine("assert isinstance(x, list)");
                 this.emitLine("return [f(y) for y in x]");
-            }
+            },
         );
     }
 
-    protected emitToClassConverter(): void {
+    protected emitToClassConverter (): void {
         const tvar = this.typeVar();
         this.emitBlock(
             [
@@ -773,16 +810,16 @@ export class JSONPythonRenderer extends PythonRenderer {
                 this.typingDecl("x", "Any"),
                 ")",
                 this.typeHint(" -> dict"),
-                ":"
+                ":",
             ],
             () => {
                 this.emitLine("assert isinstance(x, c)");
                 this.emitLine("return ", this.cast(this.withTyping("Any"), "x"), ".to_dict()");
-            }
+            },
         );
     }
 
-    protected emitDictConverter(): void {
+    protected emitDictConverter (): void {
         const tvar = this.typeVar();
         this.emitBlock(
             [
@@ -792,18 +829,18 @@ export class JSONPythonRenderer extends PythonRenderer {
                 this.typingDecl("x", "Any"),
                 ")",
                 this.typeHint(" -> ", this.withTyping("Dict"), "[str, ", tvar, "]"),
-                ":"
+                ":",
             ],
             () => {
                 this.emitLine("assert isinstance(x, dict)");
                 this.emitLine("return { k: f(v) for (k, v) in x.items() }");
-            }
+            },
         );
     }
 
     // This is not easily idiomatically typeable in Python.  See
     // https://stackoverflow.com/questions/51066468/computed-types-in-mypy/51084497
-    protected emitUnionConverter(): void {
+    protected emitUnionConverter (): void {
         this.emitMultiline(`def from_union(fs, x):
     for f in fs:
         try:
@@ -813,34 +850,34 @@ export class JSONPythonRenderer extends PythonRenderer {
     assert False`);
     }
 
-    protected emitFromDatetimeConverter(): void {
+    protected emitFromDatetimeConverter (): void {
         this.emitBlock(
             [
                 "def from_datetime(",
                 this.typingDecl("x", "Any"),
                 ")",
                 this.typeHint(" -> ", this.withImport("datetime", "datetime")),
-                ":"
+                ":",
             ],
             () => {
                 this._haveDateutil = true;
                 this.emitLine("return dateutil.parser.parse(x)");
-            }
+            },
         );
     }
 
-    protected emitFromStringifiedBoolConverter(): void {
+    protected emitFromStringifiedBoolConverter (): void {
         this.emitBlock(
             ["def from_stringified_bool(x", this.typeHint(": str"), ")", this.typeHint(" -> bool"), ":"],
             () => {
-                this.emitBlock('if x == "true":', () => this.emitLine("return True"));
-                this.emitBlock('if x == "false":', () => this.emitLine("return False"));
+                this.emitBlock("if x == \"true\":", () => this.emitLine("return True"));
+                this.emitBlock("if x == \"false\":", () => this.emitLine("return False"));
                 this.emitLine("assert False");
-            }
+            },
         );
     }
 
-    protected emitIsTypeConverter(): void {
+    protected emitIsTypeConverter (): void {
         const tvar = this.typeVar();
         this.emitBlock(
             [
@@ -850,52 +887,66 @@ export class JSONPythonRenderer extends PythonRenderer {
                 this.typingDecl("x", "Any"),
                 ")",
                 this.typeHint(" -> ", tvar),
-                ":"
+                ":",
             ],
             () => {
                 this.emitLine("assert isinstance(x, t)");
                 this.emitLine("return x");
-            }
+            },
         );
     }
 
-    protected emitConverter(cf: ConverterFunction): void {
+    protected emitConverter (cf: ConverterFunction): void {
         switch (cf) {
             case "none":
-                return this.emitNoneConverter();
+            { this.emitNoneConverter(); return; }
+
             case "bool":
-                return this.emitBoolConverter();
+            { this.emitBoolConverter(); return; }
+
             case "int":
-                return this.emitIntConverter();
+            { this.emitIntConverter(); return; }
+
             case "from-float":
-                return this.emitFromFloatConverter();
+            { this.emitFromFloatConverter(); return; }
+
             case "to-float":
-                return this.emitToFloatConverter();
+            { this.emitToFloatConverter(); return; }
+
             case "str":
-                return this.emitStrConverter();
+            { this.emitStrConverter(); return; }
+
             case "to-enum":
-                return this.emitToEnumConverter();
+            { this.emitToEnumConverter(); return; }
+
             case "list":
-                return this.emitListConverter();
+            { this.emitListConverter(); return; }
+
             case "to-class":
-                return this.emitToClassConverter();
+            { this.emitToClassConverter(); return; }
+
             case "dict":
-                return this.emitDictConverter();
+            { this.emitDictConverter(); return; }
+
             case "union":
-                return this.emitUnionConverter();
+            { this.emitUnionConverter(); return; }
+
             case "from-datetime":
-                return this.emitFromDatetimeConverter();
+            { this.emitFromDatetimeConverter(); return; }
+
             case "from-stringified-bool":
-                return this.emitFromStringifiedBoolConverter();
+            { this.emitFromStringifiedBoolConverter(); return; }
+
             case "is-type":
-                return this.emitIsTypeConverter();
+            { this.emitIsTypeConverter(); return; }
+
             default:
                 return assertNever(cf);
         }
     }
 
     // Return the name of the Python converter function `cf`.
-    protected conv(cf: ConverterFunction): Sourcelike {
+    protected conv (cf: ConverterFunction): Sourcelike {
         this._deserializerFunctions.add(cf);
         const name = cf.replace(/-/g, "_");
         if (cf.startsWith("from-") || cf.startsWith("to-") || cf.startsWith("is-")) return name;
@@ -903,11 +954,11 @@ export class JSONPythonRenderer extends PythonRenderer {
     }
 
     // Applies the converter function to `arg`
-    protected convFn(cf: ConverterFunction, arg: ValueOrLambda): ValueOrLambda {
+    protected convFn (cf: ConverterFunction, arg: ValueOrLambda): ValueOrLambda {
         return compose(arg, { lambda: singleWord(this.conv(cf)), value: undefined });
     }
 
-    protected typeObject(t: Type): Sourcelike {
+    protected typeObject (t: Type): Sourcelike {
         const s = matchType<Sourcelike | undefined>(
             t,
             _anyType => undefined,
@@ -925,23 +976,27 @@ export class JSONPythonRenderer extends PythonRenderer {
                 if (transformedStringType.kind === "date-time") {
                     return this.withImport("datetime", "datetime");
                 }
+
                 if (transformedStringType.kind === "uuid") {
                     return this.withImport("uuid", "UUID");
                 }
+
                 return undefined;
-            }
+            },
         );
         if (s === undefined) {
             return panic(`No type object for ${t.kind}`);
         }
+
         return s;
     }
 
-    protected transformer(inputTransformer: ValueOrLambda, xfer: Transformer, targetType: Type): ValueOrLambda {
+    protected transformer (inputTransformer: ValueOrLambda, xfer: Transformer, targetType: Type): ValueOrLambda {
         const consume = (consumer: Transformer | undefined, vol: ValueOrLambda) => {
             if (consumer === undefined) {
                 return vol;
             }
+
             return this.transformer(vol, consumer, targetType);
         };
 
@@ -957,7 +1012,7 @@ export class JSONPythonRenderer extends PythonRenderer {
                 arrayIntercalate(", ", lambdas),
                 "], ",
                 v,
-                ")"
+                ")",
             ]);
         } else if (xfer instanceof DecodingTransformer) {
             const consumer = xfer.consumer;
@@ -994,6 +1049,7 @@ export class JSONPythonRenderer extends PythonRenderer {
                 default:
                     return panic(`Parsing of ${immediateTargetType.kind} in a transformer is not supported`);
             }
+
             return consume(consumer, vol);
         } else if (xfer instanceof StringifyTransformer) {
             const consumer = xfer.consumer;
@@ -1017,6 +1073,7 @@ export class JSONPythonRenderer extends PythonRenderer {
                 default:
                     return panic(`Parsing of ${xfer.sourceType.kind} in a transformer is not supported`);
             }
+
             return consume(consumer, vol);
         } else {
             return panic(`Transformer ${xfer.kind} is not supported`);
@@ -1026,11 +1083,12 @@ export class JSONPythonRenderer extends PythonRenderer {
     // Returns the code to deserialize `value` as type `t`.  If `t` has
     // an associated transformer, the code for that transformer is
     // returned.
-    protected deserializer(value: ValueOrLambda, t: Type): ValueOrLambda {
+    protected deserializer (value: ValueOrLambda, t: Type): ValueOrLambda {
         const xf = transformationForType(t);
         if (xf !== undefined) {
             return this.transformer(value, xf.transformer, xf.targetType);
         }
+
         return matchType<ValueOrLambda>(
             t,
             _anyType => value,
@@ -1046,12 +1104,12 @@ export class JSONPythonRenderer extends PythonRenderer {
                     makeLambda(this.deserializer(identity, arrayType.items)).source,
                     ", ",
                     v,
-                    ")"
+                    ")",
                 ]),
             classType =>
                 compose(value, {
                     lambda: singleWord(this.nameForNamedType(classType), ".from_dict"),
-                    value: undefined
+                    value: undefined,
                 }),
             mapType =>
                 compose(value, v => [
@@ -1060,13 +1118,13 @@ export class JSONPythonRenderer extends PythonRenderer {
                     makeLambda(this.deserializer(identity, mapType.values)).source,
                     ", ",
                     v,
-                    ")"
+                    ")",
                 ]),
             enumType => compose(value, { lambda: singleWord(this.nameForNamedType(enumType)), value: undefined }),
             unionType => {
                 // FIXME: handle via transformers
                 const deserializers = Array.from(unionType.members).map(
-                    m => makeLambda(this.deserializer(identity, m)).source
+                    m => makeLambda(this.deserializer(identity, m)).source,
                 );
                 return compose(value, v => [
                     this.conv("union"),
@@ -1074,7 +1132,7 @@ export class JSONPythonRenderer extends PythonRenderer {
                     arrayIntercalate(", ", deserializers),
                     "], ",
                     v,
-                    ")"
+                    ")",
                 ]);
             },
             transformedStringType => {
@@ -1082,20 +1140,23 @@ export class JSONPythonRenderer extends PythonRenderer {
                 if (transformedStringType.kind === "date-time") {
                     return this.convFn("from-datetime", value);
                 }
+
                 if (transformedStringType.kind === "uuid") {
                     return compose(value, v => [this.withImport("uuid", "UUID"), "(", v, ")"]);
                 }
+
                 return panic(`Transformed type ${transformedStringType.kind} not supported`);
-            }
+            },
         );
     }
 
-    protected serializer(value: ValueOrLambda, t: Type): ValueOrLambda {
+    protected serializer (value: ValueOrLambda, t: Type): ValueOrLambda {
         const xf = transformationForType(t);
         if (xf !== undefined) {
             const reverse = xf.reverse;
             return this.transformer(value, reverse.transformer, reverse.targetType);
         }
+
         return matchType<ValueOrLambda>(
             t,
             _anyType => value,
@@ -1111,7 +1172,7 @@ export class JSONPythonRenderer extends PythonRenderer {
                     makeLambda(this.serializer(identity, arrayType.items)).source,
                     ", ",
                     v,
-                    ")"
+                    ")",
                 ]),
             classType =>
                 compose(value, v => [this.conv("to-class"), "(", this.nameForNamedType(classType), ", ", v, ")"]),
@@ -1122,12 +1183,12 @@ export class JSONPythonRenderer extends PythonRenderer {
                     makeLambda(this.serializer(identity, mapType.values)).source,
                     ", ",
                     v,
-                    ")"
+                    ")",
                 ]),
             enumType => compose(value, v => [this.conv("to-enum"), "(", this.nameForNamedType(enumType), ", ", v, ")"]),
             unionType => {
                 const serializers = Array.from(unionType.members).map(
-                    m => makeLambda(this.serializer(identity, m)).source
+                    m => makeLambda(this.serializer(identity, m)).source,
                 );
                 return compose(value, v => [
                     this.conv("union"),
@@ -1135,22 +1196,24 @@ export class JSONPythonRenderer extends PythonRenderer {
                     arrayIntercalate(", ", serializers),
                     "], ",
                     v,
-                    ")"
+                    ")",
                 ]);
             },
             transformedStringType => {
                 if (transformedStringType.kind === "date-time") {
                     return compose(value, v => [v, ".isoformat()"]);
                 }
+
                 if (transformedStringType.kind === "uuid") {
                     return compose(value, v => ["str(", v, ")"]);
                 }
+
                 return panic(`Transformed type ${transformedStringType.kind} not supported`);
-            }
+            },
         );
     }
 
-    protected emitClassMembers(t: ClassType): void {
+    protected emitClassMembers (t: ClassType): void {
         super.emitClassMembers(t);
         this.ensureBlankLine();
 
@@ -1168,7 +1231,7 @@ export class JSONPythonRenderer extends PythonRenderer {
                     args.push(name);
                 });
                 this.emitLine("return ", className, "(", arrayIntercalate(", ", args), ")");
-            }
+            },
         );
         this.ensureBlankLine();
 
@@ -1182,7 +1245,7 @@ export class JSONPythonRenderer extends PythonRenderer {
                             "result[",
                             this.string(jsonName),
                             "] = ",
-                            makeValue(this.serializer(property, cp.type))
+                            makeValue(this.serializer(property, cp.type)),
                         );
                     });
                 } else {
@@ -1190,7 +1253,7 @@ export class JSONPythonRenderer extends PythonRenderer {
                         "result[",
                         this.string(jsonName),
                         "] = ",
-                        makeValue(this.serializer(property, cp.type))
+                        makeValue(this.serializer(property, cp.type)),
                     );
                 }
             });
@@ -1198,7 +1261,7 @@ export class JSONPythonRenderer extends PythonRenderer {
         });
     }
 
-    protected emitImports(): void {
+    protected emitImports (): void {
         super.emitImports();
         if (this._haveDateutil) {
             this.emitLine("import dateutil.parser");
@@ -1210,46 +1273,48 @@ export class JSONPythonRenderer extends PythonRenderer {
         if (this._haveTypeVar) {
             this.emitTypeVar(this.typeVar(), []);
         }
+
         if (this._haveEnumTypeVar) {
             this.emitTypeVar(this.enumTypeVar(), [", bound=", this.withImport("enum", "Enum")]);
         }
     }
 
-    protected emitSupportCode(): void {
+    protected emitSupportCode (): void {
         const map = Array.from(this._deserializerFunctions).map(f => [f, f] as [ConverterFunction, ConverterFunction]);
         this.forEachWithBlankLines(map, ["interposing", 2], cf => {
             this.emitConverter(cf);
         });
     }
 
-    protected makeTopLevelDependencyNames(_t: Type, topLevelName: Name): DependencyName[] {
+    protected makeTopLevelDependencyNames (_t: Type, topLevelName: Name): DependencyName[] {
         const fromDict = new DependencyName(
             this._converterNamer,
             topLevelNameOrder,
-            l => `${l(topLevelName)}_from_dict`
+            l => `${l(topLevelName)}_from_dict`,
         );
         const toDict = new DependencyName(this._converterNamer, topLevelNameOrder, l => `${l(topLevelName)}_to_dict`);
         this._topLevelConverterNames.set(topLevelName, { fromDict, toDict });
         return [fromDict, toDict];
     }
 
-    protected emitDefaultLeadingComments(): void {
+    protected emitDefaultLeadingComments (): void {
         this.ensureBlankLine();
         if (this._haveDateutil) {
             this.emitCommentLines([
                 "This code parses date/times, so please",
                 "",
                 "    pip install python-dateutil",
-                ""
+                "",
             ]);
         }
+
         this.emitCommentLines([
             "To use this code, make sure you",
             "",
             "    import json",
             "",
             "and then, to convert JSON from a string, do",
-            ""
+            "",
         ]);
         this.forEachTopLevel("none", (_, name) => {
             const { fromDict } = defined(this._topLevelConverterNames.get(name));
@@ -1257,7 +1322,7 @@ export class JSONPythonRenderer extends PythonRenderer {
         });
     }
 
-    protected emitClosingCode(): void {
+    protected emitClosingCode (): void {
         this.forEachTopLevel(["interposing", 2], (t, name) => {
             const { fromDict, toDict } = defined(this._topLevelConverterNames.get(name));
             const pythonType = this.pythonType(t);
@@ -1265,14 +1330,14 @@ export class JSONPythonRenderer extends PythonRenderer {
                 ["def ", fromDict, "(", this.typingDecl("s", "Any"), ")", this.typeHint(" -> ", pythonType), ":"],
                 () => {
                     this.emitLine("return ", makeValue(this.deserializer({ value: "s" }, t)));
-                }
+                },
             );
             this.ensureBlankLine(2);
             this.emitBlock(
                 ["def ", toDict, "(x", this.typeHint(": ", pythonType), ")", this.typingReturn("Any"), ":"],
                 () => {
                     this.emitLine("return ", makeValue(this.serializer({ value: "x" }, t)));
-                }
+                },
             );
         });
     }

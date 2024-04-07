@@ -1,7 +1,7 @@
 import { parseJSON } from "../support/Support";
-import { JSONSourceData } from "./Inputs";
+import { type JSONSourceData } from "./Inputs";
 
-function isValidJSON(s: string): boolean {
+function isValidJSON (s: string): boolean {
     try {
         JSON.parse(s);
         return true;
@@ -10,23 +10,25 @@ function isValidJSON(s: string): boolean {
     }
 }
 
-export function sourcesFromPostmanCollection(
+export function sourcesFromPostmanCollection (
     collectionJSON: string,
-    collectionJSONAddress?: string
-): { sources: JSONSourceData<string>[]; description: string | undefined } {
-    const sources: JSONSourceData<string>[] = [];
+    collectionJSONAddress?: string,
+): { description: string | undefined, sources: Array<JSONSourceData<string>>, } {
+    const sources: Array<JSONSourceData<string>> = [];
     const descriptions: string[] = [];
 
-    function processCollection(c: any): void {
+    function processCollection (c: any): void {
         if (typeof c !== "object") return;
         if (Array.isArray(c.item)) {
             for (const item of c.item) {
                 processCollection(item);
             }
+
             if (typeof c.info === "object" && typeof c.info.description === "string") {
                 descriptions.push(c.info.description);
             }
         }
+
         if (typeof c.name === "string" && Array.isArray(c.response)) {
             const samples: string[] = [];
             for (const r of c.response) {
@@ -34,6 +36,7 @@ export function sourcesFromPostmanCollection(
                     samples.push(r.body);
                 }
             }
+
             if (samples.length > 0) {
                 const source: JSONSourceData<string> = { name: c.name, samples };
                 const sourceDescription = [c.name];

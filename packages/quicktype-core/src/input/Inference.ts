@@ -1,18 +1,22 @@
-import { Value, Tag, valueTag, CompressedJSON } from "./CompressedJSON";
+import { type Value, type CompressedJSON } from "./CompressedJSON";
+import { Tag, valueTag } from "./CompressedJSON";
 import { assertNever, defined, panic, assert } from "../support/Support";
-import { TypeBuilder } from "../TypeBuilder";
+import { type TypeBuilder } from "../TypeBuilder";
 import { UnionBuilder, UnionAccumulator } from "../UnionBuilder";
 import {
-    ClassProperty,
+    type ClassProperty} from "../Type";
+import {
     transformedStringTypeTargetTypeKindsMap,
     UnionType,
     ClassType,
     MapType,
-    ArrayType
+    ArrayType,
 } from "../Type";
-import { TypeAttributes, emptyTypeAttributes } from "../attributes/TypeAttributes";
+import { type TypeAttributes} from "../attributes/TypeAttributes";
+import { emptyTypeAttributes } from "../attributes/TypeAttributes";
 import { StringTypes, inferTransformedStringTypeKindForString } from "../attributes/StringTypes";
-import { TypeRef, derefTypeRef } from "../TypeGraph";
+import { type TypeRef} from "../TypeGraph";
+import { derefTypeRef } from "../TypeGraph";
 import { messageError } from "../Messages";
 import { nullableFromUnion } from "../TypeUtils";
 
@@ -21,10 +25,11 @@ import { nullableFromUnion } from "../TypeUtils";
 // but TypeScript doesn't support that.
 export type NestedValueArray = any;
 
-function forEachArrayInNestedValueArray(va: NestedValueArray, f: (va: Value[]) => void): void {
+function forEachArrayInNestedValueArray (va: NestedValueArray, f: (va: Value[]) => void): void {
     if (va.length === 0) {
         return;
     }
+
     if (Array.isArray(va[0])) {
         for (const x of va) {
             forEachArrayInNestedValueArray(x, f);
@@ -34,7 +39,7 @@ function forEachArrayInNestedValueArray(va: NestedValueArray, f: (va: Value[]) =
     }
 }
 
-function forEachValueInNestedValueArray(va: NestedValueArray, f: (v: Value) => void): void {
+function forEachValueInNestedValueArray (va: NestedValueArray, f: (v: Value) => void): void {
     forEachArrayInNestedValueArray(va, a => {
         for (const x of a) {
             f(x);
@@ -43,51 +48,51 @@ function forEachValueInNestedValueArray(va: NestedValueArray, f: (v: Value) => v
 }
 
 class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, NestedValueArray> {
-    constructor(
+    constructor (
         typeBuilder: TypeBuilder,
         private readonly _typeInference: TypeInference,
-        private readonly _fixed: boolean
+        private readonly _fixed: boolean,
     ) {
         super(typeBuilder);
     }
 
-    protected makeObject(
+    protected makeObject (
         objects: NestedValueArray,
         typeAttributes: TypeAttributes,
-        forwardingRef: TypeRef | undefined
+        forwardingRef: TypeRef | undefined,
     ): TypeRef {
         return this._typeInference.inferClassType(typeAttributes, objects, this._fixed, forwardingRef);
     }
 
-    protected makeArray(
+    protected makeArray (
         arrays: NestedValueArray,
         typeAttributes: TypeAttributes,
-        forwardingRef: TypeRef | undefined
+        forwardingRef: TypeRef | undefined,
     ): TypeRef {
         return this.typeBuilder.getArrayType(
             typeAttributes,
-            this._typeInference.inferType(emptyTypeAttributes, arrays, this._fixed, forwardingRef)
+            this._typeInference.inferType(emptyTypeAttributes, arrays, this._fixed, forwardingRef),
         );
     }
 }
 
-function canBeEnumCase(_s: string): boolean {
+function canBeEnumCase (_s: string): boolean {
     return true;
 }
 
 export type Accumulator = UnionAccumulator<NestedValueArray, NestedValueArray>;
 
 export class TypeInference {
-    private _refIntersections: [TypeRef, string[]][] | undefined;
+    private _refIntersections: Array<[TypeRef, string[]]> | undefined;
 
-    constructor(
+    constructor (
         private readonly _cjson: CompressedJSON<unknown>,
         private readonly _typeBuilder: TypeBuilder,
         private readonly _inferMaps: boolean,
-        private readonly _inferEnums: boolean
+        private readonly _inferEnums: boolean,
     ) {}
 
-    addValuesToAccumulator(valueArray: NestedValueArray, accumulator: Accumulator): void {
+    addValuesToAccumulator (valueArray: NestedValueArray, accumulator: Accumulator): void {
         forEachValueInNestedValueArray(valueArray, value => {
             const t = valueTag(value);
             switch (t) {
@@ -115,6 +120,7 @@ export class TypeInference {
                     } else {
                         accumulator.addStringType("string", emptyTypeAttributes);
                     }
+
                     break;
                 case Tag.UninternedString:
                     accumulator.addStringType("string", emptyTypeAttributes);
@@ -130,43 +136,48 @@ export class TypeInference {
                     accumulator.addStringType(
                         "string",
                         emptyTypeAttributes,
-                        new StringTypes(new Map(), new Set([kind]))
+                        new StringTypes(new Map(), new Set([kind])),
                     );
                     break;
                 }
+
                 case Tag.TransformedString: {
                     const s = this._cjson.getStringForValue(value);
                     const kind = inferTransformedStringTypeKindForString(s, this._cjson.dateTimeRecognizer);
                     if (kind === undefined) {
                         return panic("TransformedString does not have a kind");
                     }
+
                     const producer = defined(transformedStringTypeTargetTypeKindsMap.get(kind)).attributesProducer;
                     if (producer === undefined) {
                         return panic("TransformedString does not have attribute producer");
                     }
+
                     accumulator.addStringType("string", producer(s), new StringTypes(new Map(), new Set([kind])));
                     break;
                 }
+
                 default:
                     return assertNever(t);
             }
         });
     }
 
-    inferType(
+    inferType (
         typeAttributes: TypeAttributes,
         valueArray: NestedValueArray,
         fixed: boolean,
-        forwardingRef?: TypeRef
+        forwardingRef?: TypeRef,
     ): TypeRef {
         const accumulator = this.accumulatorForArray(valueArray);
         return this.makeTypeFromAccumulator(accumulator, typeAttributes, fixed, forwardingRef);
     }
 
-    private resolveRef(ref: string, topLevel: TypeRef): TypeRef {
+    private resolveRef (ref: string, topLevel: TypeRef): TypeRef {
         if (!ref.startsWith("#/")) {
             return messageError("InferenceJSONReferenceNotRooted", { reference: ref });
         }
+
         const parts = ref.split("/").slice(1);
         const graph = this._typeBuilder.typeGraph;
         let tref = topLevel;
@@ -178,33 +189,39 @@ export class TypeInference {
                     // FIXME: handle unions
                     return messageError("InferenceJSONReferenceToUnion", { reference: ref });
                 }
+
                 t = nullable;
             }
+
             if (t instanceof ClassType) {
                 const cp = t.getProperties().get(part);
                 if (cp === undefined) {
                     return messageError("InferenceJSONReferenceWrongProperty", { reference: ref });
                 }
+
                 tref = cp.typeRef;
             } else if (t instanceof MapType) {
                 tref = t.values.typeRef;
             } else if (t instanceof ArrayType) {
-                if (part.match("^[0-9]+$") === null) {
+                if (/^[0-9]+$/.exec(part) === null) {
                     return messageError("InferenceJSONReferenceInvalidArrayIndex", { reference: ref });
                 }
+
                 tref = t.items.typeRef;
             } else {
                 return messageError("InferenceJSONReferenceWrongProperty", { reference: ref });
             }
         }
+
         return tref;
     }
 
-    inferTopLevelType(typeAttributes: TypeAttributes, valueArray: NestedValueArray, fixed: boolean): TypeRef {
+    inferTopLevelType (typeAttributes: TypeAttributes, valueArray: NestedValueArray, fixed: boolean): TypeRef {
         assert(this._refIntersections === undefined, "Didn't reset ref intersections - nested invocations?");
         if (this._cjson.handleRefs) {
             this._refIntersections = [];
         }
+
         const topLevel = this.inferType(typeAttributes, valueArray, fixed);
         if (this._cjson.handleRefs) {
             for (const [tref, refs] of defined(this._refIntersections)) {
@@ -214,33 +231,34 @@ export class TypeInference {
 
             this._refIntersections = undefined;
         }
+
         return topLevel;
     }
 
-    accumulatorForArray(valueArray: NestedValueArray): Accumulator {
+    accumulatorForArray (valueArray: NestedValueArray): Accumulator {
         const accumulator = new UnionAccumulator<NestedValueArray, NestedValueArray>(true);
         this.addValuesToAccumulator(valueArray, accumulator);
         return accumulator;
     }
 
-    makeTypeFromAccumulator(
+    makeTypeFromAccumulator (
         accumulator: Accumulator,
         typeAttributes: TypeAttributes,
         fixed: boolean,
-        forwardingRef?: TypeRef
+        forwardingRef?: TypeRef,
     ): TypeRef {
         const unionBuilder = new InferenceUnionBuilder(this._typeBuilder, this, fixed);
         return unionBuilder.buildUnion(accumulator, false, typeAttributes, forwardingRef);
     }
 
-    inferClassType(
+    inferClassType (
         typeAttributes: TypeAttributes,
         objects: NestedValueArray,
         fixed: boolean,
-        forwardingRef?: TypeRef
+        forwardingRef?: TypeRef,
     ): TypeRef {
         const propertyNames: string[] = [];
-        const propertyValues: { [name: string]: Value[] } = {};
+        const propertyValues: { [name: string]: Value[], } = {};
 
         forEachArrayInNestedValueArray(objects, arr => {
             for (let i = 0; i < arr.length; i += 2) {
@@ -250,12 +268,13 @@ export class TypeInference {
                     propertyNames.push(key);
                     propertyValues[key] = [];
                 }
+
                 propertyValues[key].push(value);
             }
         });
 
         if (this._cjson.handleRefs && propertyNames.length === 1 && propertyNames[0] === "$ref") {
-            const values = propertyValues["$ref"];
+            const values = propertyValues.$ref;
             if (values.every(v => valueTag(v) === Tag.InternedString)) {
                 const allRefs = values.map(v => this._cjson.getStringForValue(v));
                 // FIXME: Add is-ref attribute
@@ -270,6 +289,7 @@ export class TypeInference {
             for (const key of propertyNames) {
                 this.addValuesToAccumulator(propertyValues[key], accumulator);
             }
+
             const values = this.makeTypeFromAccumulator(accumulator, emptyTypeAttributes, fixed);
             return this._typeBuilder.getMapType(typeAttributes, values, forwardingRef);
         }

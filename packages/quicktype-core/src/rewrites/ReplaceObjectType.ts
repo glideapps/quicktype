@@ -1,40 +1,40 @@
 import { setFilter, iterableFirst, mapMap, setMap } from "collection-utils";
 
-import { TypeGraph, TypeRef } from "../TypeGraph";
-import { StringTypeMapping } from "../TypeBuilder";
-import { GraphRewriteBuilder } from "../GraphRewriting";
-import { ObjectType, ClassProperty } from "../Type";
+import { type TypeGraph, type TypeRef } from "../TypeGraph";
+import { type StringTypeMapping } from "../TypeBuilder";
+import { type GraphRewriteBuilder } from "../GraphRewriting";
+import { type ObjectType, type ClassProperty } from "../Type";
 import { defined } from "../support/Support";
 import { emptyTypeAttributes } from "../attributes/TypeAttributes";
 
-export function replaceObjectType(
+export function replaceObjectType (
     graph: TypeGraph,
     stringTypeMapping: StringTypeMapping,
     _conflateNumbers: boolean,
     leaveFullObjects: boolean,
-    debugPrintReconstitution: boolean
+    debugPrintReconstitution: boolean,
 ): TypeGraph {
-    function replace(
+    function replace (
         setOfOneType: ReadonlySet<ObjectType>,
         builder: GraphRewriteBuilder<ObjectType>,
-        forwardingRef: TypeRef
+        forwardingRef: TypeRef,
     ): TypeRef {
         const o = defined(iterableFirst(setOfOneType));
         const attributes = o.getAttributes();
         const properties = o.getProperties();
         const additionalProperties = o.getAdditionalProperties();
 
-        function reconstituteProperties(): ReadonlyMap<string, ClassProperty> {
+        function reconstituteProperties (): ReadonlyMap<string, ClassProperty> {
             return mapMap(properties, cp =>
-                builder.makeClassProperty(builder.reconstituteTypeRef(cp.typeRef), cp.isOptional)
+                builder.makeClassProperty(builder.reconstituteTypeRef(cp.typeRef), cp.isOptional),
             );
         }
 
-        function makeClass(): TypeRef {
+        function makeClass (): TypeRef {
             return builder.getUniqueClassType(attributes, true, reconstituteProperties(), forwardingRef);
         }
 
-        function reconstituteAdditionalProperties(): TypeRef {
+        function reconstituteAdditionalProperties (): TypeRef {
             return builder.reconstituteType(defined(additionalProperties));
         }
 

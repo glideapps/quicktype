@@ -1,7 +1,7 @@
-import { Options } from ".";
+import { type Options } from ".";
 import { PassThrough } from "readable-stream";
 
-export default function bufferStream(opts: Options) {
+export default function bufferStream (opts: Options) {
     opts = Object.assign({}, opts);
 
     const array = opts.array;
@@ -22,7 +22,7 @@ export default function bufferStream(opts: Options) {
     let len = 0;
     const ret: any[] = [];
     const stream = new PassThrough({
-        objectMode
+        objectMode,
     }) as any;
 
     if (encoding) {

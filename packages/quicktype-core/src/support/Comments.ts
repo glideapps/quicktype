@@ -1,17 +1,21 @@
-import { Sourcelike } from "../Source";
+import { type Sourcelike } from "../Source";
 
-export type CommentOptions = {
-    lineStart?: string;
-    lineEnd?: string;
-    beforeComment?: string;
+export interface CommentOptions {
     afterComment?: string;
+    beforeComment?: string;
     firstLineStart?: string;
-};
+    lineEnd?: string;
+    lineStart?: string;
+}
 
-type DescriptionBlockCommentConfig = { descriptionBlock: Sourcelike[] };
-type InlineCommentConfig = { lines: Sourcelike[] };
+interface DescriptionBlockCommentConfig {
+    descriptionBlock: Sourcelike[]; 
+}
+interface InlineCommentConfig {
+    lines: Sourcelike[]; 
+}
 type CustomCommentConfig = CommentOptions & {
-    customLines: Sourcelike[];
+    customLines: Sourcelike[],
 };
 
 export type CommentConfig = DescriptionBlockCommentConfig | InlineCommentConfig | CustomCommentConfig;

@@ -1,10 +1,13 @@
 import { mapContains } from "collection-utils";
 import { TargetLanguage } from "../TargetLanguage";
-import { EnumOption, StringOption, BooleanOption, Option, getOptionValues, OptionValues } from "../RendererOptions";
-import { Type, ClassType, UnionType, EnumType, ClassProperty } from "../Type";
+import { type Option, type OptionValues } from "../RendererOptions";
+import { EnumOption, StringOption, BooleanOption, getOptionValues } from "../RendererOptions";
+import { type Type, type ClassType, type UnionType, type EnumType, type ClassProperty } from "../Type";
 import { matchType, nullableFromUnion } from "../TypeUtils";
-import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { Namer, Name, funPrefixNamer } from "../Naming";
+import { type ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { ConvenienceRenderer } from "../ConvenienceRenderer";
+import { type Namer, type Name} from "../Naming";
+import { funPrefixNamer } from "../Naming";
 import {
     legalizeCharacters,
     isLetterOrUnderscoreOrDigit,
@@ -15,40 +18,41 @@ import {
     combineWords,
     firstUpperWordStyle,
     allLowerWordStyle,
-    allUpperWordStyle
+    allUpperWordStyle,
 } from "../support/Strings";
-import { Sourcelike, MultiWord, singleWord, multiWord, parenIfNeeded } from "../Source";
-import { RenderContext } from "../Renderer";
+import { type Sourcelike, type MultiWord} from "../Source";
+import { singleWord, multiWord, parenIfNeeded } from "../Source";
+import { type RenderContext } from "../Renderer";
 
 export const haskellOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     useList: new EnumOption("array-type", "Use Array or List", [
         ["array", false],
-        ["list", true]
+        ["list", true],
     ]),
-    moduleName: new StringOption("module", "Generated module name", "NAME", "QuickType")
+    moduleName: new StringOption("module", "Generated module name", "NAME", "QuickType"),
 };
 
 export class HaskellTargetLanguage extends TargetLanguage {
-    constructor() {
+    constructor () {
         super("Haskell", ["haskell"], "haskell");
     }
 
-    protected getOptions(): Option<any>[] {
+    protected getOptions (): Array<Option<any>> {
         return [haskellOptions.justTypes, haskellOptions.moduleName, haskellOptions.useList];
     }
 
-    get supportsOptionalClassProperties(): boolean {
+    get supportsOptionalClassProperties (): boolean {
         return true;
     }
 
-    get supportsUnionsWithBothNumberTypes(): boolean {
+    get supportsUnionsWithBothNumberTypes (): boolean {
         return true;
     }
 
-    protected makeRenderer(
+    protected makeRenderer (
         renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
+        untypedOptionValues: { [name: string]: any, },
     ): HaskellRenderer {
         return new HaskellRenderer(this, renderContext, getOptionValues(haskellOptions, untypedOptionValues));
     }
@@ -106,12 +110,12 @@ const forbiddenNames = [
     "Object",
     "Result",
     "Series",
-    "Error"
+    "Error",
 ];
 
 const legalizeName = legalizeCharacters(cp => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp));
 
-function haskellNameStyle(original: string, upper: boolean): string {
+function haskellNameStyle (original: string, upper: boolean): string {
     const words = splitIntoWords(original);
     return combineWords(
         words,
@@ -121,7 +125,7 @@ function haskellNameStyle(original: string, upper: boolean): string {
         upper ? allUpperWordStyle : allLowerWordStyle,
         allUpperWordStyle,
         "",
-        isLetterOrUnderscore
+        isLetterOrUnderscore,
     );
 }
 
@@ -129,73 +133,73 @@ const upperNamingFunction = funPrefixNamer("upper", n => haskellNameStyle(n, tru
 const lowerNamingFunction = funPrefixNamer("lower", n => haskellNameStyle(n, false));
 
 export class HaskellRenderer extends ConvenienceRenderer {
-    constructor(
+    constructor (
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        private readonly _options: OptionValues<typeof haskellOptions>
+        private readonly _options: OptionValues<typeof haskellOptions>,
     ) {
         super(targetLanguage, renderContext);
     }
 
-    protected forbiddenNamesForGlobalNamespace(): string[] {
+    protected forbiddenNamesForGlobalNamespace (): string[] {
         return forbiddenNames;
     }
 
-    protected makeNamedTypeNamer(): Namer {
+    protected makeNamedTypeNamer (): Namer {
         return upperNamingFunction;
     }
 
-    protected namerForObjectProperty(): Namer {
+    protected namerForObjectProperty (): Namer {
         return lowerNamingFunction;
     }
 
-    protected forbiddenForObjectProperties(_c: ClassType, _className: Name): ForbiddenWordsInfo {
+    protected forbiddenForObjectProperties (_c: ClassType, _className: Name): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: true };
     }
 
-    protected makeUnionMemberNamer(): Namer {
+    protected makeUnionMemberNamer (): Namer {
         return upperNamingFunction;
     }
 
-    protected get unionMembersInGlobalNamespace(): boolean {
+    protected get unionMembersInGlobalNamespace (): boolean {
         return true;
     }
 
-    protected makeEnumCaseNamer(): Namer {
+    protected makeEnumCaseNamer (): Namer {
         return upperNamingFunction;
     }
 
-    protected get enumCasesInGlobalNamespace(): boolean {
+    protected get enumCasesInGlobalNamespace (): boolean {
         return true;
     }
 
-    protected proposeUnionMemberName(
+    protected proposeUnionMemberName (
         u: UnionType,
         unionName: Name,
         fieldType: Type,
-        lookup: (n: Name) => string
+        lookup: (n: Name) => string,
     ): string {
         const fieldName = super.proposeUnionMemberName(u, unionName, fieldType, lookup);
         return `${fieldName}_in_${lookup(unionName)}`;
     }
 
-    protected get commentLineStart(): string {
+    protected get commentLineStart (): string {
         return "-- ";
     }
 
-    protected emitDescriptionBlock(lines: Sourcelike[]): void {
+    protected emitDescriptionBlock (lines: Sourcelike[]): void {
         if (lines.length === 1) {
             this.emitComments([{ customLines: lines, lineStart: "{-| ", lineEnd: " -}" }]);
         } else {
             this.emitCommentLines(lines, {
                 firstLineStart: "{-| ",
                 lineStart: "",
-                afterComment: "-}"
+                afterComment: "-}",
             });
         }
     }
 
-    private haskellType(t: Type, noOptional = false): MultiWord {
+    private haskellType (t: Type, noOptional = false): MultiWord {
         return matchType<MultiWord>(
             t,
             _anyType => multiWord(" ", "Maybe", "Text"),
@@ -208,6 +212,7 @@ export class HaskellRenderer extends ConvenienceRenderer {
                 if (this._options.useList) {
                     return multiWord("", "[", parenIfNeeded(this.haskellType(arrayType.items)), "]");
                 }
+
                 return multiWord(" ", "Vector", parenIfNeeded(this.haskellType(arrayType.items)));
             },
             classType => singleWord(this.nameForNamedType(classType)),
@@ -220,12 +225,13 @@ export class HaskellRenderer extends ConvenienceRenderer {
                     if (noOptional) return nullableType;
                     return multiWord(" ", "Maybe", parenIfNeeded(nullableType));
                 }
+
                 return singleWord(this.nameForNamedType(unionType));
-            }
+            },
         );
     }
 
-    private haskellProperty(p: ClassProperty): Sourcelike {
+    private haskellProperty (p: ClassProperty): Sourcelike {
         if (p.isOptional) {
             return multiWord(" ", "Maybe", parenIfNeeded(this.haskellType(p.type, true))).source;
         } else {
@@ -233,7 +239,7 @@ export class HaskellRenderer extends ConvenienceRenderer {
         }
     }
 
-    private encoderNameForType(t: Type): MultiWord {
+    private encoderNameForType (t: Type): MultiWord {
         return matchType<MultiWord>(
             t,
             _anyType => singleWord("String"),
@@ -246,15 +252,15 @@ export class HaskellRenderer extends ConvenienceRenderer {
             _classType => singleWord("Object"),
             _mapType => singleWord("Object"),
             _enumType => singleWord("Object"),
-            _unionType => singleWord("Object")
+            _unionType => singleWord("Object"),
         );
     }
 
-    private emitTopLevelDefinition(t: Type, topLevelName: Name): void {
+    private emitTopLevelDefinition (t: Type, topLevelName: Name): void {
         this.emitLine("type ", topLevelName, " = ", this.haskellType(t).source);
     }
 
-    private emitClassDefinition(c: ClassType, className: Name): void {
+    private emitClassDefinition (c: ClassType, className: Name): void {
         let description = this.descriptionForType(c);
         this.forEachClassProperty(c, "none", (name, jsonName) => {
             const propertyDescription = this.descriptionForClassProperty(c, jsonName);
@@ -265,6 +271,7 @@ export class HaskellRenderer extends ConvenienceRenderer {
             } else {
                 description.push("");
             }
+
             description.push(`${this.sourcelikeToString(name)}:`);
             description.push(...propertyDescription);
         });
@@ -280,11 +287,12 @@ export class HaskellRenderer extends ConvenienceRenderer {
             if (onFirst) {
                 this.emitLine("{");
             }
+
             this.emitLine("} deriving (Show)");
         });
     }
 
-    private emitEnumDefinition(e: EnumType, enumName: Name): void {
+    private emitEnumDefinition (e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
         this.emitLine("data ", enumName);
         this.indent(() => {
@@ -298,7 +306,7 @@ export class HaskellRenderer extends ConvenienceRenderer {
         });
     }
 
-    private emitUnionDefinition(u: UnionType, unionName: Name): void {
+    private emitUnionDefinition (u: UnionType, unionName: Name): void {
         this.emitDescription(this.descriptionForType(u));
         this.emitLine("data ", unionName);
         this.indent(() => {
@@ -310,18 +318,19 @@ export class HaskellRenderer extends ConvenienceRenderer {
                 } else {
                     this.emitLine(equalsOrPipe, " ", constructor, " ", parenIfNeeded(this.haskellType(t)));
                 }
+
                 onFirst = false;
             });
             this.emitLine("deriving (Show)");
         });
     }
 
-    private emitTopLevelFunctions(topLevelName: Name): void {
+    private emitTopLevelFunctions (topLevelName: Name): void {
         this.emitLine("decodeTopLevel :: ByteString -> Maybe ", topLevelName);
         this.emitLine("decodeTopLevel = decode");
     }
 
-    private classPropertyLength(c: ClassType): number {
+    private classPropertyLength (c: ClassType): number {
         let counter = 0;
         this.forEachClassProperty(c, "none", () => {
             counter += 1;
@@ -329,7 +338,7 @@ export class HaskellRenderer extends ConvenienceRenderer {
         return counter;
     }
 
-    private emitClassEncoderInstance(c: ClassType, className: Name): void {
+    private emitClassEncoderInstance (c: ClassType, className: Name): void {
         let classProperties: Array<Name | string> = [];
         this.forEachClassProperty(c, "none", name => {
             classProperties.push(" ");
@@ -347,19 +356,20 @@ export class HaskellRenderer extends ConvenienceRenderer {
                     this.emitLine("object");
                     let onFirst = true;
                     this.forEachClassProperty(c, "none", (name, jsonName) => {
-                        this.emitLine(onFirst ? "[ " : ", ", '"', stringEscape(jsonName), '" .= ', name, className);
+                        this.emitLine(onFirst ? "[ " : ", ", "\"", stringEscape(jsonName), "\" .= ", name, className);
                         onFirst = false;
                     });
                     if (onFirst) {
                         this.emitLine("[");
                     }
+
                     this.emitLine("]");
                 });
             }
         });
     }
 
-    private emitClassDecoderInstance(c: ClassType, className: Name): void {
+    private emitClassDecoderInstance (c: ClassType, className: Name): void {
         this.emitLine("instance FromJSON ", className, " where");
 
         this.indent(() => {
@@ -371,7 +381,7 @@ export class HaskellRenderer extends ConvenienceRenderer {
                     let onFirst = true;
                     this.forEachClassProperty(c, "none", (_, jsonName, p) => {
                         const operator = p.isOptional ? ".:?" : ".:";
-                        this.emitLine(onFirst ? "<$> " : "<*> ", "v ", operator, ' "', stringEscape(jsonName), '"');
+                        this.emitLine(onFirst ? "<$> " : "<*> ", "v ", operator, " \"", stringEscape(jsonName), "\"");
                         onFirst = false;
                     });
                 });
@@ -379,43 +389,43 @@ export class HaskellRenderer extends ConvenienceRenderer {
         });
     }
 
-    private emitClassFunctions(c: ClassType, className: Name): void {
+    private emitClassFunctions (c: ClassType, className: Name): void {
         this.emitClassEncoderInstance(c, className);
         this.ensureBlankLine();
         this.emitClassDecoderInstance(c, className);
     }
 
-    private emitEnumEncoderInstance(e: EnumType, enumName: Name): void {
+    private emitEnumEncoderInstance (e: EnumType, enumName: Name): void {
         this.emitLine("instance ToJSON ", enumName, " where");
         this.indent(() => {
             this.forEachEnumCase(e, "none", (name, jsonName) => {
-                this.emitLine("toJSON ", name, enumName, ' = "', stringEscape(jsonName), '"');
+                this.emitLine("toJSON ", name, enumName, " = \"", stringEscape(jsonName), "\"");
             });
         });
     }
 
-    private emitEnumDecoderInstance(e: EnumType, enumName: Name): void {
+    private emitEnumDecoderInstance (e: EnumType, enumName: Name): void {
         this.emitLine("instance FromJSON ", enumName, " where");
         this.indent(() => {
-            this.emitLine('parseJSON = withText "', enumName, '" parseText');
+            this.emitLine("parseJSON = withText \"", enumName, "\" parseText");
             this.indent(() => {
                 this.emitLine("where");
                 this.indent(() => {
                     this.forEachEnumCase(e, "none", (name, jsonName) => {
-                        this.emitLine('parseText "', stringEscape(jsonName), '" = return ', name, enumName);
+                        this.emitLine("parseText \"", stringEscape(jsonName), "\" = return ", name, enumName);
                     });
                 });
             });
         });
     }
 
-    private emitEnumFunctions(e: EnumType, enumName: Name): void {
+    private emitEnumFunctions (e: EnumType, enumName: Name): void {
         this.emitEnumEncoderInstance(e, enumName);
         this.ensureBlankLine();
         this.emitEnumDecoderInstance(e, enumName);
     }
 
-    private emitUnionEncoderInstance(u: UnionType, unionName: Name): void {
+    private emitUnionEncoderInstance (u: UnionType, unionName: Name): void {
         this.emitLine("instance ToJSON ", unionName, " where");
         this.indent(() => {
             this.forEachUnionMember(u, null, "none", null, (constructor, t) => {
@@ -428,7 +438,7 @@ export class HaskellRenderer extends ConvenienceRenderer {
         });
     }
 
-    private emitUnionDecoderInstance(u: UnionType, unionName: Name): void {
+    private emitUnionDecoderInstance (u: UnionType, unionName: Name): void {
         this.emitLine("instance FromJSON ", unionName, " where");
         this.indent(() => {
             this.forEachUnionMember(u, null, "none", null, (constructor, t) => {
@@ -440,24 +450,24 @@ export class HaskellRenderer extends ConvenienceRenderer {
                         this.encoderNameForType(t).source,
                         " _) = (fmap ",
                         constructor,
-                        " . parseJSON) xs"
+                        " . parseJSON) xs",
                     );
                 }
             });
         });
     }
 
-    private emitUnionFunctions(u: UnionType, unionName: Name): void {
+    private emitUnionFunctions (u: UnionType, unionName: Name): void {
         this.emitUnionEncoderInstance(u, unionName);
         this.ensureBlankLine();
         this.emitUnionDecoderInstance(u, unionName);
     }
 
-    private emitLanguageExtensions(ext: string): void {
+    private emitLanguageExtensions (ext: string): void {
         this.emitLine(`{-# LANGUAGE ${ext} #-}`);
     }
 
-    protected emitSourceStructure(): void {
+    protected emitSourceStructure (): void {
         const exports: Sourcelike[] = [];
         this.forEachTopLevel("none", (_, name) => {
             exports.push([name, " (..)"]);
@@ -482,6 +492,7 @@ export class HaskellRenderer extends ConvenienceRenderer {
                 for (let i = 0; i < exports.length; i++) {
                     this.emitLine(i === 0 ? "(" : ",", " ", exports[i]);
                 }
+
                 this.emitLine(", decodeTopLevel");
                 this.emitLine(") where");
             });
@@ -501,25 +512,25 @@ import Data.Text (Text)`);
         this.forEachTopLevel(
             "leading-and-interposing",
             (t: Type, topLevelName: Name) => this.emitTopLevelDefinition(t, topLevelName),
-            t => this.namedTypeToNameForTopLevel(t) === undefined
+            t => this.namedTypeToNameForTopLevel(t) === undefined,
         );
 
         this.forEachNamedType(
             "leading-and-interposing",
             (c: ClassType, className: Name) => this.emitClassDefinition(c, className),
             (e: EnumType, enumName: Name) => this.emitEnumDefinition(e, enumName),
-            (u: UnionType, unionName: Name) => this.emitUnionDefinition(u, unionName)
+            (u: UnionType, unionName: Name) => this.emitUnionDefinition(u, unionName),
         );
 
         this.forEachTopLevel("leading-and-interposing", (_: Type, topLevelName: Name) =>
-            this.emitTopLevelFunctions(topLevelName)
+            this.emitTopLevelFunctions(topLevelName),
         );
 
         this.forEachNamedType(
             "leading-and-interposing",
             (c: ClassType, className: Name) => this.emitClassFunctions(c, className),
             (e: EnumType, enumName: Name) => this.emitEnumFunctions(e, enumName),
-            (u: UnionType, unionName: Name) => this.emitUnionFunctions(u, unionName)
+            (u: UnionType, unionName: Name) => this.emitUnionFunctions(u, unionName),
         );
 
         if (this._options.justTypes) return;

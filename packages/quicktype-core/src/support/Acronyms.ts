@@ -1096,14 +1096,14 @@ export const acronyms: string[] = [
     "zma",
     "zoi",
     "zope",
-    "zpl"
+    "zpl",
 ];
 
 export enum AcronymStyleOptions {
-    Pascal = "pascal",
     Camel = "camel",
+    Lower = "lowerCase",
     Original = "original",
-    Lower = "lowerCase"
+    Pascal = "pascal"
 }
 
 export const acronymOption = function (defaultOption: AcronymStyleOptions) {
@@ -1114,19 +1114,19 @@ export const acronymOption = function (defaultOption: AcronymStyleOptions) {
             [AcronymStyleOptions.Original, AcronymStyleOptions.Original],
             [AcronymStyleOptions.Pascal, AcronymStyleOptions.Pascal],
             [AcronymStyleOptions.Camel, AcronymStyleOptions.Camel],
-            [AcronymStyleOptions.Lower, AcronymStyleOptions.Lower]
+            [AcronymStyleOptions.Lower, AcronymStyleOptions.Lower],
         ],
         defaultOption,
-        "secondary"
+        "secondary",
     );
 };
 
-export function acronymStyle(style: AcronymStyleOptions): (s: string) => string {
-    const options: { [key: string]: (s: string) => string } = {
+export function acronymStyle (style: AcronymStyleOptions): (s: string) => string {
+    const options: { [key: string]: (s: string) => string, } = {
         [AcronymStyleOptions.Pascal]: allUpperWordStyle,
         [AcronymStyleOptions.Camel]: firstUpperWordStyle,
         [AcronymStyleOptions.Original]: originalWord,
-        [AcronymStyleOptions.Lower]: allLowerWordStyle
+        [AcronymStyleOptions.Lower]: allLowerWordStyle,
     };
 
     return options[style];

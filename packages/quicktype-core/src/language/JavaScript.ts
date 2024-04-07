@@ -1,12 +1,12 @@
 import { arrayIntercalate } from "collection-utils";
 
 import {
-    TransformedStringTypeKind,
-    PrimitiveStringTypeKind,
-    Type,
-    ClassProperty,
-    ClassType,
-    ObjectType
+    type TransformedStringTypeKind,
+    type PrimitiveStringTypeKind,
+    type Type,
+    type ClassProperty,
+    type ClassType,
+    type ObjectType,
 } from "../Type";
 import { matchType, directlyReachableSingleNamedType } from "../TypeUtils";
 import { acronymOption, acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
@@ -20,17 +20,20 @@ import {
     combineWords,
     firstUpperWordStyle,
     camelCase,
-    allLowerWordStyle
+    allLowerWordStyle,
 } from "../support/Strings";
 import { panic } from "../support/Support";
 
-import { Sourcelike, modifySource } from "../Source";
-import { Namer, Name, funPrefixNamer } from "../Naming";
+import { type Sourcelike} from "../Source";
+import { modifySource } from "../Source";
+import { type Namer, type Name} from "../Naming";
+import { funPrefixNamer } from "../Naming";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
-import { StringTypeMapping } from "../TypeBuilder";
-import { BooleanOption, Option, OptionValues, getOptionValues, EnumOption } from "../RendererOptions";
-import { RenderContext } from "../Renderer";
+import { type StringTypeMapping } from "../TypeBuilder";
+import { type Option, type OptionValues} from "../RendererOptions";
+import { BooleanOption, getOptionValues, EnumOption } from "../RendererOptions";
+import { type RenderContext } from "../Renderer";
 import { isES3IdentifierPart, isES3IdentifierStart } from "./JavaScriptUnicodeMaps";
 
 export const javaScriptOptions = {
@@ -40,7 +43,7 @@ export const javaScriptOptions = {
         "runtime-typecheck-ignore-unknown-properties",
         "Ignore unknown properties when verifying at runtime",
         false,
-        "secondary"
+        "secondary",
     ),
     converters: convertersOption(),
     rawType: new EnumOption<"json" | "any">(
@@ -48,39 +51,39 @@ export const javaScriptOptions = {
         "Type of raw input (json by default)",
         [
             ["json", "json"],
-            ["any", "any"]
+            ["any", "any"],
         ],
         "json",
-        "secondary"
-    )
+        "secondary",
+    ),
 };
 
-export type JavaScriptTypeAnnotations = {
+export interface JavaScriptTypeAnnotations {
     any: string;
     anyArray: string;
     anyMap: string;
-    string: string;
-    stringArray: string;
     boolean: string;
     never: string;
-};
+    string: string;
+    stringArray: string;
+}
 
 export class JavaScriptTargetLanguage extends TargetLanguage {
-    constructor(displayName = "JavaScript", names: string[] = ["javascript", "js", "jsx"], extension = "js") {
+    constructor (displayName = "JavaScript", names: string[] = ["javascript", "js", "jsx"], extension = "js") {
         super(displayName, names, extension);
     }
 
-    protected getOptions(): Option<any>[] {
+    protected getOptions (): Array<Option<any>> {
         return [
             javaScriptOptions.runtimeTypecheck,
             javaScriptOptions.runtimeTypecheckIgnoreUnknownProperties,
             javaScriptOptions.acronymStyle,
             javaScriptOptions.converters,
-            javaScriptOptions.rawType
+            javaScriptOptions.rawType,
         ];
     }
 
-    get stringTypeMapping(): StringTypeMapping {
+    get stringTypeMapping (): StringTypeMapping {
         const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
         const dateTimeType = "date-time";
         mapping.set("date", dateTimeType);
@@ -88,17 +91,17 @@ export class JavaScriptTargetLanguage extends TargetLanguage {
         return mapping;
     }
 
-    get supportsOptionalClassProperties(): boolean {
+    get supportsOptionalClassProperties (): boolean {
         return true;
     }
 
-    get supportsFullObjectType(): boolean {
+    get supportsFullObjectType (): boolean {
         return true;
     }
 
-    protected makeRenderer(
+    protected makeRenderer (
         renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
+        untypedOptionValues: { [name: string]: any, },
     ): JavaScriptRenderer {
         return new JavaScriptRenderer(this, renderContext, getOptionValues(javaScriptOptions, untypedOptionValues));
     }
@@ -109,15 +112,15 @@ export const legalizeName = utf16LegalizeCharacters(isES3IdentifierPart);
 const identityNamingFunction = funPrefixNamer("properties", s => s);
 
 export class JavaScriptRenderer extends ConvenienceRenderer {
-    constructor(
+    constructor (
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        private readonly _jsOptions: OptionValues<typeof javaScriptOptions>
+        private readonly _jsOptions: OptionValues<typeof javaScriptOptions>,
     ) {
         super(targetLanguage, renderContext);
     }
 
-    protected nameStyle(original: string, upper: boolean): string {
+    protected nameStyle (original: string, upper: boolean): string {
         const acronyms = acronymStyle(this._jsOptions.acronymStyle);
         const words = splitIntoWords(original);
         return combineWords(
@@ -128,57 +131,58 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
             upper ? s => capitalize(acronyms(s)) : allLowerWordStyle,
             acronyms,
             "",
-            isES3IdentifierStart
+            isES3IdentifierStart,
         );
     }
 
-    protected makeNamedTypeNamer(): Namer {
+    protected makeNamedTypeNamer (): Namer {
         return funPrefixNamer("types", s => this.nameStyle(s, true));
     }
 
-    protected namerForObjectProperty(): Namer {
+    protected namerForObjectProperty (): Namer {
         return identityNamingFunction;
     }
 
-    protected makeUnionMemberNamer(): null {
+    protected makeUnionMemberNamer (): null {
         return null;
     }
 
-    protected makeEnumCaseNamer(): Namer {
+    protected makeEnumCaseNamer (): Namer {
         return funPrefixNamer("enum-cases", s => this.nameStyle(s, true));
     }
 
-    protected namedTypeToNameForTopLevel(type: Type): Type | undefined {
+    protected namedTypeToNameForTopLevel (type: Type): Type | undefined {
         return directlyReachableSingleNamedType(type);
     }
 
-    protected makeNameForProperty(
+    protected makeNameForProperty (
         c: ClassType,
         className: Name,
         p: ClassProperty,
         jsonName: string,
-        _assignedName: string | undefined
+        _assignedName: string | undefined,
     ): Name | undefined {
         // Ignore the assigned name
         return super.makeNameForProperty(c, className, p, jsonName, undefined);
     }
 
-    protected emitDescriptionBlock(lines: Sourcelike[]): void {
+    protected emitDescriptionBlock (lines: Sourcelike[]): void {
         this.emitCommentLines(lines, { lineStart: " * ", beforeComment: "/**", afterComment: " */" });
     }
 
-    typeMapTypeFor(t: Type): Sourcelike {
-        if (["class", "object", "enum"].indexOf(t.kind) >= 0) {
-            return ['r("', this.nameForNamedType(t), '")'];
+    typeMapTypeFor (t: Type): Sourcelike {
+        if (["class", "object", "enum"].includes(t.kind)) {
+            return ["r(\"", this.nameForNamedType(t), "\")"];
         }
+
         return matchType<Sourcelike>(
             t,
-            _anyType => '"any"',
-            _nullType => `null`,
-            _boolType => `true`,
-            _integerType => `0`,
-            _doubleType => `3.14`,
-            _stringType => `""`,
+            _anyType => "\"any\"",
+            _nullType => "null",
+            _boolType => "true",
+            _integerType => "0",
+            _doubleType => "3.14",
+            _stringType => "\"\"",
             arrayType => ["a(", this.typeMapTypeFor(arrayType.items), ")"],
             _classType => panic("We handled this above"),
             mapType => ["m(", this.typeMapTypeFor(mapType.values), ")"],
@@ -191,26 +195,28 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
                 if (transformedStringType.kind === "date-time") {
                     return "Date";
                 }
-                return `""`;
-            }
+
+                return "\"\"";
+            },
         );
     }
 
-    typeMapTypeForProperty(p: ClassProperty): Sourcelike {
+    typeMapTypeForProperty (p: ClassProperty): Sourcelike {
         const typeMap = this.typeMapTypeFor(p.type);
         if (!p.isOptional) {
             return typeMap;
         }
+
         return ["u(undefined, ", typeMap, ")"];
     }
 
-    emitBlock(source: Sourcelike, end: Sourcelike, emit: () => void) {
+    emitBlock (source: Sourcelike, end: Sourcelike, emit: () => void) {
         this.emitLine(source, "{");
         this.indent(emit);
         this.emitLine("}", end);
     }
 
-    emitTypeMap() {
+    emitTypeMap () {
         const { any: anyAnnotation } = this.typeAnnotations;
 
         this.emitBlock(`const typeMap${anyAnnotation} = `, ";", () => {
@@ -218,24 +224,24 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
                 const additionalProperties = t.getAdditionalProperties();
                 const additional =
                     additionalProperties !== undefined ? this.typeMapTypeFor(additionalProperties) : "false";
-                this.emitLine('"', name, '": o([');
+                this.emitLine("\"", name, "\": o([");
                 this.indent(() => {
                     this.forEachClassProperty(t, "none", (propName, jsonName, property) => {
                         this.emitLine(
-                            '{ json: "',
+                            "{ json: \"",
                             utf16StringEscape(jsonName),
-                            '", js: "',
+                            "\", js: \"",
                             modifySource(utf16StringEscape, propName),
-                            '", typ: ',
+                            "\", typ: ",
                             this.typeMapTypeForProperty(property),
-                            " },"
+                            " },",
                         );
                     });
                 });
                 this.emitLine("], ", additional, "),");
             });
             this.forEachEnum("none", (e, name) => {
-                this.emitLine('"', name, '": [');
+                this.emitLine("\"", name, "\": [");
                 this.indent(() => {
                     this.forEachEnumCase(e, "none", (_caseName, jsonName) => {
                         this.emitLine(`"${utf16StringEscape(jsonName)}",`);
@@ -246,32 +252,32 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
         });
     }
 
-    protected deserializerFunctionName(name: Name): Sourcelike {
+    protected deserializerFunctionName (name: Name): Sourcelike {
         return ["to", name];
     }
 
-    protected deserializerFunctionLine(_t: Type, name: Name): Sourcelike {
+    protected deserializerFunctionLine (_t: Type, name: Name): Sourcelike {
         return ["function ", this.deserializerFunctionName(name), "(json)"];
     }
 
-    protected serializerFunctionName(name: Name): Sourcelike {
+    protected serializerFunctionName (name: Name): Sourcelike {
         const camelCaseName = modifySource(camelCase, name);
         return [camelCaseName, "ToJson"];
     }
 
-    protected serializerFunctionLine(_t: Type, name: Name): Sourcelike {
+    protected serializerFunctionLine (_t: Type, name: Name): Sourcelike {
         return ["function ", this.serializerFunctionName(name), "(value)"];
     }
 
-    protected get moduleLine(): string | undefined {
+    protected get moduleLine (): string | undefined {
         return undefined;
     }
 
-    protected get castFunctionLines(): [string, string] {
+    protected get castFunctionLines (): [string, string] {
         return ["function cast(val, typ)", "function uncast(val, typ)"];
     }
 
-    protected get typeAnnotations(): JavaScriptTypeAnnotations {
+    protected get typeAnnotations (): JavaScriptTypeAnnotations {
         return {
             any: "",
             anyArray: "",
@@ -279,11 +285,11 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
             string: "",
             stringArray: "",
             boolean: "",
-            never: ""
+            never: "",
         };
     }
 
-    protected emitConvertModuleBody(): void {
+    protected emitConvertModuleBody (): void {
         const converter = (t: Type, name: Name) => {
             const typeMap = this.typeMapTypeFor(t);
             this.emitBlock([this.deserializerFunctionLine(t, name), " "], "", () => {
@@ -324,7 +330,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
         }
     }
 
-    protected emitConvertModuleHelpers(): void {
+    protected emitConvertModuleHelpers (): void {
         if (this._jsOptions.runtimeTypecheck) {
             const {
                 any: anyAnnotation,
@@ -332,7 +338,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
                 anyMap: anyMapAnnotation,
                 string: stringAnnotation,
                 stringArray: stringArrayAnnotation,
-                never: neverAnnotation
+                never: neverAnnotation,
             } = this.typeAnnotations;
             this.ensureBlankLine();
             this
@@ -428,10 +434,10 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
         Object.getOwnPropertyNames(val).forEach(key => {
             if (!Object.prototype.hasOwnProperty.call(props, key)) {
                 result[key] = ${
-                    this._jsOptions.runtimeTypecheckIgnoreUnknownProperties
-                        ? `val[key]`
-                        : `transform(val[key], additional, getProps, key, ref)`
-                };
+    this._jsOptions.runtimeTypecheckIgnoreUnknownProperties
+        ? "val[key]"
+        : "transform(val[key], additional, getProps, key, ref)"
+};
             }
         });
         return result;
@@ -496,16 +502,17 @@ function r(name${stringAnnotation}) {
         }
     }
 
-    protected emitConvertModule(): void {
+    protected emitConvertModule (): void {
         this.ensureBlankLine();
         this.emitMultiline(
-            `// Converts JSON ${this._jsOptions.rawType === "json" ? "strings" : "types"} to/from your types`
+            `// Converts JSON ${this._jsOptions.rawType === "json" ? "strings" : "types"} to/from your types`,
         );
         if (this._jsOptions.runtimeTypecheck) {
             this.emitMultiline(
-                `// and asserts the results${this._jsOptions.rawType === "json" ? " of JSON.parse" : ""} at runtime`
+                `// and asserts the results${this._jsOptions.rawType === "json" ? " of JSON.parse" : ""} at runtime`,
             );
         }
+
         const moduleLine = this.moduleLine;
         if (moduleLine === undefined) {
             this.emitConvertModuleBody();
@@ -514,15 +521,15 @@ function r(name${stringAnnotation}) {
         }
     }
 
-    protected emitTypes(): void {
+    protected emitTypes (): void {
         return;
     }
 
-    protected emitUsageImportComment(): void {
-        this.emitLine('//   const Convert = require("./file");');
+    protected emitUsageImportComment (): void {
+        this.emitLine("//   const Convert = require(\"./file\");");
     }
 
-    protected emitUsageComments(): void {
+    protected emitUsageComments (): void {
         this.emitMultiline(`// To parse this data:
 //`);
 
@@ -539,20 +546,20 @@ function r(name${stringAnnotation}) {
         }
     }
 
-    protected emitModuleExports(): void {
+    protected emitModuleExports (): void {
         this.ensureBlankLine();
 
         this.emitBlock("module.exports = ", ";", () => {
             this.forEachTopLevel("none", (_, name) => {
                 const serializer = this.serializerFunctionName(name);
                 const deserializer = this.deserializerFunctionName(name);
-                this.emitLine('"', serializer, '": ', serializer, ",");
-                this.emitLine('"', deserializer, '": ', deserializer, ",");
+                this.emitLine("\"", serializer, "\": ", serializer, ",");
+                this.emitLine("\"", deserializer, "\": ", deserializer, ",");
             });
         });
     }
 
-    protected emitSourceStructure() {
+    protected emitSourceStructure () {
         if (this.leadingComments !== undefined) {
             this.emitComments(this.leadingComments);
         } else {

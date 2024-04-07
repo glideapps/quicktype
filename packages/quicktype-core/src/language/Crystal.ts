@@ -1,5 +1,6 @@
 import { TargetLanguage } from "../TargetLanguage";
-import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { type ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import {
     legalizeCharacters,
     splitIntoWords,
@@ -12,30 +13,32 @@ import {
     escapeNonPrintableMapper,
     isPrintable,
     isAscii,
-    isLetterOrUnderscore
+    isLetterOrUnderscore,
 } from "../support/Strings";
-import { Name, Namer, funPrefixNamer } from "../Naming";
-import { UnionType, Type, ClassType, EnumType } from "../Type";
+import { type Name, type Namer} from "../Naming";
+import { funPrefixNamer } from "../Naming";
+import { type UnionType, type Type, type ClassType, type EnumType } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
-import { Sourcelike, maybeAnnotated } from "../Source";
+import { type Sourcelike} from "../Source";
+import { maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { Option } from "../RendererOptions";
-import { RenderContext } from "../Renderer";
+import { type Option } from "../RendererOptions";
+import { type RenderContext } from "../Renderer";
 
 export class CrystalTargetLanguage extends TargetLanguage {
-    protected makeRenderer(renderContext: RenderContext): CrystalRenderer {
+    protected makeRenderer (renderContext: RenderContext): CrystalRenderer {
         return new CrystalRenderer(this, renderContext);
     }
 
-    constructor() {
+    constructor () {
         super("Crystal", ["crystal", "cr", "crystallang"], "cr");
     }
 
-    protected get defaultIndentation(): string {
+    protected get defaultIndentation (): string {
         return "  ";
     }
 
-    protected getOptions(): Option<any>[] {
+    protected getOptions (): Array<Option<any>> {
         return [];
     }
 }
@@ -176,26 +179,28 @@ const keywords = [
     "when",
     "while",
     "with",
-    "yield"
+    "yield",
 ];
 
-function isAsciiLetterOrUnderscoreOrDigit(codePoint: number): boolean {
+function isAsciiLetterOrUnderscoreOrDigit (codePoint: number): boolean {
     if (!isAscii(codePoint)) {
         return false;
     }
+
     return isLetterOrUnderscoreOrDigit(codePoint);
 }
 
-function isAsciiLetterOrUnderscore(codePoint: number): boolean {
+function isAsciiLetterOrUnderscore (codePoint: number): boolean {
     if (!isAscii(codePoint)) {
         return false;
     }
+
     return isLetterOrUnderscore(codePoint);
 }
 
 const legalizeName = legalizeCharacters(isAsciiLetterOrUnderscoreOrDigit);
 
-function crystalStyle(original: string, isSnakeCase: boolean): string {
+function crystalStyle (original: string, isSnakeCase: boolean): string {
     const words = splitIntoWords(original);
 
     const wordStyle = isSnakeCase ? allLowerWordStyle : firstUpperWordStyle;
@@ -208,7 +213,7 @@ function crystalStyle(original: string, isSnakeCase: boolean): string {
         wordStyle,
         wordStyle,
         isSnakeCase ? "_" : "",
-        isAsciiLetterOrUnderscore
+        isAsciiLetterOrUnderscore,
     );
 
     return combined === "_" ? "_underscore" : combined;
@@ -217,7 +222,7 @@ function crystalStyle(original: string, isSnakeCase: boolean): string {
 const snakeNamingFunction = funPrefixNamer("default", (original: string) => crystalStyle(original, true));
 const camelNamingFunction = funPrefixNamer("camel", (original: string) => crystalStyle(original, false));
 
-function standardUnicodeCrystalEscape(codePoint: number): string {
+function standardUnicodeCrystalEscape (codePoint: number): string {
     if (codePoint <= 0xffff) {
         return "\\u{" + intToHex(codePoint, 4) + "}";
     } else {
@@ -228,56 +233,56 @@ function standardUnicodeCrystalEscape(codePoint: number): string {
 const crystalStringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, standardUnicodeCrystalEscape));
 
 export class CrystalRenderer extends ConvenienceRenderer {
-    constructor(targetLanguage: TargetLanguage, renderContext: RenderContext) {
+    constructor (targetLanguage: TargetLanguage, renderContext: RenderContext) {
         super(targetLanguage, renderContext);
     }
 
-    protected makeNamedTypeNamer(): Namer {
+    protected makeNamedTypeNamer (): Namer {
         return camelNamingFunction;
     }
 
-    protected namerForObjectProperty(): Namer | null {
+    protected namerForObjectProperty (): Namer | null {
         return snakeNamingFunction;
     }
 
-    protected makeUnionMemberNamer(): Namer | null {
+    protected makeUnionMemberNamer (): Namer | null {
         return camelNamingFunction;
     }
 
-    protected makeEnumCaseNamer(): Namer | null {
+    protected makeEnumCaseNamer (): Namer | null {
         return camelNamingFunction;
     }
 
-    protected forbiddenNamesForGlobalNamespace(): string[] {
+    protected forbiddenNamesForGlobalNamespace (): string[] {
         return keywords;
     }
 
-    protected forbiddenForObjectProperties(_c: ClassType, _className: Name): ForbiddenWordsInfo {
+    protected forbiddenForObjectProperties (_c: ClassType, _className: Name): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: true };
     }
 
-    protected forbiddenForUnionMembers(_u: UnionType, _unionName: Name): ForbiddenWordsInfo {
+    protected forbiddenForUnionMembers (_u: UnionType, _unionName: Name): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: true };
     }
 
-    protected forbiddenForEnumCases(_e: EnumType, _enumName: Name): ForbiddenWordsInfo {
+    protected forbiddenForEnumCases (_e: EnumType, _enumName: Name): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: true };
     }
 
-    protected get commentLineStart(): string {
+    protected get commentLineStart (): string {
         return "# ";
     }
 
-    private nullableCrystalType(t: Type, withIssues: boolean): Sourcelike {
+    private nullableCrystalType (t: Type, withIssues: boolean): Sourcelike {
         return [this.crystalType(t, withIssues), "?"];
     }
 
-    protected isImplicitCycleBreaker(t: Type): boolean {
+    protected isImplicitCycleBreaker (t: Type): boolean {
         const kind = t.kind;
         return kind === "array" || kind === "map";
     }
 
-    private crystalType(t: Type, withIssues = false): Sourcelike {
+    private crystalType (t: Type, withIssues = false): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "JSON::Any?"),
@@ -300,23 +305,23 @@ export class CrystalRenderer extends ConvenienceRenderer {
                 const name = this.nameForNamedType(unionType);
 
                 return hasNull !== null ? ([name, "?"] as Sourcelike) : name;
-            }
+            },
         );
     }
 
-    private breakCycle(t: Type, withIssues: boolean): Sourcelike {
+    private breakCycle (t: Type, withIssues: boolean): Sourcelike {
         return this.crystalType(t, withIssues);
     }
 
-    private emitRenameAttribute(propName: Name, jsonName: string): void {
+    private emitRenameAttribute (propName: Name, jsonName: string): void {
         const escapedName = crystalStringEscape(jsonName);
         const namesDiffer = this.sourcelikeToString(propName) !== escapedName;
         if (namesDiffer) {
-            this.emitLine('@[JSON::Field(key: "', escapedName, '")]');
+            this.emitLine("@[JSON::Field(key: \"", escapedName, "\")]");
         }
     }
 
-    protected emitStructDefinition(c: ClassType, className: Name): void {
+    protected emitStructDefinition (c: ClassType, className: Name): void {
         this.emitDescription(this.descriptionForType(c));
 
         const structBody = () =>
@@ -330,7 +335,7 @@ export class CrystalRenderer extends ConvenienceRenderer {
         this.emitBlock(["class ", className], structBody);
     }
 
-    protected emitBlock(line: Sourcelike, f: () => void): void {
+    protected emitBlock (line: Sourcelike, f: () => void): void {
         this.emitLine(line);
         this.indent(() => {
             this.emitLine("include JSON::Serializable");
@@ -340,13 +345,13 @@ export class CrystalRenderer extends ConvenienceRenderer {
         this.emitLine("end");
     }
 
-    protected emitEnum(line: Sourcelike, f: () => void): void {
+    protected emitEnum (line: Sourcelike, f: () => void): void {
         this.emitLine(line);
         this.indent(f);
         this.emitLine("end");
     }
 
-    protected emitUnion(u: UnionType, unionName: Name): void {
+    protected emitUnion (u: UnionType, unionName: Name): void {
         const isMaybeWithSingleType = nullableFromUnion(u);
 
         if (isMaybeWithSingleType !== null) {
@@ -367,30 +372,30 @@ export class CrystalRenderer extends ConvenienceRenderer {
             "alias ",
             unionName,
             " = ",
-            types.map(r => r.map(sl => this.sourcelikeToString(sl))).join(" | ")
+            types.map(r => r.map(sl => this.sourcelikeToString(sl))).join(" | "),
         ]);
     }
 
-    protected emitTopLevelAlias(t: Type, name: Name): void {
+    protected emitTopLevelAlias (t: Type, name: Name): void {
         this.emitLine("alias ", name, " = ", this.crystalType(t));
     }
 
-    protected emitLeadingComments(): void {
+    protected emitLeadingComments (): void {
         if (this.leadingComments !== undefined) {
             this.emitComments(this.leadingComments);
             return;
         }
     }
 
-    protected emitSourceStructure(): void {
+    protected emitSourceStructure (): void {
         this.emitLeadingComments();
         this.ensureBlankLine();
-        this.emitLine('require "json"');
+        this.emitLine("require \"json\"");
 
         this.forEachTopLevel(
             "leading",
             (t, name) => this.emitTopLevelAlias(t, name),
-            t => this.namedTypeToNameForTopLevel(t) === undefined
+            t => this.namedTypeToNameForTopLevel(t) === undefined,
         );
 
         this.forEachObject("leading-and-interposing", (c: ClassType, name: Name) => this.emitStructDefinition(c, name));

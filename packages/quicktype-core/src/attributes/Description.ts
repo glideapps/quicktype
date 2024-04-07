@@ -5,51 +5,54 @@ import {
     iterableFirst,
     setUnionManyInto,
     mapMergeWithInto,
-    setSubtract
+    setSubtract,
 } from "collection-utils";
 
 // There's a cyclic import here. Ignoring now because it requires a large refactor.
 // skipcq: JS-E1008
 import { TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
 // FIXME: This is a circular import
-import { JSONSchemaType, Ref, JSONSchemaAttributes, PathElementKind, PathElement } from "../input/JSONSchemaInput";
-import { JSONSchema } from "../input/JSONSchemaStore";
-import { Type } from "../Type";
+import { type JSONSchemaType, type Ref, type JSONSchemaAttributes, type PathElement } from "../input/JSONSchemaInput";
+import { PathElementKind } from "../input/JSONSchemaInput";
+import { type JSONSchema } from "../input/JSONSchemaStore";
+import { type Type } from "../Type";
 
-export function addDescriptionToSchema(
-    schema: { [name: string]: unknown },
-    description: Iterable<string> | undefined
+export function addDescriptionToSchema (
+    schema: { [name: string]: unknown, },
+    description: Iterable<string> | undefined,
 ): void {
     if (description === undefined) return;
     schema.description = Array.from(description).join("\n");
 }
 
 class DescriptionTypeAttributeKind extends TypeAttributeKind<ReadonlySet<string>> {
-    constructor() {
+    constructor () {
         super("description");
     }
 
-    combine(attrs: ReadonlySet<string>[]): ReadonlySet<string> {
+    combine (attrs: Array<ReadonlySet<string>>): ReadonlySet<string> {
         return setUnionManyInto(new Set(), attrs);
     }
 
-    makeInferred(_: ReadonlySet<string>): undefined {
+    makeInferred (_: ReadonlySet<string>): undefined {
         return undefined;
     }
 
-    addToSchema(schema: { [name: string]: unknown }, _t: Type, attrs: ReadonlySet<string>): void {
+    addToSchema (schema: { [name: string]: unknown, }, _t: Type, attrs: ReadonlySet<string>): void {
         addDescriptionToSchema(schema, attrs);
     }
 
-    stringify(descriptions: ReadonlySet<string>): string | undefined {
+    stringify (descriptions: ReadonlySet<string>): string | undefined {
         let result = iterableFirst(descriptions);
         if (result === undefined) return undefined;
         if (result.length > 5 + 3) {
             result = `${result.slice(0, 5)}...`;
         }
+
         if (descriptions.size > 1) {
             result = `${result}, ...`;
         }
+
         return result;
     }
 }
@@ -57,24 +60,25 @@ class DescriptionTypeAttributeKind extends TypeAttributeKind<ReadonlySet<string>
 export const descriptionTypeAttributeKind: TypeAttributeKind<ReadonlySet<string>> = new DescriptionTypeAttributeKind();
 
 class PropertyDescriptionsTypeAttributeKind extends TypeAttributeKind<Map<string, ReadonlySet<string>>> {
-    constructor() {
+    constructor () {
         super("propertyDescriptions");
     }
 
-    combine(attrs: Map<string, ReadonlySet<string>>[]): Map<string, ReadonlySet<string>> {
+    combine (attrs: Array<Map<string, ReadonlySet<string>>>): Map<string, ReadonlySet<string>> {
         // FIXME: Implement this with mutable sets
         const result = new Map<string, ReadonlySet<string>>();
         for (const attr of attrs) {
             mapMergeWithInto(result, (sa, sb) => setUnion(sa, sb), attr);
         }
+
         return result;
     }
 
-    makeInferred(_: Map<string, ReadonlySet<string>>): undefined {
+    makeInferred (_: Map<string, ReadonlySet<string>>): undefined {
         return undefined;
     }
 
-    stringify(propertyDescriptions: Map<string, ReadonlySet<string>>): string | undefined {
+    stringify (propertyDescriptions: Map<string, ReadonlySet<string>>): string | undefined {
         if (propertyDescriptions.size === 0) return undefined;
         return `prop descs: ${propertyDescriptions.size}`;
     }
@@ -83,14 +87,14 @@ class PropertyDescriptionsTypeAttributeKind extends TypeAttributeKind<Map<string
 export const propertyDescriptionsTypeAttributeKind: TypeAttributeKind<Map<string, ReadonlySet<string>>> =
     new PropertyDescriptionsTypeAttributeKind();
 
-function isPropertiesKey(el: PathElement): boolean {
+function isPropertiesKey (el: PathElement): boolean {
     return el.kind === PathElementKind.KeyOrIndex && el.key === "properties";
 }
 
-export function descriptionAttributeProducer(
+export function descriptionAttributeProducer (
     schema: JSONSchema,
     ref: Ref,
-    types: Set<JSONSchemaType>
+    types: Set<JSONSchemaType>,
 ): JSONSchemaAttributes | undefined {
     if (!(typeof schema === "object")) return undefined;
 
@@ -119,6 +123,7 @@ export function descriptionAttributeProducer(
                     return new Set([desc]);
                 }
             }
+
             return undefined;
         });
         if (propertyDescriptions.size > 0) {

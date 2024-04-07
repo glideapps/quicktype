@@ -1,49 +1,49 @@
 import { mapFilterMap, mapFilter, mapTranspose, hashString } from "collection-utils";
 
 import { panic, assert } from "../support/Support";
-import { Type, TypeKind } from "../Type";
-import { BaseGraphRewriteBuilder } from "../GraphRewriting";
+import { type Type, type TypeKind } from "../Type";
+import { type BaseGraphRewriteBuilder } from "../GraphRewriting";
 
 export class TypeAttributeKind<T> {
-    constructor(readonly name: string) {}
+    constructor (readonly name: string) {}
 
-    appliesToTypeKind(kind: TypeKind): boolean {
+    appliesToTypeKind (kind: TypeKind): boolean {
         return kind !== "any";
     }
 
-    combine(_attrs: T[]): T | undefined {
+    combine (_attrs: T[]): T | undefined {
         return panic(`Cannot combine type attribute ${this.name}`);
     }
 
-    intersect(attrs: T[]): T | undefined {
+    intersect (attrs: T[]): T | undefined {
         return this.combine(attrs);
     }
 
-    makeInferred(_: T): T | undefined {
+    makeInferred (_: T): T | undefined {
         return panic(`Cannot make type attribute ${this.name} inferred`);
     }
 
-    increaseDistance(attrs: T): T | undefined {
+    increaseDistance (attrs: T): T | undefined {
         return attrs;
     }
 
-    addToSchema(_schema: { [name: string]: unknown }, _t: Type, _attrs: T): void {
+    addToSchema (_schema: { [name: string]: unknown, }, _t: Type, _attrs: T): void {
         return;
     }
 
-    children(_: T): ReadonlySet<Type> {
+    children (_: T): ReadonlySet<Type> {
         return new Set();
     }
 
-    stringify(_: T): string | undefined {
+    stringify (_: T): string | undefined {
         return undefined;
     }
 
-    get inIdentity(): boolean {
+    get inIdentity (): boolean {
         return false;
     }
 
-    requiresUniqueIdentity(_: T): boolean {
+    requiresUniqueIdentity (_: T): boolean {
         return false;
     }
 
@@ -51,21 +51,21 @@ export class TypeAttributeKind<T> {
         return a;
     }
 
-    makeAttributes(value: T): TypeAttributes {
-        const kvps: [this, T][] = [[this, value]];
+    makeAttributes (value: T): TypeAttributes {
+        const kvps: Array<[this, T]> = [[this, value]];
         return new Map(kvps);
     }
 
-    tryGetInAttributes(a: TypeAttributes): T | undefined {
+    tryGetInAttributes (a: TypeAttributes): T | undefined {
         return a.get(this);
     }
 
-    private setInAttributes(a: TypeAttributes, value: T): TypeAttributes {
+    private setInAttributes (a: TypeAttributes, value: T): TypeAttributes {
         // FIXME: This is potentially super slow
         return new Map(a).set(this, value);
     }
 
-    modifyInAttributes(a: TypeAttributes, modify: (value: T | undefined) => T | undefined): TypeAttributes {
+    modifyInAttributes (a: TypeAttributes, modify: (value: T | undefined) => T | undefined): TypeAttributes {
         const modified = modify(this.tryGetInAttributes(a));
         if (modified === undefined) {
             // FIXME: This is potentially super slow
@@ -73,26 +73,28 @@ export class TypeAttributeKind<T> {
             result.delete(this);
             return result;
         }
+
         return this.setInAttributes(a, modified);
     }
 
-    setDefaultInAttributes(a: TypeAttributes, makeDefault: () => T): TypeAttributes {
+    setDefaultInAttributes (a: TypeAttributes, makeDefault: () => T): TypeAttributes {
         if (this.tryGetInAttributes(a) !== undefined) return a;
         return this.modifyInAttributes(a, makeDefault);
     }
 
-    removeInAttributes(a: TypeAttributes): TypeAttributes {
+    removeInAttributes (a: TypeAttributes): TypeAttributes {
         return mapFilter(a, (_, k) => k !== this);
     }
 
-    equals(other: any): boolean {
+    equals (other: any): boolean {
         if (!(other instanceof TypeAttributeKind)) {
             return false;
         }
+
         return this.name === other.name;
     }
 
-    hashCode(): number {
+    hashCode (): number {
         return hashString(this.name);
     }
 }
@@ -103,12 +105,12 @@ export const emptyTypeAttributes: TypeAttributes = new Map();
 
 export type CombinationKind = "union" | "intersect";
 
-export function combineTypeAttributes(kind: CombinationKind, attributeArray: TypeAttributes[]): TypeAttributes;
-export function combineTypeAttributes(kind: CombinationKind, a: TypeAttributes, b: TypeAttributes): TypeAttributes;
-export function combineTypeAttributes(
+export function combineTypeAttributes (kind: CombinationKind, attributeArray: TypeAttributes[]): TypeAttributes;
+export function combineTypeAttributes (kind: CombinationKind, a: TypeAttributes, b: TypeAttributes): TypeAttributes;
+export function combineTypeAttributes (
     combinationKind: CombinationKind,
     firstOrArray: TypeAttributes[] | TypeAttributes,
-    second?: TypeAttributes
+    second?: TypeAttributes,
 ): TypeAttributes {
     const union = combinationKind === "union";
     let attributeArray: TypeAttributes[];
@@ -118,12 +120,13 @@ export function combineTypeAttributes(
         if (second === undefined) {
             return panic("Must have on array or two attributes");
         }
+
         attributeArray = [firstOrArray, second];
     }
 
     const attributesByKind = mapTranspose(attributeArray);
 
-    function combine(attrs: any[], kind: TypeAttributeKind<any>): any {
+    function combine (attrs: any[], kind: TypeAttributeKind<any>): any {
         assert(attrs.length > 0, "Cannot combine zero type attributes");
         if (attrs.length === 1) return attrs[0];
         if (union) {
@@ -136,10 +139,10 @@ export function combineTypeAttributes(
     return mapFilterMap(attributesByKind, combine);
 }
 
-export function makeTypeAttributesInferred(attr: TypeAttributes): TypeAttributes {
+export function makeTypeAttributesInferred (attr: TypeAttributes): TypeAttributes {
     return mapFilterMap(attr, (value, kind) => kind.makeInferred(value));
 }
 
-export function increaseTypeAttributesDistance(attr: TypeAttributes): TypeAttributes {
+export function increaseTypeAttributesDistance (attr: TypeAttributes): TypeAttributes {
     return mapFilterMap(attr, (value, kind) => kind.increaseDistance(value));
 }

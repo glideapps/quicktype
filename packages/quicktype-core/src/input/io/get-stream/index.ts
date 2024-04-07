@@ -1,15 +1,15 @@
-import { Readable } from "readable-stream";
+import { type Readable } from "readable-stream";
 import bufferStream from "./buffer-stream";
 
 export interface Options {
-    maxBuffer?: number;
     array?: boolean;
     encoding?: string;
+    maxBuffer?: number;
 }
 
-export function getStream(inputStream: Readable, opts: Options = {}) {
+export async function getStream (inputStream: Readable, opts: Options = {}) {
     if (!inputStream) {
-        return Promise.reject(new Error("Expected a stream"));
+        return await Promise.reject(new Error("Expected a stream"));
     }
 
     opts = Object.assign({ maxBuffer: Infinity }, opts);
@@ -50,13 +50,13 @@ export function getStream(inputStream: Readable, opts: Options = {}) {
 
     p.then(clean, clean);
 
-    return p.then(() => stream.getBufferedValue());
+    return await p.then(() => stream.getBufferedValue());
 }
 
-export function buffer(stream: Readable, opts: Options = {}) {
+export function buffer (stream: Readable, opts: Options = {}) {
     getStream(stream, Object.assign({}, opts, { encoding: "buffer" }));
 }
 
-export function array(stream: Readable, opts: Options = {}) {
+export function array (stream: Readable, opts: Options = {}) {
     getStream(stream, Object.assign({}, opts, { array: true }));
 }

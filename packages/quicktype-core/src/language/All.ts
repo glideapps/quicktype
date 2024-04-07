@@ -1,6 +1,6 @@
 import { iterableFind } from "collection-utils";
 
-import { TargetLanguage } from "../TargetLanguage";
+import { type TargetLanguage } from "../TargetLanguage";
 
 import { CSharpTargetLanguage } from "./CSharp";
 import { GoTargetLanguage } from "./Golang";
@@ -54,16 +54,17 @@ export const all: TargetLanguage[] = [
     new HaskellTargetLanguage(),
     new TypeScriptZodTargetLanguage(),
     new TypeScriptEffectSchemaTargetLanguage(),
-    new PhpTargetLanguage()
+    new PhpTargetLanguage(),
 ];
 
-export function languageNamed(name: string, targetLanguages?: TargetLanguage[]): TargetLanguage | undefined {
+export function languageNamed (name: string, targetLanguages?: TargetLanguage[]): TargetLanguage | undefined {
     if (targetLanguages === undefined) {
         targetLanguages = all;
     }
+
     const maybeTargetLanguage = iterableFind(
         targetLanguages,
-        l => l.names.indexOf(name) >= 0 || l.displayName === name
+        l => l.names.includes(name) || l.displayName === name,
     );
     if (maybeTargetLanguage !== undefined) return maybeTargetLanguage;
     return iterableFind(targetLanguages, l => l.extension === name);

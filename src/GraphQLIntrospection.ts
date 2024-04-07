@@ -5,24 +5,26 @@ import { exceptionToString } from "@glideapps/ts-necessities";
 import fetch from "cross-fetch";
 
 // https://github.com/apollographql/apollo-codegen/blob/master/src/downloadSchema.ts
-const defaultHeaders: { [name: string]: string } = {
+const defaultHeaders: { [name: string]: string, } = {
     Accept: "application/json",
-    "Content-Type": "application/json"
+    "Content-Type": "application/json",
 };
 
 const headerRegExp = /^([^:]+):\s*(.*)$/;
 
-export async function introspectServer(url: string, method: string, headerStrings: string[]): Promise<string> {
-    const headers: { [name: string]: string } = {};
+export async function introspectServer (url: string, method: string, headerStrings: string[]): Promise<string> {
+    const headers: { [name: string]: string, } = {};
 
     for (const name of Object.getOwnPropertyNames(defaultHeaders)) {
         headers[name] = defaultHeaders[name];
     }
+
     for (const str of headerStrings) {
-        const matches = str.match(headerRegExp);
+        const matches = headerRegExp.exec(str);
         if (matches === null) {
             return panic(`Not a valid HTTP header: "${str}"`);
         }
+
         headers[matches[1]] = matches[2];
     }
 
@@ -31,7 +33,7 @@ export async function introspectServer(url: string, method: string, headerString
         const response = await fetch(url, {
             method,
             headers: headers,
-            body: JSON.stringify({ query: introspectionQuery })
+            body: JSON.stringify({ query: introspectionQuery }),
         });
 
         result = await response.json();

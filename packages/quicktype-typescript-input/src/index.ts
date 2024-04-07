@@ -1,13 +1,15 @@
 import * as ts from "typescript";
-import { PartialArgs, generateSchema } from "@mark.probst/typescript-json-schema";
+import { type PartialArgs} from "@mark.probst/typescript-json-schema";
+import { generateSchema } from "@mark.probst/typescript-json-schema";
 
-import { defined, JSONSchemaSourceData, messageError } from "quicktype-core";
+import { type JSONSchemaSourceData} from "quicktype-core";
+import { defined, messageError } from "quicktype-core";
 
 const settings: PartialArgs = {
     required: true,
     titles: true,
     topRef: true,
-    noExtraProps: true
+    noExtraProps: true,
 };
 
 const compilerOptions: ts.CompilerOptions = {
@@ -18,18 +20,18 @@ const compilerOptions: ts.CompilerOptions = {
     module: ts.ModuleKind.CommonJS,
     strictNullChecks: true,
     typeRoots: [],
-    rootDir: "."
+    rootDir: ".",
 };
 
 // FIXME: We're stringifying and then parsing this schema again.  Just pass around
 // the schema directly.
-export function schemaForTypeScriptSources(sourceFileNames: string[]): JSONSchemaSourceData {
+export function schemaForTypeScriptSources (sourceFileNames: string[]): JSONSchemaSourceData {
     const program = ts.createProgram(sourceFileNames, compilerOptions);
     const diagnostics = ts.getPreEmitDiagnostics(program);
     const error = diagnostics.find(d => d.category === ts.DiagnosticCategory.Error);
     if (error !== undefined) {
         return messageError("TypeScriptCompilerError", {
-            message: ts.flattenDiagnosticMessageText(error.messageText, "\n")
+            message: ts.flattenDiagnosticMessageText(error.messageText, "\n"),
         });
     }
 
@@ -49,7 +51,7 @@ export function schemaForTypeScriptSources(sourceFileNames: string[]): JSONSchem
             }
 
             const description = definition.description as string;
-            const matches = description.match(/#TopLevel/);
+            const matches = /#TopLevel/.exec(description);
             if (matches === null) {
                 continue;
             }
@@ -70,11 +72,14 @@ export function schemaForTypeScriptSources(sourceFileNames: string[]): JSONSchem
             }
         }
     }
+
     if (uris.length === 0) {
         uris.push("#/definitions/");
     }
+
     if (topLevelName === undefined) {
         topLevelName = "";
     }
+
     return { schema: JSON.stringify(schema), name: topLevelName, uris, isConverted: true };
 }

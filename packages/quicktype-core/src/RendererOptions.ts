@@ -9,17 +9,17 @@ import { hasOwnProperty } from "collection-utils";
 export type OptionKind = "primary" | "secondary";
 
 export interface OptionDefinition {
-    name: string;
-    type: StringConstructor | BooleanConstructor;
-    kind?: OptionKind;
-    renderer?: boolean;
     alias?: string;
-    multiple?: boolean;
     defaultOption?: boolean;
     defaultValue?: any;
-    typeLabel?: string;
     description: string;
+    kind?: OptionKind;
     legalValues?: string[];
+    multiple?: boolean;
+    name: string;
+    renderer?: boolean;
+    type: StringConstructor | BooleanConstructor;
+    typeLabel?: string;
 }
 
 /**
@@ -29,21 +29,22 @@ export interface OptionDefinition {
 export abstract class Option<T> {
     readonly definition: OptionDefinition;
 
-    constructor(definition: OptionDefinition) {
+    constructor (definition: OptionDefinition) {
         definition.renderer = true;
         this.definition = definition;
         assert(definition.kind !== undefined, "Renderer option kind must be defined");
     }
 
-    getValue(values: { [name: string]: any }): T {
+    getValue (values: { [name: string]: any, }): T {
         const value = values[this.definition.name];
         if (value === undefined) {
             return this.definition.defaultValue;
         }
+
         return value;
     }
 
-    get cliDefinitions(): { display: OptionDefinition[]; actual: OptionDefinition[] } {
+    get cliDefinitions (): { actual: OptionDefinition[], display: OptionDefinition[], } {
         return { actual: [this.definition], display: [this.definition] };
     }
 }
@@ -51,14 +52,15 @@ export abstract class Option<T> {
 export type OptionValueType<O> = O extends Option<infer T> ? T : never;
 export type OptionValues<T> = { [P in keyof T]: OptionValueType<T[P]> };
 
-export function getOptionValues<T extends { [name: string]: Option<any> }>(
+export function getOptionValues<T extends { [name: string]: Option<any>, }> (
     options: T,
-    untypedOptionValues: { [name: string]: any }
+    untypedOptionValues: { [name: string]: any, },
 ): OptionValues<T> {
-    const optionValues: { [name: string]: any } = {};
+    const optionValues: { [name: string]: any, } = {};
     for (const name of Object.getOwnPropertyNames(options)) {
         optionValues[name] = options[name].getValue(untypedOptionValues);
     }
+
     return optionValues as OptionValues<T>;
 }
 
@@ -72,32 +74,32 @@ export class BooleanOption extends Option<boolean> {
      * @param defaultValue The default value.
      * @param kind Whether it's a primary or secondary option.
      */
-    constructor(name: string, description: string, defaultValue: boolean, kind: OptionKind = "primary") {
+    constructor (name: string, description: string, defaultValue: boolean, kind: OptionKind = "primary") {
         super({
             name,
             kind,
             type: Boolean,
             description,
-            defaultValue
+            defaultValue,
         });
     }
 
-    get cliDefinitions(): { display: OptionDefinition[]; actual: OptionDefinition[] } {
+    get cliDefinitions (): { actual: OptionDefinition[], display: OptionDefinition[], } {
         const negated = Object.assign({}, this.definition, {
             name: `no-${this.definition.name}`,
-            defaultValue: !this.definition.defaultValue
+            defaultValue: !this.definition.defaultValue,
         });
         const display = Object.assign({}, this.definition, {
             name: `[no-]${this.definition.name}`,
-            description: `${this.definition.description} (${this.definition.defaultValue ? "on" : "off"} by default)`
+            description: `${this.definition.description} (${this.definition.defaultValue ? "on" : "off"} by default)`,
         });
         return {
             display: [display],
-            actual: [this.definition, negated]
+            actual: [this.definition, negated],
         };
     }
 
-    getValue(values: { [name: string]: any }): boolean {
+    getValue (values: { [name: string]: any, }): boolean {
         let value = values[this.definition.name];
         if (value === undefined) {
             value = this.definition.defaultValue;
@@ -123,12 +125,12 @@ export class BooleanOption extends Option<boolean> {
 }
 
 export class StringOption extends Option<string> {
-    constructor(
+    constructor (
         name: string,
         description: string,
         typeLabel: string,
         defaultValue: string,
-        kind: OptionKind = "primary"
+        kind: OptionKind = "primary",
     ) {
         const definition = {
             name,
@@ -136,25 +138,26 @@ export class StringOption extends Option<string> {
             type: String,
             description,
             typeLabel,
-            defaultValue
+            defaultValue,
         };
         super(definition);
     }
 }
 
 export class EnumOption<T> extends Option<T> {
-    private readonly _values: { [name: string]: T };
+    private readonly _values: { [name: string]: T, };
 
-    constructor(
+    constructor (
         name: string,
         description: string,
-        values: [string, T][],
+        values: Array<[string, T]>,
         defaultValue: string | undefined = undefined,
-        kind: OptionKind = "primary"
+        kind: OptionKind = "primary",
     ) {
         if (defaultValue === undefined) {
             defaultValue = values[0][0];
         }
+
         const definition = {
             name,
             kind,
@@ -162,7 +165,7 @@ export class EnumOption<T> extends Option<T> {
             description,
             typeLabel: values.map(([n, _]) => n).join("|"),
             legalValues: values.map(([n, _]) => n),
-            defaultValue
+            defaultValue,
         };
         super(definition);
 
@@ -172,14 +175,16 @@ export class EnumOption<T> extends Option<T> {
         }
     }
 
-    getValue(values: { [name: string]: any }): T {
+    getValue (values: { [name: string]: any, }): T {
         let name: string = values[this.definition.name];
         if (name === undefined) {
             name = this.definition.defaultValue;
         }
+
         if (!hasOwnProperty(this._values, name)) {
             return messageError("RendererUnknownOptionValue", { value: name, name: this.definition.name });
         }
+
         return this._values[name];
     }
 }

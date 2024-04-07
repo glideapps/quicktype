@@ -1,11 +1,15 @@
 import { mapContains, arrayIntercalate } from "collection-utils";
 
 import { TargetLanguage } from "../TargetLanguage";
-import { EnumOption, StringOption, BooleanOption, Option, getOptionValues, OptionValues } from "../RendererOptions";
-import { Type, ClassType, UnionType, EnumType, ClassProperty } from "../Type";
+import { type Option, type OptionValues } from "../RendererOptions";
+import { EnumOption, StringOption, BooleanOption, getOptionValues } from "../RendererOptions";
+import { type Type, type ClassType, type EnumType, type ClassProperty } from "../Type";
+import { UnionType } from "../Type";
 import { matchType, nullableFromUnion } from "../TypeUtils";
-import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { Namer, Name, DependencyName, funPrefixNamer } from "../Naming";
+import { type ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { ConvenienceRenderer } from "../ConvenienceRenderer";
+import { type Namer, type Name} from "../Naming";
+import { DependencyName, funPrefixNamer } from "../Naming";
 import {
     legalizeCharacters,
     isLetterOrUnderscoreOrDigit,
@@ -17,41 +21,42 @@ import {
     combineWords,
     firstUpperWordStyle,
     allLowerWordStyle,
-    allUpperWordStyle
+    allUpperWordStyle,
 } from "../support/Strings";
 import { defined } from "../support/Support";
-import { Sourcelike, annotated, MultiWord, singleWord, multiWord, parenIfNeeded } from "../Source";
+import { type Sourcelike, type MultiWord} from "../Source";
+import { annotated, singleWord, multiWord, parenIfNeeded } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { RenderContext } from "../Renderer";
+import { type RenderContext } from "../Renderer";
 
 export const elmOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     useList: new EnumOption("array-type", "Use Array or List", [
         ["array", false],
-        ["list", true]
+        ["list", true],
     ]),
     // FIXME: Do this via a configurable named eventually.
-    moduleName: new StringOption("module", "Generated module name", "NAME", "QuickType")
+    moduleName: new StringOption("module", "Generated module name", "NAME", "QuickType"),
 };
 
 export class ElmTargetLanguage extends TargetLanguage {
-    constructor() {
+    constructor () {
         super("Elm", ["elm"], "elm");
     }
 
-    protected getOptions(): Option<any>[] {
+    protected getOptions (): Array<Option<any>> {
         return [elmOptions.justTypes, elmOptions.moduleName, elmOptions.useList];
     }
 
-    get supportsOptionalClassProperties(): boolean {
+    get supportsOptionalClassProperties (): boolean {
         return true;
     }
 
-    get supportsUnionsWithBothNumberTypes(): boolean {
+    get supportsUnionsWithBothNumberTypes (): boolean {
         return true;
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): ElmRenderer {
+    protected makeRenderer (renderContext: RenderContext, untypedOptionValues: { [name: string]: any, }): ElmRenderer {
         return new ElmRenderer(this, renderContext, getOptionValues(elmOptions, untypedOptionValues));
     }
 }
@@ -94,12 +99,12 @@ const forbiddenNames = [
     "True",
     "False",
     "String",
-    "Float"
+    "Float",
 ];
 
 const legalizeName = legalizeCharacters(cp => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp));
 
-function elmNameStyle(original: string, upper: boolean): string {
+function elmNameStyle (original: string, upper: boolean): string {
     const words = splitIntoWords(original);
     return combineWords(
         words,
@@ -109,125 +114,131 @@ function elmNameStyle(original: string, upper: boolean): string {
         upper ? allUpperWordStyle : allLowerWordStyle,
         allUpperWordStyle,
         "",
-        isLetterOrUnderscore
+        isLetterOrUnderscore,
     );
 }
 
 const upperNamingFunction = funPrefixNamer("upper", n => elmNameStyle(n, true));
 const lowerNamingFunction = funPrefixNamer("lower", n => elmNameStyle(n, false));
 
-type RequiredOrOptional = {
-    reqOrOpt: string;
+interface RequiredOrOptional {
     fallback: string;
-};
+    reqOrOpt: string;
+}
 
-function requiredOrOptional(p: ClassProperty): RequiredOrOptional {
-    function optional(fallback: string): RequiredOrOptional {
+function requiredOrOptional (p: ClassProperty): RequiredOrOptional {
+    function optional (fallback: string): RequiredOrOptional {
         return { reqOrOpt: "Jpipe.optional", fallback };
     }
+
     const t = p.type;
-    if (p.isOptional || (t instanceof UnionType && nullableFromUnion(t) !== null)) {
+    if (p.isOptional || t instanceof UnionType && nullableFromUnion(t) !== null) {
         return optional(" Nothing");
     }
+
     if (t.kind === "null") {
         return optional(" ()");
     }
+
     return { reqOrOpt: "Jpipe.required", fallback: "" };
 }
 
-type TopLevelDependent = {
-    encoder: Name;
+interface TopLevelDependent {
     decoder?: Name;
-};
-
-type NamedTypeDependent = {
     encoder: Name;
+}
+
+interface NamedTypeDependent {
     decoder: Name;
-};
+    encoder: Name;
+}
 
 export class ElmRenderer extends ConvenienceRenderer {
     private readonly _topLevelDependents = new Map<Name, TopLevelDependent>();
+
     private readonly _namedTypeDependents = new Map<Name, NamedTypeDependent>();
 
-    constructor(
+    constructor (
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        private readonly _options: OptionValues<typeof elmOptions>
+        private readonly _options: OptionValues<typeof elmOptions>,
     ) {
         super(targetLanguage, renderContext);
     }
 
-    protected forbiddenNamesForGlobalNamespace(): string[] {
+    protected forbiddenNamesForGlobalNamespace (): string[] {
         return forbiddenNames;
     }
 
-    protected makeTopLevelDependencyNames(t: Type, topLevelName: Name): DependencyName[] {
+    protected makeTopLevelDependencyNames (t: Type, topLevelName: Name): DependencyName[] {
         const encoder = new DependencyName(
             lowerNamingFunction,
             topLevelName.order,
-            lookup => `${lookup(topLevelName)}_to_string`
+            lookup => `${lookup(topLevelName)}_to_string`,
         );
         let decoder: DependencyName | undefined = undefined;
         if (this.namedTypeToNameForTopLevel(t) === undefined) {
             decoder = new DependencyName(lowerNamingFunction, topLevelName.order, lookup => lookup(topLevelName));
         }
+
         this._topLevelDependents.set(topLevelName, { encoder, decoder });
         if (decoder !== undefined) {
             return [encoder, decoder];
         }
+
         return [encoder];
     }
 
-    protected makeNamedTypeNamer(): Namer {
+    protected makeNamedTypeNamer (): Namer {
         return upperNamingFunction;
     }
 
-    protected makeNamedTypeDependencyNames(_: Type, typeName: Name): DependencyName[] {
+    protected makeNamedTypeDependencyNames (_: Type, typeName: Name): DependencyName[] {
         const encoder = new DependencyName(lowerNamingFunction, typeName.order, lookup => `encode_${lookup(typeName)}`);
         const decoder = new DependencyName(lowerNamingFunction, typeName.order, lookup => lookup(typeName));
         this._namedTypeDependents.set(typeName, { encoder, decoder });
         return [encoder, decoder];
     }
 
-    protected namerForObjectProperty(): Namer {
+    protected namerForObjectProperty (): Namer {
         return lowerNamingFunction;
     }
 
-    protected forbiddenForObjectProperties(_c: ClassType, _className: Name): ForbiddenWordsInfo {
+    protected forbiddenForObjectProperties (_c: ClassType, _className: Name): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: true };
     }
 
-    protected makeUnionMemberNamer(): Namer {
+    protected makeUnionMemberNamer (): Namer {
         return upperNamingFunction;
     }
 
-    protected get unionMembersInGlobalNamespace(): boolean {
+    protected get unionMembersInGlobalNamespace (): boolean {
         return true;
     }
 
-    protected makeEnumCaseNamer(): Namer {
+    protected makeEnumCaseNamer (): Namer {
         return upperNamingFunction;
     }
 
-    protected get enumCasesInGlobalNamespace(): boolean {
+    protected get enumCasesInGlobalNamespace (): boolean {
         return true;
     }
 
-    protected proposeUnionMemberName(
+    protected proposeUnionMemberName (
         u: UnionType,
         unionName: Name,
         fieldType: Type,
-        lookup: (n: Name) => string
+        lookup: (n: Name) => string,
     ): string {
         const fieldName = super.proposeUnionMemberName(u, unionName, fieldType, lookup);
         return `${fieldName}_in_${lookup(unionName)}`;
     }
 
-    protected get commentLineStart(): string {
+    protected get commentLineStart (): string {
         return "-- ";
     }
 
-    protected emitDescriptionBlock(lines: Sourcelike[]): void {
+    protected emitDescriptionBlock (lines: Sourcelike[]): void {
         if (lines.length === 1) {
             this.emitComments([{ customLines: lines, lineStart: "{-| ", lineEnd: " -}" }]);
         } else {
@@ -235,11 +246,11 @@ export class ElmRenderer extends ConvenienceRenderer {
         }
     }
 
-    private get arrayType(): string {
+    private get arrayType (): string {
         return this._options.useList ? "List" : "Array";
     }
 
-    private elmType(t: Type, noOptional = false): MultiWord {
+    private elmType (t: Type, noOptional = false): MultiWord {
         return matchType<MultiWord>(
             t,
             _anyType => singleWord(annotated(anyTypeIssueAnnotation, "Jdec.Value")),
@@ -259,12 +270,13 @@ export class ElmRenderer extends ConvenienceRenderer {
                     if (noOptional) return nullableType;
                     return multiWord(" ", "Maybe", parenIfNeeded(nullableType));
                 }
+
                 return singleWord(this.nameForNamedType(unionType));
-            }
+            },
         );
     }
 
-    private elmProperty(p: ClassProperty): Sourcelike {
+    private elmProperty (p: ClassProperty): Sourcelike {
         if (p.isOptional) {
             return multiWord(" ", "Maybe", parenIfNeeded(this.elmType(p.type, true))).source;
         } else {
@@ -272,12 +284,12 @@ export class ElmRenderer extends ConvenienceRenderer {
         }
     }
 
-    private decoderNameForNamedType(t: Type): Name {
+    private decoderNameForNamedType (t: Type): Name {
         const name = this.nameForNamedType(t);
         return defined(this._namedTypeDependents.get(name)).decoder;
     }
 
-    private decoderNameForType(t: Type, noOptional = false): MultiWord {
+    private decoderNameForType (t: Type, noOptional = false): MultiWord {
         return matchType<MultiWord>(
             t,
             _anyType => singleWord("Jdec.value"),
@@ -290,7 +302,7 @@ export class ElmRenderer extends ConvenienceRenderer {
                 multiWord(
                     " ",
                     ["Jdec.", decapitalize(this.arrayType)],
-                    parenIfNeeded(this.decoderNameForType(arrayType.items))
+                    parenIfNeeded(this.decoderNameForType(arrayType.items)),
                 ),
             classType => singleWord(this.decoderNameForNamedType(classType)),
             mapType => multiWord(" ", "Jdec.dict", parenIfNeeded(this.decoderNameForType(mapType.values))),
@@ -302,12 +314,13 @@ export class ElmRenderer extends ConvenienceRenderer {
                     if (noOptional) return nullableDecoder;
                     return multiWord(" ", "Jdec.nullable", parenIfNeeded(nullableDecoder));
                 }
+
                 return singleWord(this.decoderNameForNamedType(unionType));
-            }
+            },
         );
     }
 
-    private decoderNameForProperty(p: ClassProperty): MultiWord {
+    private decoderNameForProperty (p: ClassProperty): MultiWord {
         if (p.isOptional) {
             return multiWord(" ", "Jdec.nullable", parenIfNeeded(this.decoderNameForType(p.type, true)));
         } else {
@@ -315,12 +328,12 @@ export class ElmRenderer extends ConvenienceRenderer {
         }
     }
 
-    private encoderNameForNamedType(t: Type): Name {
+    private encoderNameForNamedType (t: Type): Name {
         const name = this.nameForNamedType(t);
         return defined(this._namedTypeDependents.get(name)).encoder;
     }
 
-    private encoderNameForType(t: Type, noOptional = false): MultiWord {
+    private encoderNameForType (t: Type, noOptional = false): MultiWord {
         return matchType<MultiWord>(
             t,
             _anyType => singleWord("identity"),
@@ -333,7 +346,7 @@ export class ElmRenderer extends ConvenienceRenderer {
                 multiWord(
                     " ",
                     ["make", this.arrayType, "Encoder"],
-                    parenIfNeeded(this.encoderNameForType(arrayType.items))
+                    parenIfNeeded(this.encoderNameForType(arrayType.items)),
                 ),
             classType => singleWord(this.encoderNameForNamedType(classType)),
             mapType => multiWord(" ", "makeDictEncoder", parenIfNeeded(this.encoderNameForType(mapType.values))),
@@ -345,12 +358,13 @@ export class ElmRenderer extends ConvenienceRenderer {
                     if (noOptional) return nullableEncoder;
                     return multiWord(" ", "makeNullableEncoder", parenIfNeeded(nullableEncoder));
                 }
+
                 return singleWord(this.encoderNameForNamedType(unionType));
-            }
+            },
         );
     }
 
-    private encoderNameForProperty(p: ClassProperty): MultiWord {
+    private encoderNameForProperty (p: ClassProperty): MultiWord {
         if (p.isOptional) {
             return multiWord(" ", "makeNullableEncoder", parenIfNeeded(this.encoderNameForType(p.type, true)));
         } else {
@@ -358,11 +372,11 @@ export class ElmRenderer extends ConvenienceRenderer {
         }
     }
 
-    private emitTopLevelDefinition(t: Type, topLevelName: Name): void {
+    private emitTopLevelDefinition (t: Type, topLevelName: Name): void {
         this.emitLine("type alias ", topLevelName, " = ", this.elmType(t).source);
     }
 
-    private emitClassDefinition(c: ClassType, className: Name): void {
+    private emitClassDefinition (c: ClassType, className: Name): void {
         let description = this.descriptionForType(c);
         this.forEachClassProperty(c, "none", (name, jsonName) => {
             const propertyDescription = this.descriptionForClassProperty(c, jsonName);
@@ -373,6 +387,7 @@ export class ElmRenderer extends ConvenienceRenderer {
             } else {
                 description.push("");
             }
+
             description.push(`${this.sourcelikeToString(name)}:`);
             description.push(...propertyDescription);
         });
@@ -388,11 +403,12 @@ export class ElmRenderer extends ConvenienceRenderer {
             if (onFirst) {
                 this.emitLine("{");
             }
+
             this.emitLine("}");
         });
     }
 
-    private emitEnumDefinition(e: EnumType, enumName: Name): void {
+    private emitEnumDefinition (e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
         this.emitLine("type ", enumName);
         this.indent(() => {
@@ -405,7 +421,7 @@ export class ElmRenderer extends ConvenienceRenderer {
         });
     }
 
-    private emitUnionDefinition(u: UnionType, unionName: Name): void {
+    private emitUnionDefinition (u: UnionType, unionName: Name): void {
         this.emitDescription(this.descriptionForType(u));
         this.emitLine("type ", unionName);
         this.indent(() => {
@@ -417,23 +433,25 @@ export class ElmRenderer extends ConvenienceRenderer {
                 } else {
                     this.emitLine(equalsOrPipe, " ", constructor, " ", parenIfNeeded(this.elmType(t)));
                 }
+
                 onFirst = false;
             });
         });
     }
 
-    private emitTopLevelFunctions(t: Type, topLevelName: Name): void {
+    private emitTopLevelFunctions (t: Type, topLevelName: Name): void {
         const { encoder, decoder } = defined(this._topLevelDependents.get(topLevelName));
         if (this.namedTypeToNameForTopLevel(t) === undefined) {
             this.emitLine(defined(decoder), " : Jdec.Decoder ", topLevelName);
             this.emitLine(defined(decoder), " = ", this.decoderNameForType(t).source);
             this.ensureBlankLine();
         }
+
         this.emitLine(encoder, " : ", topLevelName, " -> String");
         this.emitLine(encoder, " r = Jenc.encode 0 (", this.encoderNameForType(t).source, " r)");
     }
 
-    private emitClassFunctions(c: ClassType, className: Name): void {
+    private emitClassFunctions (c: ClassType, className: Name): void {
         const decoderName = this.decoderNameForNamedType(c);
         this.emitLine(decoderName, " : Jdec.Decoder ", className);
         this.emitLine(decoderName, " =");
@@ -443,7 +461,7 @@ export class ElmRenderer extends ConvenienceRenderer {
                 this.forEachClassProperty(c, "none", (_, jsonName, p) => {
                     const propDecoder = parenIfNeeded(this.decoderNameForProperty(p));
                     const { reqOrOpt, fallback } = requiredOrOptional(p);
-                    this.emitLine("|> ", reqOrOpt, ' "', stringEscape(jsonName), '" ', propDecoder, fallback);
+                    this.emitLine("|> ", reqOrOpt, " \"", stringEscape(jsonName), "\" ", propDecoder, fallback);
                 });
             });
         });
@@ -459,18 +477,19 @@ export class ElmRenderer extends ConvenienceRenderer {
                 this.forEachClassProperty(c, "none", (name, jsonName, p) => {
                     const bracketOrComma = onFirst ? "[" : ",";
                     const propEncoder = this.encoderNameForProperty(p).source;
-                    this.emitLine(bracketOrComma, ' ("', stringEscape(jsonName), '", ', propEncoder, " x.", name, ")");
+                    this.emitLine(bracketOrComma, " (\"", stringEscape(jsonName), "\", ", propEncoder, " x.", name, ")");
                     onFirst = false;
                 });
                 if (onFirst) {
                     this.emitLine("[");
                 }
+
                 this.emitLine("]");
             });
         });
     }
 
-    private emitEnumFunctions(e: EnumType, enumName: Name): void {
+    private emitEnumFunctions (e: EnumType, enumName: Name): void {
         const decoderName = this.decoderNameForNamedType(e);
         this.emitLine(decoderName, " : Jdec.Decoder ", enumName);
         this.emitLine(decoderName, " =");
@@ -482,9 +501,9 @@ export class ElmRenderer extends ConvenienceRenderer {
                     this.emitLine("case str of");
                     this.indent(() => {
                         this.forEachEnumCase(e, "none", (name, jsonName) => {
-                            this.emitLine('"', stringEscape(jsonName), '" -> Jdec.succeed ', name);
+                            this.emitLine("\"", stringEscape(jsonName), "\" -> Jdec.succeed ", name);
                         });
-                        this.emitLine('somethingElse -> Jdec.fail <| "Invalid ', enumName, ': " ++ somethingElse');
+                        this.emitLine("somethingElse -> Jdec.fail <| \"Invalid ", enumName, ": \" ++ somethingElse");
                     });
                 });
                 this.emitLine(")");
@@ -497,14 +516,14 @@ export class ElmRenderer extends ConvenienceRenderer {
         this.emitLine(encoderName, " x = case x of");
         this.indent(() => {
             this.forEachEnumCase(e, "none", (name, jsonName) => {
-                this.emitLine(name, ' -> Jenc.string "', stringEscape(jsonName), '"');
+                this.emitLine(name, " -> Jenc.string \"", stringEscape(jsonName), "\"");
             });
         });
     }
 
-    private emitUnionFunctions(u: UnionType, unionName: Name): void {
+    private emitUnionFunctions (u: UnionType, unionName: Name): void {
         // We need arrays first, then strings, and integers before doubles.
-        function sortOrder(_: Name, t: Type): string {
+        function sortOrder (_: Name, t: Type): string {
             if (t.kind === "array") {
                 return "  array";
             } else if (t.kind === "double") {
@@ -512,6 +531,7 @@ export class ElmRenderer extends ConvenienceRenderer {
             } else if (t.isPrimitive()) {
                 return " " + t.kind;
             }
+
             return t.kind;
         }
 
@@ -530,6 +550,7 @@ export class ElmRenderer extends ConvenienceRenderer {
                         const decoder = parenIfNeeded(this.decoderNameForType(t));
                         this.emitLine(bracketOrComma, " Jdec.map ", constructor, " ", decoder);
                     }
+
                     onFirst = false;
                 });
                 this.emitLine("]");
@@ -552,7 +573,7 @@ export class ElmRenderer extends ConvenienceRenderer {
         });
     }
 
-    protected emitSourceStructure(): void {
+    protected emitSourceStructure (): void {
         const exports: Sourcelike[] = [];
         const topLevelDecoders: Sourcelike[] = [];
         this.forEachTopLevel("none", (_, name) => {
@@ -560,6 +581,7 @@ export class ElmRenderer extends ConvenienceRenderer {
             if (decoder === undefined) {
                 decoder = defined(this._namedTypeDependents.get(name)).decoder;
             }
+
             topLevelDecoders.push(decoder);
             exports.push(name, encoder, decoder);
         });
@@ -583,14 +605,14 @@ export class ElmRenderer extends ConvenienceRenderer {
                 "",
                 "add these imports",
                 "",
-                "    import Json.Decode exposing (decodeString)`);"
+                "    import Json.Decode exposing (decodeString)`);",
             ]);
             this.emitLine(
                 "--     import ",
                 this._options.moduleName,
                 " exposing (",
                 arrayIntercalate(", ", topLevelDecoders),
-                ")"
+                ")",
             );
             this.emitMultiline(`--
 -- and you're off to the races with
@@ -600,6 +622,7 @@ export class ElmRenderer extends ConvenienceRenderer {
                 if (decoder === undefined) {
                     decoder = defined(this._namedTypeDependents.get(name)).decoder;
                 }
+
                 this.emitLine("--     decodeString ", decoder, " myJsonString");
             });
         }
@@ -611,6 +634,7 @@ export class ElmRenderer extends ConvenienceRenderer {
                 for (let i = 0; i < exports.length; i++) {
                     this.emitLine(i === 0 ? "(" : ",", " ", exports[i]);
                 }
+
                 this.emitLine(")");
             });
             this.ensureBlankLine();
@@ -629,13 +653,13 @@ import Dict exposing (Dict, map, toList)`);
         this.forEachTopLevel(
             "leading-and-interposing",
             (t: Type, topLevelName: Name) => this.emitTopLevelDefinition(t, topLevelName),
-            t => this.namedTypeToNameForTopLevel(t) === undefined
+            t => this.namedTypeToNameForTopLevel(t) === undefined,
         );
         this.forEachNamedType(
             "leading-and-interposing",
             (c: ClassType, className: Name) => this.emitClassDefinition(c, className),
             (e: EnumType, enumName: Name) => this.emitEnumDefinition(e, enumName),
-            (u: UnionType, unionName: Name) => this.emitUnionDefinition(u, unionName)
+            (u: UnionType, unionName: Name) => this.emitUnionDefinition(u, unionName),
         );
 
         if (this._options.justTypes) return;
@@ -643,13 +667,13 @@ import Dict exposing (Dict, map, toList)`);
         this.ensureBlankLine();
         this.emitLine("-- decoders and encoders");
         this.forEachTopLevel("leading-and-interposing", (t: Type, topLevelName: Name) =>
-            this.emitTopLevelFunctions(t, topLevelName)
+            this.emitTopLevelFunctions(t, topLevelName),
         );
         this.forEachNamedType(
             "leading-and-interposing",
             (c: ClassType, className: Name) => this.emitClassFunctions(c, className),
             (e: EnumType, enumName: Name) => this.emitEnumFunctions(e, enumName),
-            (u: UnionType, unionName: Name) => this.emitUnionFunctions(u, unionName)
+            (u: UnionType, unionName: Name) => this.emitUnionFunctions(u, unionName),
         );
         this.ensureBlankLine();
 

@@ -1,32 +1,34 @@
 import { mapMap } from "collection-utils";
 
-import { lookupKey, AccessorNames, makeAccessorNames } from "./AccessorNames";
-import { EnumType } from "../Type";
+import { type AccessorNames} from "./AccessorNames";
+import { lookupKey, makeAccessorNames } from "./AccessorNames";
+import { type EnumType } from "../Type";
 import { TypeAttributeKind } from "./TypeAttributes";
-import { JSONSchema } from "../input/JSONSchemaStore";
-import { Ref, JSONSchemaType, JSONSchemaAttributes } from "../input/JSONSchemaInput";
+import { type JSONSchema } from "../input/JSONSchemaStore";
+import { type Ref, type JSONSchemaType, type JSONSchemaAttributes } from "../input/JSONSchemaInput";
 
 class EnumValuesTypeAttributeKind extends TypeAttributeKind<AccessorNames> {
-    constructor() {
+    constructor () {
         super("enumValues");
     }
-    makeInferred(_: AccessorNames) {
+
+    makeInferred (_: AccessorNames) {
         return undefined;
     }
 }
 
 export const enumValuesTypeAttributeKind: TypeAttributeKind<AccessorNames> = new EnumValuesTypeAttributeKind();
 
-export function enumCaseValues(e: EnumType, language: string): Map<string, [string, boolean] | undefined> {
+export function enumCaseValues (e: EnumType, language: string): Map<string, [string, boolean] | undefined> {
     const enumValues = enumValuesTypeAttributeKind.tryGetInAttributes(e.getAttributes());
     if (enumValues === undefined) return mapMap(e.cases.entries(), _ => undefined);
     return mapMap(e.cases.entries(), c => lookupKey(enumValues, c, language));
 }
 
-export function enumValuesAttributeProducer(
+export function enumValuesAttributeProducer (
     schema: JSONSchema,
     _canonicalRef: Ref | undefined,
-    _types: Set<JSONSchemaType>
+    _types: Set<JSONSchemaType>,
 ): JSONSchemaAttributes | undefined {
     if (typeof schema !== "object") return undefined;
 

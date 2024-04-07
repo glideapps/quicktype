@@ -1,5 +1,5 @@
 import * as fs from "fs";
-import { Readable } from "readable-stream";
+import { type Readable } from "readable-stream";
 import { isNode } from "browser-or-node";
 import { getStream } from "./get-stream";
 import { defined, exceptionToString } from "@glideapps/ts-necessities";
@@ -12,7 +12,7 @@ interface HttpHeaders {
     [key: string]: string;
 }
 
-function parseHeaders(httpHeaders?: string[]): HttpHeaders {
+function parseHeaders (httpHeaders?: string[]): HttpHeaders {
     if (!Array.isArray(httpHeaders)) {
         return {};
     }
@@ -34,11 +34,11 @@ function parseHeaders(httpHeaders?: string[]): HttpHeaders {
     }, {} as HttpHeaders);
 }
 
-export async function readableFromFileOrURL(fileOrURL: string, httpHeaders?: string[]): Promise<Readable> {
+export async function readableFromFileOrURL (fileOrURL: string, httpHeaders?: string[]): Promise<Readable> {
     try {
         if (isURL(fileOrURL)) {
             const response = await fetch(fileOrURL, {
-                headers: parseHeaders(httpHeaders)
+                headers: parseHeaders(httpHeaders),
             });
             return defined(response.body) as unknown as Readable;
         } else if (isNode) {
@@ -46,6 +46,7 @@ export async function readableFromFileOrURL(fileOrURL: string, httpHeaders?: str
                 // Cast node readable to isomorphic readable from readable-stream
                 return process.stdin as unknown as Readable;
             }
+
             const filePath = fs.lstatSync(fileOrURL).isSymbolicLink() ? fs.readlinkSync(fileOrURL) : fileOrURL;
             if (fs.existsSync(filePath)) {
                 // Cast node readable to isomorphic readable from readable-stream
@@ -55,10 +56,11 @@ export async function readableFromFileOrURL(fileOrURL: string, httpHeaders?: str
     } catch (e) {
         return messageError("MiscReadError", { fileOrURL, message: exceptionToString(e) });
     }
+
     return messageError("DriverInputFileDoesNotExist", { filename: fileOrURL });
 }
 
-export async function readFromFileOrURL(fileOrURL: string, httpHeaders?: string[]): Promise<string> {
+export async function readFromFileOrURL (fileOrURL: string, httpHeaders?: string[]): Promise<string> {
     const readable = await readableFromFileOrURL(fileOrURL, httpHeaders);
     try {
         return await getStream(readable);

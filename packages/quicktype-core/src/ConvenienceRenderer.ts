@@ -6,24 +6,30 @@ import {
     mapFilter,
     mapSortBy,
     mapFilterMap,
-    mapSome
+    mapSome,
 } from "collection-utils";
 
-import { Type, ClassType, EnumType, UnionType, TypeKind, ClassProperty, MapType, ObjectType } from "./Type";
+import { type Type, type TypeKind, type ClassProperty} from "./Type";
+import { ClassType, EnumType, UnionType, MapType, ObjectType } from "./Type";
 import { separateNamedTypes, nullableFromUnion, matchTypeExhaustive, isNamedType } from "./TypeUtils";
-import { Namespace, Name, Namer, FixedName, SimpleName, DependencyName, keywordNamespace } from "./Naming";
-import { Renderer, BlankLineConfig, RenderContext, ForEachPosition } from "./Renderer";
+import { type Name, type Namer} from "./Naming";
+import { Namespace, FixedName, SimpleName, DependencyName, keywordNamespace } from "./Naming";
+import { type BlankLineConfig, type RenderContext, type ForEachPosition } from "./Renderer";
+import { Renderer } from "./Renderer";
 import { defined, panic, nonNull, assert } from "./support/Support";
 import { trimEnd } from "./support/Strings";
-import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source";
+import { type Sourcelike} from "./Source";
+import { sourcelikeToSource, serializeRenderResult } from "./Source";
 
-import { declarationsForGraph, DeclarationIR, cycleBreakerTypesForGraph, Declaration } from "./DeclarationIR";
+import { type DeclarationIR, type Declaration } from "./DeclarationIR";
+import { declarationsForGraph, cycleBreakerTypesForGraph } from "./DeclarationIR";
 import { TypeAttributeStoreView } from "./TypeGraph";
 import { TypeAttributeKind } from "./attributes/TypeAttributes";
 import { descriptionTypeAttributeKind, propertyDescriptionsTypeAttributeKind } from "./attributes/Description";
 import { enumCaseNames, objectPropertyNames, unionMemberName, getAccessorName } from "./attributes/AccessorNames";
-import { transformationForType, followTargetType, Transformation } from "./Transformers";
-import { TargetLanguage } from "./TargetLanguage";
+import { type Transformation } from "./Transformers";
+import { transformationForType, followTargetType } from "./Transformers";
+import { type TargetLanguage } from "./TargetLanguage";
 import { type Comment, isStringComment, type CommentOptions } from "./support/Comments";
 
 const wordWrap: (s: string) => string = require("wordwrap")(90);
@@ -41,7 +47,7 @@ const assignedEnumCaseNameOrder = 10;
 
 const unionMemberNameOrder = 40;
 
-function splitDescription(descriptions: Iterable<string> | undefined): string[] | undefined {
+function splitDescription (descriptions: Iterable<string> | undefined): string[] | undefined {
     if (descriptions === undefined) return undefined;
     const description = Array.from(descriptions).join("\n\n").trim();
     if (description === "") return undefined;
@@ -50,7 +56,9 @@ function splitDescription(descriptions: Iterable<string> | undefined): string[] 
         .map(l => l.trim());
 }
 
-export type ForbiddenWordsInfo = { names: (Name | string)[]; includeGlobalForbidden: boolean };
+export interface ForbiddenWordsInfo {
+    includeGlobalForbidden: boolean; names: Array<Name | string>; 
+}
 
 const assignedNameAttributeKind = new TypeAttributeKind<Name>("assignedName");
 const assignedPropertyNamesAttributeKind = new TypeAttributeKind<ReadonlyMap<string, Name>>("assignedPropertyNames");
@@ -59,37 +67,54 @@ const assignedCaseNamesAttributeKind = new TypeAttributeKind<ReadonlyMap<string,
 
 export abstract class ConvenienceRenderer extends Renderer {
     private _globalForbiddenNamespace: Namespace | undefined;
+
     private _otherForbiddenNamespaces: Map<string, Namespace> | undefined;
+
     private _globalNamespace: Namespace | undefined;
+
     private _nameStoreView: TypeAttributeStoreView<Name> | undefined;
+
     private _propertyNamesStoreView: TypeAttributeStoreView<ReadonlyMap<string, Name>> | undefined;
+
     private _memberNamesStoreView: TypeAttributeStoreView<ReadonlyMap<Type, Name>> | undefined;
+
     private _caseNamesStoreView: TypeAttributeStoreView<ReadonlyMap<string, Name>> | undefined;
+
     private _namesForTransformations: Map<Type, Name> | undefined;
 
     private _namedTypeNamer: Namer | undefined;
-    // @ts-ignore: FIXME: Make this `Namer | undefined`
+
+    // @ts-expect-error: FIXME: Make this `Namer | undefined`
     private _unionMemberNamer: Namer | null;
-    // @ts-ignore: FIXME: Make this `Namer | undefined`
+
+    // @ts-expect-error: FIXME: Make this `Namer | undefined`
     private _enumCaseNamer: Namer | null;
 
     private _declarationIR: DeclarationIR | undefined;
-    private _namedTypes: ReadonlyArray<Type> | undefined;
+
+    private _namedTypes: readonly Type[] | undefined;
+
     private _namedObjects: Set<ObjectType> | undefined;
+
     private _namedEnums: Set<EnumType> | undefined;
+
     private _namedUnions: Set<UnionType> | undefined;
+
     private _haveUnions: boolean | undefined;
+
     private _haveMaps: boolean | undefined;
+
     private _haveOptionalProperties: boolean | undefined;
+
     private _cycleBreakerTypes?: Set<Type> | undefined;
 
     private _alphabetizeProperties = false;
 
-    constructor(targetLanguage: TargetLanguage, renderContext: RenderContext) {
+    constructor (targetLanguage: TargetLanguage, renderContext: RenderContext) {
         super(targetLanguage, renderContext);
     }
 
-    get topLevels(): ReadonlyMap<string, Type> {
+    get topLevels (): ReadonlyMap<string, Type> {
         return this.typeGraph.topLevels;
     }
 
@@ -100,7 +125,7 @@ export abstract class ConvenienceRenderer extends Renderer {
      * that can conflict with that, such as reserved keywords or common type
      * names.
      */
-    protected forbiddenNamesForGlobalNamespace(): string[] {
+    protected forbiddenNamesForGlobalNamespace (): string[] {
         return [];
     }
 
@@ -114,95 +139,96 @@ export abstract class ConvenienceRenderer extends Renderer {
      * Note: That doesn't mean that the names in the global namespace will be
      * forbidden, too!
      */
-    protected forbiddenForObjectProperties(_o: ObjectType, _className: Name): ForbiddenWordsInfo {
+    protected forbiddenForObjectProperties (_o: ObjectType, _className: Name): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: false };
     }
 
-    protected forbiddenForUnionMembers(_u: UnionType, _unionName: Name): ForbiddenWordsInfo {
+    protected forbiddenForUnionMembers (_u: UnionType, _unionName: Name): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: false };
     }
 
-    protected forbiddenForEnumCases(_e: EnumType, _enumName: Name): ForbiddenWordsInfo {
+    protected forbiddenForEnumCases (_e: EnumType, _enumName: Name): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: false };
     }
 
-    protected makeTopLevelDependencyNames(_t: Type, _topLevelName: Name): DependencyName[] {
+    protected makeTopLevelDependencyNames (_t: Type, _topLevelName: Name): DependencyName[] {
         return [];
     }
 
-    protected makeNamedTypeDependencyNames(_t: Type, _name: Name): DependencyName[] {
+    protected makeNamedTypeDependencyNames (_t: Type, _name: Name): DependencyName[] {
         return [];
     }
 
-    protected abstract makeNamedTypeNamer(): Namer;
-    protected abstract namerForObjectProperty(o: ObjectType, p: ClassProperty): Namer | null;
-    protected abstract makeUnionMemberNamer(): Namer | null;
-    protected abstract makeEnumCaseNamer(): Namer | null;
-    protected abstract emitSourceStructure(givenOutputFilename: string): void;
+    protected abstract makeNamedTypeNamer (): Namer;
+    protected abstract namerForObjectProperty (o: ObjectType, p: ClassProperty): Namer | null;
+    protected abstract makeUnionMemberNamer (): Namer | null;
+    protected abstract makeEnumCaseNamer (): Namer | null;
+    protected abstract emitSourceStructure (givenOutputFilename: string): void;
 
-    protected makeNameForTransformation(_xf: Transformation, _typeName: Name | undefined): Name | undefined {
+    protected makeNameForTransformation (_xf: Transformation, _typeName: Name | undefined): Name | undefined {
         return undefined;
     }
 
-    protected namedTypeToNameForTopLevel(type: Type): Type | undefined {
+    protected namedTypeToNameForTopLevel (type: Type): Type | undefined {
         if (isNamedType(type)) {
             return type;
         }
+
         return undefined;
     }
 
-    protected get unionMembersInGlobalNamespace(): boolean {
+    protected get unionMembersInGlobalNamespace (): boolean {
         return false;
     }
 
-    protected get enumCasesInGlobalNamespace(): boolean {
+    protected get enumCasesInGlobalNamespace (): boolean {
         return false;
     }
 
-    protected get needsTypeDeclarationBeforeUse(): boolean {
+    protected get needsTypeDeclarationBeforeUse (): boolean {
         return false;
     }
 
-    protected canBeForwardDeclared(_t: Type): boolean {
+    protected canBeForwardDeclared (_t: Type): boolean {
         return panic("If needsTypeDeclarationBeforeUse returns true, canBeForwardDeclared must be implemented");
     }
 
-    protected unionNeedsName(u: UnionType): boolean {
+    protected unionNeedsName (u: UnionType): boolean {
         return nullableFromUnion(u) === null;
     }
 
-    private get globalNamespace(): Namespace {
+    private get globalNamespace (): Namespace {
         return defined(this._globalNamespace);
     }
 
-    private get nameStoreView(): TypeAttributeStoreView<Name> {
+    private get nameStoreView (): TypeAttributeStoreView<Name> {
         return defined(this._nameStoreView);
     }
 
-    protected descriptionForType(t: Type): string[] | undefined {
+    protected descriptionForType (t: Type): string[] | undefined {
         let description = this.typeGraph.attributeStore.tryGet(descriptionTypeAttributeKind, t);
         return splitDescription(description);
     }
 
-    protected descriptionForClassProperty(o: ObjectType, name: string): string[] | undefined {
+    protected descriptionForClassProperty (o: ObjectType, name: string): string[] | undefined {
         const descriptions = this.typeGraph.attributeStore.tryGet(propertyDescriptionsTypeAttributeKind, o);
         if (descriptions === undefined) return undefined;
         return splitDescription(descriptions.get(name));
     }
 
-    protected setUpNaming(): ReadonlySet<Namespace> {
+    protected setUpNaming (): ReadonlySet<Namespace> {
         this._nameStoreView = new TypeAttributeStoreView(this.typeGraph.attributeStore, assignedNameAttributeKind);
         this._propertyNamesStoreView = new TypeAttributeStoreView(
             this.typeGraph.attributeStore,
-            assignedPropertyNamesAttributeKind
+            assignedPropertyNamesAttributeKind,
         );
         this._memberNamesStoreView = new TypeAttributeStoreView(
             this.typeGraph.attributeStore,
-            assignedMemberNamesAttributeKind
+            assignedMemberNamesAttributeKind,
         );
         this._caseNamesStoreView = new TypeAttributeStoreView(
             this.typeGraph.attributeStore,
-            assignedCaseNamesAttributeKind
+            assignedCaseNamesAttributeKind,
         );
         this._namesForTransformations = new Map();
 
@@ -218,40 +244,44 @@ export abstract class ConvenienceRenderer extends Renderer {
         for (const [name, t] of this.topLevels) {
             this.nameStoreView.setForTopLevel(name, this.addNameForTopLevel(t, name));
         }
+
         for (const o of objects) {
             const name = this.addNameForNamedType(o);
             this.addPropertyNames(o, name);
         }
+
         for (const e of enums) {
             const name = this.addNameForNamedType(e);
             this.addEnumCaseNames(e, name);
         }
+
         for (const u of namedUnions) {
             const name = this.addNameForNamedType(u);
             this.addUnionMemberNames(u, name);
         }
+
         for (const t of this.typeGraph.allTypesUnordered()) {
             this.addNameForTransformation(t);
         }
 
         return setUnion(
             [this._globalForbiddenNamespace, this._globalNamespace],
-            this._otherForbiddenNamespaces.values()
+            this._otherForbiddenNamespaces.values(),
         );
     }
 
-    private addDependenciesForNamedType(type: Type, named: Name): void {
+    private addDependenciesForNamedType (type: Type, named: Name): void {
         const dependencyNames = this.makeNamedTypeDependencyNames(type, named);
         for (const dn of dependencyNames) {
             this.globalNamespace.add(dn);
         }
     }
 
-    protected makeNameForTopLevel(_t: Type, givenName: string, _maybeNamedType: Type | undefined): Name {
+    protected makeNameForTopLevel (_t: Type, givenName: string, _maybeNamedType: Type | undefined): Name {
         return new SimpleName([givenName], defined(this._namedTypeNamer), topLevelNameOrder);
     }
 
-    private addNameForTopLevel(type: Type, givenName: string): Name {
+    private addNameForTopLevel (type: Type, givenName: string): Name {
         const maybeNamedType = this.namedTypeToNameForTopLevel(type);
         const name = this.makeNameForTopLevel(type, givenName, maybeNamedType);
         this.globalNamespace.add(name);
@@ -268,17 +298,17 @@ export abstract class ConvenienceRenderer extends Renderer {
         return name;
     }
 
-    private makeNameForType(t: Type, namer: Namer, givenOrder: number, inferredOrder: number): Name {
+    private makeNameForType (t: Type, namer: Namer, givenOrder: number, inferredOrder: number): Name {
         const names = t.getNames();
         const order = names.areInferred ? inferredOrder : givenOrder;
         return new SimpleName(names.proposedNames, namer, order);
     }
 
-    protected makeNameForNamedType(t: Type): Name {
+    protected makeNameForNamedType (t: Type): Name {
         return this.makeNameForType(t, defined(this._namedTypeNamer), givenNameOrder, inferredNameOrder);
     }
 
-    private addNameForNamedType(type: Type): Name {
+    private addNameForNamedType (type: Type): Name {
         const existing = this.nameStoreView.tryGet(type);
         if (existing !== undefined) return existing;
 
@@ -290,11 +320,11 @@ export abstract class ConvenienceRenderer extends Renderer {
         return name;
     }
 
-    protected get typesWithNamedTransformations(): ReadonlyMap<Type, Name> {
+    protected get typesWithNamedTransformations (): ReadonlyMap<Type, Name> {
         return defined(this._namesForTransformations);
     }
 
-    protected nameForTransformation(t: Type): Name | undefined {
+    protected nameForTransformation (t: Type): Name | undefined {
         const xf = transformationForType(t);
         if (xf === undefined) return undefined;
 
@@ -302,16 +332,17 @@ export abstract class ConvenienceRenderer extends Renderer {
         if (name === undefined) {
             return panic("No name for transformation");
         }
+
         return name;
     }
 
-    private addNameForTransformation(t: Type): void {
+    private addNameForTransformation (t: Type): void {
         const xf = transformationForType(t);
         if (xf === undefined) return;
 
         assert(
             defined(this._namesForTransformations).get(t) === undefined,
-            "Tried to give two names to the same transformation"
+            "Tried to give two names to the same transformation",
         );
 
         const name = this.makeNameForTransformation(xf, this.nameStoreView.tryGet(xf.targetType));
@@ -321,10 +352,10 @@ export abstract class ConvenienceRenderer extends Renderer {
         defined(this._namesForTransformations).set(t, name);
     }
 
-    private processForbiddenWordsInfo(
+    private processForbiddenWordsInfo (
         info: ForbiddenWordsInfo,
-        namespaceName: string
-    ): { forbiddenNames: ReadonlySet<Name>; forbiddenNamespaces: ReadonlySet<Namespace> } {
+        namespaceName: string,
+    ): { forbiddenNames: ReadonlySet<Name>, forbiddenNamespaces: ReadonlySet<Namespace>, } {
         const forbiddenNames: Name[] = [];
         const forbiddenStrings: string[] = [];
         for (const nameOrString of info.names) {
@@ -334,15 +365,18 @@ export abstract class ConvenienceRenderer extends Renderer {
                 forbiddenNames.push(nameOrString);
             }
         }
+
         let namespace = defined(this._otherForbiddenNamespaces).get(namespaceName);
         if (forbiddenStrings.length > 0 && namespace === undefined) {
             namespace = keywordNamespace(namespaceName, forbiddenStrings);
             this._otherForbiddenNamespaces = defined(this._otherForbiddenNamespaces).set(namespaceName, namespace);
         }
+
         let forbiddenNamespaces = new Set<Namespace>();
         if (info.includeGlobalForbidden) {
             forbiddenNamespaces = forbiddenNamespaces.add(defined(this._globalForbiddenNamespace));
         }
+
         if (namespace !== undefined) {
             forbiddenNamespaces = forbiddenNamespaces.add(namespace);
         }
@@ -350,12 +384,12 @@ export abstract class ConvenienceRenderer extends Renderer {
         return { forbiddenNames: new Set(forbiddenNames), forbiddenNamespaces };
     }
 
-    protected makeNameForProperty(
+    protected makeNameForProperty (
         o: ObjectType,
         _className: Name,
         p: ClassProperty,
         jsonName: string,
-        assignedName: string | undefined
+        assignedName: string | undefined,
     ): Name | undefined {
         const namer = this.namerForObjectProperty(o, p);
         if (namer === null) return undefined;
@@ -374,20 +408,20 @@ export abstract class ConvenienceRenderer extends Renderer {
         return new SimpleName(names, namer, order);
     }
 
-    protected makePropertyDependencyNames(
+    protected makePropertyDependencyNames (
         _o: ObjectType,
         _className: Name,
         _p: ClassProperty,
         _jsonName: string,
-        _name: Name
+        _name: Name,
     ): Name[] {
         return [];
     }
 
-    private addPropertyNames(o: ObjectType, className: Name): void {
+    private addPropertyNames (o: ObjectType, className: Name): void {
         const { forbiddenNames, forbiddenNamespaces } = this.processForbiddenWordsInfo(
             this.forbiddenForObjectProperties(o, className),
-            "forbidden-for-properties"
+            "forbidden-for-properties",
         );
 
         let ns: Namespace | undefined;
@@ -401,37 +435,41 @@ export abstract class ConvenienceRenderer extends Renderer {
             } else {
                 name = this.makeNameForProperty(o, className, p, jsonName, assignedName);
             }
+
             if (name === undefined) return undefined;
             if (ns === undefined) {
                 ns = new Namespace(o.getCombinedName(), this.globalNamespace, forbiddenNamespaces, forbiddenNames);
             }
+
             ns.add(name);
             for (const depName of this.makePropertyDependencyNames(o, className, p, jsonName, name)) {
                 ns.add(depName);
             }
+
             return name;
         });
         defined(this._propertyNamesStoreView).set(o, names);
     }
 
-    protected makeNameForUnionMember(u: UnionType, unionName: Name, t: Type): Name {
+    protected makeNameForUnionMember (u: UnionType, unionName: Name, t: Type): Name {
         const [assignedName, isFixed] = unionMemberName(u, t, this.targetLanguage.name);
         if (isFixed) {
             return new FixedName(defined(assignedName));
         }
+
         return new DependencyName(nonNull(this._unionMemberNamer), unionMemberNameOrder, lookup => {
             if (assignedName !== undefined) return assignedName;
             return this.proposeUnionMemberName(u, unionName, t, lookup);
         });
     }
 
-    private addUnionMemberNames(u: UnionType, unionName: Name): void {
+    private addUnionMemberNames (u: UnionType, unionName: Name): void {
         const memberNamer = this._unionMemberNamer;
         if (memberNamer === null) return;
 
         const { forbiddenNames, forbiddenNamespaces } = this.processForbiddenWordsInfo(
             this.forbiddenForUnionMembers(u, unionName),
-            "forbidden-for-union-members"
+            "forbidden-for-union-members",
         );
 
         let ns: Namespace;
@@ -440,19 +478,21 @@ export abstract class ConvenienceRenderer extends Renderer {
         } else {
             ns = new Namespace(u.getCombinedName(), this.globalNamespace, forbiddenNamespaces, forbiddenNames);
         }
+
         let names = new Map<Type, Name>();
         for (const t of u.members) {
             const name = this.makeNameForUnionMember(u, unionName, followTargetType(t));
             names.set(t, ns.add(name));
         }
+
         defined(this._memberNamesStoreView).set(u, names);
     }
 
-    protected makeNameForEnumCase(
+    protected makeNameForEnumCase (
         e: EnumType,
         _enumName: Name,
         caseName: string,
-        assignedName: string | undefined
+        assignedName: string | undefined,
     ): Name {
         // FIXME: See the FIXME in `makeNameForProperty`.  We do have global
         // enum cases, though (in Go), so this is actually useful already.
@@ -463,12 +503,12 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     // FIXME: this is very similar to addPropertyNameds and addUnionMemberNames
-    private addEnumCaseNames(e: EnumType, enumName: Name): void {
+    private addEnumCaseNames (e: EnumType, enumName: Name): void {
         if (this._enumCaseNamer === null) return;
 
         const { forbiddenNames, forbiddenNamespaces } = this.processForbiddenWordsInfo(
             this.forbiddenForEnumCases(e, enumName),
-            "forbidden-for-enum-cases"
+            "forbidden-for-enum-cases",
         );
 
         let ns: Namespace;
@@ -477,6 +517,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         } else {
             ns = new Namespace(e.getCombinedName(), this.globalNamespace, forbiddenNamespaces, forbiddenNames);
         }
+
         let names = new Map<string, Name>();
         const accessorNames = enumCaseNames(e, this.targetLanguage.name);
         for (const caseName of e.cases) {
@@ -487,12 +528,14 @@ export abstract class ConvenienceRenderer extends Renderer {
             } else {
                 name = this.makeNameForEnumCase(e, enumName, caseName, assignedName);
             }
+
             names.set(caseName, ns.add(name));
         }
+
         defined(this._caseNamesStoreView).set(e, names);
     }
 
-    private childrenOfType(t: Type): ReadonlySet<Type> {
+    private childrenOfType (t: Type): ReadonlySet<Type> {
         const names = this.names;
         if (t instanceof ClassType) {
             const propertyNameds = defined(this._propertyNamesStoreView).get(t);
@@ -503,52 +546,53 @@ export abstract class ConvenienceRenderer extends Renderer {
             const sortedMap = mapSortBy(filteredMap, (_, n) => defined(names.get(defined(propertyNameds.get(n)))));
             return new Set(sortedMap.values());
         }
+
         return t.getChildren();
     }
 
-    protected get namedUnions(): ReadonlySet<UnionType> {
+    protected get namedUnions (): ReadonlySet<UnionType> {
         return defined(this._namedUnions);
     }
 
-    protected get haveNamedUnions(): boolean {
+    protected get haveNamedUnions (): boolean {
         return this.namedUnions.size > 0;
     }
 
-    protected get haveNamedTypes(): boolean {
+    protected get haveNamedTypes (): boolean {
         return defined(this._namedTypes).length > 0;
     }
 
-    protected get haveUnions(): boolean {
+    protected get haveUnions (): boolean {
         return defined(this._haveUnions);
     }
 
-    protected get haveMaps(): boolean {
+    protected get haveMaps (): boolean {
         return defined(this._haveMaps);
     }
 
-    protected get haveOptionalProperties(): boolean {
+    protected get haveOptionalProperties (): boolean {
         return defined(this._haveOptionalProperties);
     }
 
     // FIXME: Inconsistently named, though technically correct.  Right now all enums are named,
     // but this should really be called `namedEnums`.
-    protected get enums(): ReadonlySet<EnumType> {
+    protected get enums (): ReadonlySet<EnumType> {
         return defined(this._namedEnums);
     }
 
-    protected get haveEnums(): boolean {
+    protected get haveEnums (): boolean {
         return this.enums.size > 0;
     }
 
-    protected proposedUnionMemberNameForTypeKind(_kind: TypeKind): string | null {
+    protected proposedUnionMemberNameForTypeKind (_kind: TypeKind): string | null {
         return null;
     }
 
-    protected proposeUnionMemberName(
+    protected proposeUnionMemberName (
         _u: UnionType,
         _unionName: Name,
         fieldType: Type,
-        lookup: (n: Name) => string
+        lookup: (n: Name) => string,
     ): string {
         const simpleName = this.proposedUnionMemberNameForTypeKind(fieldType.kind);
         if (simpleName !== null) {
@@ -573,49 +617,50 @@ export abstract class ConvenienceRenderer extends Renderer {
                 objectType => {
                     assert(
                         this.targetLanguage.supportsFullObjectType,
-                        "Object type should have been replaced in `replaceObjectType`"
+                        "Object type should have been replaced in `replaceObjectType`",
                     );
                     return lookup(this.nameForNamedType(objectType));
                 },
                 _enumType => "enum",
                 _unionType => "union",
-                transformedType => transformedType.kind.replace("-", "_")
+                transformedType => transformedType.kind.replace("-", "_"),
             );
 
         return typeNameForUnionMember(fieldType);
     }
 
-    protected nameForNamedType(t: Type): Name {
+    protected nameForNamedType (t: Type): Name {
         return this.nameStoreView.get(t);
     }
 
-    protected isForwardDeclaredType(t: Type): boolean {
+    protected isForwardDeclaredType (t: Type): boolean {
         return defined(this._declarationIR).forwardedTypes.has(t);
     }
 
-    protected isImplicitCycleBreaker(_t: Type): boolean {
+    protected isImplicitCycleBreaker (_t: Type): boolean {
         return panic("A renderer that invokes isCycleBreakerType must implement isImplicitCycleBreaker");
     }
 
-    protected canBreakCycles(_t: Type): boolean {
+    protected canBreakCycles (_t: Type): boolean {
         return true;
     }
 
-    protected isCycleBreakerType(t: Type): boolean {
+    protected isCycleBreakerType (t: Type): boolean {
         if (this._cycleBreakerTypes === undefined) {
             this._cycleBreakerTypes = cycleBreakerTypesForGraph(
                 this.typeGraph,
                 s => this.isImplicitCycleBreaker(s),
-                s => this.canBreakCycles(s)
+                s => this.canBreakCycles(s),
             );
         }
+
         return this._cycleBreakerTypes.has(t);
     }
 
-    protected forEachTopLevel(
+    protected forEachTopLevel (
         blankLocations: BlankLineConfig,
         f: (t: Type, name: Name, position: ForEachPosition) => void,
-        predicate?: (t: Type) => boolean
+        predicate?: (t: Type) => boolean,
     ): boolean {
         let topLevels: ReadonlyMap<string, Type>;
         if (predicate !== undefined) {
@@ -623,39 +668,40 @@ export abstract class ConvenienceRenderer extends Renderer {
         } else {
             topLevels = this.topLevels;
         }
+
         return this.forEachWithBlankLines(topLevels, blankLocations, (t, name, pos) =>
-            f(t, this.nameStoreView.getForTopLevel(name), pos)
+            f(t, this.nameStoreView.getForTopLevel(name), pos),
         );
     }
 
-    protected forEachDeclaration(
+    protected forEachDeclaration (
         blankLocations: BlankLineConfig,
-        f: (decl: Declaration, position: ForEachPosition) => void
+        f: (decl: Declaration, position: ForEachPosition) => void,
     ) {
         this.forEachWithBlankLines(
             iterableEnumerate(defined(this._declarationIR).declarations),
             blankLocations,
-            (decl, _, pos) => f(decl, pos)
+            (decl, _, pos) => f(decl, pos),
         );
     }
 
-    setAlphabetizeProperties(value: boolean): void {
+    setAlphabetizeProperties (value: boolean): void {
         this._alphabetizeProperties = value;
     }
 
-    protected getAlphabetizeProperties(): boolean {
+    protected getAlphabetizeProperties (): boolean {
         return this._alphabetizeProperties;
     }
 
     // Returns the number of properties defined for the specified object type.
-    protected propertyCount(o: ObjectType): number {
+    protected propertyCount (o: ObjectType): number {
         const propertyNames = defined(this._propertyNamesStoreView).get(o);
         return propertyNames.size;
     }
 
-    protected sortClassProperties(
+    protected sortClassProperties (
         properties: ReadonlyMap<string, ClassProperty>,
-        propertyNames: ReadonlyMap<string, Name>
+        propertyNames: ReadonlyMap<string, Name>,
     ): ReadonlyMap<string, ClassProperty> {
         if (this._alphabetizeProperties) {
             return mapSortBy(properties, (_p: ClassProperty, jsonName: string) => {
@@ -667,10 +713,10 @@ export abstract class ConvenienceRenderer extends Renderer {
         }
     }
 
-    protected forEachClassProperty(
+    protected forEachClassProperty (
         o: ObjectType,
         blankLocations: BlankLineConfig,
-        f: (name: Name, jsonName: string, p: ClassProperty, position: ForEachPosition) => void
+        f: (name: Name, jsonName: string, p: ClassProperty, position: ForEachPosition) => void,
     ): void {
         const propertyNames = defined(this._propertyNamesStoreView).get(o);
         const sortedProperties = this.sortClassProperties(o.getProperties(), propertyNames);
@@ -680,44 +726,45 @@ export abstract class ConvenienceRenderer extends Renderer {
         });
     }
 
-    protected nameForUnionMember(u: UnionType, t: Type): Name {
+    protected nameForUnionMember (u: UnionType, t: Type): Name {
         return defined(defined(this._memberNamesStoreView).get(u).get(t));
     }
 
-    protected nameForEnumCase(e: EnumType, caseName: string): Name {
+    protected nameForEnumCase (e: EnumType, caseName: string): Name {
         const caseNames = defined(this._caseNamesStoreView).get(e);
         return defined(caseNames.get(caseName));
     }
 
-    protected forEachUnionMember(
+    protected forEachUnionMember (
         u: UnionType,
         members: ReadonlySet<Type> | null,
         blankLocations: BlankLineConfig,
         sortOrder: ((n: Name, t: Type) => string) | null,
-        f: (name: Name, t: Type, position: ForEachPosition) => void
+        f: (name: Name, t: Type, position: ForEachPosition) => void,
     ): void {
         const iterateMembers = members === null ? u.members : members;
         if (sortOrder === null) {
             sortOrder = n => defined(this.names.get(n));
         }
+
         const memberNames = mapFilter(defined(this._memberNamesStoreView).get(u), (_, t) => iterateMembers.has(t));
         const sortedMemberNames = mapSortBy(memberNames, sortOrder);
         this.forEachWithBlankLines(sortedMemberNames, blankLocations, f);
     }
 
-    protected forEachEnumCase(
+    protected forEachEnumCase (
         e: EnumType,
         blankLocations: BlankLineConfig,
-        f: (name: Name, jsonName: string, position: ForEachPosition) => void
+        f: (name: Name, jsonName: string, position: ForEachPosition) => void,
     ): void {
         const caseNames = defined(this._caseNamesStoreView).get(e);
         const sortedCaseNames = mapSortBy(caseNames, n => defined(this.names.get(n)));
         this.forEachWithBlankLines(sortedCaseNames, blankLocations, f);
     }
 
-    protected forEachTransformation(
+    protected forEachTransformation (
         blankLocations: BlankLineConfig,
-        f: (n: Name, t: Type, position: ForEachPosition) => void
+        f: (n: Name, t: Type, position: ForEachPosition) => void,
     ): void {
         this.forEachWithBlankLines(defined(this._namesForTransformations), blankLocations, f);
     }
@@ -725,31 +772,31 @@ export abstract class ConvenienceRenderer extends Renderer {
     protected forEachSpecificNamedType<T extends Type>(
         blankLocations: BlankLineConfig,
         types: Iterable<[any, T]>,
-        f: (t: T, name: Name, position: ForEachPosition) => void
+        f: (t: T, name: Name, position: ForEachPosition) => void,
     ): void {
         this.forEachWithBlankLines(types, blankLocations, (t, _, pos) => f(t, this.nameForNamedType(t), pos));
     }
 
-    protected forEachObject(
+    protected forEachObject (
         blankLocations: BlankLineConfig,
         f:
-            | ((c: ClassType, className: Name, position: ForEachPosition) => void)
-            | ((o: ObjectType, objectName: Name, position: ForEachPosition) => void)
+        | ((c: ClassType, className: Name, position: ForEachPosition) => void)
+        | ((o: ObjectType, objectName: Name, position: ForEachPosition) => void),
     ): void {
         // FIXME: This is ugly.
         this.forEachSpecificNamedType<ObjectType>(blankLocations, defined(this._namedObjects).entries(), f as any);
     }
 
-    protected forEachEnum(
+    protected forEachEnum (
         blankLocations: BlankLineConfig,
-        f: (u: EnumType, enumName: Name, position: ForEachPosition) => void
+        f: (u: EnumType, enumName: Name, position: ForEachPosition) => void,
     ): void {
         this.forEachSpecificNamedType(blankLocations, this.enums.entries(), f);
     }
 
-    protected forEachUnion(
+    protected forEachUnion (
         blankLocations: BlankLineConfig,
-        f: (u: UnionType, unionName: Name, position: ForEachPosition) => void
+        f: (u: UnionType, unionName: Name, position: ForEachPosition) => void,
     ): void {
         this.forEachSpecificNamedType(blankLocations, this.namedUnions.entries(), f);
     }
@@ -757,7 +804,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     protected forEachUniqueUnion<T>(
         blankLocations: BlankLineConfig,
         uniqueValue: (u: UnionType) => T,
-        f: (firstUnion: UnionType, value: T, position: ForEachPosition) => void
+        f: (firstUnion: UnionType, value: T, position: ForEachPosition) => void,
     ): void {
         const firstUnionByValue = new Map<T, UnionType>();
         for (const u of this.namedUnions) {
@@ -766,16 +813,17 @@ export abstract class ConvenienceRenderer extends Renderer {
                 firstUnionByValue.set(v, u);
             }
         }
+
         this.forEachWithBlankLines(firstUnionByValue, blankLocations, f);
     }
 
-    protected forEachNamedType(
+    protected forEachNamedType (
         blankLocations: BlankLineConfig,
         objectFunc:
-            | ((c: ClassType, className: Name, position: ForEachPosition) => void)
-            | ((o: ObjectType, objectName: Name, position: ForEachPosition) => void),
+        | ((c: ClassType, className: Name, position: ForEachPosition) => void)
+        | ((o: ObjectType, objectName: Name, position: ForEachPosition) => void),
         enumFunc: (e: EnumType, enumName: Name, position: ForEachPosition) => void,
-        unionFunc: (u: UnionType, unionName: Name, position: ForEachPosition) => void
+        unionFunc: (u: UnionType, unionName: Name, position: ForEachPosition) => void,
     ): void {
         this.forEachWithBlankLines(defined(this._namedTypes).entries(), blankLocations, (t, _, pos) => {
             const name = this.nameForNamedType(t);
@@ -796,15 +844,15 @@ export abstract class ConvenienceRenderer extends Renderer {
     // You should never have to use this to produce parts of your generated
     // code.  If you need to modify a Name, for example to change its casing,
     // use `modifySource`.
-    protected sourcelikeToString(src: Sourcelike): string {
+    protected sourcelikeToString (src: Sourcelike): string {
         return serializeRenderResult(sourcelikeToSource(src), this.names, "").lines.join("\n");
     }
 
-    protected get commentLineStart(): string {
+    protected get commentLineStart (): string {
         return "// ";
     }
 
-    protected emitComments(comments: Comment[]): void {
+    protected emitComments (comments: Comment[]): void {
         comments.forEach(comment => {
             if (isStringComment(comment)) {
                 this.emitCommentLines([comment]);
@@ -820,19 +868,20 @@ export abstract class ConvenienceRenderer extends Renderer {
         });
     }
 
-    protected emitCommentLines(
+    protected emitCommentLines (
         lines: Sourcelike[],
         {
             lineStart = this.commentLineStart,
             firstLineStart = lineStart,
             lineEnd,
             beforeComment,
-            afterComment
-        }: CommentOptions = {}
+            afterComment,
+        }: CommentOptions = {},
     ): void {
         if (beforeComment !== undefined) {
             this.emitLine(beforeComment);
         }
+
         let first = true;
         for (const line of lines) {
             let start = first ? firstLineStart : lineStart;
@@ -848,24 +897,25 @@ export abstract class ConvenienceRenderer extends Renderer {
                 this.emitLine(start, line);
             }
         }
+
         if (afterComment !== undefined) {
             this.emitLine(afterComment);
         }
     }
 
-    protected emitDescription(description: Sourcelike[] | undefined): void {
+    protected emitDescription (description: Sourcelike[] | undefined): void {
         if (description === undefined) return;
         // FIXME: word-wrap
         this.emitDescriptionBlock(description);
     }
 
-    protected emitDescriptionBlock(lines: Sourcelike[]): void {
+    protected emitDescriptionBlock (lines: Sourcelike[]): void {
         this.emitCommentLines(lines);
     }
 
-    protected emitPropertyTable(
+    protected emitPropertyTable (
         c: ClassType,
-        makePropertyRow: (name: Name, jsonName: string, p: ClassProperty) => Sourcelike[]
+        makePropertyRow: (name: Name, jsonName: string, p: ClassProperty) => Sourcelike[],
     ): void {
         let table: Sourcelike[][] = [];
         const emitTable = () => {
@@ -880,12 +930,13 @@ export abstract class ConvenienceRenderer extends Renderer {
                 emitTable();
                 this.emitDescription(description);
             }
+
             table.push(makePropertyRow(name, jsonName, p));
         });
         emitTable();
     }
 
-    private processGraph(): void {
+    private processGraph (): void {
         this._declarationIR = declarationsForGraph(
             this.typeGraph,
             this.needsTypeDeclarationBeforeUse ? t => this.canBeForwardDeclared(t) : undefined,
@@ -894,8 +945,9 @@ export abstract class ConvenienceRenderer extends Renderer {
                 if (t instanceof UnionType) {
                     return this.unionNeedsName(t);
                 }
+
                 return isNamedType(t);
-            }
+            },
         );
 
         const types = this.typeGraph.allTypesUnordered();
@@ -910,7 +962,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         this._namedUnions = new Set(unions);
     }
 
-    protected emitSource(givenOutputFilename: string): void {
+    protected emitSource (givenOutputFilename: string): void {
         this.processGraph();
         this.emitSourceStructure(givenOutputFilename);
     }
@@ -920,11 +972,12 @@ export abstract class ConvenienceRenderer extends Renderer {
         const processed = new Set<TResult>();
         const queue = Array.from(this.typeGraph.topLevels.values());
 
-        function visit(t: Type) {
+        function visit (t: Type) {
             if (visitedTypes.has(t)) return;
             for (const c of t.getChildren()) {
                 queue.push(c);
             }
+
             visitedTypes.add(t);
             processed.add(process(t));
         }
@@ -934,6 +987,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             if (maybeType === undefined) {
                 break;
             }
+
             visit(maybeType);
         }
 

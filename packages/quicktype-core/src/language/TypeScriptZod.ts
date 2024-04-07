@@ -1,21 +1,25 @@
-import { StringTypeMapping } from "TypeBuilder";
+import { type StringTypeMapping } from "TypeBuilder";
 import { arrayIntercalate } from "collection-utils";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { Name, Namer, funPrefixNamer } from "../Naming";
-import { RenderContext } from "../Renderer";
-import { BooleanOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
-import { Sourcelike } from "../Source";
+import { type Name, type Namer} from "../Naming";
+import { funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import { type Option, type OptionValues} from "../RendererOptions";
+import { BooleanOption, getOptionValues } from "../RendererOptions";
+import { type Sourcelike } from "../Source";
 import { TargetLanguage } from "../TargetLanguage";
 import {
+    type ClassProperty,
+    type EnumType,
+    type PrimitiveStringTypeKind,
+    type TransformedStringTypeKind,
+    type Type,
+} from "../Type";
+import {
     ArrayType,
-    ClassProperty,
     ClassType,
-    EnumType,
     ObjectType,
-    PrimitiveStringTypeKind,
     SetOperationType,
-    TransformedStringTypeKind,
-    Type
 } from "../Type";
 import { matchType } from "../TypeUtils";
 import { AcronymStyleOptions, acronymStyle } from "../support/Acronyms";
@@ -27,65 +31,65 @@ import {
     isLetterOrUnderscore,
     splitIntoWords,
     stringEscape,
-    utf16StringEscape
+    utf16StringEscape,
 } from "../support/Strings";
 import { panic } from "../support/Support";
 import { legalizeName } from "./JavaScript";
 
 export const typeScriptZodOptions = {
-    justSchema: new BooleanOption("just-schema", "Schema only", false)
+    justSchema: new BooleanOption("just-schema", "Schema only", false),
 };
 
 export class TypeScriptZodTargetLanguage extends TargetLanguage {
-    protected getOptions(): Option<any>[] {
+    protected getOptions (): Array<Option<any>> {
         return [];
     }
 
-    constructor(
+    constructor (
         displayName: string = "TypeScript Zod",
         names: string[] = ["typescript-zod"],
-        extension: string = "ts"
+        extension: string = "ts",
     ) {
         super(displayName, names, extension);
     }
 
-    get stringTypeMapping(): StringTypeMapping {
+    get stringTypeMapping (): StringTypeMapping {
         const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
         const dateTimeType = "date-time";
         mapping.set("date-time", dateTimeType);
         return mapping;
     }
 
-    get supportsOptionalClassProperties(): boolean {
+    get supportsOptionalClassProperties (): boolean {
         return true;
     }
 
-    protected makeRenderer(
+    protected makeRenderer (
         renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
+        untypedOptionValues: { [name: string]: any, },
     ): TypeScriptZodRenderer {
         return new TypeScriptZodRenderer(
             this,
             renderContext,
-            getOptionValues(typeScriptZodOptions, untypedOptionValues)
+            getOptionValues(typeScriptZodOptions, untypedOptionValues),
         );
     }
 }
 
 export class TypeScriptZodRenderer extends ConvenienceRenderer {
-    constructor(
+    constructor (
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        protected readonly _options: OptionValues<typeof typeScriptZodOptions>
+        protected readonly _options: OptionValues<typeof typeScriptZodOptions>,
     ) {
         super(targetLanguage, renderContext);
     }
 
-    protected forbiddenNamesForGlobalNamespace(): string[] {
+    protected forbiddenNamesForGlobalNamespace (): string[] {
         return ["Class", "Date", "Object", "String", "Array", "JSON", "Error"];
     }
 
-    protected nameStyle(original: string, upper: boolean): string {
+    protected nameStyle (original: string, upper: boolean): string {
         const acronyms = acronymStyle(AcronymStyleOptions.Camel);
         const words = splitIntoWords(original);
         return combineWords(
@@ -96,42 +100,42 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
             upper ? s => capitalize(acronyms(s)) : allLowerWordStyle,
             acronyms,
             "",
-            isLetterOrUnderscore
+            isLetterOrUnderscore,
         );
     }
 
-    protected makeNamedTypeNamer(): Namer {
+    protected makeNamedTypeNamer (): Namer {
         return funPrefixNamer("types", s => this.nameStyle(s, true));
     }
 
-    protected makeUnionMemberNamer(): Namer {
+    protected makeUnionMemberNamer (): Namer {
         return funPrefixNamer("properties", s => this.nameStyle(s, true));
     }
 
-    protected namerForObjectProperty(): Namer {
+    protected namerForObjectProperty (): Namer {
         return funPrefixNamer("properties", s => this.nameStyle(s, true));
     }
 
-    protected makeEnumCaseNamer(): Namer {
+    protected makeEnumCaseNamer (): Namer {
         return funPrefixNamer("enum-cases", s => this.nameStyle(s, false));
     }
 
-    protected importStatement(lhs: Sourcelike, moduleName: Sourcelike): Sourcelike {
+    protected importStatement (lhs: Sourcelike, moduleName: Sourcelike): Sourcelike {
         return ["import ", lhs, " from ", moduleName, ";"];
     }
 
-    protected emitImports(): void {
+    protected emitImports (): void {
         this.ensureBlankLine();
-        this.emitLine(this.importStatement("* as z", '"zod"'));
+        this.emitLine(this.importStatement("* as z", "\"zod\""));
     }
 
-    protected typeMapTypeForProperty(p: ClassProperty): Sourcelike {
+    protected typeMapTypeForProperty (p: ClassProperty): Sourcelike {
         const typeMap = this.typeMapTypeFor(p.type);
         return p.isOptional ? [typeMap, ".optional()"] : typeMap;
     }
 
-    protected typeMapTypeFor(t: Type, required: boolean = true): Sourcelike {
-        if (["class", "object", "enum"].indexOf(t.kind) >= 0) {
+    protected typeMapTypeFor (t: Type, required: boolean = true): Sourcelike {
+        if (["class", "object", "enum"].includes(t.kind)) {
             return [this.nameForNamedType(t), "Schema"];
         }
 
@@ -149,7 +153,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
             _enumType => panic("Should already be handled."),
             unionType => {
                 const children = Array.from(unionType.getChildren()).map((type: Type) =>
-                    this.typeMapTypeFor(type, false)
+                    this.typeMapTypeFor(type, false),
                 );
                 return ["z.union([", ...arrayIntercalate(", ", children), "])"];
             },
@@ -157,8 +161,9 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
                 if (_transformedStringType.kind === "date-time") {
                     return "z.coerce.date()";
                 }
+
                 return "z.string()";
-            }
+            },
         );
 
         if (required) {
@@ -168,7 +173,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         return match;
     }
 
-    protected emitObject(name: Name, t: ObjectType) {
+    protected emitObject (name: Name, t: ObjectType) {
         this.ensureBlankLine();
         this.emitLine("\nexport const ", name, "Schema = ", "z.object({");
         this.indent(() => {
@@ -182,14 +187,14 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         }
     }
 
-    protected emitEnum(e: EnumType, enumName: Name): void {
+    protected emitEnum (e: EnumType, enumName: Name): void {
         this.ensureBlankLine();
         this.emitDescription(this.descriptionForType(e));
         this.emitLine("\nexport const ", enumName, "Schema = ", "z.enum([");
         this.indent(() =>
             this.forEachEnumCase(e, "none", (_, jsonName) => {
-                this.emitLine('"', stringEscape(jsonName), '",');
-            })
+                this.emitLine("\"", stringEscape(jsonName), "\",");
+            }),
         );
         this.emitLine("]);");
         if (!this._options.justSchema) {
@@ -204,46 +209,47 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
      * Primitive types don't need defining and enums are output before other types, hence,
      * these are ignored.
      */
-    static extractUnderlyingTyperefs(type: Type): number[] {
+    static extractUnderlyingTyperefs (type: Type): number[] {
         let typeRefs: number[] = [];
-        //Ignore enums and primitives
+        // Ignore enums and primitives
         if (!type.isPrimitive() && type.kind != "enum") {
-            //need to extract constituent types for unions and intersections (which both extend SetOperationType)
-            //and can ignore the union/intersection itself
+            // need to extract constituent types for unions and intersections (which both extend SetOperationType)
+            // and can ignore the union/intersection itself
             if (type instanceof SetOperationType) {
                 (type as SetOperationType).members.forEach(member => {
-                    //recurse as the underlying type could itself be a union, instersection or array etc.
+                    // recurse as the underlying type could itself be a union, instersection or array etc.
                     typeRefs.push(...TypeScriptZodRenderer.extractUnderlyingTyperefs(member));
                 });
             }
 
-            //need to extract additional properties for object, class and map types (which all extend ObjectType)
+            // need to extract additional properties for object, class and map types (which all extend ObjectType)
             if (type instanceof ObjectType) {
                 const addType = (type as ObjectType).getAdditionalProperties();
                 if (addType) {
-                    //recurse as the underlying type could itself be a union, instersection or array etc.
+                    // recurse as the underlying type could itself be a union, instersection or array etc.
                     typeRefs.push(...TypeScriptZodRenderer.extractUnderlyingTyperefs(addType));
                 }
             }
 
-            //need to extract items types for ArrayType
+            // need to extract items types for ArrayType
             if (type instanceof ArrayType) {
                 const itemsType = (type as ArrayType).items;
                 if (itemsType) {
-                    //recurse as the underlying type could itself be a union, instersection or array etc.
+                    // recurse as the underlying type could itself be a union, instersection or array etc.
                     typeRefs.push(...TypeScriptZodRenderer.extractUnderlyingTyperefs(itemsType));
                 }
             }
 
-            //Finally return the reference to a class as that will need to be defined (where objects, maps, unions, intersections and arrays do not)
+            // Finally return the reference to a class as that will need to be defined (where objects, maps, unions, intersections and arrays do not)
             if (type instanceof ClassType) {
                 typeRefs.push(type.typeRef);
             }
         }
+
         return typeRefs;
     }
 
-    protected emitSchemas(): void {
+    protected emitSchemas (): void {
         this.ensureBlankLine();
 
         this.forEachEnum("leading-and-interposing", (u: EnumType, enumName: Name) => {
@@ -275,15 +281,15 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
             mapChildTypeRefs.push(childTypeRefs);
         });
 
-        //Items to process on this pass
+        // Items to process on this pass
         let indices: number[] = [];
         mapType.forEach((_, index) => {
             indices.push(index);
         });
-        //items to process on the next pass
+        // items to process on the next pass
         let deferredIndices: number[] = [];
 
-        //defensive: make sure we don't loop forever, even complex sets shouldn't require many passes
+        // defensive: make sure we don't loop forever, even complex sets shouldn't require many passes
         const MAX_PASSES = 999;
         let passNum = 0;
         do {
@@ -293,11 +299,11 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
                 let foundAllChildren = true;
 
                 childTypeRefs.forEach(childRef => {
-                    //defensive: first check if there is a definition for the referenced type (there should be)
-                    if (mapTypeRef.indexOf(childRef) > -1) {
+                    // defensive: first check if there is a definition for the referenced type (there should be)
+                    if (mapTypeRef.includes(childRef)) {
                         let found = false;
                         // find this childs's ordinal, if it has already been added
-                        //faster to go through what we've defined so far than all definitions
+                        // faster to go through what we've defined so far than all definitions
                         for (let j = 0; j < order.length; j++) {
                             const childIndex = order[j];
                             if (mapTypeRef[childIndex] === childRef) {
@@ -305,10 +311,11 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
                                 break;
                             }
                         }
+
                         foundAllChildren = foundAllChildren && found;
                     } else {
                         console.error(
-                            "A child type reference was not found amongst all Object definitions! TypeRef: " + childRef
+                            "A child type reference was not found amongst all Object definitions! TypeRef: " + childRef,
                         );
                     }
                 });
@@ -317,7 +324,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
                     // insert index into order as we are safe to define this type
                     order.push(index);
                 } else {
-                    //defer to a subsequent pass as we need to define other types
+                    // defer to a subsequent pass as we need to define other types
                     deferredIndices.push(index);
                 }
             });
@@ -326,7 +333,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
             passNum++;
 
             if (passNum > MAX_PASSES) {
-                //giving up
+                // giving up
                 order.push(...deferredIndices);
                 console.warn("Exceeded maximum number of passes when determining output order, output may contain forward references");
             }
@@ -336,7 +343,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         order.forEach(i => this.emitGatheredSource(this.gatherSource(() => this.emitObject(mapName[i], mapType[i]))));
     }
 
-    protected emitSourceStructure(): void {
+    protected emitSourceStructure (): void {
         if (this.leadingComments !== undefined) {
             this.emitComments(this.leadingComments);
         }

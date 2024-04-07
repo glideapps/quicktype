@@ -1,7 +1,7 @@
 import { setUnionInto, setFilter, iterableFirst, setSubtract, setIntersect } from "collection-utils";
 
-import { TypeGraph } from "./TypeGraph";
-import { Type } from "./Type";
+import { type TypeGraph } from "./TypeGraph";
+import { type Type } from "./Type";
 import { panic, defined, assert } from "./support/Support";
 import { Graph } from "./Graph";
 import { messageError } from "./Messages";
@@ -14,41 +14,43 @@ export interface Declaration {
 }
 
 export class DeclarationIR {
-    readonly declarations: ReadonlyArray<Declaration>;
+    readonly declarations: readonly Declaration[];
 
-    constructor(declarations: Iterable<Declaration>, readonly forwardedTypes: Set<Type>) {
+    constructor (declarations: Iterable<Declaration>, readonly forwardedTypes: Set<Type>) {
         this.declarations = Array.from(declarations);
     }
 }
 
-function findBreaker(
+function findBreaker (
     t: Type,
-    path: ReadonlyArray<Type>,
-    canBreak: ((t: Type) => boolean) | undefined
+    path: readonly Type[],
+    canBreak: ((t: Type) => boolean) | undefined,
 ): Type | undefined {
     const index = path.indexOf(t);
     if (index < 0) return undefined;
     if (canBreak === undefined) {
         return path[index];
     }
+
     const potentialBreakers = path.slice(0, index + 1).reverse();
     const maybeBreaker = potentialBreakers.find(canBreak);
     if (maybeBreaker === undefined) {
         return panic("Found a cycle that cannot be broken");
     }
+
     return maybeBreaker;
 }
 
-export function cycleBreakerTypesForGraph(
+export function cycleBreakerTypesForGraph (
     graph: TypeGraph,
     isImplicitCycleBreaker: (t: Type) => boolean,
-    canBreakCycles: (t: Type) => boolean
+    canBreakCycles: (t: Type) => boolean,
 ): Set<Type> {
     const visitedTypes = new Set<Type>();
     const cycleBreakerTypes = new Set<Type>();
     const queue: Type[] = Array.from(graph.topLevels.values());
 
-    function visit(t: Type, path: Type[]): void {
+    function visit (t: Type, path: Type[]): void {
         if (visitedTypes.has(t)) return;
 
         if (isImplicitCycleBreaker(t)) {
@@ -83,11 +85,11 @@ export function cycleBreakerTypesForGraph(
     return cycleBreakerTypes;
 }
 
-export function declarationsForGraph(
+export function declarationsForGraph (
     typeGraph: TypeGraph,
     canBeForwardDeclared: ((t: Type) => boolean) | undefined,
     childrenOfType: (t: Type) => ReadonlySet<Type>,
-    needsDeclaration: (t: Type) => boolean
+    needsDeclaration: (t: Type) => boolean,
 ): DeclarationIR {
     /*
     function nodeTitle(t: Type): string {
@@ -108,9 +110,9 @@ export function declarationsForGraph(
     const forwardedTypes = new Set<Type>();
     const visitedComponents = new Set<ReadonlySet<Type>>();
 
-    function processGraph(graph: Graph<Type>, _writeComponents: boolean): void {
+    function processGraph (graph: Graph<Type>, _writeComponents: boolean): void {
         const componentsGraph = graph.stronglyConnectedComponents();
-        function visitComponent(component: ReadonlySet<Type>): void {
+        function visitComponent (component: ReadonlySet<Type>): void {
             if (visitedComponents.has(component)) return;
             visitedComponents.add(component);
 
@@ -147,6 +149,7 @@ export function declarationsForGraph(
                 for (const t of declarationNeeded) {
                     declarations.push({ kind: "define", type: t });
                 }
+
                 return;
             }
 
@@ -160,9 +163,11 @@ export function declarationsForGraph(
             if (forwardDeclarable.size === 0) {
                 return messageError("IRNoForwardDeclarableTypeInCycle", {});
             }
+
             for (const t of forwardDeclarable) {
                 declarations.push({ kind: "forward", type: t });
             }
+
             setUnionInto(forwardedTypes, forwardDeclarable);
             const rest = setSubtract(component, forwardDeclarable);
             const restGraph = new Graph(rest, true, t => setIntersect(childrenOfType(t), rest));
@@ -170,6 +175,7 @@ export function declarationsForGraph(
             for (const t of forwardDeclarable) {
                 declarations.push({ kind: "define", type: t });
             }
+
             return;
         }
 

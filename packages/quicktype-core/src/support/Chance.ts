@@ -34,20 +34,26 @@ email: m-mat @ math.sci.hiroshima-u.ac.jp (remove space)
 */
 
 class MersenneTwister {
-    private N: number;
-    private M: number;
-    private MATRIX_A: number;
-    private UPPER_MASK: number;
-    private LOWER_MASK: number;
+    private readonly N: number;
+
+    private readonly M: number;
+
+    private readonly MATRIX_A: number;
+
+    private readonly UPPER_MASK: number;
+
+    private readonly LOWER_MASK: number;
 
     private mt: number[];
+
     private mti: number;
 
-    constructor(seed: number) {
+    constructor (seed: number) {
         if (seed === undefined) {
             // kept random number same size as time used previously to ensure no unexpected results downstream
             seed = Math.floor(Math.random() * Math.pow(10, 13));
         }
+
         /* Period parameters */
         this.N = 624;
         this.M = 397;
@@ -62,12 +68,12 @@ class MersenneTwister {
     }
 
     /* initializes mt[N] with a seed */
-    private init_genrand(s: number) {
+    private init_genrand (s: number) {
         this.mt[0] = s >>> 0;
         for (this.mti = 1; this.mti < this.N; this.mti++) {
-            s = this.mt[this.mti - 1] ^ (this.mt[this.mti - 1] >>> 30);
+            s = this.mt[this.mti - 1] ^ this.mt[this.mti - 1] >>> 30;
             this.mt[this.mti] =
-                ((((s & 0xffff0000) >>> 16) * 1812433253) << 16) + (s & 0x0000ffff) * 1812433253 + this.mti;
+                (((s & 0xffff0000) >>> 16) * 1812433253 << 16) + (s & 0x0000ffff) * 1812433253 + this.mti;
             /* See Knuth TAOCP Vol2. 3rd Ed. P.106 for multiplier. */
             /* In the previous versions, MSBs of the seed affect   */
             /* only MSBs of the array mt[].                        */
@@ -78,9 +84,9 @@ class MersenneTwister {
     }
 
     /* generates a random number on [0,0xffffffff]-interval */
-    private genrand_int32() {
+    private genrand_int32 () {
         let y;
-        let mag01 = new Array(0x0, this.MATRIX_A);
+        let mag01 = [0x0, this.MATRIX_A];
         /* mag01[x] = x * MATRIX_A  for x=0,1 */
 
         if (this.mti >= this.N) {
@@ -91,16 +97,19 @@ class MersenneTwister {
                 /* if init_genrand() has not been called, */
                 this.init_genrand(5489); /* a default initial seed is used */
             }
+
             for (kk = 0; kk < this.N - this.M; kk++) {
-                y = (this.mt[kk] & this.UPPER_MASK) | (this.mt[kk + 1] & this.LOWER_MASK);
-                this.mt[kk] = this.mt[kk + this.M] ^ (y >>> 1) ^ mag01[y & 0x1];
+                y = this.mt[kk] & this.UPPER_MASK | this.mt[kk + 1] & this.LOWER_MASK;
+                this.mt[kk] = this.mt[kk + this.M] ^ y >>> 1 ^ mag01[y & 0x1];
             }
+
             for (; kk < this.N - 1; kk++) {
-                y = (this.mt[kk] & this.UPPER_MASK) | (this.mt[kk + 1] & this.LOWER_MASK);
-                this.mt[kk] = this.mt[kk + (this.M - this.N)] ^ (y >>> 1) ^ mag01[y & 0x1];
+                y = this.mt[kk] & this.UPPER_MASK | this.mt[kk + 1] & this.LOWER_MASK;
+                this.mt[kk] = this.mt[kk + (this.M - this.N)] ^ y >>> 1 ^ mag01[y & 0x1];
             }
-            y = (this.mt[this.N - 1] & this.UPPER_MASK) | (this.mt[0] & this.LOWER_MASK);
-            this.mt[this.N - 1] = this.mt[this.M - 1] ^ (y >>> 1) ^ mag01[y & 0x1];
+
+            y = this.mt[this.N - 1] & this.UPPER_MASK | this.mt[0] & this.LOWER_MASK;
+            this.mt[this.N - 1] = this.mt[this.M - 1] ^ y >>> 1 ^ mag01[y & 0x1];
 
             this.mti = 0;
         }
@@ -109,15 +118,15 @@ class MersenneTwister {
 
         /* Tempering */
         y ^= y >>> 11;
-        y ^= (y << 7) & 0x9d2c5680;
-        y ^= (y << 15) & 0xefc60000;
+        y ^= y << 7 & 0x9d2c5680;
+        y ^= y << 15 & 0xefc60000;
         y ^= y >>> 18;
 
         return y >>> 0;
     }
 
     /* generates a random number on [0,1)-real-interval */
-    random() {
+    random () {
         return this.genrand_int32() * (1.0 / 4294967296.0);
         /* divided by 2^32 */
     }
@@ -125,14 +134,14 @@ class MersenneTwister {
 
 // https://github.com/chancejs/chancejs
 export class Chance {
-    private mt: MersenneTwister;
+    private readonly mt: MersenneTwister;
 
-    constructor(readonly seed: number) {
+    constructor (readonly seed: number) {
         // If no generator function was provided, use our MT
         this.mt = new MersenneTwister(this.seed);
     }
 
-    random(): number {
+    random (): number {
         return this.mt.random();
     }
 
@@ -147,7 +156,7 @@ export class Chance {
      *  @returns {Number} a single random integer number
      *  @throws {RangeError} min cannot be greater than max
      */
-    integer(options: { min: number; max: number }): number {
+    integer (options: { max: number, min: number, }): number {
         return Math.floor(this.random() * (options.max - options.min + 1) + options.min);
     }
 
@@ -162,7 +171,7 @@ export class Chance {
      *  @returns {Number} a single random integer number
      *  @throws {RangeError} min cannot be greater than max
      */
-    natural(options: { max: number }): number {
+    natural (options: { max: number, }): number {
         return this.integer({ min: 0, max: options.max });
     }
 
@@ -170,21 +179,22 @@ export class Chance {
         if (arr.length === 0) {
             throw new RangeError("Chance: Cannot pick() from an empty array");
         }
+
         return arr[this.natural({ max: arr.length - 1 })];
     }
 
-    animal(): string {
+    animal (): string {
         // if user does not put in any animal type, will return a random animal regardless
         const animalTypeArray = ["desert", "forest", "ocean", "zoo", "farm", "pet", "grassland"];
         return this.pick(animals[this.pick(animalTypeArray)]);
     }
 
-    city(): string {
+    city (): string {
         return this.pick(cities);
     }
 }
 
-const animals: { [kind: string]: string[] } = {
+const animals: { [kind: string]: string[], } = {
     // list of ocean animals comes from https://owlcation.com/stem/list-of-ocean-animals
     ocean: [
         "Acantharea",
@@ -479,7 +489,7 @@ const animals: { [kind: string]: string[] } = {
         "Yellow Tube Sponge",
         "Yellowfin Tuna",
         "Zebrashark",
-        "Zooplankton"
+        "Zooplankton",
     ],
     // list of desert, grassland, and forest animals comes from http://www.skyenimals.com/
     desert: [
@@ -572,7 +582,7 @@ const animals: { [kind: string]: string[] } = {
         "Vulture",
         "Waxwing",
         "Xerus",
-        "Zebra"
+        "Zebra",
     ],
     grassland: [
         "Aardvark",
@@ -715,7 +725,7 @@ const animals: { [kind: string]: string[] } = {
         "Thornbill",
         "Thrush",
         "Toad",
-        "Tortoise"
+        "Tortoise",
     ],
     forest: [
         "Agouti",
@@ -911,7 +921,7 @@ const animals: { [kind: string]: string[] } = {
         "Wolf",
         "Wombat",
         "Woodchuck",
-        "Woodpecker"
+        "Woodpecker",
     ],
     // list of farm animals comes from https://www.buzzle.com/articles/farm-animals-list.html
     farm: [
@@ -942,7 +952,7 @@ const animals: { [kind: string]: string[] } = {
         "Silkworm",
         "Turkey",
         "Yak",
-        "Zebu"
+        "Zebu",
     ],
     // list of pet animals comes from https://www.dogbreedinfo.com/pets/pet.htm
     pet: [
@@ -988,7 +998,7 @@ const animals: { [kind: string]: string[] } = {
         "Sugar Gliders",
         "Tarantula",
         "Turkeys",
-        "Turtles"
+        "Turtles",
     ],
     // list of zoo animals comes from https://bronxzoo.com/animals
     zoo: [
@@ -1058,8 +1068,8 @@ const animals: { [kind: string]: string[] } = {
         "Tufted Puffin",
         "White Cheeked Gibbon",
         "White-throated Bee Eater",
-        "Zebra"
-    ]
+        "Zebra",
+    ],
 };
 
 // Source: https://en.wikipedia.org/wiki/List_of_population_centers_by_latitude
@@ -2160,5 +2170,5 @@ const cities: string[] = [
     "Villa Las Estrellas",
     "Esperanza",
     "Rothera",
-    "Concordia"
+    "Concordia",
 ];

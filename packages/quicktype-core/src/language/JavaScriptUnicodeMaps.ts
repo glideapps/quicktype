@@ -1,6 +1,6 @@
 // Taken from https://github.com/Microsoft/TypeScript
 
-function lookupInUnicodeMap(code: number, map: ReadonlyArray<number>): boolean {
+function lookupInUnicodeMap (code: number, map: readonly number[]): boolean {
     // Bail out quickly if it couldn't possibly be in the map.
     if (code < map[0]) {
         return false;
@@ -45,24 +45,24 @@ const enum CharacterCodes {
     Z = 0x5a
 }
 
-export function isES3IdentifierStart(ch: number): boolean {
+export function isES3IdentifierStart (ch: number): boolean {
     return (
-        (ch >= CharacterCodes.A && ch <= CharacterCodes.Z) ||
-        (ch >= CharacterCodes.a && ch <= CharacterCodes.z) ||
+        ch >= CharacterCodes.A && ch <= CharacterCodes.Z ||
+        ch >= CharacterCodes.a && ch <= CharacterCodes.z ||
         ch === CharacterCodes.$ ||
         ch === CharacterCodes._ ||
-        (ch > CharacterCodes.maxAsciiCharacter && lookupInUnicodeMap(ch, unicodeES3IdentifierStart))
+        ch > CharacterCodes.maxAsciiCharacter && lookupInUnicodeMap(ch, unicodeES3IdentifierStart)
     );
 }
 
-export function isES3IdentifierPart(ch: number): boolean {
+export function isES3IdentifierPart (ch: number): boolean {
     return (
-        (ch >= CharacterCodes.A && ch <= CharacterCodes.Z) ||
-        (ch >= CharacterCodes.a && ch <= CharacterCodes.z) ||
-        (ch >= CharacterCodes._0 && ch <= CharacterCodes._9) ||
+        ch >= CharacterCodes.A && ch <= CharacterCodes.Z ||
+        ch >= CharacterCodes.a && ch <= CharacterCodes.z ||
+        ch >= CharacterCodes._0 && ch <= CharacterCodes._9 ||
         ch === CharacterCodes.$ ||
         ch === CharacterCodes._ ||
-        (ch > CharacterCodes.maxAsciiCharacter && lookupInUnicodeMap(ch, unicodeES3IdentifierPart))
+        ch > CharacterCodes.maxAsciiCharacter && lookupInUnicodeMap(ch, unicodeES3IdentifierPart)
     );
 }
 
@@ -113,7 +113,7 @@ const unicodeES3IdentifierStart = [
     40960, 42124, 44032, 55203, 63744, 64045, 64256, 64262, 64275, 64279, 64285, 64285, 64287, 64296, 64298, 64310,
     64312, 64316, 64318, 64318, 64320, 64321, 64323, 64324, 64326, 64433, 64467, 64829, 64848, 64911, 64914, 64967,
     65008, 65019, 65136, 65138, 65140, 65140, 65142, 65276, 65313, 65338, 65345, 65370, 65382, 65470, 65474, 65479,
-    65482, 65487, 65490, 65495, 65498, 65500
+    65482, 65487, 65490, 65495, 65498, 65500,
 ];
 const unicodeES3IdentifierPart = [
     170, 170, 181, 181, 186, 186, 192, 214, 216, 246, 248, 543, 546, 563, 592, 685, 688, 696, 699, 705, 720, 721, 736,
@@ -152,5 +152,5 @@ const unicodeES3IdentifierPart = [
     64262, 64275, 64279, 64285, 64296, 64298, 64310, 64312, 64316, 64318, 64318, 64320, 64321, 64323, 64324, 64326,
     64433, 64467, 64829, 64848, 64911, 64914, 64967, 65008, 65019, 65056, 65059, 65075, 65076, 65101, 65103, 65136,
     65138, 65140, 65140, 65142, 65276, 65296, 65305, 65313, 65338, 65343, 65343, 65345, 65370, 65381, 65470, 65474,
-    65479, 65482, 65487, 65490, 65495, 65498, 65500
+    65479, 65482, 65487, 65490, 65495, 65498, 65500,
 ];
