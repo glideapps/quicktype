@@ -15,7 +15,8 @@
         "start": "script/watch",
         "clean": "rm -rf dist node_modules *~ packages/*/{dist,node_modules}",
         "debug": "node --inspect-brk --max-old-space-size=4096 ./dist/index.js",
-        "lint": "eslint src/** packages/*/src/**"
+        "lint": "eslint src/** packages/*/src/**",
+        "lint:fix": "eslint --fix src/** packages/*/src/**"
     },
     "workspaces": [
         "./packages/quicktype-core",
