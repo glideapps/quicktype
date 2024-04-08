@@ -1,11 +1,11 @@
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { type ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { type Name, type Namer} from "../Naming";
+import { type Name, type Namer } from "../Naming";
 import { funPrefixNamer } from "../Naming";
-import { type Option, type OptionValues} from "../RendererOptions";
+import { type Option, type OptionValues } from "../RendererOptions";
 import { EnumOption, StringOption, getOptionValues } from "../RendererOptions";
-import { type Sourcelike} from "../Source";
+import { type Sourcelike } from "../Source";
 import { maybeAnnotated } from "../Source";
 import {
     allLowerWordStyle,
@@ -16,7 +16,7 @@ import {
     isLetterOrUnderscore,
     isNumeric,
     legalizeCharacters,
-    splitIntoWords,
+    splitIntoWords
 } from "../support/Strings";
 import { assertNever } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
@@ -26,12 +26,12 @@ import { matchCompoundType, matchType, nullableFromUnion, removeNullFromUnion } 
 import { type RenderContext } from "../Renderer";
 
 export enum Framework {
-    None
+    None = "None"
 }
 
 export const SmithyOptions = {
     framework: new EnumOption("framework", "Serialization framework", [["just-types", Framework.None]], undefined),
-    packageName: new StringOption("package", "Package", "PACKAGE", "quicktype"),
+    packageName: new StringOption("package", "Package", "PACKAGE", "quicktype")
 };
 
 // Use backticks for param names with symbols
@@ -53,13 +53,13 @@ const invalidSymbols = [
     "/",
     ";",
     "'",
-    "\"",
+    '"',
     "{",
     "}",
     ":",
     "~",
     "`",
-    ".",
+    "."
 ];
 
 const keywords = [
@@ -109,7 +109,7 @@ const keywords = [
     "Array",
     "List",
     "Map",
-    "Enum",
+    "Enum"
 ];
 
 /**
@@ -125,17 +125,17 @@ const shouldAddBacktick = (paramName: string): boolean => {
     );
 };
 
-function isPartCharacter (codePoint: number): boolean {
+function isPartCharacter(codePoint: number): boolean {
     return isLetterOrUnderscore(codePoint) || isNumeric(codePoint);
 }
 
-function isStartCharacter (codePoint: number): boolean {
+function isStartCharacter(codePoint: number): boolean {
     return isPartCharacter(codePoint) && !isDigit(codePoint);
 }
 
 const legalizeName = legalizeCharacters(isPartCharacter);
 
-function scalaNameStyle (isUpper: boolean, original: string): string {
+function scalaNameStyle(isUpper: boolean, original: string): string {
     const words = splitIntoWords(original);
     return combineWords(
         words,
@@ -145,7 +145,7 @@ function scalaNameStyle (isUpper: boolean, original: string): string {
         isUpper ? allUpperWordStyle : allLowerWordStyle,
         allUpperWordStyle,
         "",
-        isStartCharacter,
+        isStartCharacter
     );
 }
 
@@ -153,93 +153,93 @@ const upperNamingFunction = funPrefixNamer("upper", s => scalaNameStyle(true, s)
 const lowerNamingFunction = funPrefixNamer("lower", s => scalaNameStyle(false, s));
 
 export class Smithy4sRenderer extends ConvenienceRenderer {
-    constructor (
+    constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        protected readonly _scalaOptions: OptionValues<typeof SmithyOptions>,
+        protected readonly _scalaOptions: OptionValues<typeof SmithyOptions>
     ) {
         super(targetLanguage, renderContext);
     }
 
-    protected forbiddenNamesForGlobalNamespace (): string[] {
+    protected forbiddenNamesForGlobalNamespace(): string[] {
         return keywords;
     }
 
-    protected forbiddenForObjectProperties (_: ObjectType, _classNamed: Name): ForbiddenWordsInfo {
+    protected forbiddenForObjectProperties(_: ObjectType, _classNamed: Name): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: true };
     }
 
-    protected forbiddenForEnumCases (_: EnumType, _enumName: Name): ForbiddenWordsInfo {
+    protected forbiddenForEnumCases(_: EnumType, _enumName: Name): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: true };
     }
 
-    protected forbiddenForUnionMembers (_u: UnionType, _unionName: Name): ForbiddenWordsInfo {
+    protected forbiddenForUnionMembers(_u: UnionType, _unionName: Name): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: false };
     }
 
-    protected topLevelNameStyle (rawName: string): string {
+    protected topLevelNameStyle(rawName: string): string {
         return scalaNameStyle(true, rawName);
     }
 
-    protected makeNamedTypeNamer (): Namer {
+    protected makeNamedTypeNamer(): Namer {
         return upperNamingFunction;
     }
 
-    protected namerForObjectProperty (): Namer {
+    protected namerForObjectProperty(): Namer {
         return lowerNamingFunction;
     }
 
-    protected makeUnionMemberNamer (): Namer {
+    protected makeUnionMemberNamer(): Namer {
         return funPrefixNamer("upper", s => scalaNameStyle(true, s) + "Value");
     }
 
-    protected makeEnumCaseNamer (): Namer {
+    protected makeEnumCaseNamer(): Namer {
         return funPrefixNamer("upper", s => s.replace(" ", "")); // TODO - add backticks where appropriate
     }
 
-    protected emitDescriptionBlock (lines: Sourcelike[]): void {
+    protected emitDescriptionBlock(lines: Sourcelike[]): void {
         this.emitCommentLines(lines, { lineStart: " * ", beforeComment: "/**", afterComment: " */" });
     }
 
-    protected emitBlock (
+    protected emitBlock(
         line: Sourcelike,
         f: () => void,
-        delimiter: "curly" | "paren" | "lambda" | "none" = "curly",
+        delimiter: "curly" | "paren" | "lambda" | "none" = "curly"
     ): void {
         const [open, close] =
             delimiter === "curly"
                 ? ["{", "}"]
                 : delimiter === "paren"
-                    ? ["(", ")"]
-                    : delimiter === "none"
-                        ? ["", ""]
-                        : ["{", "})"];
+                ? ["(", ")"]
+                : delimiter === "none"
+                ? ["", ""]
+                : ["{", "})"];
         this.emitLine(line, " ", open);
         this.indent(f);
         this.emitLine(close);
     }
 
-    protected anySourceType (_: boolean): Sourcelike {
+    protected anySourceType(_: boolean): Sourcelike {
         return ["Document"];
     }
 
     // (asarazan): I've broken out the following two functions
     // because some renderers, such as kotlinx, can cope with `any`, while some get mad.
-    protected arrayType (arrayType: ArrayType, _ = false): Sourcelike {
+    protected arrayType(arrayType: ArrayType, _ = false): Sourcelike {
         // this.emitTopLevelArray(arrayType, new Name(arrayType.getCombinedName().toString() + "List"))
         return arrayType.getCombinedName().toString() + "List";
     }
 
-    protected emitArrayType (_: ArrayType, smithyType: Sourcelike): void {
+    protected emitArrayType(_: ArrayType, smithyType: Sourcelike): void {
         this.emitLine(["list ", smithyType, " { member : ", "}"]);
     }
 
-    protected mapType (mapType: MapType, _ = false): Sourcelike {
+    protected mapType(mapType: MapType, _ = false): Sourcelike {
         return mapType.getCombinedName().toString() + "Map";
         // return [this.scalaType(mapType.values, withIssues), "Map"];
     }
 
-    protected scalaType (t: Type, withIssues = false, noOptional = false): Sourcelike {
+    protected scalaType(t: Type, withIssues = false, noOptional = false): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => {
@@ -264,15 +264,15 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
                 }
 
                 return this.nameForNamedType(unionType);
-            },
+            }
         );
     }
 
-    protected emitUsageHeader (): void {
+    protected emitUsageHeader(): void {
         // To be overridden
     }
 
-    protected emitHeader (): void {
+    protected emitHeader(): void {
         if (this.leadingComments !== undefined) {
             this.emitComments(this.leadingComments);
         } else {
@@ -280,7 +280,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
         }
 
         this.ensureBlankLine();
-        this.emitLine("$version: \"2\"");
+        this.emitLine('$version: "2"');
         this.emitLine("namespace ", this._scalaOptions.packageName);
         this.ensureBlankLine();
 
@@ -288,22 +288,22 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
         this.ensureBlankLine();
     }
 
-    protected emitTopLevelArray (t: ArrayType, name: Name): void {
+    protected emitTopLevelArray(t: ArrayType, name: Name): void {
         const elementType = this.scalaType(t.items);
         this.emitLine(["list ", name, " { member : ", elementType, "}"]);
     }
 
-    protected emitTopLevelMap (t: MapType, name: Name): void {
+    protected emitTopLevelMap(t: MapType, name: Name): void {
         const elementType = this.scalaType(t.values);
         this.emitLine(["map ", name, " { map[ key : String , value : ", elementType, "}"]);
     }
 
-    protected emitEmptyClassDefinition (c: ClassType, className: Name): void {
+    protected emitEmptyClassDefinition(c: ClassType, className: Name): void {
         this.emitDescription(this.descriptionForType(c));
         this.emitLine("structure ", className, "{}");
     }
 
-    protected emitClassDefinition (c: ClassType, className: Name): void {
+    protected emitClassDefinition(c: ClassType, className: Name): void {
         if (c.getProperties().size === 0) {
             this.emitEmptyClassDefinition(c, className);
             return;
@@ -357,7 +357,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
                     " : ",
                     scalaType(p),
 
-                    last ? "" : ",",
+                    last ? "" : ","
                 );
 
                 if (meta.length > 0 && !last) {
@@ -370,10 +370,10 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
         this.emitClassDefinitionMethods(emitLater);
     }
 
-    protected emitClassDefinitionMethods (arrayTypes: ClassProperty[]) {
+    protected emitClassDefinitionMethods(arrayTypes: ClassProperty[]) {
         this.emitLine("}");
         arrayTypes.forEach(p => {
-            function ignore<T extends Type> (_: T): void {
+            function ignore<T extends Type>(_: T): void {
                 return;
             }
 
@@ -385,7 +385,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
                         this.scalaType(at, true),
                         "{ member: ",
                         this.scalaType(at.items, true),
-                        "}",
+                        "}"
                     ]);
                 },
                 ignore,
@@ -395,16 +395,16 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
                         this.scalaType(mt, true),
                         "{ key: String , value: ",
                         this.scalaType(mt.values, true),
-                        "}",
+                        "}"
                     ]);
                 },
                 ignore,
-                ignore,
+                ignore
             );
         });
     }
 
-    protected emitEnumDefinition (e: EnumType, enumName: Name): void {
+    protected emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
 
         this.ensureBlankLine();
@@ -420,7 +420,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
                                 if (backticks) {this.emitItem("`")} else  */
             this.emitLine();
 
-            this.emitItem([name, " = \"", jsonName, "\""]);
+            this.emitItem([name, ' = "', jsonName, '"']);
 
             //                if (backticks) {this.emitItem("`")}
             if (--count > 0) this.emitItem([","]);
@@ -433,8 +433,8 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
         this.emitItem(["}"]);
     }
 
-    protected emitUnionDefinition (u: UnionType, unionName: Name): void {
-        function sortBy (t: Type): string {
+    protected emitUnionDefinition(u: UnionType, unionName: Name): void {
+        function sortBy(t: Type): string {
             const kind = t.kind;
             if (kind === "class") return kind;
             return "_" + kind;
@@ -468,7 +468,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
         this.ensureBlankLine();
 
         emitLater.forEach(p => {
-            function ignore<T extends Type> (_: T): void {
+            function ignore<T extends Type>(_: T): void {
                 return;
             }
 
@@ -480,7 +480,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
                         this.scalaType(at, true),
                         "{ member: ",
                         this.scalaType(at.items, true),
-                        "}",
+                        "}"
                     ]);
                 },
                 ignore,
@@ -490,16 +490,16 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
                         this.scalaType(mt, true),
                         "{ key: String , value: ",
                         this.scalaType(mt.values, true),
-                        "}",
+                        "}"
                     ]);
                 },
                 ignore,
-                ignore,
+                ignore
             );
         });
     }
 
-    protected emitSourceStructure (): void {
+    protected emitSourceStructure(): void {
         this.emitHeader();
 
         // Top-level arrays, maps
@@ -515,31 +515,31 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
             "leading-and-interposing",
             (c: ClassType, n: Name) => this.emitClassDefinition(c, n),
             (e, n) => this.emitEnumDefinition(e, n),
-            (u, n) => this.emitUnionDefinition(u, n),
+            (u, n) => this.emitUnionDefinition(u, n)
         );
     }
 }
 
 export class SmithyTargetLanguage extends TargetLanguage {
-    constructor () {
+    constructor() {
         super("Smithy", ["Smithy"], "smithy");
     }
 
-    protected getOptions (): Array<Option<any>> {
+    protected getOptions(): Array<Option<any>> {
         return [SmithyOptions.framework, SmithyOptions.packageName];
     }
 
-    get supportsOptionalClassProperties (): boolean {
+    get supportsOptionalClassProperties(): boolean {
         return true;
     }
 
-    get supportsUnionsWithBothNumberTypes (): boolean {
+    get supportsUnionsWithBothNumberTypes(): boolean {
         return true;
     }
 
-    protected makeRenderer (
+    protected makeRenderer(
         renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any, },
+        untypedOptionValues: { [name: string]: any }
     ): ConvenienceRenderer {
         const options = getOptionValues(SmithyOptions, untypedOptionValues);
 

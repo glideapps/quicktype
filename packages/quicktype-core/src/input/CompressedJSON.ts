@@ -1,23 +1,23 @@
 import { addHashCode, hashCodeInit, hashString } from "collection-utils";
 
 import { defined, panic, assert } from "../support/Support";
-import { type TransformedStringTypeKind} from "../Type";
+import { type TransformedStringTypeKind } from "../Type";
 import { isPrimitiveStringTypeKind, transformedStringTypeTargetTypeKindsMap } from "../Type";
 import { type DateTimeRecognizer } from "../DateTime";
 import { inferTransformedStringTypeKindForString } from "../attributes/StringTypes";
 
 export enum Tag {
-    Null,
-    False,
-    True,
-    Integer,
-    Double,
-    InternedString,
-    UninternedString,
-    Object,
-    Array,
-    StringFormat,
-    TransformedString
+    Null = 1,
+    False = 2,
+    True = 3,
+    Integer = 4,
+    Double = 5,
+    InternedString = 6,
+    UninternedString = 7,
+    Object = 8,
+    Array = 9,
+    StringFormat = 10,
+    TransformedString = 11
 }
 
 export type Value = number;
@@ -25,16 +25,16 @@ export type Value = number;
 const TAG_BITS = 4;
 const TAG_MASK = (1 << TAG_BITS) - 1;
 
-export function makeValue (t: Tag, index: number): Value {
-    return t | index << TAG_BITS;
+export function makeValue(t: Tag, index: number): Value {
+    return t | (index << TAG_BITS);
 }
 
-function getIndex (v: Value, tag: Tag): number {
+function getIndex(v: Value, tag: Tag): number {
     assert(valueTag(v) === tag, "Trying to get index for value with invalid tag");
     return v >> TAG_BITS;
 }
 
-export function valueTag (v: Value): Tag {
+export function valueTag(v: Value): Tag {
     return v & TAG_MASK;
 }
 
@@ -54,21 +54,24 @@ export abstract class CompressedJSON<T> {
 
     private _strings: string[] = [];
 
-    private _stringIndexes: { [str: string]: number, } = {};
+    private _stringIndexes: { [str: string]: number } = {};
 
     private _objects: Value[][] = [];
 
     private _arrays: Value[][] = [];
 
-    constructor (readonly dateTimeRecognizer: DateTimeRecognizer, readonly handleRefs: boolean) {}
+    constructor(
+        readonly dateTimeRecognizer: DateTimeRecognizer,
+        readonly handleRefs: boolean
+    ) {}
 
-    abstract parse (input: T): Promise<Value>;
+    abstract parse(input: T): Promise<Value>;
 
-    parseSync (_input: T): Value {
+    parseSync(_input: T): Value {
         return panic("parseSync not implemented in CompressedJSON");
     }
 
-    getStringForValue (v: Value): string {
+    getStringForValue(v: Value): string {
         const tag = valueTag(v);
         assert(tag === Tag.InternedString || tag === Tag.TransformedString);
         return this._strings[getIndex(v, tag)];
@@ -82,7 +85,7 @@ export abstract class CompressedJSON<T> {
         return this._arrays[getIndex(v, Tag.Array)];
     };
 
-    getStringFormatTypeKind (v: Value): TransformedStringTypeKind {
+    getStringFormatTypeKind(v: Value): TransformedStringTypeKind {
         const kind = this._strings[getIndex(v, Tag.StringFormat)];
         if (!isPrimitiveStringTypeKind(kind) || kind === "string") {
             return panic("Not a transformed string type kind");
@@ -91,11 +94,11 @@ export abstract class CompressedJSON<T> {
         return kind;
     }
 
-    protected get context (): Context {
+    protected get context(): Context {
         return defined(this._ctx);
     }
 
-    protected internString (s: string): number {
+    protected internString(s: string): number {
         if (Object.prototype.hasOwnProperty.call(this._stringIndexes, s)) {
             return this._stringIndexes[s];
         }
@@ -106,13 +109,13 @@ export abstract class CompressedJSON<T> {
         return index;
     }
 
-    protected makeString (s: string): Value {
+    protected makeString(s: string): Value {
         const value = makeValue(Tag.InternedString, this.internString(s));
         assert(typeof value === "number", `Interned string value is not a number: ${value}`);
         return value;
     }
 
-    protected internObject (obj: Value[]): Value {
+    protected internObject(obj: Value[]): Value {
         const index = this._objects.length;
         this._objects.push(obj);
         return makeValue(Tag.Object, index);
@@ -124,16 +127,16 @@ export abstract class CompressedJSON<T> {
         return makeValue(Tag.Array, index);
     };
 
-    protected get isExpectingRef (): boolean {
+    protected get isExpectingRef(): boolean {
         return this._ctx !== undefined && this._ctx.currentKey === "$ref";
     }
 
-    protected commitValue (value: Value): void {
+    protected commitValue(value: Value): void {
         assert(typeof value === "number", `CompressedJSON value is not a number: ${value}`);
         if (this._ctx === undefined) {
             assert(
                 this._rootValue === undefined,
-                "Committing value but nowhere to commit to - root value still there.",
+                "Committing value but nowhere to commit to - root value still there."
             );
             this._rootValue = value;
         } else if (this._ctx.currentObject !== undefined) {
@@ -150,20 +153,20 @@ export abstract class CompressedJSON<T> {
         }
     }
 
-    protected commitNull (): void {
+    protected commitNull(): void {
         this.commitValue(makeValue(Tag.Null, 0));
     }
 
-    protected commitBoolean (v: boolean): void {
+    protected commitBoolean(v: boolean): void {
         this.commitValue(makeValue(v ? Tag.True : Tag.False, 0));
     }
 
-    protected commitNumber (isDouble: boolean): void {
+    protected commitNumber(isDouble: boolean): void {
         const numberTag = isDouble ? Tag.Double : Tag.Integer;
         this.commitValue(makeValue(numberTag, 0));
     }
 
-    protected commitString (s: string): void {
+    protected commitString(s: string): void {
         let value: Value | undefined = undefined;
         if (this.handleRefs && this.isExpectingRef) {
             value = this.makeString(s);
@@ -185,7 +188,7 @@ export abstract class CompressedJSON<T> {
         this.commitValue(value);
     }
 
-    protected finish (): Value {
+    protected finish(): Value {
         const value = this._rootValue;
         if (value === undefined) {
             return panic("Finished without root document");
@@ -196,7 +199,7 @@ export abstract class CompressedJSON<T> {
         return value;
     }
 
-    protected pushContext (): void {
+    protected pushContext(): void {
         if (this._ctx !== undefined) {
             this._contextStack.push(this._ctx);
         }
@@ -205,21 +208,21 @@ export abstract class CompressedJSON<T> {
             currentObject: undefined,
             currentArray: undefined,
             currentKey: undefined,
-            currentNumberIsDouble: false,
+            currentNumberIsDouble: false
         };
     }
 
-    protected pushObjectContext (): void {
+    protected pushObjectContext(): void {
         this.pushContext();
         defined(this._ctx).currentObject = [];
     }
 
-    protected setPropertyKey (key: string): void {
+    protected setPropertyKey(key: string): void {
         const ctx = this.context;
         ctx.currentKey = key;
     }
 
-    protected finishObject (): void {
+    protected finishObject(): void {
         const obj = this.context.currentObject;
         if (obj === undefined) {
             return panic("Object ended but not started");
@@ -229,12 +232,12 @@ export abstract class CompressedJSON<T> {
         this.commitValue(this.internObject(obj));
     }
 
-    protected pushArrayContext (): void {
+    protected pushArrayContext(): void {
         this.pushContext();
         defined(this._ctx).currentArray = [];
     }
 
-    protected finishArray (): void {
+    protected finishArray(): void {
         const arr = this.context.currentArray;
         if (arr === undefined) {
             return panic("Array ended but not started");
@@ -244,16 +247,16 @@ export abstract class CompressedJSON<T> {
         this.commitValue(this.internArray(arr));
     }
 
-    protected popContext (): void {
+    protected popContext(): void {
         assert(this._ctx !== undefined, "Popping context when there isn't one");
         this._ctx = this._contextStack.pop();
     }
 
-    equals (other: any): boolean {
+    equals(other: any): boolean {
         return this === other;
     }
 
-    hashCode (): number {
+    hashCode(): number {
         let hashAccumulator = hashCodeInit;
         for (const s of this._strings) {
             hashAccumulator = addHashCode(hashAccumulator, hashString(s));
@@ -281,17 +284,17 @@ export abstract class CompressedJSON<T> {
 }
 
 export class CompressedJSONFromString extends CompressedJSON<string> {
-    async parse (input: string): Promise<Value> {
+    async parse(input: string): Promise<Value> {
         return this.parseSync(input);
     }
 
-    parseSync (input: string): Value {
+    parseSync(input: string): Value {
         const json = JSON.parse(input);
         this.process(json);
         return this.finish();
     }
 
-    private process (json: unknown): void {
+    private process(json: unknown): void {
         if (json === null) {
             this.commitNull();
         } else if (typeof json === "boolean") {
