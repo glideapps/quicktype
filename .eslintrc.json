@@ -5,16 +5,29 @@
             "files": "*.json"
         },
         {
-            "extends": ["eslint:recommended", "canonical/typescript", "canonical/typescript-type-checking"],
+            "extends": [
+                "eslint:recommended",
+                "canonical/typescript",
+                "canonical/typescript-type-checking",
+                "plugin:import/recommended",
+                "plugin:import/typescript"
+            ],
+            "plugins": ["canonical"],
             "parserOptions": {
                 "tsconfigRootDir": "./",
                 "project": ["./tsconfig.json", "./packages/*/tsconfig.json"]
             },
-            "plugins": ["canonical"],
+            "settings": {
+                "import/resolver": {
+                    "typescript": true,
+                    "node": true
+                }
+            },
             "rules": {
                 "comma-dangle": "off",
                 "no-extra-parens": "off",
                 "canonical/prefer-inline-type-import": "error",
+                "typescript-sort-keys/string-enum": "off",
                 "@typescript-eslint/class-literal-property-style": "off",
                 "@typescript-eslint/comma-dangle": "off",
                 "@typescript-eslint/consistent-type-definitions": ["error", "interface"],
