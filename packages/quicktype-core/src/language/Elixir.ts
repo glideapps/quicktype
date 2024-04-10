@@ -855,8 +855,8 @@ export class ElixirRenderer extends ConvenienceRenderer {
     }
 
     private emitEnum(e: EnumType, enumName: Name) {
-        this.emitDescription(this.descriptionForType(e));
         this.emitBlock(["defmodule ", this.nameWithNamespace(enumName), " do"], () => {
+            this.emitDescription(this.descriptionForType(e));
             this.emitLine("@valid_enum_members [");
             this.indent(() => {
                 this.forEachEnumCase(e, "none", (_name, json) => {
@@ -927,6 +927,12 @@ end`);
                     const isTopLevelArray = "array" === topLevel.kind;
 
                     this.emitBlock(["defmodule ", this.nameWithNamespace(name), " do"], () => {
+                        const description = this.descriptionForType(topLevel) ?? [];
+                        if (description.length) {
+                            this.emitDescription([...description]);
+                            this.ensureBlankLine();
+                        }
+
                         if (isTopLevelArray) {
                             const arrayElement = (topLevel as ArrayType).items;
 
