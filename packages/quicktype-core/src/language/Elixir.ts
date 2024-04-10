@@ -337,8 +337,6 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 attributeName,
                 suffix,
                 "(value) when is_binary(value)",
-                // this.nameForNamedTypeWithNamespace(enumType),
-                // ".valid_atom_string?(value)
                 ", do: ",
                 this.nameForNamedTypeWithNamespace(enumType),
                 ".decode(value)"
@@ -390,8 +388,6 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 attributeName,
                 suffix,
                 "(value) when is_atom(value)",
-                // this.nameForNamedTypeWithNamespace(enumType),
-                // ".valid_atom?(value)
                 ", do: ",
                 this.nameForNamedTypeWithNamespace(enumType),
                 ".encode(value)"
@@ -806,7 +802,38 @@ export class ElixirRenderer extends ConvenienceRenderer {
                         return;
                     }
 
-                    this.emitPatternMatches(unionTypes, name, this.nameForNamedTypeWithNamespace(c), "", p.isOptional);
+                    const unionTypesNonNull = unionTypes.filter(type => type.kind !== "null");
+                    if (unionTypesNonNull.length === 1) {
+                        let suffix = "";
+                        let itemTypes: Type[] = [];
+                        if (unionTypesNonNull[0] instanceof ArrayType) {
+                            suffix = "_element";
+                            itemTypes = [...unionTypesNonNull[0].getChildren()];
+                        } else if (unionTypesNonNull[0] instanceof MapType) {
+                            suffix = "_value";
+                            itemTypes = [...unionTypesNonNull[0].getChildren()];
+                        }
+
+                        if (itemTypes.length === 1 && itemTypes[0] instanceof UnionType) {
+                            itemTypes = [...itemTypes[0].getChildren()];
+                        }
+
+                        this.emitPatternMatches(
+                            itemTypes,
+                            name,
+                            this.nameForNamedTypeWithNamespace(c),
+                            suffix,
+                            p.isOptional
+                        );
+                    } else {
+                        this.emitPatternMatches(
+                            unionTypes,
+                            name,
+                            this.nameForNamedTypeWithNamespace(c),
+                            "",
+                            p.isOptional
+                        );
+                    }
                 } else if (p.type.kind === "array") {
                     const arrayType = p.type as ArrayType;
                     if (arrayType.items instanceof UnionType) {
