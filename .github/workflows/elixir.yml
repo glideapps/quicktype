@@ -41,7 +41,7 @@ jobs:
                     - ruby
                     - php
                     - scala3,schema-scala3
-                    - elixir,schema-elixir
+                    - elixir,schema-elixir,graphql-elixir
 
                     # Partially working
                     # - schema-typescript # TODO Unify with typescript once fixed
