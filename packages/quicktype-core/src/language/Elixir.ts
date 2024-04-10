@@ -408,6 +408,10 @@ export class ElixirRenderer extends ConvenienceRenderer {
                     return -1;
                 } else if (b instanceof ClassType && !(a instanceof ClassType)) {
                     return 1;
+                } else if (a.kind === "bool" && b.kind !== "bool") {
+                    return -1;
+                } else if (b.kind === "bool" && a.kind !== "bool") {
+                    return 1;
                 } else if (a instanceof EnumType && !(b instanceof EnumType)) {
                     return -1;
                 } else if (b instanceof EnumType && !(a instanceof EnumType)) {
@@ -924,11 +928,31 @@ def valid_atom_string?(value) do
 end
 
 def encode(value) do
-    if valid_atom?(value), do: Atom.to_string(value), else: value
+    if valid_atom?(value) do
+        Atom.to_string(value)
+    else
+        {:error, "Unexpected value when encoding atom: #{inspect(value)}"}
+    end
 end
 
 def decode(value) do
-    if valid_atom_string?(value), do: String.to_existing_atom(value), else: value
+    if valid_atom_string?(value) do
+        String.to_existing_atom(value)
+    else
+        {:error, "Unexpected value when decoding atom: #{inspect(value)}"}
+    end
+end
+
+def from_json(json) do
+    json
+    |> Jason.decode!()
+    |> decode()
+end
+
+def to_json(data) do
+    data
+    |> encode()
+    |> Jason.encode!()
 end`);
         });
     }
