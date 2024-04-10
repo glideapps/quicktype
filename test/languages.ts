@@ -1678,22 +1678,17 @@ export const ElixirLanguage: Language = {
     ],
     skipMiscJSON: false,
     skipSchema: [
-        // Haven't found a good way to handle this one. The cause of the error is that TopLevel is not
-        // compiled yet when the guard that references it is compiled. The test could be made to pass by
-        // emitting TopLevel module before Bar module. This does not solve the true problem though because
-        // if TopLevel contained pattern matches that matched against the Bar module, it would not compile.
+        // The error occurs because a guard clause that references TopLevel is compiled before TopLevel itself. To fix this, put
+        // TopLevel before Bar, but this doesn't address the actual problem if for example a pattern match to Bar was in TopLevel.
         "mutually-recursive.schema",
 
-        // Struct keys cannot be enforced at runtime in Elixir and will just be set to null.
+        // Struct keys cannot be enforced at runtime in Elixir and their values will just be set to null.
         "strict-optional.schema",
         "required.schema",
         "intersection.schema",
 
-        // This case passes but should be a failure. This is due to the emitter being permissive
-        // when the union contains only primitive types. I believe this could be added to the Elixir
-        // emitter in the future. it could be a "strict" option that the user enables rather than
-        // the default behavior so they have control over if their structs should pattern match and
-        // error if the wrong primitive type passes through.
+        // The test incorrectly succeeds due to the emitter being permissive for unions that contain only primitives. A future enhancement
+        // for the Elixir emitter could be a user-controlled 'strict' mode that pattern matches even on unions of only primitive types.
         "go-schema-pattern-properties.schema"
     ],
     rendererOptions: {},
