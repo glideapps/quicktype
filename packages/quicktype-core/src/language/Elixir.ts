@@ -332,7 +332,17 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 ];
             },
             _mapType => ["def decode_", attributeName, suffix, "(value) when is_map(value), do: value"],
-            _enumType => [],
+            enumType => [
+                "def decode_",
+                attributeName,
+                suffix,
+                "(value) when is_binary(value)",
+                // this.nameForNamedTypeWithNamespace(enumType),
+                // ".valid_atom_string?(value)
+                ", do: ",
+                this.nameForNamedTypeWithNamespace(enumType),
+                ".decode(value)"
+            ],
             _unionType => []
         );
     }
@@ -375,7 +385,17 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 ];
             },
             _mapType => ["def encode_", attributeName, suffix, "(value) when is_map(value), do: value"],
-            _enumType => [],
+            enumType => [
+                "def encode_",
+                attributeName,
+                suffix,
+                "(value) when is_atom(value)",
+                // this.nameForNamedTypeWithNamespace(enumType),
+                // ".valid_atom?(value)
+                ", do: ",
+                this.nameForNamedTypeWithNamespace(enumType),
+                ".encode(value)"
+            ],
             _unionType => []
         );
     }
@@ -402,7 +422,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
             });
     }
 
-    private emitPatternMatches(types: Type[], name: Sourcelike, parentName: Sourcelike, suffix = "") {
+    private emitPatternMatches(types: Type[], name: Sourcelike, parentName: Sourcelike, suffix = "", optional = false) {
         this.ensureBlankLine();
 
         let typesToMatch = this.sortAndFilterPatternMatchTypes(types);
@@ -417,6 +437,11 @@ export class ElixirRenderer extends ConvenienceRenderer {
         typesToMatch.forEach(type => {
             this.emitLine(this.patternMatchClauseDecode(type, name, suffix));
         });
+
+        if (optional && !typesToMatch.find(type => type.kind === "null")) {
+            this.emitLine("def decode_", name, suffix, "(value) when is_nil(value), do: value");
+        }
+
         this.emitLine(
             "def decode_",
             name,
@@ -433,6 +458,11 @@ export class ElixirRenderer extends ConvenienceRenderer {
         typesToMatch.forEach(type => {
             this.emitLine(this.patternMatchClauseEncode(type, name, suffix));
         });
+
+        if (optional && !typesToMatch.find(type => type.kind === "null")) {
+            this.emitLine("def encode_", name, suffix, "(value) when is_nil(value), do: value");
+        }
+
         this.emitLine(
             "def encode_",
             name,
@@ -771,13 +801,23 @@ export class ElixirRenderer extends ConvenienceRenderer {
                     if (unionTypes.length === unionPrimitiveTypes.length) {
                         return;
                     }
-                    this.emitPatternMatches(unionTypes, name, this.nameForNamedTypeWithNamespace(c));
+
+                    this.emitPatternMatches(unionTypes, name, this.nameForNamedTypeWithNamespace(c), "", p.isOptional);
                 } else if (p.type.kind === "array") {
                     const arrayType = p.type as ArrayType;
                     if (arrayType.items instanceof UnionType) {
                         const unionType = arrayType.items;
                         const typesInUnion = [...unionType.getChildren()];
+
                         this.emitPatternMatches(typesInUnion, name, this.nameForNamedTypeWithNamespace(c), "_element");
+                    }
+                } else if (p.type.kind === "map") {
+                    const mapType = p.type as MapType;
+                    if (mapType.values instanceof UnionType) {
+                        const unionType = mapType.values;
+                        const typesInUnion = [...unionType.getChildren()];
+
+                        this.emitPatternMatches(typesInUnion, name, this.nameForNamedTypeWithNamespace(c), "_value");
                     }
                 }
             });
