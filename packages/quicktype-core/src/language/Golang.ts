@@ -1,7 +1,7 @@
 import { type TypeKind, type Type, type ClassType, type EnumType, type ClassProperty } from "../Type";
 import { UnionType } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
-import { type Name, type Namer} from "../Naming";
+import { type Name, type Namer } from "../Naming";
 import { DependencyName, funPrefixNamer } from "../Naming";
 import {
     legalizeCharacters,
@@ -12,12 +12,12 @@ import {
     combineWords,
     firstUpperWordStyle,
     allUpperWordStyle,
-    camelCase,
+    camelCase
 } from "../support/Strings";
 import { assert, defined } from "../support/Support";
-import { type Option, type OptionValues} from "../RendererOptions";
+import { type Option, type OptionValues } from "../RendererOptions";
 import { StringOption, BooleanOption, getOptionValues } from "../RendererOptions";
-import { type Sourcelike} from "../Source";
+import { type Sourcelike } from "../Source";
 import { maybeAnnotated, modifySource } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { TargetLanguage } from "../TargetLanguage";
@@ -33,46 +33,46 @@ export const goOptions = {
     fieldTags: new StringOption("field-tags", "list of tags which should be generated for fields", "TAGS", "json"),
     omitEmpty: new BooleanOption(
         "omit-empty",
-        "If set, all non-required objects will be tagged with \",omitempty\"",
-        false,
-    ),
+        'If set, all non-required objects will be tagged with ",omitempty"',
+        false
+    )
 };
 
 export class GoTargetLanguage extends TargetLanguage {
-    constructor () {
+    public constructor() {
         super("Go", ["go", "golang"], "go");
     }
 
-    protected getOptions (): Array<Option<any>> {
+    protected getOptions(): Array<Option<any>> {
         return [
             goOptions.justTypes,
             goOptions.justTypesAndPackage,
             goOptions.packageName,
             goOptions.multiFileOutput,
             goOptions.fieldTags,
-            goOptions.omitEmpty,
+            goOptions.omitEmpty
         ];
     }
 
-    get supportsUnionsWithBothNumberTypes (): boolean {
+    public get supportsUnionsWithBothNumberTypes(): boolean {
         return true;
     }
 
-    get stringTypeMapping (): StringTypeMapping {
+    public get stringTypeMapping(): StringTypeMapping {
         const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
         mapping.set("date-time", "date-time");
         return mapping;
     }
 
-    get supportsOptionalClassProperties (): boolean {
+    public get supportsOptionalClassProperties(): boolean {
         return true;
     }
 
-    protected makeRenderer (renderContext: RenderContext, untypedOptionValues: { [name: string]: any, }): GoRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): GoRenderer {
         return new GoRenderer(this, renderContext, getOptionValues(goOptions, untypedOptionValues));
     }
 
-    protected get defaultIndentation (): string {
+    protected get defaultIndentation(): string {
         return "\t";
     }
 }
@@ -81,7 +81,7 @@ const namingFunction = funPrefixNamer("namer", goNameStyle);
 
 const legalizeName = legalizeCharacters(isLetterOrUnderscoreOrDigit);
 
-function goNameStyle (original: string): string {
+function goNameStyle(original: string): string {
     const words = splitIntoWords(original);
     return combineWords(
         words,
@@ -91,19 +91,19 @@ function goNameStyle (original: string): string {
         allUpperWordStyle,
         allUpperWordStyle,
         "",
-        isLetterOrUnderscore,
+        isLetterOrUnderscore
     );
 }
 
 const primitiveValueTypeKinds: TypeKind[] = ["integer", "double", "bool", "string"];
 const compoundTypeKinds: TypeKind[] = ["array", "class", "map", "enum"];
 
-function isValueType (t: Type): boolean {
+function isValueType(t: Type): boolean {
     const kind = t.kind;
     return primitiveValueTypeKinds.includes(kind) || kind === "class" || kind === "enum" || kind === "date-time";
 }
 
-function canOmitEmpty (cp: ClassProperty, omitEmptyOption: boolean): boolean {
+function canOmitEmpty(cp: ClassProperty, omitEmptyOption: boolean): boolean {
     if (!cp.isOptional) return false;
     if (omitEmptyOption) return true;
     const t = cp.type;
@@ -115,46 +115,46 @@ export class GoRenderer extends ConvenienceRenderer {
 
     private _currentFilename: string | undefined;
 
-    constructor (
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        private readonly _options: OptionValues<typeof goOptions>,
+        private readonly _options: OptionValues<typeof goOptions>
     ) {
         super(targetLanguage, renderContext);
     }
 
-    protected makeNamedTypeNamer (): Namer {
+    protected makeNamedTypeNamer(): Namer {
         return namingFunction;
     }
 
-    protected namerForObjectProperty (): Namer {
+    protected namerForObjectProperty(): Namer {
         return namingFunction;
     }
 
-    protected makeUnionMemberNamer (): Namer {
+    protected makeUnionMemberNamer(): Namer {
         return namingFunction;
     }
 
-    protected makeEnumCaseNamer (): Namer {
+    protected makeEnumCaseNamer(): Namer {
         return namingFunction;
     }
 
-    protected get enumCasesInGlobalNamespace (): boolean {
+    protected get enumCasesInGlobalNamespace(): boolean {
         return true;
     }
 
-    protected makeTopLevelDependencyNames (_: Type, topLevelName: Name): DependencyName[] {
+    protected makeTopLevelDependencyNames(_: Type, topLevelName: Name): DependencyName[] {
         const unmarshalName = new DependencyName(
             namingFunction,
             topLevelName.order,
-            lookup => `unmarshal_${lookup(topLevelName)}`,
+            lookup => `unmarshal_${lookup(topLevelName)}`
         );
         this._topLevelUnmarshalNames.set(topLevelName, unmarshalName);
         return [unmarshalName];
     }
 
     /// startFile takes a file name, lowercases it, appends ".go" to it, and sets it as the current filename.
-    protected startFile (basename: Sourcelike): void {
+    protected startFile(basename: Sourcelike): void {
         if (this._options.multiFileOutput === false) {
             return;
         }
@@ -165,7 +165,7 @@ export class GoRenderer extends ConvenienceRenderer {
     }
 
     /// endFile pushes the current file name onto the collection of finished files and then resets the current file name. These finished files are used in index.ts to write the output.
-    protected endFile (): void {
+    protected endFile(): void {
         if (this._options.multiFileOutput === false) {
             return;
         }
@@ -174,21 +174,21 @@ export class GoRenderer extends ConvenienceRenderer {
         this._currentFilename = undefined;
     }
 
-    private emitBlock (line: Sourcelike, f: () => void): void {
+    private emitBlock(line: Sourcelike, f: () => void): void {
         this.emitLine(line, " {");
         this.indent(f);
         this.emitLine("}");
     }
 
-    private emitFunc (decl: Sourcelike, f: () => void): void {
+    private emitFunc(decl: Sourcelike, f: () => void): void {
         this.emitBlock(["func ", decl], f);
     }
 
-    private emitStruct (name: Name, table: Sourcelike[][]): void {
+    private emitStruct(name: Name, table: Sourcelike[][]): void {
         this.emitBlock(["type ", name, " struct"], () => this.emitTable(table));
     }
 
-    private nullableGoType (t: Type, withIssues: boolean): Sourcelike {
+    private nullableGoType(t: Type, withIssues: boolean): Sourcelike {
         const goType = this.goType(t, withIssues);
         if (isValueType(t)) {
             return ["*", goType];
@@ -197,7 +197,7 @@ export class GoRenderer extends ConvenienceRenderer {
         }
     }
 
-    private propertyGoType (cp: ClassProperty): Sourcelike {
+    private propertyGoType(cp: ClassProperty): Sourcelike {
         const t = cp.type;
         if (t instanceof UnionType && nullableFromUnion(t) === null) {
             return ["*", this.goType(t, true)];
@@ -210,7 +210,7 @@ export class GoRenderer extends ConvenienceRenderer {
         return this.goType(t, true);
     }
 
-    private goType (t: Type, withIssues = false): Sourcelike {
+    private goType(t: Type, withIssues = false): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "interface{}"),
@@ -244,11 +244,11 @@ export class GoRenderer extends ConvenienceRenderer {
                 }
 
                 return "string";
-            },
+            }
         );
     }
 
-    private emitTopLevel (t: Type, name: Name): void {
+    private emitTopLevel(t: Type, name: Name): void {
         this.startFile(name);
 
         if (
@@ -258,7 +258,7 @@ export class GoRenderer extends ConvenienceRenderer {
             this.leadingComments === undefined
         ) {
             this.emitLineOnce(
-                "// This file was generated from JSON Schema using quicktype, do not modify it directly.",
+                "// This file was generated from JSON Schema using quicktype, do not modify it directly."
             );
             this.emitLineOnce("// To parse and unparse this JSON data, add this code to your project and do:");
             this.emitLineOnce("//");
@@ -289,7 +289,7 @@ export class GoRenderer extends ConvenienceRenderer {
         this.endFile();
     }
 
-    private emitClass (c: ClassType, className: Name): void {
+    private emitClass(c: ClassType, className: Name): void {
         this.startFile(className);
         let columns: Sourcelike[][] = [];
         const usedTypes = new Set<string>();
@@ -303,12 +303,12 @@ export class GoRenderer extends ConvenienceRenderer {
             docStrings.forEach(doc => columns.push([doc]));
             const tags = this._options.fieldTags
                 .split(",")
-                .map(tag => tag + ":\"" + stringEscape(jsonName) + omitEmpty + "\"")
+                .map(tag => tag + ':"' + stringEscape(jsonName) + omitEmpty + '"')
                 .join(" ");
             columns.push([
                 [name, " "],
                 [goType, " "],
-                ["`", tags, "`"],
+                ["`", tags, "`"]
             ]);
             usedTypes.add(goType.toString());
         });
@@ -317,14 +317,14 @@ export class GoRenderer extends ConvenienceRenderer {
             false,
             usedTypes.has("time.Time") || usedTypes.has("*,time.Time") || usedTypes.has("[],time.Time")
                 ? new Set<string>(["time"])
-                : undefined,
+                : undefined
         );
         this.emitDescription(this.descriptionForType(c));
         this.emitStruct(className, columns);
         this.endFile();
     }
 
-    private emitEnum (e: EnumType, enumName: Name): void {
+    private emitEnum(e: EnumType, enumName: Name): void {
         this.startFile(enumName);
         this.emitPackageDefinitons(false);
         this.emitDescription(this.descriptionForType(e));
@@ -335,7 +335,7 @@ export class GoRenderer extends ConvenienceRenderer {
         this.forEachEnumCase(e, "none", (name, jsonName) => {
             columns.push([
                 [name, " "],
-                [enumName, " = \"", stringEscape(jsonName), "\""],
+                [enumName, ' = "', stringEscape(jsonName), '"']
             ]);
         });
         this.indent(() => this.emitTable(columns));
@@ -343,7 +343,7 @@ export class GoRenderer extends ConvenienceRenderer {
         this.endFile();
     }
 
-    private emitUnion (u: UnionType, unionName: Name): void {
+    private emitUnion(u: UnionType, unionName: Name): void {
         this.startFile(unionName);
         this.emitPackageDefinitons(false);
         const [hasNull, nonNulls] = removeNullFromUnion(u);
@@ -367,20 +367,20 @@ export class GoRenderer extends ConvenienceRenderer {
 
         const makeArgs = (
             primitiveArg: (fieldName: Sourcelike) => Sourcelike,
-            compoundArg: (isClass: boolean, fieldName: Sourcelike) => Sourcelike,
+            compoundArg: (isClass: boolean, fieldName: Sourcelike) => Sourcelike
         ): Sourcelike => {
             const args: Sourcelike = [];
             for (const kind of primitiveValueTypeKinds) {
                 args.push(
                     ifMember(kind, "nil", (_1, fieldName, _2) => primitiveArg(fieldName)),
-                    ", ",
+                    ", "
                 );
             }
 
             for (const kind of compoundTypeKinds) {
                 args.push(
                     ifMember(kind, "false, nil", (t, fieldName, _) => compoundArg(t.kind === "class", fieldName)),
-                    ", ",
+                    ", "
                 );
             }
 
@@ -415,7 +415,7 @@ export class GoRenderer extends ConvenienceRenderer {
                     } else {
                         return ["true, &x.", fn];
                     }
-                },
+                }
             );
             this.emitLine("object, err := unmarshalUnion(data, ", args, ")");
             this.emitBlock("if err != nil", () => {
@@ -432,14 +432,14 @@ export class GoRenderer extends ConvenienceRenderer {
         this.emitFunc(["(x *", unionName, ") MarshalJSON() ([]byte, error)"], () => {
             const args = makeArgs(
                 fn => ["x.", fn],
-                (_, fn) => ["x.", fn, " != nil, x.", fn],
+                (_, fn) => ["x.", fn, " != nil, x.", fn]
             );
             this.emitLine("return marshalUnion(", args, ")");
         });
         this.endFile();
     }
 
-    private emitSingleFileHeaderComments (): void {
+    private emitSingleFileHeaderComments(): void {
         this.emitLineOnce("// This file was generated from JSON Schema using quicktype, do not modify it directly.");
         this.emitLineOnce("// To parse and unparse this JSON data, add this code to your project and do:");
         this.forEachTopLevel("none", (_: Type, name: Name) => {
@@ -450,7 +450,7 @@ export class GoRenderer extends ConvenienceRenderer {
         });
     }
 
-    private emitPackageDefinitons (includeJSONEncodingImport: boolean, imports: Set<string> = new Set<string>()): void {
+    private emitPackageDefinitons(includeJSONEncodingImport: boolean, imports: Set<string> = new Set<string>()): void {
         if (!this._options.justTypes || this._options.justTypesAndPackage) {
             this.ensureBlankLine();
             const packageDeclaration = "package " + this._options.packageName;
@@ -472,7 +472,7 @@ export class GoRenderer extends ConvenienceRenderer {
         this.emitImports(imports);
     }
 
-    private emitImports (imports: Set<string>): void {
+    private emitImports(imports: Set<string>): void {
         const sortedImports = Array.from(imports).sort((a, b) => a.localeCompare(b));
 
         if (sortedImports.length === 0) {
@@ -485,7 +485,7 @@ export class GoRenderer extends ConvenienceRenderer {
         this.ensureBlankLine();
     }
 
-    private emitHelperFunctions (): void {
+    private emitHelperFunctions(): void {
         if (this.haveNamedUnions) {
             this.startFile("JSONSchemaSupport");
             const imports = new Set<string>();
@@ -614,7 +614,7 @@ func marshalUnion(pi *int64, pf *float64, pb *bool, ps *string, haveArray bool, 
         }
     }
 
-    protected emitSourceStructure (): void {
+    protected emitSourceStructure(): void {
         if (
             this._options.multiFileOutput === false &&
             this._options.justTypes === false &&
@@ -630,7 +630,7 @@ func marshalUnion(pi *int64, pf *float64, pb *bool, ps *string, haveArray bool, 
             (t, name) => this.emitTopLevel(t, name),
             t =>
                 !(this._options.justTypes || this._options.justTypesAndPackage) ||
-                this.namedTypeToNameForTopLevel(t) === undefined,
+                this.namedTypeToNameForTopLevel(t) === undefined
         );
         this.forEachObject("leading-and-interposing", (c: ClassType, className: Name) => this.emitClass(c, className));
         this.forEachEnum("leading-and-interposing", (u: EnumType, enumName: Name) => this.emitEnum(u, enumName));
@@ -643,7 +643,7 @@ func marshalUnion(pi *int64, pf *float64, pb *bool, ps *string, haveArray bool, 
         this.emitHelperFunctions();
     }
 
-    private collectAllImports (): Set<string> {
+    private collectAllImports(): Set<string> {
         let imports = new Set<string>();
         this.forEachObject("leading-and-interposing", (c: ClassType, _className: Name) => {
             const classImports = this.collectClassImports(c);
@@ -657,7 +657,7 @@ func marshalUnion(pi *int64, pf *float64, pb *bool, ps *string, haveArray bool, 
         return imports;
     }
 
-    private collectClassImports (c: ClassType): Set<string> {
+    private collectClassImports(c: ClassType): Set<string> {
         const usedTypes = new Set<string>();
         const mapping: Map<string, string> = new Map();
         mapping.set("time.Time", "time");
@@ -680,7 +680,7 @@ func marshalUnion(pi *int64, pf *float64, pb *bool, ps *string, haveArray bool, 
         return imports;
     }
 
-    private collectUnionImports (u: UnionType): Set<string> {
+    private collectUnionImports(u: UnionType): Set<string> {
         const usedTypes = new Set<string>();
         const mapping: Map<string, string> = new Map();
         mapping.set("time.Time", "time");

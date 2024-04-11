@@ -7,15 +7,15 @@ import { type TypeBuilder } from "./TypeBuilder";
 import { type TypeLookerUp, type GraphRewriteBuilder, type BaseGraphRewriteBuilder } from "./GraphRewriting";
 import { UnionBuilder, TypeRefUnionAccumulator } from "./UnionBuilder";
 import { panic, assert, defined } from "./support/Support";
-import { type TypeAttributes} from "./attributes/TypeAttributes";
+import { type TypeAttributes } from "./attributes/TypeAttributes";
 import { combineTypeAttributes, emptyTypeAttributes } from "./attributes/TypeAttributes";
-import { type TypeRef} from "./TypeGraph";
+import { type TypeRef } from "./TypeGraph";
 import { derefTypeRef } from "./TypeGraph";
 
-function getCliqueProperties (
+function getCliqueProperties(
     clique: ObjectType[],
     builder: TypeBuilder,
-    makePropertyType: (types: ReadonlySet<Type>) => TypeRef,
+    makePropertyType: (types: ReadonlySet<Type>) => TypeRef
 ): [ReadonlyMap<string, ClassProperty>, TypeRef | undefined, boolean] {
     let lostTypeAttributes = false;
     let propertyNames = new Set<string>();
@@ -68,10 +68,10 @@ function getCliqueProperties (
     return [unifiedProperties, unifiedAdditionalProperties, lostTypeAttributes];
 }
 
-function countProperties (clique: ObjectType[]): {
-    hasAdditionalProperties: boolean,
-    hasNonAnyAdditionalProperties: boolean,
-    hasProperties: boolean,
+function countProperties(clique: ObjectType[]): {
+    hasAdditionalProperties: boolean;
+    hasNonAnyAdditionalProperties: boolean;
+    hasProperties: boolean;
 } {
     let hasProperties = false;
     let hasAdditionalProperties = false;
@@ -94,25 +94,25 @@ function countProperties (clique: ObjectType[]): {
 }
 
 export class UnifyUnionBuilder extends UnionBuilder<BaseGraphRewriteBuilder, TypeRef[], TypeRef[]> {
-    constructor (
+    public constructor(
         typeBuilder: BaseGraphRewriteBuilder,
         private readonly _makeObjectTypes: boolean,
         private readonly _makeClassesFixed: boolean,
-        private readonly _unifyTypes: (typesToUnify: TypeRef[]) => TypeRef,
+        private readonly _unifyTypes: (typesToUnify: TypeRef[]) => TypeRef
     ) {
         super(typeBuilder);
     }
 
-    protected makeObject (
+    protected makeObject(
         objectRefs: TypeRef[],
         typeAttributes: TypeAttributes,
-        forwardingRef: TypeRef | undefined,
+        forwardingRef: TypeRef | undefined
     ): TypeRef {
         const maybeTypeRef = this.typeBuilder.lookupTypeRefs(objectRefs, forwardingRef);
         if (maybeTypeRef !== undefined) {
             assert(
                 forwardingRef === undefined || maybeTypeRef === forwardingRef,
-                "The forwarding ref must be consumed",
+                "The forwarding ref must be consumed"
             );
             this.typeBuilder.addAttributes(maybeTypeRef, typeAttributes);
             return maybeTypeRef;
@@ -125,19 +125,19 @@ export class UnifyUnionBuilder extends UnionBuilder<BaseGraphRewriteBuilder, Typ
         const objectTypes = objectRefs.map(r => assertIsObject(derefTypeRef(r, this.typeBuilder)));
         const { hasProperties, hasAdditionalProperties, hasNonAnyAdditionalProperties } = countProperties(objectTypes);
 
-        if (!this._makeObjectTypes && (hasNonAnyAdditionalProperties || !hasProperties && hasAdditionalProperties)) {
+        if (!this._makeObjectTypes && (hasNonAnyAdditionalProperties || (!hasProperties && hasAdditionalProperties))) {
             const propertyTypes = new Set<TypeRef>();
             for (const o of objectTypes) {
                 setUnionInto(
                     propertyTypes,
-                    Array.from(o.getProperties().values()).map(cp => cp.typeRef),
+                    Array.from(o.getProperties().values()).map(cp => cp.typeRef)
                 );
             }
 
             const additionalPropertyTypes = new Set(
                 objectTypes
                     .filter(o => o.getAdditionalProperties() !== undefined)
-                    .map(o => defined(o.getAdditionalProperties()).typeRef),
+                    .map(o => defined(o.getAdditionalProperties()).typeRef)
             );
             setUnionInto(propertyTypes, additionalPropertyTypes);
             return this.typeBuilder.getMapType(typeAttributes, this._unifyTypes(Array.from(propertyTypes)));
@@ -148,7 +148,7 @@ export class UnifyUnionBuilder extends UnionBuilder<BaseGraphRewriteBuilder, Typ
                 types => {
                     assert(types.size > 0, "Property has no type");
                     return this._unifyTypes(Array.from(types).map(t => t.typeRef));
-                },
+                }
             );
             if (lostTypeAttributes) {
                 this.typeBuilder.setLostTypeAttributes();
@@ -159,7 +159,7 @@ export class UnifyUnionBuilder extends UnionBuilder<BaseGraphRewriteBuilder, Typ
                     typeAttributes,
                     properties,
                     additionalProperties,
-                    forwardingRef,
+                    forwardingRef
                 );
             } else {
                 assert(additionalProperties === undefined, "We have additional properties but want to make a class");
@@ -167,27 +167,27 @@ export class UnifyUnionBuilder extends UnionBuilder<BaseGraphRewriteBuilder, Typ
                     typeAttributes,
                     this._makeClassesFixed,
                     properties,
-                    forwardingRef,
+                    forwardingRef
                 );
             }
         }
     }
 
-    protected makeArray (
+    protected makeArray(
         arrays: TypeRef[],
         typeAttributes: TypeAttributes,
-        forwardingRef: TypeRef | undefined,
+        forwardingRef: TypeRef | undefined
     ): TypeRef {
         const ref = this.typeBuilder.getArrayType(typeAttributes, this._unifyTypes(arrays), forwardingRef);
         return ref;
     }
 }
 
-export function unionBuilderForUnification<T extends Type> (
+export function unionBuilderForUnification<T extends Type>(
     typeBuilder: GraphRewriteBuilder<T>,
     makeObjectTypes: boolean,
     makeClassesFixed: boolean,
-    conflateNumbers: boolean,
+    conflateNumbers: boolean
 ): UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef[], TypeRef[]> {
     return new UnifyUnionBuilder(typeBuilder, makeObjectTypes, makeClassesFixed, trefs =>
         unifyTypes(
@@ -195,20 +195,20 @@ export function unionBuilderForUnification<T extends Type> (
             emptyTypeAttributes,
             typeBuilder,
             unionBuilderForUnification(typeBuilder, makeObjectTypes, makeClassesFixed, conflateNumbers),
-            conflateNumbers,
-        ),
+            conflateNumbers
+        )
     );
 }
 
 // typeAttributes must not be reconstituted yet.
 // FIXME: The UnionBuilder might end up not being used.
-export function unifyTypes<T extends Type> (
+export function unifyTypes<T extends Type>(
     types: ReadonlySet<Type>,
     typeAttributes: TypeAttributes,
     typeBuilder: GraphRewriteBuilder<T>,
     unionBuilder: UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef[], TypeRef[]>,
     conflateNumbers: boolean,
-    maybeForwardingRef?: TypeRef,
+    maybeForwardingRef?: TypeRef
 ): TypeRef {
     typeAttributes = typeBuilder.reconstituteTypeAttributes(typeAttributes);
     if (types.size === 0) {

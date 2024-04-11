@@ -9,19 +9,15 @@ import {
     type TypeKind,
     type ClassProperty,
     type TransformedStringTypeKind,
-    type PrimitiveStringTypeKind,
+    type PrimitiveStringTypeKind
 } from "../Type";
-import {
-    EnumType,
-    ArrayType,
-    MapType,
-} from "../Type";
+import { EnumType, ArrayType, MapType } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
-import { type Name, type Namer} from "../Naming";
+import { type Name, type Namer } from "../Naming";
 import { funPrefixNamer } from "../Naming";
-import { type Option, type OptionValues} from "../RendererOptions";
+import { type Option, type OptionValues } from "../RendererOptions";
 import { BooleanOption, EnumOption, StringOption, getOptionValues } from "../RendererOptions";
-import { type Sourcelike} from "../Source";
+import { type Sourcelike } from "../Source";
 import { maybeAnnotated, modifySource } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { type ForbiddenWordsInfo } from "../ConvenienceRenderer";
@@ -41,7 +37,7 @@ import {
     allLowerWordStyle,
     allUpperWordStyle,
     camelCase,
-    addPrefixIfNecessary,
+    addPrefixIfNecessary
 } from "../support/Strings";
 import { type RenderContext, type ForEachPosition } from "../Renderer";
 import { type StringTypeMapping } from "../TypeBuilder";
@@ -60,7 +56,7 @@ export const swiftOptions = {
     namedTypePrefix: new StringOption("type-prefix", "Prefix for type names", "PREFIX", "", "secondary"),
     useClasses: new EnumOption("struct-or-class", "Structs or classes", [
         ["struct", false],
-        ["class", true],
+        ["class", true]
     ]),
     mutableProperties: new BooleanOption("mutable-properties", "Use var instead of let for object properties", false),
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
@@ -69,16 +65,16 @@ export const swiftOptions = {
         "Code density",
         [
             ["dense", true],
-            ["normal", false],
+            ["normal", false]
         ],
         "dense",
-        "secondary",
+        "secondary"
     ),
     linux: new BooleanOption("support-linux", "Support Linux", false, "secondary"),
     objcSupport: new BooleanOption(
         "objective-c-support",
         "Objects inherit from NSObject and @objcMembers is added to classes",
-        false,
+        false
     ),
     optionalEnums: new BooleanOption("optional-enums", "If no matching case is found enum value is set to null", false),
     swift5Support: new BooleanOption("swift-5-support", "Renders output in a Swift 5 compatible mode", false),
@@ -86,17 +82,17 @@ export const swiftOptions = {
     multiFileOutput: new BooleanOption(
         "multi-file-output",
         "Renders each top-level object in its own Swift file",
-        false,
+        false
     ),
     accessLevel: new EnumOption(
         "access-level",
         "Access level",
         [
             ["internal", "internal"],
-            ["public", "public"],
+            ["public", "public"]
         ],
         "internal",
-        "secondary",
+        "secondary"
     ),
     protocol: new EnumOption(
         "protocol",
@@ -104,11 +100,11 @@ export const swiftOptions = {
         [
             ["none", { equatable: false, hashable: false }],
             ["equatable", { equatable: true, hashable: false }],
-            ["hashable", { equatable: false, hashable: true }],
+            ["hashable", { equatable: false, hashable: true }]
         ],
         "none",
-        "secondary",
-    ),
+        "secondary"
+    )
 };
 
 // These are all recognized by Swift as ISO8601 date-times:
@@ -125,7 +121,7 @@ export const swiftOptions = {
 const swiftDateTimeRegex = /^\d+-\d+-\d+T\d+:\d+:\d+([zZ]|[+-]\d+(:\d+)?)$/;
 
 class SwiftDateTimeRecognizer extends DefaultDateTimeRecognizer {
-    isDateTime (str: string): boolean {
+    public isDateTime(str: string): boolean {
         return swiftDateTimeRegex.exec(str) !== null;
     }
 }
@@ -138,11 +134,11 @@ export interface SwiftProperty {
 }
 
 export class SwiftTargetLanguage extends TargetLanguage {
-    constructor () {
+    public constructor() {
         super("Swift", ["swift", "swift4"], "swift");
     }
 
-    protected getOptions (): Array<Option<any>> {
+    protected getOptions(): Array<Option<any>> {
         return [
             swiftOptions.justTypes,
             swiftOptions.useClasses,
@@ -160,29 +156,29 @@ export class SwiftTargetLanguage extends TargetLanguage {
             swiftOptions.sendable,
             swiftOptions.swift5Support,
             swiftOptions.multiFileOutput,
-            swiftOptions.mutableProperties,
+            swiftOptions.mutableProperties
         ];
     }
 
-    get stringTypeMapping (): StringTypeMapping {
+    public get stringTypeMapping(): StringTypeMapping {
         const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
         mapping.set("date-time", "date-time");
         return mapping;
     }
 
-    get supportsOptionalClassProperties (): boolean {
+    public get supportsOptionalClassProperties(): boolean {
         return true;
     }
 
-    get supportsUnionsWithBothNumberTypes (): boolean {
+    public get supportsUnionsWithBothNumberTypes(): boolean {
         return true;
     }
 
-    protected makeRenderer (renderContext: RenderContext, untypedOptionValues: { [name: string]: any, }): SwiftRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): SwiftRenderer {
         return new SwiftRenderer(this, renderContext, getOptionValues(swiftOptions, untypedOptionValues));
     }
 
-    get dateTimeRecognizer (): DateTimeRecognizer {
+    public get dateTimeRecognizer(): DateTimeRecognizer {
         return new SwiftDateTimeRecognizer();
     }
 }
@@ -286,24 +282,24 @@ const keywords = [
     "convertDict",
     "convertDouble",
     "jsonString",
-    "jsonData",
+    "jsonData"
 ];
 
-function isPartCharacter (codePoint: number): boolean {
+function isPartCharacter(codePoint: number): boolean {
     return isLetterOrUnderscore(codePoint) || isNumeric(codePoint);
 }
 
-function isStartCharacter (codePoint: number): boolean {
+function isStartCharacter(codePoint: number): boolean {
     return isPartCharacter(codePoint) && !isDigit(codePoint);
 }
 
 const legalizeName = legalizeCharacters(isPartCharacter);
 
-function swiftNameStyle (
+function swiftNameStyle(
     prefix: string,
     isUpper: boolean,
     original: string,
-    acronymsStyle: (s: string) => string = allUpperWordStyle,
+    acronymsStyle: (s: string) => string = allUpperWordStyle
 ): string {
     const words = splitIntoWords(original);
     const combined = combineWords(
@@ -314,12 +310,12 @@ function swiftNameStyle (
         isUpper ? allUpperWordStyle : allLowerWordStyle,
         acronymsStyle,
         "",
-        isStartCharacter,
+        isStartCharacter
     );
     return addPrefixIfNecessary(prefix, combined);
 }
 
-function unicodeEscape (codePoint: number): string {
+function unicodeEscape(codePoint: number): string {
     return "\\u{" + intToHex(codePoint, 0) + "}";
 }
 
@@ -332,15 +328,15 @@ export class SwiftRenderer extends ConvenienceRenderer {
 
     private _needNull = false;
 
-    constructor (
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        private readonly _options: OptionValues<typeof swiftOptions>,
+        private readonly _options: OptionValues<typeof swiftOptions>
     ) {
         super(targetLanguage, renderContext);
     }
 
-    protected forbiddenNamesForGlobalNamespace (): string[] {
+    protected forbiddenNamesForGlobalNamespace(): string[] {
         if (this._options.alamofire) {
             return ["DataRequest", ...keywords];
         }
@@ -348,73 +344,73 @@ export class SwiftRenderer extends ConvenienceRenderer {
         return keywords;
     }
 
-    protected forbiddenForObjectProperties (_c: ClassType, _classNamed: Name): ForbiddenWordsInfo {
+    protected forbiddenForObjectProperties(_c: ClassType, _classNamed: Name): ForbiddenWordsInfo {
         return { names: ["fromURL", "json"], includeGlobalForbidden: true };
     }
 
-    protected forbiddenForEnumCases (_e: EnumType, _enumName: Name): ForbiddenWordsInfo {
+    protected forbiddenForEnumCases(_e: EnumType, _enumName: Name): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: true };
     }
 
-    protected forbiddenForUnionMembers (_u: UnionType, _unionName: Name): ForbiddenWordsInfo {
+    protected forbiddenForUnionMembers(_u: UnionType, _unionName: Name): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: true };
     }
 
-    protected makeNamedTypeNamer (): Namer {
+    protected makeNamedTypeNamer(): Namer {
         return funPrefixNamer("upper", s =>
-            swiftNameStyle(this._options.namedTypePrefix, true, s, acronymStyle(this._options.acronymStyle)),
+            swiftNameStyle(this._options.namedTypePrefix, true, s, acronymStyle(this._options.acronymStyle))
         );
     }
 
-    protected namerForObjectProperty (): Namer {
+    protected namerForObjectProperty(): Namer {
         return this.lowerNamingFunction;
     }
 
-    protected makeUnionMemberNamer (): Namer {
+    protected makeUnionMemberNamer(): Namer {
         return this.lowerNamingFunction;
     }
 
-    protected makeEnumCaseNamer (): Namer {
+    protected makeEnumCaseNamer(): Namer {
         return this.lowerNamingFunction;
     }
 
-    protected isImplicitCycleBreaker (t: Type): boolean {
+    protected isImplicitCycleBreaker(t: Type): boolean {
         const kind = t.kind;
         return kind === "array" || kind === "map";
     }
 
-    protected emitDescriptionBlock (lines: Sourcelike[]): void {
+    protected emitDescriptionBlock(lines: Sourcelike[]): void {
         this.emitCommentLines(lines, { lineStart: "/// " });
     }
 
-    private emitBlock (line: Sourcelike, f: () => void): void {
+    private emitBlock(line: Sourcelike, f: () => void): void {
         this.emitLine(line, " {");
         this.indent(f);
         this.emitLine("}");
     }
 
-    private emitBlockWithAccess (line: Sourcelike, f: () => void): void {
+    private emitBlockWithAccess(line: Sourcelike, f: () => void): void {
         this.emitBlock([this.accessLevel, line], f);
     }
 
-    private justTypesCase (justTypes: Sourcelike, notJustTypes: Sourcelike): Sourcelike {
+    private justTypesCase(justTypes: Sourcelike, notJustTypes: Sourcelike): Sourcelike {
         if (this._options.justTypes) return justTypes;
         else return notJustTypes;
     }
 
-    private get lowerNamingFunction () {
+    private get lowerNamingFunction() {
         return funPrefixNamer("lower", s => swiftNameStyle("", false, s, acronymStyle(this._options.acronymStyle)));
     }
 
-    protected swiftPropertyType (p: ClassProperty): Sourcelike {
-        if (p.isOptional || this._options.optionalEnums && p.type.kind === "enum") {
+    protected swiftPropertyType(p: ClassProperty): Sourcelike {
+        if (p.isOptional || (this._options.optionalEnums && p.type.kind === "enum")) {
             return [this.swiftType(p.type, true, true), "?"];
         } else {
             return this.swiftType(p.type, true);
         }
     }
 
-    protected swiftType (t: Type, withIssues = false, noOptional = false): Sourcelike {
+    protected swiftType(t: Type, withIssues = false, noOptional = false): Sourcelike {
         const optional = noOptional ? "" : "?";
         return matchType<Sourcelike>(
             t,
@@ -423,7 +419,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 return maybeAnnotated(
                     withIssues,
                     anyTypeIssueAnnotation,
-                    this.justTypesCase(["Any", optional], "JSONAny"),
+                    this.justTypesCase(["Any", optional], "JSONAny")
                 );
             },
             _nullType => {
@@ -431,7 +427,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 return maybeAnnotated(
                     withIssues,
                     nullTypeIssueAnnotation,
-                    this.justTypesCase("NSNull", ["JSONNull", optional]),
+                    this.justTypesCase("NSNull", ["JSONNull", optional])
                 );
             },
             _boolType => "Bool",
@@ -453,11 +449,11 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 } else {
                     return panic(`Transformed string type ${transformedStringType.kind} not supported`);
                 }
-            },
+            }
         );
     }
 
-    protected proposedUnionMemberNameForTypeKind (kind: TypeKind): string | null {
+    protected proposedUnionMemberNameForTypeKind(kind: TypeKind): string | null {
         if (kind === "enum") {
             return "enumeration";
         }
@@ -469,7 +465,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
         return null;
     }
 
-    private renderSingleFileHeaderComments (): void {
+    private renderSingleFileHeaderComments(): void {
         this.emitLineOnce("// This file was generated from JSON Schema using quicktype, do not modify it directly.");
         this.emitLineOnce("// To parse the JSON, add this file to your project and do:");
         this.emitLineOnce("//");
@@ -480,7 +476,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                     modifySource(camelCase, topLevelName),
                     " = try ",
                     topLevelName,
-                    "(json)",
+                    "(json)"
                 );
             } else {
                 this.emitLineOnce(
@@ -489,19 +485,19 @@ export class SwiftRenderer extends ConvenienceRenderer {
                     " = ",
                     "try? JSONDecoder().decode(",
                     topLevelName,
-                    ".self, from: jsonData)",
+                    ".self, from: jsonData)"
                 );
             }
         });
     }
 
-    private renderHeader (type: Type, name: Name): void {
+    private renderHeader(type: Type, name: Name): void {
         if (this.leadingComments !== undefined) {
             this.emitComments(this.leadingComments);
         } else if (!this._options.justTypes) {
             if (this._options.multiFileOutput) {
                 this.emitLineOnce(
-                    "// This file was generated from JSON Schema using quicktype, do not modify it directly.",
+                    "// This file was generated from JSON Schema using quicktype, do not modify it directly."
                 );
                 this.emitLineOnce("// To parse the JSON, add this file to your project and do:");
                 this.emitLineOnce("//");
@@ -514,7 +510,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                         " = ",
                         "try? newJSONDecoder().decode(",
                         name,
-                        ".self, from: jsonData)",
+                        ".self, from: jsonData)"
                     );
                 }
             }
@@ -534,10 +530,10 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 this.emitLine("//");
                 this.emitLine("// Hashable or Equatable:");
                 this.emitLine(
-                    "// The compiler will not be able to synthesize the implementation of Hashable or Equatable",
+                    "// The compiler will not be able to synthesize the implementation of Hashable or Equatable"
                 );
                 this.emitLine(
-                    "// for types that require the use of JSONAny, nor will the implementation of Hashable be",
+                    "// for types that require the use of JSONAny, nor will the implementation of Hashable be"
                 );
                 this.emitLine("// synthesized for types that have collections (such as arrays or dictionaries).");
             }
@@ -556,11 +552,11 @@ export class SwiftRenderer extends ConvenienceRenderer {
         this.ensureBlankLine();
     }
 
-    private renderTopLevelAlias (t: Type, name: Name): void {
+    private renderTopLevelAlias(t: Type, name: Name): void {
         this.emitLine(this.accessLevel, "typealias ", name, " = ", this.swiftType(t, true));
     }
 
-    protected getProtocolsArray (kind: "struct" | "class" | "enum"): string[] {
+    protected getProtocolsArray(kind: "struct" | "class" | "enum"): string[] {
         const protocols: string[] = [];
 
         // [Michael Fey (@MrRooni), 2019-4-24] Technically NSObject isn't a "protocol" in this instance, but this felt like the best place to slot in this superclass declaration.
@@ -589,9 +585,9 @@ export class SwiftRenderer extends ConvenienceRenderer {
         return protocols;
     }
 
-    private getProtocolString (
+    private getProtocolString(
         kind: "struct" | "class" | "enum",
-        baseClass: string | undefined = undefined,
+        baseClass: string | undefined = undefined
     ): Sourcelike {
         let protocols = this.getProtocolsArray(kind);
         if (baseClass) {
@@ -601,8 +597,8 @@ export class SwiftRenderer extends ConvenienceRenderer {
         return protocols.length > 0 ? ": " + protocols.join(", ") : "";
     }
 
-    private getEnumPropertyGroups (c: ClassType) {
-        type PropertyGroup = Array<{ label?: string, name: Name, }>;
+    private getEnumPropertyGroups(c: ClassType) {
+        type PropertyGroup = Array<{ label?: string; name: Name }>;
 
         let groups: PropertyGroup[] = [];
         let group: PropertyGroup = [];
@@ -631,13 +627,13 @@ export class SwiftRenderer extends ConvenienceRenderer {
     }
 
     /// Access level with trailing space (e.g. "public "), or empty string
-    private get accessLevel (): string {
+    private get accessLevel(): string {
         return this._options.accessLevel === "internal"
             ? "" // internal is default, so we don't have to emit it
             : this._options.accessLevel + " ";
     }
 
-    private get objcMembersDeclaration (): string {
+    private get objcMembersDeclaration(): string {
         if (this._options.objcSupport) {
             return "@objcMembers ";
         }
@@ -646,7 +642,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
     }
 
     /// startFile takes a file name, appends ".swift" to it and sets it as the current filename.
-    protected startFile (basename: Sourcelike): void {
+    protected startFile(basename: Sourcelike): void {
         if (this._options.multiFileOutput === false) {
             return;
         }
@@ -658,7 +654,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
     }
 
     /// endFile pushes the current file name onto the collection of finished files and then resets the current file name. These finished files are used in index.ts to write the output.
-    protected endFile (): void {
+    protected endFile(): void {
         if (this._options.multiFileOutput === false) {
             return;
         }
@@ -667,18 +663,18 @@ export class SwiftRenderer extends ConvenienceRenderer {
         this._currentFilename = undefined;
     }
 
-    protected propertyLinesDefinition (name: Name, parameter: ClassProperty): Sourcelike {
+    protected propertyLinesDefinition(name: Name, parameter: ClassProperty): Sourcelike {
         const useMutableProperties = this._options.mutableProperties;
         return [
             this.accessLevel,
             useMutableProperties ? "var " : "let ",
             name,
             ": ",
-            this.swiftPropertyType(parameter),
+            this.swiftPropertyType(parameter)
         ];
     }
 
-    private renderClassDefinition (c: ClassType, className: Name): void {
+    private renderClassDefinition(c: ClassType, className: Name): void {
         this.startFile(className);
 
         this.renderHeader(c, className);
@@ -710,10 +706,10 @@ export class SwiftRenderer extends ConvenienceRenderer {
                                 ? "@OptionallyDecodable "
                                 : "",
                             this.accessLevel,
-                            useMutableProperties || this._options.optionalEnums && lastProperty.type.kind === "enum"
+                            useMutableProperties || (this._options.optionalEnums && lastProperty.type.kind === "enum")
                                 ? "var "
-                                : "let ",
-                        ],
+                                : "let "
+                        ]
                     ];
                     lastNames.forEach((n, i) => {
                         if (i > 0) sources.push(", ");
@@ -768,11 +764,11 @@ export class SwiftRenderer extends ConvenienceRenderer {
                         for (const group of groups) {
                             const { name, label } = group[0];
                             if (this._options.explicitCodingKeys && label !== undefined) {
-                                this.emitLine("case ", name, " = \"", label, "\"");
+                                this.emitLine("case ", name, ' = "', label, '"');
                             } else {
                                 const names = arrayIntercalate<Sourcelike>(
                                     ", ",
-                                    group.map(p => p.name),
+                                    group.map(p => p.name)
                                 );
                                 this.emitLine("case ", names);
                             }
@@ -826,7 +822,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
         this.endFile();
     }
 
-    protected initializableProperties (c: ClassType): SwiftProperty[] {
+    protected initializableProperties(c: ClassType): SwiftProperty[] {
         const properties: SwiftProperty[] = [];
         this.forEachClassProperty(c, "none", (name, jsonName, parameter, position) => {
             const property = { name, jsonName, parameter, position };
@@ -835,7 +831,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
         return properties;
     }
 
-    private emitNewEncoderDecoder (): void {
+    private emitNewEncoderDecoder(): void {
         this.emitBlock("func newJSONDecoder() -> JSONDecoder", () => {
             this.emitLine("let decoder = JSONDecoder()");
             if (!this._options.linux) {
@@ -885,7 +881,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         });
     }
 
-    private emitConvenienceInitializersExtension (c: ClassType, className: Name): void {
+    private emitConvenienceInitializersExtension(c: ClassType, className: Name): void {
         const isClass = this._options.useClasses || this.isCycleBreakerType(c);
         const convenience = isClass ? "convenience " : "";
 
@@ -916,10 +912,10 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
                 [convenience, "init(_ json: String, using encoding: String.Encoding = .utf8) throws"],
                 () => {
                     this.emitBlock("guard let data = json.data(using: encoding) else", () => {
-                        this.emitLine("throw NSError(domain: \"JSONDecoding\", code: 0, userInfo: nil)");
+                        this.emitLine('throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)');
                     });
                     this.emitLine("try self.init(data: data)");
-                },
+                }
             );
             this.ensureBlankLine();
             this.emitBlock([convenience, "init(fromURL url: URL) throws"], () => {
@@ -941,7 +937,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         });
     }
 
-    private renderEnumDefinition (e: EnumType, enumName: Name): void {
+    private renderEnumDefinition(e: EnumType, enumName: Name): void {
         this.startFile(enumName);
 
         this.emitLineOnce("import Foundation");
@@ -959,7 +955,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         } else {
             this.emitBlockWithAccess(["enum ", enumName, protocolString], () => {
                 this.forEachEnumCase(e, "none", (name, jsonName) => {
-                    this.emitLine("case ", name, " = \"", stringEscape(jsonName), "\"");
+                    this.emitLine("case ", name, ' = "', stringEscape(jsonName), '"');
                 });
             });
         }
@@ -967,13 +963,13 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         this.endFile();
     }
 
-    private renderUnionDefinition (u: UnionType, unionName: Name): void {
+    private renderUnionDefinition(u: UnionType, unionName: Name): void {
         this.startFile(unionName);
 
         this.emitLineOnce("import Foundation");
         this.ensureBlankLine();
 
-        function sortBy (t: Type): string {
+        function sortBy(t: Type): string {
             const kind = t.kind;
             if (kind === "class") return kind;
             return "_" + kind;
@@ -1040,7 +1036,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         this.endFile();
     }
 
-    private emitTopLevelMapAndArrayConvenienceInitializerExtensions (t: Type, name: Name): void {
+    private emitTopLevelMapAndArrayConvenienceInitializerExtensions(t: Type, name: Name): void {
         let extensionSource: Sourcelike;
 
         if (t instanceof ArrayType) {
@@ -1058,7 +1054,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             this.ensureBlankLine();
             this.emitBlock("init(_ json: String, using encoding: String.Encoding = .utf8) throws", () => {
                 this.emitBlock("guard let data = json.data(using: encoding) else", () => {
-                    this.emitLine("throw NSError(domain: \"JSONDecoding\", code: 0, userInfo: nil)");
+                    this.emitLine('throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)');
                 });
                 this.emitLine("try self.init(data: data)");
             });
@@ -1077,13 +1073,13 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         });
     }
 
-    private emitDecodingError (name: Name): void {
+    private emitDecodingError(name: Name): void {
         this.emitLine(
             "throw DecodingError.typeMismatch(",
             name,
-            ".self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: \"Wrong type for ",
+            '.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Wrong type for ',
             name,
-            "\"))",
+            '"))'
         );
     }
 
@@ -1095,17 +1091,17 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         this.forEachTopLevel(
             "leading",
             (t: Type, name: Name) => this.renderTopLevelAlias(t, name),
-            t => this.namedTypeToNameForTopLevel(t) === undefined,
+            t => this.namedTypeToNameForTopLevel(t) === undefined
         );
 
         if (this._options.convenienceInitializers) {
             this.ensureBlankLine();
             this.forEachTopLevel("leading-and-interposing", (t: Type, name: Name) =>
-                this.emitTopLevelMapAndArrayConvenienceInitializerExtensions(t, name),
+                this.emitTopLevelMapAndArrayConvenienceInitializerExtensions(t, name)
             );
         }
 
-        if (!this._options.justTypes && this._options.convenienceInitializers || this._options.alamofire) {
+        if ((!this._options.justTypes && this._options.convenienceInitializers) || this._options.alamofire) {
             this.ensureBlankLine();
             this.emitMark("Helper functions for creating encoders and decoders", true);
             this.ensureBlankLine();
@@ -1400,7 +1396,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         this.endFile();
     };
 
-    private emitConvenienceMutator (c: ClassType, className: Name) {
+    private emitConvenienceMutator(c: ClassType, className: Name) {
         this.emitLine("func with(");
         this.indent(() => {
             this.forEachClassProperty(c, "none", (name, _, p, position) => {
@@ -1409,7 +1405,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
                     ": ",
                     this.swiftPropertyType(p),
                     "? = nil",
-                    position !== "only" && position !== "last" ? "," : "",
+                    position !== "only" && position !== "last" ? "," : ""
                 );
             });
         });
@@ -1423,7 +1419,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
                         name,
                         " ?? self.",
                         name,
-                        position !== "only" && position !== "last" ? "," : "",
+                        position !== "only" && position !== "last" ? "," : ""
                     );
                 });
             });
@@ -1431,11 +1427,11 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         });
     }
 
-    protected emitMark (line: Sourcelike, horizontalLine = false) {
+    protected emitMark(line: Sourcelike, horizontalLine = false) {
         this.emitLine("// MARK:", horizontalLine ? " - " : " ", line);
     }
 
-    protected emitSourceStructure (): void {
+    protected emitSourceStructure(): void {
         if (this._options.multiFileOutput === false) {
             this.renderSingleFileHeaderComments();
         }
@@ -1444,7 +1440,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             "leading-and-interposing",
             (c: ClassType, className: Name) => this.renderClassDefinition(c, className),
             (e: EnumType, enumName: Name) => this.renderEnumDefinition(e, enumName),
-            (u: UnionType, unionName: Name) => this.renderUnionDefinition(u, unionName),
+            (u: UnionType, unionName: Name) => this.renderUnionDefinition(u, unionName)
         );
 
         if (!this._options.justTypes) {
@@ -1452,7 +1448,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         }
     }
 
-    private emitAlamofireExtension () {
+    private emitAlamofireExtension() {
         this.ensureBlankLine();
         this.emitBlockWithAccess("extension DataRequest", () => {
             this
@@ -1481,11 +1477,11 @@ fileprivate func responseDecodable<T: Decodable>(queue: DispatchQueue? = nil, co
                         name,
                         "(queue: DispatchQueue? = nil, completionHandler: @escaping (DataResponse<",
                         name,
-                        ">) -> Void) -> Self",
+                        ">) -> Void) -> Self"
                     ],
                     () => {
                         this.emitLine("return responseDecodable(queue: queue, completionHandler: completionHandler)");
-                    },
+                    }
                 );
             });
         });

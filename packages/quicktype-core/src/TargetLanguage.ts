@@ -9,26 +9,26 @@ import { type StringTypeMapping } from "./TypeBuilder";
 import { defined } from "./support/Support";
 import { type ConvenienceRenderer } from "./ConvenienceRenderer";
 import { type Type } from "./Type";
-import { type DateTimeRecognizer} from "./DateTime";
+import { type DateTimeRecognizer } from "./DateTime";
 import { DefaultDateTimeRecognizer } from "./DateTime";
 import { type Comment } from "./support/Comments";
 
 export type MultiFileRenderResult = ReadonlyMap<string, SerializedRenderResult>;
 
 export abstract class TargetLanguage {
-    constructor (
-        readonly displayName: string,
-        readonly names: string[],
-        readonly extension: string,
+    public constructor(
+        public readonly displayName: string,
+        public readonly names: string[],
+        public readonly extension: string
     ) {}
 
-    protected abstract getOptions (): Array<Option<any>>;
+    protected abstract getOptions(): Array<Option<any>>;
 
-    get optionDefinitions (): OptionDefinition[] {
+    public get optionDefinitions(): OptionDefinition[] {
         return this.getOptions().map(o => o.definition);
     }
 
-    get cliOptionDefinitions (): { actual: OptionDefinition[], display: OptionDefinition[], } {
+    public get cliOptionDefinitions(): { actual: OptionDefinition[]; display: OptionDefinition[] } {
         let actual: OptionDefinition[] = [];
         let display: OptionDefinition[] = [];
         for (const { cliDefinitions } of this.getOptions()) {
@@ -39,19 +39,19 @@ export abstract class TargetLanguage {
         return { actual, display };
     }
 
-    get name (): string {
+    public get name(): string {
         return defined(this.names[0]);
     }
 
-    protected abstract makeRenderer (renderContext: RenderContext, optionValues: { [name: string]: any, }): Renderer;
+    protected abstract makeRenderer(renderContext: RenderContext, optionValues: { [name: string]: any }): Renderer;
 
-    renderGraphAndSerialize (
+    public renderGraphAndSerialize(
         typeGraph: TypeGraph,
         givenOutputFilename: string,
         alphabetizeProperties: boolean,
         leadingComments: Comment[] | undefined,
-        rendererOptions: { [name: string]: any, },
-        indentation?: string,
+        rendererOptions: { [name: string]: any },
+        indentation?: string
     ): MultiFileRenderResult {
         if (indentation === undefined) {
             indentation = this.defaultIndentation;
@@ -67,31 +67,31 @@ export abstract class TargetLanguage {
         return mapMap(renderResult.sources, s => serializeRenderResult(s, renderResult.names, defined(indentation)));
     }
 
-    protected get defaultIndentation (): string {
+    protected get defaultIndentation(): string {
         return "    ";
     }
 
-    get stringTypeMapping (): StringTypeMapping {
+    public get stringTypeMapping(): StringTypeMapping {
         return new Map();
     }
 
-    get supportsOptionalClassProperties (): boolean {
+    public get supportsOptionalClassProperties(): boolean {
         return false;
     }
 
-    get supportsUnionsWithBothNumberTypes (): boolean {
+    public get supportsUnionsWithBothNumberTypes(): boolean {
         return false;
     }
 
-    get supportsFullObjectType (): boolean {
+    public get supportsFullObjectType(): boolean {
         return false;
     }
 
-    needsTransformerForType (_t: Type): boolean {
+    public needsTransformerForType(_t: Type): boolean {
         return false;
     }
 
-    get dateTimeRecognizer (): DateTimeRecognizer {
+    public get dateTimeRecognizer(): DateTimeRecognizer {
         return new DefaultDateTimeRecognizer();
     }
 }

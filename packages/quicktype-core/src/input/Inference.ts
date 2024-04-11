@@ -3,19 +3,12 @@ import { Tag, valueTag } from "./CompressedJSON";
 import { assertNever, defined, panic, assert } from "../support/Support";
 import { type TypeBuilder } from "../TypeBuilder";
 import { UnionBuilder, UnionAccumulator } from "../UnionBuilder";
-import {
-    type ClassProperty} from "../Type";
-import {
-    transformedStringTypeTargetTypeKindsMap,
-    UnionType,
-    ClassType,
-    MapType,
-    ArrayType,
-} from "../Type";
-import { type TypeAttributes} from "../attributes/TypeAttributes";
+import { type ClassProperty } from "../Type";
+import { transformedStringTypeTargetTypeKindsMap, UnionType, ClassType, MapType, ArrayType } from "../Type";
+import { type TypeAttributes } from "../attributes/TypeAttributes";
 import { emptyTypeAttributes } from "../attributes/TypeAttributes";
 import { StringTypes, inferTransformedStringTypeKindForString } from "../attributes/StringTypes";
-import { type TypeRef} from "../TypeGraph";
+import { type TypeRef } from "../TypeGraph";
 import { derefTypeRef } from "../TypeGraph";
 import { messageError } from "../Messages";
 import { nullableFromUnion } from "../TypeUtils";
@@ -23,9 +16,10 @@ import { nullableFromUnion } from "../TypeUtils";
 // This should be the recursive type
 //   Value[] | NestedValueArray[]
 // but TypeScript doesn't support that.
-export type NestedValueArray = any;
+// FIXME
+export type NestedValueArray = Value[];
 
-function forEachArrayInNestedValueArray (va: NestedValueArray, f: (va: Value[]) => void): void {
+function forEachArrayInNestedValueArray(va: NestedValueArray, f: (va: Value[]) => void): void {
     if (va.length === 0) {
         return;
     }
@@ -39,7 +33,7 @@ function forEachArrayInNestedValueArray (va: NestedValueArray, f: (va: Value[]) 
     }
 }
 
-function forEachValueInNestedValueArray (va: NestedValueArray, f: (v: Value) => void): void {
+function forEachValueInNestedValueArray(va: NestedValueArray, f: (v: Value) => void): void {
     forEachArrayInNestedValueArray(va, a => {
         for (const x of a) {
             f(x);
@@ -48,35 +42,35 @@ function forEachValueInNestedValueArray (va: NestedValueArray, f: (v: Value) => 
 }
 
 class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, NestedValueArray> {
-    constructor (
+    public constructor(
         typeBuilder: TypeBuilder,
         private readonly _typeInference: TypeInference,
-        private readonly _fixed: boolean,
+        private readonly _fixed: boolean
     ) {
         super(typeBuilder);
     }
 
-    protected makeObject (
+    protected makeObject(
         objects: NestedValueArray,
         typeAttributes: TypeAttributes,
-        forwardingRef: TypeRef | undefined,
+        forwardingRef: TypeRef | undefined
     ): TypeRef {
         return this._typeInference.inferClassType(typeAttributes, objects, this._fixed, forwardingRef);
     }
 
-    protected makeArray (
+    protected makeArray(
         arrays: NestedValueArray,
         typeAttributes: TypeAttributes,
-        forwardingRef: TypeRef | undefined,
+        forwardingRef: TypeRef | undefined
     ): TypeRef {
         return this.typeBuilder.getArrayType(
             typeAttributes,
-            this._typeInference.inferType(emptyTypeAttributes, arrays, this._fixed, forwardingRef),
+            this._typeInference.inferType(emptyTypeAttributes, arrays, this._fixed, forwardingRef)
         );
     }
 }
 
-function canBeEnumCase (_s: string): boolean {
+function canBeEnumCase(_s: string): boolean {
     return true;
 }
 
@@ -85,14 +79,14 @@ export type Accumulator = UnionAccumulator<NestedValueArray, NestedValueArray>;
 export class TypeInference {
     private _refIntersections: Array<[TypeRef, string[]]> | undefined;
 
-    constructor (
+    public constructor(
         private readonly _cjson: CompressedJSON<unknown>,
         private readonly _typeBuilder: TypeBuilder,
         private readonly _inferMaps: boolean,
-        private readonly _inferEnums: boolean,
+        private readonly _inferEnums: boolean
     ) {}
 
-    addValuesToAccumulator (valueArray: NestedValueArray, accumulator: Accumulator): void {
+    private addValuesToAccumulator(valueArray: NestedValueArray, accumulator: Accumulator): void {
         forEachValueInNestedValueArray(valueArray, value => {
             const t = valueTag(value);
             switch (t) {
@@ -136,7 +130,7 @@ export class TypeInference {
                     accumulator.addStringType(
                         "string",
                         emptyTypeAttributes,
-                        new StringTypes(new Map(), new Set([kind])),
+                        new StringTypes(new Map(), new Set([kind]))
                     );
                     break;
                 }
@@ -163,17 +157,17 @@ export class TypeInference {
         });
     }
 
-    inferType (
+    public inferType(
         typeAttributes: TypeAttributes,
         valueArray: NestedValueArray,
         fixed: boolean,
-        forwardingRef?: TypeRef,
+        forwardingRef?: TypeRef
     ): TypeRef {
         const accumulator = this.accumulatorForArray(valueArray);
         return this.makeTypeFromAccumulator(accumulator, typeAttributes, fixed, forwardingRef);
     }
 
-    private resolveRef (ref: string, topLevel: TypeRef): TypeRef {
+    private resolveRef(ref: string, topLevel: TypeRef): TypeRef {
         if (!ref.startsWith("#/")) {
             return messageError("InferenceJSONReferenceNotRooted", { reference: ref });
         }
@@ -216,7 +210,7 @@ export class TypeInference {
         return tref;
     }
 
-    inferTopLevelType (typeAttributes: TypeAttributes, valueArray: NestedValueArray, fixed: boolean): TypeRef {
+    public inferTopLevelType(typeAttributes: TypeAttributes, valueArray: NestedValueArray, fixed: boolean): TypeRef {
         assert(this._refIntersections === undefined, "Didn't reset ref intersections - nested invocations?");
         if (this._cjson.handleRefs) {
             this._refIntersections = [];
@@ -235,30 +229,30 @@ export class TypeInference {
         return topLevel;
     }
 
-    accumulatorForArray (valueArray: NestedValueArray): Accumulator {
+    private accumulatorForArray(valueArray: NestedValueArray): Accumulator {
         const accumulator = new UnionAccumulator<NestedValueArray, NestedValueArray>(true);
         this.addValuesToAccumulator(valueArray, accumulator);
         return accumulator;
     }
 
-    makeTypeFromAccumulator (
+    private makeTypeFromAccumulator(
         accumulator: Accumulator,
         typeAttributes: TypeAttributes,
         fixed: boolean,
-        forwardingRef?: TypeRef,
+        forwardingRef?: TypeRef
     ): TypeRef {
         const unionBuilder = new InferenceUnionBuilder(this._typeBuilder, this, fixed);
         return unionBuilder.buildUnion(accumulator, false, typeAttributes, forwardingRef);
     }
 
-    inferClassType (
+    public inferClassType(
         typeAttributes: TypeAttributes,
         objects: NestedValueArray,
         fixed: boolean,
-        forwardingRef?: TypeRef,
+        forwardingRef?: TypeRef
     ): TypeRef {
         const propertyNames: string[] = [];
-        const propertyValues: { [name: string]: Value[], } = {};
+        const propertyValues: { [name: string]: Value[] } = {};
 
         forEachArrayInNestedValueArray(objects, arr => {
             for (let i = 0; i < arr.length; i += 2) {

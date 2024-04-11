@@ -2,84 +2,84 @@ import { type StringMap } from "./support/Support";
 import { type Ref } from "./input/JSONSchemaInput";
 
 export type ErrorProperties =
-    | { kind: "InternalError", properties: { message: string, }, }
+    | { kind: "InternalError"; properties: { message: string } }
 
     // Misc
     | {
-        kind: "MiscJSONParseError",
-        properties: { address: string, description: string, message: string, },
-    }
-    | { kind: "MiscReadError", properties: { fileOrURL: string, message: string, }, }
-    | { kind: "MiscUnicodeHighSurrogateWithoutLowSurrogate", properties: {}, }
-    | { kind: "MiscInvalidMinMaxConstraint", properties: { max: number, min: number, }, }
+          kind: "MiscJSONParseError";
+          properties: { address: string; description: string; message: string };
+      }
+    | { kind: "MiscReadError"; properties: { fileOrURL: string; message: string } }
+    | { kind: "MiscUnicodeHighSurrogateWithoutLowSurrogate"; properties: {} }
+    | { kind: "MiscInvalidMinMaxConstraint"; properties: { max: number; min: number } }
 
     // Inference
-    | { kind: "InferenceJSONReferenceNotRooted", properties: { reference: string, }, }
-    | { kind: "InferenceJSONReferenceToUnion", properties: { reference: string, }, }
-    | { kind: "InferenceJSONReferenceWrongProperty", properties: { reference: string, }, }
-    | { kind: "InferenceJSONReferenceInvalidArrayIndex", properties: { reference: string, }, }
+    | { kind: "InferenceJSONReferenceNotRooted"; properties: { reference: string } }
+    | { kind: "InferenceJSONReferenceToUnion"; properties: { reference: string } }
+    | { kind: "InferenceJSONReferenceWrongProperty"; properties: { reference: string } }
+    | { kind: "InferenceJSONReferenceInvalidArrayIndex"; properties: { reference: string } }
 
     // JSON Schema input
-    | { kind: "SchemaArrayIsInvalidSchema", properties: { ref: Ref, }, }
-    | { kind: "SchemaNullIsInvalidSchema", properties: { ref: Ref, }, }
-    | { kind: "SchemaRefMustBeString", properties: { actual: string, ref: Ref, }, }
-    | { kind: "SchemaAdditionalTypesForbidRequired", properties: { ref: Ref, }, }
-    | { kind: "SchemaNoTypeSpecified", properties: { ref: Ref, }, }
-    | { kind: "SchemaInvalidType", properties: { ref: Ref, type: string, }, }
-    | { kind: "SchemaFalseNotSupported", properties: { ref: Ref, }, }
-    | { kind: "SchemaInvalidJSONSchemaType", properties: { ref: Ref, type: string, }, }
-    | { kind: "SchemaRequiredMustBeStringOrStringArray", properties: { actual: any, ref: Ref, }, }
-    | { kind: "SchemaRequiredElementMustBeString", properties: { element: any, ref: Ref, }, }
-    | { kind: "SchemaTypeMustBeStringOrStringArray", properties: { actual: any, }, }
-    | { kind: "SchemaTypeElementMustBeString", properties: { element: any, ref: Ref, }, }
-    | { kind: "SchemaArrayItemsMustBeStringOrArray", properties: { actual: any, ref: Ref, }, }
-    | { kind: "SchemaIDMustHaveAddress", properties: { id: string, ref: Ref, }, }
-    | { kind: "SchemaWrongAccessorEntryArrayLength", properties: { operation: string, ref: Ref, }, }
+    | { kind: "SchemaArrayIsInvalidSchema"; properties: { ref: Ref } }
+    | { kind: "SchemaNullIsInvalidSchema"; properties: { ref: Ref } }
+    | { kind: "SchemaRefMustBeString"; properties: { actual: string; ref: Ref } }
+    | { kind: "SchemaAdditionalTypesForbidRequired"; properties: { ref: Ref } }
+    | { kind: "SchemaNoTypeSpecified"; properties: { ref: Ref } }
+    | { kind: "SchemaInvalidType"; properties: { ref: Ref; type: string } }
+    | { kind: "SchemaFalseNotSupported"; properties: { ref: Ref } }
+    | { kind: "SchemaInvalidJSONSchemaType"; properties: { ref: Ref; type: string } }
+    | { kind: "SchemaRequiredMustBeStringOrStringArray"; properties: { actual: any; ref: Ref } }
+    | { kind: "SchemaRequiredElementMustBeString"; properties: { element: any; ref: Ref } }
+    | { kind: "SchemaTypeMustBeStringOrStringArray"; properties: { actual: any } }
+    | { kind: "SchemaTypeElementMustBeString"; properties: { element: any; ref: Ref } }
+    | { kind: "SchemaArrayItemsMustBeStringOrArray"; properties: { actual: any; ref: Ref } }
+    | { kind: "SchemaIDMustHaveAddress"; properties: { id: string; ref: Ref } }
+    | { kind: "SchemaWrongAccessorEntryArrayLength"; properties: { operation: string; ref: Ref } }
     | {
-        kind: "SchemaSetOperationCasesIsNotArray",
-        properties: { cases: any, operation: string, ref: Ref, },
-    }
-    | { kind: "SchemaMoreThanOneUnionMemberName", properties: { names: string[], }, }
-    | { kind: "SchemaCannotGetTypesFromBoolean", properties: { ref: string, }, }
-    | { kind: "SchemaCannotIndexArrayWithNonNumber", properties: { actual: string, ref: Ref, }, }
-    | { kind: "SchemaIndexNotInArray", properties: { index: number, ref: Ref, }, }
-    | { kind: "SchemaKeyNotInObject", properties: { key: string, ref: Ref, }, }
-    | { kind: "SchemaFetchError", properties: { address: string, base: Ref, }, }
-    | { kind: "SchemaFetchErrorTopLevel", properties: { address: string, }, }
-    | { kind: "SchemaFetchErrorAdditional", properties: { address: string, }, }
+          kind: "SchemaSetOperationCasesIsNotArray";
+          properties: { cases: any; operation: string; ref: Ref };
+      }
+    | { kind: "SchemaMoreThanOneUnionMemberName"; properties: { names: string[] } }
+    | { kind: "SchemaCannotGetTypesFromBoolean"; properties: { ref: string } }
+    | { kind: "SchemaCannotIndexArrayWithNonNumber"; properties: { actual: string; ref: Ref } }
+    | { kind: "SchemaIndexNotInArray"; properties: { index: number; ref: Ref } }
+    | { kind: "SchemaKeyNotInObject"; properties: { key: string; ref: Ref } }
+    | { kind: "SchemaFetchError"; properties: { address: string; base: Ref } }
+    | { kind: "SchemaFetchErrorTopLevel"; properties: { address: string } }
+    | { kind: "SchemaFetchErrorAdditional"; properties: { address: string } }
 
     // GraphQL input
-    | { kind: "GraphQLNoQueriesDefined", properties: {}, }
+    | { kind: "GraphQLNoQueriesDefined"; properties: {} }
 
     // Driver
-    | { kind: "DriverUnknownSourceLanguage", properties: { lang: string, }, }
-    | { kind: "DriverUnknownOutputLanguage", properties: { lang: string, }, }
-    | { kind: "DriverMoreThanOneInputGiven", properties: { topLevel: string, }, }
-    | { kind: "DriverCannotInferNameForSchema", properties: { uri: string, }, }
-    | { kind: "DriverNoGraphQLQueryGiven", properties: {}, }
-    | { kind: "DriverNoGraphQLSchemaInDir", properties: { dir: string, }, }
-    | { kind: "DriverMoreThanOneGraphQLSchemaInDir", properties: { dir: string, }, }
-    | { kind: "DriverSourceLangMustBeGraphQL", properties: {}, }
-    | { kind: "DriverGraphQLSchemaNeeded", properties: {}, }
-    | { kind: "DriverInputFileDoesNotExist", properties: { filename: string, }, }
-    | { kind: "DriverCannotMixJSONWithOtherSamples", properties: { dir: string, }, }
-    | { kind: "DriverCannotMixNonJSONInputs", properties: { dir: string, }, }
-    | { kind: "DriverUnknownDebugOption", properties: { option: string, }, }
-    | { kind: "DriverNoLanguageOrExtension", properties: {}, }
-    | { kind: "DriverCLIOptionParsingFailed", properties: { message: string, }, }
+    | { kind: "DriverUnknownSourceLanguage"; properties: { lang: string } }
+    | { kind: "DriverUnknownOutputLanguage"; properties: { lang: string } }
+    | { kind: "DriverMoreThanOneInputGiven"; properties: { topLevel: string } }
+    | { kind: "DriverCannotInferNameForSchema"; properties: { uri: string } }
+    | { kind: "DriverNoGraphQLQueryGiven"; properties: {} }
+    | { kind: "DriverNoGraphQLSchemaInDir"; properties: { dir: string } }
+    | { kind: "DriverMoreThanOneGraphQLSchemaInDir"; properties: { dir: string } }
+    | { kind: "DriverSourceLangMustBeGraphQL"; properties: {} }
+    | { kind: "DriverGraphQLSchemaNeeded"; properties: {} }
+    | { kind: "DriverInputFileDoesNotExist"; properties: { filename: string } }
+    | { kind: "DriverCannotMixJSONWithOtherSamples"; properties: { dir: string } }
+    | { kind: "DriverCannotMixNonJSONInputs"; properties: { dir: string } }
+    | { kind: "DriverUnknownDebugOption"; properties: { option: string } }
+    | { kind: "DriverNoLanguageOrExtension"; properties: {} }
+    | { kind: "DriverCLIOptionParsingFailed"; properties: { message: string } }
 
     // IR
-    | { kind: "IRNoForwardDeclarableTypeInCycle", properties: {}, }
-    | { kind: "IRTypeAttributesNotPropagated", properties: { count: number, indexes: number[], }, }
-    | { kind: "IRNoEmptyUnions", properties: {}, }
+    | { kind: "IRNoForwardDeclarableTypeInCycle"; properties: {} }
+    | { kind: "IRTypeAttributesNotPropagated"; properties: { count: number; indexes: number[] } }
+    | { kind: "IRNoEmptyUnions"; properties: {} }
 
     // Rendering
-    | { kind: "RendererUnknownOptionValue", properties: { name: string, value: string, }, }
+    | { kind: "RendererUnknownOptionValue"; properties: { name: string; value: string } }
 
     // TypeScript input
-    | { kind: "TypeScriptCompilerError", properties: { message: string, }, };
+    | { kind: "TypeScriptCompilerError"; properties: { message: string } };
 
-export type ErrorKinds = ErrorProperties extends { kind: infer K, } ? K : never;
+export type ErrorKinds = ErrorProperties extends { kind: infer K } ? K : never;
 
 type ErrorMessages = { readonly [K in ErrorKinds]: string };
 
@@ -106,7 +106,7 @@ const errorMessages: ErrorMessages = {
         "Can't have non-specified required properties but forbidden additionalTypes at ${ref}",
     SchemaNoTypeSpecified: "JSON Schema must specify at least one type at ${ref}",
     SchemaInvalidType: "Invalid type ${type} in JSON Schema at ${ref}",
-    SchemaFalseNotSupported: "Schema \"false\" is not supported at ${ref}",
+    SchemaFalseNotSupported: 'Schema "false" is not supported at ${ref}',
     SchemaInvalidJSONSchemaType: "Value of type ${type} is not valid JSON Schema at ${ref}",
     SchemaRequiredMustBeStringOrStringArray:
         "`required` must be string or array of strings, but is ${actual} at ${ref}",
@@ -161,25 +161,24 @@ const errorMessages: ErrorMessages = {
     RendererUnknownOptionValue: "Unknown value ${value} for option ${name}",
 
     // TypeScript input
-    TypeScriptCompilerError: "TypeScript error: ${message}",
+    TypeScriptCompilerError: "TypeScript error: ${message}"
 };
 
-export type ErrorPropertiesForName<K> = Extract<ErrorProperties, { kind: K, }> extends { properties: infer P, }
-    ? P
-    : never;
+export type ErrorPropertiesForName<K> =
+    Extract<ErrorProperties, { kind: K }> extends { properties: infer P } ? P : never;
 
 export class QuickTypeError extends Error {
-    constructor (
-        readonly errorMessage: string,
-        readonly messageName: string,
-        userMessage: string,
-        readonly properties: StringMap,
+    public constructor(
+        public readonly errorMessage: string,
+        public readonly messageName: string,
+        public userMessage: string,
+        public readonly properties: StringMap
     ) {
         super(userMessage);
     }
 }
 
-export function messageError<N extends ErrorKinds> (kind: N, properties: ErrorPropertiesForName<N>): never {
+export function messageError<N extends ErrorKinds>(kind: N, properties: ErrorPropertiesForName<N>): never {
     const message = errorMessages[kind];
     let userMessage: string = message;
     const propertiesMap = properties as StringMap;
@@ -200,10 +199,10 @@ export function messageError<N extends ErrorKinds> (kind: N, properties: ErrorPr
     throw new QuickTypeError(message, kind, userMessage, propertiesMap);
 }
 
-export function messageAssert<N extends ErrorKinds> (
+export function messageAssert<N extends ErrorKinds>(
     assertion: boolean,
     kind: N,
-    properties: ErrorPropertiesForName<N>,
+    properties: ErrorPropertiesForName<N>
 ): void {
     if (assertion) return;
     return messageError(kind, properties);

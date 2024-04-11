@@ -10,23 +10,23 @@ import { combineTypeAttributes } from "../attributes/TypeAttributes";
 
 // A union needs replacing if it contains more than one string type, one of them being
 // a basic string type.
-function unionNeedsReplacing (u: UnionType): ReadonlySet<Type> | undefined {
+function unionNeedsReplacing(u: UnionType): ReadonlySet<Type> | undefined {
     const stringMembers = u.stringTypeMembers;
     if (stringMembers.size <= 1) return undefined;
     const stringType = u.findMember("string");
     if (stringType === undefined) return undefined;
     assert(
         !stringTypesForType(stringType as PrimitiveType).isRestricted,
-        "We must only flatten strings if we have no restriced strings",
+        "We must only flatten strings if we have no restriced strings"
     );
     return stringMembers;
 }
 
 // Replaces all string types in an enum with the basic string type.
-function replaceUnion (
+function replaceUnion(
     group: ReadonlySet<UnionType>,
     builder: GraphRewriteBuilder<UnionType>,
-    forwardingRef: TypeRef,
+    forwardingRef: TypeRef
 ): TypeRef {
     assert(group.size === 1);
     const u = defined(iterableFirst(group));
@@ -42,7 +42,7 @@ function replaceUnion (
         return builder.getStringType(
             combineTypeAttributes("union", stringAttributes, u.getAttributes()),
             undefined,
-            forwardingRef,
+            forwardingRef
         );
     }
 
@@ -50,10 +50,10 @@ function replaceUnion (
     return builder.getUnionType(u.getAttributes(), new Set(types), forwardingRef);
 }
 
-export function flattenStrings (
+export function flattenStrings(
     graph: TypeGraph,
     stringTypeMapping: StringTypeMapping,
-    debugPrintReconstitution: boolean,
+    debugPrintReconstitution: boolean
 ): TypeGraph {
     const allUnions = graph.allNamedTypesSeparated().unions;
     const unionsToReplace = Array.from(allUnions)
@@ -65,6 +65,6 @@ export function flattenStrings (
         false,
         unionsToReplace,
         debugPrintReconstitution,
-        replaceUnion,
+        replaceUnion
     );
 }

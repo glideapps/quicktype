@@ -21,10 +21,10 @@ export interface TextSource {
 
 export interface NewlineSource {
     // Number of indentation levels (not spaces!) to change
-// the rest of the source by.  Positive numbers mean
-// indent more, negative mean indent less.  The most
-// common value will be zero, for no change in
-// indentation.
+    // the rest of the source by.  Positive numbers mean
+    // indent more, negative mean indent less.  The most
+    // common value will be zero, for no change in
+    // indentation.
     indentationChange: number;
     kind: "newline";
 }
@@ -56,7 +56,7 @@ export interface ModifiedSource {
     source: Source;
 }
 
-export function newline (): NewlineSource {
+export function newline(): NewlineSource {
     // We're returning a new object instead of using a singleton
     // here because `Renderer` will modify `indentationChange`.
     return { kind: "newline", indentationChange: 0 };
@@ -65,11 +65,11 @@ export function newline (): NewlineSource {
 export type Sourcelike = Source | string | Name | SourcelikeArray;
 export type SourcelikeArray = Sourcelike[];
 
-export function sourcelikeToSource (sl: Sourcelike): Source {
+export function sourcelikeToSource(sl: Sourcelike): Source {
     if (sl instanceof Array) {
         return {
             kind: "sequence",
-            sequence: sl.map(sourcelikeToSource),
+            sequence: sl.map(sourcelikeToSource)
         };
     }
 
@@ -83,8 +83,8 @@ export function sourcelikeToSource (sl: Sourcelike): Source {
             kind: "sequence",
             sequence: arrayIntercalate(
                 newline(),
-                lines.map((l: string) => ({ kind: "text", text: l } as Source)),
-            ),
+                lines.map((l: string) => ({ kind: "text", text: l }) as Source)
+            )
         };
     }
 
@@ -95,15 +95,15 @@ export function sourcelikeToSource (sl: Sourcelike): Source {
     return sl;
 }
 
-export function annotated (annotation: AnnotationData, sl: Sourcelike): Source {
+export function annotated(annotation: AnnotationData, sl: Sourcelike): Source {
     return {
         kind: "annotated",
         annotation,
-        source: sourcelikeToSource(sl),
+        source: sourcelikeToSource(sl)
     };
 }
 
-export function maybeAnnotated (doAnnotate: boolean, annotation: AnnotationData, sl: Sourcelike): Sourcelike {
+export function maybeAnnotated(doAnnotate: boolean, annotation: AnnotationData, sl: Sourcelike): Sourcelike {
     if (!doAnnotate) {
         return sl;
     }
@@ -111,11 +111,11 @@ export function maybeAnnotated (doAnnotate: boolean, annotation: AnnotationData,
     return annotated(annotation, sl);
 }
 
-export function modifySource (modifier: (serialized: string) => string, sl: Sourcelike): Sourcelike {
+export function modifySource(modifier: (serialized: string) => string, sl: Sourcelike): Sourcelike {
     return {
         kind: "modified",
         modifier,
-        source: sourcelikeToSource(sl),
+        source: sourcelikeToSource(sl)
     };
 }
 
@@ -140,7 +140,7 @@ export interface SerializedRenderResult {
     lines: string[];
 }
 
-function sourceLineLength (source: Source, names: ReadonlyMap<Name, string>): number {
+function sourceLineLength(source: Source, names: ReadonlyMap<Name, string>): number {
     switch (source.kind) {
         case "text":
             return source.text.length;
@@ -163,10 +163,10 @@ function sourceLineLength (source: Source, names: ReadonlyMap<Name, string>): nu
     }
 }
 
-export function serializeRenderResult (
+export function serializeRenderResult(
     rootSource: Source,
     names: ReadonlyMap<Name, string>,
-    indentation: string,
+    indentation: string
 ): SerializedRenderResult {
     let indent = 0;
     let indentNeeded = 0;
@@ -175,28 +175,28 @@ export function serializeRenderResult (
     let currentLine: string[] = [];
     const annotations: Annotation[] = [];
 
-    function indentIfNeeded (): void {
+    function indentIfNeeded(): void {
         if (indentNeeded === 0) return;
         currentLine.push(repeatString(indentation, indentNeeded));
         indentNeeded = 0;
     }
 
-    function flattenCurrentLine (): string {
+    function flattenCurrentLine(): string {
         const str = currentLine.join("");
         currentLine = [str];
         return str;
     }
 
-    function currentLocation (): Location {
+    function currentLocation(): Location {
         return { line: lines.length, column: flattenCurrentLine().length };
     }
 
-    function finishLine (): void {
+    function finishLine(): void {
         lines.push(flattenCurrentLine());
         currentLine = [];
     }
 
-    function serializeToStringArray (source: Source): void {
+    function serializeToStringArray(source: Source): void {
         switch (source.kind) {
             case "text":
                 indentIfNeeded();
@@ -278,11 +278,11 @@ export interface MultiWord {
     source: Sourcelike;
 }
 
-export function singleWord (...source: Sourcelike[]): MultiWord {
+export function singleWord(...source: Sourcelike[]): MultiWord {
     return { source, needsParens: false };
 }
 
-export function multiWord (separator: Sourcelike, ...words: Sourcelike[]): MultiWord {
+export function multiWord(separator: Sourcelike, ...words: Sourcelike[]): MultiWord {
     assert(words.length > 0, "Zero words is not multiple");
     if (words.length === 1) {
         return singleWord(words[0]);
@@ -297,7 +297,7 @@ export function multiWord (separator: Sourcelike, ...words: Sourcelike[]): Multi
     return { source: items, needsParens: true };
 }
 
-export function parenIfNeeded ({ source, needsParens }: MultiWord): Sourcelike {
+export function parenIfNeeded({ source, needsParens }: MultiWord): Sourcelike {
     if (needsParens) {
         return ["(", source, ")"];
     }

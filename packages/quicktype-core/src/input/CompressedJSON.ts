@@ -60,32 +60,32 @@ export abstract class CompressedJSON<T> {
 
     private _arrays: Value[][] = [];
 
-    constructor(
-        readonly dateTimeRecognizer: DateTimeRecognizer,
-        readonly handleRefs: boolean
+    public constructor(
+        public readonly dateTimeRecognizer: DateTimeRecognizer,
+        public readonly handleRefs: boolean
     ) {}
 
-    abstract parse(input: T): Promise<Value>;
+    public abstract parse(input: T): Promise<Value>;
 
-    parseSync(_input: T): Value {
+    public parseSync(_input: T): Value {
         return panic("parseSync not implemented in CompressedJSON");
     }
 
-    getStringForValue(v: Value): string {
+    public getStringForValue(v: Value): string {
         const tag = valueTag(v);
         assert(tag === Tag.InternedString || tag === Tag.TransformedString);
         return this._strings[getIndex(v, tag)];
     }
 
-    getObjectForValue = (v: Value): Value[] => {
+    public getObjectForValue = (v: Value): Value[] => {
         return this._objects[getIndex(v, Tag.Object)];
     };
 
-    getArrayForValue = (v: Value): Value[] => {
+    public getArrayForValue = (v: Value): Value[] => {
         return this._arrays[getIndex(v, Tag.Array)];
     };
 
-    getStringFormatTypeKind(v: Value): TransformedStringTypeKind {
+    public getStringFormatTypeKind(v: Value): TransformedStringTypeKind {
         const kind = this._strings[getIndex(v, Tag.StringFormat)];
         if (!isPrimitiveStringTypeKind(kind) || kind === "string") {
             return panic("Not a transformed string type kind");
@@ -252,11 +252,11 @@ export abstract class CompressedJSON<T> {
         this._ctx = this._contextStack.pop();
     }
 
-    equals(other: any): boolean {
+    public equals(other: any): boolean {
         return this === other;
     }
 
-    hashCode(): number {
+    public hashCode(): number {
         let hashAccumulator = hashCodeInit;
         for (const s of this._strings) {
             hashAccumulator = addHashCode(hashAccumulator, hashString(s));
@@ -284,11 +284,11 @@ export abstract class CompressedJSON<T> {
 }
 
 export class CompressedJSONFromString extends CompressedJSON<string> {
-    async parse(input: string): Promise<Value> {
+    public async parse(input: string): Promise<Value> {
         return this.parseSync(input);
     }
 
-    parseSync(input: string): Value {
+    public parseSync(input: string): Value {
         const json = JSON.parse(input);
         this.process(json);
         return this.finish();

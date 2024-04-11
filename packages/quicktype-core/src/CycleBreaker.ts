@@ -1,6 +1,9 @@
 import { assert, panic } from "./support/Support";
 
-export function breakCycles<T> (outEdges: number[][], chooseBreaker: (cycle: number[]) => [number, T]): Array<[number, T]> {
+export function breakCycles<T>(
+    outEdges: number[][],
+    chooseBreaker: (cycle: number[]) => [number, T]
+): Array<[number, T]> {
     const numNodes = outEdges.length;
     const inEdges: number[][] = [];
     const inDegree: number[] = [];
@@ -28,7 +31,7 @@ export function breakCycles<T> (outEdges: number[][], chooseBreaker: (cycle: num
         }
     }
 
-    function removeNode (node: number): void {
+    function removeNode(node: number): void {
         for (const n of outEdges[node]) {
             assert(inDegree[n] > 0);
             inDegree[n] -= 1;
@@ -51,7 +54,7 @@ export function breakCycles<T> (outEdges: number[][], chooseBreaker: (cycle: num
     for (;;) {
         const i = workList.pop();
         if (i !== undefined) {
-            if (done[i] || inDegree[i] === 0 && outDegree[i] === 0) {
+            if (done[i] || (inDegree[i] === 0 && outDegree[i] === 0)) {
                 done[i] = true;
                 continue;
             }

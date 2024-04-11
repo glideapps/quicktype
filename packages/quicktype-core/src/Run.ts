@@ -8,7 +8,7 @@ import { combineClasses } from "./rewrites/CombineClasses";
 import { inferMaps } from "./rewrites/InferMaps";
 import { type StringTypeMapping } from "./TypeBuilder";
 import { TypeBuilder } from "./TypeBuilder";
-import { type TypeGraph} from "./TypeGraph";
+import { type TypeGraph } from "./TypeGraph";
 import { noneToAny, optionalToNullable, removeIndirectionIntersections } from "./TypeGraph";
 import { initTypeNames } from "./attributes/TypeNames";
 import { gatherNames } from "./GatherNames";
@@ -23,7 +23,7 @@ import { makeTransformations } from "./MakeTransformations";
 import { type TransformedStringTypeKind } from "./Type";
 import { type Comment } from "./support/Comments";
 
-export function getTargetLanguage (nameOrInstance: string | TargetLanguage): TargetLanguage {
+export function getTargetLanguage(nameOrInstance: string | TargetLanguage): TargetLanguage {
     if (typeof nameOrInstance === "object") {
         return nameOrInstance;
     }
@@ -37,7 +37,7 @@ export function getTargetLanguage (nameOrInstance: string | TargetLanguage): Tar
 }
 
 export interface RendererOptions {
-    [name: string]: string | boolean; 
+    [name: string]: string | boolean;
 }
 
 export interface InferenceFlag {
@@ -54,14 +54,14 @@ export const inferenceFlagsObject = {
         description: "Detect maps",
         negationDescription: "Don't infer maps, always use classes",
         explanation: "Infer maps when object keys look like map keys.",
-        order: 1,
+        order: 1
     },
     /** Whether to infer enum types from JSON data */
     inferEnums: {
         description: "Detect enums",
         negationDescription: "Don't infer enums, always use strings",
         explanation: "If string values occur within a relatively small domain,\ninfer them as enum values.",
-        order: 2,
+        order: 2
     },
     /** Whether to convert UUID strings to UUID objects */
     inferUuids: {
@@ -69,7 +69,7 @@ export const inferenceFlagsObject = {
         negationDescription: "Don't convert UUIDs to UUID objects",
         explanation: "Detect UUIDs like '123e4567-e89b-12d3-a456-426655440000' (partial support).",
         stringType: "uuid" as TransformedStringTypeKind,
-        order: 3,
+        order: 3
     },
     /** Whether to assume that JSON strings that look like dates are dates */
     inferDateTimes: {
@@ -77,24 +77,24 @@ export const inferenceFlagsObject = {
         negationDescription: "Don't infer dates or times",
         explanation: "Infer dates from strings (partial support).",
         stringType: "date-time" as TransformedStringTypeKind,
-        order: 4,
+        order: 4
     },
     /** Whether to convert stringified integers to integers */
     inferIntegerStrings: {
         description: "Detect integers in strings",
         negationDescription: "Don't convert stringified integers to integers",
-        explanation: "Automatically convert stringified integers to integers.\nFor example, \"1\" is converted to 1.",
+        explanation: 'Automatically convert stringified integers to integers.\nFor example, "1" is converted to 1.',
         stringType: "integer-string" as TransformedStringTypeKind,
-        order: 5,
+        order: 5
     },
     /** Whether to convert stringified booleans to boolean values */
     inferBooleanStrings: {
         description: "Detect booleans in strings",
         negationDescription: "Don't convert stringified booleans to booleans",
         explanation:
-            "Automatically convert stringified booleans to booleans.\nFor example, \"true\" is converted to true.",
+            'Automatically convert stringified booleans to booleans.\nFor example, "true" is converted to true.',
         stringType: "bool-string" as TransformedStringTypeKind,
-        order: 6,
+        order: 6
     },
     /** Combine similar classes.  This doesn't apply to classes from a schema, only from inference. */
     combineClasses: {
@@ -102,7 +102,7 @@ export const inferenceFlagsObject = {
         negationDescription: "Don't combine similar classes",
         explanation:
             "Combine classes with significantly overlapping properties,\ntreating contingent properties as nullable.",
-        order: 7,
+        order: 7
     },
     /** Whether to treat $ref as references within JSON */
     ignoreJsonRefs: {
@@ -110,8 +110,8 @@ export const inferenceFlagsObject = {
         negationDescription: "Treat $ref as a reference in JSON",
         explanation:
             "Like in JSON Schema, allow objects like\n'{ $ref: \"#/foo/bar\" }' to refer\nto another part of the input.",
-        order: 8,
-    },
+        order: 8
+    }
 };
 export type InferenceFlagName = keyof typeof inferenceFlagsObject;
 export const inferenceFlagNames = Object.getOwnPropertyNames(inferenceFlagsObject) as InferenceFlagName[];
@@ -194,7 +194,7 @@ const defaultOptions: NonInferenceOptions = {
     debugPrintGatherNames: false,
     debugPrintTransformations: false,
     debugPrintTimes: false,
-    debugPrintSchemaResolving: false,
+    debugPrintSchemaResolving: false
 };
 
 export interface RunContext {
@@ -214,7 +214,7 @@ interface GraphInputs {
     typeBuilder: TypeBuilder;
 }
 
-function makeDefaultInferenceFlags (): InferenceFlags {
+function makeDefaultInferenceFlags(): InferenceFlags {
     const flags = {} as InferenceFlags;
     for (const flag of inferenceFlagNames) {
         flags[flag] = true;
@@ -228,7 +228,7 @@ export const defaultInferenceFlags = makeDefaultInferenceFlags();
 class Run implements RunContext {
     private readonly _options: Options;
 
-    constructor (options: Partial<Options>) {
+    public constructor(options: Partial<Options>) {
         // We must not overwrite defaults with undefined values, which
         // we sometimes get.
         this._options = Object.assign({}, defaultOptions, defaultInferenceFlags);
@@ -240,7 +240,7 @@ class Run implements RunContext {
         }
     }
 
-    get stringTypeMapping (): StringTypeMapping {
+    public get stringTypeMapping(): StringTypeMapping {
         const targetLanguage = getTargetLanguage(this._options.lang);
         const mapping = new Map(targetLanguage.stringTypeMapping);
         for (const flag of inferenceFlagNames) {
@@ -253,19 +253,19 @@ class Run implements RunContext {
         return mapping;
     }
 
-    get debugPrintReconstitution (): boolean {
+    public get debugPrintReconstitution(): boolean {
         return this._options.debugPrintReconstitution === true;
     }
 
-    get debugPrintTransformations (): boolean {
+    public get debugPrintTransformations(): boolean {
         return this._options.debugPrintTransformations;
     }
 
-    get debugPrintSchemaResolving (): boolean {
+    public get debugPrintSchemaResolving(): boolean {
         return this._options.debugPrintSchemaResolving;
     }
 
-    async timeSync<T>(name: string, f: () => Promise<T>): Promise<T> {
+    public async timeSync<T>(name: string, f: () => Promise<T>): Promise<T> {
         const start = Date.now();
         const result = await f();
         const end = Date.now();
@@ -276,7 +276,7 @@ class Run implements RunContext {
         return result;
     }
 
-    time<T>(name: string, f: () => T): T {
+    public time<T>(name: string, f: () => T): T {
         const start = Date.now();
         const result = f();
         const end = Date.now();
@@ -287,7 +287,7 @@ class Run implements RunContext {
         return result;
     }
 
-    private makeGraphInputs (): GraphInputs {
+    private makeGraphInputs(): GraphInputs {
         const targetLanguage = getTargetLanguage(this._options.lang);
         const stringTypeMapping = this.stringTypeMapping;
         const conflateNumbers = !targetLanguage.supportsUnionsWithBothNumberTypes;
@@ -297,13 +297,13 @@ class Run implements RunContext {
             this._options.alphabetizeProperties,
             this._options.allPropertiesOptional,
             this._options.checkProvenance,
-            false,
+            false
         );
 
         return { targetLanguage, stringTypeMapping, conflateNumbers, typeBuilder };
     }
 
-    private async makeGraph (allInputs: InputData): Promise<TypeGraph> {
+    private async makeGraph(allInputs: InputData): Promise<TypeGraph> {
         const graphInputs = this.makeGraphInputs();
 
         await this.timeSync(
@@ -314,14 +314,14 @@ class Run implements RunContext {
                     graphInputs.typeBuilder,
                     this._options.inferMaps,
                     this._options.inferEnums,
-                    this._options.fixedTopLevels,
-                ),
+                    this._options.fixedTopLevels
+                )
         );
 
         return this.processGraph(allInputs, graphInputs);
     }
 
-    private makeGraphSync (allInputs: InputData): TypeGraph {
+    private makeGraphSync(allInputs: InputData): TypeGraph {
         const graphInputs = this.makeGraphInputs();
 
         this.time("read input", () =>
@@ -330,14 +330,14 @@ class Run implements RunContext {
                 graphInputs.typeBuilder,
                 this._options.inferMaps,
                 this._options.inferEnums,
-                this._options.fixedTopLevels,
-            ),
+                this._options.fixedTopLevels
+            )
         );
 
         return this.processGraph(allInputs, graphInputs);
     }
 
-    private processGraph (allInputs: InputData, graphInputs: GraphInputs): TypeGraph {
+    private processGraph(allInputs: InputData, graphInputs: GraphInputs): TypeGraph {
         const { targetLanguage, stringTypeMapping, conflateNumbers, typeBuilder } = graphInputs;
 
         let graph = typeBuilder.finish();
@@ -351,7 +351,7 @@ class Run implements RunContext {
         if (typeBuilder.didAddForwardingIntersection || !this._options.ignoreJsonRefs) {
             this.time(
                 "remove indirection intersections",
-                () => graph = removeIndirectionIntersections(graph, stringTypeMapping, debugPrintReconstitution),
+                () => (graph = removeIndirectionIntersections(graph, stringTypeMapping, debugPrintReconstitution))
             );
         }
 
@@ -364,11 +364,11 @@ class Run implements RunContext {
                     this.time(
                         "resolve intersections",
                         () =>
-                            [graph, intersectionsDone] = resolveIntersections(
+                            ([graph, intersectionsDone] = resolveIntersections(
                                 graph,
                                 stringTypeMapping,
-                                debugPrintReconstitution,
-                            ),
+                                debugPrintReconstitution
+                            ))
                     );
                 }
 
@@ -376,13 +376,13 @@ class Run implements RunContext {
                     this.time(
                         "flatten unions",
                         () =>
-                            [graph, unionsDone] = flattenUnions(
+                            ([graph, unionsDone] = flattenUnions(
                                 graph,
                                 stringTypeMapping,
                                 conflateNumbers,
                                 true,
-                                debugPrintReconstitution,
-                            ),
+                                debugPrintReconstitution
+                            ))
                     );
                 }
 
@@ -395,31 +395,31 @@ class Run implements RunContext {
         this.time(
             "replace object type",
             () =>
-                graph = replaceObjectType(
+                (graph = replaceObjectType(
                     graph,
                     stringTypeMapping,
                     conflateNumbers,
                     targetLanguage.supportsFullObjectType,
-                    debugPrintReconstitution,
-                ),
+                    debugPrintReconstitution
+                ))
         );
         do {
             this.time(
                 "flatten unions",
                 () =>
-                    [graph, unionsDone] = flattenUnions(
+                    ([graph, unionsDone] = flattenUnions(
                         graph,
                         stringTypeMapping,
                         conflateNumbers,
                         false,
-                        debugPrintReconstitution,
-                    ),
+                        debugPrintReconstitution
+                    ))
             );
         } while (!unionsDone);
 
         if (this._options.combineClasses) {
             const combinedGraph = this.time("combine classes", () =>
-                combineClasses(this, graph, this._options.alphabetizeProperties, true, false, debugPrintReconstitution),
+                combineClasses(this, graph, this._options.alphabetizeProperties, true, false, debugPrintReconstitution)
             );
             if (combinedGraph === graph) {
                 graph = combinedGraph;
@@ -427,14 +427,14 @@ class Run implements RunContext {
                 this.time(
                     "combine classes cleanup",
                     () =>
-                        graph = combineClasses(
+                        (graph = combineClasses(
                             this,
                             combinedGraph,
                             this._options.alphabetizeProperties,
                             false,
                             true,
-                            debugPrintReconstitution,
-                        ),
+                            debugPrintReconstitution
+                        ))
                 );
             }
         }
@@ -442,7 +442,7 @@ class Run implements RunContext {
         if (this._options.inferMaps) {
             for (;;) {
                 const newGraph = this.time("infer maps", () =>
-                    inferMaps(graph, stringTypeMapping, true, debugPrintReconstitution),
+                    inferMaps(graph, stringTypeMapping, true, debugPrintReconstitution)
                 );
                 if (newGraph === graph) {
                     break;
@@ -453,49 +453,49 @@ class Run implements RunContext {
         }
 
         const enumInference = allInputs.needSchemaProcessing ? "all" : this._options.inferEnums ? "infer" : "none";
-        this.time("expand strings", () => graph = expandStrings(this, graph, enumInference));
+        this.time("expand strings", () => (graph = expandStrings(this, graph, enumInference)));
         this.time(
             "flatten unions",
             () =>
-                [graph, unionsDone] = flattenUnions(
+                ([graph, unionsDone] = flattenUnions(
                     graph,
                     stringTypeMapping,
                     conflateNumbers,
                     false,
-                    debugPrintReconstitution,
-                ),
+                    debugPrintReconstitution
+                ))
         );
         assert(unionsDone, "We should only have to flatten unions once after expanding strings");
 
         if (allInputs.needSchemaProcessing) {
             this.time(
                 "flatten strings",
-                () => graph = flattenStrings(graph, stringTypeMapping, debugPrintReconstitution),
+                () => (graph = flattenStrings(graph, stringTypeMapping, debugPrintReconstitution))
             );
         }
 
-        this.time("none to any", () => graph = noneToAny(graph, stringTypeMapping, debugPrintReconstitution));
+        this.time("none to any", () => (graph = noneToAny(graph, stringTypeMapping, debugPrintReconstitution)));
         if (!targetLanguage.supportsOptionalClassProperties) {
             this.time(
                 "optional to nullable",
-                () => graph = optionalToNullable(graph, stringTypeMapping, debugPrintReconstitution),
+                () => (graph = optionalToNullable(graph, stringTypeMapping, debugPrintReconstitution))
             );
         }
 
-        this.time("fixed point", () => graph = graph.rewriteFixedPoint(false, debugPrintReconstitution));
+        this.time("fixed point", () => (graph = graph.rewriteFixedPoint(false, debugPrintReconstitution)));
 
-        this.time("make transformations", () => graph = makeTransformations(this, graph, targetLanguage));
+        this.time("make transformations", () => (graph = makeTransformations(this, graph, targetLanguage)));
 
         this.time(
             "flatten unions",
             () =>
-                [graph, unionsDone] = flattenUnions(
+                ([graph, unionsDone] = flattenUnions(
                     graph,
                     stringTypeMapping,
                     conflateNumbers,
                     false,
-                    debugPrintReconstitution,
-                ),
+                    debugPrintReconstitution
+                ))
         );
         assert(unionsDone, "We should only have to flatten unions once after making transformations");
 
@@ -508,7 +508,7 @@ class Run implements RunContext {
         // is different from the one we started out with.
         this.time(
             "GC",
-            () => graph = graph.garbageCollect(this._options.alphabetizeProperties, debugPrintReconstitution),
+            () => (graph = graph.garbageCollect(this._options.alphabetizeProperties, debugPrintReconstitution))
         );
 
         if (this._options.debugPrintGraph) {
@@ -516,7 +516,7 @@ class Run implements RunContext {
         }
 
         this.time("gather names", () =>
-            gatherNames(graph, !allInputs.needSchemaProcessing, this._options.debugPrintGatherNames),
+            gatherNames(graph, !allInputs.needSchemaProcessing, this._options.debugPrintGatherNames)
         );
         if (this._options.debugPrintGraph) {
             graph.printGraph();
@@ -525,14 +525,13 @@ class Run implements RunContext {
         return graph;
     }
 
-    private makeSimpleTextResult (lines: string[]): MultiFileRenderResult {
-        return new Map([[this._options.outputFilename, { lines, annotations: [] }]] as Array<[
-            string,
-            SerializedRenderResult
-        ]>);
+    private makeSimpleTextResult(lines: string[]): MultiFileRenderResult {
+        return new Map([[this._options.outputFilename, { lines, annotations: [] }]] as Array<
+            [string, SerializedRenderResult]
+        >);
     }
 
-    private preRun (): MultiFileRenderResult | [InputData, TargetLanguage] {
+    private preRun(): MultiFileRenderResult | [InputData, TargetLanguage] {
         // FIXME: This makes quicktype not quite reentrant
         initTypeNames();
 
@@ -551,7 +550,7 @@ class Run implements RunContext {
         return [inputData, targetLanguage];
     }
 
-    async run (): Promise<MultiFileRenderResult> {
+    public async run(): Promise<MultiFileRenderResult> {
         const preRunResult = this.preRun();
         if (!Array.isArray(preRunResult)) {
             return preRunResult;
@@ -564,7 +563,7 @@ class Run implements RunContext {
         return this.renderGraph(targetLanguage, graph);
     }
 
-    runSync (): MultiFileRenderResult {
+    public runSync(): MultiFileRenderResult {
         const preRunResult = this.preRun();
         if (!Array.isArray(preRunResult)) {
             return preRunResult;
@@ -577,7 +576,7 @@ class Run implements RunContext {
         return this.renderGraph(targetLanguage, graph);
     }
 
-    private renderGraph (targetLanguage: TargetLanguage, graph: TypeGraph): MultiFileRenderResult {
+    private renderGraph(targetLanguage: TargetLanguage, graph: TypeGraph): MultiFileRenderResult {
         if (this._options.noRender) {
             return this.makeSimpleTextResult(["Done.", ""]);
         }
@@ -588,7 +587,7 @@ class Run implements RunContext {
             this._options.alphabetizeProperties,
             this._options.leadingComments,
             this._options.rendererOptions,
-            this._options.indentation,
+            this._options.indentation
         );
     }
 }
@@ -599,19 +598,19 @@ class Run implements RunContext {
  * @param options Partial options.  For options that are not defined, the
  * defaults will be used.
  */
-export async function quicktypeMultiFile (options: Partial<Options>): Promise<MultiFileRenderResult> {
+export async function quicktypeMultiFile(options: Partial<Options>): Promise<MultiFileRenderResult> {
     return await new Run(options).run();
 }
 
-export function quicktypeMultiFileSync (options: Partial<Options>): MultiFileRenderResult {
+export function quicktypeMultiFileSync(options: Partial<Options>): MultiFileRenderResult {
     return new Run(options).runSync();
 }
 
-function offsetLocation (loc: Location, lineOffset: number): Location {
+function offsetLocation(loc: Location, lineOffset: number): Location {
     return { line: loc.line + lineOffset, column: loc.column };
 }
 
-function offsetSpan (span: Span, lineOffset: number): Span {
+function offsetSpan(span: Span, lineOffset: number): Span {
     return { start: offsetLocation(span.start, lineOffset), end: offsetLocation(span.end, lineOffset) };
 }
 
@@ -620,7 +619,7 @@ function offsetSpan (span: Span, lineOffset: number): Span {
  * are concatenated and prefixed with a `//`-style comment giving the
  * filename.
  */
-export function combineRenderResults (result: MultiFileRenderResult): SerializedRenderResult {
+export function combineRenderResults(result: MultiFileRenderResult): SerializedRenderResult {
     if (result.size <= 1) {
         const first = mapFirst(result);
         if (first === undefined) {
@@ -636,7 +635,7 @@ export function combineRenderResults (result: MultiFileRenderResult): Serialized
         const offset = lines.length + 2;
         lines = lines.concat([`// ${filename}`, ""], srr.lines);
         annotations = annotations.concat(
-            srr.annotations.map(ann => ({ annotation: ann.annotation, span: offsetSpan(ann.span, offset) })),
+            srr.annotations.map(ann => ({ annotation: ann.annotation, span: offsetSpan(ann.span, offset) }))
         );
     }
 
@@ -651,7 +650,7 @@ export function combineRenderResults (result: MultiFileRenderResult): Serialized
  * @param options Partial options.  For options that are not defined, the
  * defaults will be used.
  */
-export async function quicktype (options: Partial<Options>): Promise<SerializedRenderResult> {
+export async function quicktype(options: Partial<Options>): Promise<SerializedRenderResult> {
     const result = await quicktypeMultiFile(options);
     return combineRenderResults(result);
 }

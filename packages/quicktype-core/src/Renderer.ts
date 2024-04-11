@@ -1,11 +1,11 @@
 import { iterableEnumerate } from "collection-utils";
 
 import { type TypeGraph } from "./TypeGraph";
-import { type Name, type Namespace} from "./Naming";
+import { type Name, type Namespace } from "./Naming";
 import { assignNames } from "./Naming";
-import { type Source, type Sourcelike, type NewlineSource} from "./Source";
+import { type Source, type Sourcelike, type NewlineSource } from "./Source";
 import { annotated, sourcelikeToSource, newline } from "./Source";
-import { type AnnotationData} from "./Annotation";
+import { type AnnotationData } from "./Annotation";
 import { IssueAnnotationData } from "./Annotation";
 import { assert, panic } from "./support/Support";
 import { type TargetLanguage } from "./TargetLanguage";
@@ -19,7 +19,7 @@ export interface RenderResult {
 export type BlankLinePosition = "none" | "interposing" | "leading" | "leading-and-interposing";
 export type BlankLineConfig = BlankLinePosition | [BlankLinePosition, number];
 
-function getBlankLineConfig (cfg: BlankLineConfig): { count: number, position: BlankLinePosition, } {
+function getBlankLineConfig(cfg: BlankLineConfig): { count: number; position: BlankLinePosition } {
     if (Array.isArray(cfg)) {
         return { position: cfg[0], count: cfg[1] };
     }
@@ -27,7 +27,7 @@ function getBlankLineConfig (cfg: BlankLineConfig): { count: number, position: B
     return { position: cfg, count: 1 };
 }
 
-function lineIndentation (line: string): { indent: number, text: string | null, } {
+function lineIndentation(line: string): { indent: number; text: string | null } {
     const len = line.length;
     let indent = 0;
     for (let i = 0; i < len; i++) {
@@ -54,48 +54,44 @@ export type ForEachPosition = "first" | "last" | "middle" | "only";
 class EmitContext {
     private _lastNewline?: NewlineSource;
 
-    // @ts-expect-error: Initialized in startEmit, which is called from the constructor
     private readonly _emitted: Sourcelike[];
 
-    // @ts-expect-error: Initialized in startEmit, which is called from the constructor
     private readonly _currentEmitTarget: Sourcelike[];
 
-    // @ts-expect-error: Initialized in startEmit, which is called from the constructor
     private _numBlankLinesNeeded: number;
 
-    // @ts-expect-error: Initialized in startEmit, which is called from the constructor
     private _preventBlankLine: boolean;
 
-    constructor () {
+    public constructor() {
         this._currentEmitTarget = this._emitted = [];
         this._numBlankLinesNeeded = 0;
         this._preventBlankLine = true; // no blank lines at start of file
     }
 
-    get isEmpty (): boolean {
+    public get isEmpty(): boolean {
         return this._emitted.length === 0;
     }
 
-    get isNested (): boolean {
+    public get isNested(): boolean {
         return this._emitted !== this._currentEmitTarget;
     }
 
-    get source (): Sourcelike[] {
+    public get source(): Sourcelike[] {
         return this._emitted;
     }
 
-    private pushItem (item: Sourcelike): void {
+    public pushItem(item: Sourcelike): void {
         this._currentEmitTarget.push(item);
         this._preventBlankLine = false;
     }
 
-    emitNewline (): void {
+    public emitNewline(): void {
         const nl = newline();
         this.pushItem(nl);
         this._lastNewline = nl;
     }
 
-    emitItem (item: Sourcelike): void {
+    public emitItem(item: Sourcelike): void {
         if (!this.isEmpty) {
             for (let i = 0; i < this._numBlankLinesNeeded; i++) {
                 this.emitNewline();
@@ -106,22 +102,22 @@ class EmitContext {
         this.pushItem(item);
     }
 
-    containsItem (item: Sourcelike): boolean {
+    public containsItem(item: Sourcelike): boolean {
         const existingItem = this._currentEmitTarget.find((value: Sourcelike) => item === value);
         return existingItem !== undefined;
     }
 
-    ensureBlankLine (numBlankLines: number): void {
+    public ensureBlankLine(numBlankLines: number): void {
         if (this._preventBlankLine) return;
         this._numBlankLinesNeeded = Math.max(this._numBlankLinesNeeded, numBlankLines);
     }
 
-    preventBlankLine (): void {
+    public preventBlankLine(): void {
         this._numBlankLinesNeeded = 0;
         this._preventBlankLine = true;
     }
 
-    changeIndent (offset: number): void {
+    public changeIndent(offset: number): void {
         if (this._lastNewline === undefined) {
             return panic("Cannot change indent for the first line");
         }
@@ -143,9 +139,9 @@ export abstract class Renderer {
 
     private _emitContext: EmitContext;
 
-    constructor (
+    public constructor(
         protected readonly targetLanguage: TargetLanguage,
-        renderContext: RenderContext,
+        renderContext: RenderContext
     ) {
         this.typeGraph = renderContext.typeGraph;
         this.leadingComments = renderContext.leadingComments;
@@ -155,19 +151,20 @@ export abstract class Renderer {
         this._emitContext = new EmitContext();
     }
 
-    ensureBlankLine (numBlankLines = 1): void {
+    // FIXME: make protected once JavaDateTimeRenderer is refactored
+    public ensureBlankLine(numBlankLines = 1): void {
         this._emitContext.ensureBlankLine(numBlankLines);
     }
 
-    preventBlankLine (): void {
+    protected preventBlankLine(): void {
         this._emitContext.preventBlankLine();
     }
 
-    emitItem (item: Sourcelike): void {
+    protected emitItem(item: Sourcelike): void {
         this._emitContext.emitItem(item);
     }
 
-    emitItemOnce (item: Sourcelike): boolean {
+    protected emitItemOnce(item: Sourcelike): boolean {
         if (this._emitContext.containsItem(item)) {
             return false;
         }
@@ -176,7 +173,7 @@ export abstract class Renderer {
         return true;
     }
 
-    emitLineOnce (...lineParts: Sourcelike[]): void {
+    protected emitLineOnce(...lineParts: Sourcelike[]): void {
         let lineEmitted = true;
         if (lineParts.length === 1) {
             lineEmitted = this.emitItemOnce(lineParts[0]);
@@ -189,7 +186,8 @@ export abstract class Renderer {
         }
     }
 
-    emitLine (...lineParts: Sourcelike[]): void {
+    // FIXME: make protected once JavaDateTimeRenderer is refactored
+    public emitLine(...lineParts: Sourcelike[]): void {
         if (lineParts.length === 1) {
             this._emitContext.emitItem(lineParts[0]);
         } else if (lineParts.length > 1) {
@@ -199,7 +197,7 @@ export abstract class Renderer {
         this._emitContext.emitNewline();
     }
 
-    emitMultiline (linesString: string): void {
+    protected emitMultiline(linesString: string): void {
         const lines = linesString.split("\n");
         const numLines = lines.length;
         if (numLines === 0) return;
@@ -224,7 +222,7 @@ export abstract class Renderer {
         }
     }
 
-    gatherSource (emitter: () => void): Sourcelike[] {
+    protected gatherSource(emitter: () => void): Sourcelike[] {
         const oldEmitContext = this._emitContext;
         this._emitContext = new EmitContext();
         emitter();
@@ -234,19 +232,19 @@ export abstract class Renderer {
         return source;
     }
 
-    emitGatheredSource (items: Sourcelike[]): void {
+    protected emitGatheredSource(items: Sourcelike[]): void {
         for (const item of items) {
             this._emitContext.emitItem(item);
         }
     }
 
-    emitAnnotated (annotation: AnnotationData, emitter: () => void): void {
+    protected emitAnnotated(annotation: AnnotationData, emitter: () => void): void {
         const lines = this.gatherSource(emitter);
         const source = sourcelikeToSource(lines);
         this._emitContext.emitItem(annotated(annotation, source));
     }
 
-    emitIssue (message: string, emitter: () => void): void {
+    protected emitIssue(message: string, emitter: () => void): void {
         this.emitAnnotated(new IssueAnnotationData(message), emitter);
     }
 
@@ -257,11 +255,11 @@ export abstract class Renderer {
         this._emitContext.emitNewline();
     };
 
-    changeIndent (offset: number): void {
+    protected changeIndent(offset: number): void {
         this._emitContext.changeIndent(offset);
     }
 
-    iterableForEach<T>(iterable: Iterable<T>, emitter: (v: T, position: ForEachPosition) => void): void {
+    protected iterableForEach<T>(iterable: Iterable<T>, emitter: (v: T, position: ForEachPosition) => void): void {
         const items = Array.from(iterable);
         let onFirst = true;
         for (const [i, v] of iterableEnumerate(items)) {
@@ -272,11 +270,11 @@ export abstract class Renderer {
         }
     }
 
-    forEach<K, V>(
+    protected forEach<K, V>(
         iterable: Iterable<[K, V]>,
         interposedBlankLines: number,
         leadingBlankLines: number,
-        emitter: (v: V, k: K, position: ForEachPosition) => void,
+        emitter: (v: V, k: K, position: ForEachPosition) => void
     ): boolean {
         let didEmit = false;
         this.iterableForEach(iterable, ([k, v], position) => {
@@ -292,10 +290,10 @@ export abstract class Renderer {
         return didEmit;
     }
 
-    forEachWithBlankLines<K, V>(
+    protected forEachWithBlankLines<K, V>(
         iterable: Iterable<[K, V]>,
         blankLineConfig: BlankLineConfig,
-        emitter: (v: V, k: K, position: ForEachPosition) => void,
+        emitter: (v: V, k: K, position: ForEachPosition) => void
     ): boolean {
         const { position, count } = getBlankLineConfig(blankLineConfig);
         const interposing = ["interposing", "leading-and-interposing"].includes(position);
@@ -303,20 +301,21 @@ export abstract class Renderer {
         return this.forEach(iterable, interposing ? count : 0, leading ? count : 0, emitter);
     }
 
-    indent (fn: () => void): void {
+    // FIXME: make protected once JavaDateTimeRenderer is refactored
+    public indent(fn: () => void): void {
         this.changeIndent(1);
         fn();
         this.changeIndent(-1);
     }
 
-    protected abstract setUpNaming (): Iterable<Namespace>;
-    protected abstract emitSource (givenOutputFilename: string): void;
+    protected abstract setUpNaming(): Iterable<Namespace>;
+    protected abstract emitSource(givenOutputFilename: string): void;
 
-    private assignNames (): ReadonlyMap<Name, string> {
+    protected assignNames(): ReadonlyMap<Name, string> {
         return assignNames(this.setUpNaming());
     }
 
-    protected initializeEmitContextForFilename (filename: string): void {
+    protected initializeEmitContextForFilename(filename: string): void {
         if (this._finishedEmitContexts.has(filename.toLowerCase())) {
             const existingEmitContext = this._finishedEmitContexts.get(filename.toLowerCase());
             if (existingEmitContext !== undefined) {
@@ -325,10 +324,10 @@ export abstract class Renderer {
         }
     }
 
-    protected finishFile (filename: string): void {
+    protected finishFile(filename: string): void {
         if (this._finishedFiles.has(filename)) {
             console.log(
-                `[WARNING] Tried to emit file ${filename} more than once. If performing multi-file output this warning can be safely ignored.`,
+                `[WARNING] Tried to emit file ${filename} more than once. If performing multi-file output this warning can be safely ignored.`
             );
         }
 
@@ -340,7 +339,7 @@ export abstract class Renderer {
         this._emitContext = new EmitContext();
     }
 
-    render (givenOutputFilename: string): RenderResult {
+    public render(givenOutputFilename: string): RenderResult {
         this._names = this.assignNames();
         this.emitSource(givenOutputFilename);
         if (!this._emitContext.isEmpty) {
@@ -350,7 +349,7 @@ export abstract class Renderer {
         return { sources: this._finishedFiles, names: this._names };
     }
 
-    get names (): ReadonlyMap<Name, string> {
+    public get names(): ReadonlyMap<Name, string> {
         if (this._names === undefined) {
             return panic("Names accessed before they were assigned");
         }

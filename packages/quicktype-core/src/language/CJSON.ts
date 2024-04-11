@@ -139,7 +139,7 @@ export class CJSONTargetLanguage extends TargetLanguage {
      * @params names: names
      * @param extension: extension of files
      */
-    constructor(displayName = "C (cJSON)", names: string[] = ["cjson", "cJSON"], extension = "h") {
+    public constructor(displayName = "C (cJSON)", names: string[] = ["cjson", "cJSON"], extension = "h") {
         super(displayName, names, extension);
     }
 
@@ -164,7 +164,7 @@ export class CJSONTargetLanguage extends TargetLanguage {
      * Indicate if language support union with both number types
      * @return true
      */
-    get supportsUnionsWithBothNumberTypes(): boolean {
+    public get supportsUnionsWithBothNumberTypes(): boolean {
         return true;
     }
 
@@ -172,7 +172,7 @@ export class CJSONTargetLanguage extends TargetLanguage {
      * Indicate if language support optional class properties
      * @return true
      */
-    get supportsOptionalClassProperties(): boolean {
+    public get supportsOptionalClassProperties(): boolean {
         return true;
     }
 
@@ -387,7 +387,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
      * @param renderContext: render context
      * @param _options: renderer options
      */
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof cJSONOptions>

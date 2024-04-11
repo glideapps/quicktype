@@ -5,7 +5,7 @@ import {
     type OperationDefinitionNode,
     type FragmentDefinitionNode,
     type DirectiveNode,
-    type FieldNode,
+    type FieldNode
 } from "graphql/language/ast";
 import * as graphql from "graphql/language";
 import { setMap, iterableFirst, mapFromObject } from "collection-utils";
@@ -16,7 +16,7 @@ import {
     type TypeRef,
     type TypeAttributes,
     type Input,
-    type RunContext,
+    type RunContext
 } from "quicktype-core";
 import {
     UnionType,
@@ -29,7 +29,7 @@ import {
     messageAssert,
     emptyTypeAttributes,
     StringTypes,
-    derefTypeRef,
+    derefTypeRef
 } from "quicktype-core";
 
 import { type GraphQLSchema } from "./GraphQLSchema";
@@ -66,7 +66,7 @@ interface InputValue {
     type: GQLType;
 }
 
-function getField (t: GQLType, name: string): Field {
+function getField(t: GQLType, name: string): Field {
     if (!t.fields) return panic(`Required field ${name} in type ${t.name} which doesn't have fields.`);
     for (const f of t.fields) {
         if (f.name === name) {
@@ -77,7 +77,7 @@ function getField (t: GQLType, name: string): Field {
     return panic(`Required field ${name} not defined on type ${t.name}.`);
 }
 
-function makeNames (name: string, fieldName: string | null, containingTypeName: string | null): TypeAttributes {
+function makeNames(name: string, fieldName: string | null, containingTypeName: string | null): TypeAttributes {
     const alternatives: string[] = [];
     if (fieldName) alternatives.push(fieldName);
     if (containingTypeName) alternatives.push(`${containingTypeName}_${name}`);
@@ -85,12 +85,12 @@ function makeNames (name: string, fieldName: string | null, containingTypeName: 
     return namesTypeAttributeKind.makeAttributes(TypeNames.make(new Set([name]), new Set(alternatives), false));
 }
 
-function makeNullable (
+function makeNullable(
     builder: TypeBuilder,
     tref: TypeRef,
     name: string,
     fieldName: string | null,
-    containingTypeName: string,
+    containingTypeName: string
 ): TypeRef {
     const typeNames = makeNames(name, fieldName, containingTypeName);
     const t = derefTypeRef(tref, builder.typeGraph);
@@ -109,7 +109,7 @@ function makeNullable (
 // union if the type is modified to be non-nullable.  That means that the union
 // (and the null) might be left unreachable in the graph.  Provenance checking
 // won't work in this case, which is why it's disabled in testing for GraphQL.
-function removeNull (builder: TypeBuilder, tref: TypeRef): TypeRef {
+function removeNull(builder: TypeBuilder, tref: TypeRef): TypeRef {
     const t = derefTypeRef(tref, builder.typeGraph);
     if (!(t instanceof UnionType)) {
         return tref;
@@ -121,14 +121,14 @@ function removeNull (builder: TypeBuilder, tref: TypeRef): TypeRef {
         if (nonNulls.size === 1) return first.typeRef;
         return builder.getUnionType(
             t.getAttributes(),
-            setMap(nonNulls, nn => nn.typeRef),
+            setMap(nonNulls, nn => nn.typeRef)
         );
     }
 
     return panic("Trying to remove null results in empty union.");
 }
 
-function makeScalar (builder: TypeBuilder, ft: GQLType): TypeRef {
+function makeScalar(builder: TypeBuilder, ft: GQLType): TypeRef {
     switch (ft.name) {
         case "Boolean":
             return builder.getPrimitiveType("bool");
@@ -142,7 +142,7 @@ function makeScalar (builder: TypeBuilder, ft: GQLType): TypeRef {
     }
 }
 
-function hasOptionalDirectives (directives?: DirectiveNode[]): boolean {
+function hasOptionalDirectives(directives?: DirectiveNode[]): boolean {
     if (!directives) return false;
     for (const d of directives) {
         const name = d.name.value;
@@ -158,7 +158,7 @@ interface Selection {
     selection: SelectionNode;
 }
 
-function expandSelectionSet (selectionSet: SelectionSetNode, inType: GQLType, optional: boolean): Selection[] {
+function expandSelectionSet(selectionSet: SelectionSetNode, inType: GQLType, optional: boolean): Selection[] {
     return selectionSet.selections
         .reverse()
         .map(s => ({ selection: s, inType, optional: optional || hasOptionalDirectives(s.directives) }));
@@ -167,17 +167,17 @@ function expandSelectionSet (selectionSet: SelectionSetNode, inType: GQLType, op
 interface GQLSchema {
     readonly mutationType?: GQLType;
     readonly queryType: GQLType;
-    readonly types: { [name: string]: GQLType, };
+    readonly types: { [name: string]: GQLType };
 }
 
 class GQLQuery {
     private readonly _schema: GQLSchema;
 
-    private readonly _fragments: { [name: string]: FragmentDefinitionNode, };
+    private readonly _fragments: { [name: string]: FragmentDefinitionNode };
 
-    readonly queries: readonly OperationDefinitionNode[];
+    public readonly queries: readonly OperationDefinitionNode[];
 
-    constructor (schema: GQLSchema, queryString: string) {
+    public constructor(schema: GQLSchema, queryString: string) {
         this._schema = schema;
         this._fragments = {};
 
@@ -201,7 +201,7 @@ class GQLQuery {
         builder: TypeBuilder,
         fieldNode: FieldNode,
         fieldType: GQLType,
-        containingTypeName: string,
+        containingTypeName: string
     ): TypeRef => {
         let optional = hasOptionalDirectives(fieldNode.directives);
         let result: TypeRef;
@@ -224,11 +224,11 @@ class GQLQuery {
                         fieldNode.selectionSet,
                         fieldType,
                         fieldNode.name.value,
-                        containingTypeName,
+                        containingTypeName
                     ),
                     fieldNode.name.value,
                     null,
-                    containingTypeName,
+                    containingTypeName
                 );
             case TypeKind.ENUM:
                 if (!fieldType.enumValues) {
@@ -260,7 +260,7 @@ class GQLQuery {
                 optional = true;
                 result = builder.getArrayType(
                     emptyTypeAttributes,
-                    this.makeIRTypeFromFieldNode(builder, fieldNode, fieldType.ofType, containingTypeName),
+                    this.makeIRTypeFromFieldNode(builder, fieldNode, fieldType.ofType, containingTypeName)
                 );
                 break;
             case TypeKind.NON_NULL:
@@ -270,7 +270,7 @@ class GQLQuery {
 
                 result = removeNull(
                     builder,
-                    this.makeIRTypeFromFieldNode(builder, fieldNode, fieldType.ofType, containingTypeName),
+                    this.makeIRTypeFromFieldNode(builder, fieldNode, fieldType.ofType, containingTypeName)
                 );
                 break;
             default:
@@ -296,7 +296,7 @@ class GQLQuery {
         gqlType: GQLType,
         containingFieldName: string | null,
         containingTypeName: string | null,
-        overrideName?: string,
+        overrideName?: string
     ): TypeRef => {
         if (
             gqlType.kind !== TypeKind.OBJECT &&
@@ -354,7 +354,7 @@ class GQLQuery {
         return builder.getClassType(makeNames(nameOrOverride, containingFieldName, containingTypeName), properties);
     };
 
-    makeType (builder: TypeBuilder, query: OperationDefinitionNode, queryName: string): TypeRef {
+    public makeType(builder: TypeBuilder, query: OperationDefinitionNode, queryName: string): TypeRef {
         if (query.operation === "query") {
             return this.makeIRTypeFromSelectionSet(
                 builder,
@@ -362,7 +362,7 @@ class GQLQuery {
                 this._schema.queryType,
                 null,
                 queryName,
-                "data",
+                "data"
             );
         }
 
@@ -377,7 +377,7 @@ class GQLQuery {
                 this._schema.mutationType,
                 null,
                 queryName,
-                "data",
+                "data"
             );
         }
 
@@ -386,15 +386,14 @@ class GQLQuery {
 }
 
 class GQLSchemaFromJSON implements GQLSchema {
-    readonly types: { [name: string]: GQLType, } = {};
+    public readonly types: { [name: string]: GQLType } = {};
 
     // @ts-expect-error: The constructor can return early, but only by throwing.
-    readonly queryType: GQLType;
+    public readonly queryType: GQLType;
 
-    // @ts-expect-error: The constructor can return early, but only by throwing.
-    readonly mutationType?: GQLType;
+    public readonly mutationType?: GQLType;
 
-    constructor (json: any) {
+    public constructor(json: any) {
         const schema: GraphQLSchema = json.data;
 
         if (schema.__schema.queryType.name === null) {
@@ -444,7 +443,7 @@ class GQLSchemaFromJSON implements GQLSchema {
                     name: f.name,
                     description: f.description,
                     type: this.makeType(f.type),
-                    args: f.args.map(this.makeInputValue),
+                    args: f.args.map(this.makeInputValue)
                 };
             });
             // console.log(`${target.name} has ${target.fields.length} fields`);
@@ -478,7 +477,7 @@ class GQLSchemaFromJSON implements GQLSchema {
             name: iv.name,
             description: iv.description,
             type: this.makeType(iv.type),
-            defaultValue: iv.defaultValue,
+            defaultValue: iv.defaultValue
         };
     };
 
@@ -493,18 +492,18 @@ class GQLSchemaFromJSON implements GQLSchema {
         const type: GQLType = {
             kind: t.kind,
             description: t.description,
-            ofType: this.makeType(t.ofType),
+            ofType: this.makeType(t.ofType)
         };
         this.addTypeFields(type, t);
         return type;
     };
 }
 
-function makeGraphQLQueryTypes (
+function makeGraphQLQueryTypes(
     topLevelName: string,
     builder: TypeBuilder,
     json: any,
-    queryString: string,
+    queryString: string
 ): Map<string, TypeRef> {
     const schema = new GQLSchemaFromJSON(json);
     const query = new GQLQuery(schema, queryString);
@@ -518,29 +517,29 @@ function makeGraphQLQueryTypes (
         const dataType = query.makeType(builder, odn, queryName);
         const dataOrNullType = builder.getUnionType(
             emptyTypeAttributes,
-            new Set([dataType, builder.getPrimitiveType("null")]),
+            new Set([dataType, builder.getPrimitiveType("null")])
         );
         const errorType = builder.getClassType(
             namesTypeAttributeKind.makeAttributes(TypeNames.make(new Set(["error"]), new Set(["graphQLError"]), false)),
             mapFromObject({
                 message: builder.makeClassProperty(
                     builder.getStringType(emptyTypeAttributes, StringTypes.unrestricted),
-                    false,
-                ),
-            }),
+                    false
+                )
+            })
         );
         const errorArray = builder.getArrayType(
             namesTypeAttributeKind.makeAttributes(
-                TypeNames.make(new Set(["errors"]), new Set(["graphQLErrors"]), false),
+                TypeNames.make(new Set(["errors"]), new Set(["graphQLErrors"]), false)
             ),
-            errorType,
+            errorType
         );
         const t = builder.getClassType(
             makeNamesTypeAttributes(queryName, false),
             mapFromObject({
                 data: builder.makeClassProperty(dataOrNullType, false),
-                errors: builder.makeClassProperty(errorArray, true),
-            }),
+                errors: builder.makeClassProperty(errorArray, true)
+            })
         );
         types.set(queryName, t);
     }
@@ -549,42 +548,45 @@ function makeGraphQLQueryTypes (
 }
 
 export interface GraphQLSourceData {
-    name: string; query: string; schema: any; 
+    name: string;
+    query: string;
+    schema: any;
 }
 
 interface GraphQLTopLevel {
-    query: string; schema: any; 
+    query: string;
+    schema: any;
 }
 
 export class GraphQLInput implements Input<GraphQLSourceData> {
-    readonly kind: string = "graphql";
+    public readonly kind: string = "graphql";
 
-    readonly needIR: boolean = true;
+    public readonly needIR: boolean = true;
 
-    readonly needSchemaProcessing: boolean = false;
+    public readonly needSchemaProcessing: boolean = false;
 
     private readonly _topLevels: Map<string, GraphQLTopLevel> = new Map();
 
-    async addSource (source: GraphQLSourceData): Promise<void> {
+    public async addSource(source: GraphQLSourceData): Promise<void> {
         this.addSourceSync(source);
     }
 
-    addSourceSync (source: GraphQLSourceData): void {
+    public addSourceSync(source: GraphQLSourceData): void {
         this._topLevels.set(source.name, {
             schema: source.schema,
-            query: source.query,
+            query: source.query
         });
     }
 
-    singleStringSchemaSource (): undefined {
+    public singleStringSchemaSource(): undefined {
         return undefined;
     }
 
-    async addTypes (ctx: RunContext, typeBuilder: TypeBuilder): Promise<void> {
+    public async addTypes(ctx: RunContext, typeBuilder: TypeBuilder): Promise<void> {
         this.addTypesSync(ctx, typeBuilder);
     }
 
-    addTypesSync (_ctx: RunContext, typeBuilder: TypeBuilder): void {
+    public addTypesSync(_ctx: RunContext, typeBuilder: TypeBuilder): void {
         for (const [name, { schema, query }] of this._topLevels) {
             const newTopLevels = makeGraphQLQueryTypes(name, typeBuilder, schema, query);
             for (const [actualName, t] of newTopLevels) {

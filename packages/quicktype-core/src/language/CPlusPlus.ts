@@ -125,7 +125,7 @@ export const cPlusPlusOptions = {
 };
 
 export class CPlusPlusTargetLanguage extends TargetLanguage {
-    constructor(displayName = "C++", names: string[] = ["c++", "cpp", "cplusplus"], extension = "cpp") {
+    public constructor(displayName = "C++", names: string[] = ["c++", "cpp", "cplusplus"], extension = "cpp") {
         super(displayName, names, extension);
     }
 
@@ -147,11 +147,11 @@ export class CPlusPlusTargetLanguage extends TargetLanguage {
         ];
     }
 
-    get supportsUnionsWithBothNumberTypes(): boolean {
+    public get supportsUnionsWithBothNumberTypes(): boolean {
         return true;
     }
 
-    get supportsOptionalClassProperties(): boolean {
+    public get supportsOptionalClassProperties(): boolean {
         return true;
     }
 
@@ -392,12 +392,12 @@ function addQualifier(qualifier: Sourcelike, qualified: Sourcelike[]): Sourcelik
 }
 
 class WrappingCode {
-    constructor(
+    public constructor(
         private readonly start: Sourcelike[],
         private readonly end: Sourcelike[]
     ) {}
 
-    wrap(qualifier: Sourcelike, inner: Sourcelike): Sourcelike {
+    public wrap(qualifier: Sourcelike, inner: Sourcelike): Sourcelike {
         return [addQualifier(qualifier, this.start), inner, this.end];
     }
 }
@@ -419,7 +419,7 @@ class BaseString {
 
     public _encodingFunction: Sourcelike;
 
-    constructor(
+    public constructor(
         stringType: string,
         constStringType: string,
         smatch: string,
@@ -509,7 +509,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
     protected readonly enumeratorNamingStyle: NamingStyle;
 
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof cPlusPlusOptions>
@@ -557,14 +557,14 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     // union typeguard
-    isUnion(t: Type | UnionType): t is UnionType {
+    private isUnion(t: Type | UnionType): t is UnionType {
         return t.kind === "union";
     }
 
     // Returns true if the type can be stored in
     // a stack based optional type. This requires
     // that the type does not require forward declaration.
-    isOptionalAsValuePossible(t: Type): boolean {
+    private isOptionalAsValuePossible(t: Type): boolean {
         if (this.isForwardDeclaredType(t)) return false;
 
         if (this.isUnion(t)) {
@@ -626,42 +626,42 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         return !this.isCycleBreakerType(t);
     }
 
-    isImplicitCycleBreaker(t: Type): boolean {
+    public isImplicitCycleBreaker(t: Type): boolean {
         const kind = t.kind;
         return kind === "array" || kind === "map";
     }
 
     // Is likely to return std::optional or boost::optional
-    optionalTypeStack(): string {
+    private optionalTypeStack(): string {
         return this._optionalType;
     }
 
     // Is likely to return std::make_optional or boost::optional
-    optionalFactoryStack(): string {
+    private optionalFactoryStack(): string {
         return this._optionalFactory;
     }
 
     // Is likely to return std::shared_ptr
-    optionalTypeHeap(): string {
+    private optionalTypeHeap(): string {
         return optionalAsSharedType;
     }
 
     // Is likely to return std::make_shared
-    optionalFactoryHeap(): string {
+    private optionalFactoryHeap(): string {
         return optionalFactoryAsSharedType;
     }
 
     // Returns the optional type most suitable for the given type.
     // Classes that don't require forward declarations can be stored
     // in std::optional ( or boost::optional )
-    optionalType(t: Type): string {
+    private optionalType(t: Type): string {
         if (this.isOptionalAsValuePossible(t)) return this.optionalTypeStack();
         else return this.optionalTypeHeap();
     }
 
     // Returns a label that can be used to distinguish between
     // heap and stack based optional handling methods
-    optionalTypeLabel(t: Type): string {
+    private optionalTypeLabel(t: Type): string {
         if (this.isOptionalAsValuePossible(t)) return "stack";
         else return "heap";
     }
@@ -3012,7 +3012,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     public NarrowString = new (class extends BaseString implements StringType {
-        constructor() {
+        public constructor() {
             super(
                 "std::string",
                 "const std::string & ",
@@ -3040,7 +3040,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     })();
 
     public WideString = new (class extends BaseString implements StringType {
-        constructor(public superThis: CPlusPlusRenderer) {
+        public constructor(public superThis: CPlusPlusRenderer) {
             super(
                 "std::wstring",
                 "const std::wstring & ",

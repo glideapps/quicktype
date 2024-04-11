@@ -125,7 +125,7 @@ function normalizeURI(uri: string | URI): URI {
 }
 
 export class Ref {
-    static root(address: string | undefined): Ref {
+    public static root(address: string | undefined): Ref {
         const uri = definedMap(address, a => new URI(a));
         return new Ref(uri, []);
     }
@@ -146,7 +146,7 @@ export class Ref {
         return elements;
     }
 
-    static parseURI(uri: URI, destroyURI = false): Ref {
+    public static parseURI(uri: URI, destroyURI = false): Ref {
         if (!destroyURI) {
             uri = uri.clone();
         }
@@ -161,15 +161,15 @@ export class Ref {
         return new Ref(uri, elements);
     }
 
-    static parse(ref: string): Ref {
+    public static parse(ref: string): Ref {
         return Ref.parseURI(new URI(ref), true);
     }
 
     public addressURI: URI | undefined;
 
-    constructor(
+    public constructor(
         addressURI: URI | undefined,
-        readonly path: readonly PathElement[]
+        public readonly path: readonly PathElement[]
     ) {
         if (addressURI !== undefined) {
             assert(addressURI.fragment() === "", `Ref URI with fragment is not allowed: ${addressURI.toString()}`);
@@ -179,15 +179,15 @@ export class Ref {
         }
     }
 
-    get hasAddress(): boolean {
+    public get hasAddress(): boolean {
         return this.addressURI !== undefined;
     }
 
-    get address(): string {
+    public get address(): string {
         return defined(this.addressURI).toString();
     }
 
-    get isRoot(): boolean {
+    public get isRoot(): boolean {
         return this.path.length === 1 && this.path[0].kind === PathElementKind.Root;
     }
 
@@ -197,7 +197,7 @@ export class Ref {
         return new Ref(this.addressURI, newPath);
     }
 
-    push(...keys: string[]): Ref {
+    public push(...keys: string[]): Ref {
         let ref: Ref = this;
         for (const key of keys) {
             ref = ref.pushElement({ kind: PathElementKind.KeyOrIndex, key });
@@ -206,15 +206,15 @@ export class Ref {
         return ref;
     }
 
-    pushObject(): Ref {
+    public pushObject(): Ref {
         return this.pushElement({ kind: PathElementKind.Object });
     }
 
-    pushType(index: number): Ref {
+    public pushType(index: number): Ref {
         return this.pushElement({ kind: PathElementKind.Type, index });
     }
 
-    resolveAgainst(base: Ref | undefined): Ref {
+    public resolveAgainst(base: Ref | undefined): Ref {
         let addressURI = this.addressURI;
         if (base?.addressURI !== undefined) {
             addressURI = addressURI === undefined ? base.addressURI : addressURI.absoluteTo(base.addressURI);
@@ -223,7 +223,7 @@ export class Ref {
         return new Ref(addressURI, this.path);
     }
 
-    get name(): string {
+    public get name(): string {
         const path = Array.from(this.path);
 
         for (;;) {
@@ -258,14 +258,14 @@ export class Ref {
         }
     }
 
-    get definitionName(): string | undefined {
+    public get definitionName(): string | undefined {
         const pe = arrayGetFromEnd(this.path, 2);
         if (pe === undefined) return undefined;
         if (keyOrIndex(pe) === "definitions") return keyOrIndex(defined(arrayLast(this.path)));
         return undefined;
     }
 
-    toString(): string {
+    public toString(): string {
         function elementToString(e: PathElement): string {
             switch (e.kind) {
                 case PathElementKind.Root:
@@ -326,11 +326,11 @@ export class Ref {
         }
     }
 
-    lookupRef(root: JSONSchema): JSONSchema {
+    public lookupRef(root: JSONSchema): JSONSchema {
         return this.lookup(root, this.path, root);
     }
 
-    equals(other: any): boolean {
+    public equals(other: any): boolean {
         if (!(other instanceof Ref)) return false;
         if (this.addressURI !== undefined && other.addressURI !== undefined) {
             if (!this.addressURI.equals(other.addressURI)) return false;
@@ -347,7 +347,7 @@ export class Ref {
         return true;
     }
 
-    hashCode(): number {
+    public hashCode(): number {
         let acc = hashCodeOf(definedMap(this.addressURI, u => u.toString()));
         for (const pe of this.path) {
             acc = addHashCode(acc, pe.kind);
@@ -372,16 +372,16 @@ class Location {
 
     public readonly virtualRef: Ref;
 
-    constructor(
+    public constructor(
         canonicalRef: Ref,
         virtualRef?: Ref,
-        readonly haveID: boolean = false
+        public readonly haveID: boolean = false
     ) {
         this.canonicalRef = canonicalRef;
         this.virtualRef = virtualRef !== undefined ? virtualRef : canonicalRef;
     }
 
-    updateWithID(id: any) {
+    public updateWithID(id: any) {
         if (typeof id !== "string") return this;
         const parsed = Ref.parse(id);
         const virtual = this.haveID ? parsed.resolveAgainst(this.virtualRef) : parsed;
@@ -392,19 +392,19 @@ class Location {
         return new Location(this.canonicalRef, virtual, true);
     }
 
-    push(...keys: string[]): Location {
+    public push(...keys: string[]): Location {
         return new Location(this.canonicalRef.push(...keys), this.virtualRef.push(...keys), this.haveID);
     }
 
-    pushObject(): Location {
+    public pushObject(): Location {
         return new Location(this.canonicalRef.pushObject(), this.virtualRef.pushObject(), this.haveID);
     }
 
-    pushType(index: number): Location {
+    public pushType(index: number): Location {
         return new Location(this.canonicalRef.pushType(index), this.virtualRef.pushType(index), this.haveID);
     }
 
-    toString(): string {
+    public toString(): string {
         return `${this.virtualRef.toString()} (${this.canonicalRef.toString()})`;
     }
 }
@@ -414,7 +414,7 @@ class Canonizer {
 
     private readonly _schemaAddressesAdded = new Set<string>();
 
-    constructor(private readonly _ctx: RunContext) {}
+    public constructor(private readonly _ctx: RunContext) {}
 
     private addIDs(schema: any, loc: Location) {
         if (schema === null) return;
@@ -449,7 +449,7 @@ class Canonizer {
         }
     }
 
-    addSchema(schema: any, address: string): boolean {
+    public addSchema(schema: any, address: string): boolean {
         if (this._schemaAddressesAdded.has(address)) return false;
 
         this.addIDs(schema, new Location(Ref.root(address), Ref.root(undefined)));
@@ -458,7 +458,7 @@ class Canonizer {
     }
 
     // Returns: Canonical ref
-    canonize(base: Location, ref: Ref): Location {
+    public canonize(base: Location, ref: Ref): Location {
         const virtual = ref.resolveAgainst(base.virtualRef);
         const loc = this._map.get(virtual);
         if (loc !== undefined) {
@@ -560,7 +560,7 @@ function schemaFetchError(base: Location | undefined, address: string): never {
 }
 
 class Resolver {
-    constructor(
+    public constructor(
         private readonly _ctx: RunContext,
         private readonly _store: JSONSchemaStore,
         private readonly _canonizer: Canonizer
@@ -608,7 +608,7 @@ class Resolver {
         }
     }
 
-    async resolveVirtualRef(base: Location, virtualRef: Ref): Promise<[JSONSchema, Location]> {
+    public async resolveVirtualRef(base: Location, virtualRef: Ref): Promise<[JSONSchema, Location]> {
         if (this._ctx.debugPrintSchemaResolving) {
             console.log(`resolving ${virtualRef.toString()} relative to ${base.toString()}`);
         }
@@ -643,7 +643,7 @@ class Resolver {
         return schemaFetchError(base, virtualRef.address);
     }
 
-    async resolveTopLevelRef(ref: Ref): Promise<[JSONSchema, Location]> {
+    public async resolveTopLevelRef(ref: Ref): Promise<[JSONSchema, Location]> {
         return await this.resolveVirtualRef(new Location(new Ref(ref.addressURI, [])), new Ref(undefined, ref.path));
     }
 }
@@ -1151,14 +1151,14 @@ async function refsInSchemaForURI(
 }
 
 class InputJSONSchemaStore extends JSONSchemaStore {
-    constructor(
+    public constructor(
         private readonly _inputs: Map<string, string>,
         private readonly _delegate?: JSONSchemaStore
     ) {
         super();
     }
 
-    async fetch(address: string): Promise<JSONSchema | undefined> {
+    public async fetch(address: string): Promise<JSONSchema | undefined> {
         const maybeInput = this._inputs.get(address);
         if (maybeInput !== undefined) {
             return checkJSONSchema(parseJSON(maybeInput, "JSON Schema", address), () => Ref.root(address));
@@ -1180,9 +1180,9 @@ export interface JSONSchemaSourceData {
 }
 
 export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
-    readonly kind: string = "schema";
+    public readonly kind: string = "schema";
 
-    readonly needSchemaProcessing: boolean = true;
+    public readonly needSchemaProcessing: boolean = true;
 
     private readonly _attributeProducers: JSONSchemaAttributeProducer[];
 
@@ -1194,7 +1194,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
 
     private _needIR = false;
 
-    constructor(
+    public constructor(
         private _schemaStore: JSONSchemaStore | undefined,
         additionalAttributeProducers: JSONSchemaAttributeProducer[] = [],
         private readonly _additionalSchemaAddresses: readonly string[] = []
@@ -1210,15 +1210,15 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
         ].concat(additionalAttributeProducers);
     }
 
-    get needIR(): boolean {
+    public get needIR(): boolean {
         return this._needIR;
     }
 
-    addTopLevel(name: string, ref: Ref): void {
+    public addTopLevel(name: string, ref: Ref): void {
         this._topLevels.set(name, ref);
     }
 
-    async addTypes(ctx: RunContext, typeBuilder: TypeBuilder): Promise<void> {
+    public async addTypes(ctx: RunContext, typeBuilder: TypeBuilder): Promise<void> {
         if (this._schemaSources.length === 0) return;
 
         let maybeSchemaStore = this._schemaStore;
@@ -1267,15 +1267,15 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
         await addTypesInSchema(resolver, typeBuilder, this._topLevels, this._attributeProducers);
     }
 
-    addTypesSync(): void {
+    public addTypesSync(): void {
         return panic("addTypesSync not supported in JSONSchemaInput");
     }
 
-    async addSource(schemaSource: JSONSchemaSourceData): Promise<void> {
+    public async addSource(schemaSource: JSONSchemaSourceData): Promise<void> {
         this.addSourceSync(schemaSource);
     }
 
-    addSourceSync(schemaSource: JSONSchemaSourceData): void {
+    public addSourceSync(schemaSource: JSONSchemaSourceData): void {
         const { name, uris, schema, isConverted } = schemaSource;
 
         if (isConverted !== true) {
@@ -1323,7 +1323,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
         }
     }
 
-    singleStringSchemaSource(): string | undefined {
+    public singleStringSchemaSource(): string | undefined {
         if (!this._schemaSources.every(([_, { schema }]) => typeof schema === "string")) {
             return undefined;
         }

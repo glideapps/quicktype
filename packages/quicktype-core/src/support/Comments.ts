@@ -9,13 +9,13 @@ export interface CommentOptions {
 }
 
 interface DescriptionBlockCommentConfig {
-    descriptionBlock: Sourcelike[]; 
+    descriptionBlock: Sourcelike[];
 }
 interface InlineCommentConfig {
-    lines: Sourcelike[]; 
+    lines: Sourcelike[];
 }
 type CustomCommentConfig = CommentOptions & {
-    customLines: Sourcelike[],
+    customLines: Sourcelike[];
 };
 
 export type CommentConfig = DescriptionBlockCommentConfig | InlineCommentConfig | CustomCommentConfig;

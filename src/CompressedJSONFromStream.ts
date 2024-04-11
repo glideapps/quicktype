@@ -3,7 +3,7 @@ import { type Value } from "quicktype-core";
 import { CompressedJSON } from "quicktype-core";
 import { Parser } from "stream-json";
 
-const methodMap: { [name: string]: string, } = {
+const methodMap: { [name: string]: string } = {
     startObject: "pushObjectContext",
     endObject: "finishObject",
     startArray: "pushArrayContext",
@@ -15,13 +15,13 @@ const methodMap: { [name: string]: string, } = {
     stringValue: "commitString",
     nullValue: "commitNull",
     trueValue: "handleTrueValue",
-    falseValue: "handleFalseValue",
+    falseValue: "handleFalseValue"
 };
 
 export class CompressedJSONFromStream extends CompressedJSON<Readable> {
-    async parse (readStream: Readable): Promise<Value> {
+    public async parse(readStream: Readable): Promise<Value> {
         const combo = new Parser({ packKeys: true, packStrings: true });
-        combo.on("data", (item: { name: string, value: string | undefined, }) => {
+        combo.on("data", (item: { name: string; value: string | undefined }) => {
             if (typeof methodMap[item.name] === "string") {
                 (this as any)[methodMap[item.name]](item.value);
             }
@@ -52,17 +52,17 @@ export class CompressedJSONFromStream extends CompressedJSON<Readable> {
         }
     };
 
-    protected handleEndNumber (): void {
+    protected handleEndNumber(): void {
         const isDouble = this.context.currentNumberIsDouble;
         this.popContext();
         this.commitNumber(isDouble);
     }
 
-    protected handleTrueValue (): void {
+    protected handleTrueValue(): void {
         this.commitBoolean(true);
     }
 
-    protected handleFalseValue (): void {
+    protected handleFalseValue(): void {
         this.commitBoolean(false);
     }
 }

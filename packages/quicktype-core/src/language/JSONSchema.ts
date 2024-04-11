@@ -1,7 +1,7 @@
 import { mapFirst, iterableFirst } from "collection-utils";
 
 import { TargetLanguage } from "../TargetLanguage";
-import { type Type, type UnionType, type EnumType, type ObjectType} from "../Type";
+import { type Type, type UnionType, type EnumType, type ObjectType } from "../Type";
 import { transformedStringTypeTargetTypeKindsMap } from "../Type";
 import { matchTypeExhaustive } from "../TypeUtils";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
@@ -12,39 +12,39 @@ import {
     splitIntoWords,
     combineWords,
     firstUpperWordStyle,
-    allUpperWordStyle,
+    allUpperWordStyle
 } from "../support/Strings";
 import { defined, panic } from "../support/Support";
-import { type StringTypeMapping} from "../TypeBuilder";
+import { type StringTypeMapping } from "../TypeBuilder";
 import { getNoStringTypeMapping } from "../TypeBuilder";
 import { addDescriptionToSchema } from "../attributes/Description";
 import { type Option } from "../RendererOptions";
 import { type RenderContext } from "../Renderer";
 
 export class JSONSchemaTargetLanguage extends TargetLanguage {
-    constructor () {
+    public constructor() {
         super("JSON Schema", ["schema", "json-schema"], "schema");
     }
 
-    protected getOptions (): Array<Option<any>> {
+    protected getOptions(): Array<Option<any>> {
         return [];
     }
 
-    get stringTypeMapping (): StringTypeMapping {
+    public get stringTypeMapping(): StringTypeMapping {
         return getNoStringTypeMapping();
     }
 
-    get supportsOptionalClassProperties (): boolean {
+    public get supportsOptionalClassProperties(): boolean {
         return true;
     }
 
-    get supportsFullObjectType (): boolean {
+    public get supportsFullObjectType(): boolean {
         return true;
     }
 
-    protected makeRenderer (
+    protected makeRenderer(
         renderContext: RenderContext,
-        _untypedOptionValues: { [name: string]: any, },
+        _untypedOptionValues: { [name: string]: any }
     ): JSONSchemaRenderer {
         return new JSONSchemaRenderer(this, renderContext);
     }
@@ -54,7 +54,7 @@ const namingFunction = funPrefixNamer("namer", jsonNameStyle);
 
 const legalizeName = legalizeCharacters(cp => cp >= 32 && cp < 128 && cp !== 0x2f /* slash */);
 
-function jsonNameStyle (original: string): string {
+function jsonNameStyle(original: string): string {
     const words = splitIntoWords(original);
     return combineWords(
         words,
@@ -64,36 +64,36 @@ function jsonNameStyle (original: string): string {
         allUpperWordStyle,
         allUpperWordStyle,
         "",
-        _ => true,
+        _ => true
     );
 }
 
 interface Schema {
-    [name: string]: any; 
+    [name: string]: any;
 }
 
 export class JSONSchemaRenderer extends ConvenienceRenderer {
-    protected makeNamedTypeNamer (): Namer {
+    protected makeNamedTypeNamer(): Namer {
         return namingFunction;
     }
 
-    protected namerForObjectProperty (): null {
+    protected namerForObjectProperty(): null {
         return null;
     }
 
-    protected makeUnionMemberNamer (): null {
+    protected makeUnionMemberNamer(): null {
         return null;
     }
 
-    protected makeEnumCaseNamer (): null {
+    protected makeEnumCaseNamer(): null {
         return null;
     }
 
-    private nameForType (t: Type): string {
+    private nameForType(t: Type): string {
         return defined(this.names.get(this.nameForNamedType(t)));
     }
 
-    private makeOneOf (types: ReadonlySet<Type>): Schema {
+    private makeOneOf(types: ReadonlySet<Type>): Schema {
         const first = iterableFirst(types);
         if (first === undefined) {
             return panic("Must have at least one type for oneOf");
@@ -106,19 +106,19 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
         return { anyOf: Array.from(types).map((t: Type) => this.schemaForType(t)) };
     }
 
-    private makeRef (t: Type): Schema {
+    private makeRef(t: Type): Schema {
         return { $ref: `#/definitions/${this.nameForType(t)}` };
     }
 
-    private addAttributesToSchema (t: Type, schema: Schema): void {
+    private addAttributesToSchema(t: Type, schema: Schema): void {
         const attributes = this.typeGraph.attributeStore.attributesForType(t);
         for (const [kind, attr] of attributes) {
             kind.addToSchema(schema, t, attr);
         }
     }
 
-    private schemaForType (t: Type): Schema {
-        const schema = matchTypeExhaustive<{ [name: string]: any, }>(
+    private schemaForType(t: Type): Schema {
+        const schema = matchTypeExhaustive<{ [name: string]: any }>(
             t,
             _noneType => {
                 return panic("none type should have been replaced");
@@ -148,7 +148,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
                 }
 
                 return { type: "string", format: target.jsonSchema };
-            },
+            }
         );
         if (schema.$ref === undefined) {
             this.addAttributesToSchema(t, schema);
@@ -157,7 +157,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
         return schema;
     }
 
-    private definitionForObject (o: ObjectType, title: string | undefined): Schema {
+    private definitionForObject(o: ObjectType, title: string | undefined): Schema {
         let properties: Schema | undefined;
         let required: string[] | undefined;
         if (o.getProperties().size === 0) {
@@ -189,13 +189,13 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
             additionalProperties,
             properties,
             required,
-            title,
+            title
         };
         this.addAttributesToSchema(o, schema);
         return schema;
     }
 
-    private definitionForUnion (u: UnionType, title?: string): Schema {
+    private definitionForUnion(u: UnionType, title?: string): Schema {
         const oneOf = this.makeOneOf(u.sortedMembers);
         if (title !== undefined) {
             oneOf.title = title;
@@ -205,17 +205,17 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
         return oneOf;
     }
 
-    private definitionForEnum (e: EnumType, title: string): Schema {
+    private definitionForEnum(e: EnumType, title: string): Schema {
         const schema = { type: "string", enum: Array.from(e.cases), title };
         this.addAttributesToSchema(e, schema);
         return schema;
     }
 
-    protected emitSourceStructure (): void {
+    protected emitSourceStructure(): void {
         // FIXME: Find a good way to do multiple top-levels.  Maybe multiple files?
         const topLevelType = this.topLevels.size === 1 ? this.schemaForType(defined(mapFirst(this.topLevels))) : {};
         const schema = Object.assign({ $schema: "http://json-schema.org/draft-06/schema#" }, topLevelType);
-        const definitions: { [name: string]: Schema, } = {};
+        const definitions: { [name: string]: Schema } = {};
         this.forEachObject("none", (o: ObjectType, name: Name) => {
             const title = defined(this.names.get(name));
             definitions[title] = this.definitionForObject(o, title);

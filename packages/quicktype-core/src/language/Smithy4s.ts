@@ -153,7 +153,7 @@ const upperNamingFunction = funPrefixNamer("upper", s => scalaNameStyle(true, s)
 const lowerNamingFunction = funPrefixNamer("lower", s => scalaNameStyle(false, s));
 
 export class Smithy4sRenderer extends ConvenienceRenderer {
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         protected readonly _scalaOptions: OptionValues<typeof SmithyOptions>
@@ -210,10 +210,10 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
             delimiter === "curly"
                 ? ["{", "}"]
                 : delimiter === "paren"
-                ? ["(", ")"]
-                : delimiter === "none"
-                ? ["", ""]
-                : ["{", "})"];
+                  ? ["(", ")"]
+                  : delimiter === "none"
+                    ? ["", ""]
+                    : ["{", "})"];
         this.emitLine(line, " ", open);
         this.indent(f);
         this.emitLine(close);
@@ -521,7 +521,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
 }
 
 export class SmithyTargetLanguage extends TargetLanguage {
-    constructor() {
+    public constructor() {
         super("Smithy", ["Smithy"], "smithy");
     }
 
@@ -529,11 +529,11 @@ export class SmithyTargetLanguage extends TargetLanguage {
         return [SmithyOptions.framework, SmithyOptions.packageName];
     }
 
-    get supportsOptionalClassProperties(): boolean {
+    public get supportsOptionalClassProperties(): boolean {
         return true;
     }
 
-    get supportsUnionsWithBothNumberTypes(): boolean {
+    public get supportsUnionsWithBothNumberTypes(): boolean {
         return true;
     }
 

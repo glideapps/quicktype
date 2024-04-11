@@ -2,17 +2,9 @@ import { mapMap, EqualityMap } from "collection-utils";
 
 import { type PrimitiveTypeKind, type Type, type ClassProperty, type MaybeTypeIdentity } from "./Type";
 import { combineTypeAttributesOfTypes } from "./TypeUtils";
-import {
-    type TypeGraph,
-    type TypeRef} from "./TypeGraph";
-import {
-    derefTypeRef,
-    typeAndAttributesForTypeRef,
-    assertTypeRefGraph,
-    typeRefIndex,
-    isTypeRef,
-} from "./TypeGraph";
-import { type TypeAttributes} from "./attributes/TypeAttributes";
+import { type TypeGraph, type TypeRef } from "./TypeGraph";
+import { derefTypeRef, typeAndAttributesForTypeRef, assertTypeRefGraph, typeRefIndex, isTypeRef } from "./TypeGraph";
+import { type TypeAttributes } from "./attributes/TypeAttributes";
 import { emptyTypeAttributes, combineTypeAttributes } from "./attributes/TypeAttributes";
 import { assert, panic, indentationString } from "./support/Support";
 import { type StringTypeMapping } from "./TypeBuilder";
@@ -28,26 +20,26 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
 
     private _typeRef: TypeRef | undefined = undefined;
 
-    constructor (
+    public constructor(
         private readonly _typeBuilder: TBuilder,
         private readonly _makeClassUnique: boolean,
         private readonly _typeAttributes: TypeAttributes,
         private readonly _forwardingRef: TypeRef | undefined,
-        private readonly _register: (tref: TypeRef) => void,
+        private readonly _register: (tref: TypeRef) => void
     ) {}
 
-    private builderForNewType (): TBuilder {
+    private builderForNewType(): TBuilder {
         assert(!this._wasUsed, "TypeReconstituter used more than once");
         this._wasUsed = true;
         return this._typeBuilder;
     }
 
-    private builderForSetting (): TBuilder {
+    private builderForSetting(): TBuilder {
         assert(this._wasUsed && this._typeRef !== undefined, "Can't set type members before constructing a type");
         return this._typeBuilder;
     }
 
-    getResult (): TypeRef {
+    public getResult(): TypeRef {
         if (this._typeRef === undefined) {
             return panic("Type was not reconstituted");
         }
@@ -56,20 +48,20 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
     }
 
     // FIXME: Do registration automatically.
-    private register (tref: TypeRef): void {
+    private register(tref: TypeRef): void {
         assert(this._typeRef === undefined, "Cannot register a type twice");
         this._typeRef = tref;
         this._register(tref);
     }
 
-    private registerAndAddAttributes (tref: TypeRef): void {
+    private registerAndAddAttributes(tref: TypeRef): void {
         this._typeBuilder.addAttributes(tref, this._typeAttributes);
         this.register(tref);
     }
 
-    lookup (tref: TypeRef): TypeRef | undefined;
-    lookup (trefs: Iterable<TypeRef>): readonly TypeRef[] | undefined;
-    lookup (trefs: TypeRef | Iterable<TypeRef>): TypeRef | readonly TypeRef[] | undefined {
+    public lookup(tref: TypeRef): TypeRef | undefined;
+    public lookup(trefs: Iterable<TypeRef>): readonly TypeRef[] | undefined;
+    public lookup(trefs: TypeRef | Iterable<TypeRef>): TypeRef | readonly TypeRef[] | undefined {
         assert(!this._wasUsed, "Cannot lookup constituents after building type");
         if (isTypeRef(trefs)) {
             return this._typeBuilder.lookupTypeRefs([trefs], undefined, false);
@@ -80,7 +72,7 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
         }
     }
 
-    lookupMap<K>(trefs: ReadonlyMap<K, TypeRef>): ReadonlyMap<K, TypeRef> | undefined {
+    public lookupMap<K>(trefs: ReadonlyMap<K, TypeRef>): ReadonlyMap<K, TypeRef> | undefined {
         const resultValues = this.lookup(trefs.values());
         if (resultValues === undefined) return undefined;
         assert(resultValues.length === trefs.size, "Didn't get back the correct number of types");
@@ -94,9 +86,9 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
         return result;
     }
 
-    reconstitute (tref: TypeRef): TypeRef;
-    reconstitute (trefs: Iterable<TypeRef>): readonly TypeRef[];
-    reconstitute (trefs: TypeRef | Iterable<TypeRef>): TypeRef | readonly TypeRef[] {
+    public reconstitute(tref: TypeRef): TypeRef;
+    public reconstitute(trefs: Iterable<TypeRef>): readonly TypeRef[];
+    public reconstitute(trefs: TypeRef | Iterable<TypeRef>): TypeRef | readonly TypeRef[] {
         assert(this._wasUsed, "Cannot reconstitute constituents before building type");
         if (isTypeRef(trefs)) {
             return this._typeBuilder.reconstituteTypeRef(trefs);
@@ -105,68 +97,71 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
         }
     }
 
-    reconstituteMap<K>(trefs: ReadonlyMap<K, TypeRef>): ReadonlyMap<K, TypeRef> {
+    public reconstituteMap<K>(trefs: ReadonlyMap<K, TypeRef>): ReadonlyMap<K, TypeRef> {
         return mapMap(trefs, tref => this._typeBuilder.reconstituteTypeRef(tref));
     }
 
-    getPrimitiveType (kind: PrimitiveTypeKind): void {
+    public getPrimitiveType(kind: PrimitiveTypeKind): void {
         this.register(this.builderForNewType().getPrimitiveType(kind, this._typeAttributes, this._forwardingRef));
     }
 
-    getEnumType (cases: ReadonlySet<string>): void {
+    public getEnumType(cases: ReadonlySet<string>): void {
         this.register(this.builderForNewType().getEnumType(this._typeAttributes, cases, this._forwardingRef));
     }
 
-    getUniqueMapType (): void {
+    public getUniqueMapType(): void {
         this.registerAndAddAttributes(this.builderForNewType().getUniqueMapType(this._forwardingRef));
     }
 
-    getMapType (values: TypeRef): void {
+    public getMapType(values: TypeRef): void {
         this.register(this.builderForNewType().getMapType(this._typeAttributes, values, this._forwardingRef));
     }
 
-    getUniqueArrayType (): void {
+    public getUniqueArrayType(): void {
         this.registerAndAddAttributes(this.builderForNewType().getUniqueArrayType(this._forwardingRef));
     }
 
-    getArrayType (items: TypeRef): void {
+    public getArrayType(items: TypeRef): void {
         this.register(this.builderForNewType().getArrayType(this._typeAttributes, items, this._forwardingRef));
     }
 
-    setArrayItems (items: TypeRef): void {
+    public setArrayItems(items: TypeRef): void {
         this.builderForSetting().setArrayItems(this.getResult(), items);
     }
 
-    makeClassProperty (tref: TypeRef, isOptional: boolean): ClassProperty {
+    public makeClassProperty(tref: TypeRef, isOptional: boolean): ClassProperty {
         return this._typeBuilder.makeClassProperty(tref, isOptional);
     }
 
-    getObjectType (properties: ReadonlyMap<string, ClassProperty>, additionalProperties: TypeRef | undefined): void {
-        this.register(
-            this.builderForNewType().getUniqueObjectType(
-                this._typeAttributes,
-                properties,
-                additionalProperties,
-                this._forwardingRef,
-            ),
-        );
-    }
-
-    getUniqueObjectType (
-        properties: ReadonlyMap<string, ClassProperty> | undefined,
-        additionalProperties: TypeRef | undefined,
+    public getObjectType(
+        properties: ReadonlyMap<string, ClassProperty>,
+        additionalProperties: TypeRef | undefined
     ): void {
         this.register(
             this.builderForNewType().getUniqueObjectType(
                 this._typeAttributes,
                 properties,
                 additionalProperties,
-                this._forwardingRef,
-            ),
+                this._forwardingRef
+            )
         );
     }
 
-    getClassType (properties: ReadonlyMap<string, ClassProperty>): void {
+    public getUniqueObjectType(
+        properties: ReadonlyMap<string, ClassProperty> | undefined,
+        additionalProperties: TypeRef | undefined
+    ): void {
+        this.register(
+            this.builderForNewType().getUniqueObjectType(
+                this._typeAttributes,
+                properties,
+                additionalProperties,
+                this._forwardingRef
+            )
+        );
+    }
+
+    public getClassType(properties: ReadonlyMap<string, ClassProperty>): void {
         if (this._makeClassUnique) {
             this.getUniqueClassType(false, properties);
             return;
@@ -175,40 +170,40 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
         this.register(this.builderForNewType().getClassType(this._typeAttributes, properties, this._forwardingRef));
     }
 
-    getUniqueClassType (isFixed: boolean, properties: ReadonlyMap<string, ClassProperty> | undefined): void {
+    public getUniqueClassType(isFixed: boolean, properties: ReadonlyMap<string, ClassProperty> | undefined): void {
         this.register(
-            this.builderForNewType().getUniqueClassType(this._typeAttributes, isFixed, properties, this._forwardingRef),
+            this.builderForNewType().getUniqueClassType(this._typeAttributes, isFixed, properties, this._forwardingRef)
         );
     }
 
-    setObjectProperties (
+    public setObjectProperties(
         properties: ReadonlyMap<string, ClassProperty>,
-        additionalProperties: TypeRef | undefined,
+        additionalProperties: TypeRef | undefined
     ): void {
         this.builderForSetting().setObjectProperties(this.getResult(), properties, additionalProperties);
     }
 
-    getUnionType (members: ReadonlySet<TypeRef>): void {
+    public getUnionType(members: ReadonlySet<TypeRef>): void {
         this.register(this.builderForNewType().getUnionType(this._typeAttributes, members, this._forwardingRef));
     }
 
-    getUniqueUnionType (): void {
+    public getUniqueUnionType(): void {
         this.register(
-            this.builderForNewType().getUniqueUnionType(this._typeAttributes, undefined, this._forwardingRef),
+            this.builderForNewType().getUniqueUnionType(this._typeAttributes, undefined, this._forwardingRef)
         );
     }
 
-    getIntersectionType (members: ReadonlySet<TypeRef>): void {
+    public getIntersectionType(members: ReadonlySet<TypeRef>): void {
         this.register(this.builderForNewType().getIntersectionType(this._typeAttributes, members, this._forwardingRef));
     }
 
-    getUniqueIntersectionType (members?: ReadonlySet<TypeRef>): void {
+    public getUniqueIntersectionType(members?: ReadonlySet<TypeRef>): void {
         this.register(
-            this.builderForNewType().getUniqueIntersectionType(this._typeAttributes, members, this._forwardingRef),
+            this.builderForNewType().getUniqueIntersectionType(this._typeAttributes, members, this._forwardingRef)
         );
     }
 
-    setSetOperationMembers (members: ReadonlySet<TypeRef>): void {
+    public setSetOperationMembers(members: ReadonlySet<TypeRef>): void {
         this.builderForSetting().setSetOperationMembers(this.getResult(), members);
     }
 }
@@ -220,12 +215,12 @@ export abstract class BaseGraphRewriteBuilder extends TypeBuilder implements Typ
 
     private _printIndent = 0;
 
-    constructor (
-        readonly originalGraph: TypeGraph,
+    public constructor(
+        protected readonly originalGraph: TypeGraph,
         stringTypeMapping: StringTypeMapping,
         alphabetizeProperties: boolean,
         graphHasProvenanceAttributes: boolean,
-        protected readonly debugPrint: boolean,
+        protected readonly debugPrint: boolean
     ) {
         super(
             originalGraph.serial + 1,
@@ -233,13 +228,13 @@ export abstract class BaseGraphRewriteBuilder extends TypeBuilder implements Typ
             alphabetizeProperties,
             false,
             false,
-            graphHasProvenanceAttributes,
+            graphHasProvenanceAttributes
         );
     }
 
-    withForwardingRef (
+    public withForwardingRef(
         maybeForwardingRef: TypeRef | undefined,
-        typeCreator: (forwardingRef: TypeRef) => TypeRef,
+        typeCreator: (forwardingRef: TypeRef) => TypeRef
     ): TypeRef {
         if (maybeForwardingRef !== undefined) {
             return typeCreator(maybeForwardingRef);
@@ -251,18 +246,26 @@ export abstract class BaseGraphRewriteBuilder extends TypeBuilder implements Typ
         return actualRef;
     }
 
-    reconstituteType (t: Type, attributes?: TypeAttributes, forwardingRef?: TypeRef): TypeRef {
+    public reconstituteType(t: Type, attributes?: TypeAttributes, forwardingRef?: TypeRef): TypeRef {
         return this.reconstituteTypeRef(t.typeRef, attributes, forwardingRef);
     }
 
-    abstract lookupTypeRefs (typeRefs: TypeRef[], forwardingRef?: TypeRef, replaceSet?: boolean): TypeRef | undefined;
-    protected abstract forceReconstituteTypeRef (
+    public abstract lookupTypeRefs(
+        typeRefs: TypeRef[],
+        forwardingRef?: TypeRef,
+        replaceSet?: boolean
+    ): TypeRef | undefined;
+    protected abstract forceReconstituteTypeRef(
         originalRef: TypeRef,
         attributes?: TypeAttributes,
         maybeForwardingRef?: TypeRef
     ): TypeRef;
 
-    reconstituteTypeRef (originalRef: TypeRef, attributes?: TypeAttributes, maybeForwardingRef?: TypeRef): TypeRef {
+    public reconstituteTypeRef(
+        originalRef: TypeRef,
+        attributes?: TypeAttributes,
+        maybeForwardingRef?: TypeRef
+    ): TypeRef {
         const maybeRef = this.lookupTypeRefs([originalRef], maybeForwardingRef);
         if (maybeRef !== undefined) {
             if (attributes !== undefined) {
@@ -275,11 +278,11 @@ export abstract class BaseGraphRewriteBuilder extends TypeBuilder implements Typ
         return this.forceReconstituteTypeRef(originalRef, attributes, maybeForwardingRef);
     }
 
-    reconstituteTypeAttributes (attributes: TypeAttributes): TypeAttributes {
+    public reconstituteTypeAttributes(attributes: TypeAttributes): TypeAttributes {
         return mapMap(attributes, (v, a) => a.reconstitute(this, v));
     }
 
-    protected assertTypeRefsToReconstitute (typeRefs: TypeRef[], forwardingRef?: TypeRef): void {
+    protected assertTypeRefsToReconstitute(typeRefs: TypeRef[], forwardingRef?: TypeRef): void {
         assert(typeRefs.length > 0, "Must have at least one type to reconstitute");
         for (const originalRef of typeRefs) {
             assertTypeRefGraph(originalRef, this.originalGraph);
@@ -290,15 +293,15 @@ export abstract class BaseGraphRewriteBuilder extends TypeBuilder implements Typ
         }
     }
 
-    protected changeDebugPrintIndent (delta: number): void {
+    protected changeDebugPrintIndent(delta: number): void {
         this._printIndent += delta;
     }
 
-    protected get debugPrintIndentation (): string {
+    protected get debugPrintIndentation(): string {
         return indentationString(this._printIndent);
     }
 
-    finish (): TypeGraph {
+    public finish(): TypeGraph {
         for (const [name, t] of this.originalGraph.topLevels) {
             this.addTopLevel(name, this.reconstituteType(t));
         }
@@ -306,11 +309,11 @@ export abstract class BaseGraphRewriteBuilder extends TypeBuilder implements Typ
         return super.finish();
     }
 
-    setLostTypeAttributes (): void {
+    public setLostTypeAttributes(): void {
         this._lostTypeAttributes = true;
     }
 
-    get lostTypeAttributes (): boolean {
+    public get lostTypeAttributes(): boolean {
         return this._lostTypeAttributes;
     }
 }
@@ -318,20 +321,20 @@ export abstract class BaseGraphRewriteBuilder extends TypeBuilder implements Typ
 export class GraphRemapBuilder extends BaseGraphRewriteBuilder {
     private readonly _attributeSources: Map<Type, Type[]> = new Map();
 
-    constructor (
+    public constructor(
         originalGraph: TypeGraph,
         stringTypeMapping: StringTypeMapping,
         alphabetizeProperties: boolean,
         graphHasProvenanceAttributes: boolean,
         private readonly _map: ReadonlyMap<Type, Type>,
-        debugPrintRemapping: boolean,
+        debugPrintRemapping: boolean
     ) {
         super(
             originalGraph,
             stringTypeMapping,
             alphabetizeProperties,
             graphHasProvenanceAttributes,
-            debugPrintRemapping,
+            debugPrintRemapping
         );
 
         for (const [source, target] of _map) {
@@ -345,22 +348,22 @@ export class GraphRemapBuilder extends BaseGraphRewriteBuilder {
         }
     }
 
-    protected makeIdentity (_maker: () => MaybeTypeIdentity): MaybeTypeIdentity {
+    protected makeIdentity(_maker: () => MaybeTypeIdentity): MaybeTypeIdentity {
         return undefined;
     }
 
-    private getMapTarget (tref: TypeRef): TypeRef {
+    private getMapTarget(tref: TypeRef): TypeRef {
         const maybeType = this._map.get(derefTypeRef(tref, this.originalGraph));
         if (maybeType === undefined) return tref;
         assert(this._map.get(maybeType) === undefined, "We have a type that's remapped to a remapped type");
         return maybeType.typeRef;
     }
 
-    protected addForwardingIntersection (_forwardingRef: TypeRef, _tref: TypeRef): TypeRef {
+    protected addForwardingIntersection(_forwardingRef: TypeRef, _tref: TypeRef): TypeRef {
         return panic("We can't add forwarding intersections when we're removing forwarding intersections");
     }
 
-    lookupTypeRefs (typeRefs: TypeRef[], forwardingRef?: TypeRef): TypeRef | undefined {
+    public lookupTypeRefs(typeRefs: TypeRef[], forwardingRef?: TypeRef): TypeRef | undefined {
         assert(forwardingRef === undefined, "We can't have a forwarding ref when we remap");
 
         this.assertTypeRefsToReconstitute(typeRefs, forwardingRef);
@@ -376,10 +379,10 @@ export class GraphRemapBuilder extends BaseGraphRewriteBuilder {
         return first;
     }
 
-    protected forceReconstituteTypeRef (
+    protected forceReconstituteTypeRef(
         originalRef: TypeRef,
         attributes?: TypeAttributes,
-        maybeForwardingRef?: TypeRef,
+        maybeForwardingRef?: TypeRef
     ): TypeRef {
         originalRef = this.getMapTarget(originalRef);
 
@@ -407,13 +410,13 @@ export class GraphRemapBuilder extends BaseGraphRewriteBuilder {
                 attributes = combineTypeAttributes(
                     "union",
                     attributes,
-                    this.reconstituteTypeAttributes(originalAttributes),
+                    this.reconstituteTypeAttributes(originalAttributes)
                 );
             } else {
                 attributes = combineTypeAttributes(
                     "union",
                     attributes,
-                    this.reconstituteTypeAttributes(combineTypeAttributesOfTypes("union", attributeSources)),
+                    this.reconstituteTypeAttributes(combineTypeAttributesOfTypes("union", attributeSources))
                 );
             }
 
@@ -430,7 +433,7 @@ export class GraphRemapBuilder extends BaseGraphRewriteBuilder {
                         this.changeDebugPrintIndent(-1);
                         console.log(`${this.debugPrintIndentation}reconstituted ${index} as ${typeRefIndex(tref)}`);
                     }
-                },
+                }
             );
             originalType.reconstitute(reconstituter, this.canonicalOrder);
             return reconstituter.getResult();
@@ -443,7 +446,7 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
 
     private readonly _reconstitutedUnions: EqualityMap<Set<TypeRef>, TypeRef> = new EqualityMap();
 
-    constructor (
+    public constructor(
         originalGraph: TypeGraph,
         stringTypeMapping: StringTypeMapping,
         alphabetizeProperties: boolean,
@@ -454,14 +457,14 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
             typesToReplace: ReadonlySet<T>,
             builder: GraphRewriteBuilder<T>,
             forwardingRef: TypeRef
-        ) => TypeRef,
+        ) => TypeRef
     ) {
         super(
             originalGraph,
             stringTypeMapping,
             alphabetizeProperties,
             graphHasProvenanceAttributes,
-            debugPrintReconstitution,
+            debugPrintReconstitution
         );
 
         this._setsToReplaceByMember = new Map();
@@ -475,19 +478,19 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
         }
     }
 
-    registerUnion (typeRefs: TypeRef[], reconstituted: TypeRef): void {
+    public registerUnion(typeRefs: TypeRef[], reconstituted: TypeRef): void {
         const set = new Set(typeRefs);
         assert(!this._reconstitutedUnions.has(set), "Cannot register reconstituted set twice");
         this._reconstitutedUnions.set(set, reconstituted);
     }
 
-    private replaceSet (typesToReplace: ReadonlySet<T>, maybeForwardingRef: TypeRef | undefined): TypeRef {
+    private replaceSet(typesToReplace: ReadonlySet<T>, maybeForwardingRef: TypeRef | undefined): TypeRef {
         return this.withForwardingRef(maybeForwardingRef, forwardingRef => {
             if (this.debugPrint) {
                 console.log(
                     `${this.debugPrintIndentation}replacing set ${Array.from(typesToReplace)
                         .map(t => t.index.toString())
-                        .join(",")} as ${typeRefIndex(forwardingRef)}`,
+                        .join(",")} as ${typeRefIndex(forwardingRef)}`
                 );
                 this.changeDebugPrintIndent(1);
             }
@@ -507,7 +510,7 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
                 console.log(
                     `${this.debugPrintIndentation}replaced set ${Array.from(typesToReplace)
                         .map(t => t.index.toString())
-                        .join(",")} as ${typeRefIndex(forwardingRef)}`,
+                        .join(",")} as ${typeRefIndex(forwardingRef)}`
                 );
             }
 
@@ -515,10 +518,10 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
         });
     }
 
-    protected forceReconstituteTypeRef (
+    protected forceReconstituteTypeRef(
         originalRef: TypeRef,
         attributes?: TypeAttributes,
-        maybeForwardingRef?: TypeRef,
+        maybeForwardingRef?: TypeRef
     ): TypeRef {
         const [originalType, originalAttributes] = typeAndAttributesForTypeRef(originalRef, this.originalGraph);
         const index = typeRefIndex(originalRef);
@@ -534,7 +537,7 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
             attributes = combineTypeAttributes(
                 "union",
                 attributes,
-                this.reconstituteTypeAttributes(originalAttributes),
+                this.reconstituteTypeAttributes(originalAttributes)
             );
         }
 
@@ -560,7 +563,7 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
     }
 
     /*
-    reconstituteTypeUnmodified(originalType: Type): TypeRef {
+     public reconstituteTypeUnmodified(originalType: Type): TypeRef {
         const reconstituter = new TypeReconstituter(
             this,
             this.alphabetizeProperties,
@@ -575,7 +578,7 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
 
     // If the union of these type refs have been, or are supposed to be, reconstituted to
     // one target type, return it.  Otherwise return undefined.
-    lookupTypeRefs (typeRefs: TypeRef[], forwardingRef?: TypeRef, replaceSet = true): TypeRef | undefined {
+    public lookupTypeRefs(typeRefs: TypeRef[], forwardingRef?: TypeRef, replaceSet = true): TypeRef | undefined {
         this.assertTypeRefsToReconstitute(typeRefs, forwardingRef);
 
         // Check whether we have already reconstituted them.  That means ensuring

@@ -193,7 +193,7 @@ const upperNamingFunction = funPrefixNamer("upper", s => scalaNameStyle(true, s)
 const lowerNamingFunction = funPrefixNamer("lower", s => scalaNameStyle(false, s));
 
 export class Scala3Renderer extends ConvenienceRenderer {
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         protected readonly _scalaOptions: OptionValues<typeof scala3Options>
@@ -250,10 +250,10 @@ export class Scala3Renderer extends ConvenienceRenderer {
             delimiter === "curly"
                 ? ["{", "}"]
                 : delimiter === "paren"
-                ? ["(", ")"]
-                : delimiter === "none"
-                ? ["", ""]
-                : ["{", "})"];
+                  ? ["(", ")"]
+                  : delimiter === "none"
+                    ? ["", ""]
+                    : ["{", "})"];
         this.emitLine(line, " ", open);
         this.indent(f);
         this.emitLine(close);
@@ -551,7 +551,7 @@ export class Smithy4sRenderer extends Scala3Renderer {
 }
 
 export class CirceRenderer extends Scala3Renderer {
-    seenUnionTypes: string[] = [];
+    private seenUnionTypes: string[] = [];
 
     protected circeEncoderForType(t: Type, _ = false, noOptional = false, paramName: string = ""): Sourcelike {
         return matchType<Sourcelike>(
@@ -737,7 +737,7 @@ export class CirceRenderer extends Scala3Renderer {
 }
 
 export class Scala3TargetLanguage extends TargetLanguage {
-    constructor() {
+    public constructor() {
         super("Scala3", ["scala3"], "scala");
     }
 
@@ -745,11 +745,11 @@ export class Scala3TargetLanguage extends TargetLanguage {
         return [scala3Options.framework, scala3Options.packageName];
     }
 
-    get supportsOptionalClassProperties(): boolean {
+    public get supportsOptionalClassProperties(): boolean {
         return true;
     }
 
-    get supportsUnionsWithBothNumberTypes(): boolean {
+    public get supportsUnionsWithBothNumberTypes(): boolean {
         return true;
     }
 

@@ -7,27 +7,27 @@ import {
     mapMergeWithInto,
     definedMap,
     addHashCode,
-    setUnionInto,
+    setUnionInto
 } from "collection-utils";
 
 import { TypeAttributeKind } from "./TypeAttributes";
 import { defined, assert } from "../support/Support";
-import { type StringTypeMapping} from "../TypeBuilder";
+import { type StringTypeMapping } from "../TypeBuilder";
 import { stringTypeMappingGet } from "../TypeBuilder";
 import { type TransformedStringTypeKind } from "../Type";
 import { type DateTimeRecognizer } from "../DateTime";
 
 export class StringTypes {
-    static readonly unrestricted: StringTypes = new StringTypes(undefined, new Set());
+    public static readonly unrestricted: StringTypes = new StringTypes(undefined, new Set());
 
-    static fromCase (s: string, count: number): StringTypes {
-        const caseMap: { [name: string]: number, } = {};
+    public static fromCase(s: string, count: number): StringTypes {
+        const caseMap: { [name: string]: number } = {};
         caseMap[s] = count;
         return new StringTypes(new Map([[s, count] as [string, number]]), new Set());
     }
 
-    static fromCases (cases: string[]): StringTypes {
-        const caseMap: { [name: string]: number, } = {};
+    public static fromCases(cases: string[]): StringTypes {
+        const caseMap: { [name: string]: number } = {};
         for (const s of cases) {
             caseMap[s] = 1;
         }
@@ -36,20 +36,20 @@ export class StringTypes {
     }
 
     // undefined means no restrictions
-    constructor (
-        readonly cases: ReadonlyMap<string, number> | undefined,
-        readonly transformations: ReadonlySet<TransformedStringTypeKind>,
+    public constructor(
+        public readonly cases: ReadonlyMap<string, number> | undefined,
+        public readonly transformations: ReadonlySet<TransformedStringTypeKind>
     ) {
         if (cases === undefined) {
             assert(transformations.size === 0, "We can't have an unrestricted string that also allows transformations");
         }
     }
 
-    get isRestricted (): boolean {
+    public get isRestricted(): boolean {
         return this.cases !== undefined;
     }
 
-    union (othersArray: StringTypes[], startIndex: number): StringTypes {
+    public union(othersArray: StringTypes[], startIndex: number): StringTypes {
         if (this.cases === undefined) return this;
 
         const cases = new Map(this.cases);
@@ -67,7 +67,7 @@ export class StringTypes {
         return new StringTypes(cases, transformations);
     }
 
-    intersect (othersArray: StringTypes[], startIndex: number): StringTypes {
+    public intersect(othersArray: StringTypes[], startIndex: number): StringTypes {
         let cases = this.cases;
         let transformations = this.transformations;
 
@@ -95,7 +95,7 @@ export class StringTypes {
         return new StringTypes(cases, transformations);
     }
 
-    applyStringTypeMapping (mapping: StringTypeMapping): StringTypes {
+    public applyStringTypeMapping(mapping: StringTypeMapping): StringTypes {
         if (!this.isRestricted) return this;
 
         const kinds = new Set<TransformedStringTypeKind>();
@@ -108,18 +108,18 @@ export class StringTypes {
         return new StringTypes(this.cases, new Set(kinds));
     }
 
-    equals (other: any): boolean {
+    public equals(other: any): boolean {
         if (!(other instanceof StringTypes)) return false;
         return areEqual(this.cases, other.cases) && areEqual(this.transformations, other.transformations);
     }
 
-    hashCode (): number {
+    public hashCode(): number {
         let h = hashCodeOf(this.cases);
         h = addHashCode(h, hashCodeOf(this.transformations));
         return h;
     }
 
-    toString (): string {
+    public toString(): string {
         const parts: string[] = [];
 
         const enumCases = this.cases;
@@ -139,33 +139,33 @@ export class StringTypes {
 }
 
 class StringTypesTypeAttributeKind extends TypeAttributeKind<StringTypes> {
-    constructor () {
+    public constructor() {
         super("stringTypes");
     }
 
-    get inIdentity (): boolean {
+    public get inIdentity(): boolean {
         return true;
     }
 
-    requiresUniqueIdentity (st: StringTypes): boolean {
+    public requiresUniqueIdentity(st: StringTypes): boolean {
         return st.cases !== undefined && st.cases.size > 0;
     }
 
-    combine (arr: StringTypes[]): StringTypes {
+    public combine(arr: StringTypes[]): StringTypes {
         assert(arr.length > 0);
         return arr[0].union(arr, 1);
     }
 
-    intersect (arr: StringTypes[]): StringTypes {
+    public intersect(arr: StringTypes[]): StringTypes {
         assert(arr.length > 0);
         return arr[0].intersect(arr, 1);
     }
 
-    makeInferred (_: StringTypes): undefined {
+    public makeInferred(_: StringTypes): undefined {
         return undefined;
     }
 
-    stringify (st: StringTypes): string {
+    public stringify(st: StringTypes): string {
         return st.toString();
     }
 }
@@ -178,7 +178,7 @@ const INTEGER_STRING = /^(0|-?[1-9]\d*)$/;
 const MIN_INTEGER_STRING = 1 << 31;
 const MAX_INTEGER_STRING = -(MIN_INTEGER_STRING + 1);
 
-function isIntegerString (s: string): boolean {
+function isIntegerString(s: string): boolean {
     if (INTEGER_STRING.exec(s) === null) {
         return false;
     }
@@ -189,7 +189,7 @@ function isIntegerString (s: string): boolean {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
-function isUUID (s: string): boolean {
+function isUUID(s: string): boolean {
     return UUID.exec(s) !== null;
 }
 
@@ -198,7 +198,7 @@ function isUUID (s: string): boolean {
 // with those characters which ajv refuses to accept as `uri`.
 const URI = /^(https?|ftp):\/\/[^{}]+$/;
 
-function isURI (s: string): boolean {
+function isURI(s: string): boolean {
     return URI.exec(s) !== null;
 }
 
@@ -209,9 +209,9 @@ function isURI (s: string): boolean {
  *
  * @param s The string for which to determine the transformed string type kind.
  */
-export function inferTransformedStringTypeKindForString (
+export function inferTransformedStringTypeKindForString(
     s: string,
-    recognizer: DateTimeRecognizer,
+    recognizer: DateTimeRecognizer
 ): TransformedStringTypeKind | undefined {
     if (s.length === 0 || !"0123456789-abcdefth".includes(s[0])) return undefined;
 

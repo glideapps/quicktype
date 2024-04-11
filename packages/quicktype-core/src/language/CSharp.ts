@@ -201,7 +201,7 @@ export const cSharpOptions = {
 };
 
 export class CSharpTargetLanguage extends TargetLanguage {
-    constructor() {
+    public constructor() {
         super("C#", ["cs", "csharp"], "cs");
     }
 
@@ -222,7 +222,7 @@ export class CSharpTargetLanguage extends TargetLanguage {
         ];
     }
 
-    get stringTypeMapping(): StringTypeMapping {
+    public get stringTypeMapping(): StringTypeMapping {
         const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
         mapping.set("date", "date-time");
         mapping.set("time", "date-time");
@@ -234,15 +234,15 @@ export class CSharpTargetLanguage extends TargetLanguage {
         return mapping;
     }
 
-    get supportsUnionsWithBothNumberTypes(): boolean {
+    public get supportsUnionsWithBothNumberTypes(): boolean {
         return true;
     }
 
-    get supportsOptionalClassProperties(): boolean {
+    public get supportsOptionalClassProperties(): boolean {
         return true;
     }
 
-    needsTransformerForType(t: Type): boolean {
+    public needsTransformerForType(t: Type): boolean {
         const need = needTransformerForType(t);
         return need !== "none" && need !== "nullable";
     }
@@ -424,7 +424,7 @@ function isValueType(t: Type): boolean {
 }
 
 export class CSharpRenderer extends ConvenienceRenderer {
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _csOptions: OptionValues<typeof cSharpOptions>
@@ -801,7 +801,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
 
     private readonly _needNamespaces: boolean;
 
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof newtonsoftCSharpOptions>
@@ -1562,7 +1562,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
 
     private readonly _needNamespaces: boolean;
 
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof systemTextJsonCSharpOptions>
@@ -2428,19 +2428,19 @@ internal class IsoDateTimeOffsetConverter : JsonConverter<DateTimeOffset>
 
     public DateTimeStyles DateTimeStyles
     {
-        get => _dateTimeStyles;
+public get => _dateTimeStyles;
         set => _dateTimeStyles = value;
     }
 
     public string? DateTimeFormat
     {
-        get => _dateTimeFormat ?? string.Empty;
+public get => _dateTimeFormat ?? string.Empty;
         set => _dateTimeFormat = (string.IsNullOrEmpty(value)) ? null : value;
     }
 
     public CultureInfo Culture
     {
-        get => _culture ?? CultureInfo.CurrentCulture;
+public get => _culture ?? CultureInfo.CurrentCulture;
         set => _culture = value;
     }
 

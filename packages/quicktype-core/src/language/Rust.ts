@@ -121,7 +121,7 @@ export class RustTargetLanguage extends TargetLanguage {
         return new RustRenderer(this, renderContext, getOptionValues(rustOptions, untypedOptionValues));
     }
 
-    constructor() {
+    public constructor() {
         super("Rust", ["rust", "rs", "rustlang"], "rs");
     }
 
@@ -267,7 +267,7 @@ const standardUnicodeRustEscape = (codePoint: number): string => {
 const rustStringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, standardUnicodeRustEscape));
 
 export class RustRenderer extends ConvenienceRenderer {
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof rustOptions>

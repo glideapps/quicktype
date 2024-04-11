@@ -4,9 +4,9 @@ import { TargetLanguage } from "../TargetLanguage";
 import { type ClassProperty } from "../Type";
 import { Type, ClassType, EnumType, ArrayType, MapType, UnionType } from "../Type";
 import { matchType, nullableFromUnion, isAnyOrNull } from "../TypeUtils";
-import { type Name} from "../Naming";
+import { type Name } from "../Naming";
 import { Namer, funPrefixNamer } from "../Naming";
-import { type Sourcelike} from "../Source";
+import { type Sourcelike } from "../Source";
 import { modifySource } from "../Source";
 import {
     splitIntoWords,
@@ -19,7 +19,7 @@ import {
     stringEscape,
     addPrefixIfNecessary,
     repeatString,
-    fastIsUpperCase,
+    fastIsUpperCase
 } from "../support/Strings";
 import { type ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
@@ -32,7 +32,8 @@ import unicode from "unicode-properties";
 
 export type MemoryAttribute = "assign" | "strong" | "copy";
 export interface OutputFeatures {
-    implementation: boolean; interface: boolean; 
+    implementation: boolean;
+    interface: boolean;
 }
 
 const DEBUG = false;
@@ -42,38 +43,38 @@ export const objcOptions = {
     features: new EnumOption("features", "Interface and implementation", [
         ["all", { interface: true, implementation: true }],
         ["interface", { interface: true, implementation: false }],
-        ["implementation", { interface: false, implementation: true }],
+        ["implementation", { interface: false, implementation: true }]
     ]),
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     marshallingFunctions: new BooleanOption("functions", "C-style functions", false),
     classPrefix: new StringOption("class-prefix", "Class prefix", "PREFIX", DEFAULT_CLASS_PREFIX),
-    extraComments: new BooleanOption("extra-comments", "Extra comments", false),
+    extraComments: new BooleanOption("extra-comments", "Extra comments", false)
 };
 
 export class ObjectiveCTargetLanguage extends TargetLanguage {
-    constructor () {
+    public constructor() {
         super("Objective-C", ["objc", "objective-c", "objectivec"], "m");
     }
 
-    protected getOptions (): Array<Option<any>> {
+    protected getOptions(): Array<Option<any>> {
         return [
             objcOptions.justTypes,
             objcOptions.classPrefix,
             objcOptions.features,
             objcOptions.extraComments,
-            objcOptions.marshallingFunctions,
+            objcOptions.marshallingFunctions
         ];
     }
 
-    protected makeRenderer (
+    protected makeRenderer(
         renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any, },
+        untypedOptionValues: { [name: string]: any }
     ): ObjectiveCRenderer {
         return new ObjectiveCRenderer(this, renderContext, getOptionValues(objcOptions, untypedOptionValues));
     }
 }
 
-function typeNameStyle (prefix: string, original: string): string {
+function typeNameStyle(prefix: string, original: string): string {
     const words = splitIntoWords(original);
     const result = combineWords(
         words,
@@ -83,12 +84,12 @@ function typeNameStyle (prefix: string, original: string): string {
         allUpperWordStyle,
         allUpperWordStyle,
         "",
-        isStartCharacter,
+        isStartCharacter
     );
     return addPrefixIfNecessary(prefix, result);
 }
 
-function propertyNameStyle (original: string, isBool = false): string {
+function propertyNameStyle(original: string, isBool = false): string {
     // Objective-C developers are uncomfortable with property "id"
     // so we use an alternate name in this special case.
     if (original === "id") {
@@ -119,7 +120,7 @@ function propertyNameStyle (original: string, isBool = false): string {
         allLowerWordStyle,
         allUpperWordStyle,
         "",
-        isStartCharacter,
+        isStartCharacter
     );
 }
 
@@ -171,7 +172,7 @@ const keywords = [
     "unsigned",
     "void",
     "volatile",
-    "while",
+    "while"
 ];
 
 const forbiddenPropertyNames = [
@@ -183,7 +184,7 @@ const forbiddenPropertyNames = [
     "mutableCopy",
     "superclass",
     "debugDescription",
-    "new",
+    "new"
 ];
 
 const booleanPrefixes = [
@@ -203,14 +204,14 @@ const booleanPrefixes = [
     "requires",
     "require",
     "needs",
-    "need",
+    "need"
 ];
 
-function isStartCharacter (utf16Unit: number): boolean {
+function isStartCharacter(utf16Unit: number): boolean {
     return unicode.isAlphabetic(utf16Unit) || utf16Unit === 0x5f; // underscore
 }
 
-function isPartCharacter (utf16Unit: number): boolean {
+function isPartCharacter(utf16Unit: number): boolean {
     const category: string = unicode.getCategory(utf16Unit);
     return ["Nd", "Pc", "Mn", "Mc"].includes(category) || isStartCharacter(utf16Unit);
 }
@@ -220,7 +221,7 @@ const legalizeName = utf16LegalizeCharacters(isPartCharacter);
 const staticEnumValuesIdentifier = "values";
 const forbiddenForEnumCases = ["new", staticEnumValuesIdentifier];
 
-function splitExtension (filename: string): [string, string] {
+function splitExtension(filename: string): [string, string] {
     const i = filename.lastIndexOf(".");
     const extension = i !== -1 ? filename.split(".").pop() : "m";
     filename = i !== -1 ? filename.slice(0, i) : filename;
@@ -232,10 +233,10 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
 
     private readonly _classPrefix: string;
 
-    constructor (
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        private readonly _options: OptionValues<typeof objcOptions>,
+        private readonly _options: OptionValues<typeof objcOptions>
     ) {
         super(targetLanguage, renderContext);
 
@@ -248,7 +249,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         }
     }
 
-    private inferClassPrefix (name: string): string {
+    private inferClassPrefix(name: string): string {
         const l = name.length;
         let firstNonUpper = 0;
         while (firstNonUpper < l && fastIsUpperCase(name.charCodeAt(firstNonUpper))) {
@@ -259,88 +260,88 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         return name.slice(0, firstNonUpper - 1);
     }
 
-    protected forbiddenNamesForGlobalNamespace (): string[] {
+    protected forbiddenNamesForGlobalNamespace(): string[] {
         return keywords;
     }
 
-    protected forbiddenForObjectProperties (_c: ClassType, _className: Name): ForbiddenWordsInfo {
+    protected forbiddenForObjectProperties(_c: ClassType, _className: Name): ForbiddenWordsInfo {
         return { names: forbiddenPropertyNames, includeGlobalForbidden: true };
     }
 
-    protected forbiddenForEnumCases (_e: EnumType, _enumName: Name): ForbiddenWordsInfo {
+    protected forbiddenForEnumCases(_e: EnumType, _enumName: Name): ForbiddenWordsInfo {
         return { names: forbiddenForEnumCases, includeGlobalForbidden: true };
     }
 
-    protected makeNamedTypeNamer (): Namer {
+    protected makeNamedTypeNamer(): Namer {
         return funPrefixNamer("types", rawName => typeNameStyle(this._classPrefix, rawName));
     }
 
-    protected namerForObjectProperty (_: ClassType, p: ClassProperty): Namer {
+    protected namerForObjectProperty(_: ClassType, p: ClassProperty): Namer {
         // TODO why is underscore being removed?
         return new Namer("properties", s => propertyNameStyle(s, p.type.kind === "bool"), [
             "_",
             "the",
             "one",
             "some",
-            "another",
+            "another"
         ]);
     }
 
-    protected makeUnionMemberNamer (): null {
+    protected makeUnionMemberNamer(): null {
         return null;
     }
 
-    protected makeEnumCaseNamer (): Namer {
+    protected makeEnumCaseNamer(): Namer {
         return new Namer("enum-cases", propertyNameStyle, []);
     }
 
-    protected namedTypeToNameForTopLevel (type: Type): Type | undefined {
+    protected namedTypeToNameForTopLevel(type: Type): Type | undefined {
         return type;
     }
 
-    protected emitDescriptionBlock (lines: Sourcelike[]): void {
+    protected emitDescriptionBlock(lines: Sourcelike[]): void {
         this.emitCommentLines(lines, { lineStart: "/// " });
     }
 
-    protected emitBlock (line: Sourcelike, f: () => void): void {
+    protected emitBlock(line: Sourcelike, f: () => void): void {
         this.emitLine(line, " {");
         this.indent(f);
         this.emitLine("}");
     }
 
-    protected emitMethod (declaration: Sourcelike, f: () => void) {
+    protected emitMethod(declaration: Sourcelike, f: () => void) {
         this.emitLine(declaration);
         this.emitLine("{");
         this.indent(f);
         this.emitLine("}");
     }
 
-    protected emitExtraComments (...comments: Sourcelike[]) {
+    protected emitExtraComments(...comments: Sourcelike[]) {
         if (!this._options.extraComments) return;
         for (const comment of comments) {
             this.emitLine("// ", comment);
         }
     }
 
-    protected startFile (basename: Sourcelike, extension: string): void {
+    protected startFile(basename: Sourcelike, extension: string): void {
         assert(this._currentFilename === undefined, "Previous file wasn't finished");
         // FIXME: The filenames should actually be Sourcelikes, too
         this._currentFilename = `${this.sourcelikeToString(basename)}.${extension}`;
     }
 
-    protected finishFile (): void {
+    protected finishFile(): void {
         super.finishFile(defined(this._currentFilename));
         this._currentFilename = undefined;
     }
 
-    protected memoryAttribute (t: Type, isNullable: boolean): MemoryAttribute {
+    protected memoryAttribute(t: Type, isNullable: boolean): MemoryAttribute {
         return matchType<MemoryAttribute>(
             t,
             _anyType => "copy",
             _nullType => "copy",
-            _boolType => isNullable ? "strong" : "assign",
-            _integerType => isNullable ? "strong" : "assign",
-            _doubleType => isNullable ? "strong" : "assign",
+            _boolType => (isNullable ? "strong" : "assign"),
+            _integerType => (isNullable ? "strong" : "assign"),
+            _doubleType => (isNullable ? "strong" : "assign"),
             _stringType => "copy",
             _arrayType => "copy",
             _classType => "strong",
@@ -349,19 +350,19 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 return nullable !== null ? this.memoryAttribute(nullable, true) : "copy";
-            },
+            }
         );
     }
 
-    protected objcType (t: Type, nullableOrBoxed = false): [Sourcelike, string] {
+    protected objcType(t: Type, nullableOrBoxed = false): [Sourcelike, string] {
         return matchType<[Sourcelike, string]>(
             t,
             _anyType => ["id", ""],
             // For now, we're treating nulls just like any
             _nullType => ["id", ""],
-            _boolType => nullableOrBoxed ? ["NSNumber", " *"] : ["BOOL", ""],
-            _integerType => nullableOrBoxed ? ["NSNumber", " *"] : ["NSInteger", ""],
-            _doubleType => nullableOrBoxed ? ["NSNumber", " *"] : ["double", ""],
+            _boolType => (nullableOrBoxed ? ["NSNumber", " *"] : ["BOOL", ""]),
+            _integerType => (nullableOrBoxed ? ["NSNumber", " *"] : ["NSInteger", ""]),
+            _doubleType => (nullableOrBoxed ? ["NSNumber", " *"] : ["double", ""]),
             _stringType => ["NSString", " *"],
             arrayType => {
                 const itemType = arrayType.items;
@@ -379,11 +380,11 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 return nullable !== null ? this.objcType(nullable, true) : ["id", ""];
-            },
+            }
         );
     }
 
-    private jsonType (t: Type): [Sourcelike, string] {
+    private jsonType(t: Type): [Sourcelike, string] {
         return matchType<[Sourcelike, string]>(
             t,
             _anyType => ["id", ""],
@@ -400,11 +401,11 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 return nullable !== null ? this.jsonType(nullable) : ["id", ""];
-            },
+            }
         );
     }
 
-    protected fromDynamicExpression (t: Type, ...dynamic: Sourcelike[]): Sourcelike {
+    protected fromDynamicExpression(t: Type, ...dynamic: Sourcelike[]): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => dynamic,
@@ -420,11 +421,11 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 return nullable !== null ? this.fromDynamicExpression(nullable, dynamic) : dynamic;
-            },
+            }
         );
     }
 
-    protected toDynamicExpression (t: Type, typed: Sourcelike): Sourcelike {
+    protected toDynamicExpression(t: Type, typed: Sourcelike): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => ["NSNullify(", typed, ")"],
@@ -464,11 +465,11 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                     // TODO support unions
                     return typed;
                 }
-            },
+            }
         );
     }
 
-    protected implicitlyConvertsFromJSON (t: Type): boolean {
+    protected implicitlyConvertsFromJSON(t: Type): boolean {
         if (t instanceof ClassType) {
             return false;
         } else if (t instanceof EnumType) {
@@ -492,11 +493,11 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         }
     }
 
-    protected implicitlyConvertsToJSON (t: Type): boolean {
+    protected implicitlyConvertsToJSON(t: Type): boolean {
         return this.implicitlyConvertsFromJSON(t) && "bool" !== t.kind;
     }
 
-    protected emitPropertyAssignment (propertyName: Name, jsonName: string, propertyType: Type) {
+    protected emitPropertyAssignment(propertyName: Name, jsonName: string, propertyType: Type) {
         const name = ["_", propertyName];
         matchType(
             propertyType,
@@ -516,7 +517,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                     name,
                     ", ",
                     ["λ(id x, ", this.fromDynamicExpression(itemType, "x"), ")"],
-                    ");",
+                    ");"
                 );
             },
             enumType => this.emitLine(name, " = ", this.fromDynamicExpression(enumType, ["(id)", name]), ";"),
@@ -528,43 +529,43 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                     // TODO This is a union, but for now we just leave it dynamic
                     this.emitLine(name, " = ", this.fromDynamicExpression(unionType, name), ";");
                 }
-            },
+            }
         );
     }
 
-    protected emitPrivateClassInterface (_: ClassType, name: Name): void {
+    protected emitPrivateClassInterface(_: ClassType, name: Name): void {
         this.emitLine("@interface ", name, " (JSONConversion)");
         this.emitLine("+ (instancetype)fromJSONDictionary:(NSDictionary *)dict;");
         this.emitLine("- (NSDictionary *)JSONDictionary;");
         this.emitLine("@end");
     }
 
-    protected pointerAwareTypeName (t: Type | [Sourcelike, string]): Sourcelike {
+    protected pointerAwareTypeName(t: Type | [Sourcelike, string]): Sourcelike {
         const name = t instanceof Type ? this.objcType(t) : t;
         const isPointer = name[1] !== "";
         return isPointer ? name : [name, " "];
     }
 
-    private emitNonClassTopLevelTypedef (t: Type, name: Name): void {
+    private emitNonClassTopLevelTypedef(t: Type, name: Name): void {
         let nonPointerTypeName = this.objcType(t)[0];
         this.emitLine("typedef ", nonPointerTypeName, " ", name, ";");
     }
 
-    private topLevelFromDataPrototype (name: Name): Sourcelike {
+    private topLevelFromDataPrototype(name: Name): Sourcelike {
         return [name, " *_Nullable ", name, "FromData(NSData *data, NSError **error)"];
     }
 
-    private topLevelFromJSONPrototype (name: Name): Sourcelike {
+    private topLevelFromJSONPrototype(name: Name): Sourcelike {
         return [name, " *_Nullable ", name, "FromJSON(NSString *json, NSStringEncoding encoding, NSError **error)"];
     }
 
-    private topLevelToDataPrototype (name: Name, pad = false): Sourcelike {
+    private topLevelToDataPrototype(name: Name, pad = false): Sourcelike {
         const parameter = this.variableNameForTopLevel(name);
         const padding = pad ? repeatString(" ", this.sourcelikeToString(name).length - "NSData".length) : "";
         return ["NSData", padding, " *_Nullable ", name, "ToData(", name, " *", parameter, ", NSError **error)"];
     }
 
-    private topLevelToJSONPrototype (name: Name, pad = false): Sourcelike {
+    private topLevelToJSONPrototype(name: Name, pad = false): Sourcelike {
         const parameter = this.variableNameForTopLevel(name);
         const padding = pad ? repeatString(" ", this.sourcelikeToString(name).length - "NSString".length) : "";
         return [
@@ -576,31 +577,31 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             name,
             " *",
             parameter,
-            ", NSStringEncoding encoding, NSError **error)",
+            ", NSStringEncoding encoding, NSError **error)"
         ];
     }
 
-    private emitTopLevelFunctionDeclarations (_: Type, name: Name): void {
+    private emitTopLevelFunctionDeclarations(_: Type, name: Name): void {
         this.emitLine(this.topLevelFromDataPrototype(name), ";");
         this.emitLine(this.topLevelFromJSONPrototype(name), ";");
         this.emitLine(this.topLevelToDataPrototype(name, true), ";");
         this.emitLine(this.topLevelToJSONPrototype(name, true), ";");
     }
 
-    private emitTryCatchAsError (inTry: () => void, inCatch: () => void) {
+    private emitTryCatchAsError(inTry: () => void, inCatch: () => void) {
         this.emitLine("@try {");
         this.indent(inTry);
         this.emitLine("} @catch (NSException *exception) {");
         this.indent(() => {
             this.emitLine(
-                "*error = [NSError errorWithDomain:@\"JSONSerialization\" code:-1 userInfo:@{ @\"exception\": exception }];",
+                '*error = [NSError errorWithDomain:@"JSONSerialization" code:-1 userInfo:@{ @"exception": exception }];'
             );
             inCatch();
         });
         this.emitLine("}");
     }
 
-    private emitTopLevelFunctions (t: Type, name: Name): void {
+    private emitTopLevelFunctions(t: Type, name: Name): void {
         const parameter = this.variableNameForTopLevel(name);
 
         this.ensureBlankLine();
@@ -608,11 +609,11 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             this.emitTryCatchAsError(
                 () => {
                     this.emitLine(
-                        "id json = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:error];",
+                        "id json = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:error];"
                     );
                     this.emitLine("return *error ? nil : ", this.fromDynamicExpression(t, "json"), ";");
                 },
-                () => this.emitLine("return nil;"),
+                () => this.emitLine("return nil;")
             );
         });
 
@@ -627,11 +628,11 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 () => {
                     this.emitLine("id json = ", this.toDynamicExpression(t, parameter), ";");
                     this.emitLine(
-                        "NSData *data = [NSJSONSerialization dataWithJSONObject:json options:kNilOptions error:error];",
+                        "NSData *data = [NSJSONSerialization dataWithJSONObject:json options:kNilOptions error:error];"
                     );
                     this.emitLine("return *error ? nil : data;");
                 },
-                () => this.emitLine("return nil;"),
+                () => this.emitLine("return nil;")
             );
         });
 
@@ -642,7 +643,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         });
     }
 
-    private emitClassInterface (t: ClassType, className: Name): void {
+    private emitClassInterface(t: ClassType, className: Name): void {
         const isTopLevel = mapContains(this.topLevels, t);
 
         this.emitDescription(this.descriptionForType(t));
@@ -660,7 +661,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             attributes.push(this.memoryAttribute(property.type, property.type.isNullable));
             return [
                 ["@property ", ["(", attributes.join(", "), ")"], " "],
-                [this.pointerAwareTypeName(property.type), name, ";"],
+                [this.pointerAwareTypeName(property.type), name, ";"]
             ];
         });
 
@@ -668,11 +669,11 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             if (t.getProperties().size > 0) this.ensureBlankLine();
 
             this.emitLine(
-                "+ (_Nullable instancetype)fromJSON:(NSString *)json encoding:(NSStringEncoding)encoding error:(NSError *_Nullable *)error;",
+                "+ (_Nullable instancetype)fromJSON:(NSString *)json encoding:(NSStringEncoding)encoding error:(NSError *_Nullable *)error;"
             );
             this.emitLine("+ (_Nullable instancetype)fromData:(NSData *)data error:(NSError *_Nullable *)error;");
             this.emitLine(
-                "- (NSString *_Nullable)toJSON:(NSStringEncoding)encoding error:(NSError *_Nullable *)error;",
+                "- (NSString *_Nullable)toJSON:(NSStringEncoding)encoding error:(NSError *_Nullable *)error;"
             );
             this.emitLine("- (NSData *_Nullable)toData:(NSError *_Nullable *)error;");
         }
@@ -680,7 +681,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         this.emitLine("@end");
     }
 
-    protected hasIrregularProperties (t: ClassType) {
+    protected hasIrregularProperties(t: ClassType) {
         let irregular = false;
         this.forEachClassProperty(t, "none", (name, jsonName) => {
             irregular = irregular || stringEscape(jsonName) !== this.sourcelikeToString(name);
@@ -688,7 +689,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         return irregular;
     }
 
-    protected hasUnsafeProperties (t: ClassType) {
+    protected hasUnsafeProperties(t: ClassType) {
         let unsafe = false;
         this.forEachClassProperty(t, "none", (_, __, property) => {
             unsafe = unsafe || !this.implicitlyConvertsToJSON(property.type);
@@ -697,7 +698,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
     }
 
     // TODO Implement NSCopying
-    private emitClassImplementation (t: ClassType, className: Name): void {
+    private emitClassImplementation(t: ClassType, className: Name): void {
         const isTopLevel = mapContains(this.topLevels, t);
 
         const hasIrregularProperties = this.hasIrregularProperties(t);
@@ -710,7 +711,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 this.emitLine("return properties = properties ? properties : @{");
                 this.indent(() => {
                     this.forEachClassProperty(t, "none", (name, jsonName) =>
-                        this.emitLine(`@"${stringEscape(jsonName)}": @"`, name, "\","),
+                        this.emitLine(`@"${stringEscape(jsonName)}": @"`, name, '",')
                     );
                 });
                 this.emitLine("};");
@@ -722,14 +723,14 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                     "+ (_Nullable instancetype)fromData:(NSData *)data error:(NSError *_Nullable *)error",
                     () => {
                         this.emitLine("return ", className, "FromData(data, error);");
-                    },
+                    }
                 );
                 this.ensureBlankLine();
                 this.emitMethod(
                     "+ (_Nullable instancetype)fromJSON:(NSString *)json encoding:(NSStringEncoding)encoding error:(NSError *_Nullable *)error",
                     () => {
                         this.emitLine("return ", className, "FromJSON(json, encoding, error);");
-                    },
+                    }
                 );
                 this.ensureBlankLine();
             }
@@ -777,7 +778,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 this.emitLine(
                     "id dict = [[self dictionaryWithValuesForKeys:",
                     className,
-                    ".properties.allValues] mutableCopy];",
+                    ".properties.allValues] mutableCopy];"
                 );
                 this.ensureBlankLine();
 
@@ -801,7 +802,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                             if (!this.implicitlyConvertsToJSON(property.type)) {
                                 const key = stringEscape(jsonKey);
                                 const name = ["_", propertyName];
-                                this.emitLine("@\"", key, "\": ", this.toDynamicExpression(property.type, name), ",");
+                                this.emitLine('@"', key, '": ', this.toDynamicExpression(property.type, name), ",");
                             }
                         });
                     });
@@ -822,7 +823,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                     "- (NSString *_Nullable)toJSON:(NSStringEncoding)encoding error:(NSError *_Nullable *)error",
                     () => {
                         this.emitLine("return ", className, "ToJSON(self, encoding, error);");
-                    },
+                    }
                 );
             }
         }
@@ -830,13 +831,13 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         this.emitLine("@end");
     }
 
-    protected emitMark (label: string) {
+    protected emitMark(label: string) {
         this.ensureBlankLine();
         this.emitLine(`#pragma mark - ${label}`);
         this.ensureBlankLine();
     }
 
-    protected variableNameForTopLevel (name: Name): Sourcelike {
+    protected variableNameForTopLevel(name: Name): Sourcelike {
         const camelCaseName = modifySource(serialized => {
             // 1. remove class prefix
             serialized = serialized.slice(this._classPrefix.length);
@@ -846,7 +847,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         return camelCaseName;
     }
 
-    private emitPseudoEnumInterface (enumType: EnumType, enumName: Name) {
+    private emitPseudoEnumInterface(enumType: EnumType, enumName: Name) {
         this.emitDescription(this.descriptionForType(enumType));
 
         this.emitLine("@interface ", enumName, " : NSObject");
@@ -858,7 +859,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         this.emitLine("@end");
     }
 
-    private emitPseudoEnumImplementation (enumType: EnumType, enumName: Name) {
+    private emitPseudoEnumImplementation(enumType: EnumType, enumName: Name) {
         this.emitLine("@implementation ", enumName);
 
         const instances = [enumName, ".", staticEnumValuesIdentifier];
@@ -871,11 +872,11 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 staticEnumValuesIdentifier,
                 " ? ",
                 staticEnumValuesIdentifier,
-                " : @{",
+                " : @{"
             );
             this.indent(() => {
                 this.forEachEnumCase(enumType, "none", (_, jsonValue) => {
-                    const value = ["@\"", stringEscape(jsonValue), "\""];
+                    const value = ['@"', stringEscape(jsonValue), '"'];
                     this.emitLine(value, ": [[", enumName, " alloc] initWithValue:", value, "],");
                 });
             });
@@ -891,15 +892,15 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 name,
                 " { return ",
                 instances,
-                "[@\"",
+                '[@"',
                 stringEscape(jsonValue),
-                "\"]; }",
+                '"]; }'
             );
         });
         this.ensureBlankLine();
 
         this.emitMethod("+ (instancetype _Nullable)withValue:(NSString *)value", () =>
-            this.emitLine("return ", instances, "[value];"),
+            this.emitLine("return ", instances, "[value];")
         );
 
         this.ensureBlankLine();
@@ -913,7 +914,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         this.emitLine("@end");
     }
 
-    protected emitSourceStructure (proposedFilename: string): void {
+    protected emitSourceStructure(proposedFilename: string): void {
         const fileMode = proposedFilename !== "stdout";
         if (!fileMode) {
             // We don't have a filename, so we use a top-level name
@@ -942,7 +943,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                         " *",
                         this.variableNameForTopLevel(topLevelName),
                         " = ",
-                        fromJsonExpression,
+                        fromJsonExpression
                     );
                 });
             }
@@ -956,7 +957,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 "none",
                 (_: ClassType, className: Name) => this.emitLine("@class ", className, ";"),
                 (_, enumName) => this.emitLine("@class ", enumName, ";"),
-                () => null,
+                () => null
             );
             this.ensureBlankLine();
 
@@ -973,7 +974,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             this.forEachTopLevel(
                 "leading-and-interposing",
                 (t, n) => this.emitNonClassTopLevelTypedef(t, n),
-                t => !(t instanceof ClassType),
+                t => !(t instanceof ClassType)
             );
 
             const hasTopLevelNonClassTypes = iterableSome(this.topLevels, ([_, t]) => !(t instanceof ClassType));
@@ -985,7 +986,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                     (t, n) => this.emitTopLevelFunctionDeclarations(t, n),
                     // Objective-C developers get freaked out by C functions, so we don't
                     // declare them for top-level object types (we always need them for non-object types)
-                    t => this._options.marshallingFunctions || !(t instanceof ClassType),
+                    t => this._options.marshallingFunctions || !(t instanceof ClassType)
                 );
             }
 
@@ -994,7 +995,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 "leading-and-interposing",
                 (c: ClassType, className: Name) => this.emitClassInterface(c, className),
                 () => null,
-                () => null,
+                () => null
             );
 
             this.ensureBlankLine();
@@ -1015,7 +1016,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 this.ensureBlankLine();
                 this.emitExtraComments("nil → NSNull conversion for JSON dictionaries");
                 this.emitBlock("static id NSNullify(id _Nullable x)", () =>
-                    this.emitLine("return (x == nil || x == NSNull.null) ? NSNull.null : x;"),
+                    this.emitLine("return (x == nil || x == NSNull.null) ? NSNull.null : x;")
                 );
                 this.ensureBlankLine();
                 this.emitLine("NS_ASSUME_NONNULL_BEGIN");
@@ -1031,7 +1032,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                     "leading-and-interposing",
                     (c: ClassType, className: Name) => this.emitPrivateClassInterface(c, className),
                     () => null,
-                    () => null,
+                    () => null
                 );
 
                 if (this.haveEnums) {
@@ -1039,7 +1040,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                         this.ensureBlankLine();
                         this.emitExtraComments(
                             "These enum-like reference types are needed so that enum",
-                            "values can be contained by NSArray and NSDictionary.",
+                            "values can be contained by NSArray and NSDictionary."
                         );
                         this.ensureBlankLine();
                     }
@@ -1059,7 +1060,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 "leading-and-interposing",
                 (c: ClassType, className: Name) => this.emitClassImplementation(c, className),
                 () => null,
-                () => null,
+                () => null
             );
 
             if (!this._options.justTypes) {
@@ -1071,20 +1072,20 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         }
     }
 
-    private get needsMap (): boolean {
+    private get needsMap(): boolean {
         // TODO this isn't complete (needs union support, for example)
-        function needsMap (t: Type): boolean {
+        function needsMap(t: Type): boolean {
             return (
                 t instanceof MapType ||
                 t instanceof ArrayType ||
-                t instanceof ClassType && mapSome(t.getProperties(), p => needsMap(p.type))
+                (t instanceof ClassType && mapSome(t.getProperties(), p => needsMap(p.type)))
             );
         }
 
         return iterableSome(this.typeGraph.allTypesUnordered(), needsMap);
     }
 
-    protected emitMapFunction () {
+    protected emitMapFunction() {
         if (this.needsMap) {
             this.emitMultiline(`static id map(id collection, id (^f)(id value)) {
     id result = nil;

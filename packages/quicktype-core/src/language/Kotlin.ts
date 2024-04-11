@@ -57,7 +57,7 @@ export const kotlinOptions = {
 };
 
 export class KotlinTargetLanguage extends TargetLanguage {
-    constructor() {
+    public constructor() {
         super("Kotlin", ["kotlin"], "kt");
     }
 
@@ -65,11 +65,11 @@ export class KotlinTargetLanguage extends TargetLanguage {
         return [kotlinOptions.framework, kotlinOptions.acronymStyle, kotlinOptions.packageName];
     }
 
-    get supportsOptionalClassProperties(): boolean {
+    public get supportsOptionalClassProperties(): boolean {
         return true;
     }
 
-    get supportsUnionsWithBothNumberTypes(): boolean {
+    public get supportsUnionsWithBothNumberTypes(): boolean {
         return true;
     }
 
@@ -186,7 +186,7 @@ function stringEscape(s: string): string {
 }
 
 export class KotlinRenderer extends ConvenienceRenderer {
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         protected readonly _kotlinOptions: OptionValues<typeof kotlinOptions>
@@ -455,7 +455,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
 }
 
 export class KotlinKlaxonRenderer extends KotlinRenderer {
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         _kotlinOptions: OptionValues<typeof kotlinOptions>
@@ -738,7 +738,7 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
 }
 
 export class KotlinJacksonRenderer extends KotlinRenderer {
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         _kotlinOptions: OptionValues<typeof kotlinOptions>
@@ -1012,7 +1012,7 @@ private fun <T> ObjectMapper.convert(k: kotlin.reflect.KClass<*>, fromJson: (Jso
  * TODO: Union, Any, Top Level Array, Top Level Map
  */
 export class KotlinXRenderer extends KotlinRenderer {
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         _kotlinOptions: OptionValues<typeof kotlinOptions>

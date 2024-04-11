@@ -18,16 +18,16 @@ import {
     hashCodeInit,
     addHashCode,
     hasOwnProperty,
-    mapFromObject,
+    mapFromObject
 } from "collection-utils";
 
 import { defined, panic, assert } from "./support/Support";
 import { type TypeReconstituter, type BaseGraphRewriteBuilder } from "./GraphRewriting";
-import { type TypeNames} from "./attributes/TypeNames";
+import { type TypeNames } from "./attributes/TypeNames";
 import { namesTypeAttributeKind } from "./attributes/TypeNames";
 import { type TypeAttributes } from "./attributes/TypeAttributes";
 import { messageAssert } from "./Messages";
-import { type TypeRef, type TypeGraph} from "./TypeGraph";
+import { type TypeRef, type TypeGraph } from "./TypeGraph";
 import { attributesForTypeRef, derefTypeRef, typeRefIndex } from "./TypeGraph";
 import { uriInferenceAttributesProducer } from "./attributes/URIAttributes";
 
@@ -58,13 +58,13 @@ const transformedStringTypeTargetTypeKinds = {
     uuid: { jsonSchema: "uuid", primitive: undefined },
     uri: { jsonSchema: "uri", primitive: undefined, attributesProducer: uriInferenceAttributesProducer },
     "integer-string": { jsonSchema: "integer", primitive: "integer" } as TransformedStringTypeTargets,
-    "bool-string": { jsonSchema: "boolean", primitive: "bool" } as TransformedStringTypeTargets,
+    "bool-string": { jsonSchema: "boolean", primitive: "bool" } as TransformedStringTypeTargets
 };
 
 export const transformedStringTypeTargetTypeKindsMap = mapFromObject(
     transformedStringTypeTargetTypeKinds as {
-        [kind: string]: TransformedStringTypeTargets,
-    },
+        [kind: string]: TransformedStringTypeTargets;
+    }
 );
 
 export type TransformedStringTypeKind = keyof typeof transformedStringTypeTargetTypeKinds;
@@ -76,32 +76,32 @@ export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "object" | 
 export type ObjectTypeKind = "object" | "map" | "class";
 
 export const transformedStringTypeKinds = new Set(
-    Object.getOwnPropertyNames(transformedStringTypeTargetTypeKinds),
+    Object.getOwnPropertyNames(transformedStringTypeTargetTypeKinds)
 ) as ReadonlySet<TransformedStringTypeKind>;
 
-export function isPrimitiveStringTypeKind (kind: string): kind is PrimitiveStringTypeKind {
+export function isPrimitiveStringTypeKind(kind: string): kind is PrimitiveStringTypeKind {
     return kind === "string" || hasOwnProperty(transformedStringTypeTargetTypeKinds, kind);
 }
 
-export function targetTypeKindForTransformedStringTypeKind (
-    kind: PrimitiveStringTypeKind,
+export function targetTypeKindForTransformedStringTypeKind(
+    kind: PrimitiveStringTypeKind
 ): PrimitiveNonStringTypeKind | undefined {
     const target = transformedStringTypeTargetTypeKindsMap.get(kind);
     if (target === undefined) return undefined;
     return target.primitive;
 }
 
-export function isNumberTypeKind (kind: TypeKind): kind is "integer" | "double" {
+export function isNumberTypeKind(kind: TypeKind): kind is "integer" | "double" {
     return kind === "integer" || kind === "double";
 }
 
-export function isPrimitiveTypeKind (kind: TypeKind): kind is PrimitiveTypeKind {
+export function isPrimitiveTypeKind(kind: TypeKind): kind is PrimitiveTypeKind {
     if (isPrimitiveStringTypeKind(kind)) return true;
     if (isNumberTypeKind(kind)) return true;
     return kind === "none" || kind === "any" || kind === "null" || kind === "bool";
 }
 
-function triviallyStructurallyCompatible (x: Type, y: Type): boolean {
+function triviallyStructurallyCompatible(x: Type, y: Type): boolean {
     if (x.index === y.index) return true;
     if (x.kind === "none" || y.kind === "none") return true;
     return false;
@@ -110,7 +110,10 @@ function triviallyStructurallyCompatible (x: Type, y: Type): boolean {
 export class TypeIdentity {
     private readonly _hashCode: number;
 
-    constructor (private readonly _kind: TypeKind, private readonly _components: readonly any[]) {
+    public constructor(
+        private readonly _kind: TypeKind,
+        private readonly _components: readonly any[]
+    ) {
         let h = hashCodeInit;
         h = addHashCode(h, hashCodeOf(this._kind));
         for (const c of _components) {
@@ -120,7 +123,7 @@ export class TypeIdentity {
         this._hashCode = h;
     }
 
-    equals (other: any): boolean {
+    public equals(other: any): boolean {
         if (!(other instanceof TypeIdentity)) return false;
         if (this._kind !== other._kind) return false;
         const n = this._components.length;
@@ -132,7 +135,7 @@ export class TypeIdentity {
         return true;
     }
 
-    hashCode (): number {
+    public hashCode(): number {
         return this._hashCode;
     }
 }
@@ -141,18 +144,21 @@ export class TypeIdentity {
 export type MaybeTypeIdentity = TypeIdentity | undefined;
 
 export abstract class Type {
-    abstract readonly kind: TypeKind;
+    public abstract readonly kind: TypeKind;
 
-    constructor (readonly typeRef: TypeRef, protected readonly graph: TypeGraph) {}
+    public constructor(
+        public readonly typeRef: TypeRef,
+        protected readonly graph: TypeGraph
+    ) {}
 
-    get index (): number {
+    public get index(): number {
         return typeRefIndex(this.typeRef);
     }
 
     // This must return a newly allocated set
-    abstract getNonAttributeChildren (): Set<Type>;
+    public abstract getNonAttributeChildren(): Set<Type>;
 
-    getChildren (): ReadonlySet<Type> {
+    public getChildren(): ReadonlySet<Type> {
         let result = this.getNonAttributeChildren();
         for (const [k, v] of this.getAttributes()) {
             if (k.children === undefined) continue;
@@ -162,54 +168,54 @@ export abstract class Type {
         return result;
     }
 
-    getAttributes (): TypeAttributes {
+    public getAttributes(): TypeAttributes {
         return attributesForTypeRef(this.typeRef, this.graph);
     }
 
-    get hasNames (): boolean {
+    public get hasNames(): boolean {
         return namesTypeAttributeKind.tryGetInAttributes(this.getAttributes()) !== undefined;
     }
 
-    getNames (): TypeNames {
+    public getNames(): TypeNames {
         return defined(namesTypeAttributeKind.tryGetInAttributes(this.getAttributes()));
     }
 
-    getCombinedName (): string {
+    public getCombinedName(): string {
         return this.getNames().combinedName;
     }
 
-    abstract get isNullable (): boolean;
+    public abstract get isNullable(): boolean;
     // FIXME: Remove `isPrimitive`
-    abstract isPrimitive (): this is PrimitiveType;
-    abstract get identity (): MaybeTypeIdentity;
-    abstract reconstitute<T extends BaseGraphRewriteBuilder>(
+    public abstract isPrimitive(): this is PrimitiveType;
+    public abstract get identity(): MaybeTypeIdentity;
+    public abstract reconstitute<T extends BaseGraphRewriteBuilder>(
         builder: TypeReconstituter<T>,
         canonicalOrder: boolean
     ): void;
 
-    get debugPrintKind (): string {
+    public get debugPrintKind(): string {
         return this.kind;
     }
 
-    equals (other: any): boolean {
+    public equals(other: any): boolean {
         if (!(other instanceof Type)) return false;
         return this.typeRef === other.typeRef;
     }
 
-    hashCode (): number {
+    public hashCode(): number {
         return hashCodeOf(this.typeRef);
     }
 
     // This will only ever be called when `this` and `other` are not
     // equal, but `this.kind === other.kind`.
-    protected abstract structuralEqualityStep (
+    protected abstract structuralEqualityStep(
         other: Type,
         conflateNumbers: boolean,
         queue: (a: Type, b: Type) => boolean
     ): boolean;
 
-    structurallyCompatible (other: Type, conflateNumbers = false): boolean {
-        function kindsCompatible (kind1: TypeKind, kind2: TypeKind): boolean {
+    public structurallyCompatible(other: Type, conflateNumbers = false): boolean {
+        function kindsCompatible(kind1: TypeKind, kind2: TypeKind): boolean {
             if (kind1 === kind2) return true;
             if (!conflateNumbers) return false;
             if (kind1 === "integer") return kind2 === "double";
@@ -268,11 +274,11 @@ export abstract class Type {
         return true;
     }
 
-    getParentTypes (): ReadonlySet<Type> {
+    public getParentTypes(): ReadonlySet<Type> {
         return this.graph.getParentsOfType(this);
     }
 
-    getAncestorsNotInSet (set: ReadonlySet<TypeRef>): ReadonlySet<Type> {
+    public getAncestorsNotInSet(set: ReadonlySet<TypeRef>): ReadonlySet<Type> {
         const workList: Type[] = [this];
         const processed = new Set<Type>();
         const ancestors = new Set<Type>();
@@ -299,54 +305,58 @@ export abstract class Type {
     }
 }
 
-function hasUniqueIdentityAttributes (attributes: TypeAttributes): boolean {
+function hasUniqueIdentityAttributes(attributes: TypeAttributes): boolean {
     return mapSome(attributes, (v, ta) => ta.requiresUniqueIdentity(v));
 }
 
-function identityAttributes (attributes: TypeAttributes): TypeAttributes {
+function identityAttributes(attributes: TypeAttributes): TypeAttributes {
     return mapFilter(attributes, (_, kind) => kind.inIdentity);
 }
 
-export function primitiveTypeIdentity (kind: PrimitiveTypeKind, attributes: TypeAttributes): MaybeTypeIdentity {
+export function primitiveTypeIdentity(kind: PrimitiveTypeKind, attributes: TypeAttributes): MaybeTypeIdentity {
     if (hasUniqueIdentityAttributes(attributes)) return undefined;
     return new TypeIdentity(kind, [identityAttributes(attributes)]);
 }
 
 export class PrimitiveType extends Type {
-    constructor (typeRef: TypeRef, graph: TypeGraph, public readonly kind: PrimitiveTypeKind) {
+    public constructor(
+        typeRef: TypeRef,
+        graph: TypeGraph,
+        public readonly kind: PrimitiveTypeKind
+    ) {
         super(typeRef, graph);
     }
 
-    get isNullable (): boolean {
+    public get isNullable(): boolean {
         return this.kind === "null" || this.kind === "any" || this.kind === "none";
     }
 
-    isPrimitive (): this is PrimitiveType {
+    public isPrimitive(): this is PrimitiveType {
         return true;
     }
 
-    getNonAttributeChildren (): Set<Type> {
+    public getNonAttributeChildren(): Set<Type> {
         return new Set();
     }
 
-    get identity (): MaybeTypeIdentity {
+    public get identity(): MaybeTypeIdentity {
         return primitiveTypeIdentity(this.kind, this.getAttributes());
     }
 
-    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
+    public reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
         builder.getPrimitiveType(this.kind);
     }
 
-    protected structuralEqualityStep (
+    protected structuralEqualityStep(
         _other: Type,
         _conflateNumbers: boolean,
-        _queue: (a: Type, b: Type) => boolean,
+        _queue: (a: Type, b: Type) => boolean
     ): boolean {
         return true;
     }
 }
 
-export function arrayTypeIdentity (attributes: TypeAttributes, itemsRef: TypeRef): MaybeTypeIdentity {
+export function arrayTypeIdentity(attributes: TypeAttributes, itemsRef: TypeRef): MaybeTypeIdentity {
     if (hasUniqueIdentityAttributes(attributes)) return undefined;
     return new TypeIdentity("array", [identityAttributes(attributes), itemsRef]);
 }
@@ -354,11 +364,15 @@ export function arrayTypeIdentity (attributes: TypeAttributes, itemsRef: TypeRef
 export class ArrayType extends Type {
     public readonly kind = "array";
 
-    constructor (typeRef: TypeRef, graph: TypeGraph, private _itemsRef?: TypeRef) {
+    public constructor(
+        typeRef: TypeRef,
+        graph: TypeGraph,
+        private _itemsRef?: TypeRef
+    ) {
         super(typeRef, graph);
     }
 
-    setItems (itemsRef: TypeRef) {
+    public setItems(itemsRef: TypeRef) {
         if (this._itemsRef !== undefined) {
             return panic("Can only set array items once");
         }
@@ -366,7 +380,7 @@ export class ArrayType extends Type {
         this._itemsRef = itemsRef;
     }
 
-    private getItemsRef (): TypeRef {
+    private getItemsRef(): TypeRef {
         if (this._itemsRef === undefined) {
             return panic("Array items accessed before they were set");
         }
@@ -374,27 +388,27 @@ export class ArrayType extends Type {
         return this._itemsRef;
     }
 
-    get items (): Type {
+    public get items(): Type {
         return derefTypeRef(this.getItemsRef(), this.graph);
     }
 
-    getNonAttributeChildren (): Set<Type> {
+    public getNonAttributeChildren(): Set<Type> {
         return new Set([this.items]);
     }
 
-    get isNullable (): boolean {
+    public get isNullable(): boolean {
         return false;
     }
 
-    isPrimitive (): this is PrimitiveType {
+    public isPrimitive(): this is PrimitiveType {
         return false;
     }
 
-    get identity (): MaybeTypeIdentity {
+    public get identity(): MaybeTypeIdentity {
         return arrayTypeIdentity(this.getAttributes(), this.getItemsRef());
     }
 
-    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
+    public reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
         const itemsRef = this.getItemsRef();
         const maybeItems = builder.lookup(itemsRef);
         if (maybeItems === undefined) {
@@ -405,19 +419,22 @@ export class ArrayType extends Type {
         }
     }
 
-    protected structuralEqualityStep (
+    protected structuralEqualityStep(
         other: ArrayType,
         _conflateNumbers: boolean,
-        queue: (a: Type, b: Type) => boolean,
+        queue: (a: Type, b: Type) => boolean
     ): boolean {
         return queue(this.items, other.items);
     }
 }
 
 export class GenericClassProperty<T> {
-    constructor (readonly typeData: T, readonly isOptional: boolean) {}
+    public constructor(
+        public readonly typeData: T,
+        public readonly isOptional: boolean
+    ) {}
 
-    equals (other: any): boolean {
+    public equals(other: any): boolean {
         if (!(other instanceof GenericClassProperty)) {
             return false;
         }
@@ -425,57 +442,61 @@ export class GenericClassProperty<T> {
         return areEqual(this.typeData, other.typeData) && this.isOptional === other.isOptional;
     }
 
-    hashCode (): number {
+    public hashCode(): number {
         return hashCodeOf(this.typeData) + (this.isOptional ? 17 : 23);
     }
 }
 
 export class ClassProperty extends GenericClassProperty<TypeRef> {
-    constructor (typeRef: TypeRef, readonly graph: TypeGraph, isOptional: boolean) {
+    public constructor(
+        typeRef: TypeRef,
+        public readonly graph: TypeGraph,
+        isOptional: boolean
+    ) {
         super(typeRef, isOptional);
     }
 
-    get typeRef (): TypeRef {
+    public get typeRef(): TypeRef {
         return this.typeData;
     }
 
-    get type (): Type {
+    public get type(): Type {
         return derefTypeRef(this.typeRef, this.graph);
     }
 }
 
-function objectTypeIdentify (
+function objectTypeIdentify(
     kind: ObjectTypeKind,
     attributes: TypeAttributes,
     properties: ReadonlyMap<string, ClassProperty>,
-    additionalPropertiesRef: TypeRef | undefined,
+    additionalPropertiesRef: TypeRef | undefined
 ): MaybeTypeIdentity {
     if (hasUniqueIdentityAttributes(attributes)) return undefined;
     return new TypeIdentity(kind, [identityAttributes(attributes), properties, additionalPropertiesRef]);
 }
 
-export function classTypeIdentity (
+export function classTypeIdentity(
     attributes: TypeAttributes,
-    properties: ReadonlyMap<string, ClassProperty>,
+    properties: ReadonlyMap<string, ClassProperty>
 ): MaybeTypeIdentity {
     return objectTypeIdentify("class", attributes, properties, undefined);
 }
 
-export function mapTypeIdentify (
+export function mapTypeIdentify(
     attributes: TypeAttributes,
-    additionalPropertiesRef: TypeRef | undefined,
+    additionalPropertiesRef: TypeRef | undefined
 ): MaybeTypeIdentity {
     return objectTypeIdentify("map", attributes, new Map(), additionalPropertiesRef);
 }
 
 export class ObjectType extends Type {
-    constructor (
+    public constructor(
         typeRef: TypeRef,
         graph: TypeGraph,
         public readonly kind: ObjectTypeKind,
-        readonly isFixed: boolean,
+        public readonly isFixed: boolean,
         private _properties: ReadonlyMap<string, ClassProperty> | undefined,
-        private _additionalPropertiesRef: TypeRef | undefined,
+        private _additionalPropertiesRef: TypeRef | undefined
     ) {
         super(typeRef, graph);
 
@@ -492,7 +513,7 @@ export class ObjectType extends Type {
         }
     }
 
-    setProperties (properties: ReadonlyMap<string, ClassProperty>, additionalPropertiesRef: TypeRef | undefined) {
+    public setProperties(properties: ReadonlyMap<string, ClassProperty>, additionalPropertiesRef: TypeRef | undefined) {
         assert(this._properties === undefined, "Tried to set object properties twice");
 
         if (this instanceof MapType) {
@@ -507,26 +528,26 @@ export class ObjectType extends Type {
         this._additionalPropertiesRef = additionalPropertiesRef;
     }
 
-    getProperties (): ReadonlyMap<string, ClassProperty> {
+    public getProperties(): ReadonlyMap<string, ClassProperty> {
         return defined(this._properties);
     }
 
-    getSortedProperties (): ReadonlyMap<string, ClassProperty> {
+    public getSortedProperties(): ReadonlyMap<string, ClassProperty> {
         return mapSortByKey(this.getProperties());
     }
 
-    private getAdditionalPropertiesRef (): TypeRef | undefined {
+    private getAdditionalPropertiesRef(): TypeRef | undefined {
         assert(this._properties !== undefined, "Properties are not set yet");
         return this._additionalPropertiesRef;
     }
 
-    getAdditionalProperties (): Type | undefined {
+    public getAdditionalProperties(): Type | undefined {
         const tref = this.getAdditionalPropertiesRef();
         if (tref === undefined) return undefined;
         return derefTypeRef(tref, this.graph);
     }
 
-    getNonAttributeChildren (): Set<Type> {
+    public getNonAttributeChildren(): Set<Type> {
         const types = mapSortToArray(this.getProperties(), (_, k) => k).map(([_, p]) => p.type);
         const additionalProperties = this.getAdditionalProperties();
         if (additionalProperties !== undefined) {
@@ -536,25 +557,28 @@ export class ObjectType extends Type {
         return new Set(types);
     }
 
-    get isNullable (): boolean {
+    public get isNullable(): boolean {
         return false;
     }
 
-    isPrimitive (): this is PrimitiveType {
+    public isPrimitive(): this is PrimitiveType {
         return false;
     }
 
-    get identity (): MaybeTypeIdentity {
+    public get identity(): MaybeTypeIdentity {
         if (this.isFixed) return undefined;
         return objectTypeIdentify(
             this.kind,
             this.getAttributes(),
             this.getProperties(),
-            this.getAdditionalPropertiesRef(),
+            this.getAdditionalPropertiesRef()
         );
     }
 
-    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>, canonicalOrder: boolean): void {
+    public reconstitute<T extends BaseGraphRewriteBuilder>(
+        builder: TypeReconstituter<T>,
+        canonicalOrder: boolean
+    ): void {
         const sortedProperties = this.getSortedProperties();
         const propertiesInNewOrder = canonicalOrder ? sortedProperties : this.getProperties();
         const maybePropertyTypes = builder.lookupMap(mapMap(sortedProperties, cp => cp.typeRef));
@@ -565,7 +589,7 @@ export class ObjectType extends Type {
             (maybeAdditionalProperties !== undefined || this._additionalPropertiesRef === undefined)
         ) {
             const properties = mapMap(propertiesInNewOrder, (cp, n) =>
-                builder.makeClassProperty(defined(maybePropertyTypes.get(n)), cp.isOptional),
+                builder.makeClassProperty(defined(maybePropertyTypes.get(n)), cp.isOptional)
             );
 
             switch (this.kind) {
@@ -605,17 +629,17 @@ export class ObjectType extends Type {
 
             const reconstitutedTypes = mapMap(sortedProperties, cp => builder.reconstitute(cp.typeRef));
             const properties = mapMap(propertiesInNewOrder, (cp, n) =>
-                builder.makeClassProperty(defined(reconstitutedTypes.get(n)), cp.isOptional),
+                builder.makeClassProperty(defined(reconstitutedTypes.get(n)), cp.isOptional)
             );
             const additionalProperties = definedMap(this._additionalPropertiesRef, r => builder.reconstitute(r));
             builder.setObjectProperties(properties, additionalProperties);
         }
     }
 
-    protected structuralEqualityStep (
+    protected structuralEqualityStep(
         other: ObjectType,
         _conflateNumbers: boolean,
-        queue: (a: Type, b: Type) => boolean,
+        queue: (a: Type, b: Type) => boolean
     ): boolean {
         const pa = this.getProperties();
         const pb = other.getProperties();
@@ -633,42 +657,42 @@ export class ObjectType extends Type {
 
         const thisAdditionalProperties = this.getAdditionalProperties();
         const otherAdditionalProperties = other.getAdditionalProperties();
-        if (thisAdditionalProperties === undefined !== (otherAdditionalProperties === undefined)) return false;
+        if ((thisAdditionalProperties === undefined) !== (otherAdditionalProperties === undefined)) return false;
         if (thisAdditionalProperties === undefined || otherAdditionalProperties === undefined) return true;
         return queue(thisAdditionalProperties, otherAdditionalProperties);
     }
 }
 
 export class ClassType extends ObjectType {
-    constructor (
+    public constructor(
         typeRef: TypeRef,
         graph: TypeGraph,
         isFixed: boolean,
-        properties: ReadonlyMap<string, ClassProperty> | undefined,
+        properties: ReadonlyMap<string, ClassProperty> | undefined
     ) {
         super(typeRef, graph, "class", isFixed, properties, undefined);
     }
 }
 
 export class MapType extends ObjectType {
-    constructor (typeRef: TypeRef, graph: TypeGraph, valuesRef: TypeRef | undefined) {
+    public constructor(typeRef: TypeRef, graph: TypeGraph, valuesRef: TypeRef | undefined) {
         super(
             typeRef,
             graph,
             "map",
             false,
             definedMap(valuesRef, () => new Map()),
-            valuesRef,
+            valuesRef
         );
     }
 
     // FIXME: Remove and use `getAdditionalProperties()` instead.
-    get values (): Type {
+    public get values(): Type {
         return defined(this.getAdditionalProperties());
     }
 }
 
-export function enumTypeIdentity (attributes: TypeAttributes, cases: ReadonlySet<string>): MaybeTypeIdentity {
+export function enumTypeIdentity(attributes: TypeAttributes, cases: ReadonlySet<string>): MaybeTypeIdentity {
     if (hasUniqueIdentityAttributes(attributes)) return undefined;
     return new TypeIdentity("enum", [identityAttributes(attributes), cases]);
 }
@@ -676,44 +700,48 @@ export function enumTypeIdentity (attributes: TypeAttributes, cases: ReadonlySet
 export class EnumType extends Type {
     public readonly kind = "enum";
 
-    constructor (typeRef: TypeRef, graph: TypeGraph, readonly cases: ReadonlySet<string>) {
+    public constructor(
+        typeRef: TypeRef,
+        graph: TypeGraph,
+        public readonly cases: ReadonlySet<string>
+    ) {
         super(typeRef, graph);
     }
 
-    get isNullable (): boolean {
+    public get isNullable(): boolean {
         return false;
     }
 
-    isPrimitive (): this is PrimitiveType {
+    public isPrimitive(): this is PrimitiveType {
         return false;
     }
 
-    get identity (): MaybeTypeIdentity {
+    public get identity(): MaybeTypeIdentity {
         return enumTypeIdentity(this.getAttributes(), this.cases);
     }
 
-    getNonAttributeChildren (): Set<Type> {
+    public getNonAttributeChildren(): Set<Type> {
         return new Set();
     }
 
-    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
+    public reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
         builder.getEnumType(this.cases);
     }
 
-    protected structuralEqualityStep (
+    protected structuralEqualityStep(
         other: EnumType,
         _conflateNumbers: boolean,
-        _queue: (a: Type, b: Type) => void,
+        _queue: (a: Type, b: Type) => void
     ): boolean {
         return areEqual(this.cases, other.cases);
     }
 }
 
-export function setOperationCasesEqual (
+export function setOperationCasesEqual(
     typesA: Iterable<Type>,
     typesB: Iterable<Type>,
     conflateNumbers: boolean,
-    membersEqual: (a: Type, b: Type) => boolean,
+    membersEqual: (a: Type, b: Type) => boolean
 ): boolean {
     const ma = toReadonlySet(typesA);
     const mb = toReadonlySet(typesB);
@@ -733,37 +761,37 @@ export function setOperationCasesEqual (
     });
 }
 
-export function setOperationTypeIdentity (
+export function setOperationTypeIdentity(
     kind: TypeKind,
     attributes: TypeAttributes,
-    memberRefs: ReadonlySet<TypeRef>,
+    memberRefs: ReadonlySet<TypeRef>
 ): MaybeTypeIdentity {
     if (hasUniqueIdentityAttributes(attributes)) return undefined;
     return new TypeIdentity(kind, [identityAttributes(attributes), memberRefs]);
 }
 
-export function unionTypeIdentity (attributes: TypeAttributes, memberRefs: ReadonlySet<TypeRef>): MaybeTypeIdentity {
+export function unionTypeIdentity(attributes: TypeAttributes, memberRefs: ReadonlySet<TypeRef>): MaybeTypeIdentity {
     return setOperationTypeIdentity("union", attributes, memberRefs);
 }
 
-export function intersectionTypeIdentity (
+export function intersectionTypeIdentity(
     attributes: TypeAttributes,
-    memberRefs: ReadonlySet<TypeRef>,
+    memberRefs: ReadonlySet<TypeRef>
 ): MaybeTypeIdentity {
     return setOperationTypeIdentity("intersection", attributes, memberRefs);
 }
 
 export abstract class SetOperationType extends Type {
-    constructor (
+    public constructor(
         typeRef: TypeRef,
         graph: TypeGraph,
         public readonly kind: TypeKind,
-        private _memberRefs?: ReadonlySet<TypeRef>,
+        private _memberRefs?: ReadonlySet<TypeRef>
     ) {
         super(typeRef, graph);
     }
 
-    setMembers (memberRefs: ReadonlySet<TypeRef>): void {
+    public setMembers(memberRefs: ReadonlySet<TypeRef>): void {
         if (this._memberRefs !== undefined) {
             return panic("Can only set map members once");
         }
@@ -771,7 +799,7 @@ export abstract class SetOperationType extends Type {
         this._memberRefs = memberRefs;
     }
 
-    protected getMemberRefs (): ReadonlySet<TypeRef> {
+    protected getMemberRefs(): ReadonlySet<TypeRef> {
         if (this._memberRefs === undefined) {
             return panic("Map members accessed before they were set");
         }
@@ -779,31 +807,31 @@ export abstract class SetOperationType extends Type {
         return this._memberRefs;
     }
 
-    get members (): ReadonlySet<Type> {
+    public get members(): ReadonlySet<Type> {
         return setMap(this.getMemberRefs(), tref => derefTypeRef(tref, this.graph));
     }
 
-    get sortedMembers (): ReadonlySet<Type> {
+    public get sortedMembers(): ReadonlySet<Type> {
         return this.getNonAttributeChildren();
     }
 
-    getNonAttributeChildren (): Set<Type> {
+    public getNonAttributeChildren(): Set<Type> {
         // FIXME: We're assuming no two members of the same kind.
         return setSortBy(this.members, t => t.kind);
     }
 
-    isPrimitive (): this is PrimitiveType {
+    public isPrimitive(): this is PrimitiveType {
         return false;
     }
 
-    get identity (): MaybeTypeIdentity {
+    public get identity(): MaybeTypeIdentity {
         return setOperationTypeIdentity(this.kind, this.getAttributes(), this.getMemberRefs());
     }
 
     protected reconstituteSetOperation<T extends BaseGraphRewriteBuilder>(
         builder: TypeReconstituter<T>,
         canonicalOrder: boolean,
-        getType: (members: ReadonlySet<TypeRef> | undefined) => void,
+        getType: (members: ReadonlySet<TypeRef> | undefined) => void
     ): void {
         const sortedMemberRefs = mapMap(this.sortedMembers.entries(), t => t.typeRef);
         const membersInOrder = canonicalOrder ? this.sortedMembers : this.members;
@@ -817,25 +845,28 @@ export abstract class SetOperationType extends Type {
         }
     }
 
-    protected structuralEqualityStep (
+    protected structuralEqualityStep(
         other: SetOperationType,
         conflateNumbers: boolean,
-        queue: (a: Type, b: Type) => boolean,
+        queue: (a: Type, b: Type) => boolean
     ): boolean {
         return setOperationCasesEqual(this.members, other.members, conflateNumbers, queue);
     }
 }
 
 export class IntersectionType extends SetOperationType {
-    constructor (typeRef: TypeRef, graph: TypeGraph, memberRefs?: ReadonlySet<TypeRef>) {
+    public constructor(typeRef: TypeRef, graph: TypeGraph, memberRefs?: ReadonlySet<TypeRef>) {
         super(typeRef, graph, "intersection", memberRefs);
     }
 
-    get isNullable (): boolean {
+    public get isNullable(): boolean {
         return panic("isNullable not implemented for IntersectionType");
     }
 
-    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>, canonicalOrder: boolean): void {
+    public reconstitute<T extends BaseGraphRewriteBuilder>(
+        builder: TypeReconstituter<T>,
+        canonicalOrder: boolean
+    ): void {
         this.reconstituteSetOperation(builder, canonicalOrder, members => {
             if (members === undefined) {
                 builder.getUniqueIntersectionType();
@@ -847,31 +878,31 @@ export class IntersectionType extends SetOperationType {
 }
 
 export class UnionType extends SetOperationType {
-    constructor (typeRef: TypeRef, graph: TypeGraph, memberRefs?: ReadonlySet<TypeRef>) {
+    public constructor(typeRef: TypeRef, graph: TypeGraph, memberRefs?: ReadonlySet<TypeRef>) {
         super(typeRef, graph, "union", memberRefs);
         if (memberRefs !== undefined) {
             messageAssert(memberRefs.size > 0, "IRNoEmptyUnions", {});
         }
     }
 
-    setMembers (memberRefs: ReadonlySet<TypeRef>): void {
+    public setMembers(memberRefs: ReadonlySet<TypeRef>): void {
         messageAssert(memberRefs.size > 0, "IRNoEmptyUnions", {});
         super.setMembers(memberRefs);
     }
 
-    get stringTypeMembers (): ReadonlySet<Type> {
+    public get stringTypeMembers(): ReadonlySet<Type> {
         return setFilter(this.members, t => isPrimitiveStringTypeKind(t.kind) || t.kind === "enum");
     }
 
-    findMember (kind: TypeKind): Type | undefined {
+    public findMember(kind: TypeKind): Type | undefined {
         return iterableFind(this.members, t => t.kind === kind);
     }
 
-    get isNullable (): boolean {
+    public get isNullable(): boolean {
         return this.findMember("null") !== undefined;
     }
 
-    get isCanonical (): boolean {
+    public get isCanonical(): boolean {
         const members = this.members;
         if (members.size <= 1) return false;
         const kinds = setMap(members, t => t.kind);
@@ -889,7 +920,10 @@ export class UnionType extends SetOperationType {
         return true;
     }
 
-    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>, canonicalOrder: boolean): void {
+    public reconstitute<T extends BaseGraphRewriteBuilder>(
+        builder: TypeReconstituter<T>,
+        canonicalOrder: boolean
+    ): void {
         this.reconstituteSetOperation(builder, canonicalOrder, members => {
             if (members === undefined) {
                 builder.getUniqueUnionType();

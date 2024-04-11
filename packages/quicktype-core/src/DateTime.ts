@@ -1,3 +1,4 @@
+/* eslint-disable */
 // https://github.com/epoberezkin/ajv/blob/4d76c6fb813b136b6ec4fe74990bc97233d75dea/lib/compile/formats.js
 
 /*
@@ -37,7 +38,7 @@ export interface DateTimeRecognizer {
 const DATE_TIME_SEPARATOR = /t|\s/i;
 
 export class DefaultDateTimeRecognizer implements DateTimeRecognizer {
-    isDate (str: string) {
+    isDate(str: string) {
         // full-date from http://tools.ietf.org/html/rfc3339#section-5.6
         const matches = DATE.exec(str);
         if (matches === null) return false;
@@ -47,7 +48,7 @@ export class DefaultDateTimeRecognizer implements DateTimeRecognizer {
         return month >= 1 && month <= 12 && day >= 1 && day <= DAYS[month];
     }
 
-    isTime (str: string): boolean {
+    isTime(str: string): boolean {
         const matches = TIME.exec(str);
         if (matches === null) return false;
 
@@ -57,7 +58,7 @@ export class DefaultDateTimeRecognizer implements DateTimeRecognizer {
         return hour <= 23 && minute <= 59 && second <= 59;
     }
 
-    isDateTime (str: string): boolean {
+    isDateTime(str: string): boolean {
         // http://tools.ietf.org/html/rfc3339#section-5.6
         const dateTime = str.split(DATE_TIME_SEPARATOR);
         return dateTime.length === 2 && this.isDate(dateTime[0]) && this.isTime(dateTime[1]);

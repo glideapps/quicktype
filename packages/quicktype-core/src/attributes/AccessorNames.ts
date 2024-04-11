@@ -4,7 +4,7 @@ import {
     mapMap,
     mapFromObject,
     setUnionManyInto,
-    mapMergeInto,
+    mapMergeInto
 } from "collection-utils";
 
 import { type TypeAttributes } from "./TypeAttributes";
@@ -20,11 +20,11 @@ export type AccessorEntry = string | Map<string, string>;
 export type AccessorNames = Map<string, AccessorEntry>;
 
 class AccessorNamesTypeAttributeKind extends TypeAttributeKind<AccessorNames> {
-    constructor () {
+    public constructor() {
         super("accessorNames");
     }
 
-    makeInferred (_: AccessorNames): undefined {
+    public makeInferred(_: AccessorNames): undefined {
         return undefined;
     }
 }
@@ -32,7 +32,7 @@ class AccessorNamesTypeAttributeKind extends TypeAttributeKind<AccessorNames> {
 export const accessorNamesTypeAttributeKind: TypeAttributeKind<AccessorNames> = new AccessorNamesTypeAttributeKind();
 
 // Returns [name, isFixed].
-function getFromEntry (entry: AccessorEntry, language: string): [string, boolean] | undefined {
+function getFromEntry(entry: AccessorEntry, language: string): [string, boolean] | undefined {
     if (typeof entry === "string") return [entry, false];
 
     const maybeForLanguage = entry.get(language);
@@ -44,28 +44,28 @@ function getFromEntry (entry: AccessorEntry, language: string): [string, boolean
     return undefined;
 }
 
-export function lookupKey (accessors: AccessorNames, key: string, language: string): [string, boolean] | undefined {
+export function lookupKey(accessors: AccessorNames, key: string, language: string): [string, boolean] | undefined {
     const entry = accessors.get(key);
     if (entry === undefined) return undefined;
     return getFromEntry(entry, language);
 }
 
-export function objectPropertyNames (o: ObjectType, language: string): Map<string, [string, boolean] | undefined> {
+export function objectPropertyNames(o: ObjectType, language: string): Map<string, [string, boolean] | undefined> {
     const accessors = accessorNamesTypeAttributeKind.tryGetInAttributes(o.getAttributes());
     const map = o.getProperties();
     if (accessors === undefined) return mapMap(map, _ => undefined);
     return mapMap(map, (_cp, n) => lookupKey(accessors, n, language));
 }
 
-export function enumCaseNames (e: EnumType, language: string): Map<string, [string, boolean] | undefined> {
+export function enumCaseNames(e: EnumType, language: string): Map<string, [string, boolean] | undefined> {
     const accessors = accessorNamesTypeAttributeKind.tryGetInAttributes(e.getAttributes());
     if (accessors === undefined) return mapMap(e.cases.entries(), _ => undefined);
     return mapMap(e.cases.entries(), c => lookupKey(accessors, c, language));
 }
 
-export function getAccessorName (
+export function getAccessorName(
     names: Map<string, [string, boolean] | undefined>,
-    original: string,
+    original: string
 ): [string | undefined, boolean] {
     const maybeName = names.get(original);
     if (maybeName === undefined) return [undefined, false];
@@ -80,15 +80,15 @@ export function getAccessorName (
 // up its union's identifier(s), and then look up the member's accessor entries for that
 // identifier.  Of course we might find more than one, potentially conflicting.
 class UnionIdentifierTypeAttributeKind extends TypeAttributeKind<ReadonlySet<number>> {
-    constructor () {
+    public constructor() {
         super("unionIdentifier");
     }
 
-    combine (arr: Array<ReadonlySet<number>>): ReadonlySet<number> {
+    public combine(arr: Array<ReadonlySet<number>>): ReadonlySet<number> {
         return setUnionManyInto(new Set(), arr);
     }
 
-    makeInferred (_: ReadonlySet<number>): ReadonlySet<number> {
+    public makeInferred(_: ReadonlySet<number>): ReadonlySet<number> {
         return new Set();
     }
 }
@@ -98,18 +98,18 @@ export const unionIdentifierTypeAttributeKind: TypeAttributeKind<ReadonlySet<num
 
 let nextUnionIdentifier = 0;
 
-export function makeUnionIdentifierAttribute (): TypeAttributes {
+export function makeUnionIdentifierAttribute(): TypeAttributes {
     const attributes = unionIdentifierTypeAttributeKind.makeAttributes(new Set([nextUnionIdentifier]));
     nextUnionIdentifier += 1;
     return attributes;
 }
 
 class UnionMemberNamesTypeAttributeKind extends TypeAttributeKind<Map<number, AccessorEntry>> {
-    constructor () {
+    public constructor() {
         super("unionMemberNames");
     }
 
-    combine (arr: Array<Map<number, AccessorEntry>>): Map<number, AccessorEntry> {
+    public combine(arr: Array<Map<number, AccessorEntry>>): Map<number, AccessorEntry> {
         const result = new Map<number, AccessorEntry>();
         for (const m of arr) {
             mapMergeInto(result, m);
@@ -122,13 +122,13 @@ class UnionMemberNamesTypeAttributeKind extends TypeAttributeKind<Map<number, Ac
 export const unionMemberNamesTypeAttributeKind: TypeAttributeKind<Map<number, AccessorEntry>> =
     new UnionMemberNamesTypeAttributeKind();
 
-export function makeUnionMemberNamesAttribute (unionAttributes: TypeAttributes, entry: AccessorEntry): TypeAttributes {
+export function makeUnionMemberNamesAttribute(unionAttributes: TypeAttributes, entry: AccessorEntry): TypeAttributes {
     const identifiers = defined(unionIdentifierTypeAttributeKind.tryGetInAttributes(unionAttributes));
     const map = mapFromIterable(identifiers, _ => entry);
     return unionMemberNamesTypeAttributeKind.makeAttributes(map);
 }
 
-export function unionMemberName (u: UnionType, member: Type, language: string): [string | undefined, boolean] {
+export function unionMemberName(u: UnionType, member: Type, language: string): [string | undefined, boolean] {
     const identifiers = unionIdentifierTypeAttributeKind.tryGetInAttributes(u.getAttributes());
     if (identifiers === undefined) return [undefined, false];
 
@@ -168,7 +168,7 @@ export function unionMemberName (u: UnionType, member: Type, language: string): 
     return [first, isFixed];
 }
 
-function isAccessorEntry (x: any): x is string | { [language: string]: string, } {
+function isAccessorEntry(x: any): x is string | { [language: string]: string } {
     if (typeof x === "string") {
         return true;
     }
@@ -176,22 +176,22 @@ function isAccessorEntry (x: any): x is string | { [language: string]: string, }
     return isStringMap(x, (v: any): v is string => typeof v === "string");
 }
 
-function makeAccessorEntry (ae: string | { [language: string]: string, }): AccessorEntry {
+function makeAccessorEntry(ae: string | { [language: string]: string }): AccessorEntry {
     if (typeof ae === "string") return ae;
     return mapFromObject(ae);
 }
 
-export function makeAccessorNames (x: any): AccessorNames {
+export function makeAccessorNames(x: any): AccessorNames {
     // FIXME: Do proper error reporting
     const stringMap = checkStringMap(x, isAccessorEntry);
     return mapMap(mapFromObject(stringMap), makeAccessorEntry);
 }
 
-export function accessorNamesAttributeProducer (
+export function accessorNamesAttributeProducer(
     schema: JSONSchema,
     canonicalRef: Ref,
     _types: Set<JSONSchemaType>,
-    cases: JSONSchema[] | undefined,
+    cases: JSONSchema[] | undefined
 ): JSONSchemaAttributes | undefined {
     if (typeof schema !== "object") return undefined;
     const maybeAccessors = schema["qt-accessors"];
@@ -205,10 +205,10 @@ export function accessorNamesAttributeProducer (
         const accessors = checkArray(maybeAccessors, isAccessorEntry);
         messageAssert(cases.length === accessors.length, "SchemaWrongAccessorEntryArrayLength", {
             operation: "oneOf",
-            ref: canonicalRef.push("oneOf"),
+            ref: canonicalRef.push("oneOf")
         });
         const caseAttributes = accessors.map(accessor =>
-            makeUnionMemberNamesAttribute(identifierAttribute, makeAccessorEntry(accessor)),
+            makeUnionMemberNamesAttribute(identifierAttribute, makeAccessorEntry(accessor))
         );
         return { forUnion: identifierAttribute, forCases: caseAttributes };
     }

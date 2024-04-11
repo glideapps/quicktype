@@ -1,6 +1,6 @@
 import { iterableFirst, iterableEvery, setMap } from "collection-utils";
 
-import { type Type, type ClassProperty} from "../Type";
+import { type Type, type ClassProperty } from "../Type";
 import { ClassType, setOperationCasesEqual, isPrimitiveStringTypeKind } from "../Type";
 import { removeNullFromType } from "../TypeUtils";
 import { defined, panic } from "../support/Support";
@@ -8,7 +8,7 @@ import { type TypeGraph, type TypeRef } from "../TypeGraph";
 import { type StringTypeMapping } from "../TypeBuilder";
 import { type GraphRewriteBuilder } from "../GraphRewriting";
 import { unifyTypes, unionBuilderForUnification } from "../UnifyClasses";
-import { type MarkovChain} from "../MarkovChain";
+import { type MarkovChain } from "../MarkovChain";
 import { load, evaluate } from "../MarkovChain";
 
 const mapSizeThreshold = 20;
@@ -16,7 +16,7 @@ const stringMapSizeThreshold = 50;
 
 let markovChain: MarkovChain | undefined = undefined;
 
-function nameProbability (name: string): number {
+function nameProbability(name: string): number {
     if (markovChain === undefined) {
         markovChain = load();
     }
@@ -24,7 +24,7 @@ function nameProbability (name: string): number {
     return evaluate(markovChain, name);
 }
 
-function shouldBeMap (properties: ReadonlyMap<string, ClassProperty>): ReadonlySet<Type> | undefined {
+function shouldBeMap(properties: ReadonlyMap<string, ClassProperty>): ReadonlySet<Type> | undefined {
     // Only classes with a certain number of properties are inferred
     // as maps.
     const numProperties = properties.size;
@@ -108,16 +108,16 @@ function shouldBeMap (properties: ReadonlyMap<string, ClassProperty>): ReadonlyS
     return allCases;
 }
 
-export function inferMaps (
+export function inferMaps(
     graph: TypeGraph,
     stringTypeMapping: StringTypeMapping,
     conflateNumbers: boolean,
-    debugPrintReconstitution: boolean,
+    debugPrintReconstitution: boolean
 ): TypeGraph {
-    function replaceClass (
+    function replaceClass(
         setOfOneClass: ReadonlySet<ClassType>,
         builder: GraphRewriteBuilder<ClassType>,
-        forwardingRef: TypeRef,
+        forwardingRef: TypeRef
     ): TypeRef {
         const c = defined(iterableFirst(setOfOneClass));
         const properties = c.getProperties();
@@ -140,9 +140,9 @@ export function inferMaps (
                 c.getAttributes(),
                 builder,
                 unionBuilderForUnification(builder, false, false, conflateNumbers),
-                conflateNumbers,
+                conflateNumbers
             ),
-            forwardingRef,
+            forwardingRef
         );
     }
 
@@ -156,6 +156,6 @@ export function inferMaps (
         false,
         classesToReplace.map(c => [c]),
         debugPrintReconstitution,
-        replaceClass,
+        replaceClass
     );
 }

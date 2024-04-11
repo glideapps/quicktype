@@ -6,7 +6,7 @@ import {
     setUnion,
     setIntersect,
     setIsSuperset,
-    areEqual,
+    areEqual
 } from "collection-utils";
 
 import { type PrimitiveType } from "../Type";
@@ -30,31 +30,31 @@ interface EnumInfo {
     numValues: number;
 }
 
-function isOwnEnum ({ numValues, cases }: EnumInfo): boolean {
+function isOwnEnum({ numValues, cases }: EnumInfo): boolean {
     return numValues >= MIN_LENGTH_FOR_ENUM && cases.size < Math.sqrt(numValues);
 }
 
-function enumCasesOverlap (
+function enumCasesOverlap(
     newCases: ReadonlySet<string>,
     existingCases: ReadonlySet<string>,
-    newAreSubordinate: boolean,
+    newAreSubordinate: boolean
 ): boolean {
     const smaller = newAreSubordinate ? newCases.size : Math.min(newCases.size, existingCases.size);
     const overlap = setIntersect(newCases, existingCases).size;
     return overlap >= smaller * REQUIRED_OVERLAP;
 }
 
-function isAlwaysEmptyString (cases: string[]): boolean {
+function isAlwaysEmptyString(cases: string[]): boolean {
     return cases.length === 1 && cases[0] === "";
 }
 
-export function expandStrings (ctx: RunContext, graph: TypeGraph, inference: EnumInference): TypeGraph {
+export function expandStrings(ctx: RunContext, graph: TypeGraph, inference: EnumInference): TypeGraph {
     const stringTypeMapping = ctx.stringTypeMapping;
     const allStrings = Array.from(graph.allTypesUnordered()).filter(
-        t => t.kind === "string" && stringTypesForType(t as PrimitiveType).isRestricted,
+        t => t.kind === "string" && stringTypesForType(t as PrimitiveType).isRestricted
     ) as PrimitiveType[];
 
-    function makeEnumInfo (t: PrimitiveType): EnumInfo | undefined {
+    function makeEnumInfo(t: PrimitiveType): EnumInfo | undefined {
         const stringTypes = stringTypesForType(t);
         const mappedStringTypes = stringTypes.applyStringTypeMapping(stringTypeMapping);
         if (!mappedStringTypes.isRestricted) return undefined;
@@ -85,7 +85,7 @@ export function expandStrings (ctx: RunContext, graph: TypeGraph, inference: Enu
             enumInfos.set(t, enumInfo);
         }
 
-        function findOverlap (newCases: ReadonlySet<string>, newAreSubordinate: boolean): number {
+        function findOverlap(newCases: ReadonlySet<string>, newAreSubordinate: boolean): number {
             return enumSets.findIndex(s => enumCasesOverlap(newCases, s, newAreSubordinate));
         }
 
@@ -139,10 +139,10 @@ export function expandStrings (ctx: RunContext, graph: TypeGraph, inference: Enu
         }
     }
 
-    function replaceString (
+    function replaceString(
         group: ReadonlySet<PrimitiveType>,
         builder: GraphRewriteBuilder<PrimitiveType>,
-        forwardingRef: TypeRef,
+        forwardingRef: TypeRef
     ): TypeRef {
         assert(group.size === 1);
         const t = defined(iterableFirst(group));
@@ -191,6 +191,6 @@ export function expandStrings (ctx: RunContext, graph: TypeGraph, inference: Enu
         false,
         allStrings.map(t => [t]),
         ctx.debugPrintReconstitution,
-        replaceString,
+        replaceString
     );
 }

@@ -1,26 +1,13 @@
 import { TargetLanguage } from "../TargetLanguage";
-import { type Option, type OptionValues} from "../RendererOptions";
+import { type Option, type OptionValues } from "../RendererOptions";
 import { getOptionValues, EnumOption } from "../RendererOptions";
 import { type RenderContext } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { type Name, type Namer } from "../Naming";
 import { funPrefixNamer } from "../Naming";
 import { acronymOption, acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
-import {
-    type ClassProperty,
-    type ClassType,
-    type ObjectType,
-    type Sourcelike,
-    type Type,
-} from "..";
-import {
-    capitalize,
-    combineWords,
-    firstUpperWordStyle,
-    matchType,
-    panic,
-    splitIntoWords,
-} from "..";
+import { type ClassProperty, type ClassType, type ObjectType, type Sourcelike, type Type } from "..";
+import { capitalize, combineWords, firstUpperWordStyle, matchType, panic, splitIntoWords } from "..";
 import { allLowerWordStyle, utf16StringEscape } from "../support/Strings";
 import { isES3IdentifierStart } from "./JavaScriptUnicodeMaps";
 import { legalizeName } from "./JavaScript";
@@ -37,29 +24,33 @@ export const javaScriptPropTypesOptions = {
         "Which module system to use",
         [
             ["common-js", false],
-            ["es6", true],
+            ["es6", true]
         ],
-        "es6",
-    ),
+        "es6"
+    )
 };
 
 export class JavaScriptPropTypesTargetLanguage extends TargetLanguage {
-    protected getOptions (): Array<Option<any>> {
+    protected getOptions(): Array<Option<any>> {
         return [javaScriptPropTypesOptions.acronymStyle, javaScriptPropTypesOptions.converters];
     }
 
-    constructor (displayName = "JavaScript PropTypes", names: string[] = ["javascript-prop-types"], extension = "js") {
+    public constructor(
+        displayName = "JavaScript PropTypes",
+        names: string[] = ["javascript-prop-types"],
+        extension = "js"
+    ) {
         super(displayName, names, extension);
     }
 
-    protected makeRenderer (
+    protected makeRenderer(
         renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any, },
+        untypedOptionValues: { [name: string]: any }
     ): JavaScriptPropTypesRenderer {
         return new JavaScriptPropTypesRenderer(
             this,
             renderContext,
-            getOptionValues(javaScriptPropTypesOptions, untypedOptionValues),
+            getOptionValues(javaScriptPropTypesOptions, untypedOptionValues)
         );
     }
 }
@@ -67,15 +58,15 @@ export class JavaScriptPropTypesTargetLanguage extends TargetLanguage {
 const identityNamingFunction = funPrefixNamer("properties", s => s);
 
 export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
-    constructor (
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        private readonly _jsOptions: OptionValues<typeof javaScriptPropTypesOptions>,
+        private readonly _jsOptions: OptionValues<typeof javaScriptPropTypesOptions>
     ) {
         super(targetLanguage, renderContext);
     }
 
-    protected nameStyle (original: string, upper: boolean): string {
+    protected nameStyle(original: string, upper: boolean): string {
         const acronyms = acronymStyle(this._jsOptions.acronymStyle);
         const words = splitIntoWords(original);
         return combineWords(
@@ -86,42 +77,42 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
             upper ? s => capitalize(acronyms(s)) : allLowerWordStyle,
             acronyms,
             "",
-            isES3IdentifierStart,
+            isES3IdentifierStart
         );
     }
 
-    protected makeNamedTypeNamer (): Namer {
+    protected makeNamedTypeNamer(): Namer {
         return funPrefixNamer("types", s => this.nameStyle(s, true));
     }
 
-    protected namerForObjectProperty (): Namer {
+    protected namerForObjectProperty(): Namer {
         return identityNamingFunction;
     }
 
-    protected makeUnionMemberNamer (): null {
+    protected makeUnionMemberNamer(): null {
         return null;
     }
 
-    protected makeEnumCaseNamer (): Namer {
+    protected makeEnumCaseNamer(): Namer {
         return funPrefixNamer("enum-cases", s => this.nameStyle(s, false));
     }
 
-    protected namedTypeToNameForTopLevel (type: Type): Type | undefined {
+    protected namedTypeToNameForTopLevel(type: Type): Type | undefined {
         return directlyReachableSingleNamedType(type);
     }
 
-    protected makeNameForProperty (
+    protected makeNameForProperty(
         c: ClassType,
         className: Name,
         p: ClassProperty,
         jsonName: string,
-        _assignedName: string | undefined,
+        _assignedName: string | undefined
     ): Name | undefined {
         // Ignore the assigned name
         return super.makeNameForProperty(c, className, p, jsonName, undefined);
     }
 
-    typeMapTypeFor (t: Type, required = true): Sourcelike {
+    private typeMapTypeFor(t: Type, required = true): Sourcelike {
         if (["class", "object", "enum"].includes(t.kind)) {
             return ["_", this.nameForNamedType(t)];
         }
@@ -140,13 +131,13 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
             _enumType => panic("Should already be handled."),
             unionType => {
                 const children = Array.from(unionType.getChildren()).map((type: Type) =>
-                    this.typeMapTypeFor(type, false),
+                    this.typeMapTypeFor(type, false)
                 );
                 return ["PropTypes.oneOfType([", ...arrayIntercalate(", ", children), "])"];
             },
             _transformedStringType => {
                 return "PropTypes.string";
-            },
+            }
         );
 
         if (required) {
@@ -156,11 +147,11 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         return match;
     }
 
-    typeMapTypeForProperty (p: ClassProperty): Sourcelike {
+    private typeMapTypeForProperty(p: ClassProperty): Sourcelike {
         return this.typeMapTypeFor(p.type);
     }
 
-    private importStatement (lhs: Sourcelike, moduleName: Sourcelike): Sourcelike {
+    private importStatement(lhs: Sourcelike, moduleName: Sourcelike): Sourcelike {
         if (this._jsOptions.moduleSystem) {
             return ["import ", lhs, " from ", moduleName, ";"];
         } else {
@@ -168,7 +159,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         }
     }
 
-    protected emitUsageComments (): void {
+    protected emitUsageComments(): void {
         // FIXME: Use the correct type name
         this.emitCommentLines(
             [
@@ -182,24 +173,24 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
                 "",
                 "MyComponent.propTypes = {",
                 "  input: MyShape",
-                "};",
+                "};"
             ],
-            { lineStart: "// " },
+            { lineStart: "// " }
         );
     }
 
-    protected emitBlock (source: Sourcelike, end: Sourcelike, emit: () => void) {
+    protected emitBlock(source: Sourcelike, end: Sourcelike, emit: () => void) {
         this.emitLine(source, "{");
         this.indent(emit);
         this.emitLine("}", end);
     }
 
-    protected emitImports (): void {
+    protected emitImports(): void {
         this.ensureBlankLine();
-        this.emitLine(this.importStatement("PropTypes", "\"prop-types\""));
+        this.emitLine(this.importStatement("PropTypes", '"prop-types"'));
     }
 
-    private emitExport (name: Sourcelike, value: Sourcelike): void {
+    private emitExport(name: Sourcelike, value: Sourcelike): void {
         if (this._jsOptions.moduleSystem) {
             this.emitLine("export const ", name, " = ", value, ";");
         } else {
@@ -207,7 +198,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         }
     }
 
-    protected emitTypes (): void {
+    protected emitTypes(): void {
         this.ensureBlankLine();
 
         this.forEachObject("none", (_type: ObjectType, name: Name) => {
@@ -282,7 +273,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         });
     }
 
-    private emitObject (name: Name, t: ObjectType) {
+    private emitObject(name: Name, t: ObjectType) {
         this.ensureBlankLine();
         this.emitLine("_", name, " = PropTypes.shape({");
         this.indent(() => {
@@ -293,7 +284,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         this.emitLine("});");
     }
 
-    protected emitSourceStructure (): void {
+    protected emitSourceStructure(): void {
         if (this.leadingComments !== undefined) {
             this.emitComments(this.leadingComments);
         } else {

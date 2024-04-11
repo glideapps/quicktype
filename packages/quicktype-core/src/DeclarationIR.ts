@@ -14,18 +14,17 @@ export interface Declaration {
 }
 
 export class DeclarationIR {
-    readonly declarations: readonly Declaration[];
+    public readonly declarations: readonly Declaration[];
 
-    constructor (declarations: Iterable<Declaration>, readonly forwardedTypes: Set<Type>) {
+    public constructor(
+        declarations: Iterable<Declaration>,
+        public readonly forwardedTypes: Set<Type>
+    ) {
         this.declarations = Array.from(declarations);
     }
 }
 
-function findBreaker (
-    t: Type,
-    path: readonly Type[],
-    canBreak: ((t: Type) => boolean) | undefined,
-): Type | undefined {
+function findBreaker(t: Type, path: readonly Type[], canBreak: ((t: Type) => boolean) | undefined): Type | undefined {
     const index = path.indexOf(t);
     if (index < 0) return undefined;
     if (canBreak === undefined) {
@@ -41,16 +40,16 @@ function findBreaker (
     return maybeBreaker;
 }
 
-export function cycleBreakerTypesForGraph (
+export function cycleBreakerTypesForGraph(
     graph: TypeGraph,
     isImplicitCycleBreaker: (t: Type) => boolean,
-    canBreakCycles: (t: Type) => boolean,
+    canBreakCycles: (t: Type) => boolean
 ): Set<Type> {
     const visitedTypes = new Set<Type>();
     const cycleBreakerTypes = new Set<Type>();
     const queue: Type[] = Array.from(graph.topLevels.values());
 
-    function visit (t: Type, path: Type[]): void {
+    function visit(t: Type, path: Type[]): void {
         if (visitedTypes.has(t)) return;
 
         if (isImplicitCycleBreaker(t)) {
@@ -85,11 +84,11 @@ export function cycleBreakerTypesForGraph (
     return cycleBreakerTypes;
 }
 
-export function declarationsForGraph (
+export function declarationsForGraph(
     typeGraph: TypeGraph,
     canBeForwardDeclared: ((t: Type) => boolean) | undefined,
     childrenOfType: (t: Type) => ReadonlySet<Type>,
-    needsDeclaration: (t: Type) => boolean,
+    needsDeclaration: (t: Type) => boolean
 ): DeclarationIR {
     /*
     function nodeTitle(t: Type): string {
@@ -110,9 +109,9 @@ export function declarationsForGraph (
     const forwardedTypes = new Set<Type>();
     const visitedComponents = new Set<ReadonlySet<Type>>();
 
-    function processGraph (graph: Graph<Type>, _writeComponents: boolean): void {
+    function processGraph(graph: Graph<Type>, _writeComponents: boolean): void {
         const componentsGraph = graph.stronglyConnectedComponents();
-        function visitComponent (component: ReadonlySet<Type>): void {
+        function visitComponent(component: ReadonlySet<Type>): void {
             if (visitedComponents.has(component)) return;
             visitedComponents.add(component);
 

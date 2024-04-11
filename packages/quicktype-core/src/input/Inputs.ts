@@ -1,6 +1,6 @@
 import { iterableFirst, iterableFind, iterableSome, setFilterMap, withDefault, arrayMapSync } from "collection-utils";
 
-import { type Value, type CompressedJSON} from "./CompressedJSON";
+import { type Value, type CompressedJSON } from "./CompressedJSON";
 import { CompressedJSONFromString } from "./CompressedJSON";
 import { panic, errorMessage, defined } from "../support/Support";
 import { messageError } from "../Messages";
@@ -39,7 +39,8 @@ export interface Input<T> {
 }
 
 interface JSONTopLevel {
-    description: string | undefined; samples: Value[]; 
+    description: string | undefined;
+    samples: Value[];
 }
 
 export interface JSONSourceData<T> {
@@ -48,26 +49,26 @@ export interface JSONSourceData<T> {
     samples: T[];
 }
 
-function messageParseError (name: string, description: string | undefined, e: unknown): never {
+function messageParseError(name: string, description: string | undefined, e: unknown): never {
     return messageError("MiscJSONParseError", {
         description: withDefault(description, "input"),
         address: name,
-        message: errorMessage(e),
+        message: errorMessage(e)
     });
 }
 
 export class JSONInput<T> implements Input<JSONSourceData<T>> {
-    readonly kind: string = "json";
+    public readonly kind: string = "json";
 
-    readonly needIR: boolean = true;
+    public readonly needIR: boolean = true;
 
-    readonly needSchemaProcessing: boolean = false;
+    public readonly needSchemaProcessing: boolean = false;
 
     private readonly _topLevels: Map<string, JSONTopLevel> = new Map();
 
-    constructor (private readonly _compressedJSON: CompressedJSON<T>) {}
+    public constructor(private readonly _compressedJSON: CompressedJSON<T>) {}
 
-    private addSample (topLevelName: string, sample: Value): void {
+    private addSample(topLevelName: string, sample: Value): void {
         let topLevel = this._topLevels.get(topLevelName);
         if (topLevel === undefined) {
             topLevel = { samples: [], description: undefined };
@@ -77,7 +78,7 @@ export class JSONInput<T> implements Input<JSONSourceData<T>> {
         topLevel.samples.push(sample);
     }
 
-    private setDescription (topLevelName: string, description: string): void {
+    private setDescription(topLevelName: string, description: string): void {
         let topLevel = this._topLevels.get(topLevelName);
         if (topLevel === undefined) {
             return panic("Trying to set description for a top-level that doesn't exist");
@@ -86,7 +87,7 @@ export class JSONInput<T> implements Input<JSONSourceData<T>> {
         topLevel.description = description;
     }
 
-    private addSamples (name: string, values: Value[], description: string | undefined): void {
+    private addSamples(name: string, values: Value[], description: string | undefined): void {
         for (const value of values) {
             this.addSample(name, value);
             if (description !== undefined) {
@@ -95,7 +96,7 @@ export class JSONInput<T> implements Input<JSONSourceData<T>> {
         }
     }
 
-    async addSource (source: JSONSourceData<T>): Promise<void> {
+    public async addSource(source: JSONSourceData<T>): Promise<void> {
         const { name, samples, description } = source;
         try {
             const values = await arrayMapSync(samples, async s => await this._compressedJSON.parse(s));
@@ -105,7 +106,7 @@ export class JSONInput<T> implements Input<JSONSourceData<T>> {
         }
     }
 
-    addSourceSync (source: JSONSourceData<T>): void {
+    public addSourceSync(source: JSONSourceData<T>): void {
         const { name, samples, description } = source;
         try {
             const values = samples.map(s => this._compressedJSON.parseSync(s));
@@ -115,26 +116,26 @@ export class JSONInput<T> implements Input<JSONSourceData<T>> {
         }
     }
 
-    singleStringSchemaSource (): undefined {
+    public singleStringSchemaSource(): undefined {
         return undefined;
     }
 
-    async addTypes (
+    public async addTypes(
         ctx: RunContext,
         typeBuilder: TypeBuilder,
         inferMaps: boolean,
         inferEnums: boolean,
-        fixedTopLevels: boolean,
+        fixedTopLevels: boolean
     ): Promise<void> {
         this.addTypesSync(ctx, typeBuilder, inferMaps, inferEnums, fixedTopLevels);
     }
 
-    addTypesSync (
+    public addTypesSync(
         _ctx: RunContext,
         typeBuilder: TypeBuilder,
         inferMaps: boolean,
         inferEnums: boolean,
-        fixedTopLevels: boolean,
+        fixedTopLevels: boolean
     ): void {
         const inference = new TypeInference(this._compressedJSON, typeBuilder, inferMaps, inferEnums);
 
@@ -149,10 +150,10 @@ export class JSONInput<T> implements Input<JSONSourceData<T>> {
     }
 }
 
-export function jsonInputForTargetLanguage (
+export function jsonInputForTargetLanguage(
     targetLanguage: string | TargetLanguage,
     languages?: TargetLanguage[],
-    handleJSONRefs = false,
+    handleJSONRefs = false
 ): JSONInput<string> {
     if (typeof targetLanguage === "string") {
         targetLanguage = defined(languageNamed(targetLanguage, languages));
@@ -166,7 +167,7 @@ export class InputData {
     // FIXME: Make into a Map, indexed by kind.
     private _inputs: Set<Input<any>> = new Set();
 
-    addInput<T>(input: Input<T>): void {
+    protected addInput<T>(input: Input<T>): void {
         this._inputs = this._inputs.add(input);
     }
 
@@ -180,49 +181,49 @@ export class InputData {
         return input;
     }
 
-    async addSource<T>(kind: string, source: T, makeInput: () => Input<T>): Promise<void> {
+    public async addSource<T>(kind: string, source: T, makeInput: () => Input<T>): Promise<void> {
         const input = this.getOrAddInput(kind, makeInput);
         await input.addSource(source);
     }
 
-    addSourceSync<T>(kind: string, source: T, makeInput: () => Input<T>): void {
+    public addSourceSync<T>(kind: string, source: T, makeInput: () => Input<T>): void {
         const input = this.getOrAddInput(kind, makeInput);
         input.addSourceSync(source);
     }
 
-    async addTypes (
+    public async addTypes(
         ctx: RunContext,
         typeBuilder: TypeBuilder,
         inferMaps: boolean,
         inferEnums: boolean,
-        fixedTopLevels: boolean,
+        fixedTopLevels: boolean
     ): Promise<void> {
         for (const input of this._inputs) {
             await input.addTypes(ctx, typeBuilder, inferMaps, inferEnums, fixedTopLevels);
         }
     }
 
-    addTypesSync (
+    public addTypesSync(
         ctx: RunContext,
         typeBuilder: TypeBuilder,
         inferMaps: boolean,
         inferEnums: boolean,
-        fixedTopLevels: boolean,
+        fixedTopLevels: boolean
     ): void {
         for (const input of this._inputs) {
             input.addTypesSync(ctx, typeBuilder, inferMaps, inferEnums, fixedTopLevels);
         }
     }
 
-    get needIR (): boolean {
+    public get needIR(): boolean {
         return iterableSome(this._inputs, i => i.needIR);
     }
 
-    get needSchemaProcessing (): boolean {
+    public get needSchemaProcessing(): boolean {
         return iterableSome(this._inputs, i => i.needSchemaProcessing);
     }
 
-    singleStringSchemaSource (): string | undefined {
+    public singleStringSchemaSource(): string | undefined {
         const schemaStrings = setFilterMap(this._inputs, i => i.singleStringSchemaSource());
         if (schemaStrings.size > 1) {
             return panic("We have more than one input with a string schema source");

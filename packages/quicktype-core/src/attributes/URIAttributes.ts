@@ -1,6 +1,6 @@
 import URI from "urijs";
 
-import { type TypeAttributes} from "./TypeAttributes";
+import { type TypeAttributes } from "./TypeAttributes";
 import { TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
 import { setUnionManyInto } from "collection-utils";
 import { type JSONSchemaType, type JSONSchemaAttributes, type Ref } from "../input/JSONSchemaInput";
@@ -15,25 +15,25 @@ const extensionsSchemaProperty = "qt-uri-extensions";
 type URIAttributes = [ReadonlySet<string>, ReadonlySet<string>];
 
 class URITypeAttributeKind extends TypeAttributeKind<URIAttributes> {
-    constructor () {
+    public constructor() {
         super("uriAttributes");
     }
 
-    get inIdentity (): boolean {
+    public get inIdentity(): boolean {
         return true;
     }
 
-    combine (attrs: URIAttributes[]): URIAttributes {
+    public combine(attrs: URIAttributes[]): URIAttributes {
         const protocolSets = attrs.map(a => a[0]);
         const extensionSets = attrs.map(a => a[1]);
         return [setUnionManyInto(new Set(), protocolSets), setUnionManyInto(new Set(), extensionSets)];
     }
 
-    makeInferred (_: URIAttributes): undefined {
+    public makeInferred(_: URIAttributes): undefined {
         return undefined;
     }
 
-    addToSchema (schema: { [name: string]: unknown, }, t: Type, attrs: URIAttributes): void {
+    public addToSchema(schema: { [name: string]: unknown }, t: Type, attrs: URIAttributes): void {
         if (t.kind !== "string" && t.kind !== "uri") return;
 
         const [protocols, extensions] = attrs;
@@ -51,13 +51,13 @@ export const uriTypeAttributeKind: TypeAttributeKind<URIAttributes> = new URITyp
 
 const extensionRegex = /^.+(\.[^./\\]+)$/;
 
-function pathExtension (path: string): string | undefined {
+function pathExtension(path: string): string | undefined {
     const matches = extensionRegex.exec(path);
     if (matches === null) return undefined;
     return matches[1];
 }
 
-export function uriInferenceAttributesProducer (s: string): TypeAttributes {
+export function uriInferenceAttributesProducer(s: string): TypeAttributes {
     try {
         const uri = URI(s);
         const extension = pathExtension(uri.path());
@@ -68,10 +68,10 @@ export function uriInferenceAttributesProducer (s: string): TypeAttributes {
     }
 }
 
-export function uriSchemaAttributesProducer (
+export function uriSchemaAttributesProducer(
     schema: JSONSchema,
     _ref: Ref,
-    types: Set<JSONSchemaType>,
+    types: Set<JSONSchemaType>
 ): JSONSchemaAttributes | undefined {
     if (!(typeof schema === "object")) return undefined;
     if (!types.has("string")) return undefined;
