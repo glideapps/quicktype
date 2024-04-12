@@ -1,6 +1,10 @@
-import { assert, defined, panic, assertNever } from "./Support";
-import { acronyms } from "./Acronyms";
+import unicode from "unicode-properties";
+
 import { messageAssert } from "../Messages";
+
+// eslint-disable-next-line import/no-cycle
+import { acronyms } from "./Acronyms";
+import { assert, assertNever, defined, panic } from "./Support";
 
 export type NamingStyle =
     | "pascal"
@@ -9,8 +13,6 @@ export type NamingStyle =
     | "upper-underscore"
     | "pascal-upper-acronyms"
     | "camel-upper-acronyms";
-
-import unicode from "unicode-properties";
 
 function computeAsciiMap(mapper: (codePoint: number) => string): {
     charNoEscapeMap: number[];

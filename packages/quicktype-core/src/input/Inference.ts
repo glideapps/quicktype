@@ -1,17 +1,21 @@
-import { type Value, type CompressedJSON } from "./CompressedJSON";
-import { Tag, valueTag } from "./CompressedJSON";
-import { assertNever, defined, panic, assert } from "../support/Support";
-import { type TypeBuilder } from "../TypeBuilder";
-import { UnionBuilder, UnionAccumulator } from "../UnionBuilder";
-import { type ClassProperty } from "../Type";
-import { transformedStringTypeTargetTypeKindsMap, UnionType, ClassType, MapType, ArrayType } from "../Type";
-import { type TypeAttributes } from "../attributes/TypeAttributes";
-import { emptyTypeAttributes } from "../attributes/TypeAttributes";
 import { StringTypes, inferTransformedStringTypeKindForString } from "../attributes/StringTypes";
-import { type TypeRef } from "../TypeGraph";
-import { derefTypeRef } from "../TypeGraph";
+import { type TypeAttributes, emptyTypeAttributes } from "../attributes/TypeAttributes";
 import { messageError } from "../Messages";
+import { assert, assertNever, defined, panic } from "../support/Support";
+import {
+    ArrayType,
+    type ClassProperty,
+    ClassType,
+    MapType,
+    UnionType,
+    transformedStringTypeTargetTypeKindsMap
+} from "../Type";
+import { type TypeBuilder } from "../TypeBuilder";
+import { type TypeRef, derefTypeRef } from "../TypeGraph";
 import { nullableFromUnion } from "../TypeUtils";
+import { UnionAccumulator, UnionBuilder } from "../UnionBuilder";
+
+import { type CompressedJSON, Tag, type Value, valueTag } from "./CompressedJSON";
 
 // This should be the recursive type
 //   Value[] | NestedValueArray[]

@@ -1,14 +1,14 @@
-import { type StringMap } from "./support/Support";
 import { type Ref } from "./input/JSONSchemaInput";
+import { type StringMap } from "./support/Support";
 
 export type ErrorProperties =
     | { kind: "InternalError"; properties: { message: string } }
 
     // Misc
     | {
-          kind: "MiscJSONParseError";
-          properties: { address: string; description: string; message: string };
-      }
+        kind: "MiscJSONParseError";
+        properties: { address: string; description: string; message: string };
+    }
     | { kind: "MiscReadError"; properties: { fileOrURL: string; message: string } }
     | { kind: "MiscUnicodeHighSurrogateWithoutLowSurrogate"; properties: {} }
     | { kind: "MiscInvalidMinMaxConstraint"; properties: { max: number; min: number } }
@@ -36,9 +36,9 @@ export type ErrorProperties =
     | { kind: "SchemaIDMustHaveAddress"; properties: { id: string; ref: Ref } }
     | { kind: "SchemaWrongAccessorEntryArrayLength"; properties: { operation: string; ref: Ref } }
     | {
-          kind: "SchemaSetOperationCasesIsNotArray";
-          properties: { cases: any; operation: string; ref: Ref };
-      }
+        kind: "SchemaSetOperationCasesIsNotArray";
+        properties: { cases: any; operation: string; ref: Ref };
+    }
     | { kind: "SchemaMoreThanOneUnionMemberName"; properties: { names: string[] } }
     | { kind: "SchemaCannotGetTypesFromBoolean"; properties: { ref: string } }
     | { kind: "SchemaCannotIndexArrayWithNonNumber"; properties: { actual: string; ref: Ref } }

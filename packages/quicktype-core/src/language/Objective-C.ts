@@ -1,34 +1,35 @@
-import { iterableSome, iterableFirst, mapContains, mapFirst, mapSome } from "collection-utils";
-
-import { TargetLanguage } from "../TargetLanguage";
-import { type ClassProperty } from "../Type";
-import { Type, ClassType, EnumType, ArrayType, MapType, UnionType } from "../Type";
-import { matchType, nullableFromUnion, isAnyOrNull } from "../TypeUtils";
-import { type Name } from "../Naming";
-import { Namer, funPrefixNamer } from "../Naming";
-import { type Sourcelike } from "../Source";
-import { modifySource } from "../Source";
-import {
-    splitIntoWords,
-    combineWords,
-    firstUpperWordStyle,
-    allUpperWordStyle,
-    allLowerWordStyle,
-    camelCase,
-    utf16LegalizeCharacters,
-    stringEscape,
-    addPrefixIfNecessary,
-    repeatString,
-    fastIsUpperCase
-} from "../support/Strings";
-import { type ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { type Option, type OptionValues } from "../RendererOptions";
-import { StringOption, BooleanOption, EnumOption, getOptionValues } from "../RendererOptions";
-import { assert, defined } from "../support/Support";
-import { type RenderContext } from "../Renderer";
-
+import { iterableFirst, iterableSome, mapContains, mapFirst, mapSome } from "collection-utils";
 import unicode from "unicode-properties";
+
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { type Name, Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import {
+    BooleanOption,
+    EnumOption,
+    type Option,
+    type OptionValues,
+    StringOption,
+    getOptionValues
+} from "../RendererOptions";
+import { type Sourcelike, modifySource } from "../Source";
+import {
+    addPrefixIfNecessary,
+    allLowerWordStyle,
+    allUpperWordStyle,
+    camelCase,
+    combineWords,
+    fastIsUpperCase,
+    firstUpperWordStyle,
+    repeatString,
+    splitIntoWords,
+    stringEscape,
+    utf16LegalizeCharacters
+} from "../support/Strings";
+import { assert, defined } from "../support/Support";
+import { TargetLanguage } from "../TargetLanguage";
+import { ArrayType, type ClassProperty, ClassType, EnumType, MapType, Type, UnionType } from "../Type";
+import { isAnyOrNull, matchType, nullableFromUnion } from "../TypeUtils";
 
 export type MemoryAttribute = "assign" | "strong" | "copy";
 export interface OutputFeatures {

@@ -1,16 +1,17 @@
-import { iterableFirst, iterableFind, iterableSome, setFilterMap, withDefault, arrayMapSync } from "collection-utils";
+import { arrayMapSync, iterableFind, iterableFirst, iterableSome, setFilterMap, withDefault } from "collection-utils";
 
-import { type Value, type CompressedJSON } from "./CompressedJSON";
-import { CompressedJSONFromString } from "./CompressedJSON";
-import { panic, errorMessage, defined } from "../support/Support";
-import { messageError } from "../Messages";
-import { type TypeBuilder } from "../TypeBuilder";
-import { makeNamesTypeAttributes } from "../attributes/TypeNames";
 import { descriptionTypeAttributeKind } from "../attributes/Description";
-import { TypeInference } from "./Inference";
-import { type TargetLanguage } from "../TargetLanguage";
-import { type RunContext } from "../Run";
+import { makeNamesTypeAttributes } from "../attributes/TypeNames";
+// eslint-disable-next-line import/no-cycle
 import { languageNamed } from "../language/All";
+import { messageError } from "../Messages";
+import { type RunContext } from "../Run";
+import { defined, errorMessage, panic } from "../support/Support";
+import { type TargetLanguage } from "../TargetLanguage";
+import { type TypeBuilder } from "../TypeBuilder";
+
+import { type CompressedJSON, CompressedJSONFromString, type Value } from "./CompressedJSON";
+import { TypeInference } from "./Inference";
 
 export interface Input<T> {
     addSource: (source: T) => Promise<void>;

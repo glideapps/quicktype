@@ -1,28 +1,32 @@
 import { mapContains } from "collection-utils";
-import { TargetLanguage } from "../TargetLanguage";
-import { type Option, type OptionValues } from "../RendererOptions";
-import { EnumOption, StringOption, BooleanOption, getOptionValues } from "../RendererOptions";
-import { type Type, type ClassType, type UnionType, type EnumType, type ClassProperty } from "../Type";
-import { matchType, nullableFromUnion } from "../TypeUtils";
-import { type ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { type Namer, type Name } from "../Naming";
-import { funPrefixNamer } from "../Naming";
+
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { type Name, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
 import {
-    legalizeCharacters,
-    isLetterOrUnderscoreOrDigit,
-    isLetterOrUnderscore,
-    stringEscape,
-    isAscii,
-    splitIntoWords,
+    BooleanOption,
+    EnumOption,
+    type Option,
+    type OptionValues,
+    StringOption,
+    getOptionValues
+} from "../RendererOptions";
+import { type MultiWord, type Sourcelike, multiWord, parenIfNeeded, singleWord } from "../Source";
+import {
+    allLowerWordStyle,
+    allUpperWordStyle,
     combineWords,
     firstUpperWordStyle,
-    allLowerWordStyle,
-    allUpperWordStyle
+    isAscii,
+    isLetterOrUnderscore,
+    isLetterOrUnderscoreOrDigit,
+    legalizeCharacters,
+    splitIntoWords,
+    stringEscape
 } from "../support/Strings";
-import { type Sourcelike, type MultiWord } from "../Source";
-import { singleWord, multiWord, parenIfNeeded } from "../Source";
-import { type RenderContext } from "../Renderer";
+import { TargetLanguage } from "../TargetLanguage";
+import { type ClassProperty, type ClassType, type EnumType, type Type, type UnionType } from "../Type";
+import { matchType, nullableFromUnion } from "../TypeUtils";
 
 export const haskellOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),

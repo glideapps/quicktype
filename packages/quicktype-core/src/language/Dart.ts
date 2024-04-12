@@ -1,15 +1,9 @@
-import {
-    type ClassProperty,
-    type ClassType,
-    type PrimitiveStringTypeKind,
-    type TransformedStringTypeKind,
-    type Type,
-    type UnionType
-} from "../Type";
-import { EnumType } from "../Type";
-import { directlyReachableSingleNamedType, matchType, nullableFromUnion } from "../TypeUtils";
-import { type Sourcelike } from "../Source";
-import { maybeAnnotated, modifySource } from "../Source";
+import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { DependencyName, type Name, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import { BooleanOption, type Option, type OptionValues, StringOption, getOptionValues } from "../RendererOptions";
+import { type Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import {
     allLowerWordStyle,
     allUpperWordStyle,
@@ -27,19 +21,19 @@ import {
     utf16ConcatMap,
     utf16LegalizeCharacters
 } from "../support/Strings";
-
-import { type StringTypeMapping } from "../TypeBuilder";
-
-import { type Name, type Namer } from "../Naming";
-import { DependencyName, funPrefixNamer } from "../Naming";
-import { type ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { TargetLanguage } from "../TargetLanguage";
-import { type Option, type OptionValues } from "../RendererOptions";
-import { BooleanOption, getOptionValues, StringOption } from "../RendererOptions";
-import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { defined } from "../support/Support";
-import { type RenderContext } from "../Renderer";
+import { TargetLanguage } from "../TargetLanguage";
+import {
+    type ClassProperty,
+    type ClassType,
+    EnumType,
+    type PrimitiveStringTypeKind,
+    type TransformedStringTypeKind,
+    type Type,
+    type UnionType
+} from "../Type";
+import { type StringTypeMapping } from "../TypeBuilder";
+import { directlyReachableSingleNamedType, matchType, nullableFromUnion } from "../TypeUtils";
 
 export const dartOptions = {
     nullSafety: new BooleanOption("null-safety", "Null Safety", true),
@@ -204,8 +198,8 @@ function dartNameStyle(startWithUpper: boolean, upperUnderscore: boolean, origin
     const firstWordStyle = upperUnderscore
         ? allUpperWordStyle
         : startWithUpper
-        ? firstUpperWordStyle
-        : allLowerWordStyle;
+          ? firstUpperWordStyle
+          : allLowerWordStyle;
     const restWordStyle = upperUnderscore ? allUpperWordStyle : firstUpperWordStyle;
     return combineWords(
         words,

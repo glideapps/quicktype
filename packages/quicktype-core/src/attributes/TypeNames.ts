@@ -1,11 +1,11 @@
+import { definedMap, iterableFirst, iterableSkip, setMap, setUnionInto } from "collection-utils";
 import * as pluralize from "pluralize";
-import { setMap, iterableFirst, iterableSkip, setUnionInto, definedMap } from "collection-utils";
 
-import { panic, defined, assert } from "../support/Support";
-import { type TypeAttributes } from "./TypeAttributes";
-import { TypeAttributeKind } from "./TypeAttributes";
-import { splitIntoWords } from "../support/Strings";
 import { Chance } from "../support/Chance";
+import { splitIntoWords } from "../support/Strings";
+import { assert, defined, panic } from "../support/Support";
+
+import { TypeAttributeKind, type TypeAttributes } from "./TypeAttributes";
 
 let chance: Chance;
 let usedRandomNames: Set<string>;

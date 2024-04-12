@@ -1,27 +1,25 @@
 import { mapFirst } from "collection-utils";
 
-import * as targetLanguages from "./language/All";
-import { type TargetLanguage, type MultiFileRenderResult } from "./TargetLanguage";
-import { type SerializedRenderResult, type Annotation, type Location, type Span } from "./Source";
-import { assert } from "./support/Support";
-import { combineClasses } from "./rewrites/CombineClasses";
-import { inferMaps } from "./rewrites/InferMaps";
-import { type StringTypeMapping } from "./TypeBuilder";
-import { TypeBuilder } from "./TypeBuilder";
-import { type TypeGraph } from "./TypeGraph";
-import { noneToAny, optionalToNullable, removeIndirectionIntersections } from "./TypeGraph";
 import { initTypeNames } from "./attributes/TypeNames";
 import { gatherNames } from "./GatherNames";
-import { expandStrings } from "./rewrites/ExpandStrings";
-import { flattenUnions } from "./rewrites/FlattenUnions";
-import { resolveIntersections } from "./rewrites/ResolveIntersections";
-import { replaceObjectType } from "./rewrites/ReplaceObjectType";
-import { messageError } from "./Messages";
 import { InputData } from "./input/Inputs";
-import { flattenStrings } from "./rewrites/FlattenStrings";
+import * as targetLanguages from "./language/All";
 import { makeTransformations } from "./MakeTransformations";
-import { type TransformedStringTypeKind } from "./Type";
+import { messageError } from "./Messages";
+import { combineClasses } from "./rewrites/CombineClasses";
+import { expandStrings } from "./rewrites/ExpandStrings";
+import { flattenStrings } from "./rewrites/FlattenStrings";
+import { flattenUnions } from "./rewrites/FlattenUnions";
+import { inferMaps } from "./rewrites/InferMaps";
+import { replaceObjectType } from "./rewrites/ReplaceObjectType";
+import { resolveIntersections } from "./rewrites/ResolveIntersections";
+import { type Annotation, type Location, type SerializedRenderResult, type Span } from "./Source";
 import { type Comment } from "./support/Comments";
+import { assert } from "./support/Support";
+import { type MultiFileRenderResult, type TargetLanguage } from "./TargetLanguage";
+import { type TransformedStringTypeKind } from "./Type";
+import { type StringTypeMapping, TypeBuilder } from "./TypeBuilder";
+import { type TypeGraph, noneToAny, optionalToNullable, removeIndirectionIntersections } from "./TypeGraph";
 
 export function getTargetLanguage(nameOrInstance: string | TargetLanguage): TargetLanguage {
     if (typeof nameOrInstance === "object") {

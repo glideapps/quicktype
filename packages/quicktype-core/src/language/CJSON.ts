@@ -22,30 +22,25 @@
  */
 
 /* Imports */
-import { TargetLanguage } from "../TargetLanguage";
-import { type Type, type TypeKind } from "../Type";
-import { ClassType, ArrayType, MapType, EnumType, UnionType } from "../Type";
-import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
-import { type NameStyle, type Name, type Namer } from "../Naming";
-import { funPrefixNamer } from "../Naming";
-import { type Sourcelike } from "../Source";
-import { type NamingStyle } from "../support/Strings";
-import {
-    allUpperWordStyle,
-    legalizeCharacters,
-    isAscii,
-    isLetterOrUnderscoreOrDigit,
-    makeNameStyle
-} from "../support/Strings";
-import { defined, assertNever, panic, numberEnumValues } from "../support/Support";
-import { type ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { type Option, type OptionValues } from "../RendererOptions";
-import { EnumOption, StringOption, getOptionValues } from "../RendererOptions";
-import { assert } from "../support/Support";
-import { type RenderContext } from "../Renderer";
 import { getAccessorName } from "../attributes/AccessorNames";
 import { enumCaseValues } from "../attributes/EnumValues";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { type Name, type NameStyle, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import { EnumOption, type Option, type OptionValues, StringOption, getOptionValues } from "../RendererOptions";
+import { type Sourcelike } from "../Source";
+import {
+    type NamingStyle,
+    allUpperWordStyle,
+    isAscii,
+    isLetterOrUnderscoreOrDigit,
+    legalizeCharacters,
+    makeNameStyle
+} from "../support/Strings";
+import { assert, assertNever, defined, numberEnumValues, panic } from "../support/Support";
+import { TargetLanguage } from "../TargetLanguage";
+import { ArrayType, ClassType, EnumType, MapType, type Type, type TypeKind, UnionType } from "../Type";
+import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
 /* Naming styles */
 const pascalValue: [string, NamingStyle] = ["pascal-case", "pascal"];

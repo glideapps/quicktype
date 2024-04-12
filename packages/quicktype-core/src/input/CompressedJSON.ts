@@ -1,10 +1,13 @@
 import { addHashCode, hashCodeInit, hashString } from "collection-utils";
 
-import { defined, panic, assert } from "../support/Support";
-import { type TransformedStringTypeKind } from "../Type";
-import { isPrimitiveStringTypeKind, transformedStringTypeTargetTypeKindsMap } from "../Type";
-import { type DateTimeRecognizer } from "../DateTime";
 import { inferTransformedStringTypeKindForString } from "../attributes/StringTypes";
+import { type DateTimeRecognizer } from "../DateTime";
+import { assert, defined, panic } from "../support/Support";
+import {
+    type TransformedStringTypeKind,
+    isPrimitiveStringTypeKind,
+    transformedStringTypeTargetTypeKindsMap
+} from "../Type";
 
 export enum Tag {
     Null = 1,

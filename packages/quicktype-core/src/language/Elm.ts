@@ -1,33 +1,35 @@
-import { mapContains, arrayIntercalate } from "collection-utils";
+import { arrayIntercalate, mapContains } from "collection-utils";
 
-import { TargetLanguage } from "../TargetLanguage";
-import { type Option, type OptionValues } from "../RendererOptions";
-import { EnumOption, StringOption, BooleanOption, getOptionValues } from "../RendererOptions";
-import { type Type, type ClassType, type EnumType, type ClassProperty } from "../Type";
-import { UnionType } from "../Type";
-import { matchType, nullableFromUnion } from "../TypeUtils";
-import { type ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { type Namer, type Name } from "../Naming";
-import { DependencyName, funPrefixNamer } from "../Naming";
+import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { DependencyName, type Name, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
 import {
-    legalizeCharacters,
-    isLetterOrUnderscoreOrDigit,
-    isLetterOrUnderscore,
-    decapitalize,
-    stringEscape,
-    isAscii,
-    splitIntoWords,
-    combineWords,
-    firstUpperWordStyle,
+    BooleanOption,
+    EnumOption,
+    type Option,
+    type OptionValues,
+    StringOption,
+    getOptionValues
+} from "../RendererOptions";
+import { type MultiWord, type Sourcelike, annotated, multiWord, parenIfNeeded, singleWord } from "../Source";
+import {
     allLowerWordStyle,
-    allUpperWordStyle
+    allUpperWordStyle,
+    combineWords,
+    decapitalize,
+    firstUpperWordStyle,
+    isAscii,
+    isLetterOrUnderscore,
+    isLetterOrUnderscoreOrDigit,
+    legalizeCharacters,
+    splitIntoWords,
+    stringEscape
 } from "../support/Strings";
 import { defined } from "../support/Support";
-import { type Sourcelike, type MultiWord } from "../Source";
-import { annotated, singleWord, multiWord, parenIfNeeded } from "../Source";
-import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { type RenderContext } from "../Renderer";
+import { TargetLanguage } from "../TargetLanguage";
+import { type ClassProperty, type ClassType, type EnumType, type Type, UnionType } from "../Type";
+import { matchType, nullableFromUnion } from "../TypeUtils";
 
 export const elmOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),

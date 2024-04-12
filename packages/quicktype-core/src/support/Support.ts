@@ -1,7 +1,8 @@
 import { Base64 } from "js-base64";
 import * as pako from "pako";
-import { messageError } from "../Messages";
 import * as YAML from "yaml";
+
+import { messageError } from "../Messages";
 
 export interface StringMap {
     [name: string]: any;

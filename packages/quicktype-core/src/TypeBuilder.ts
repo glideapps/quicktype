@@ -1,51 +1,54 @@
 import {
     EqualityMap,
-    mapMap,
-    mapSortByKey,
+    areEqual,
+    definedMap,
     iterableEvery,
     mapFilter,
     mapFind,
-    areEqual,
+    mapMap,
+    mapSortByKey,
     setUnionManyInto,
-    definedMap,
     withDefault
 } from "collection-utils";
 
+// eslint-disable-next-line import/no-cycle
+import { StringTypes, stringTypesTypeAttributeKind } from "./attributes/StringTypes";
 import {
-    type PrimitiveTypeKind,
-    type Type,
-    type PrimitiveStringTypeKind,
-    type MaybeTypeIdentity,
-    type TypeIdentity,
-    type TransformedStringTypeKind,
-    type TypeKind
-} from "./Type";
+    TypeAttributeKind,
+    type TypeAttributes,
+    combineTypeAttributes,
+    emptyTypeAttributes
+} from "./attributes/TypeAttributes";
+import { assert, defined, panic } from "./support/Support";
+// eslint-disable-next-line import/no-cycle
 import {
-    PrimitiveType,
-    EnumType,
-    MapType,
     ArrayType,
-    ClassType,
-    UnionType,
     ClassProperty,
+    ClassType,
+    EnumType,
     IntersectionType,
+    MapType,
+    type MaybeTypeIdentity,
     ObjectType,
-    primitiveTypeIdentity,
-    enumTypeIdentity,
-    mapTypeIdentify,
+    type PrimitiveStringTypeKind,
+    PrimitiveType,
+    type PrimitiveTypeKind,
+    type TransformedStringTypeKind,
+    type Type,
+    type TypeIdentity,
+    type TypeKind,
+    UnionType,
     arrayTypeIdentity,
     classTypeIdentity,
-    unionTypeIdentity,
+    enumTypeIdentity,
     intersectionTypeIdentity,
     isPrimitiveStringTypeKind,
-    transformedStringTypeKinds
+    mapTypeIdentify,
+    primitiveTypeIdentity,
+    transformedStringTypeKinds,
+    unionTypeIdentity
 } from "./Type";
-import { type TypeRef } from "./TypeGraph";
-import { TypeGraph, makeTypeRef, derefTypeRef, typeRefIndex, assertTypeRefGraph } from "./TypeGraph";
-import { type TypeAttributes } from "./attributes/TypeAttributes";
-import { combineTypeAttributes, TypeAttributeKind, emptyTypeAttributes } from "./attributes/TypeAttributes";
-import { defined, assert, panic } from "./support/Support";
-import { stringTypesTypeAttributeKind, StringTypes } from "./attributes/StringTypes";
+import { TypeGraph, type TypeRef, assertTypeRefGraph, derefTypeRef, makeTypeRef, typeRefIndex } from "./TypeGraph";
 
 // FIXME: Don't infer provenance.  All original types should be present in
 // non-inferred form in the final graph.

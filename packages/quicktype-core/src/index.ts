@@ -12,7 +12,7 @@ export {
     inferenceFlagsObject,
     type InferenceFlags,
     type InferenceFlagName,
-    type RunContext,
+    type RunContext
 } from "./Run";
 export { CompressedJSON, type Value } from "./input/CompressedJSON";
 export { type Input, InputData, JSONInput, type JSONSourceData, jsonInputForTargetLanguage } from "./input/Inputs";
@@ -29,7 +29,7 @@ export {
     type Annotation,
     modifySource,
     singleWord,
-    parenIfNeeded,
+    parenIfNeeded
 } from "./Source";
 export { Name, funPrefixNamer, Namer } from "./Naming";
 export { IssueAnnotationData } from "./Annotation";
@@ -41,7 +41,7 @@ export {
     parseJSON,
     checkStringMap,
     checkArray,
-    inflateBase64,
+    inflateBase64
 } from "./support/Support";
 export {
     splitIntoWords,
@@ -50,7 +50,7 @@ export {
     firstUpperWordStyle,
     allUpperWordStyle,
     legalizeCharacters,
-    isLetterOrDigit,
+    isLetterOrDigit
 } from "./support/Strings";
 export { train as trainMarkovChain } from "./MarkovChain";
 export { QuickTypeError, messageError, messageAssert } from "./Messages";
@@ -66,10 +66,12 @@ export {
     type TypeKind,
     ObjectType,
     type TransformedStringTypeKind,
-    type PrimitiveStringTypeKind,
+    type PrimitiveStringTypeKind
 } from "./Type";
 export { getStream } from "./input/io/get-stream";
+// eslint-disable-next-line import/no-cycle
 export { readableFromFileOrURL, readFromFileOrURL } from "./input/io/NodeIO";
+// eslint-disable-next-line import/no-cycle
 export { FetchingJSONSchemaStore } from "./input/FetchingJSONSchemaStore";
 export { JSONSchemaStore, type JSONSchema } from "./input/JSONSchemaStore";
 export { sourcesFromPostmanCollection } from "./input/PostmanCollection";
@@ -93,14 +95,14 @@ export { JavaScriptTargetLanguage, JavaScriptRenderer, javaScriptOptions } from 
 export {
     JavaScriptPropTypesTargetLanguage,
     JavaScriptPropTypesRenderer,
-    javaScriptPropTypesOptions,
+    javaScriptPropTypesOptions
 } from "./language/JavaScriptPropTypes";
 export {
     TypeScriptTargetLanguage,
     TypeScriptRenderer,
     FlowTargetLanguage,
     FlowRenderer,
-    tsFlowOptions,
+    tsFlowOptions
 } from "./language/TypeScriptFlow";
 export { SwiftTargetLanguage, SwiftRenderer, swiftOptions } from "./language/Swift";
 export { KotlinTargetLanguage, KotlinRenderer, kotlinOptions } from "./language/Kotlin";

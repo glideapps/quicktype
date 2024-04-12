@@ -1,12 +1,12 @@
+import { setUnionManyInto } from "collection-utils";
 import URI from "urijs";
 
-import { type TypeAttributes } from "./TypeAttributes";
-import { TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
-import { setUnionManyInto } from "collection-utils";
-import { type JSONSchemaType, type JSONSchemaAttributes, type Ref } from "../input/JSONSchemaInput";
+import { type JSONSchemaAttributes, type JSONSchemaType, type Ref } from "../input/JSONSchemaInput";
 import { type JSONSchema } from "../input/JSONSchemaStore";
 import { checkArray, checkString } from "../support/Support";
 import { type Type } from "../Type";
+
+import { TypeAttributeKind, type TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 
 const protocolsSchemaProperty = "qt-uri-protocols";
 const extensionsSchemaProperty = "qt-uri-extensions";

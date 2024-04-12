@@ -1,5 +1,7 @@
 import { EnumOption } from "../RendererOptions";
-import { allUpperWordStyle, firstUpperWordStyle, originalWord, allLowerWordStyle } from "./Strings";
+
+// eslint-disable-next-line import/no-cycle
+import { allLowerWordStyle, allUpperWordStyle, firstUpperWordStyle, originalWord } from "./Strings";
 
 export const acronyms: string[] = [
     "aaa",
@@ -1096,7 +1098,7 @@ export const acronyms: string[] = [
     "zma",
     "zoi",
     "zope",
-    "zpl",
+    "zpl"
 ];
 
 export enum AcronymStyleOptions {
@@ -1114,19 +1116,19 @@ export const acronymOption = function (defaultOption: AcronymStyleOptions) {
             [AcronymStyleOptions.Original, AcronymStyleOptions.Original],
             [AcronymStyleOptions.Pascal, AcronymStyleOptions.Pascal],
             [AcronymStyleOptions.Camel, AcronymStyleOptions.Camel],
-            [AcronymStyleOptions.Lower, AcronymStyleOptions.Lower],
+            [AcronymStyleOptions.Lower, AcronymStyleOptions.Lower]
         ],
         defaultOption,
-        "secondary",
+        "secondary"
     );
 };
 
-export function acronymStyle (style: AcronymStyleOptions): (s: string) => string {
-    const options: { [key: string]: (s: string) => string, } = {
+export function acronymStyle(style: AcronymStyleOptions): (s: string) => string {
+    const options: { [key: string]: (s: string) => string } = {
         [AcronymStyleOptions.Pascal]: allUpperWordStyle,
         [AcronymStyleOptions.Camel]: firstUpperWordStyle,
         [AcronymStyleOptions.Original]: originalWord,
-        [AcronymStyleOptions.Lower]: allLowerWordStyle,
+        [AcronymStyleOptions.Lower]: allLowerWordStyle
     };
 
     return options[style];

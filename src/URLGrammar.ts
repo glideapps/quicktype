@@ -1,6 +1,6 @@
-import { panic, checkStringMap, checkArray } from "quicktype-core";
+import { checkArray, checkStringMap, panic } from "quicktype-core";
 
-function expand (json: any): string[] {
+function expand(json: any): string[] {
     if (typeof json === "string") {
         return [json];
     }
@@ -37,9 +37,9 @@ function expand (json: any): string[] {
     return panic(`Value is not a valid URL grammar: ${json}`);
 }
 
-export function urlsFromURLGrammar (json: any): { [name: string]: string[], } {
+export function urlsFromURLGrammar(json: any): { [name: string]: string[] } {
     const topLevelMap = checkStringMap(json);
-    const results: { [name: string]: string[], } = {};
+    const results: { [name: string]: string[] } = {};
 
     for (const name of Object.getOwnPropertyNames(topLevelMap)) {
         results[name] = expand(topLevelMap[name]);

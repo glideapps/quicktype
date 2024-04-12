@@ -1,21 +1,22 @@
 import {
-    mapMap,
-    iterableFirst,
-    setIntersect,
-    hashCodeOf,
-    areEqual,
-    mapMergeWithInto,
-    definedMap,
     addHashCode,
+    areEqual,
+    definedMap,
+    hashCodeOf,
+    iterableFirst,
+    mapMap,
+    mapMergeWithInto,
+    setIntersect,
     setUnionInto
 } from "collection-utils";
 
-import { TypeAttributeKind } from "./TypeAttributes";
-import { defined, assert } from "../support/Support";
-import { type StringTypeMapping } from "../TypeBuilder";
-import { stringTypeMappingGet } from "../TypeBuilder";
-import { type TransformedStringTypeKind } from "../Type";
 import { type DateTimeRecognizer } from "../DateTime";
+import { assert, defined } from "../support/Support";
+import { type TransformedStringTypeKind } from "../Type";
+// eslint-disable-next-line import/no-cycle
+import { type StringTypeMapping, stringTypeMappingGet } from "../TypeBuilder";
+
+import { TypeAttributeKind } from "./TypeAttributes";
 
 export class StringTypes {
     public static readonly unrestricted: StringTypes = new StringTypes(undefined, new Set());

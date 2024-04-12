@@ -1,51 +1,54 @@
-import { TargetLanguage } from "../TargetLanguage";
-import { type StringTypeMapping } from "../TypeBuilder";
-import { type TransformedStringTypeKind, type PrimitiveStringTypeKind, type Type, type ClassProperty } from "../Type";
-import { EnumType, ClassType, UnionType } from "../Type";
-import { type RenderContext } from "../Renderer";
-import { type Option, type OptionValues } from "../RendererOptions";
-import { getOptionValues, EnumOption, BooleanOption } from "../RendererOptions";
-import { type ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { ConvenienceRenderer, topLevelNameOrder } from "../ConvenienceRenderer";
-import { type Namer, type Name } from "../Naming";
-import { funPrefixNamer, DependencyName } from "../Naming";
-import {
-    splitIntoWords,
-    combineWords,
-    firstUpperWordStyle,
-    utf16LegalizeCharacters,
-    allUpperWordStyle,
-    allLowerWordStyle,
-    stringEscape,
-    originalWord
-} from "../support/Strings";
-import { assertNever, panic, defined } from "../support/Support";
-import { type Sourcelike, type MultiWord } from "../Source";
-import { multiWord, singleWord, parenIfNeeded, modifySource } from "../Source";
-import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
-import { type Transformer } from "../Transformers";
-import {
-    followTargetType,
-    transformationForType,
-    DecodingChoiceTransformer,
-    ChoiceTransformer,
-    DecodingTransformer,
-    UnionInstantiationTransformer,
-    ParseStringTransformer,
-    UnionMemberMatchTransformer,
-    StringifyTransformer,
-    EncodingTransformer
-} from "../Transformers";
 import {
     arrayIntercalate,
-    setUnionInto,
-    mapUpdateInto,
+    iterableFirst,
     iterableSome,
     mapSortBy,
-    iterableFirst
+    mapUpdateInto,
+    setUnionInto
 } from "collection-utils";
-
 import unicode from "unicode-properties";
+
+import { ConvenienceRenderer, type ForbiddenWordsInfo, topLevelNameOrder } from "../ConvenienceRenderer";
+import { DependencyName, type Name, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import { BooleanOption, EnumOption, type Option, type OptionValues, getOptionValues } from "../RendererOptions";
+import { type MultiWord, type Sourcelike, modifySource, multiWord, parenIfNeeded, singleWord } from "../Source";
+import {
+    allLowerWordStyle,
+    allUpperWordStyle,
+    combineWords,
+    firstUpperWordStyle,
+    originalWord,
+    splitIntoWords,
+    stringEscape,
+    utf16LegalizeCharacters
+} from "../support/Strings";
+import { assertNever, defined, panic } from "../support/Support";
+import { TargetLanguage } from "../TargetLanguage";
+import {
+    ChoiceTransformer,
+    DecodingChoiceTransformer,
+    DecodingTransformer,
+    EncodingTransformer,
+    ParseStringTransformer,
+    StringifyTransformer,
+    type Transformer,
+    UnionInstantiationTransformer,
+    UnionMemberMatchTransformer,
+    followTargetType,
+    transformationForType
+} from "../Transformers";
+import {
+    type ClassProperty,
+    ClassType,
+    EnumType,
+    type PrimitiveStringTypeKind,
+    type TransformedStringTypeKind,
+    type Type,
+    UnionType
+} from "../Type";
+import { type StringTypeMapping } from "../TypeBuilder";
+import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
 const forbiddenTypeNames = [
     "Any",

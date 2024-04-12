@@ -1,14 +1,18 @@
+import { type PrimitiveStringTypeKind, type StringTypeMapping, type TransformedStringTypeKind } from "..";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { type ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { type Name, type Namer } from "../Naming";
-import { DependencyName, funPrefixNamer } from "../Naming";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { DependencyName, type Name, type Namer, funPrefixNamer } from "../Naming";
 import { type RenderContext } from "../Renderer";
-import { type Option, type OptionValues } from "../RendererOptions";
-import { BooleanOption, EnumOption, getOptionValues, StringOption } from "../RendererOptions";
-import { type Sourcelike } from "../Source";
-import { maybeAnnotated } from "../Source";
-import { acronymOption, acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
+import {
+    BooleanOption,
+    EnumOption,
+    type Option,
+    type OptionValues,
+    StringOption,
+    getOptionValues
+} from "../RendererOptions";
+import { type Sourcelike, maybeAnnotated } from "../Source";
+import { AcronymStyleOptions, acronymOption, acronymStyle } from "../support/Acronyms";
 import {
     allLowerWordStyle,
     allUpperWordStyle,
@@ -26,10 +30,17 @@ import {
 } from "../support/Strings";
 import { assert, assertNever, defined, panic } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
-import { type ClassProperty, type Type, type TypeKind } from "../Type";
-import { ArrayType, ClassType, EnumType, MapType, UnionType } from "../Type";
+import {
+    ArrayType,
+    type ClassProperty,
+    ClassType,
+    EnumType,
+    MapType,
+    type Type,
+    type TypeKind,
+    UnionType
+} from "../Type";
 import { directlyReachableSingleNamedType, matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
-import { type StringTypeMapping, type TransformedStringTypeKind, type PrimitiveStringTypeKind } from "..";
 
 export const javaOptions = {
     useList: new EnumOption(

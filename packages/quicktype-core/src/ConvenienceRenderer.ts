@@ -1,38 +1,40 @@
 import {
-    setUnion,
-    setFilter,
     iterableEnumerate,
     iterableSome,
     mapFilter,
-    mapSortBy,
     mapFilterMap,
-    mapSome
+    mapSome,
+    mapSortBy,
+    setFilter,
+    setUnion
 } from "collection-utils";
-
-import { type Type, type TypeKind, type ClassProperty } from "./Type";
-import { ClassType, EnumType, UnionType, MapType, ObjectType } from "./Type";
-import { separateNamedTypes, nullableFromUnion, matchTypeExhaustive, isNamedType } from "./TypeUtils";
-import { type Name, type Namer } from "./Naming";
-import { Namespace, FixedName, SimpleName, DependencyName, keywordNamespace } from "./Naming";
-import { type BlankLineConfig, type RenderContext, type ForEachPosition } from "./Renderer";
-import { Renderer } from "./Renderer";
-import { defined, panic, nonNull, assert } from "./support/Support";
-import { trimEnd } from "./support/Strings";
-import { type Sourcelike } from "./Source";
-import { sourcelikeToSource, serializeRenderResult } from "./Source";
-
-import { type DeclarationIR, type Declaration } from "./DeclarationIR";
-import { declarationsForGraph, cycleBreakerTypesForGraph } from "./DeclarationIR";
-import { TypeAttributeStoreView } from "./TypeGraph";
-import { TypeAttributeKind } from "./attributes/TypeAttributes";
-import { descriptionTypeAttributeKind, propertyDescriptionsTypeAttributeKind } from "./attributes/Description";
-import { enumCaseNames, objectPropertyNames, unionMemberName, getAccessorName } from "./attributes/AccessorNames";
-import { type Transformation } from "./Transformers";
-import { transformationForType, followTargetType } from "./Transformers";
-import { type TargetLanguage } from "./TargetLanguage";
-import { type Comment, isStringComment, type CommentOptions } from "./support/Comments";
-
 import _wordwrap from "wordwrap";
+
+import { enumCaseNames, getAccessorName, objectPropertyNames, unionMemberName } from "./attributes/AccessorNames";
+import { descriptionTypeAttributeKind, propertyDescriptionsTypeAttributeKind } from "./attributes/Description";
+import { TypeAttributeKind } from "./attributes/TypeAttributes";
+import { type Declaration, type DeclarationIR, cycleBreakerTypesForGraph, declarationsForGraph } from "./DeclarationIR";
+import { DependencyName, FixedName, type Name, type Namer, Namespace, SimpleName, keywordNamespace } from "./Naming";
+import { type BlankLineConfig, type ForEachPosition, type RenderContext, Renderer } from "./Renderer";
+import { type Sourcelike, serializeRenderResult, sourcelikeToSource } from "./Source";
+import { type Comment, type CommentOptions, isStringComment } from "./support/Comments";
+import { trimEnd } from "./support/Strings";
+import { assert, defined, nonNull, panic } from "./support/Support";
+import { type TargetLanguage } from "./TargetLanguage";
+import { type Transformation, followTargetType, transformationForType } from "./Transformers";
+import {
+    type ClassProperty,
+    ClassType,
+    EnumType,
+    MapType,
+    ObjectType,
+    type Type,
+    type TypeKind,
+    UnionType
+} from "./Type";
+import { TypeAttributeStoreView } from "./TypeGraph";
+import { isNamedType, matchTypeExhaustive, nullableFromUnion, separateNamedTypes } from "./TypeUtils";
+
 const wordWrap: (s: string) => string = _wordwrap(90);
 
 export const topLevelNameOrder = 1;

@@ -1,21 +1,19 @@
 import {
-    setUnionInto,
-    areEqual,
-    hashCodeOf,
-    definedMap,
     addHashCode,
-    definedMapWithDefault,
+    areEqual,
     arraySortByInto,
-    hashString
+    definedMap,
+    definedMapWithDefault,
+    hashCodeOf,
+    hashString,
+    setUnionInto
 } from "collection-utils";
 
-import { type Type, type TypeKind } from "./Type";
-import { UnionType, EnumType, PrimitiveType } from "./Type";
 import { TypeAttributeKind } from "./attributes/TypeAttributes";
-import { panic, assert, indentationString } from "./support/Support";
 import { type BaseGraphRewriteBuilder } from "./GraphRewriting";
-import { type TypeRef, type TypeGraph } from "./TypeGraph";
-import { derefTypeRef } from "./TypeGraph";
+import { assert, indentationString, panic } from "./support/Support";
+import { EnumType, PrimitiveType, type Type, type TypeKind, UnionType } from "./Type";
+import { type TypeGraph, type TypeRef, derefTypeRef } from "./TypeGraph";
 
 function debugStringForType(t: Type): string {
     const target = followTargetType(t);

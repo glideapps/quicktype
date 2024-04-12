@@ -1,50 +1,53 @@
 import { arrayIntercalate } from "collection-utils";
-import { assert, defined } from "../support/Support";
 
-import { TargetLanguage } from "../TargetLanguage";
-import {
-    type Type,
-    type ClassType,
-    type UnionType,
-    type TypeKind,
-    type ClassProperty,
-    type TransformedStringTypeKind,
-    type PrimitiveStringTypeKind
-} from "../Type";
-import { EnumType, ArrayType, MapType } from "../Type";
-import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
-import { type Name, type Namer } from "../Naming";
-import { funPrefixNamer } from "../Naming";
-import { type Option, type OptionValues } from "../RendererOptions";
-import { BooleanOption, EnumOption, StringOption, getOptionValues } from "../RendererOptions";
-import { type Sourcelike } from "../Source";
-import { maybeAnnotated, modifySource } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { type ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { type DateTimeRecognizer, DefaultDateTimeRecognizer } from "../DateTime";
+import { type Name, type Namer, funPrefixNamer } from "../Naming";
+import { type ForEachPosition, type RenderContext } from "../Renderer";
 import {
-    legalizeCharacters,
-    isLetterOrUnderscore,
-    isNumeric,
-    isDigit,
-    utf32ConcatMap,
-    escapeNonPrintableMapper,
-    isPrintable,
-    intToHex,
-    splitIntoWords,
-    combineWords,
-    firstUpperWordStyle,
+    BooleanOption,
+    EnumOption,
+    type Option,
+    type OptionValues,
+    StringOption,
+    getOptionValues
+} from "../RendererOptions";
+import { type Sourcelike, maybeAnnotated, modifySource } from "../Source";
+import { AcronymStyleOptions, acronymOption, acronymStyle } from "../support/Acronyms";
+import {
+    addPrefixIfNecessary,
     allLowerWordStyle,
     allUpperWordStyle,
     camelCase,
-    addPrefixIfNecessary
+    combineWords,
+    escapeNonPrintableMapper,
+    firstUpperWordStyle,
+    intToHex,
+    isDigit,
+    isLetterOrUnderscore,
+    isNumeric,
+    isPrintable,
+    legalizeCharacters,
+    splitIntoWords,
+    utf32ConcatMap
 } from "../support/Strings";
-import { type RenderContext, type ForEachPosition } from "../Renderer";
+import { assert, defined, panic } from "../support/Support";
+import { TargetLanguage } from "../TargetLanguage";
+import {
+    ArrayType,
+    type ClassProperty,
+    type ClassType,
+    EnumType,
+    MapType,
+    type PrimitiveStringTypeKind,
+    type TransformedStringTypeKind,
+    type Type,
+    type TypeKind,
+    type UnionType
+} from "../Type";
 import { type StringTypeMapping } from "../TypeBuilder";
-import { panic } from "../support/Support";
-import { type DateTimeRecognizer } from "../DateTime";
-import { DefaultDateTimeRecognizer } from "../DateTime";
-import { acronymOption, acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
+import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
 const MAX_SAMELINE_PROPERTIES = 4;
 

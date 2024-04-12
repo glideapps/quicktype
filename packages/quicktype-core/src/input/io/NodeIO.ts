@@ -1,12 +1,15 @@
 import * as fs from "fs";
-import { type Readable } from "readable-stream";
-import { isNode } from "browser-or-node";
-import { getStream } from "./get-stream";
+
 import { defined, exceptionToString } from "@glideapps/ts-necessities";
+import { isNode } from "browser-or-node";
+import fetch from "cross-fetch";
+import isURL from "is-url";
+import { type Readable } from "readable-stream";
+
+// eslint-disable-next-line import/no-cycle
 import { messageError, panic } from "../../index";
 
-import isURL from "is-url";
-import fetch from "cross-fetch";
+import { getStream } from "./get-stream";
 
 interface HttpHeaders {
     [key: string]: string;

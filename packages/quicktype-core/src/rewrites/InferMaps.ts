@@ -1,15 +1,13 @@
-import { iterableFirst, iterableEvery, setMap } from "collection-utils";
+import { iterableEvery, iterableFirst, setMap } from "collection-utils";
 
-import { type Type, type ClassProperty } from "../Type";
-import { ClassType, setOperationCasesEqual, isPrimitiveStringTypeKind } from "../Type";
-import { removeNullFromType } from "../TypeUtils";
-import { defined, panic } from "../support/Support";
-import { type TypeGraph, type TypeRef } from "../TypeGraph";
-import { type StringTypeMapping } from "../TypeBuilder";
 import { type GraphRewriteBuilder } from "../GraphRewriting";
+import { type MarkovChain, evaluate, load } from "../MarkovChain";
+import { defined, panic } from "../support/Support";
+import { type ClassProperty, ClassType, type Type, isPrimitiveStringTypeKind, setOperationCasesEqual } from "../Type";
+import { type StringTypeMapping } from "../TypeBuilder";
+import { type TypeGraph, type TypeRef } from "../TypeGraph";
+import { removeNullFromType } from "../TypeUtils";
 import { unifyTypes, unionBuilderForUnification } from "../UnifyClasses";
-import { type MarkovChain } from "../MarkovChain";
-import { load, evaluate } from "../MarkovChain";
 
 const mapSizeThreshold = 20;
 const stringMapSizeThreshold = 50;

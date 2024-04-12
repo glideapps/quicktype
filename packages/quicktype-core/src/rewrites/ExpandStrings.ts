@@ -1,22 +1,22 @@
 import {
+    areEqual,
     iterableFirst,
-    mapFilter,
-    iterableSome,
     iterableReduce,
-    setUnion,
+    iterableSome,
+    mapFilter,
     setIntersect,
     setIsSuperset,
-    areEqual
+    setUnion
 } from "collection-utils";
 
-import { type PrimitiveType } from "../Type";
-import { stringTypesForType } from "../TypeUtils";
-import { type TypeGraph, type TypeRef } from "../TypeGraph";
-import { type GraphRewriteBuilder } from "../GraphRewriting";
-import { assert, defined } from "../support/Support";
-import { emptyTypeAttributes } from "../attributes/TypeAttributes";
 import { StringTypes } from "../attributes/StringTypes";
+import { emptyTypeAttributes } from "../attributes/TypeAttributes";
+import { type GraphRewriteBuilder } from "../GraphRewriting";
 import { type RunContext } from "../Run";
+import { assert, defined } from "../support/Support";
+import { type PrimitiveType } from "../Type";
+import { type TypeGraph, type TypeRef } from "../TypeGraph";
+import { stringTypesForType } from "../TypeUtils";
 
 const MIN_LENGTH_FOR_ENUM = 10;
 

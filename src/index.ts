@@ -1,64 +1,62 @@
 #!/usr/bin/env node
 import * as fs from "fs";
 import * as path from "path";
+
+import { exceptionToString } from "@glideapps/ts-necessities";
+import chalk from "chalk";
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+import { definedMap, hasOwnProperty, mapFromObject, mapMap, withDefault } from "collection-utils";
+import commandLineArgs from "command-line-args";
+import getUsage from "command-line-usage";
 import * as _ from "lodash";
 import { type Readable } from "readable-stream";
-import { hasOwnProperty, definedMap, withDefault, mapFromObject, mapMap } from "collection-utils";
-import { exceptionToString } from "@glideapps/ts-necessities";
+import stringToStream from "string-to-stream";
+import _wordwrap from "wordwrap";
 
 import {
+    FetchingJSONSchemaStore,
+    InputData,
+    IssueAnnotationData,
+    JSONInput,
+    JSONSchemaInput,
+    type JSONSourceData,
+    type OptionDefinition,
     type Options,
     type RendererOptions,
     type SerializedRenderResult,
     type TargetLanguage,
-    type OptionDefinition,
-    type JSONSourceData
-} from "quicktype-core";
-import {
-    getTargetLanguage,
-    quicktypeMultiFile,
-    languageNamed,
-    InputData,
-    JSONSchemaInput,
-    defaultTargetLanguages,
-    IssueAnnotationData,
-    panic,
     assert,
-    defined,
     assertNever,
-    parseJSON,
-    trainMarkovChain,
-    messageError,
-    messageAssert,
-    sourcesFromPostmanCollection,
-    inferenceFlags,
-    inferenceFlagNames,
-    splitIntoWords,
     capitalize,
-    JSONInput,
+    defaultTargetLanguages,
+    defined,
     getStream,
-    readableFromFileOrURL,
+    getTargetLanguage,
+    inferenceFlagNames,
+    inferenceFlags,
+    languageNamed,
+    messageAssert,
+    messageError,
+    panic,
+    parseJSON,
+    quicktypeMultiFile,
     readFromFileOrURL,
-    FetchingJSONSchemaStore
+    readableFromFileOrURL,
+    sourcesFromPostmanCollection,
+    splitIntoWords,
+    trainMarkovChain
 } from "quicktype-core";
-import { schemaForTypeScriptSources } from "quicktype-typescript-input";
 import { GraphQLInput } from "quicktype-graphql-input";
-
-import { urlsFromURLGrammar } from "./URLGrammar";
-import { introspectServer } from "./GraphQLIntrospection";
-import { type JSONTypeSource, type TypeSource, type GraphQLTypeSource, type SchemaTypeSource } from "./TypeSource";
-import { CompressedJSONFromStream } from "./CompressedJSONFromStream";
-
-import stringToStream from "string-to-stream";
-
-import commandLineArgs from "command-line-args";
-import getUsage from "command-line-usage";
-import chalk from "chalk";
-
-import _wordwrap from "wordwrap";
-const wordWrap: (s: string) => string = _wordwrap(90);
+import { schemaForTypeScriptSources } from "quicktype-typescript-input";
 
 import packageJSON from "../package.json";
+
+import { CompressedJSONFromStream } from "./CompressedJSONFromStream";
+import { introspectServer } from "./GraphQLIntrospection";
+import { type GraphQLTypeSource, type JSONTypeSource, type SchemaTypeSource, type TypeSource } from "./TypeSource";
+import { urlsFromURLGrammar } from "./URLGrammar";
+
+const wordWrap: (s: string) => string = _wordwrap(90);
 
 export interface CLIOptions {
     // We use this to access the inference flags

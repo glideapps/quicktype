@@ -1,39 +1,35 @@
 import { arrayIntercalate } from "collection-utils";
 
+import { ConvenienceRenderer } from "../ConvenienceRenderer";
+import { type Name, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import { BooleanOption, EnumOption, type Option, type OptionValues, getOptionValues } from "../RendererOptions";
+import { type Sourcelike, modifySource } from "../Source";
+import { AcronymStyleOptions, acronymOption, acronymStyle } from "../support/Acronyms";
+import { ConvertersOptions, convertersOption } from "../support/Converters";
 import {
-    type TransformedStringTypeKind,
-    type PrimitiveStringTypeKind,
-    type Type,
-    type ClassProperty,
-    type ClassType,
-    type ObjectType
-} from "../Type";
-import { matchType, directlyReachableSingleNamedType } from "../TypeUtils";
-import { acronymOption, acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
-import { convertersOption, ConvertersOptions } from "../support/Converters";
-
-import {
-    utf16LegalizeCharacters,
-    utf16StringEscape,
-    splitIntoWords,
+    allLowerWordStyle,
+    camelCase,
     capitalize,
     combineWords,
     firstUpperWordStyle,
-    camelCase,
-    allLowerWordStyle
+    splitIntoWords,
+    utf16LegalizeCharacters,
+    utf16StringEscape
 } from "../support/Strings";
 import { panic } from "../support/Support";
-
-import { type Sourcelike } from "../Source";
-import { modifySource } from "../Source";
-import { type Namer, type Name } from "../Naming";
-import { funPrefixNamer } from "../Naming";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
+import {
+    type ClassProperty,
+    type ClassType,
+    type ObjectType,
+    type PrimitiveStringTypeKind,
+    type TransformedStringTypeKind,
+    type Type
+} from "../Type";
 import { type StringTypeMapping } from "../TypeBuilder";
-import { type Option, type OptionValues } from "../RendererOptions";
-import { BooleanOption, getOptionValues, EnumOption } from "../RendererOptions";
-import { type RenderContext } from "../Renderer";
+import { directlyReachableSingleNamedType, matchType } from "../TypeUtils";
+
 import { isES3IdentifierPart, isES3IdentifierStart } from "./JavaScriptUnicodeMaps";
 
 export const javaScriptOptions = {

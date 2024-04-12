@@ -1,7 +1,7 @@
 import { type Readable } from "readable-stream";
-import { type Value } from "quicktype-core";
-import { CompressedJSON } from "quicktype-core";
 import { Parser } from "stream-json";
+
+import { CompressedJSON, type Value } from "quicktype-core";
 
 const methodMap: { [name: string]: string } = {
     startObject: "pushObjectContext",

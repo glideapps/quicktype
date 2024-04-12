@@ -1,29 +1,26 @@
-import { TargetLanguage } from "../TargetLanguage";
-import { type ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
+import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { type Name, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import { type Option } from "../RendererOptions";
+import { type Sourcelike, maybeAnnotated } from "../Source";
 import {
-    legalizeCharacters,
-    splitIntoWords,
-    isLetterOrUnderscoreOrDigit,
-    combineWords,
     allLowerWordStyle,
+    combineWords,
+    escapeNonPrintableMapper,
     firstUpperWordStyle,
     intToHex,
-    utf32ConcatMap,
-    escapeNonPrintableMapper,
-    isPrintable,
     isAscii,
-    isLetterOrUnderscore
+    isLetterOrUnderscore,
+    isLetterOrUnderscoreOrDigit,
+    isPrintable,
+    legalizeCharacters,
+    splitIntoWords,
+    utf32ConcatMap
 } from "../support/Strings";
-import { type Name, type Namer } from "../Naming";
-import { funPrefixNamer } from "../Naming";
-import { type UnionType, type Type, type ClassType, type EnumType } from "../Type";
+import { TargetLanguage } from "../TargetLanguage";
+import { type ClassType, type EnumType, type Type, type UnionType } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
-import { type Sourcelike } from "../Source";
-import { maybeAnnotated } from "../Source";
-import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { type Option } from "../RendererOptions";
-import { type RenderContext } from "../Renderer";
 
 export class CrystalTargetLanguage extends TargetLanguage {
     protected makeRenderer(renderContext: RenderContext): CrystalRenderer {

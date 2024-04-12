@@ -1,6 +1,8 @@
-import { assert } from "./support/Support";
-import { messageError } from "./Messages";
+// eslint-disable-next-line @typescript-eslint/no-redeclare
 import { hasOwnProperty } from "collection-utils";
+
+import { messageError } from "./Messages";
+import { assert } from "./support/Support";
 
 /**
  * Primary options show up in the web UI in the "Language" settings tab,

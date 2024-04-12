@@ -1,19 +1,19 @@
 import {
-    setUnion,
-    setUnionInto,
-    setMap,
-    setFilter,
-    iterableFind,
-    iterableSome,
-    iterableMinBy,
-    setGroupBy,
-    setFilterMap,
-    iterableFirst,
     iterableEvery,
-    mapMergeInto
+    iterableFind,
+    iterableFirst,
+    iterableMinBy,
+    iterableSome,
+    mapMergeInto,
+    setFilter,
+    setFilterMap,
+    setGroupBy,
+    setMap,
+    setUnion,
+    setUnionInto
 } from "collection-utils";
 
-import { defined, assert, panic } from "./support/Support";
+import { assert, defined, panic } from "./support/Support";
 
 export class Namespace {
     public readonly forbiddenNamespaces: ReadonlySet<Namespace>;

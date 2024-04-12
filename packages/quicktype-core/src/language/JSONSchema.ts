@@ -1,25 +1,28 @@
-import { mapFirst, iterableFirst } from "collection-utils";
+import { iterableFirst, mapFirst } from "collection-utils";
 
-import { TargetLanguage } from "../TargetLanguage";
-import { type Type, type UnionType, type EnumType, type ObjectType } from "../Type";
-import { transformedStringTypeTargetTypeKindsMap } from "../Type";
-import { matchTypeExhaustive } from "../TypeUtils";
+import { addDescriptionToSchema } from "../attributes/Description";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { type Namer, type Name } from "../Naming";
-import { funPrefixNamer } from "../Naming";
+import { type Name, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import { type Option } from "../RendererOptions";
 import {
-    legalizeCharacters,
-    splitIntoWords,
+    allUpperWordStyle,
     combineWords,
     firstUpperWordStyle,
-    allUpperWordStyle
+    legalizeCharacters,
+    splitIntoWords
 } from "../support/Strings";
 import { defined, panic } from "../support/Support";
-import { type StringTypeMapping } from "../TypeBuilder";
-import { getNoStringTypeMapping } from "../TypeBuilder";
-import { addDescriptionToSchema } from "../attributes/Description";
-import { type Option } from "../RendererOptions";
-import { type RenderContext } from "../Renderer";
+import { TargetLanguage } from "../TargetLanguage";
+import {
+    type EnumType,
+    type ObjectType,
+    type Type,
+    type UnionType,
+    transformedStringTypeTargetTypeKindsMap
+} from "../Type";
+import { type StringTypeMapping, getNoStringTypeMapping } from "../TypeBuilder";
+import { matchTypeExhaustive } from "../TypeUtils";
 
 export class JSONSchemaTargetLanguage extends TargetLanguage {
     public constructor() {

@@ -1,16 +1,12 @@
-import { type ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { type Name, type Namer } from "../Naming";
-import { funPrefixNamer } from "../Naming";
-import { type Option } from "../RendererOptions";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { type Name, type Namer, funPrefixNamer } from "../Naming";
 import { type RenderContext } from "../Renderer";
-import { type MultiWord, type Sourcelike } from "../Source";
-import { multiWord, parenIfNeeded, singleWord } from "../Source";
+import { type Option } from "../RendererOptions";
+import { type MultiWord, type Sourcelike, multiWord, parenIfNeeded, singleWord } from "../Source";
+import { isLetterOrUnderscoreOrDigit, legalizeCharacters, makeNameStyle, stringEscape } from "../support/Strings";
 import { TargetLanguage } from "../TargetLanguage";
-import { type Type, type ClassType, type EnumType, type UnionType } from "../Type";
-import { ArrayType, MapType, PrimitiveType } from "../Type";
+import { ArrayType, type ClassType, type EnumType, MapType, PrimitiveType, type Type, type UnionType } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
-import { legalizeCharacters, isLetterOrUnderscoreOrDigit, stringEscape, makeNameStyle } from "../support/Strings";
 
 export const pikeOptions = {};
 

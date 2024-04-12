@@ -1,13 +1,12 @@
+import { setMap, setSortBy, setUnion } from "collection-utils";
 import * as pluralize from "pluralize";
-import { setUnion, setMap, setSortBy } from "collection-utils";
 
-import { type TypeGraph } from "./TypeGraph";
-import { type Type } from "./Type";
-import { ObjectType } from "./Type";
-import { matchCompoundType, nullableFromUnion } from "./TypeUtils";
-import { TypeNames, namesTypeAttributeKind, TooManyTypeNames, tooManyNamesThreshold } from "./attributes/TypeNames";
-import { defined, panic, assert } from "./support/Support";
+import { TooManyTypeNames, TypeNames, namesTypeAttributeKind, tooManyNamesThreshold } from "./attributes/TypeNames";
+import { assert, defined, panic } from "./support/Support";
 import { transformationForType } from "./Transformers";
+import { ObjectType, type Type } from "./Type";
+import { type TypeGraph } from "./TypeGraph";
+import { matchCompoundType, nullableFromUnion } from "./TypeUtils";
 
 class UniqueQueue<T> {
     private readonly _present = new Set<T>();

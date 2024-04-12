@@ -1,14 +1,13 @@
+import * as _ from "lodash";
+
+import { type PrimitiveStringTypeKind, type StringTypeMapping, type TransformedStringTypeKind } from "..";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { type ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { type Name, type Namer } from "../Naming";
-import { DependencyName, funPrefixNamer } from "../Naming";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { DependencyName, type Name, type Namer, funPrefixNamer } from "../Naming";
 import { type RenderContext } from "../Renderer";
-import { type Option, type OptionValues } from "../RendererOptions";
-import { BooleanOption, getOptionValues } from "../RendererOptions";
-import { type Sourcelike } from "../Source";
-import { maybeAnnotated } from "../Source";
-import { acronymOption, acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
+import { BooleanOption, type Option, type OptionValues, getOptionValues } from "../RendererOptions";
+import { type Sourcelike, maybeAnnotated } from "../Source";
+import { AcronymStyleOptions, acronymOption, acronymStyle } from "../support/Acronyms";
 import {
     allLowerWordStyle,
     allUpperWordStyle,
@@ -27,8 +26,6 @@ import { defined } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
 import { type ClassProperty, type ClassType, type EnumType, type Type, type UnionType } from "../Type";
 import { directlyReachableSingleNamedType, matchType, nullableFromUnion } from "../TypeUtils";
-import { type StringTypeMapping, type TransformedStringTypeKind, type PrimitiveStringTypeKind } from "..";
-import * as _ from "lodash";
 
 export const phpOptions = {
     withGet: new BooleanOption("with-get", "Create Getter", true),

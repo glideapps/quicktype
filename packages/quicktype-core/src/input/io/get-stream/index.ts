@@ -1,4 +1,5 @@
 import { type Readable } from "readable-stream";
+
 import bufferStream from "./buffer-stream";
 
 export interface Options {

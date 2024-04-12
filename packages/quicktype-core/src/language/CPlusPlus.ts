@@ -1,42 +1,56 @@
 import {
-    setUnion,
     arrayIntercalate,
-    toReadonlyArray,
-    iterableFirst,
     iterableFind,
+    iterableFirst,
     iterableSome,
+    setUnion,
+    toReadonlyArray,
     withDefault
 } from "collection-utils";
 
-import { TargetLanguage } from "../TargetLanguage";
-import { type Type, type TypeKind, type ClassProperty } from "../Type";
-import { ClassType, ArrayType, MapType, EnumType, UnionType } from "../Type";
-import { nullableFromUnion, matchType, removeNullFromUnion, isNamedType, directlyReachableTypes } from "../TypeUtils";
-import { type NameStyle, type Name, type Namer } from "../Naming";
-import { funPrefixNamer, DependencyName } from "../Naming";
-import { type Sourcelike } from "../Source";
-import { maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { type NamingStyle } from "../support/Strings";
+import { getAccessorName } from "../attributes/AccessorNames";
 import {
-    legalizeCharacters,
+    type MinMaxConstraint,
+    minMaxLengthForType,
+    minMaxValueForType,
+    patternForType
+} from "../attributes/Constraints";
+import { enumCaseValues } from "../attributes/EnumValues";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { type Declaration } from "../DeclarationIR";
+import { DependencyName, type Name, type NameStyle, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import {
+    BooleanOption,
+    EnumOption,
+    type Option,
+    type OptionValues,
+    StringOption,
+    getOptionValues
+} from "../RendererOptions";
+import { type Sourcelike, maybeAnnotated } from "../Source";
+import {
+    type NamingStyle,
     isAscii,
     isLetterOrUnderscoreOrDigit,
-    stringEscape,
-    makeNameStyle
+    legalizeCharacters,
+    makeNameStyle,
+    stringEscape
 } from "../support/Strings";
-import { defined, assertNever, panic, numberEnumValues } from "../support/Support";
-import { type ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { type Option, type OptionValues } from "../RendererOptions";
-import { StringOption, EnumOption, BooleanOption, getOptionValues } from "../RendererOptions";
-import { assert } from "../support/Support";
-import { type Declaration } from "../DeclarationIR";
-import { type RenderContext } from "../Renderer";
-import { getAccessorName } from "../attributes/AccessorNames";
-import { enumCaseValues } from "../attributes/EnumValues";
-import { type MinMaxConstraint } from "../attributes/Constraints";
-import { minMaxValueForType, minMaxLengthForType, patternForType } from "../attributes/Constraints";
+import { assert, assertNever, defined, numberEnumValues, panic } from "../support/Support";
+import { TargetLanguage } from "../TargetLanguage";
+import {
+    ArrayType,
+    type ClassProperty,
+    ClassType,
+    EnumType,
+    MapType,
+    type Type,
+    type TypeKind,
+    UnionType
+} from "../Type";
+import { directlyReachableTypes, isNamedType, matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
 const pascalValue: [string, NamingStyle] = ["pascal-case", "pascal"];
 const underscoreValue: [string, NamingStyle] = ["underscore-case", "underscore"];
@@ -164,12 +178,12 @@ export class CPlusPlusTargetLanguage extends TargetLanguage {
 }
 
 function constraintsForType(t: Type):
-    | {
-          minMax?: MinMaxConstraint;
-          minMaxLength?: MinMaxConstraint;
-          pattern?: string;
-      }
-    | undefined {
+| {
+    minMax?: MinMaxConstraint;
+    minMaxLength?: MinMaxConstraint;
+    pattern?: string;
+}
+| undefined {
     const minMax = minMaxValueForType(t);
     const minMaxLength = minMaxLengthForType(t);
     const pattern = patternForType(t);
@@ -1361,11 +1375,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 pattern === undefined
                     ? this._nulloptType
                     : [
-                          this._stringType.getType(),
-                          "(",
-                          this._stringType.createStringLiteral([stringEscape(pattern)]),
-                          ")"
-                      ],
+                        this._stringType.getType(),
+                        "(",
+                        this._stringType.createStringLiteral([stringEscape(pattern)]),
+                        ")"
+                    ],
                 ")"
             ]);
         });

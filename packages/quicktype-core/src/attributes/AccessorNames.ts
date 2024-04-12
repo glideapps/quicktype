@@ -1,19 +1,19 @@
 import {
     iterableFirst,
     mapFromIterable,
-    mapMap,
     mapFromObject,
-    setUnionManyInto,
-    mapMergeInto
+    mapMap,
+    mapMergeInto,
+    setUnionManyInto
 } from "collection-utils";
 
-import { type TypeAttributes } from "./TypeAttributes";
-import { TypeAttributeKind } from "./TypeAttributes";
-import { defined, isStringMap, checkStringMap, checkArray } from "../support/Support";
-import { type EnumType, type UnionType, type Type, type ObjectType } from "../Type";
-import { messageAssert } from "../Messages";
+import { type JSONSchemaAttributes, type JSONSchemaType, type Ref } from "../input/JSONSchemaInput";
 import { type JSONSchema } from "../input/JSONSchemaStore";
-import { type Ref, type JSONSchemaType, type JSONSchemaAttributes } from "../input/JSONSchemaInput";
+import { messageAssert } from "../Messages";
+import { checkArray, checkStringMap, defined, isStringMap } from "../support/Support";
+import { type EnumType, type ObjectType, type Type, type UnionType } from "../Type";
+
+import { TypeAttributeKind, type TypeAttributes } from "./TypeAttributes";
 
 export type AccessorEntry = string | Map<string, string>;
 

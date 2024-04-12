@@ -1,19 +1,20 @@
-import { type Type, type ClassType } from "../Type";
-import { ArrayType, UnionType, EnumType } from "../Type";
-import { matchType, nullableFromUnion, isNamedType } from "../TypeUtils";
-import { utf16StringEscape, camelCase } from "../support/Strings";
-
-import { type Sourcelike, type MultiWord } from "../Source";
-import { modifySource, singleWord, parenIfNeeded, multiWord } from "../Source";
-import { type Name, type Namer } from "../Naming";
-import { funPrefixNamer } from "../Naming";
-import { type Option, type OptionValues } from "../RendererOptions";
-import { BooleanOption, getOptionValues } from "../RendererOptions";
-import { type JavaScriptTypeAnnotations } from "./JavaScript";
-import { javaScriptOptions, JavaScriptTargetLanguage, JavaScriptRenderer, legalizeName } from "./JavaScript";
+import { type Name, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import { BooleanOption, type Option, type OptionValues, getOptionValues } from "../RendererOptions";
+import { type MultiWord, type Sourcelike, modifySource, multiWord, parenIfNeeded, singleWord } from "../Source";
+import { camelCase, utf16StringEscape } from "../support/Strings";
 import { defined, panic } from "../support/Support";
 import { type TargetLanguage } from "../TargetLanguage";
-import { type RenderContext } from "../Renderer";
+import { ArrayType, type ClassType, EnumType, type Type, UnionType } from "../Type";
+import { isNamedType, matchType, nullableFromUnion } from "../TypeUtils";
+
+import {
+    JavaScriptRenderer,
+    JavaScriptTargetLanguage,
+    type JavaScriptTypeAnnotations,
+    javaScriptOptions,
+    legalizeName
+} from "./JavaScript";
 import { isES3IdentifierStart } from "./JavaScriptUnicodeMaps";
 
 export const tsFlowOptions = Object.assign({}, javaScriptOptions, {

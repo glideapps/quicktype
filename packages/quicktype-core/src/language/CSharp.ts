@@ -1,57 +1,64 @@
 import { arrayIntercalate } from "collection-utils";
+import unicode from "unicode-properties";
 
+import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
+import { minMaxLengthForType, minMaxValueForType } from "../attributes/Constraints";
+import { ConvenienceRenderer, type ForbiddenWordsInfo, inferredNameOrder } from "../ConvenienceRenderer";
+import { DependencyName, type Name, type Namer, SimpleName, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
 import {
-    type Type,
-    type ClassProperty,
-    type TransformedStringTypeKind,
-    type PrimitiveStringTypeKind,
-    type PrimitiveType
-} from "../Type";
-import { EnumType, UnionType, ClassType, ArrayType } from "../Type";
-import { matchType, nullableFromUnion, removeNullFromUnion, directlyReachableSingleNamedType } from "../TypeUtils";
-import { type Sourcelike } from "../Source";
-import { maybeAnnotated, modifySource } from "../Source";
-import { type WordInName } from "../support/Strings";
+    BooleanOption,
+    EnumOption,
+    type Option,
+    type OptionValues,
+    StringOption,
+    getOptionValues
+} from "../RendererOptions";
+import { type Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import {
-    utf16LegalizeCharacters,
-    utf16StringEscape,
-    splitIntoWords,
+    type WordInName,
+    camelCase,
     combineWords,
     firstUpperWordStyle,
-    camelCase
+    splitIntoWords,
+    utf16LegalizeCharacters,
+    utf16StringEscape
 } from "../support/Strings";
-import { defined, assert, panic, assertNever } from "../support/Support";
-import { type Name, type Namer } from "../Naming";
-import { DependencyName, funPrefixNamer, SimpleName } from "../Naming";
-import { type ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { ConvenienceRenderer, inferredNameOrder } from "../ConvenienceRenderer";
+import { assert, assertNever, defined, panic } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
-import { type Option, type OptionValues } from "../RendererOptions";
-import { StringOption, EnumOption, BooleanOption, getOptionValues } from "../RendererOptions";
-import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { type StringTypeMapping } from "../TypeBuilder";
-import { type Transformer, type Transformation } from "../Transformers";
 import {
-    followTargetType,
-    transformationForType,
-    DecodingTransformer,
-    DecodingChoiceTransformer,
-    UnionInstantiationTransformer,
-    ChoiceTransformer,
-    UnionMemberMatchTransformer,
-    EncodingTransformer,
-    StringMatchTransformer,
-    StringProducerTransformer,
-    ParseStringTransformer,
-    StringifyTransformer,
     ArrayDecodingTransformer,
     ArrayEncodingTransformer,
+    ChoiceTransformer,
+    DecodingChoiceTransformer,
+    DecodingTransformer,
+    EncodingTransformer,
     MinMaxLengthCheckTransformer,
-    MinMaxValueTransformer
+    MinMaxValueTransformer,
+    ParseStringTransformer,
+    StringMatchTransformer,
+    StringProducerTransformer,
+    StringifyTransformer,
+    type Transformation,
+    type Transformer,
+    UnionInstantiationTransformer,
+    UnionMemberMatchTransformer,
+    followTargetType,
+    transformationForType
 } from "../Transformers";
-import { type RenderContext } from "../Renderer";
-import { minMaxLengthForType, minMaxValueForType } from "../attributes/Constraints";
-import unicode from "unicode-properties";
+import {
+    ArrayType,
+    type ClassProperty,
+    ClassType,
+    EnumType,
+    type PrimitiveStringTypeKind,
+    type PrimitiveType,
+    type TransformedStringTypeKind,
+    type Type,
+    UnionType
+} from "../Type";
+import { type StringTypeMapping } from "../TypeBuilder";
+import { directlyReachableSingleNamedType, matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
 export enum Framework {
     Newtonsoft = "Newtonsoft",

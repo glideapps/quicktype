@@ -1,29 +1,25 @@
-import { type TypeKind, type Type, type ClassType, type EnumType, type ClassProperty } from "../Type";
-import { UnionType } from "../Type";
-import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
-import { type Name, type Namer } from "../Naming";
-import { DependencyName, funPrefixNamer } from "../Naming";
+import { type PrimitiveStringTypeKind, type StringTypeMapping, type TransformedStringTypeKind } from "..";
+import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
+import { ConvenienceRenderer } from "../ConvenienceRenderer";
+import { DependencyName, type Name, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import { BooleanOption, type Option, type OptionValues, StringOption, getOptionValues } from "../RendererOptions";
+import { type Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import {
-    legalizeCharacters,
-    isLetterOrUnderscore,
-    isLetterOrUnderscoreOrDigit,
-    stringEscape,
-    splitIntoWords,
+    allUpperWordStyle,
+    camelCase,
     combineWords,
     firstUpperWordStyle,
-    allUpperWordStyle,
-    camelCase
+    isLetterOrUnderscore,
+    isLetterOrUnderscoreOrDigit,
+    legalizeCharacters,
+    splitIntoWords,
+    stringEscape
 } from "../support/Strings";
 import { assert, defined } from "../support/Support";
-import { type Option, type OptionValues } from "../RendererOptions";
-import { StringOption, BooleanOption, getOptionValues } from "../RendererOptions";
-import { type Sourcelike } from "../Source";
-import { maybeAnnotated, modifySource } from "../Source";
-import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { TargetLanguage } from "../TargetLanguage";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { type RenderContext } from "../Renderer";
-import { type StringTypeMapping, type TransformedStringTypeKind, type PrimitiveStringTypeKind } from "..";
+import { type ClassProperty, type ClassType, type EnumType, type Type, type TypeKind, UnionType } from "../Type";
+import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
 export const goOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),

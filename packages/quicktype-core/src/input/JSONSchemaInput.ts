@@ -1,54 +1,62 @@
-import URI from "urijs";
 import {
-    setFilter,
     EqualityMap,
-    mapMap,
-    mapFromObject,
-    setSubtract,
-    mapFromIterable,
+    addHashCode,
+    arrayGetFromEnd,
+    arrayLast,
+    arrayMapSync,
+    definedMap,
+    // eslint-disable-next-line @typescript-eslint/no-redeclare
+    hasOwnProperty,
+    hashCodeOf,
+    hashString,
     iterableFind,
-    mapSortBy,
+    iterableFirst,
+    mapFromIterable,
+    mapFromObject,
+    mapMap,
     mapMapSync,
     mapMergeInto,
-    arrayMapSync,
-    arrayLast,
-    arrayGetFromEnd,
-    hashCodeOf,
-    hasOwnProperty,
-    definedMap,
-    addHashCode,
-    iterableFirst,
-    hashString
+    mapSortBy,
+    setFilter,
+    setSubtract
 } from "collection-utils";
+import URI from "urijs";
 
-import { type PrimitiveTypeKind, type TransformedStringTypeKind } from "../Type";
-import { transformedStringTypeTargetTypeKindsMap, isNumberTypeKind } from "../Type";
-import { type StringMap } from "../support/Support";
-import { panic, assertNever, assert, defined, parseJSON } from "../support/Support";
-import { type TypeBuilder } from "../TypeBuilder";
-import { TypeNames } from "../attributes/TypeNames";
-import { makeNamesTypeAttributes, modifyTypeNames, singularizeTypeNames } from "../attributes/TypeNames";
-import { type TypeAttributes } from "../attributes/TypeAttributes";
-import { makeTypeAttributesInferred, emptyTypeAttributes, combineTypeAttributes } from "../attributes/TypeAttributes";
-import { type JSONSchema } from "./JSONSchemaStore";
-import { JSONSchemaStore } from "./JSONSchemaStore";
-import { messageAssert, messageError } from "../Messages";
+import { accessorNamesAttributeProducer } from "../attributes/AccessorNames";
+import {
+    minMaxAttributeProducer,
+    minMaxLengthAttributeProducer,
+    patternAttributeProducer
+} from "../attributes/Constraints";
+// eslint-disable-next-line import/no-cycle
+import { descriptionAttributeProducer } from "../attributes/Description";
+import { enumValuesAttributeProducer } from "../attributes/EnumValues";
 import { StringTypes } from "../attributes/StringTypes";
-
-import { type TypeRef } from "../TypeGraph";
+import {
+    type TypeAttributes,
+    combineTypeAttributes,
+    emptyTypeAttributes,
+    makeTypeAttributesInferred
+} from "../attributes/TypeAttributes";
+import { TypeNames, makeNamesTypeAttributes, modifyTypeNames, singularizeTypeNames } from "../attributes/TypeNames";
+import { uriSchemaAttributesProducer } from "../attributes/URIAttributes";
+import { messageAssert, messageError } from "../Messages";
 import { type RunContext } from "../Run";
+import { type StringMap, assert, assertNever, defined, panic, parseJSON } from "../support/Support";
+import {
+    type PrimitiveTypeKind,
+    type TransformedStringTypeKind,
+    isNumberTypeKind,
+    transformedStringTypeTargetTypeKindsMap
+} from "../Type";
+import { type TypeBuilder } from "../TypeBuilder";
+import { type TypeRef } from "../TypeGraph";
+
 import { type Input } from "./Inputs";
+import { type JSONSchema, JSONSchemaStore } from "./JSONSchemaStore";
 
 // There's a cyclic import here. Ignoring now because it requires a large refactor.
 // skipcq: JS-E1008
-import { descriptionAttributeProducer } from "../attributes/Description";
-
-import { accessorNamesAttributeProducer } from "../attributes/AccessorNames";
-import { enumValuesAttributeProducer } from "../attributes/EnumValues";
-import { minMaxAttributeProducer } from "../attributes/Constraints";
-import { minMaxLengthAttributeProducer } from "../attributes/Constraints";
-import { patternAttributeProducer } from "../attributes/Constraints";
-import { uriSchemaAttributesProducer } from "../attributes/URIAttributes";
 
 export enum PathElementKind {
     Root = 1,

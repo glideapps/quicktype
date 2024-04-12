@@ -1,7 +1,8 @@
-import { type JSONSchema } from "./JSONSchemaStore";
-import { JSONSchemaStore } from "./JSONSchemaStore";
+// eslint-disable-next-line import/no-cycle
 import { parseJSON } from "..";
+
 import { readFromFileOrURL } from "./io/NodeIO";
+import { type JSONSchema, JSONSchemaStore } from "./JSONSchemaStore";
 
 export class FetchingJSONSchemaStore extends JSONSchemaStore {
     public constructor(private readonly _httpHeaders?: string[]) {

@@ -1,14 +1,12 @@
-import { iterableSome, arrayIntercalate } from "collection-utils";
+import { arrayIntercalate, iterableSome } from "collection-utils";
 
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { type ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { type Name, type Namer } from "../Naming";
-import { funPrefixNamer } from "../Naming";
-import { type Option, type OptionValues } from "../RendererOptions";
-import { EnumOption, StringOption, getOptionValues } from "../RendererOptions";
-import { type Sourcelike } from "../Source";
-import { maybeAnnotated, modifySource } from "../Source";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { type Name, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import { EnumOption, type Option, type OptionValues, StringOption, getOptionValues } from "../RendererOptions";
+import { type Sourcelike, maybeAnnotated, modifySource } from "../Source";
+import { AcronymStyleOptions, acronymOption, acronymStyle } from "../support/Acronyms";
 import {
     allLowerWordStyle,
     allUpperWordStyle,
@@ -27,11 +25,18 @@ import {
 } from "../support/Strings";
 import { assertNever, mustNotHappen } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
-import { type ClassProperty, type EnumType, type ObjectType, type PrimitiveType, type Type } from "../Type";
-import { ArrayType, ClassType, MapType, UnionType } from "../Type";
+import {
+    ArrayType,
+    type ClassProperty,
+    ClassType,
+    type EnumType,
+    MapType,
+    type ObjectType,
+    type PrimitiveType,
+    type Type,
+    UnionType
+} from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
-import { type RenderContext } from "../Renderer";
-import { acronymOption, acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
 
 export enum Framework {
     None = "None",

@@ -1,8 +1,8 @@
-import { mapFilterMap, mapFilter, mapTranspose, hashString } from "collection-utils";
+import { hashString, mapFilter, mapFilterMap, mapTranspose } from "collection-utils";
 
-import { panic, assert } from "../support/Support";
-import { type Type, type TypeKind } from "../Type";
 import { type BaseGraphRewriteBuilder } from "../GraphRewriting";
+import { assert, panic } from "../support/Support";
+import { type Type, type TypeKind } from "../Type";
 
 export class TypeAttributeKind<T> {
     public constructor(public readonly name: string) {}

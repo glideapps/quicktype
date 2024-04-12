@@ -1,22 +1,10 @@
-import { type StringTypeMapping } from "TypeBuilder";
 import { arrayIntercalate } from "collection-utils";
+
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { type Name, type Namer } from "../Naming";
-import { funPrefixNamer } from "../Naming";
+import { type Name, type Namer, funPrefixNamer } from "../Naming";
 import { type RenderContext } from "../Renderer";
-import { type Option, type OptionValues } from "../RendererOptions";
-import { BooleanOption, getOptionValues } from "../RendererOptions";
+import { BooleanOption, type Option, type OptionValues, getOptionValues } from "../RendererOptions";
 import { type Sourcelike } from "../Source";
-import { TargetLanguage } from "../TargetLanguage";
-import {
-    type ClassProperty,
-    type EnumType,
-    type PrimitiveStringTypeKind,
-    type TransformedStringTypeKind,
-    type Type
-} from "../Type";
-import { ArrayType, ClassType, ObjectType, SetOperationType } from "../Type";
-import { matchType } from "../TypeUtils";
 import { AcronymStyleOptions, acronymStyle } from "../support/Acronyms";
 import {
     allLowerWordStyle,
@@ -29,6 +17,21 @@ import {
     utf16StringEscape
 } from "../support/Strings";
 import { panic } from "../support/Support";
+import { TargetLanguage } from "../TargetLanguage";
+import {
+    ArrayType,
+    type ClassProperty,
+    ClassType,
+    type EnumType,
+    ObjectType,
+    type PrimitiveStringTypeKind,
+    SetOperationType,
+    type TransformedStringTypeKind,
+    type Type
+} from "../Type";
+import { type StringTypeMapping } from "../TypeBuilder";
+import { matchType } from "../TypeUtils";
+
 import { legalizeName } from "./JavaScript";
 
 export const typeScriptZodOptions = {

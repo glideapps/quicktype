@@ -1,36 +1,41 @@
 import {
-    iterableFirst,
     iterableEvery,
-    setFilter,
+    iterableFind,
+    iterableFirst,
+    mapMap,
     mapMapEntries,
     mapMergeWithInto,
-    mapMap,
     mapUpdateInto,
-    setMap,
-    iterableFind,
+    setFilter,
     setIntersect,
+    setMap,
     setUnionInto
 } from "collection-utils";
 
-import { type TypeGraph, type TypeRef } from "../TypeGraph";
-import { type StringTypeMapping, type TypeBuilder } from "../TypeBuilder";
-import { type GraphRewriteBuilder, type TypeLookerUp } from "../GraphRewriting";
-import { type UnionTypeProvider, type TypeAttributeMap } from "../UnionBuilder";
-import { UnionBuilder } from "../UnionBuilder";
-import { type Type, type PrimitiveTypeKind, type TypeKind } from "../Type";
 import {
-    IntersectionType,
-    UnionType,
+    type TypeAttributes,
+    combineTypeAttributes,
+    emptyTypeAttributes,
+    makeTypeAttributesInferred
+} from "../attributes/TypeAttributes";
+import { type GraphRewriteBuilder, type TypeLookerUp } from "../GraphRewriting";
+import { assert, defined, mustNotHappen, panic } from "../support/Support";
+import {
     ArrayType,
-    isPrimitiveTypeKind,
-    isNumberTypeKind,
     GenericClassProperty,
-    ObjectType
+    IntersectionType,
+    ObjectType,
+    type PrimitiveTypeKind,
+    type Type,
+    type TypeKind,
+    UnionType,
+    isNumberTypeKind,
+    isPrimitiveTypeKind
 } from "../Type";
-import { setOperationMembersRecursively, matchTypeExhaustive, makeGroupsToFlatten } from "../TypeUtils";
-import { assert, defined, panic, mustNotHappen } from "../support/Support";
-import { type TypeAttributes } from "../attributes/TypeAttributes";
-import { combineTypeAttributes, emptyTypeAttributes, makeTypeAttributesInferred } from "../attributes/TypeAttributes";
+import { type StringTypeMapping, type TypeBuilder } from "../TypeBuilder";
+import { type TypeGraph, type TypeRef } from "../TypeGraph";
+import { makeGroupsToFlatten, matchTypeExhaustive, setOperationMembersRecursively } from "../TypeUtils";
+import { type TypeAttributeMap, UnionBuilder, type UnionTypeProvider } from "../UnionBuilder";
 
 function canResolve(t: IntersectionType): boolean {
     const members = setOperationMembersRecursively(t, undefined)[0];

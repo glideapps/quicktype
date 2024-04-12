@@ -1,14 +1,20 @@
-import { mapMap, EqualityMap } from "collection-utils";
+import { EqualityMap, mapMap } from "collection-utils";
 
-import { type PrimitiveTypeKind, type Type, type ClassProperty, type MaybeTypeIdentity } from "./Type";
+import { type TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./attributes/TypeAttributes";
+import { assert, indentationString, panic } from "./support/Support";
+import { type ClassProperty, type MaybeTypeIdentity, type PrimitiveTypeKind, type Type } from "./Type";
+// eslint-disable-next-line import/no-cycle
+import { type StringTypeMapping, TypeBuilder } from "./TypeBuilder";
+import {
+    type TypeGraph,
+    type TypeRef,
+    assertTypeRefGraph,
+    derefTypeRef,
+    isTypeRef,
+    typeAndAttributesForTypeRef,
+    typeRefIndex
+} from "./TypeGraph";
 import { combineTypeAttributesOfTypes } from "./TypeUtils";
-import { type TypeGraph, type TypeRef } from "./TypeGraph";
-import { derefTypeRef, typeAndAttributesForTypeRef, assertTypeRefGraph, typeRefIndex, isTypeRef } from "./TypeGraph";
-import { type TypeAttributes } from "./attributes/TypeAttributes";
-import { emptyTypeAttributes, combineTypeAttributes } from "./attributes/TypeAttributes";
-import { assert, panic, indentationString } from "./support/Support";
-import { type StringTypeMapping } from "./TypeBuilder";
-import { TypeBuilder } from "./TypeBuilder";
 
 export interface TypeLookerUp {
     lookupTypeRefs: (typeRefs: TypeRef[], forwardingRef?: TypeRef) => TypeRef | undefined;

@@ -1,9 +1,10 @@
-import { type Type, type TypeKind } from "../Type";
-import { TypeAttributeKind } from "./TypeAttributes";
-import { assert } from "../support/Support";
-import { messageError } from "../Messages";
-import { type JSONSchemaType, type JSONSchemaAttributes, type Ref } from "../input/JSONSchemaInput";
+import { type JSONSchemaAttributes, type JSONSchemaType, type Ref } from "../input/JSONSchemaInput";
 import { type JSONSchema } from "../input/JSONSchemaStore";
+import { messageError } from "../Messages";
+import { assert } from "../support/Support";
+import { type Type, type TypeKind } from "../Type";
+
+import { TypeAttributeKind } from "./TypeAttributes";
 
 // This can't be an object type, unfortunately, because it's in the
 // type's identity and as such must be comparable and hashable with

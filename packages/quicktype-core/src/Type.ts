@@ -1,35 +1,35 @@
 import {
+    addHashCode,
+    areEqual,
+    definedMap,
+    // eslint-disable-next-line @typescript-eslint/no-redeclare
+    hasOwnProperty,
+    hashCodeInit,
+    hashCodeOf,
     iterableEvery,
     iterableFind,
     iterableSome,
-    toReadonlySet,
-    hashCodeOf,
-    areEqual,
-    mapMap,
-    setMap,
-    mapSortByKey,
-    mapSome,
     mapFilter,
-    setSortBy,
-    setFilter,
-    setUnionInto,
+    mapFromObject,
+    mapMap,
+    mapSome,
+    mapSortByKey,
     mapSortToArray,
-    definedMap,
-    hashCodeInit,
-    addHashCode,
-    hasOwnProperty,
-    mapFromObject
+    setFilter,
+    setMap,
+    setSortBy,
+    setUnionInto,
+    toReadonlySet
 } from "collection-utils";
 
-import { defined, panic, assert } from "./support/Support";
-import { type TypeReconstituter, type BaseGraphRewriteBuilder } from "./GraphRewriting";
-import { type TypeNames } from "./attributes/TypeNames";
-import { namesTypeAttributeKind } from "./attributes/TypeNames";
 import { type TypeAttributes } from "./attributes/TypeAttributes";
-import { messageAssert } from "./Messages";
-import { type TypeRef, type TypeGraph } from "./TypeGraph";
-import { attributesForTypeRef, derefTypeRef, typeRefIndex } from "./TypeGraph";
+import { type TypeNames, namesTypeAttributeKind } from "./attributes/TypeNames";
 import { uriInferenceAttributesProducer } from "./attributes/URIAttributes";
+import { type BaseGraphRewriteBuilder, type TypeReconstituter } from "./GraphRewriting";
+import { messageAssert } from "./Messages";
+import { assert, defined, panic } from "./support/Support";
+// eslint-disable-next-line import/no-cycle
+import { type TypeGraph, type TypeRef, attributesForTypeRef, derefTypeRef, typeRefIndex } from "./TypeGraph";
 
 /**
  * `jsonSchema` is the `format` to be used to represent this string type in

@@ -1,21 +1,28 @@
 import {
+    iterableFirst,
     mapFilterMap,
     mapFromObject,
-    setUnion,
-    iterableFirst,
-    setUnionManyInto,
     mapMergeWithInto,
-    setSubtract
+    setSubtract,
+    setUnion,
+    setUnionManyInto
 } from "collection-utils";
 
 // There's a cyclic import here. Ignoring now because it requires a large refactor.
 // skipcq: JS-E1008
-import { TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
 // FIXME: This is a circular import
-import { type JSONSchemaType, type Ref, type JSONSchemaAttributes, type PathElement } from "../input/JSONSchemaInput";
-import { PathElementKind } from "../input/JSONSchemaInput";
+// eslint-disable-next-line import/no-cycle
+import {
+    type JSONSchemaAttributes,
+    type JSONSchemaType,
+    type PathElement,
+    PathElementKind,
+    type Ref
+} from "../input/JSONSchemaInput";
 import { type JSONSchema } from "../input/JSONSchemaStore";
 import { type Type } from "../Type";
+
+import { TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
 
 export function addDescriptionToSchema(
     schema: { [name: string]: unknown },

@@ -1,38 +1,46 @@
 import unicode from "unicode-properties";
 
-import { type Sourcelike } from "../../Source";
-import { modifySource } from "../../Source";
-import { type Name } from "../../Naming";
-import { Namer } from "../../Naming";
-import { type ForbiddenWordsInfo } from "../../ConvenienceRenderer";
-import { ConvenienceRenderer } from "../../ConvenienceRenderer";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../../ConvenienceRenderer";
+import { type Name, Namer } from "../../Naming";
+import { type RenderContext } from "../../Renderer";
+import {
+    BooleanOption,
+    EnumOption,
+    type Option,
+    type OptionValues,
+    StringOption,
+    getOptionValues
+} from "../../RendererOptions";
+import { type Sourcelike, modifySource } from "../../Source";
+import {
+    allLowerWordStyle,
+    allUpperWordStyle,
+    combineWords,
+    escapeNonPrintableMapper,
+    firstUpperWordStyle,
+    intToHex,
+    isLetterOrUnderscore,
+    isPrintable,
+    legalizeCharacters,
+    snakeCase,
+    splitIntoWords,
+    utf32ConcatMap
+} from "../../support/Strings";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type Option, type OptionValues } from "../../RendererOptions";
-import { BooleanOption, EnumOption, getOptionValues, StringOption } from "../../RendererOptions";
+import {
+    ArrayType,
+    type ClassProperty,
+    ClassType,
+    type EnumType,
+    MapType,
+    type Type,
+    type UnionType
+} from "../../Type";
+import { matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
 
 import * as keywords from "./keywords";
 
 const forbiddenForObjectProperties = Array.from(new Set([...keywords.keywords, ...keywords.reservedProperties]));
-
-import { type Type, type EnumType, type UnionType, type ClassProperty } from "../../Type";
-import { ClassType, ArrayType, MapType } from "../../Type";
-import { matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
-
-import {
-    legalizeCharacters,
-    splitIntoWords,
-    combineWords,
-    firstUpperWordStyle,
-    allUpperWordStyle,
-    allLowerWordStyle,
-    utf32ConcatMap,
-    isPrintable,
-    escapeNonPrintableMapper,
-    intToHex,
-    snakeCase,
-    isLetterOrUnderscore
-} from "../../support/Strings";
-import { type RenderContext } from "../../Renderer";
 
 function unicodeEscape(codePoint: number): string {
     return "\\u{" + intToHex(codePoint, 0) + "}";

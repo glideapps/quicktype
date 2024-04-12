@@ -1,11 +1,11 @@
 import { mapMap } from "collection-utils";
 
-import { type AccessorNames } from "./AccessorNames";
-import { lookupKey, makeAccessorNames } from "./AccessorNames";
-import { type EnumType } from "../Type";
-import { TypeAttributeKind } from "./TypeAttributes";
+import { type JSONSchemaAttributes, type JSONSchemaType, type Ref } from "../input/JSONSchemaInput";
 import { type JSONSchema } from "../input/JSONSchemaStore";
-import { type Ref, type JSONSchemaType, type JSONSchemaAttributes } from "../input/JSONSchemaInput";
+import { type EnumType } from "../Type";
+
+import { type AccessorNames, lookupKey, makeAccessorNames } from "./AccessorNames";
+import { TypeAttributeKind } from "./TypeAttributes";
 
 class EnumValuesTypeAttributeKind extends TypeAttributeKind<AccessorNames> {
     public constructor() {

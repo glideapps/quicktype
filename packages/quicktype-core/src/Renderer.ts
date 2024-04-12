@@ -1,15 +1,12 @@
 import { iterableEnumerate } from "collection-utils";
 
-import { type TypeGraph } from "./TypeGraph";
-import { type Name, type Namespace } from "./Naming";
-import { assignNames } from "./Naming";
-import { type Source, type Sourcelike, type NewlineSource } from "./Source";
-import { annotated, sourcelikeToSource, newline } from "./Source";
-import { type AnnotationData } from "./Annotation";
-import { IssueAnnotationData } from "./Annotation";
+import { type AnnotationData, IssueAnnotationData } from "./Annotation";
+import { type Name, type Namespace, assignNames } from "./Naming";
+import { type NewlineSource, type Source, type Sourcelike, annotated, newline, sourcelikeToSource } from "./Source";
+import { type Comment } from "./support/Comments";
 import { assert, panic } from "./support/Support";
 import { type TargetLanguage } from "./TargetLanguage";
-import { type Comment } from "./support/Comments";
+import { type TypeGraph } from "./TypeGraph";
 
 export interface RenderResult {
     names: ReadonlyMap<Name, string>;

@@ -1,13 +1,11 @@
 import { arrayIntercalate } from "collection-utils";
-import { type ClassProperty, type ObjectType, type Type } from "../Type";
-import { ArrayType, EnumType, MapType } from "../Type";
-import { matchType } from "../TypeUtils";
-import { type Name, type Namer } from "../Naming";
-import { funPrefixNamer } from "../Naming";
+
+import { ConvenienceRenderer } from "../ConvenienceRenderer";
+import { type Name, type Namer, funPrefixNamer } from "../Naming";
 import { type RenderContext } from "../Renderer";
-import { type Option, type OptionValues } from "../RendererOptions";
-import { BooleanOption, getOptionValues } from "../RendererOptions";
-import { acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
+import { BooleanOption, type Option, type OptionValues, getOptionValues } from "../RendererOptions";
+import { type Sourcelike } from "../Source";
+import { AcronymStyleOptions, acronymStyle } from "../support/Acronyms";
 import {
     allLowerWordStyle,
     capitalize,
@@ -18,11 +16,12 @@ import {
     stringEscape,
     utf16StringEscape
 } from "../support/Strings";
-import { TargetLanguage } from "../TargetLanguage";
-import { legalizeName } from "./JavaScript";
-import { type Sourcelike } from "../Source";
 import { panic } from "../support/Support";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
+import { TargetLanguage } from "../TargetLanguage";
+import { ArrayType, type ClassProperty, EnumType, MapType, type ObjectType, type Type } from "../Type";
+import { matchType } from "../TypeUtils";
+
+import { legalizeName } from "./JavaScript";
 
 export const typeScriptEffectSchemaOptions = {
     justSchema: new BooleanOption("just-schema", "Schema only", false)

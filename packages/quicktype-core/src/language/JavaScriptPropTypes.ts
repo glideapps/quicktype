@@ -1,20 +1,27 @@
-import { TargetLanguage } from "../TargetLanguage";
-import { type Option, type OptionValues } from "../RendererOptions";
-import { getOptionValues, EnumOption } from "../RendererOptions";
-import { type RenderContext } from "../Renderer";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { type Name, type Namer } from "../Naming";
-import { funPrefixNamer } from "../Naming";
-import { acronymOption, acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
-import { type ClassProperty, type ClassType, type ObjectType, type Sourcelike, type Type } from "..";
-import { capitalize, combineWords, firstUpperWordStyle, matchType, panic, splitIntoWords } from "..";
-import { allLowerWordStyle, utf16StringEscape } from "../support/Strings";
-import { isES3IdentifierStart } from "./JavaScriptUnicodeMaps";
-import { legalizeName } from "./JavaScript";
-import { convertersOption } from "../support/Converters";
-import { directlyReachableSingleNamedType } from "../TypeUtils";
+import { panic } from "@glideapps/ts-necessities";
 import { arrayIntercalate } from "collection-utils";
-import { PrimitiveType } from "../Type";
+
+import { ConvenienceRenderer } from "../ConvenienceRenderer";
+import { type Name, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import { EnumOption, type Option, type OptionValues, getOptionValues } from "../RendererOptions";
+import { type Sourcelike } from "../Source";
+import { AcronymStyleOptions, acronymOption, acronymStyle } from "../support/Acronyms";
+import { convertersOption } from "../support/Converters";
+import {
+    allLowerWordStyle,
+    capitalize,
+    combineWords,
+    firstUpperWordStyle,
+    splitIntoWords,
+    utf16StringEscape
+} from "../support/Strings";
+import { TargetLanguage } from "../TargetLanguage";
+import { type ClassProperty, type ClassType, type ObjectType, PrimitiveType, type Type } from "../Type";
+import { directlyReachableSingleNamedType, matchType } from "../TypeUtils";
+
+import { legalizeName } from "./JavaScript";
+import { isES3IdentifierStart } from "./JavaScriptUnicodeMaps";
 
 export const javaScriptPropTypesOptions = {
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal),

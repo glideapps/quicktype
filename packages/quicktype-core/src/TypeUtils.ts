@@ -1,12 +1,27 @@
-import { setFilter, setSortBy, iterableFirst, setUnion, EqualityMap } from "collection-utils";
+import { EqualityMap, iterableFirst, setFilter, setSortBy, setUnion } from "collection-utils";
 
-import { defined, panic, assert, assertNever } from "./support/Support";
-import { type TypeAttributes, type CombinationKind } from "./attributes/TypeAttributes";
-import { combineTypeAttributes, emptyTypeAttributes } from "./attributes/TypeAttributes";
-import { type Type, type PrimitiveType, type ClassProperty, type SetOperationType } from "./Type";
-import { ArrayType, EnumType, ObjectType, MapType, ClassType, UnionType, isPrimitiveStringTypeKind } from "./Type";
-import { type StringTypes } from "./attributes/StringTypes";
-import { stringTypesTypeAttributeKind } from "./attributes/StringTypes";
+// eslint-disable-next-line import/no-cycle
+import { type StringTypes, stringTypesTypeAttributeKind } from "./attributes/StringTypes";
+import {
+    type CombinationKind,
+    type TypeAttributes,
+    combineTypeAttributes,
+    emptyTypeAttributes
+} from "./attributes/TypeAttributes";
+import { assert, assertNever, defined, panic } from "./support/Support";
+import {
+    ArrayType,
+    type ClassProperty,
+    ClassType,
+    EnumType,
+    MapType,
+    ObjectType,
+    type PrimitiveType,
+    type SetOperationType,
+    type Type,
+    UnionType,
+    isPrimitiveStringTypeKind
+} from "./Type";
 
 export function assertIsObject(t: Type): ObjectType {
     if (t instanceof ObjectType) {

@@ -1,16 +1,13 @@
 import { iterableFirst, setUnionInto } from "collection-utils";
 
-import { type Type, type ClassProperty, type ObjectType } from "./Type";
-import { UnionType } from "./Type";
-import { assertIsObject } from "./TypeUtils";
+import { type TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./attributes/TypeAttributes";
+import { type BaseGraphRewriteBuilder, type GraphRewriteBuilder, type TypeLookerUp } from "./GraphRewriting";
+import { assert, defined, panic } from "./support/Support";
+import { type ClassProperty, type ObjectType, type Type, UnionType } from "./Type";
 import { type TypeBuilder } from "./TypeBuilder";
-import { type TypeLookerUp, type GraphRewriteBuilder, type BaseGraphRewriteBuilder } from "./GraphRewriting";
-import { UnionBuilder, TypeRefUnionAccumulator } from "./UnionBuilder";
-import { panic, assert, defined } from "./support/Support";
-import { type TypeAttributes } from "./attributes/TypeAttributes";
-import { combineTypeAttributes, emptyTypeAttributes } from "./attributes/TypeAttributes";
-import { type TypeRef } from "./TypeGraph";
-import { derefTypeRef } from "./TypeGraph";
+import { type TypeRef, derefTypeRef } from "./TypeGraph";
+import { assertIsObject } from "./TypeUtils";
+import { TypeRefUnionAccumulator, UnionBuilder } from "./UnionBuilder";
 
 function getCliqueProperties(
     clique: ObjectType[],

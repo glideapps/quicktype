@@ -1,12 +1,9 @@
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { type ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { type Name, type Namer } from "../Naming";
-import { funPrefixNamer } from "../Naming";
-import { type Option, type OptionValues } from "../RendererOptions";
-import { EnumOption, StringOption, getOptionValues } from "../RendererOptions";
-import { type Sourcelike } from "../Source";
-import { maybeAnnotated } from "../Source";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { type Name, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import { EnumOption, type Option, type OptionValues, StringOption, getOptionValues } from "../RendererOptions";
+import { type Sourcelike, maybeAnnotated } from "../Source";
 import {
     allLowerWordStyle,
     allUpperWordStyle,
@@ -20,10 +17,17 @@ import {
 } from "../support/Strings";
 import { assertNever } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
-import { type ClassProperty, type ClassType, type EnumType, type ObjectType, type Type, type UnionType } from "../Type";
-import { ArrayType, MapType } from "../Type";
+import {
+    ArrayType,
+    type ClassProperty,
+    type ClassType,
+    type EnumType,
+    MapType,
+    type ObjectType,
+    type Type,
+    type UnionType
+} from "../Type";
 import { matchCompoundType, matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
-import { type RenderContext } from "../Renderer";
 
 export enum Framework {
     None = "None"

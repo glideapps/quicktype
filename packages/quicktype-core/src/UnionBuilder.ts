@@ -1,19 +1,25 @@
-import { mapMerge, mapUpdateInto, mapMap, setUnionInto } from "collection-utils";
+import { mapMap, mapMerge, mapUpdateInto, setUnionInto } from "collection-utils";
 
-import { type TypeKind, type PrimitiveStringTypeKind, type Type, type PrimitiveTypeKind } from "./Type";
-import { UnionType, isPrimitiveTypeKind } from "./Type";
-import { matchTypeExhaustive } from "./TypeUtils";
-import { type TypeAttributes } from "./attributes/TypeAttributes";
+import { StringTypes, stringTypesTypeAttributeKind } from "./attributes/StringTypes";
 import {
+    type TypeAttributes,
     combineTypeAttributes,
     emptyTypeAttributes,
-    makeTypeAttributesInferred,
-    increaseTypeAttributesDistance
+    increaseTypeAttributesDistance,
+    makeTypeAttributesInferred
 } from "./attributes/TypeAttributes";
-import { defined, assert, panic, assertNever } from "./support/Support";
+import { assert, assertNever, defined, panic } from "./support/Support";
+import {
+    type PrimitiveStringTypeKind,
+    type PrimitiveTypeKind,
+    type Type,
+    type TypeKind,
+    UnionType,
+    isPrimitiveTypeKind
+} from "./Type";
 import { type TypeBuilder } from "./TypeBuilder";
-import { StringTypes, stringTypesTypeAttributeKind } from "./attributes/StringTypes";
 import { type TypeRef } from "./TypeGraph";
+import { matchTypeExhaustive } from "./TypeUtils";
 
 // FIXME: This interface is badly designed.  All the properties
 // should use immutable types, and getMemberKinds should be

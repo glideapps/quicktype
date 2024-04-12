@@ -1,19 +1,19 @@
-import { panic } from "quicktype-core";
-import { introspectionQuery } from "graphql";
 import { exceptionToString } from "@glideapps/ts-necessities";
-
 import fetch from "cross-fetch";
+import { introspectionQuery } from "graphql";
+
+import { panic } from "quicktype-core";
 
 // https://github.com/apollographql/apollo-codegen/blob/master/src/downloadSchema.ts
-const defaultHeaders: { [name: string]: string, } = {
+const defaultHeaders: { [name: string]: string } = {
     Accept: "application/json",
-    "Content-Type": "application/json",
+    "Content-Type": "application/json"
 };
 
 const headerRegExp = /^([^:]+):\s*(.*)$/;
 
-export async function introspectServer (url: string, method: string, headerStrings: string[]): Promise<string> {
-    const headers: { [name: string]: string, } = {};
+export async function introspectServer(url: string, method: string, headerStrings: string[]): Promise<string> {
+    const headers: { [name: string]: string } = {};
 
     for (const name of Object.getOwnPropertyNames(defaultHeaders)) {
         headers[name] = defaultHeaders[name];
@@ -33,7 +33,7 @@ export async function introspectServer (url: string, method: string, headerStrin
         const response = await fetch(url, {
             method,
             headers: headers,
-            body: JSON.stringify({ query: introspectionQuery }),
+            body: JSON.stringify({ query: introspectionQuery })
         });
 
         result = await response.json();

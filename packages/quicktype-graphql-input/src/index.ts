@@ -1,39 +1,35 @@
-import {
-    type DocumentNode,
-    type SelectionSetNode,
-    type SelectionNode,
-    type OperationDefinitionNode,
-    type FragmentDefinitionNode,
-    type DirectiveNode,
-    type FieldNode
-} from "graphql/language/ast";
+import { iterableFirst, mapFromObject, setMap } from "collection-utils";
 import * as graphql from "graphql/language";
-import { setMap, iterableFirst, mapFromObject } from "collection-utils";
-
+import {
+    type DirectiveNode,
+    type DocumentNode,
+    type FieldNode,
+    type FragmentDefinitionNode,
+    type OperationDefinitionNode,
+    type SelectionNode,
+    type SelectionSetNode
+} from "graphql/language/ast";
 import {
     type ClassProperty,
-    type TypeBuilder,
-    type TypeRef,
-    type TypeAttributes,
     type Input,
-    type RunContext
-} from "quicktype-core";
-import {
-    UnionType,
-    removeNullFromUnion,
-    assertNever,
-    panic,
-    TypeNames,
-    makeNamesTypeAttributes,
-    namesTypeAttributeKind,
-    messageAssert,
-    emptyTypeAttributes,
+    type RunContext,
     StringTypes,
-    derefTypeRef
+    type TypeAttributes,
+    type TypeBuilder,
+    TypeNames,
+    type TypeRef,
+    UnionType,
+    assertNever,
+    derefTypeRef,
+    emptyTypeAttributes,
+    makeNamesTypeAttributes,
+    messageAssert,
+    namesTypeAttributeKind,
+    panic,
+    removeNullFromUnion
 } from "quicktype-core";
 
-import { type GraphQLSchema } from "./GraphQLSchema";
-import { TypeKind } from "./GraphQLSchema";
+import { type GraphQLSchema, TypeKind } from "./GraphQLSchema";
 
 interface GQLType {
     description?: string;
