@@ -184,7 +184,7 @@ function replaceUnion(
         transformerForClass === undefined || transformerForMap === undefined,
         "Can't have both class and map in a transformed union"
     );
-    const transformerForObject = transformerForClass !== undefined ? transformerForClass : transformerForMap;
+    const transformerForObject = transformerForClass ?? transformerForMap;
 
     const transformer = new DecodingChoiceTransformer(
         graph,

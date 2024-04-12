@@ -310,7 +310,7 @@ class GQLQuery {
             return panic("Object, interface, or union type doesn't have a name.");
         }
 
-        const nameOrOverride = overrideName || gqlType.name;
+        const nameOrOverride = overrideName ?? gqlType.name;
         const properties = new Map<string, ClassProperty>();
         let selections = expandSelectionSet(selectionSet, gqlType, false);
         for (;;) {

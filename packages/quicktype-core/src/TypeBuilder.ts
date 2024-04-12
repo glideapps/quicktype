@@ -185,7 +185,7 @@ export class TypeBuilder {
             assert(this.types[typeRefIndex(forwardingRef)] === undefined);
         }
 
-        const tref = forwardingRef !== undefined ? forwardingRef : this.reserveTypeRef();
+        const tref = forwardingRef ?? this.reserveTypeRef();
         if (attributes !== undefined) {
             const index = typeRefIndex(tref);
             this.typeAttributes[index] = combineTypeAttributes("union", this.typeAttributes[index], attributes);

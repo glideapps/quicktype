@@ -304,7 +304,7 @@ export function matchType<U>(
         typeNotSupported,
         enumType,
         unionType,
-        transformedStringType || typeNotSupported
+        transformedStringType ?? typeNotSupported
     );
 }
 

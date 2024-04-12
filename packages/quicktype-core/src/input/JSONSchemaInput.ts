@@ -85,7 +85,7 @@ function withRef<T extends object>(refOrLoc: Ref | (() => Ref) | Location, props
 function withRef<T extends object>(refOrLoc: Ref | (() => Ref) | Location, props?: T): any {
     const ref =
         typeof refOrLoc === "function" ? refOrLoc() : refOrLoc instanceof Ref ? refOrLoc : refOrLoc.canonicalRef;
-    return Object.assign({ ref }, props === undefined ? {} : props);
+    return Object.assign({ ref }, props ?? {});
 }
 
 function checkJSONSchemaObject(x: any, refOrLoc: Ref | (() => Ref)): StringMap {
@@ -378,7 +378,7 @@ class Location {
         public readonly haveID: boolean = false
     ) {
         this.canonicalRef = canonicalRef;
-        this.virtualRef = virtualRef !== undefined ? virtualRef : canonicalRef;
+        this.virtualRef = virtualRef ?? canonicalRef;
     }
 
     public updateWithID(id: any) {
@@ -1143,7 +1143,7 @@ async function refsInSchemaForURI(
             name = schema.title;
         } else {
             const maybeName = nameFromURI(uri);
-            name = maybeName !== undefined ? maybeName : defaultName;
+            name = maybeName ?? defaultName;
         }
 
         return [name, ref];

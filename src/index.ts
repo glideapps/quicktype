@@ -12,7 +12,8 @@ import {
     type SerializedRenderResult,
     type TargetLanguage,
     type OptionDefinition,
-    type JSONSourceData} from "quicktype-core";
+    type JSONSourceData
+} from "quicktype-core";
 import {
     getTargetLanguage,
     quicktypeMultiFile,
@@ -38,7 +39,7 @@ import {
     getStream,
     readableFromFileOrURL,
     readFromFileOrURL,
-    FetchingJSONSchemaStore,
+    FetchingJSONSchemaStore
 } from "quicktype-core";
 import { schemaForTypeScriptSources } from "quicktype-typescript-input";
 import { GraphQLInput } from "quicktype-graphql-input";
@@ -89,22 +90,22 @@ export interface CLIOptions {
 
 const defaultDefaultTargetLanguageName = "go";
 
-async function sourceFromFileOrUrlArray (
+async function sourceFromFileOrUrlArray(
     name: string,
     filesOrUrls: string[],
-    httpHeaders?: string[],
+    httpHeaders?: string[]
 ): Promise<JSONTypeSource> {
     const samples = await Promise.all(filesOrUrls.map(async file => await readableFromFileOrURL(file, httpHeaders)));
     return { kind: "json", name, samples };
 }
 
-function typeNameFromFilename (filename: string): string {
+function typeNameFromFilename(filename: string): string {
     const name = path.basename(filename);
     return name.substring(0, name.lastIndexOf("."));
 }
 
-async function samplesFromDirectory (dataDir: string, httpHeaders?: string[]): Promise<TypeSource[]> {
-    async function readFilesOrURLsInDirectory (d: string): Promise<TypeSource[]> {
+async function samplesFromDirectory(dataDir: string, httpHeaders?: string[]): Promise<TypeSource[]> {
+    async function readFilesOrURLsInDirectory(d: string): Promise<TypeSource[]> {
         const files = fs
             .readdirSync(d)
             .map(x => path.join(d, x))
@@ -129,17 +130,17 @@ async function samplesFromDirectory (dataDir: string, httpHeaders?: string[]): P
                 sourcesInDir.push({
                     kind: "json",
                     name,
-                    samples: [await readableFromFileOrURL(fileOrUrl, httpHeaders)],
+                    samples: [await readableFromFileOrURL(fileOrUrl, httpHeaders)]
                 });
             } else if (file.endsWith(".schema")) {
                 sourcesInDir.push({
                     kind: "schema",
                     name,
-                    uris: [fileOrUrl],
+                    uris: [fileOrUrl]
                 });
             } else if (file.endsWith(".gqlschema")) {
                 messageAssert(graphQLSchema === undefined, "DriverMoreThanOneGraphQLSchemaInDir", {
-                    dir: dataDir,
+                    dir: dataDir
                 });
                 graphQLSchema = await readableFromFileOrURL(fileOrUrl, httpHeaders);
                 graphQLSchemaFileName = fileOrUrl;
@@ -148,7 +149,7 @@ async function samplesFromDirectory (dataDir: string, httpHeaders?: string[]): P
                     kind: "graphql",
                     name,
                     schema: undefined,
-                    query: await getStream(await readableFromFileOrURL(fileOrUrl, httpHeaders)),
+                    query: await getStream(await readableFromFileOrURL(fileOrUrl, httpHeaders))
                 });
             }
         }
@@ -207,7 +208,7 @@ async function samplesFromDirectory (dataDir: string, httpHeaders?: string[]): P
             sources.push({
                 kind: "json",
                 name: path.basename(dir),
-                samples: jsonSamples,
+                samples: jsonSamples
             });
         }
 
@@ -218,7 +219,7 @@ async function samplesFromDirectory (dataDir: string, httpHeaders?: string[]): P
     return sources;
 }
 
-function inferLang (options: Partial<CLIOptions>, defaultLanguage: string): string {
+function inferLang(options: Partial<CLIOptions>, defaultLanguage: string): string {
     // Output file extension determines the language if language is undefined
     if (options.out !== undefined) {
         let extension = path.extname(options.out);
@@ -232,7 +233,7 @@ function inferLang (options: Partial<CLIOptions>, defaultLanguage: string): stri
     return defaultLanguage;
 }
 
-function inferTopLevel (options: Partial<CLIOptions>): string {
+function inferTopLevel(options: Partial<CLIOptions>): string {
     // Output file name determines the top-level if undefined
     if (options.out !== undefined) {
         let extension = path.extname(options.out);
@@ -251,7 +252,7 @@ function inferTopLevel (options: Partial<CLIOptions>): string {
     return "TopLevel";
 }
 
-function inferCLIOptions (opts: Partial<CLIOptions>, targetLanguage: TargetLanguage | undefined): CLIOptions {
+function inferCLIOptions(opts: Partial<CLIOptions>, targetLanguage: TargetLanguage | undefined): CLIOptions {
     let srcLang = opts.srcLang;
     if (opts.graphqlSchema !== undefined || opts.graphqlIntrospect !== undefined) {
         messageAssert(srcLang === undefined || srcLang === "graphql", "DriverSourceLangMustBeGraphQL", {});
@@ -267,7 +268,7 @@ function inferCLIOptions (opts: Partial<CLIOptions>, targetLanguage: TargetLangu
     if (targetLanguage !== undefined) {
         language = targetLanguage;
     } else {
-        const languageName = opts.lang !== undefined ? opts.lang : inferLang(opts, defaultDefaultTargetLanguageName);
+        const languageName = opts.lang ?? inferLang(opts, defaultDefaultTargetLanguageName);
         const maybeLanguage = languageNamed(languageName);
         if (maybeLanguage === undefined) {
             return messageError("DriverUnknownOutputLanguage", { lang: languageName });
@@ -277,27 +278,27 @@ function inferCLIOptions (opts: Partial<CLIOptions>, targetLanguage: TargetLangu
     }
 
     const options: CLIOptions = {
-        src: opts.src || [],
+        src: opts.src ?? [],
         srcUrls: opts.srcUrls,
         srcLang: srcLang,
         lang: language.displayName,
-        topLevel: opts.topLevel || inferTopLevel(opts),
+        topLevel: opts.topLevel ?? inferTopLevel(opts),
         noRender: !!opts.noRender,
         alphabetizeProperties: !!opts.alphabetizeProperties,
         allPropertiesOptional: !!opts.allPropertiesOptional,
-        rendererOptions: opts.rendererOptions || {},
-        help: opts.help || false,
-        quiet: opts.quiet || false,
-        version: opts.version || false,
+        rendererOptions: opts.rendererOptions ?? {},
+        help: opts.help ?? false,
+        quiet: opts.quiet ?? false,
+        version: opts.version ?? false,
         out: opts.out,
         buildMarkovChain: opts.buildMarkovChain,
-        additionalSchema: opts.additionalSchema || [],
+        additionalSchema: opts.additionalSchema ?? [],
         graphqlSchema: opts.graphqlSchema,
         graphqlIntrospect: opts.graphqlIntrospect,
         httpMethod: opts.httpMethod,
         httpHeader: opts.httpHeader,
         debug: opts.debug,
-        telemetry: opts.telemetry,
+        telemetry: opts.telemetry
     };
     for (const flagName of inferenceFlagNames) {
         const cliName = negatedInferenceFlagName(flagName);
@@ -307,12 +308,12 @@ function inferCLIOptions (opts: Partial<CLIOptions>, targetLanguage: TargetLangu
     return options;
 }
 
-function makeLangTypeLabel (targetLanguages: TargetLanguage[]): string {
+function makeLangTypeLabel(targetLanguages: TargetLanguage[]): string {
     assert(targetLanguages.length > 0, "Must have at least one target language");
     return targetLanguages.map(r => _.minBy(r.names, s => s.length)).join("|");
 }
 
-function negatedInferenceFlagName (name: string): string {
+function negatedInferenceFlagName(name: string): string {
     const prefix = "infer";
     if (name.startsWith(prefix)) {
         name = name.slice(prefix.length);
@@ -321,41 +322,41 @@ function negatedInferenceFlagName (name: string): string {
     return "no" + capitalize(name);
 }
 
-function dashedFromCamelCase (name: string): string {
+function dashedFromCamelCase(name: string): string {
     return splitIntoWords(name)
         .map(w => w.word.toLowerCase())
         .join("-");
 }
 
-function makeOptionDefinitions (targetLanguages: TargetLanguage[]): OptionDefinition[] {
+function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinition[] {
     const beforeLang: OptionDefinition[] = [
         {
             name: "out",
             alias: "o",
             type: String,
             typeLabel: "FILE",
-            description: "The output file. Determines --lang and --top-level.",
+            description: "The output file. Determines --lang and --top-level."
         },
         {
             name: "top-level",
             alias: "t",
             type: String,
             typeLabel: "NAME",
-            description: "The name for the top level type.",
-        },
+            description: "The name for the top level type."
+        }
     ];
     const lang: OptionDefinition[] =
         targetLanguages.length < 2
             ? []
             : [
-                {
-                    name: "lang",
-                    alias: "l",
-                    type: String,
-                    typeLabel: "LANG",
-                    description: "The target language.",
-                },
-            ];
+                  {
+                      name: "lang",
+                      alias: "l",
+                      type: String,
+                      typeLabel: "LANG",
+                      description: "The target language."
+                  }
+              ];
     const afterLang: OptionDefinition[] = [
         {
             name: "src-lang",
@@ -363,7 +364,7 @@ function makeOptionDefinitions (targetLanguages: TargetLanguage[]): OptionDefini
             type: String,
             defaultValue: undefined,
             typeLabel: "SRC_LANG",
-            description: "The source language (default is json).",
+            description: "The source language (default is json)."
         },
         {
             name: "src",
@@ -371,49 +372,49 @@ function makeOptionDefinitions (targetLanguages: TargetLanguage[]): OptionDefini
             multiple: true,
             defaultOption: true,
             typeLabel: "FILE|URL|DIRECTORY",
-            description: "The file, url, or data directory to type.",
+            description: "The file, url, or data directory to type."
         },
         {
             name: "src-urls",
             type: String,
             typeLabel: "FILE",
-            description: "Tracery grammar describing URLs to crawl.",
-        },
+            description: "Tracery grammar describing URLs to crawl."
+        }
     ];
     const inference: OptionDefinition[] = Array.from(
         mapMap(mapFromObject(inferenceFlags), (flag, name) => {
             return {
                 name: dashedFromCamelCase(negatedInferenceFlagName(name)),
                 type: Boolean,
-                description: flag.negationDescription + ".",
+                description: flag.negationDescription + "."
             };
-        }).values(),
+        }).values()
     );
     const afterInference: OptionDefinition[] = [
         {
             name: "graphql-schema",
             type: String,
             typeLabel: "FILE",
-            description: "GraphQL introspection file.",
+            description: "GraphQL introspection file."
         },
         {
             name: "graphql-introspect",
             type: String,
             typeLabel: "URL",
-            description: "Introspect GraphQL schema from a server.",
+            description: "Introspect GraphQL schema from a server."
         },
         {
             name: "http-method",
             type: String,
             typeLabel: "METHOD",
-            description: "HTTP method to use for the GraphQL introspection query.",
+            description: "HTTP method to use for the GraphQL introspection query."
         },
         {
             name: "http-header",
             type: String,
             multiple: true,
             typeLabel: "HEADER",
-            description: "Header(s) to attach to all HTTP requests, including the GraphQL introspection query.",
+            description: "Header(s) to attach to all HTTP requests, including the GraphQL introspection query."
         },
         {
             name: "additional-schema",
@@ -421,66 +422,66 @@ function makeOptionDefinitions (targetLanguages: TargetLanguage[]): OptionDefini
             type: String,
             multiple: true,
             typeLabel: "FILE",
-            description: "Register the $id's of additional JSON Schema files.",
+            description: "Register the $id's of additional JSON Schema files."
         },
         {
             name: "no-render",
             type: Boolean,
-            description: "Don't render output.",
+            description: "Don't render output."
         },
         {
             name: "alphabetize-properties",
             type: Boolean,
-            description: "Alphabetize order of class properties.",
+            description: "Alphabetize order of class properties."
         },
         {
             name: "all-properties-optional",
             type: Boolean,
-            description: "Make all class properties optional.",
+            description: "Make all class properties optional."
         },
         {
             name: "build-markov-chain",
             type: String,
             typeLabel: "FILE",
-            description: "Markov chain corpus filename.",
+            description: "Markov chain corpus filename."
         },
         {
             name: "quiet",
             type: Boolean,
-            description: "Don't show issues in the generated code.",
+            description: "Don't show issues in the generated code."
         },
         {
             name: "debug",
             type: String,
             typeLabel: "OPTIONS or all",
             description:
-                "Comma separated debug options: print-graph, print-reconstitution, print-gather-names, print-transformations, print-schema-resolving, print-times, provenance",
+                "Comma separated debug options: print-graph, print-reconstitution, print-gather-names, print-transformations, print-schema-resolving, print-times, provenance"
         },
         {
             name: "telemetry",
             type: String,
             typeLabel: "enable|disable",
-            description: "Enable anonymous telemetry to help improve quicktype",
+            description: "Enable anonymous telemetry to help improve quicktype"
         },
         {
             name: "help",
             alias: "h",
             type: Boolean,
-            description: "Get some help.",
+            description: "Get some help."
         },
         {
             name: "version",
             alias: "v",
             type: Boolean,
-            description: "Display the version of quicktype",
-        },
+            description: "Display the version of quicktype"
+        }
     ];
     return beforeLang.concat(lang, afterLang, inference, afterInference);
 }
 
 interface ColumnDefinition {
     name: string;
-    padding?: { left: string, right: string, };
+    padding?: { left: string; right: string };
     width?: number;
 }
 
@@ -500,16 +501,16 @@ const tableOptionsForOptions: TableOptions = {
     columns: [
         {
             name: "option",
-            width: 60,
+            width: 60
         },
         {
             name: "description",
-            width: 60,
-        },
-    ],
+            width: 60
+        }
+    ]
 };
 
-function makeSectionsBeforeRenderers (targetLanguages: TargetLanguage[]): UsageSection[] {
+function makeSectionsBeforeRenderers(targetLanguages: TargetLanguage[]): UsageSection[] {
     const langDisplayNames = targetLanguages.map(r => r.displayName).join(", ");
 
     return [
@@ -517,24 +518,24 @@ function makeSectionsBeforeRenderers (targetLanguages: TargetLanguage[]): UsageS
             header: "Synopsis",
             content: [
                 `$ quicktype [${chalk.bold("--lang")} LANG] [${chalk.bold("--src-lang")} SRC_LANG] [${chalk.bold(
-                    "--out",
+                    "--out"
                 )} FILE] FILE|URL ...`,
                 "",
                 `  LANG ... ${makeLangTypeLabel(targetLanguages)}`,
                 "",
-                "SRC_LANG ... json|schema|graphql|postman|typescript",
-            ],
+                "SRC_LANG ... json|schema|graphql|postman|typescript"
+            ]
         },
         {
             header: "Description",
-            content: `Given JSON sample data, quicktype outputs code for working with that data in ${langDisplayNames}.`,
+            content: `Given JSON sample data, quicktype outputs code for working with that data in ${langDisplayNames}.`
         },
         {
             header: "Options",
             optionList: makeOptionDefinitions(targetLanguages),
             hide: ["no-render", "build-markov-chain"],
-            tableOptions: tableOptionsForOptions,
-        },
+            tableOptions: tableOptionsForOptions
+        }
     ];
 }
 
@@ -551,21 +552,21 @@ const sectionsAfterRenderers: UsageSection[] = [
   + Bar
     - bar-sample-1.json
     - bar-sample-2.json
-  - Baz.url`,
+  - Baz.url`
             ),
             "$ quicktype -l go samples",
             "",
             chalk.dim("Generate JSON Schema, then TypeScript"),
             "$ quicktype -o schema.json https://blockchain.info/latestblock",
-            "$ quicktype -o bitcoin.ts --src-lang schema schema.json",
-        ],
+            "$ quicktype -o bitcoin.ts --src-lang schema schema.json"
+        ]
     },
     {
-        content: `Learn more at ${chalk.bold("quicktype.io")}`,
-    },
+        content: `Learn more at ${chalk.bold("quicktype.io")}`
+    }
 ];
 
-export function parseCLIOptions (argv: string[], targetLanguage?: TargetLanguage): CLIOptions {
+export function parseCLIOptions(argv: string[], targetLanguage?: TargetLanguage): CLIOptions {
     if (argv.length === 0) {
         return inferCLIOptions({ help: true }, targetLanguage);
     }
@@ -592,8 +593,8 @@ export function parseCLIOptions (argv: string[], targetLanguage?: TargetLanguage
 // Parse the options in argv and split them into global options and renderer options,
 // according to each option definition's `renderer` field.  If `partial` is false this
 // will throw if it encounters an unknown option.
-function parseOptions (definitions: OptionDefinition[], argv: string[], partial: boolean): Partial<CLIOptions> {
-    let opts: { [key: string]: any, };
+function parseOptions(definitions: OptionDefinition[], argv: string[], partial: boolean): Partial<CLIOptions> {
+    let opts: { [key: string]: any };
     try {
         opts = commandLineArgs(definitions, { argv, partial });
     } catch (e) {
@@ -604,12 +605,12 @@ function parseOptions (definitions: OptionDefinition[], argv: string[], partial:
     for (const k of Object.keys(opts)) {
         if (opts[k] === null) {
             return messageError("DriverCLIOptionParsingFailed", {
-                message: `Missing value for command line option "${k}"`,
+                message: `Missing value for command line option "${k}"`
             });
         }
     }
 
-    const options: { [key: string]: any, rendererOptions: RendererOptions, } = { rendererOptions: {} };
+    const options: { [key: string]: any; rendererOptions: RendererOptions } = { rendererOptions: {} };
     for (const o of definitions) {
         if (!hasOwnProperty(opts, o.name)) continue;
         const v = opts[o.name] as string;
@@ -623,7 +624,7 @@ function parseOptions (definitions: OptionDefinition[], argv: string[], partial:
     return options;
 }
 
-function usage (targetLanguages: TargetLanguage[]) {
+function usage(targetLanguages: TargetLanguage[]) {
     const rendererSections: UsageSection[] = [];
 
     for (const language of targetLanguages) {
@@ -633,7 +634,7 @@ function usage (targetLanguages: TargetLanguage[]) {
         rendererSections.push({
             header: `Options for ${language.displayName}`,
             optionList: definitions,
-            tableOptions: tableOptionsForOptions,
+            tableOptions: tableOptionsForOptions
         });
     }
 
@@ -643,12 +644,12 @@ function usage (targetLanguages: TargetLanguage[]) {
 }
 
 // Returns an array of [name, sourceURIs] pairs.
-async function getSourceURIs (options: CLIOptions): Promise<Array<[string, string[]]>> {
+async function getSourceURIs(options: CLIOptions): Promise<Array<[string, string[]]>> {
     if (options.srcUrls !== undefined) {
         const json = parseJSON(
             await readFromFileOrURL(options.srcUrls, options.httpHeader),
             "URL grammar",
-            options.srcUrls,
+            options.srcUrls
         );
         const jsonMap = urlsFromURLGrammar(json);
         const topLevels = Object.getOwnPropertyNames(jsonMap);
@@ -660,7 +661,7 @@ async function getSourceURIs (options: CLIOptions): Promise<Array<[string, strin
     }
 }
 
-async function typeSourcesForURIs (name: string, uris: string[], options: CLIOptions): Promise<TypeSource[]> {
+async function typeSourcesForURIs(name: string, uris: string[], options: CLIOptions): Promise<TypeSource[]> {
     switch (options.srcLang) {
         case "json":
             return [await sourceFromFileOrUrlArray(name, uris, options.httpHeader)];
@@ -671,10 +672,10 @@ async function typeSourcesForURIs (name: string, uris: string[], options: CLIOpt
     }
 }
 
-async function getSources (options: CLIOptions): Promise<TypeSource[]> {
+async function getSources(options: CLIOptions): Promise<TypeSource[]> {
     const sourceURIs = await getSourceURIs(options);
     const sourceArrays = await Promise.all(
-        sourceURIs.map(async ([name, uris]) => await typeSourcesForURIs(name, uris, options)),
+        sourceURIs.map(async ([name, uris]) => await typeSourcesForURIs(name, uris, options))
     );
     let sources: TypeSource[] = ([] as TypeSource[]).concat(...sourceArrays);
 
@@ -688,20 +689,20 @@ async function getSources (options: CLIOptions): Promise<TypeSource[]> {
     // Every src that's not a directory is assumed to be a file or URL
     const filesOrUrls = options.src.filter(x => !_.includes(directories, x));
     if (!_.isEmpty(filesOrUrls)) {
-        sources.push(...await typeSourcesForURIs(options.topLevel, filesOrUrls, options));
+        sources.push(...(await typeSourcesForURIs(options.topLevel, filesOrUrls, options)));
     }
 
     return sources;
 }
 
-function makeTypeScriptSource (fileNames: string[]): SchemaTypeSource {
+function makeTypeScriptSource(fileNames: string[]): SchemaTypeSource {
     return Object.assign({ kind: "schema" }, schemaForTypeScriptSources(fileNames)) as SchemaTypeSource;
 }
 
-export function jsonInputForTargetLanguage (
+export function jsonInputForTargetLanguage(
     targetLanguage: string | TargetLanguage,
     languages?: TargetLanguage[],
-    handleJSONRefs = false,
+    handleJSONRefs = false
 ): JSONInput<Readable> {
     if (typeof targetLanguage === "string") {
         targetLanguage = defined(languageNamed(targetLanguage, languages));
@@ -711,12 +712,12 @@ export function jsonInputForTargetLanguage (
     return new JSONInput(compressedJSON);
 }
 
-async function makeInputData (
+async function makeInputData(
     sources: TypeSource[],
     targetLanguage: TargetLanguage,
     additionalSchemaAddresses: readonly string[],
     handleJSONRefs: boolean,
-    httpHeaders?: string[],
+    httpHeaders?: string[]
 ): Promise<InputData> {
     const inputData = new InputData();
 
@@ -727,14 +728,14 @@ async function makeInputData (
                 break;
             case "json":
                 await inputData.addSource("json", source, () =>
-                    jsonInputForTargetLanguage(targetLanguage, undefined, handleJSONRefs),
+                    jsonInputForTargetLanguage(targetLanguage, undefined, handleJSONRefs)
                 );
                 break;
             case "schema":
                 await inputData.addSource(
                     "schema",
                     source,
-                    () => new JSONSchemaInput(new FetchingJSONSchemaStore(httpHeaders), [], additionalSchemaAddresses),
+                    () => new JSONSchemaInput(new FetchingJSONSchemaStore(httpHeaders), [], additionalSchemaAddresses)
                 );
                 break;
             default:
@@ -745,16 +746,16 @@ async function makeInputData (
     return inputData;
 }
 
-function stringSourceDataToStreamSourceData (src: JSONSourceData<string>): JSONSourceData<Readable> {
+function stringSourceDataToStreamSourceData(src: JSONSourceData<string>): JSONSourceData<Readable> {
     return { name: src.name, description: src.description, samples: src.samples.map(stringToStream) };
 }
 
-export async function makeQuicktypeOptions (
+export async function makeQuicktypeOptions(
     options: CLIOptions,
-    targetLanguages?: TargetLanguage[],
+    targetLanguages?: TargetLanguage[]
 ): Promise<Partial<Options> | undefined> {
     if (options.help) {
-        usage(targetLanguages === undefined ? defaultTargetLanguages : targetLanguages);
+        usage(targetLanguages ?? defaultTargetLanguages);
         return undefined;
     }
 
@@ -783,7 +784,7 @@ export async function makeQuicktypeOptions (
                 schemaString = await introspectServer(
                     options.graphqlIntrospect,
                     withDefault(options.httpMethod, "POST"),
-                    withDefault<string[]>(options.httpHeader, []),
+                    withDefault<string[]>(options.httpHeader, [])
                 );
                 if (options.graphqlSchema !== undefined) {
                     fs.writeFileSync(options.graphqlSchema, schemaString);
@@ -836,11 +837,11 @@ export async function makeQuicktypeOptions (
                 const collectionJSON = fs.readFileSync(collectionFile, "utf8");
                 const { sources: postmanSources, description } = sourcesFromPostmanCollection(
                     collectionJSON,
-                    collectionFile,
+                    collectionFile
                 );
                 for (const src of postmanSources) {
                     sources.push(
-                        Object.assign({ kind: "json" }, stringSourceDataToStreamSourceData(src)) as JSONTypeSource,
+                        Object.assign({ kind: "json" }, stringSourceDataToStreamSourceData(src)) as JSONTypeSource
                     );
                 }
 
@@ -910,7 +911,7 @@ export async function makeQuicktypeOptions (
         debugPrintGatherNames,
         debugPrintTransformations,
         debugPrintSchemaResolving,
-        debugPrintTimes,
+        debugPrintTimes
     };
     for (const flagName of inferenceFlagNames) {
         const cliName = negatedInferenceFlagName(flagName);
@@ -927,15 +928,15 @@ export async function makeQuicktypeOptions (
         lang,
         options.additionalSchema,
         quicktypeOptions.ignoreJsonRefs !== true,
-        options.httpHeader,
+        options.httpHeader
     );
 
     return quicktypeOptions;
 }
 
-export function writeOutput (
+export function writeOutput(
     cliOptions: CLIOptions,
-    resultsByFilename: ReadonlyMap<string, SerializedRenderResult>,
+    resultsByFilename: ReadonlyMap<string, SerializedRenderResult>
 ): void {
     let onFirst = true;
     for (const [filename, { lines, annotations }] of resultsByFilename) {
@@ -972,7 +973,7 @@ export function writeOutput (
     }
 }
 
-export async function main (args: string[] | Partial<CLIOptions>) {
+export async function main(args: string[] | Partial<CLIOptions>) {
     let cliOptions: CLIOptions;
     if (Array.isArray(args)) {
         cliOptions = parseCLIOptions(args);

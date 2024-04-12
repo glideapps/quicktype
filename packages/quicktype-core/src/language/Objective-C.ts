@@ -225,7 +225,7 @@ function splitExtension(filename: string): [string, string] {
     const i = filename.lastIndexOf(".");
     const extension = i !== -1 ? filename.split(".").pop() : "m";
     filename = i !== -1 ? filename.slice(0, i) : filename;
-    return [filename, extension === undefined ? "m" : extension];
+    return [filename, extension ?? "m"];
 }
 
 export class ObjectiveCRenderer extends ConvenienceRenderer {

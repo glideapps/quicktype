@@ -743,7 +743,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         sortOrder: ((n: Name, t: Type) => string) | null,
         f: (name: Name, t: Type, position: ForEachPosition) => void
     ): void {
-        const iterateMembers = members === null ? u.members : members;
+        const iterateMembers = members ?? u.members;
         if (sortOrder === null) {
             sortOrder = n => defined(this.names.get(n));
         }
