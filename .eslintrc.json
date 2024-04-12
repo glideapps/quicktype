@@ -9,7 +9,8 @@
                 "eslint:recommended",
                 "canonical/typescript",
                 "canonical/typescript-type-checking",
-                "plugin:import/recommended",
+                "plugin:import/errors",
+                "plugin:import/warnings",
                 "plugin:import/typescript"
             ],
             "plugins": ["canonical"],
@@ -28,6 +29,41 @@
                 "no-extra-parens": "off",
                 "canonical/prefer-inline-type-import": "error",
                 "typescript-sort-keys/string-enum": "off",
+
+                "sort-imports": [
+                    "error",
+                    {
+                        "ignoreDeclarationSort": true
+                    }
+                ],
+                "no-duplicate-imports": "error",
+                "import/first": "error",
+                "import/order": [
+                    "error",
+                    {
+                        "newlines-between": "always",
+                        "groups": ["builtin", "external", "internal", "parent", "sibling", "index", "object", "type"],
+                        "pathGroups": [
+                            {
+                                "pattern": "@/**",
+                                "group": "internal",
+                                "position": "before"
+                            }
+                        ],
+                        "alphabetize": {
+                            "order": "asc" /* sort in ascending order. Options: ['ignore', 'asc', 'desc'] */,
+                            "caseInsensitive": true /* ignore case. Options: [true, false] */
+                        }
+                    }
+                ],
+
+                "import/no-absolute-path": "error",
+                "import/no-cycle": "error",
+                "import/no-duplicates": "error",
+                "import/no-extraneous-dependencies": "error",
+                "import/no-named-as-default": "off",
+                "import/no-useless-path-segments": "error",
+
                 "@typescript-eslint/class-literal-property-style": "off",
                 "@typescript-eslint/comma-dangle": "off",
                 "@typescript-eslint/consistent-type-definitions": ["error", "interface"],
