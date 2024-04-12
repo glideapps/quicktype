@@ -5,14 +5,14 @@ import { getStream } from "./get-stream";
 import { defined, exceptionToString } from "@glideapps/ts-necessities";
 import { messageError, panic } from "../../index";
 
-const isURL = require("is-url");
+import isURL from "is-url";
 import fetch from "cross-fetch";
 
 interface HttpHeaders {
     [key: string]: string;
 }
 
-function parseHeaders (httpHeaders?: string[]): HttpHeaders {
+function parseHeaders(httpHeaders?: string[]): HttpHeaders {
     if (!Array.isArray(httpHeaders)) {
         return {};
     }
@@ -34,11 +34,11 @@ function parseHeaders (httpHeaders?: string[]): HttpHeaders {
     }, {} as HttpHeaders);
 }
 
-export async function readableFromFileOrURL (fileOrURL: string, httpHeaders?: string[]): Promise<Readable> {
+export async function readableFromFileOrURL(fileOrURL: string, httpHeaders?: string[]): Promise<Readable> {
     try {
         if (isURL(fileOrURL)) {
             const response = await fetch(fileOrURL, {
-                headers: parseHeaders(httpHeaders),
+                headers: parseHeaders(httpHeaders)
             });
             return defined(response.body) as unknown as Readable;
         } else if (isNode) {
@@ -60,7 +60,7 @@ export async function readableFromFileOrURL (fileOrURL: string, httpHeaders?: st
     return messageError("DriverInputFileDoesNotExist", { filename: fileOrURL });
 }
 
-export async function readFromFileOrURL (fileOrURL: string, httpHeaders?: string[]): Promise<string> {
+export async function readFromFileOrURL(fileOrURL: string, httpHeaders?: string[]): Promise<string> {
     const readable = await readableFromFileOrURL(fileOrURL, httpHeaders);
     try {
         return await getStream(readable);

@@ -32,7 +32,8 @@ import { transformationForType, followTargetType } from "./Transformers";
 import { type TargetLanguage } from "./TargetLanguage";
 import { type Comment, isStringComment, type CommentOptions } from "./support/Comments";
 
-const wordWrap: (s: string) => string = require("wordwrap")(90);
+import _wordwrap from "wordwrap";
+const wordWrap: (s: string) => string = _wordwrap(90);
 
 export const topLevelNameOrder = 1;
 

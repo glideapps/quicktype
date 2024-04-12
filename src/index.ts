@@ -49,14 +49,16 @@ import { introspectServer } from "./GraphQLIntrospection";
 import { type JSONTypeSource, type TypeSource, type GraphQLTypeSource, type SchemaTypeSource } from "./TypeSource";
 import { CompressedJSONFromStream } from "./CompressedJSONFromStream";
 
-const stringToStream = require("string-to-stream");
+import stringToStream from "string-to-stream";
 
 import commandLineArgs from "command-line-args";
 import getUsage from "command-line-usage";
 import chalk from "chalk";
-const wordWrap: (s: string) => string = require("wordwrap")(90);
 
-const packageJSON = require("../package.json");
+import _wordwrap from "wordwrap";
+const wordWrap: (s: string) => string = _wordwrap(90);
+
+import packageJSON from "../package.json";
 
 export interface CLIOptions {
     // We use this to access the inference flags
