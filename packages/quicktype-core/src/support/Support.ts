@@ -2,6 +2,7 @@ import { Base64 } from "js-base64";
 import * as pako from "pako";
 import * as YAML from "yaml";
 
+import { type JSONSchema } from "../input/JSONSchemaStore";
 import { messageError } from "../Messages";
 
 export interface StringMap {
@@ -123,7 +124,7 @@ export function inflateBase64(encoded: string): string {
     return pako.inflate(bytes, { to: "string" });
 }
 
-export function parseJSON(text: string, description: string, address = "<unknown>"): unknown {
+export function parseJSON(text: string, description: string, address = "<unknown>"): JSONSchema | undefined {
     try {
         // https://gist.github.com/pbakondy/f5045eff725193dad9c7
         if (text.charCodeAt(0) === 0xfeff) {

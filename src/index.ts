@@ -752,7 +752,11 @@ async function makeInputData(
 }
 
 function stringSourceDataToStreamSourceData(src: JSONSourceData<string>): JSONSourceData<Readable> {
-    return { name: src.name, description: src.description, samples: src.samples.map(stringToStream) };
+    return {
+        name: src.name,
+        description: src.description,
+        samples: src.samples.map(sample => stringToStream(sample) as Readable)
+    };
 }
 
 export async function makeQuicktypeOptions(

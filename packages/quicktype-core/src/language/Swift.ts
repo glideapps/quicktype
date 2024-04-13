@@ -730,7 +730,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 this.forEachClassProperty(c, "none", (name, jsonName, p) => {
                     const description = this.descriptionForClassProperty(c, jsonName);
                     if (
-                        !p.equals(lastProperty) ||
+                        (lastProperty && !p.equals(lastProperty)) ||
                         lastNames.length >= MAX_SAMELINE_PROPERTIES ||
                         description !== undefined
                     ) {

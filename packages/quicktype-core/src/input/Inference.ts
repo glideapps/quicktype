@@ -20,8 +20,9 @@ import { type CompressedJSON, Tag, type Value, valueTag } from "./CompressedJSON
 // This should be the recursive type
 //   Value[] | NestedValueArray[]
 // but TypeScript doesn't support that.
-// FIXME
-export type NestedValueArray = Value[];
+// FIXME: reactor this
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type NestedValueArray = any;
 
 function forEachArrayInNestedValueArray(va: NestedValueArray, f: (va: Value[]) => void): void {
     if (va.length === 0) {

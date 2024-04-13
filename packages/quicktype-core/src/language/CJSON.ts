@@ -498,7 +498,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
      * @param fieldType: the variable type
      * @param fieldName: name of the variable
      */
-    protected emitTypedefAlias(fieldType: Type, fieldName: Name) {
+    protected emitTypedefAlias(fieldType: Type, fieldName: Name): void {
         if (this._options.addTypedefAlias) {
             this.emitLine("typedef ", this.quicktypeTypeToCJSON(fieldType, false).cType, " ", fieldName, ";");
             this.ensureBlankLine();
@@ -922,6 +922,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                 );
                                             } else {
                                                 this.emitLine(
+                                                    // @ts-expect-error awaiting refactor
                                                     cJSON.items?.cType,
                                                     " * tmp",
                                                     level > 0 ? level.toString() : "",
@@ -936,6 +937,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                             "* tmp",
                                                             level > 0 ? level.toString() : "",
                                                             " = ",
+                                                            // @ts-expect-error awaiting refactor
                                                             cJSON.items?.getValue,
                                                             "(e",
                                                             child_level.toString(),
@@ -947,6 +949,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                             ", tmp",
                                                             level > 0 ? level.toString() : "",
                                                             ", sizeof(",
+                                                            // @ts-expect-error awaiting refactor
                                                             cJSON.items?.cType,
                                                             " *));"
                                                         );
@@ -1057,6 +1060,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                 );
                                             } else {
                                                 this.emitLine(
+                                                    // @ts-expect-error awaiting refactor
                                                     cJSON.items?.cType,
                                                     " * tmp",
                                                     level > 0 ? level.toString() : "",
@@ -1071,6 +1075,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                             "* tmp",
                                                             level > 0 ? level.toString() : "",
                                                             " = ",
+                                                            // @ts-expect-error awaiting refactor
                                                             cJSON.items?.getValue,
                                                             "(e",
                                                             child_level.toString(),
@@ -1084,6 +1089,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                             "->string, tmp",
                                                             level > 0 ? level.toString() : "",
                                                             ", sizeof(",
+                                                            // @ts-expect-error awaiting refactor
                                                             cJSON.items?.cType,
                                                             " *));"
                                                         );
@@ -1185,6 +1191,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                     );
                                     this.emitBlock(["if (NULL != j", child_level.toString(), ")"], () => {
                                         this.emitLine(
+                                            // @ts-expect-error awaiting refactor
                                             cJSON.items?.cType,
                                             " * x",
                                             child_level.toString(),
@@ -1229,6 +1236,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                         "cJSON_AddItemToArray(j",
                                                         child_level.toString(),
                                                         ", ",
+                                                        // @ts-expect-error awaiting refactor
                                                         cJSON.items?.createObject,
                                                         "(*x",
                                                         child_level.toString(),
@@ -1305,6 +1313,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                 ],
                                                 () => {
                                                     this.emitLine(
+                                                        // @ts-expect-error awaiting refactor
                                                         cJSON.items?.cType,
                                                         " *x",
                                                         child_level.toString(),
@@ -1367,6 +1376,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                 "[index",
                                                                 child_level.toString(),
                                                                 "], ",
+                                                                // @ts-expect-error awaiting refactor
                                                                 cJSON.items?.createObject,
                                                                 "(*x",
                                                                 child_level.toString(),
@@ -1450,6 +1460,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                 ],
                                 () => {
                                     this.emitLine(
+                                        // @ts-expect-error awaiting refactor
                                         cJSON.items?.cType,
                                         " * x",
                                         child_level.toString(),
@@ -1475,6 +1486,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                     ["if ((void *)0xDEADBEEF != x", child_level.toString(), ")"],
                                                     () => {
                                                         this.emitLine(
+                                                            // @ts-expect-error awaiting refactor
                                                             cJSON.items?.deleteType,
                                                             "(x",
                                                             child_level.toString(),
@@ -1484,6 +1496,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                 );
                                             } else {
                                                 this.emitLine(
+                                                    // @ts-expect-error awaiting refactor
                                                     cJSON.items?.deleteType,
                                                     "(x",
                                                     child_level.toString(),
@@ -1551,6 +1564,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                             ],
                                             () => {
                                                 this.emitLine(
+                                                    // @ts-expect-error awaiting refactor
                                                     cJSON.items?.cType,
                                                     " *x",
                                                     child_level.toString(),
@@ -1584,6 +1598,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                 ],
                                                                 () => {
                                                                     this.emitLine(
+                                                                        // @ts-expect-error awaiting refactor
                                                                         cJSON.items?.deleteType,
                                                                         "(x",
                                                                         child_level.toString(),
@@ -1593,6 +1608,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                             );
                                                         } else {
                                                             this.emitLine(
+                                                                // @ts-expect-error awaiting refactor
                                                                 cJSON.items?.deleteType,
                                                                 "(x",
                                                                 child_level.toString(),
@@ -1766,6 +1782,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                     ", x",
                                                     child_level2.toString(),
                                                     ", sizeof(",
+                                                    // @ts-expect-error awaiting refactor
                                                     cJSON.items?.cType,
                                                     " *));"
                                                 );
@@ -1965,6 +1982,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                     );
                                                                 } else {
                                                                     this.emitLine(
+                                                                        // @ts-expect-error awaiting refactor
                                                                         cJSON.items?.cType,
                                                                         " * tmp",
                                                                         level > 0 ? level.toString() : "",
@@ -1983,6 +2001,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                                 "* tmp",
                                                                                 level > 0 ? level.toString() : "",
                                                                                 " = ",
+                                                                                // @ts-expect-error awaiting refactor
                                                                                 cJSON.items?.getValue,
                                                                                 "(e",
                                                                                 child_level.toString(),
@@ -1994,6 +2013,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                                 ", tmp",
                                                                                 level > 0 ? level.toString() : "",
                                                                                 ", sizeof(",
+                                                                                // @ts-expect-error awaiting refactor
                                                                                 cJSON.items?.cType,
                                                                                 " *));"
                                                                             );
@@ -2139,6 +2159,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                     );
                                                                 } else {
                                                                     this.emitLine(
+                                                                        // @ts-expect-error awaiting refactor
                                                                         cJSON.items?.cType,
                                                                         " * tmp",
                                                                         level > 0 ? level.toString() : "",
@@ -2157,6 +2178,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                                 "* tmp",
                                                                                 level > 0 ? level.toString() : "",
                                                                                 " = ",
+                                                                                // @ts-expect-error awaiting refactor
                                                                                 cJSON.items?.getValue,
                                                                                 "(e",
                                                                                 child_level.toString(),
@@ -2170,6 +2192,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                                 "->string, tmp",
                                                                                 level > 0 ? level.toString() : "",
                                                                                 ", sizeof(",
+                                                                                // @ts-expect-error awaiting refactor
                                                                                 cJSON.items?.cType,
                                                                                 " *));"
                                                                             );
@@ -2478,6 +2501,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                 );
                                                 this.emitBlock(["if (NULL != j", child_level.toString(), ")"], () => {
                                                     this.emitLine(
+                                                        // @ts-expect-error awaiting refactor
                                                         cJSON.items?.cType,
                                                         " * x",
                                                         child_level.toString(),
@@ -2540,6 +2564,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                         "cJSON_AddItemToArray(j",
                                                                         child_level.toString(),
                                                                         ", ",
+                                                                        // @ts-expect-error awaiting refactor
                                                                         cJSON.items?.createObject,
                                                                         "(*x",
                                                                         child_level.toString(),
@@ -2626,6 +2651,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                 ],
                                                                 () => {
                                                                     this.emitLine(
+                                                                        // @ts-expect-error awaiting refactor
                                                                         cJSON.items?.cType,
                                                                         " *x",
                                                                         child_level.toString(),
@@ -2715,6 +2741,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                                 "[index",
                                                                                 child_level.toString(),
                                                                                 "], ",
+                                                                                // @ts-expect-error awaiting refactor
                                                                                 cJSON.items?.createObject,
                                                                                 "(*x",
                                                                                 child_level.toString(),
@@ -3015,6 +3042,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                     ["if (NULL != x", level > 0 ? level.toString() : "", "->", name, ")"],
                                     () => {
                                         this.emitLine(
+                                            // @ts-expect-error awaiting refactor
                                             cJSON.items?.cType,
                                             " * x",
                                             child_level.toString(),
@@ -3050,6 +3078,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                         ["if ((void *)0xDEADBEEF != x", child_level.toString(), ")"],
                                                         () => {
                                                             this.emitLine(
+                                                                // @ts-expect-error awaiting refactor
                                                                 cJSON.items?.deleteType,
                                                                 "(x",
                                                                 child_level.toString(),
@@ -3059,6 +3088,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                     );
                                                 } else {
                                                     this.emitLine(
+                                                        // @ts-expect-error awaiting refactor
                                                         cJSON.items?.deleteType,
                                                         "(x",
                                                         child_level.toString(),
@@ -3119,6 +3149,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                 ],
                                                 () => {
                                                     this.emitLine(
+                                                        // @ts-expect-error awaiting refactor
                                                         cJSON.items?.cType,
                                                         " *x",
                                                         child_level.toString(),
@@ -3164,6 +3195,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                         ],
                                                                         () => {
                                                                             this.emitLine(
+                                                                                // @ts-expect-error awaiting refactor
                                                                                 cJSON.items?.deleteType,
                                                                                 "(x",
                                                                                 child_level.toString(),
@@ -3173,6 +3205,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                     );
                                                                 } else {
                                                                     this.emitLine(
+                                                                        // @ts-expect-error awaiting refactor
                                                                         cJSON.items?.deleteType,
                                                                         "(x",
                                                                         child_level.toString(),
@@ -3376,6 +3409,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                         } else {
                                             this.emitLine(
                                                 "list_add_tail(x->value, ",
+																								// @ts-expect-error awaiting refactor
                                                 cJSON.items?.getValue,
                                                 "(e), sizeof(",
                                                 cJSON.items?.cType,
@@ -3430,6 +3464,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                         } else {
                                             this.emitLine(
                                                 "hashtable_add(x->value, e->string, ",
+                                                // @ts-expect-error awaiting refactor
                                                 cJSON.items?.getValue,
                                                 "(e), sizeof(",
                                                 cJSON.items?.cType,
@@ -3479,6 +3514,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                         this.emitBlock(["if (NULL != x->value)"], () => {
                             this.emitLine("j = ", cJSON.createObject, "();");
                             this.emitBlock(["if (NULL != j)"], () => {
+                                // @ts-expect-error awaiting refactor
                                 this.emitLine(cJSON.items?.cType, " * x1 = list_get_head(x->value);");
                                 this.emitBlock(["while (NULL != x1)"], () => {
                                     const add = (cJSON: TypeCJSON) => {
@@ -3507,6 +3543,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                         } else {
                                             this.emitLine(
                                                 "cJSON_AddItemToArray(j, ",
+                                                // @ts-expect-error awaiting refactor
                                                 cJSON.items?.createObject,
                                                 "(*x1));"
                                             );
@@ -3537,6 +3574,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                 this.emitBlock(["if (NULL != keys)"], () => {
                                     this.emitBlock(["for (size_t index = 0; index < count; index++)"], () => {
                                         this.emitLine(
+                                            // @ts-expect-error awaiting refactor
                                             cJSON.items?.cType,
                                             " *x2 = hashtable_lookup(x->value, keys[index]);"
                                         );
@@ -3569,6 +3607,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                 this.emitLine(
                                                     cJSON.addToObject,
                                                     "(j, keys[index], ",
+                                                    // @ts-expect-error awaiting refactor
                                                     cJSON.items?.createObject,
                                                     "(*x2));"
                                                 );
@@ -3626,13 +3665,16 @@ export class CJSONRenderer extends ConvenienceRenderer {
                 const cJSON = this.quicktypeTypeToCJSON(type, false);
                 if (cJSON.cjsonType === "cJSON_Array" && cJSON.items !== undefined) {
                     this.emitBlock(["if (NULL != x->value)"], () => {
+                        // @ts-expect-error awaiting refactor
                         this.emitLine(cJSON.items?.cType, " * x1 = list_get_head(x->value);");
                         this.emitBlock(["while (NULL != x1)"], () => {
                             if (cJSON.items?.isNullable) {
                                 this.emitBlock(["if ((void *)0xDEADBEEF != x1)"], () => {
+                                    // @ts-expect-error awaiting refactor
                                     this.emitLine(cJSON.items?.deleteType, "(x1);");
                                 });
                             } else {
+                                // @ts-expect-error awaiting refactor
                                 this.emitLine(cJSON.items?.deleteType, "(x1);");
                             }
 
@@ -3646,13 +3688,16 @@ export class CJSONRenderer extends ConvenienceRenderer {
                         this.emitLine("size_t count = hashtable_get_keys(x->value, &keys);");
                         this.emitBlock(["if (NULL != keys)"], () => {
                             this.emitBlock(["for (size_t index = 0; index < count; index++)"], () => {
+                                // @ts-expect-error awaiting refactor
                                 this.emitLine(cJSON.items?.cType, " *x2 = hashtable_lookup(x->value, keys[index]);");
                                 this.emitBlock(["if (NULL != x2)"], () => {
                                     if (cJSON.items?.isNullable) {
                                         this.emitBlock(["if ((", cJSON.items?.cType, " *)0xDEADBEEF != x2)"], () => {
+                                            // @ts-expect-error awaiting refactor
                                             this.emitLine(cJSON.items?.deleteType, "(x2);");
                                         });
                                     } else {
+                                        // @ts-expect-error awaiting refactor
                                         this.emitLine(cJSON.items?.deleteType, "(x2);");
                                     }
                                 });
