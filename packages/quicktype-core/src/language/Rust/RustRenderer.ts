@@ -1,267 +1,28 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import { mapFirst } from "collection-utils";
 
-import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { type Name, type Namer, funPrefixNamer } from "../Naming";
-import { type RenderContext } from "../Renderer";
-import { BooleanOption, EnumOption, type Option, type OptionValues, getOptionValues } from "../RendererOptions";
-import { type Sourcelike, maybeAnnotated } from "../Source";
+import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../../Annotation";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../../ConvenienceRenderer";
+import { type Name, type Namer } from "../../Naming";
+import { type RenderContext } from "../../Renderer";
+import { type OptionValues } from "../../RendererOptions";
+import { type Sourcelike, maybeAnnotated } from "../../Source";
+import { defined } from "../../support/Support";
+import { type TargetLanguage } from "../../TargetLanguage";
+import { type ClassType, type EnumType, type Type, UnionType } from "../../Type";
+import { matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
+
+import { keywords } from "./constants";
+import { Density, Visibility, type rustOptions } from "./language";
 import {
-    allLowerWordStyle,
-    combineWords,
-    escapeNonPrintableMapper,
-    firstUpperWordStyle,
-    intToHex,
-    isAscii,
-    isLetterOrUnderscore,
-    isLetterOrUnderscoreOrDigit,
-    isPrintable,
-    legalizeCharacters,
-    splitIntoWords,
-    utf32ConcatMap
-} from "../support/Strings";
-import { defined } from "../support/Support";
-import { TargetLanguage } from "../TargetLanguage";
-import { type ClassType, type EnumType, type Type, UnionType } from "../Type";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
-import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
-
-export enum Density {
-    Normal = "Normal",
-    Dense = "Dense"
-}
-
-export enum Visibility {
-    Private = "Private",
-    Crate = "Crate",
-    Public = "Public"
-}
-
-export const rustOptions = {
-    density: new EnumOption("density", "Density", [
-        ["normal", Density.Normal],
-        ["dense", Density.Dense]
-    ]),
-    visibility: new EnumOption("visibility", "Field visibility", [
-        ["private", Visibility.Private],
-        ["crate", Visibility.Crate],
-        ["public", Visibility.Public]
-    ]),
-    deriveDebug: new BooleanOption("derive-debug", "Derive Debug impl", false),
-    deriveClone: new BooleanOption("derive-clone", "Derive Clone impl", false),
-    derivePartialEq: new BooleanOption("derive-partial-eq", "Derive PartialEq impl", false),
-    skipSerializingNone: new BooleanOption("skip-serializing-none", "Skip serializing empty Option fields", false),
-    edition2018: new BooleanOption("edition-2018", "Edition 2018", true),
-    leadingComments: new BooleanOption("leading-comments", "Leading Comments", true)
-};
-
-type NameToParts = (name: string) => string[];
-type PartsToName = (parts: string[]) => string;
-interface NamingStyle {
-    fromParts: PartsToName;
-    regex: RegExp;
-    toParts: NameToParts;
-}
-
-const namingStyles: Record<string, NamingStyle> = {
-    snake_case: {
-        regex: /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/,
-        toParts: (name: string): string[] => name.split("_"),
-        fromParts: (parts: string[]): string => parts.map(p => p.toLowerCase()).join("_")
-    },
-    SCREAMING_SNAKE_CASE: {
-        regex: /^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$/,
-        toParts: (name: string): string[] => name.split("_"),
-        fromParts: (parts: string[]): string => parts.map(p => p.toUpperCase()).join("_")
-    },
-    camelCase: {
-        regex: /^[a-z]+([A-Z0-9][a-z]*)*$/,
-        toParts: (name: string): string[] => namingStyles.snake_case.toParts(name.replace(/(.)([A-Z])/g, "$1_$2")),
-        fromParts: (parts: string[]): string =>
-            parts
-                .map((p, i) =>
-                    i === 0 ? p.toLowerCase() : p.substring(0, 1).toUpperCase() + p.substring(1).toLowerCase()
-                )
-                .join("")
-    },
-    PascalCase: {
-        regex: /^[A-Z][a-z]*([A-Z0-9][a-z]*)*$/,
-        toParts: (name: string): string[] => namingStyles.snake_case.toParts(name.replace(/(.)([A-Z])/g, "$1_$2")),
-        fromParts: (parts: string[]): string =>
-            parts.map(p => p.substring(0, 1).toUpperCase() + p.substring(1).toLowerCase()).join("")
-    },
-    "kebab-case": {
-        regex: /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/,
-        toParts: (name: string): string[] => name.split("-"),
-        fromParts: (parts: string[]): string => parts.map(p => p.toLowerCase()).join("-")
-    },
-    "SCREAMING-KEBAB-CASE": {
-        regex: /^[A-Z][A-Z0-9]*(-[A-Z0-9]+)*$/,
-        toParts: (name: string): string[] => name.split("-"),
-        fromParts: (parts: string[]): string => parts.map(p => p.toUpperCase()).join("-")
-    },
-    lowercase: {
-        regex: /^[a-z][a-z0-9]*$/,
-        toParts: (name: string): string[] => [name],
-        fromParts: (parts: string[]): string => parts.map(p => p.toLowerCase()).join("")
-    },
-    UPPERCASE: {
-        regex: /^[A-Z][A-Z0-9]*$/,
-        toParts: (name: string): string[] => [name],
-        fromParts: (parts: string[]): string => parts.map(p => p.toUpperCase()).join("")
-    }
-};
-
-export class RustTargetLanguage extends TargetLanguage {
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): RustRenderer {
-        return new RustRenderer(this, renderContext, getOptionValues(rustOptions, untypedOptionValues));
-    }
-
-    public constructor() {
-        super("Rust", ["rust", "rs", "rustlang"], "rs");
-    }
-
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [
-            rustOptions.density,
-            rustOptions.visibility,
-            rustOptions.deriveDebug,
-            rustOptions.deriveClone,
-            rustOptions.derivePartialEq,
-            rustOptions.edition2018,
-            rustOptions.leadingComments,
-            rustOptions.skipSerializingNone
-        ];
-    }
-}
-
-const keywords = [
-    "Serialize",
-    "Deserialize",
-
-    // Special reserved identifiers used internally for elided lifetimes,
-    // unnamed method parameters, crate root module, error recovery etc.
-    "{{root}}",
-    "$crate",
-
-    // Keywords used in the language.
-    "as",
-    "async",
-    "box",
-    "break",
-    "const",
-    "continue",
-    "crate",
-    "else",
-    "enum",
-    "extern",
-    "false",
-    "fn",
-    "for",
-    "if",
-    "impl",
-    "in",
-    "let",
-    "loop",
-    "match",
-    "mod",
-    "move",
-    "mut",
-    "pub",
-    "ref",
-    "return",
-    "self",
-    "Self",
-    "static",
-    "struct",
-    "super",
-    "trait",
-    "true",
-    "type",
-    "unsafe",
-    "use",
-    "where",
-    "while",
-
-    // Keywords reserved for future use.
-    "abstract",
-    "alignof",
-    "become",
-    "do",
-    "final",
-    "macro",
-    "offsetof",
-    "override",
-    "priv",
-    "proc",
-    "pure",
-    "sizeof",
-    "typeof",
-    "unsized",
-    "virtual",
-    "yield",
-
-    // Weak keywords, have special meaning only in specific contexts.
-    "catch",
-    "default",
-    "dyn",
-    "'static",
-    "union",
-
-    // Conflict between `std::Option` and potentially generated Option
-    "option"
-];
-
-const isAsciiLetterOrUnderscoreOrDigit = (codePoint: number): boolean => {
-    if (!isAscii(codePoint)) {
-        return false;
-    }
-
-    return isLetterOrUnderscoreOrDigit(codePoint);
-};
-
-const isAsciiLetterOrUnderscore = (codePoint: number): boolean => {
-    if (!isAscii(codePoint)) {
-        return false;
-    }
-
-    return isLetterOrUnderscore(codePoint);
-};
-
-const legalizeName = legalizeCharacters(isAsciiLetterOrUnderscoreOrDigit);
-
-function rustStyle(original: string, isSnakeCase: boolean): string {
-    const words = splitIntoWords(original);
-
-    const wordStyle = isSnakeCase ? allLowerWordStyle : firstUpperWordStyle;
-
-    const combined = combineWords(
-        words,
-        legalizeName,
-        wordStyle,
-        wordStyle,
-        wordStyle,
-        wordStyle,
-        isSnakeCase ? "_" : "",
-        isAsciiLetterOrUnderscore
-    );
-
-    return combined === "_" ? "_underscore" : combined;
-}
-
-const snakeNamingFunction = funPrefixNamer("default", (original: string) => rustStyle(original, true));
-const camelNamingFunction = funPrefixNamer("camel", (original: string) => rustStyle(original, false));
-
-const standardUnicodeRustEscape = (codePoint: number): string => {
-    if (codePoint <= 0xffff) {
-        return "\\u{" + intToHex(codePoint, 4) + "}";
-    } else {
-        return "\\u{" + intToHex(codePoint, 6) + "}";
-    }
-};
-
-const rustStringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, standardUnicodeRustEscape));
+    camelNamingFunction,
+    getPreferedNamingStyle,
+    listMatchingNamingStyles,
+    nameToNamingStyle,
+    namingStyles,
+    rustStringEscape,
+    snakeNamingFunction
+} from "./utils";
 
 export class RustRenderer extends ConvenienceRenderer {
     public constructor(
@@ -288,7 +49,7 @@ export class RustRenderer extends ConvenienceRenderer {
         return camelNamingFunction;
     }
 
-    protected forbiddenNamesForGlobalNamespace(): string[] {
+    protected forbiddenNamesForGlobalNamespace(): readonly string[] {
         return keywords;
     }
 
@@ -547,37 +308,4 @@ export class RustRenderer extends ConvenienceRenderer {
             (u, name) => this.emitUnion(u, name)
         );
     }
-}
-
-function getPreferedNamingStyle(namingStyleOccurences: string[], defaultStyle: string): string {
-    const occurrences = Object.fromEntries(Object.keys(namingStyles).map(key => [key, 0]));
-    namingStyleOccurences.forEach(style => ++occurrences[style]);
-    const max = Math.max(...Object.values(occurrences));
-    const preferedStyles = Object.entries(occurrences)
-        .filter(([_style, num]) => num === max)
-        .map(([style, _num]) => style);
-    if (preferedStyles.includes(defaultStyle)) {
-        return defaultStyle;
-    }
-
-    return preferedStyles[0];
-}
-
-function listMatchingNamingStyles(name: string): string[] {
-    return Object.entries(namingStyles)
-        .filter(([_, { regex }]) => regex.test(name))
-        .map(([namingStyle, _]) => namingStyle);
-}
-
-function nameToNamingStyle(name: string, style: string): string {
-    if (namingStyles[style].regex.test(name)) {
-        return name;
-    }
-
-    const fromStyle = listMatchingNamingStyles(name)[0];
-    if (fromStyle === undefined) {
-        return name;
-    }
-
-    return namingStyles[style].fromParts(namingStyles[fromStyle].toParts(name));
 }
