@@ -43,15 +43,6 @@ For the best CLI, we recommend installing `quicktype` globally via `npm`:
 npm install -g quicktype
 ```
 
-Other options:
-
--   [Homebrew](http://formulae.brew.sh/formula/quicktype) _(infrequently updated)_
--   [Xcode extension](https://itunes.apple.com/us/app/paste-json-as-code-quicktype/id1330801220?mt=12)\*
--   [VSCode extension](https://marketplace.visualstudio.com/items/quicktype.quicktype)\*
--   [Visual Studio extension](https://marketplace.visualstudio.com/items?itemName=typeguard.quicktype-vs)\*
-
-<small>\* limited functionality</small>
-
 ## Using `quicktype`
 
 ```bash

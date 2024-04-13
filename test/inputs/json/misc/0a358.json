@@ -1,1 +1,410 @@
-{"count": 245, "facets": {}, "results": [{"code": "ZW", "name": "Zimbabwe", "created_at": "2015-04-24T01:46:50.459583", "updated_at": "2015-04-24T01:46:50.459593", "uri": "http://api.lobbyfacts.eu/api/1/country/245", "id": 245}, {"code": "ZM", "name": "Zambia", "created_at": "2015-04-24T01:46:50.457459", "updated_at": "2015-04-24T01:46:50.457468", "uri": "http://api.lobbyfacts.eu/api/1/country/244", "id": 244}, {"code": "YE", "name": "Yemen", "created_at": "2015-04-24T01:46:50.454731", "updated_at": "2015-04-24T01:46:50.454741", "uri": "http://api.lobbyfacts.eu/api/1/country/243", "id": 243}, {"code": "EH", "name": "Western Sahara", "created_at": "2015-04-24T01:46:50.452002", "updated_at": "2015-04-24T01:46:50.452011", "uri": "http://api.lobbyfacts.eu/api/1/country/242", "id": 242}, {"code": "WF", "name": "Wallis & Futuna", "created_at": "2015-04-24T01:46:50.449346", "updated_at": "2015-04-24T01:46:50.449355", "uri": "http://api.lobbyfacts.eu/api/1/country/241", "id": 241}, {"code": "VN", "name": "Vietnam", "created_at": "2015-04-24T01:46:50.446644", "updated_at": "2015-04-24T01:46:50.446652", "uri": "http://api.lobbyfacts.eu/api/1/country/240", "id": 240}, {"code": "VE", "name": "Venezuela", "created_at": "2015-04-24T01:46:50.444031", "updated_at": "2015-04-24T01:46:50.444040", "uri": "http://api.lobbyfacts.eu/api/1/country/239", "id": 239}, {"code": "VU", "name": "Vanuatu", "created_at": "2015-04-24T01:46:50.441423", "updated_at": "2015-04-24T01:46:50.441433", "uri": "http://api.lobbyfacts.eu/api/1/country/238", "id": 238}, {"code": "UZ", "name": "Uzbekistan", "created_at": "2015-04-24T01:46:50.438748", "updated_at": "2015-04-24T01:46:50.438757", "uri": "http://api.lobbyfacts.eu/api/1/country/237", "id": 237}, {"code": "UY", "name": "Uruguay", "created_at": "2015-04-24T01:46:50.435761", "updated_at": "2015-04-24T01:46:50.435770", "uri": "http://api.lobbyfacts.eu/api/1/country/236", "id": 236}, {"code": "VI", "name": "United States Virgin Islands", "created_at": "2015-04-24T01:46:50.433229", "updated_at": "2015-04-24T01:46:50.433238", "uri": "http://api.lobbyfacts.eu/api/1/country/235", "id": 235}, {"code": "US", "name": "United States", "created_at": "2015-04-24T01:46:50.430335", "updated_at": "2015-04-24T01:46:50.430340", "uri": "http://api.lobbyfacts.eu/api/1/country/234", "id": 234}, {"code": "GB", "name": "United Kingdom", "created_at": "2015-04-24T01:46:50.427956", "updated_at": "2015-04-24T01:46:50.427961", "uri": "http://api.lobbyfacts.eu/api/1/country/233", "id": 233}, {"code": "AE", "name": "United Arab Emirates", "created_at": "2015-04-24T01:46:50.425383", "updated_at": "2015-04-24T01:46:50.425392", "uri": "http://api.lobbyfacts.eu/api/1/country/232", "id": 232}, {"code": "UA", "name": "Ukraine", "created_at": "2015-04-24T01:46:50.422970", "updated_at": "2015-04-24T01:46:50.422980", "uri": "http://api.lobbyfacts.eu/api/1/country/231", "id": 231}, {"code": "UG", "name": "Uganda", "created_at": "2015-04-24T01:46:50.419963", "updated_at": "2015-04-24T01:46:50.419968", "uri": "http://api.lobbyfacts.eu/api/1/country/230", "id": 230}, {"code": "TV", "name": "Tuvalu", "created_at": "2015-04-24T01:46:50.417896", "updated_at": "2015-04-24T01:46:50.417906", "uri": "http://api.lobbyfacts.eu/api/1/country/229", "id": 229}, {"code": "TC", "name": "Turks & Caicos Islands", "created_at": "2015-04-24T01:46:50.414854", "updated_at": "2015-04-24T01:46:50.414868", "uri": "http://api.lobbyfacts.eu/api/1/country/228", "id": 228}, {"code": "TM", "name": "Turkmenistan", "created_at": "2015-04-24T01:46:50.412601", "updated_at": "2015-04-24T01:46:50.412605", "uri": "http://api.lobbyfacts.eu/api/1/country/227", "id": 227}, {"code": "TR", "name": "Turkey", "created_at": "2015-04-24T01:46:50.411105", "updated_at": "2015-04-24T01:46:50.411110", "uri": "http://api.lobbyfacts.eu/api/1/country/226", "id": 226}, {"code": "TN", "name": "Tunisia", "created_at": "2015-04-24T01:46:50.409535", "updated_at": "2015-04-24T01:46:50.409539", "uri": "http://api.lobbyfacts.eu/api/1/country/225", "id": 225}, {"code": "TT", "name": "Trinidad & Tobago", "created_at": "2015-04-24T01:46:50.408030", "updated_at": "2015-04-24T01:46:50.408034", "uri": "http://api.lobbyfacts.eu/api/1/country/224", "id": 224}, {"code": "TO", "name": "Tonga", "created_at": "2015-04-24T01:46:50.406306", "updated_at": "2015-04-24T01:46:50.406311", "uri": "http://api.lobbyfacts.eu/api/1/country/223", "id": 223}, {"code": "TK", "name": "Tokelau", "created_at": "2015-04-24T01:46:50.404794", "updated_at": "2015-04-24T01:46:50.404799", "uri": "http://api.lobbyfacts.eu/api/1/country/222", "id": 222}, {"code": "TG", "name": "Togo", "created_at": "2015-04-24T01:46:50.403306", "updated_at": "2015-04-24T01:46:50.403310", "uri": "http://api.lobbyfacts.eu/api/1/country/221", "id": 221}, {"code": "TH", "name": "Thailand", "created_at": "2015-04-24T01:46:50.400840", "updated_at": "2015-04-24T01:46:50.400849", "uri": "http://api.lobbyfacts.eu/api/1/country/220", "id": 220}, {"code": "TZ", "name": "Tanzania", "created_at": "2015-04-24T01:46:50.397846", "updated_at": "2015-04-24T01:46:50.397855", "uri": "http://api.lobbyfacts.eu/api/1/country/219", "id": 219}, {"code": "TJ", "name": "Tajikistan", "created_at": "2015-04-24T01:46:50.394924", "updated_at": "2015-04-24T01:46:50.394933", "uri": "http://api.lobbyfacts.eu/api/1/country/218", "id": 218}, {"code": "TW", "name": "Taiwan", "created_at": "2015-04-24T01:46:50.391969", "updated_at": "2015-04-24T01:46:50.391978", "uri": "http://api.lobbyfacts.eu/api/1/country/217", "id": 217}, {"code": "SY", "name": "Syria", "created_at": "2015-04-24T01:46:50.389120", "updated_at": "2015-04-24T01:46:50.389124", "uri": "http://api.lobbyfacts.eu/api/1/country/216", "id": 216}, {"code": "CH", "name": "Switzerland", "created_at": "2015-04-24T01:46:50.386939", "updated_at": "2015-04-24T01:46:50.386943", "uri": "http://api.lobbyfacts.eu/api/1/country/215", "id": 215}, {"code": "SE", "name": "Sweden", "created_at": "2015-04-24T01:46:50.385345", "updated_at": "2015-04-24T01:46:50.385349", "uri": "http://api.lobbyfacts.eu/api/1/country/214", "id": 214}, {"code": "SZ", "name": "Swaziland", "created_at": "2015-04-24T01:46:50.383834", "updated_at": "2015-04-24T01:46:50.383838", "uri": "http://api.lobbyfacts.eu/api/1/country/213", "id": 213}, {"code": "SR", "name": "Suriname", "created_at": "2015-04-24T01:46:50.382073", "updated_at": "2015-04-24T01:46:50.382078", "uri": "http://api.lobbyfacts.eu/api/1/country/212", "id": 212}, {"code": "SD", "name": "Sudan", "created_at": "2015-04-24T01:46:50.380114", "updated_at": "2015-04-24T01:46:50.380119", "uri": "http://api.lobbyfacts.eu/api/1/country/211", "id": 211}, {"code": "LK", "name": "Sri Lanka", "created_at": "2015-04-24T01:46:50.378189", "updated_at": "2015-04-24T01:46:50.378195", "uri": "http://api.lobbyfacts.eu/api/1/country/210", "id": 210}, {"code": "ES", "name": "Spain", "created_at": "2015-04-24T01:46:50.376105", "updated_at": "2015-04-24T01:46:50.376109", "uri": "http://api.lobbyfacts.eu/api/1/country/209", "id": 209}, {"code": "SS", "name": "South Sudan", "created_at": "2015-04-24T01:46:50.373942", "updated_at": "2015-04-24T01:46:50.373946", "uri": "http://api.lobbyfacts.eu/api/1/country/208", "id": 208}, {"code": "KR", "name": "South Korea", "created_at": "2015-04-24T01:46:50.371790", "updated_at": "2015-04-24T01:46:50.371794", "uri": "http://api.lobbyfacts.eu/api/1/country/207", "id": 207}, {"code": "GS", "name": "South Georgia & The South Sandwish Islands", "created_at": "2015-04-24T01:46:50.369460", "updated_at": "2015-04-24T01:46:50.369465", "uri": "http://api.lobbyfacts.eu/api/1/country/206", "id": 206}, {"code": "ZA", "name": "South Africa", "created_at": "2015-04-24T01:46:50.367247", "updated_at": "2015-04-24T01:46:50.367252", "uri": "http://api.lobbyfacts.eu/api/1/country/205", "id": 205}, {"code": "SO", "name": "Somaliland", "created_at": "2015-04-24T01:46:50.362905", "updated_at": "2016-09-18T18:34:35.724427", "uri": "http://api.lobbyfacts.eu/api/1/country/204", "id": 204}, {"code": "SB", "name": "Solomon Islands", "created_at": "2015-04-24T01:46:50.360631", "updated_at": "2015-04-24T01:46:50.360635", "uri": "http://api.lobbyfacts.eu/api/1/country/203", "id": 203}, {"code": "SI", "name": "Slovenia", "created_at": "2015-04-24T01:46:50.358394", "updated_at": "2015-04-24T01:46:50.358399", "uri": "http://api.lobbyfacts.eu/api/1/country/202", "id": 202}, {"code": "SK", "name": "Slovakia", "created_at": "2015-04-24T01:46:50.356154", "updated_at": "2015-04-24T01:46:50.356158", "uri": "http://api.lobbyfacts.eu/api/1/country/201", "id": 201}, {"code": "SX", "name": "Sint Maarten", "created_at": "2015-04-24T01:46:50.353807", "updated_at": "2015-04-24T01:46:50.353811", "uri": "http://api.lobbyfacts.eu/api/1/country/200", "id": 200}, {"code": "SG", "name": "Singapore", "created_at": "2015-04-24T01:46:50.349354", "updated_at": "2015-04-24T01:46:50.349358", "uri": "http://api.lobbyfacts.eu/api/1/country/199", "id": 199}, {"code": "SL", "name": "Sierra Leone", "created_at": "2015-04-24T01:46:50.347186", "updated_at": "2015-04-24T01:46:50.347190", "uri": "http://api.lobbyfacts.eu/api/1/country/198", "id": 198}, {"code": "SC", "name": "Seychelles", "created_at": "2015-04-24T01:46:50.344980", "updated_at": "2015-04-24T01:46:50.344984", "uri": "http://api.lobbyfacts.eu/api/1/country/197", "id": 197}, {"code": "RS", "name": "Serbia", "created_at": "2015-04-24T01:46:50.342496", "updated_at": "2015-04-24T01:46:50.342501", "uri": "http://api.lobbyfacts.eu/api/1/country/196", "id": 196}], "next": "http://api.lobbyfacts.eu/api/1/country?limit=50&offset=50", "limit": 50, "offset": 0, "previous": false}
+{
+    "count": 245,
+    "facets": {},
+    "results": [
+        {
+            "code": "ZW",
+            "name": "Zimbabwe",
+            "created_at": "2015-04-24T01:46:50.459583Z",
+            "updated_at": "2015-04-24T01:46:50.459593Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/245",
+            "id": 245
+        },
+        {
+            "code": "ZM",
+            "name": "Zambia",
+            "created_at": "2015-04-24T01:46:50.457459Z",
+            "updated_at": "2015-04-24T01:46:50.457468Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/244",
+            "id": 244
+        },
+        {
+            "code": "YE",
+            "name": "Yemen",
+            "created_at": "2015-04-24T01:46:50.454731Z",
+            "updated_at": "2015-04-24T01:46:50.454741Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/243",
+            "id": 243
+        },
+        {
+            "code": "EH",
+            "name": "Western Sahara",
+            "created_at": "2015-04-24T01:46:50.452002Z",
+            "updated_at": "2015-04-24T01:46:50.452011Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/242",
+            "id": 242
+        },
+        {
+            "code": "WF",
+            "name": "Wallis & Futuna",
+            "created_at": "2015-04-24T01:46:50.449346Z",
+            "updated_at": "2015-04-24T01:46:50.449355Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/241",
+            "id": 241
+        },
+        {
+            "code": "VN",
+            "name": "Vietnam",
+            "created_at": "2015-04-24T01:46:50.446644Z",
+            "updated_at": "2015-04-24T01:46:50.446652Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/240",
+            "id": 240
+        },
+        {
+            "code": "VE",
+            "name": "Venezuela",
+            "created_at": "2015-04-24T01:46:50.444031Z",
+            "updated_at": "2015-04-24T01:46:50.444040Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/239",
+            "id": 239
+        },
+        {
+            "code": "VU",
+            "name": "Vanuatu",
+            "created_at": "2015-04-24T01:46:50.441423Z",
+            "updated_at": "2015-04-24T01:46:50.441433Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/238",
+            "id": 238
+        },
+        {
+            "code": "UZ",
+            "name": "Uzbekistan",
+            "created_at": "2015-04-24T01:46:50.438748Z",
+            "updated_at": "2015-04-24T01:46:50.438757Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/237",
+            "id": 237
+        },
+        {
+            "code": "UY",
+            "name": "Uruguay",
+            "created_at": "2015-04-24T01:46:50.435761Z",
+            "updated_at": "2015-04-24T01:46:50.435770Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/236",
+            "id": 236
+        },
+        {
+            "code": "VI",
+            "name": "United States Virgin Islands",
+            "created_at": "2015-04-24T01:46:50.433229Z",
+            "updated_at": "2015-04-24T01:46:50.433238Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/235",
+            "id": 235
+        },
+        {
+            "code": "US",
+            "name": "United States",
+            "created_at": "2015-04-24T01:46:50.430335Z",
+            "updated_at": "2015-04-24T01:46:50.430340Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/234",
+            "id": 234
+        },
+        {
+            "code": "GB",
+            "name": "United Kingdom",
+            "created_at": "2015-04-24T01:46:50.427956Z",
+            "updated_at": "2015-04-24T01:46:50.427961Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/233",
+            "id": 233
+        },
+        {
+            "code": "AE",
+            "name": "United Arab Emirates",
+            "created_at": "2015-04-24T01:46:50.425383Z",
+            "updated_at": "2015-04-24T01:46:50.425392Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/232",
+            "id": 232
+        },
+        {
+            "code": "UA",
+            "name": "Ukraine",
+            "created_at": "2015-04-24T01:46:50.422970Z",
+            "updated_at": "2015-04-24T01:46:50.422980Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/231",
+            "id": 231
+        },
+        {
+            "code": "UG",
+            "name": "Uganda",
+            "created_at": "2015-04-24T01:46:50.419963Z",
+            "updated_at": "2015-04-24T01:46:50.419968Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/230",
+            "id": 230
+        },
+        {
+            "code": "TV",
+            "name": "Tuvalu",
+            "created_at": "2015-04-24T01:46:50.417896Z",
+            "updated_at": "2015-04-24T01:46:50.417906Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/229",
+            "id": 229
+        },
+        {
+            "code": "TC",
+            "name": "Turks & Caicos Islands",
+            "created_at": "2015-04-24T01:46:50.414854Z",
+            "updated_at": "2015-04-24T01:46:50.414868Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/228",
+            "id": 228
+        },
+        {
+            "code": "TM",
+            "name": "Turkmenistan",
+            "created_at": "2015-04-24T01:46:50.412601Z",
+            "updated_at": "2015-04-24T01:46:50.412605Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/227",
+            "id": 227
+        },
+        {
+            "code": "TR",
+            "name": "Turkey",
+            "created_at": "2015-04-24T01:46:50.411105Z",
+            "updated_at": "2015-04-24T01:46:50.411110Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/226",
+            "id": 226
+        },
+        {
+            "code": "TN",
+            "name": "Tunisia",
+            "created_at": "2015-04-24T01:46:50.409535Z",
+            "updated_at": "2015-04-24T01:46:50.409539Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/225",
+            "id": 225
+        },
+        {
+            "code": "TT",
+            "name": "Trinidad & Tobago",
+            "created_at": "2015-04-24T01:46:50.408030Z",
+            "updated_at": "2015-04-24T01:46:50.408034Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/224",
+            "id": 224
+        },
+        {
+            "code": "TO",
+            "name": "Tonga",
+            "created_at": "2015-04-24T01:46:50.406306Z",
+            "updated_at": "2015-04-24T01:46:50.406311Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/223",
+            "id": 223
+        },
+        {
+            "code": "TK",
+            "name": "Tokelau",
+            "created_at": "2015-04-24T01:46:50.404794Z",
+            "updated_at": "2015-04-24T01:46:50.404799Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/222",
+            "id": 222
+        },
+        {
+            "code": "TG",
+            "name": "Togo",
+            "created_at": "2015-04-24T01:46:50.403306Z",
+            "updated_at": "2015-04-24T01:46:50.403310Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/221",
+            "id": 221
+        },
+        {
+            "code": "TH",
+            "name": "Thailand",
+            "created_at": "2015-04-24T01:46:50.400840Z",
+            "updated_at": "2015-04-24T01:46:50.400849Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/220",
+            "id": 220
+        },
+        {
+            "code": "TZ",
+            "name": "Tanzania",
+            "created_at": "2015-04-24T01:46:50.397846Z",
+            "updated_at": "2015-04-24T01:46:50.397855Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/219",
+            "id": 219
+        },
+        {
+            "code": "TJ",
+            "name": "Tajikistan",
+            "created_at": "2015-04-24T01:46:50.394924Z",
+            "updated_at": "2015-04-24T01:46:50.394933Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/218",
+            "id": 218
+        },
+        {
+            "code": "TW",
+            "name": "Taiwan",
+            "created_at": "2015-04-24T01:46:50.391969Z",
+            "updated_at": "2015-04-24T01:46:50.391978Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/217",
+            "id": 217
+        },
+        {
+            "code": "SY",
+            "name": "Syria",
+            "created_at": "2015-04-24T01:46:50.389120Z",
+            "updated_at": "2015-04-24T01:46:50.389124Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/216",
+            "id": 216
+        },
+        {
+            "code": "CH",
+            "name": "Switzerland",
+            "created_at": "2015-04-24T01:46:50.386939Z",
+            "updated_at": "2015-04-24T01:46:50.386943Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/215",
+            "id": 215
+        },
+        {
+            "code": "SE",
+            "name": "Sweden",
+            "created_at": "2015-04-24T01:46:50.385345Z",
+            "updated_at": "2015-04-24T01:46:50.385349Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/214",
+            "id": 214
+        },
+        {
+            "code": "SZ",
+            "name": "Swaziland",
+            "created_at": "2015-04-24T01:46:50.383834Z",
+            "updated_at": "2015-04-24T01:46:50.383838Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/213",
+            "id": 213
+        },
+        {
+            "code": "SR",
+            "name": "Suriname",
+            "created_at": "2015-04-24T01:46:50.382073Z",
+            "updated_at": "2015-04-24T01:46:50.382078Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/212",
+            "id": 212
+        },
+        {
+            "code": "SD",
+            "name": "Sudan",
+            "created_at": "2015-04-24T01:46:50.380114Z",
+            "updated_at": "2015-04-24T01:46:50.380119Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/211",
+            "id": 211
+        },
+        {
+            "code": "LK",
+            "name": "Sri Lanka",
+            "created_at": "2015-04-24T01:46:50.378189Z",
+            "updated_at": "2015-04-24T01:46:50.378195Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/210",
+            "id": 210
+        },
+        {
+            "code": "ES",
+            "name": "Spain",
+            "created_at": "2015-04-24T01:46:50.376105Z",
+            "updated_at": "2015-04-24T01:46:50.376109Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/209",
+            "id": 209
+        },
+        {
+            "code": "SS",
+            "name": "South Sudan",
+            "created_at": "2015-04-24T01:46:50.373942Z",
+            "updated_at": "2015-04-24T01:46:50.373946Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/208",
+            "id": 208
+        },
+        {
+            "code": "KR",
+            "name": "South Korea",
+            "created_at": "2015-04-24T01:46:50.371790Z",
+            "updated_at": "2015-04-24T01:46:50.371794Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/207",
+            "id": 207
+        },
+        {
+            "code": "GS",
+            "name": "South Georgia & The South Sandwish Islands",
+            "created_at": "2015-04-24T01:46:50.369460Z",
+            "updated_at": "2015-04-24T01:46:50.369465Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/206",
+            "id": 206
+        },
+        {
+            "code": "ZA",
+            "name": "South Africa",
+            "created_at": "2015-04-24T01:46:50.367247Z",
+            "updated_at": "2015-04-24T01:46:50.367252Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/205",
+            "id": 205
+        },
+        {
+            "code": "SO",
+            "name": "Somaliland",
+            "created_at": "2015-04-24T01:46:50.362905Z",
+            "updated_at": "2016-09-18T18:34:35.724427Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/204",
+            "id": 204
+        },
+        {
+            "code": "SB",
+            "name": "Solomon Islands",
+            "created_at": "2015-04-24T01:46:50.360631Z",
+            "updated_at": "2015-04-24T01:46:50.360635Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/203",
+            "id": 203
+        },
+        {
+            "code": "SI",
+            "name": "Slovenia",
+            "created_at": "2015-04-24T01:46:50.358394Z",
+            "updated_at": "2015-04-24T01:46:50.358399Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/202",
+            "id": 202
+        },
+        {
+            "code": "SK",
+            "name": "Slovakia",
+            "created_at": "2015-04-24T01:46:50.356154Z",
+            "updated_at": "2015-04-24T01:46:50.356158Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/201",
+            "id": 201
+        },
+        {
+            "code": "SX",
+            "name": "Sint Maarten",
+            "created_at": "2015-04-24T01:46:50.353807Z",
+            "updated_at": "2015-04-24T01:46:50.353811Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/200",
+            "id": 200
+        },
+        {
+            "code": "SG",
+            "name": "Singapore",
+            "created_at": "2015-04-24T01:46:50.349354Z",
+            "updated_at": "2015-04-24T01:46:50.349358Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/199",
+            "id": 199
+        },
+        {
+            "code": "SL",
+            "name": "Sierra Leone",
+            "created_at": "2015-04-24T01:46:50.347186Z",
+            "updated_at": "2015-04-24T01:46:50.347190Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/198",
+            "id": 198
+        },
+        {
+            "code": "SC",
+            "name": "Seychelles",
+            "created_at": "2015-04-24T01:46:50.344980Z",
+            "updated_at": "2015-04-24T01:46:50.344984Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/197",
+            "id": 197
+        },
+        {
+            "code": "RS",
+            "name": "Serbia",
+            "created_at": "2015-04-24T01:46:50.342496Z",
+            "updated_at": "2015-04-24T01:46:50.342501Z",
+            "uri": "http://api.lobbyfacts.eu/api/1/country/196",
+            "id": 196
+        }
+    ],
+    "next": "http://api.lobbyfacts.eu/api/1/country?limit=50&offset=50",
+    "limit": 50,
+    "offset": 0,
+    "previous": false
+}

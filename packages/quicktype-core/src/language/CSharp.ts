@@ -191,7 +191,7 @@ export const cSharpOptions = {
         "secondary"
     ),
     checkRequired: new BooleanOption("check-required", "Fail if required properties are missing", false),
-    keepPropertyName: new BooleanOption("keep-property-name", "Keep original field name generate", false),
+    keepPropertyName: new BooleanOption("keep-property-name", "Keep original field name generate", false)
 };
 
 export class CSharpTargetLanguage extends TargetLanguage {
@@ -306,7 +306,6 @@ function csNameStyle(original: string): string {
 }
 
 function csNameStyleKeep(original: string): string {
-
     const keywords = [
         "abstract",
         "as",
@@ -384,8 +383,8 @@ function csNameStyleKeep(original: string): string {
         "virtual",
         "void",
         "volatile",
-        "while",
-    ]
+        "while"
+    ];
 
     const words: WordInName[] = [
         {
@@ -403,7 +402,7 @@ function csNameStyleKeep(original: string): string {
         x => x,
         "",
         isStartCharacter
-    )
+    );
 
     return keywords.includes(result) ? "@" + result : result;
 }
@@ -581,7 +580,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
         if (this._csOptions.dense) {
             this.emitLine(start, lines.join("; "), "</summary>");
         } else {
-            this.emitCommentLines(lines, "/// ", start, "/// </summary>");
+            this.emitCommentLines(lines, { lineStart: "/// ", beforeComment: start, afterComment: "/// </summary>" });
         }
     }
 
@@ -755,7 +754,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
 
     protected emitSourceStructure(): void {
         if (this.leadingComments !== undefined) {
-            this.emitCommentLines(this.leadingComments);
+            this.emitComments(this.leadingComments);
         } else {
             this.emitDefaultLeadingComments();
         }
