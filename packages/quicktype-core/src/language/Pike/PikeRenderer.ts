@@ -1,89 +1,20 @@
-import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { type Name, type Namer, funPrefixNamer } from "../Naming";
-import { type RenderContext } from "../Renderer";
-import { type Option } from "../RendererOptions";
-import { type MultiWord, type Sourcelike, multiWord, parenIfNeeded, singleWord } from "../Source";
-import { isLetterOrUnderscoreOrDigit, legalizeCharacters, makeNameStyle, stringEscape } from "../support/Strings";
-import { TargetLanguage } from "../TargetLanguage";
-import { ArrayType, type ClassType, type EnumType, MapType, PrimitiveType, type Type, type UnionType } from "../Type";
-import { type FixMeOptionsAnyType } from "../types";
-import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../../ConvenienceRenderer";
+import { type Name, type Namer } from "../../Naming";
+import { type MultiWord, type Sourcelike, multiWord, parenIfNeeded, singleWord } from "../../Source";
+import { stringEscape } from "../../support/Strings";
+import {
+    ArrayType,
+    type ClassType,
+    type EnumType,
+    MapType,
+    PrimitiveType,
+    type Type,
+    type UnionType
+} from "../../Type";
+import { matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
 
-export const pikeOptions = {};
-
-const keywords = [
-    "auto",
-    "nomask",
-    "final",
-    "static",
-    "extern",
-    "private",
-    "local",
-    "public",
-    "protected",
-    "inline",
-    "optional",
-    "variant",
-    "void",
-    "mixed",
-    "array",
-    "__attribute__",
-    "__deprecated__",
-    "mapping",
-    "multiset",
-    "object",
-    "function",
-    "__func__",
-    "program",
-    "string",
-    "float",
-    "int",
-    "enum",
-    "typedef",
-    "if",
-    "do",
-    "for",
-    "while",
-    "else",
-    "foreach",
-    "catch",
-    "gauge",
-    "class",
-    "break",
-    "case",
-    "const",
-    "constant",
-    "continue",
-    "default",
-    "import",
-    "inherit",
-    "lambda",
-    "predef",
-    "return",
-    "sscanf",
-    "switch",
-    "typeof",
-    "global"
-];
-
-const legalizeName = legalizeCharacters(isLetterOrUnderscoreOrDigit);
-const enumNamingFunction = funPrefixNamer("enumNamer", makeNameStyle("upper-underscore", legalizeName));
-const namingFunction = funPrefixNamer("genericNamer", makeNameStyle("underscore", legalizeName));
-const namedTypeNamingFunction = funPrefixNamer("typeNamer", makeNameStyle("pascal", legalizeName));
-
-export class PikeTargetLanguage extends TargetLanguage {
-    public constructor() {
-        super("Pike", ["pike", "pikelang"], "pmod");
-    }
-
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [];
-    }
-
-    protected makeRenderer(renderContext: RenderContext): PikeRenderer {
-        return new PikeRenderer(this, renderContext);
-    }
-}
+import { keywords } from "./constants";
+import { enumNamingFunction, namedTypeNamingFunction, namingFunction } from "./utils";
 
 export class PikeRenderer extends ConvenienceRenderer {
     protected emitSourceStructure(): void {
