@@ -1,100 +1,20 @@
 import * as _ from "lodash";
 
-import { type PrimitiveStringTypeKind, type StringTypeMapping, type TransformedStringTypeKind } from "..";
-import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { DependencyName, type Name, type Namer, funPrefixNamer } from "../Naming";
-import { type RenderContext } from "../Renderer";
-import { BooleanOption, type Option, type OptionValues, getOptionValues } from "../RendererOptions";
-import { type Sourcelike, maybeAnnotated } from "../Source";
-import { AcronymStyleOptions, acronymOption, acronymStyle } from "../support/Acronyms";
-import {
-    allLowerWordStyle,
-    allUpperWordStyle,
-    combineWords,
-    escapeNonPrintableMapper,
-    firstUpperWordStyle,
-    isAscii,
-    isDigit,
-    isLetter,
-    splitIntoWords,
-    standardUnicodeHexEscape,
-    utf16ConcatMap,
-    utf16LegalizeCharacters
-} from "../support/Strings";
-import { defined } from "../support/Support";
-import { TargetLanguage } from "../TargetLanguage";
-import { type ClassProperty, type ClassType, type EnumType, type Type, type UnionType } from "../Type";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
-import { directlyReachableSingleNamedType, matchType, nullableFromUnion } from "../TypeUtils";
+import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../../Annotation";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../../ConvenienceRenderer";
+import { DependencyName, type Name, type Namer, funPrefixNamer } from "../../Naming";
+import { type RenderContext } from "../../Renderer";
+import { type OptionValues } from "../../RendererOptions";
+import { type Sourcelike, maybeAnnotated } from "../../Source";
+import { acronymStyle } from "../../support/Acronyms";
+import { stringEscape } from "../../support/Strings";
+import { defined } from "../../support/Support";
+import { type TargetLanguage } from "../../TargetLanguage";
+import { type ClassProperty, type ClassType, type EnumType, type Type, type UnionType } from "../../Type";
+import { directlyReachableSingleNamedType, matchType, nullableFromUnion } from "../../TypeUtils";
 
-export const phpOptions = {
-    withGet: new BooleanOption("with-get", "Create Getter", true),
-    fastGet: new BooleanOption("fast-get", "getter without validation", false),
-    withSet: new BooleanOption("with-set", "Create Setter", false),
-    withClosing: new BooleanOption("with-closing", "PHP Closing Tag", false),
-    acronymStyle: acronymOption(AcronymStyleOptions.Pascal)
-};
-
-export class PhpTargetLanguage extends TargetLanguage {
-    public constructor() {
-        super("PHP", ["php"], "php");
-    }
-
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return _.values(phpOptions);
-    }
-
-    public get supportsUnionsWithBothNumberTypes(): boolean {
-        return true;
-    }
-
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): PhpRenderer {
-        const options = getOptionValues(phpOptions, untypedOptionValues);
-        return new PhpRenderer(this, renderContext, options);
-    }
-
-    public get stringTypeMapping(): StringTypeMapping {
-        const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
-        mapping.set("date", "date"); // TODO is not implemented yet
-        mapping.set("time", "time"); // TODO is not implemented yet
-        mapping.set("uuid", "uuid"); // TODO is not implemented yet
-        mapping.set("date-time", "date-time");
-        return mapping;
-    }
-}
-
-export const stringEscape = utf16ConcatMap(escapeNonPrintableMapper(isAscii, standardUnicodeHexEscape));
-
-function isStartCharacter(codePoint: number): boolean {
-    if (codePoint === 0x5f) return true; // underscore
-    return isAscii(codePoint) && isLetter(codePoint);
-}
-
-function isPartCharacter(codePoint: number): boolean {
-    return isStartCharacter(codePoint) || (isAscii(codePoint) && isDigit(codePoint));
-}
-
-const legalizeName = utf16LegalizeCharacters(isPartCharacter);
-
-export function phpNameStyle(
-    startWithUpper: boolean,
-    upperUnderscore: boolean,
-    original: string,
-    acronymsStyle: (s: string) => string = allUpperWordStyle
-): string {
-    const words = splitIntoWords(original);
-    return combineWords(
-        words,
-        legalizeName,
-        upperUnderscore ? allUpperWordStyle : startWithUpper ? firstUpperWordStyle : allLowerWordStyle,
-        upperUnderscore ? allUpperWordStyle : firstUpperWordStyle,
-        upperUnderscore || startWithUpper ? allUpperWordStyle : allLowerWordStyle,
-        acronymsStyle,
-        upperUnderscore ? "_" : "",
-        isStartCharacter
-    );
-}
+import { type phpOptions } from "./language";
+import { phpNameStyle } from "./utils";
 
 export interface FunctionNames {
     readonly from: Name;
