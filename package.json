@@ -31,7 +31,7 @@
         "cross-fetch": "^4.0.0",
         "graphql": "^0.11.7",
         "lodash": "^4.17.21",
-        "moment": "^2.29.4",
+        "moment": "^2.30.1",
         "quicktype-core": "20.0.12",
         "quicktype-graphql-input": "20.0.2",
         "quicktype-typescript-input": "20.0.2",
