@@ -1,150 +1,20 @@
 import { arrayIntercalate, mapContains } from "collection-utils";
 
-import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { DependencyName, type Name, type Namer, funPrefixNamer } from "../Naming";
-import { type RenderContext } from "../Renderer";
-import {
-    BooleanOption,
-    EnumOption,
-    type Option,
-    type OptionValues,
-    StringOption,
-    getOptionValues
-} from "../RendererOptions";
-import { type MultiWord, type Sourcelike, annotated, multiWord, parenIfNeeded, singleWord } from "../Source";
-import {
-    allLowerWordStyle,
-    allUpperWordStyle,
-    combineWords,
-    decapitalize,
-    firstUpperWordStyle,
-    isAscii,
-    isLetterOrUnderscore,
-    isLetterOrUnderscoreOrDigit,
-    legalizeCharacters,
-    splitIntoWords,
-    stringEscape
-} from "../support/Strings";
-import { defined } from "../support/Support";
-import { TargetLanguage } from "../TargetLanguage";
-import { type ClassProperty, type ClassType, type EnumType, type Type, UnionType } from "../Type";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
-import { matchType, nullableFromUnion } from "../TypeUtils";
+import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../../Annotation";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../../ConvenienceRenderer";
+import { DependencyName, type Name, type Namer } from "../../Naming";
+import { type RenderContext } from "../../Renderer";
+import { type OptionValues } from "../../RendererOptions";
+import { type MultiWord, type Sourcelike, annotated, multiWord, parenIfNeeded, singleWord } from "../../Source";
+import { decapitalize, stringEscape } from "../../support/Strings";
+import { defined } from "../../support/Support";
+import { type TargetLanguage } from "../../TargetLanguage";
+import { type ClassProperty, type ClassType, type EnumType, type Type, type UnionType } from "../../Type";
+import { matchType, nullableFromUnion } from "../../TypeUtils";
 
-export const elmOptions = {
-    justTypes: new BooleanOption("just-types", "Plain types only", false),
-    useList: new EnumOption("array-type", "Use Array or List", [
-        ["array", false],
-        ["list", true]
-    ]),
-    // FIXME: Do this via a configurable named eventually.
-    moduleName: new StringOption("module", "Generated module name", "NAME", "QuickType")
-};
-
-export class ElmTargetLanguage extends TargetLanguage {
-    public constructor() {
-        super("Elm", ["elm"], "elm");
-    }
-
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [elmOptions.justTypes, elmOptions.moduleName, elmOptions.useList];
-    }
-
-    public get supportsOptionalClassProperties(): boolean {
-        return true;
-    }
-
-    public get supportsUnionsWithBothNumberTypes(): boolean {
-        return true;
-    }
-
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): ElmRenderer {
-        return new ElmRenderer(this, renderContext, getOptionValues(elmOptions, untypedOptionValues));
-    }
-}
-
-const forbiddenNames = [
-    "if",
-    "then",
-    "else",
-    "case",
-    "of",
-    "let",
-    "in",
-    "infix",
-    "type",
-    "module",
-    "where",
-    "import",
-    "exposing",
-    "as",
-    "port",
-    "int",
-    "float",
-    "bool",
-    "string",
-    "Jenc",
-    "Jdec",
-    "Jpipe",
-    "always",
-    "identity",
-    "Array",
-    "List",
-    "Dict",
-    "Maybe",
-    "map",
-    "toList",
-    "makeArrayEncoder",
-    "makeDictEncoder",
-    "makeNullableEncoder",
-    "Int",
-    "True",
-    "False",
-    "String",
-    "Float"
-];
-
-const legalizeName = legalizeCharacters(cp => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp));
-
-function elmNameStyle(original: string, upper: boolean): string {
-    const words = splitIntoWords(original);
-    return combineWords(
-        words,
-        legalizeName,
-        upper ? firstUpperWordStyle : allLowerWordStyle,
-        firstUpperWordStyle,
-        upper ? allUpperWordStyle : allLowerWordStyle,
-        allUpperWordStyle,
-        "",
-        isLetterOrUnderscore
-    );
-}
-
-const upperNamingFunction = funPrefixNamer("upper", n => elmNameStyle(n, true));
-const lowerNamingFunction = funPrefixNamer("lower", n => elmNameStyle(n, false));
-
-interface RequiredOrOptional {
-    fallback: string;
-    reqOrOpt: string;
-}
-
-function requiredOrOptional(p: ClassProperty): RequiredOrOptional {
-    function optional(fallback: string): RequiredOrOptional {
-        return { reqOrOpt: "Jpipe.optional", fallback };
-    }
-
-    const t = p.type;
-    if (p.isOptional || (t instanceof UnionType && nullableFromUnion(t) !== null)) {
-        return optional(" Nothing");
-    }
-
-    if (t.kind === "null") {
-        return optional(" ()");
-    }
-
-    return { reqOrOpt: "Jpipe.required", fallback: "" };
-}
+import { forbiddenNames } from "./constants";
+import { type elmOptions } from "./language";
+import { lowerNamingFunction, requiredOrOptional, upperNamingFunction } from "./utils";
 
 interface TopLevelDependent {
     decoder?: Name;
@@ -169,7 +39,7 @@ export class ElmRenderer extends ConvenienceRenderer {
         super(targetLanguage, renderContext);
     }
 
-    protected forbiddenNamesForGlobalNamespace(): string[] {
+    protected forbiddenNamesForGlobalNamespace(): readonly string[] {
         return forbiddenNames;
     }
 
@@ -690,12 +560,12 @@ import Dict exposing (Dict, map, toList)`);
         this.ensureBlankLine();
         this.emitMultiline(`makeDictEncoder : (a -> Jenc.Value) -> Dict String a -> Jenc.Value
 makeDictEncoder f dict =
-    Jenc.object (toList (Dict.map (\\k -> f) dict))
+	Jenc.object (toList (Dict.map (\\k -> f) dict))
 
 makeNullableEncoder : (a -> Jenc.Value) -> Maybe a -> Jenc.Value
 makeNullableEncoder f m =
-    case m of
-    Just x -> f x
-    Nothing -> Jenc.null`);
+	case m of
+	Just x -> f x
+	Nothing -> Jenc.null`);
     }
 }
