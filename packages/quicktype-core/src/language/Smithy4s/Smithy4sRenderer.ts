@@ -1,22 +1,10 @@
-import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { type Name, type Namer, funPrefixNamer } from "../Naming";
-import { type RenderContext } from "../Renderer";
-import { EnumOption, type Option, type OptionValues, StringOption, getOptionValues } from "../RendererOptions";
-import { type Sourcelike, maybeAnnotated } from "../Source";
-import {
-    allLowerWordStyle,
-    allUpperWordStyle,
-    combineWords,
-    firstUpperWordStyle,
-    isDigit,
-    isLetterOrUnderscore,
-    isNumeric,
-    legalizeCharacters,
-    splitIntoWords
-} from "../support/Strings";
-import { assertNever } from "../support/Support";
-import { TargetLanguage } from "../TargetLanguage";
+import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../../Annotation";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../../ConvenienceRenderer";
+import { type Name, type Namer, funPrefixNamer } from "../../Naming";
+import { type RenderContext } from "../../Renderer";
+import { type OptionValues } from "../../RendererOptions";
+import { type Sourcelike, maybeAnnotated } from "../../Source";
+import { type TargetLanguage } from "../../TargetLanguage";
 import {
     ArrayType,
     type ClassProperty,
@@ -26,147 +14,23 @@ import {
     type ObjectType,
     type Type,
     type UnionType
-} from "../Type";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
-import { matchCompoundType, matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
+} from "../../Type";
+import { matchCompoundType, matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
 
-export enum Framework {
-    None = "None"
-}
-
-export const SmithyOptions = {
-    framework: new EnumOption("framework", "Serialization framework", [["just-types", Framework.None]], undefined),
-    packageName: new StringOption("package", "Package", "PACKAGE", "quicktype")
-};
-
-// Use backticks for param names with symbols
-const invalidSymbols = [
-    ":",
-    "-",
-    "+",
-    "!",
-    "@",
-    "#",
-    "%",
-    "^",
-    "&",
-    "*",
-    "(",
-    ")",
-    ">",
-    "<",
-    "/",
-    ";",
-    "'",
-    '"',
-    "{",
-    "}",
-    ":",
-    "~",
-    "`",
-    "."
-];
-
-const keywords = [
-    "abstract",
-    "case",
-    "catch",
-    "do",
-    "else",
-    "export",
-    "false",
-    "final",
-    "finally",
-    "for",
-    "forSome",
-    "if",
-    "implicit",
-    "import",
-    "new",
-    "override",
-    "package",
-    "private",
-    "protected",
-    "return",
-    "sealed",
-    "super",
-    "this",
-    "then",
-    "throw",
-    "trait",
-    "try",
-    "true",
-    "val",
-    "var",
-    "while",
-    "with",
-    "yield",
-    "Any",
-    "Boolean",
-    "Double",
-    "Float",
-    "Long",
-    "Int",
-    "Short",
-    "System",
-    "Byte",
-    "String",
-    "Array",
-    "List",
-    "Map",
-    "Enum"
-];
-
-/**
- * Check if given parameter name should be wrapped in a backtick
- * @param paramName
- */
-const shouldAddBacktick = (paramName: string): boolean => {
-    return (
-        keywords.some(s => paramName === s) ||
-        invalidSymbols.some(s => paramName.includes(s)) ||
-        !isNaN(parseFloat(paramName)) ||
-        !isNaN(parseInt(paramName.charAt(0)))
-    );
-};
-
-function isPartCharacter(codePoint: number): boolean {
-    return isLetterOrUnderscore(codePoint) || isNumeric(codePoint);
-}
-
-function isStartCharacter(codePoint: number): boolean {
-    return isPartCharacter(codePoint) && !isDigit(codePoint);
-}
-
-const legalizeName = legalizeCharacters(isPartCharacter);
-
-function scalaNameStyle(isUpper: boolean, original: string): string {
-    const words = splitIntoWords(original);
-    return combineWords(
-        words,
-        legalizeName,
-        isUpper ? firstUpperWordStyle : allLowerWordStyle,
-        firstUpperWordStyle,
-        isUpper ? allUpperWordStyle : allLowerWordStyle,
-        allUpperWordStyle,
-        "",
-        isStartCharacter
-    );
-}
-
-const upperNamingFunction = funPrefixNamer("upper", s => scalaNameStyle(true, s));
-const lowerNamingFunction = funPrefixNamer("lower", s => scalaNameStyle(false, s));
+import { keywords } from "./constants";
+import { type smithyOptions } from "./language";
+import { lowerNamingFunction, scalaNameStyle, shouldAddBacktick, upperNamingFunction } from "./utils";
 
 export class Smithy4sRenderer extends ConvenienceRenderer {
     public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        protected readonly _scalaOptions: OptionValues<typeof SmithyOptions>
+        protected readonly _scalaOptions: OptionValues<typeof smithyOptions>
     ) {
         super(targetLanguage, renderContext);
     }
 
-    protected forbiddenNamesForGlobalNamespace(): string[] {
+    protected forbiddenNamesForGlobalNamespace(): readonly string[] {
         return keywords;
     }
 
@@ -419,10 +283,10 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
         this.forEachEnumCase(e, "none", (name, jsonName) => {
             // if (!(jsonName == "")) {
             /*                 const backticks = 
-                                    shouldAddBacktick(jsonName) || 
-                                    jsonName.includes(" ") || 
-                                    !isNaN(parseInt(jsonName.charAt(0)))
-                                if (backticks) {this.emitItem("`")} else  */
+																	shouldAddBacktick(jsonName) || 
+																	jsonName.includes(" ") || 
+																	!isNaN(parseInt(jsonName.charAt(0)))
+															if (backticks) {this.emitItem("`")} else  */
             this.emitLine();
 
             this.emitItem([name, ' = "', jsonName, '"']);
@@ -522,34 +386,5 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
             (e, n) => this.emitEnumDefinition(e, n),
             (u, n) => this.emitUnionDefinition(u, n)
         );
-    }
-}
-
-export class SmithyTargetLanguage extends TargetLanguage {
-    public constructor() {
-        super("Smithy", ["Smithy"], "smithy");
-    }
-
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [SmithyOptions.framework, SmithyOptions.packageName];
-    }
-
-    public get supportsOptionalClassProperties(): boolean {
-        return true;
-    }
-
-    public get supportsUnionsWithBothNumberTypes(): boolean {
-        return true;
-    }
-
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): ConvenienceRenderer {
-        const options = getOptionValues(SmithyOptions, untypedOptionValues);
-
-        switch (options.framework) {
-            case Framework.None:
-                return new Smithy4sRenderer(this, renderContext, options);
-            default:
-                return assertNever(options.framework);
-        }
     }
 }
