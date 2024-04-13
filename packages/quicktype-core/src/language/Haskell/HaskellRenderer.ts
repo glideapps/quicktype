@@ -1,138 +1,18 @@
 import { mapContains } from "collection-utils";
 
-import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { type Name, type Namer, funPrefixNamer } from "../Naming";
-import { type RenderContext } from "../Renderer";
-import {
-    BooleanOption,
-    EnumOption,
-    type Option,
-    type OptionValues,
-    StringOption,
-    getOptionValues
-} from "../RendererOptions";
-import { type MultiWord, type Sourcelike, multiWord, parenIfNeeded, singleWord } from "../Source";
-import {
-    allLowerWordStyle,
-    allUpperWordStyle,
-    combineWords,
-    firstUpperWordStyle,
-    isAscii,
-    isLetterOrUnderscore,
-    isLetterOrUnderscoreOrDigit,
-    legalizeCharacters,
-    splitIntoWords,
-    stringEscape
-} from "../support/Strings";
-import { TargetLanguage } from "../TargetLanguage";
-import { type ClassProperty, type ClassType, type EnumType, type Type, type UnionType } from "../Type";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
-import { matchType, nullableFromUnion } from "../TypeUtils";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../../ConvenienceRenderer";
+import { type Name, type Namer } from "../../Naming";
+import { type RenderContext } from "../../Renderer";
+import { type OptionValues } from "../../RendererOptions";
+import { type MultiWord, type Sourcelike, multiWord, parenIfNeeded, singleWord } from "../../Source";
+import { stringEscape } from "../../support/Strings";
+import { type TargetLanguage } from "../../TargetLanguage";
+import { type ClassProperty, type ClassType, type EnumType, type Type, type UnionType } from "../../Type";
+import { matchType, nullableFromUnion } from "../../TypeUtils";
 
-export const haskellOptions = {
-    justTypes: new BooleanOption("just-types", "Plain types only", false),
-    useList: new EnumOption("array-type", "Use Array or List", [
-        ["array", false],
-        ["list", true]
-    ]),
-    moduleName: new StringOption("module", "Generated module name", "NAME", "QuickType")
-};
-
-export class HaskellTargetLanguage extends TargetLanguage {
-    public constructor() {
-        super("Haskell", ["haskell"], "haskell");
-    }
-
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [haskellOptions.justTypes, haskellOptions.moduleName, haskellOptions.useList];
-    }
-
-    public get supportsOptionalClassProperties(): boolean {
-        return true;
-    }
-
-    public get supportsUnionsWithBothNumberTypes(): boolean {
-        return true;
-    }
-
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): HaskellRenderer {
-        return new HaskellRenderer(this, renderContext, getOptionValues(haskellOptions, untypedOptionValues));
-    }
-}
-
-const forbiddenNames = [
-    // reserved keywords
-    "as",
-    "case",
-    "class",
-    "data",
-    "default",
-    "deriving",
-    "do",
-    "else",
-    "family",
-    "forall",
-    "foreign",
-    "hiding",
-    "if",
-    "import",
-    "in",
-    "infix",
-    "infixl",
-    "infixr",
-    "instance",
-    "let",
-    "of",
-    "mdo",
-    "module",
-    "newtype",
-    "proc",
-    "qualified",
-    "rec",
-    "then",
-    "type",
-    "where",
-    // in Prelude keywords ...
-    "id",
-    "Array",
-    "HashMap",
-    "Map",
-    "Maybe",
-    "Bool",
-    "Int",
-    "True",
-    "False",
-    "Enum",
-    // Aeson types
-    "encode",
-    "decode",
-    "text",
-    "Text",
-    "Value",
-    "Object",
-    "Result",
-    "Series",
-    "Error"
-];
-
-const legalizeName = legalizeCharacters(cp => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp));
-
-function haskellNameStyle(original: string, upper: boolean): string {
-    const words = splitIntoWords(original);
-    return combineWords(
-        words,
-        legalizeName,
-        upper ? firstUpperWordStyle : allLowerWordStyle,
-        firstUpperWordStyle,
-        upper ? allUpperWordStyle : allLowerWordStyle,
-        allUpperWordStyle,
-        "",
-        isLetterOrUnderscore
-    );
-}
-
-const upperNamingFunction = funPrefixNamer("upper", n => haskellNameStyle(n, true));
-const lowerNamingFunction = funPrefixNamer("lower", n => haskellNameStyle(n, false));
+import { forbiddenNames } from "./constants";
+import { type haskellOptions } from "./language";
+import { lowerNamingFunction, upperNamingFunction } from "./utils";
 
 export class HaskellRenderer extends ConvenienceRenderer {
     public constructor(
@@ -143,7 +23,7 @@ export class HaskellRenderer extends ConvenienceRenderer {
         super(targetLanguage, renderContext);
     }
 
-    protected forbiddenNamesForGlobalNamespace(): string[] {
+    protected forbiddenNamesForGlobalNamespace(): readonly string[] {
         return forbiddenNames;
     }
 
