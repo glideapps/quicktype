@@ -1,13 +1,11 @@
-import { panic } from "@glideapps/ts-necessities";
 import { arrayIntercalate } from "collection-utils";
 
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { type Name, type Namer, funPrefixNamer } from "../Naming";
-import { type RenderContext } from "../Renderer";
-import { EnumOption, type Option, type OptionValues, getOptionValues } from "../RendererOptions";
-import { type Sourcelike } from "../Source";
-import { AcronymStyleOptions, acronymOption, acronymStyle } from "../support/Acronyms";
-import { convertersOption } from "../support/Converters";
+import { ConvenienceRenderer } from "../../ConvenienceRenderer";
+import { type Name, type Namer, funPrefixNamer } from "../../Naming";
+import { type RenderContext } from "../../Renderer";
+import { type OptionValues } from "../../RendererOptions";
+import { type Sourcelike } from "../../Source";
+import { acronymStyle } from "../../support/Acronyms";
 import {
     allLowerWordStyle,
     capitalize,
@@ -15,53 +13,15 @@ import {
     firstUpperWordStyle,
     splitIntoWords,
     utf16StringEscape
-} from "../support/Strings";
-import { TargetLanguage } from "../TargetLanguage";
-import { type ArrayType, type ClassProperty, type ClassType, type ObjectType, PrimitiveType, type Type } from "../Type";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
-import { directlyReachableSingleNamedType, matchType } from "../TypeUtils";
+} from "../../support/Strings";
+import { panic } from "../../support/Support";
+import { type TargetLanguage } from "../../TargetLanguage";
+import { type ClassProperty, type ClassType, type ObjectType, PrimitiveType, type Type } from "../../Type";
+import { directlyReachableSingleNamedType, matchType } from "../../TypeUtils";
+import { isES3IdentifierStart } from "../JavaScript/unicodeMaps";
+import { legalizeName } from "../JavaScript/utils";
 
-import { legalizeName } from "./JavaScript";
-import { isES3IdentifierStart } from "./JavaScriptUnicodeMaps";
-
-export const javaScriptPropTypesOptions = {
-    acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
-    converters: convertersOption(),
-    moduleSystem: new EnumOption(
-        "module-system",
-        "Which module system to use",
-        [
-            ["common-js", false],
-            ["es6", true]
-        ],
-        "es6"
-    )
-};
-
-export class JavaScriptPropTypesTargetLanguage extends TargetLanguage {
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [javaScriptPropTypesOptions.acronymStyle, javaScriptPropTypesOptions.converters];
-    }
-
-    public constructor(
-        displayName = "JavaScript PropTypes",
-        names: string[] = ["javascript-prop-types"],
-        extension = "js"
-    ) {
-        super(displayName, names, extension);
-    }
-
-    protected makeRenderer(
-        renderContext: RenderContext,
-        untypedOptionValues: FixMeOptionsType
-    ): JavaScriptPropTypesRenderer {
-        return new JavaScriptPropTypesRenderer(
-            this,
-            renderContext,
-            getOptionValues(javaScriptPropTypesOptions, untypedOptionValues)
-        );
-    }
-}
+import { type javaScriptPropTypesOptions } from "./language";
 
 const identityNamingFunction = funPrefixNamer("properties", s => s);
 
