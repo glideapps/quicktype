@@ -28,7 +28,7 @@ import {
     type Type
 } from "../../Type";
 import { matchType } from "../../TypeUtils";
-import { legalizeName } from "../JavaScript";
+import { legalizeName } from "../JavaScript/utils";
 
 import { type typeScriptZodOptions } from "./language";
 

@@ -20,7 +20,7 @@ import { panic } from "../../support/Support";
 import { type TargetLanguage } from "../../TargetLanguage";
 import { ArrayType, type ClassProperty, EnumType, MapType, type ObjectType, type Type } from "../../Type";
 import { matchType } from "../../TypeUtils";
-import { legalizeName } from "../JavaScript";
+import { legalizeName } from "../JavaScript/utils";
 
 import { type typeScriptEffectSchemaOptions } from "./language";
 

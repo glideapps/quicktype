@@ -1,2 +1,2 @@
 export { JavaScriptTargetLanguage, javaScriptOptions } from "./language";
-export { JavaScriptRenderer } from "./JavaScriptRenderer";
+export { JavaScriptRenderer, JavaScriptTypeAnnotations } from "./JavaScriptRenderer";
