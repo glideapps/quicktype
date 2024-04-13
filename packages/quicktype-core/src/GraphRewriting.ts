@@ -222,7 +222,7 @@ export abstract class BaseGraphRewriteBuilder extends TypeBuilder implements Typ
     private _printIndent = 0;
 
     public constructor(
-        protected readonly originalGraph: TypeGraph,
+        public readonly originalGraph: TypeGraph,
         stringTypeMapping: StringTypeMapping,
         alphabetizeProperties: boolean,
         graphHasProvenanceAttributes: boolean,

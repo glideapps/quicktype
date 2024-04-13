@@ -20,6 +20,7 @@ import { type MultiFileRenderResult, type TargetLanguage } from "./TargetLanguag
 import { type TransformedStringTypeKind } from "./Type";
 import { type StringTypeMapping, TypeBuilder } from "./TypeBuilder";
 import { type TypeGraph, noneToAny, optionalToNullable, removeIndirectionIntersections } from "./TypeGraph";
+import { type FixMeOptionsType } from "./types";
 
 export function getTargetLanguage(nameOrInstance: string | TargetLanguage): TargetLanguage {
     if (typeof nameOrInstance === "object") {
@@ -231,9 +232,9 @@ class Run implements RunContext {
         // we sometimes get.
         this._options = Object.assign({}, defaultOptions, defaultInferenceFlags);
         for (const k of Object.getOwnPropertyNames(options)) {
-            const v = (options as any)[k];
+            const v = (options as FixMeOptionsType)[k];
             if (v !== undefined) {
-                (this._options as any)[k] = v;
+                (this._options as FixMeOptionsType)[k] = v;
             }
         }
     }

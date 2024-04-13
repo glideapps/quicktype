@@ -168,12 +168,12 @@ export function unionMemberName(u: UnionType, member: Type, language: string): [
     return [first, isFixed];
 }
 
-function isAccessorEntry(x: any): x is string | { [language: string]: string } {
+function isAccessorEntry(x: unknown): x is string | { [language: string]: string } {
     if (typeof x === "string") {
         return true;
     }
 
-    return isStringMap(x, (v: any): v is string => typeof v === "string");
+    return isStringMap(x, (v: unknown): v is string => typeof v === "string");
 }
 
 function makeAccessorEntry(ae: string | { [language: string]: string }): AccessorEntry {
@@ -181,7 +181,7 @@ function makeAccessorEntry(ae: string | { [language: string]: string }): Accesso
     return mapFromObject(ae);
 }
 
-export function makeAccessorNames(x: any): AccessorNames {
+export function makeAccessorNames(x: unknown): AccessorNames {
     // FIXME: Do proper error reporting
     const stringMap = checkStringMap(x, isAccessorEntry);
     return mapMap(mapFromObject(stringMap), makeAccessorEntry);

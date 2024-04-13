@@ -2,7 +2,7 @@ import { parseJSON } from "../support/Support";
 
 import { type JSONSourceData } from "./Inputs";
 
-function isValidJSON (s: string): boolean {
+function isValidJSON(s: string): boolean {
     try {
         JSON.parse(s);
         return true;
@@ -11,14 +11,15 @@ function isValidJSON (s: string): boolean {
     }
 }
 
-export function sourcesFromPostmanCollection (
+export function sourcesFromPostmanCollection(
     collectionJSON: string,
-    collectionJSONAddress?: string,
-): { description: string | undefined, sources: Array<JSONSourceData<string>>, } {
+    collectionJSONAddress?: string
+): { description: string | undefined; sources: Array<JSONSourceData<string>> } {
     const sources: Array<JSONSourceData<string>> = [];
     const descriptions: string[] = [];
 
-    function processCollection (c: any): void {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    function processCollection(c: any): void {
         if (typeof c !== "object") return;
         if (Array.isArray(c.item)) {
             for (const item of c.item) {

@@ -23,6 +23,7 @@ import {
 import { defined } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
 import { type ClassType, type EnumType, type Type, UnionType } from "../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
 export enum Density {
@@ -112,7 +113,7 @@ const namingStyles: Record<string, NamingStyle> = {
 };
 
 export class RustTargetLanguage extends TargetLanguage {
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): RustRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): RustRenderer {
         return new RustRenderer(this, renderContext, getOptionValues(rustOptions, untypedOptionValues));
     }
 
@@ -120,7 +121,7 @@ export class RustTargetLanguage extends TargetLanguage {
         super("Rust", ["rust", "rs", "rustlang"], "rs");
     }
 
-    protected getOptions(): Array<Option<any>> {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [
             rustOptions.density,
             rustOptions.visibility,
@@ -346,7 +347,7 @@ export class RustRenderer extends ConvenienceRenderer {
         );
     }
 
-    private breakCycle(t: Type, withIssues: boolean): any {
+    private breakCycle(t: Type, withIssues: boolean): Sourcelike {
         const rustType = this.rustType(t, withIssues);
         const isCycleBreaker = this.isCycleBreakerType(t);
 

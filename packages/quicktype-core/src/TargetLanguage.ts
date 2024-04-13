@@ -1,6 +1,6 @@
 import { mapMap } from "collection-utils";
 
-import { type ConvenienceRenderer } from "./ConvenienceRenderer";
+import { ConvenienceRenderer } from "./ConvenienceRenderer";
 import { type DateTimeRecognizer, DefaultDateTimeRecognizer } from "./DateTime";
 import { type RenderContext, type Renderer } from "./Renderer";
 import { type Option, type OptionDefinition } from "./RendererOptions";
@@ -10,6 +10,7 @@ import { defined } from "./support/Support";
 import { type Type } from "./Type";
 import { type StringTypeMapping } from "./TypeBuilder";
 import { type TypeGraph } from "./TypeGraph";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "./types";
 
 export type MultiFileRenderResult = ReadonlyMap<string, SerializedRenderResult>;
 
@@ -20,7 +21,7 @@ export abstract class TargetLanguage {
         public readonly extension: string
     ) {}
 
-    protected abstract getOptions(): Array<Option<any>>;
+    protected abstract getOptions(): Array<Option<FixMeOptionsAnyType>>;
 
     public get optionDefinitions(): OptionDefinition[] {
         return this.getOptions().map(o => o.definition);
@@ -41,14 +42,14 @@ export abstract class TargetLanguage {
         return defined(this.names[0]);
     }
 
-    protected abstract makeRenderer(renderContext: RenderContext, optionValues: { [name: string]: any }): Renderer;
+    protected abstract makeRenderer(renderContext: RenderContext, optionValues: FixMeOptionsType): Renderer;
 
     public renderGraphAndSerialize(
         typeGraph: TypeGraph,
         givenOutputFilename: string,
         alphabetizeProperties: boolean,
         leadingComments: Comment[] | undefined,
-        rendererOptions: { [name: string]: any },
+        rendererOptions: FixMeOptionsType,
         indentation?: string
     ): MultiFileRenderResult {
         if (indentation === undefined) {
@@ -57,8 +58,8 @@ export abstract class TargetLanguage {
 
         const renderContext = { typeGraph, leadingComments };
         const renderer = this.makeRenderer(renderContext, rendererOptions);
-        if ((renderer as any).setAlphabetizeProperties !== undefined) {
-            (renderer as ConvenienceRenderer).setAlphabetizeProperties(alphabetizeProperties);
+        if (renderer instanceof ConvenienceRenderer) {
+            renderer.setAlphabetizeProperties(alphabetizeProperties);
         }
 
         const renderResult = renderer.render(givenOutputFilename);

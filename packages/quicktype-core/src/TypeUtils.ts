@@ -131,7 +131,7 @@ export function isAnyOrNull(t: Type): boolean {
 // introduced.
 export function removeNullFromUnion(
     t: UnionType,
-    sortBy: boolean | ((t: Type) => any) = false
+    sortBy: boolean | ((t: Type) => string | number) = false
 ): [PrimitiveType | null, ReadonlySet<Type>] {
     function sort(s: ReadonlySet<Type>): ReadonlySet<Type> {
         if (sortBy === false) return s;

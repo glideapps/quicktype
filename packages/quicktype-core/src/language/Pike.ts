@@ -6,6 +6,7 @@ import { type MultiWord, type Sourcelike, multiWord, parenIfNeeded, singleWord }
 import { isLetterOrUnderscoreOrDigit, legalizeCharacters, makeNameStyle, stringEscape } from "../support/Strings";
 import { TargetLanguage } from "../TargetLanguage";
 import { ArrayType, type ClassType, type EnumType, MapType, PrimitiveType, type Type, type UnionType } from "../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
 export const pikeOptions = {};
@@ -75,7 +76,7 @@ export class PikeTargetLanguage extends TargetLanguage {
         super("Pike", ["pike", "pikelang"], "pmod");
     }
 
-    protected getOptions(): Array<Option<any>> {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [];
     }
 

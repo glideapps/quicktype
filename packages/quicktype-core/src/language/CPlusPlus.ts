@@ -50,6 +50,7 @@ import {
     type TypeKind,
     UnionType
 } from "../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
 import { directlyReachableTypes, isNamedType, matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
 const pascalValue: [string, NamingStyle] = ["pascal-case", "pascal"];
@@ -143,7 +144,7 @@ export class CPlusPlusTargetLanguage extends TargetLanguage {
         super(displayName, names, extension);
     }
 
-    protected getOptions(): Array<Option<any>> {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [
             cPlusPlusOptions.justTypes,
             cPlusPlusOptions.namespace,
@@ -169,21 +170,18 @@ export class CPlusPlusTargetLanguage extends TargetLanguage {
         return true;
     }
 
-    protected makeRenderer(
-        renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
-    ): CPlusPlusRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): CPlusPlusRenderer {
         return new CPlusPlusRenderer(this, renderContext, getOptionValues(cPlusPlusOptions, untypedOptionValues));
     }
 }
 
 function constraintsForType(t: Type):
-| {
-    minMax?: MinMaxConstraint;
-    minMaxLength?: MinMaxConstraint;
-    pattern?: string;
-}
-| undefined {
+    | {
+          minMax?: MinMaxConstraint;
+          minMaxLength?: MinMaxConstraint;
+          pattern?: string;
+      }
+    | undefined {
     const minMax = minMaxValueForType(t);
     const minMaxLength = minMaxLengthForType(t);
     const pattern = patternForType(t);
@@ -1375,11 +1373,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 pattern === undefined
                     ? this._nulloptType
                     : [
-                        this._stringType.getType(),
-                        "(",
-                        this._stringType.createStringLiteral([stringEscape(pattern)]),
-                        ")"
-                    ],
+                          this._stringType.getType(),
+                          "(",
+                          this._stringType.createStringLiteral([stringEscape(pattern)]),
+                          ")"
+                      ],
                 ")"
             ]);
         });
@@ -2646,11 +2644,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
     protected gatherUserNamespaceForwardDecls(): Sourcelike[] {
         return this.gatherSource(() => {
-            this.forEachObject("leading-and-interposing", (_: any, className: Name) =>
+            this.forEachObject("leading-and-interposing", (_: unknown, className: Name) =>
                 this.emitClassHeaders(className)
             );
 
-            this.forEachEnum("leading-and-interposing", (_: any, enumName: Name) => this.emitEnumHeaders(enumName));
+            this.forEachEnum("leading-and-interposing", (_: unknown, enumName: Name) => this.emitEnumHeaders(enumName));
         });
     }
 

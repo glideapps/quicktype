@@ -33,6 +33,7 @@ import {
     type UnionType
 } from "../Type";
 import { type StringTypeMapping } from "../TypeBuilder";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
 import { directlyReachableSingleNamedType, matchType, nullableFromUnion } from "../TypeUtils";
 
 export const dartOptions = {
@@ -64,7 +65,7 @@ export class DartTargetLanguage extends TargetLanguage {
         super("Dart", ["dart"], "dart");
     }
 
-    protected getOptions(): Array<Option<any>> {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [
             dartOptions.nullSafety,
             dartOptions.justTypes,
@@ -91,7 +92,7 @@ export class DartTargetLanguage extends TargetLanguage {
         return mapping;
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): DartRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): DartRenderer {
         const options = getOptionValues(dartOptions, untypedOptionValues);
         return new DartRenderer(this, renderContext, options);
     }

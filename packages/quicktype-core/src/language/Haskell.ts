@@ -26,6 +26,7 @@ import {
 } from "../support/Strings";
 import { TargetLanguage } from "../TargetLanguage";
 import { type ClassProperty, type ClassType, type EnumType, type Type, type UnionType } from "../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
 import { matchType, nullableFromUnion } from "../TypeUtils";
 
 export const haskellOptions = {
@@ -42,7 +43,7 @@ export class HaskellTargetLanguage extends TargetLanguage {
         super("Haskell", ["haskell"], "haskell");
     }
 
-    protected getOptions(): Array<Option<any>> {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [haskellOptions.justTypes, haskellOptions.moduleName, haskellOptions.useList];
     }
 
@@ -54,10 +55,7 @@ export class HaskellTargetLanguage extends TargetLanguage {
         return true;
     }
 
-    protected makeRenderer(
-        renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
-    ): HaskellRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): HaskellRenderer {
         return new HaskellRenderer(this, renderContext, getOptionValues(haskellOptions, untypedOptionValues));
     }
 }

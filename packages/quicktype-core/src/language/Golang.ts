@@ -19,6 +19,7 @@ import {
 import { assert, defined } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
 import { type ClassProperty, type ClassType, type EnumType, type Type, type TypeKind, UnionType } from "../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
 export const goOptions = {
@@ -39,7 +40,7 @@ export class GoTargetLanguage extends TargetLanguage {
         super("Go", ["go", "golang"], "go");
     }
 
-    protected getOptions(): Array<Option<any>> {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [
             goOptions.justTypes,
             goOptions.justTypesAndPackage,
@@ -64,7 +65,7 @@ export class GoTargetLanguage extends TargetLanguage {
         return true;
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): GoRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): GoRenderer {
         return new GoRenderer(this, renderContext, getOptionValues(goOptions, untypedOptionValues));
     }
 

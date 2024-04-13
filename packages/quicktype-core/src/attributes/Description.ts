@@ -123,8 +123,8 @@ export function descriptionAttributeProducer(
     }
 
     if (types.has("object") && typeof schema.properties === "object") {
-        const propertyDescriptions = mapFilterMap(mapFromObject<any>(schema.properties), propSchema => {
-            if (typeof propSchema === "object") {
+        const propertyDescriptions = mapFilterMap(mapFromObject(schema.properties), propSchema => {
+            if (propSchema && typeof propSchema === "object" && "description" in propSchema) {
                 const desc = propSchema.description;
                 if (typeof desc === "string") {
                     return new Set([desc]);

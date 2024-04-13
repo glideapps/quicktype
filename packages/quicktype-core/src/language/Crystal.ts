@@ -20,6 +20,7 @@ import {
 } from "../support/Strings";
 import { TargetLanguage } from "../TargetLanguage";
 import { type ClassType, type EnumType, type Type, type UnionType } from "../Type";
+import { type FixMeOptionsAnyType } from "../types";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
 export class CrystalTargetLanguage extends TargetLanguage {
@@ -35,7 +36,7 @@ export class CrystalTargetLanguage extends TargetLanguage {
         return "  ";
     }
 
-    protected getOptions(): Array<Option<any>> {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [];
     }
 }

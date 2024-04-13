@@ -389,7 +389,7 @@ class GQLSchemaFromJSON implements GQLSchema {
 
     public readonly mutationType?: GQLType;
 
-    public constructor(json: any) {
+    public constructor(json: { data: GraphQLSchema }) {
         const schema: GraphQLSchema = json.data;
 
         if (schema.__schema.queryType.name === null) {
@@ -498,7 +498,7 @@ class GQLSchemaFromJSON implements GQLSchema {
 function makeGraphQLQueryTypes(
     topLevelName: string,
     builder: TypeBuilder,
-    json: any,
+    json: { data: GraphQLSchema },
     queryString: string
 ): Map<string, TypeRef> {
     const schema = new GQLSchemaFromJSON(json);
@@ -546,11 +546,13 @@ function makeGraphQLQueryTypes(
 export interface GraphQLSourceData {
     name: string;
     query: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     schema: any;
 }
 
 interface GraphQLTopLevel {
     query: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     schema: any;
 }
 

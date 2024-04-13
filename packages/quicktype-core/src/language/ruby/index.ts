@@ -36,6 +36,7 @@ import {
     type Type,
     type UnionType
 } from "../../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
 
 import * as keywords from "./keywords";
@@ -69,7 +70,7 @@ export class RubyTargetLanguage extends TargetLanguage {
         super("Ruby", ["ruby"], "rb");
     }
 
-    protected getOptions(): Array<Option<any>> {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [rubyOptions.justTypes, rubyOptions.strictness, rubyOptions.namespace];
     }
 
@@ -81,7 +82,7 @@ export class RubyTargetLanguage extends TargetLanguage {
         return "  ";
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): RubyRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): RubyRenderer {
         return new RubyRenderer(this, renderContext, getOptionValues(rubyOptions, untypedOptionValues));
     }
 }

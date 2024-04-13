@@ -25,7 +25,7 @@ const indexMask = (1 << indexBits) - 1;
 const serialBits = 31 - indexBits;
 const serialMask = (1 << serialBits) - 1;
 
-export function isTypeRef(x: any): x is TypeRef {
+export function isTypeRef(x: unknown): x is TypeRef {
     return typeof x === "number";
 }
 
@@ -292,7 +292,7 @@ export class TypeGraph {
         return result;
     }
 
-    private setPrintOnRewrite(): void {
+    public setPrintOnRewrite(): void {
         this._printOnRewrite = true;
     }
 
@@ -448,7 +448,7 @@ export class TypeGraph {
         return this._parents[t.index];
     }
 
-    private printGraph(): void {
+    public printGraph(): void {
         const types = defined(this._types);
         for (let i = 0; i < types.length; i++) {
             const t = types[i];

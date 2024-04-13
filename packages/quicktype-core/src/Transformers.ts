@@ -54,8 +54,7 @@ export abstract class Transformer {
 
     public abstract reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer;
 
-    public equals(other: any): boolean {
-        if (!(other instanceof Transformer)) return false;
+    public equals<T extends Transformer>(other: T): boolean {
         return this.sourceTypeRef === other.sourceTypeRef;
     }
 
@@ -97,7 +96,7 @@ export abstract class ProducerTransformer extends Transformer {
         return super.getNumberOfNodes() + getNumberOfNodes(this.consumer);
     }
 
-    public equals(other: any): boolean {
+    public equals<T extends Transformer>(other: T): boolean {
         if (!super.equals(other)) return false;
         if (!(other instanceof ProducerTransformer)) return false;
         return areEqual(this.consumer, other.consumer);
@@ -132,7 +131,7 @@ export abstract class MatchTransformer extends Transformer {
         return super.getNumberOfNodes() + this.transformer.getNumberOfNodes();
     }
 
-    public equals(other: any): boolean {
+    public equals<T extends Transformer>(other: T): boolean {
         if (!super.equals(other)) return false;
         if (!(other instanceof MatchTransformer)) return false;
         return this.transformer.equals(other.transformer);
@@ -180,7 +179,7 @@ export class DecodingTransformer extends ProducerTransformer {
         );
     }
 
-    public equals(other: any): boolean {
+    public equals<T extends Transformer>(other: T): boolean {
         if (!super.equals(other)) return false;
         return other instanceof DecodingTransformer;
     }
@@ -203,7 +202,7 @@ export class EncodingTransformer extends Transformer {
         return new EncodingTransformer(builder.typeGraph, builder.reconstituteTypeRef(this.sourceTypeRef));
     }
 
-    public equals(other: any): boolean {
+    public equals<T extends Transformer>(other: T): boolean {
         if (!super.equals(other)) return false;
         if (!(other instanceof EncodingTransformer)) return false;
         return true;
@@ -283,7 +282,7 @@ export class ArrayDecodingTransformer extends ProducerTransformer {
         return h;
     }
 
-    public equals(other: any): boolean {
+    public equals<T extends Transformer>(other: T): boolean {
         if (!super.equals(other)) return false;
         if (!(other instanceof ArrayDecodingTransformer)) return false;
         if (!areEqual(this._itemTargetTypeRef, other._itemTargetTypeRef)) return false;
@@ -343,7 +342,7 @@ export class ArrayEncodingTransformer extends Transformer {
         return addHashCode(h, this.itemTransformer.hashCode());
     }
 
-    public equals(other: any): boolean {
+    public equals<T extends Transformer>(other: T): boolean {
         if (!super.equals(other)) return false;
         if (!(other instanceof ArrayEncodingTransformer)) return false;
         if (!areEqual(this._itemTargetTypeRef, other._itemTargetTypeRef)) return false;
@@ -415,7 +414,7 @@ export class ChoiceTransformer extends Transformer {
         );
     }
 
-    public equals(other: any): boolean {
+    public equals<T extends Transformer>(other: T): boolean {
         if (!super.equals(other)) return false;
         if (!(other instanceof ChoiceTransformer)) return false;
         return areEqual(this.transformers, other.transformers);
@@ -597,7 +596,7 @@ export class DecodingChoiceTransformer extends Transformer {
         );
     }
 
-    public equals(other: any): boolean {
+    public equals<T extends Transformer>(other: T): boolean {
         if (!super.equals(other)) return false;
         if (!(other instanceof DecodingChoiceTransformer)) return false;
         if (!areEqual(this.nullTransformer, other.nullTransformer)) return false;
@@ -673,7 +672,7 @@ export class UnionMemberMatchTransformer extends MatchTransformer {
         );
     }
 
-    public equals(other: any): boolean {
+    public equals<T extends Transformer>(other: T): boolean {
         if (!super.equals(other)) return false;
         if (!(other instanceof UnionMemberMatchTransformer)) return false;
         return this.memberTypeRef === other.memberTypeRef;
@@ -736,7 +735,7 @@ export class StringMatchTransformer extends MatchTransformer {
         );
     }
 
-    public equals(other: any): boolean {
+    public equals<T extends Transformer>(other: T): boolean {
         if (!super.equals(other)) return false;
         if (!(other instanceof StringMatchTransformer)) return false;
         return this.stringCase !== other.stringCase;
@@ -773,7 +772,7 @@ export class UnionInstantiationTransformer extends Transformer {
         return new UnionInstantiationTransformer(builder.typeGraph, builder.reconstituteTypeRef(this.sourceTypeRef));
     }
 
-    public equals(other: any): boolean {
+    public equals<T extends Transformer>(other: T): boolean {
         if (!super.equals(other)) return false;
         return other instanceof UnionInstantiationTransformer;
     }
@@ -825,7 +824,7 @@ export class StringProducerTransformer extends ProducerTransformer {
         );
     }
 
-    public equals(other: any): boolean {
+    public equals<T extends Transformer>(other: T): boolean {
         if (!super.equals(other)) return false;
         if (!(other instanceof StringProducerTransformer)) return false;
         return this.result === other.result;
@@ -869,7 +868,7 @@ export class ParseStringTransformer extends ProducerTransformer {
         );
     }
 
-    public equals(other: any): boolean {
+    public equals<T extends Transformer>(other: T): boolean {
         if (!super.equals(other)) return false;
         return other instanceof ParseStringTransformer;
     }
@@ -903,7 +902,7 @@ export class StringifyTransformer extends ProducerTransformer {
         );
     }
 
-    public equals(other: any): boolean {
+    public equals<T extends Transformer>(other: T): boolean {
         if (!super.equals(other)) return false;
         return other instanceof StringifyTransformer;
     }
@@ -957,7 +956,7 @@ export class MinMaxLengthCheckTransformer extends ProducerTransformer {
         );
     }
 
-    public equals(other: any): boolean {
+    public equals<T extends Transformer>(other: T): boolean {
         if (!super.equals(other)) return false;
         return (
             other instanceof MinMaxLengthCheckTransformer &&
@@ -1015,7 +1014,7 @@ export class MinMaxValueTransformer extends ProducerTransformer {
         );
     }
 
-    public equals(other: any): boolean {
+    public equals<T extends Transformer>(other: T): boolean {
         if (!super.equals(other)) return false;
         return (
             other instanceof MinMaxValueTransformer && this.minimum === other.minimum && this.maximum === other.maximum
@@ -1058,7 +1057,7 @@ export class Transformation {
         );
     }
 
-    public equals(other: any): boolean {
+    public equals<T extends Transformer>(other: T): boolean {
         if (!(other instanceof Transformation)) return false;
         return this._targetTypeRef === other._targetTypeRef && this.transformer.equals(other.transformer);
     }

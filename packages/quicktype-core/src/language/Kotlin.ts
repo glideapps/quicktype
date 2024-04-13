@@ -36,6 +36,7 @@ import {
     type Type,
     UnionType
 } from "../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
 export enum Framework {
@@ -66,7 +67,7 @@ export class KotlinTargetLanguage extends TargetLanguage {
         super("Kotlin", ["kotlin"], "kt");
     }
 
-    protected getOptions(): Array<Option<any>> {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [kotlinOptions.framework, kotlinOptions.acronymStyle, kotlinOptions.packageName];
     }
 
@@ -78,10 +79,7 @@ export class KotlinTargetLanguage extends TargetLanguage {
         return true;
     }
 
-    protected makeRenderer(
-        renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
-    ): ConvenienceRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): ConvenienceRenderer {
         const options = getOptionValues(kotlinOptions, untypedOptionValues);
 
         switch (options.framework) {

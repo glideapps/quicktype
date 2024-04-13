@@ -19,6 +19,7 @@ import {
 import { panic } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
 import { ArrayType, type ClassProperty, EnumType, MapType, type ObjectType, type Type } from "../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
 import { matchType } from "../TypeUtils";
 
 import { legalizeName } from "./JavaScript";
@@ -28,7 +29,7 @@ export const typeScriptEffectSchemaOptions = {
 };
 
 export class TypeScriptEffectSchemaTargetLanguage extends TargetLanguage {
-    protected getOptions(): Array<Option<any>> {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [];
     }
 
@@ -42,7 +43,7 @@ export class TypeScriptEffectSchemaTargetLanguage extends TargetLanguage {
 
     protected makeRenderer(
         renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
+        untypedOptionValues: FixMeOptionsType
     ): TypeScriptEffectSchemaRenderer {
         return new TypeScriptEffectSchemaRenderer(
             this,

@@ -28,6 +28,7 @@ import {
     type Type
 } from "../Type";
 import { type StringTypeMapping } from "../TypeBuilder";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
 import { directlyReachableSingleNamedType, matchType } from "../TypeUtils";
 
 import { isES3IdentifierPart, isES3IdentifierStart } from "./JavaScriptUnicodeMaps";
@@ -69,7 +70,7 @@ export class JavaScriptTargetLanguage extends TargetLanguage {
         super(displayName, names, extension);
     }
 
-    protected getOptions(): Array<Option<any>> {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [
             javaScriptOptions.runtimeTypecheck,
             javaScriptOptions.runtimeTypecheckIgnoreUnknownProperties,
@@ -95,10 +96,7 @@ export class JavaScriptTargetLanguage extends TargetLanguage {
         return true;
     }
 
-    protected makeRenderer(
-        renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
-    ): JavaScriptRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): JavaScriptRenderer {
         return new JavaScriptRenderer(this, renderContext, getOptionValues(javaScriptOptions, untypedOptionValues));
     }
 }

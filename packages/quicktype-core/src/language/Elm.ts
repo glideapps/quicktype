@@ -29,6 +29,7 @@ import {
 import { defined } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
 import { type ClassProperty, type ClassType, type EnumType, type Type, UnionType } from "../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
 import { matchType, nullableFromUnion } from "../TypeUtils";
 
 export const elmOptions = {
@@ -46,7 +47,7 @@ export class ElmTargetLanguage extends TargetLanguage {
         super("Elm", ["elm"], "elm");
     }
 
-    protected getOptions(): Array<Option<any>> {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [elmOptions.justTypes, elmOptions.moduleName, elmOptions.useList];
     }
 
@@ -58,7 +59,7 @@ export class ElmTargetLanguage extends TargetLanguage {
         return true;
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): ElmRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): ElmRenderer {
         return new ElmRenderer(this, renderContext, getOptionValues(elmOptions, untypedOptionValues));
     }
 }

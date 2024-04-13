@@ -86,7 +86,7 @@ export class TypeAttributeKind<T> {
         return mapFilter(a, (_, k) => k !== this);
     }
 
-    public equals(other: any): boolean {
+    public equals(other: TypeAttributeKind<unknown>): boolean {
         if (!(other instanceof TypeAttributeKind)) {
             return false;
         }
@@ -99,6 +99,8 @@ export class TypeAttributeKind<T> {
     }
 }
 
+// FIXME: strongly type this
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type TypeAttributes = ReadonlyMap<TypeAttributeKind<any>, any>;
 
 export const emptyTypeAttributes: TypeAttributes = new Map();
@@ -126,6 +128,8 @@ export function combineTypeAttributes(
 
     const attributesByKind = mapTranspose(attributeArray);
 
+    // FIXME: strongly type this
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     function combine(attrs: any[], kind: TypeAttributeKind<any>): any {
         assert(attrs.length > 0, "Cannot combine zero type attributes");
         if (attrs.length === 1) return attrs[0];

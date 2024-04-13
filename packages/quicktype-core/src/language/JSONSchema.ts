@@ -22,6 +22,7 @@ import {
     transformedStringTypeTargetTypeKindsMap
 } from "../Type";
 import { type StringTypeMapping, getNoStringTypeMapping } from "../TypeBuilder";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
 import { matchTypeExhaustive } from "../TypeUtils";
 
 export class JSONSchemaTargetLanguage extends TargetLanguage {
@@ -29,7 +30,7 @@ export class JSONSchemaTargetLanguage extends TargetLanguage {
         super("JSON Schema", ["schema", "json-schema"], "schema");
     }
 
-    protected getOptions(): Array<Option<any>> {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [];
     }
 
@@ -45,10 +46,7 @@ export class JSONSchemaTargetLanguage extends TargetLanguage {
         return true;
     }
 
-    protected makeRenderer(
-        renderContext: RenderContext,
-        _untypedOptionValues: { [name: string]: any }
-    ): JSONSchemaRenderer {
+    protected makeRenderer(renderContext: RenderContext, _untypedOptionValues: FixMeOptionsType): JSONSchemaRenderer {
         return new JSONSchemaRenderer(this, renderContext);
     }
 }
@@ -72,6 +70,7 @@ function jsonNameStyle(original: string): string {
 }
 
 interface Schema {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [name: string]: any;
 }
 
@@ -121,7 +120,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
     }
 
     private schemaForType(t: Type): Schema {
-        const schema = matchTypeExhaustive<{ [name: string]: any }>(
+        const schema = matchTypeExhaustive(
             t,
             _noneType => {
                 return panic("none type should have been replaced");

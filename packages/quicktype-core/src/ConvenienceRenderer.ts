@@ -775,7 +775,7 @@ export abstract class ConvenienceRenderer extends Renderer {
 
     protected forEachSpecificNamedType<T extends Type>(
         blankLocations: BlankLineConfig,
-        types: Iterable<[any, T]>,
+        types: Iterable<[T, T]>,
         f: (t: T, name: Name, position: ForEachPosition) => void
     ): void {
         this.forEachWithBlankLines(types, blankLocations, (t, _, pos) => f(t, this.nameForNamedType(t), pos));
@@ -788,7 +788,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             | ((o: ObjectType, objectName: Name, position: ForEachPosition) => void)
     ): void {
         // FIXME: This is ugly.
-        this.forEachSpecificNamedType<ObjectType>(blankLocations, defined(this._namedObjects).entries(), f as any);
+        this.forEachSpecificNamedType<ObjectType>(blankLocations, defined(this._namedObjects).entries(), f);
     }
 
     protected forEachEnum(
@@ -834,7 +834,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             if (t instanceof ObjectType) {
                 // FIXME: This is ugly.  We can't runtime check that the function
                 // takes full object types if we have them.
-                (objectFunc as any)(t, name, pos);
+                objectFunc(t, name, pos);
             } else if (t instanceof EnumType) {
                 enumFunc(t, name, pos);
             } else if (t instanceof UnionType) {

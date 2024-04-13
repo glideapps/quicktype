@@ -166,6 +166,7 @@ export function jsonInputForTargetLanguage(
 
 export class InputData {
     // FIXME: Make into a Map, indexed by kind.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private _inputs: Set<Input<any>> = new Set();
 
     protected addInput<T>(input: Input<T>): void {

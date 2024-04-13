@@ -27,6 +27,7 @@ import {
     type Type,
     type UnionType
 } from "../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
 import { matchCompoundType, matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
 export enum Framework {
@@ -529,7 +530,7 @@ export class SmithyTargetLanguage extends TargetLanguage {
         super("Smithy", ["Smithy"], "smithy");
     }
 
-    protected getOptions(): Array<Option<any>> {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [SmithyOptions.framework, SmithyOptions.packageName];
     }
 
@@ -541,10 +542,7 @@ export class SmithyTargetLanguage extends TargetLanguage {
         return true;
     }
 
-    protected makeRenderer(
-        renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
-    ): ConvenienceRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): ConvenienceRenderer {
         const options = getOptionValues(SmithyOptions, untypedOptionValues);
 
         switch (options.framework) {

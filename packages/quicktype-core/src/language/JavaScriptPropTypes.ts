@@ -17,7 +17,8 @@ import {
     utf16StringEscape
 } from "../support/Strings";
 import { TargetLanguage } from "../TargetLanguage";
-import { type ClassProperty, type ClassType, type ObjectType, PrimitiveType, type Type } from "../Type";
+import { type ClassProperty, type ClassType, type ObjectType, PrimitiveType, type Type, ArrayType } from "../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
 import { directlyReachableSingleNamedType, matchType } from "../TypeUtils";
 
 import { legalizeName } from "./JavaScript";
@@ -38,7 +39,7 @@ export const javaScriptPropTypesOptions = {
 };
 
 export class JavaScriptPropTypesTargetLanguage extends TargetLanguage {
-    protected getOptions(): Array<Option<any>> {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [javaScriptPropTypesOptions.acronymStyle, javaScriptPropTypesOptions.converters];
     }
 
@@ -52,7 +53,7 @@ export class JavaScriptPropTypesTargetLanguage extends TargetLanguage {
 
     protected makeRenderer(
         renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
+        untypedOptionValues: FixMeOptionsType
     ): JavaScriptPropTypesRenderer {
         return new JavaScriptPropTypesRenderer(
             this,
@@ -271,7 +272,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
             } else {
                 if (type.kind === "array") {
                     this.ensureBlankLine();
-                    this.emitExport(name, ["PropTypes.arrayOf(", this.typeMapTypeFor((type as any).items), ")"]);
+                    this.emitExport(name, ["PropTypes.arrayOf(", this.typeMapTypeFor((type as ArrayType).items), ")"]);
                 } else {
                     this.ensureBlankLine();
                     this.emitExport(name, ["_", name]);

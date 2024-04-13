@@ -58,6 +58,7 @@ import {
     UnionType
 } from "../Type";
 import { type StringTypeMapping } from "../TypeBuilder";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
 import { directlyReachableSingleNamedType, matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
 export enum Framework {
@@ -212,7 +213,7 @@ export class CSharpTargetLanguage extends TargetLanguage {
         super("C#", ["cs", "csharp"], "cs");
     }
 
-    protected getOptions(): Array<Option<any>> {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [
             cSharpOptions.framework,
             cSharpOptions.namespace,
@@ -254,10 +255,7 @@ export class CSharpTargetLanguage extends TargetLanguage {
         return need !== "none" && need !== "nullable";
     }
 
-    protected makeRenderer(
-        renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
-    ): ConvenienceRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): ConvenienceRenderer {
         const options = getOptionValues(cSharpOptions, untypedOptionValues);
 
         switch (options.framework) {

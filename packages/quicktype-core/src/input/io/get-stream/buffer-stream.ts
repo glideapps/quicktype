@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { PassThrough } from "readable-stream";
 
 import { type Options } from ".";

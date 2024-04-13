@@ -255,7 +255,7 @@ export abstract class CompressedJSON<T> {
         this._ctx = this._contextStack.pop();
     }
 
-    public equals(other: any): boolean {
+    public equals(other: CompressedJSON<unknown>): boolean {
         return this === other;
     }
 
@@ -319,7 +319,7 @@ export class CompressedJSONFromString extends CompressedJSON<string> {
             this.pushObjectContext();
             for (const key of Object.getOwnPropertyNames(json)) {
                 this.setPropertyKey(key);
-                this.process((json as any)[key]);
+                this.process(json[key as keyof typeof json]);
             }
 
             this.finishObject();

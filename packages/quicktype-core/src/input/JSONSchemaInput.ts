@@ -78,25 +78,27 @@ function keyOrIndex(pe: PathElement): string | undefined {
 
 function pathElementEquals(a: PathElement, b: PathElement): boolean {
     if (a.kind !== b.kind) return false;
-    switch (a.kind) {
-        case PathElementKind.Type:
-            return a.index === (b as any).index;
-        case PathElementKind.KeyOrIndex:
-            return a.key === (b as any).key;
-        default:
-            return true;
+
+    if (a.kind === PathElementKind.Type && b.kind === PathElementKind.Type) {
+        return a.index === b.index;
     }
+
+    if (a.kind === PathElementKind.KeyOrIndex && b.kind === PathElementKind.KeyOrIndex) {
+        return a.key === b.key;
+    }
+
+    return true;
 }
 
 function withRef(refOrLoc: Ref | (() => Ref) | Location): { ref: Ref };
 function withRef<T extends object>(refOrLoc: Ref | (() => Ref) | Location, props?: T): T & { ref: Ref };
-function withRef<T extends object>(refOrLoc: Ref | (() => Ref) | Location, props?: T): any {
+function withRef<T extends object>(refOrLoc: Ref | (() => Ref) | Location, props?: T): unknown {
     const ref =
         typeof refOrLoc === "function" ? refOrLoc() : refOrLoc instanceof Ref ? refOrLoc : refOrLoc.canonicalRef;
     return Object.assign({ ref }, props ?? {});
 }
 
-function checkJSONSchemaObject(x: any, refOrLoc: Ref | (() => Ref)): StringMap {
+function checkJSONSchemaObject(x: unknown, refOrLoc: Ref | (() => Ref)): StringMap {
     if (Array.isArray(x)) {
         return messageError("SchemaArrayIsInvalidSchema", withRef(refOrLoc));
     }
@@ -112,7 +114,7 @@ function checkJSONSchemaObject(x: any, refOrLoc: Ref | (() => Ref)): StringMap {
     return x;
 }
 
-function checkJSONSchema(x: any, refOrLoc: Ref | (() => Ref)): JSONSchema {
+function checkJSONSchema(x: unknown, refOrLoc: Ref | (() => Ref)): JSONSchema {
     if (typeof x === "boolean") return x;
     return checkJSONSchemaObject(x, refOrLoc);
 }
@@ -293,7 +295,7 @@ export class Ref {
         return address + "#" + this.path.map(elementToString).join("/");
     }
 
-    private lookup(local: any, path: readonly PathElement[], root: JSONSchema): JSONSchema {
+    private lookup(local: unknown, path: readonly PathElement[], root: JSONSchema): JSONSchema {
         const refMaker = () => new Ref(this.addressURI, path);
         const first = path[0];
         if (first === undefined) {
@@ -338,7 +340,7 @@ export class Ref {
         return this.lookup(root, this.path, root);
     }
 
-    public equals(other: any): boolean {
+    public equals<R extends Ref>(other: R): boolean {
         if (!(other instanceof Ref)) return false;
         if (this.addressURI !== undefined && other.addressURI !== undefined) {
             if (!this.addressURI.equals(other.addressURI)) return false;
@@ -389,7 +391,7 @@ class Location {
         this.virtualRef = virtualRef ?? canonicalRef;
     }
 
-    public updateWithID(id: any) {
+    public updateWithID(id: string | unknown) {
         if (typeof id !== "string") return this;
         const parsed = Ref.parse(id);
         const virtual = this.haveID ? parsed.resolveAgainst(this.virtualRef) : parsed;
@@ -424,7 +426,7 @@ class Canonizer {
 
     public constructor(private readonly _ctx: RunContext) {}
 
-    private addIDs(schema: any, loc: Location) {
+    private addIDs(schema: unknown, loc: Location) {
         if (schema === null) return;
         if (Array.isArray(schema)) {
             for (let i = 0; i < schema.length; i++) {
@@ -439,7 +441,7 @@ class Canonizer {
         }
 
         const locWithoutID = loc;
-        const maybeID = schema.$id;
+        const maybeID = "$id" in schema ? schema.$id : undefined;
         if (typeof maybeID === "string") {
             loc = loc.updateWithID(maybeID);
         }
@@ -453,11 +455,11 @@ class Canonizer {
         }
 
         for (const property of Object.getOwnPropertyNames(schema)) {
-            this.addIDs(schema[property], loc.push(property));
+            this.addIDs(schema[property as keyof typeof schema], loc.push(property));
         }
     }
 
-    public addSchema(schema: any, address: string): boolean {
+    public addSchema(schema: unknown, address: string): boolean {
         if (this._schemaAddressesAdded.has(address)) return false;
 
         this.addIDs(schema, new Location(Ref.root(address), Ref.root(undefined)));
@@ -479,7 +481,7 @@ class Canonizer {
     }
 }
 
-function checkTypeList(typeOrTypes: any, loc: Location): ReadonlySet<string> {
+function checkTypeList(typeOrTypes: string | string[], loc: Location): ReadonlySet<string> {
     let set: Set<string>;
     if (typeof typeOrTypes === "string") {
         set = new Set([typeOrTypes]);
@@ -508,7 +510,7 @@ function checkTypeList(typeOrTypes: any, loc: Location): ReadonlySet<string> {
     return set;
 }
 
-function checkRequiredArray(arr: any, loc: Location): string[] {
+function checkRequiredArray(arr: string[], loc: Location): string[] {
     if (!Array.isArray(arr)) {
         return messageError("SchemaRequiredMustBeStringOrStringArray", withRef(loc, { actual: arr }));
     }
@@ -678,7 +680,7 @@ async function addTypesInSchema(
         attributes: TypeAttributes,
         properties: StringMap,
         requiredArray: string[],
-        additionalProperties: any,
+        additionalProperties: unknown,
         sortKey: (k: string) => number | string = (k: string) => k.toLowerCase()
     ): Promise<TypeRef> {
         const required = new Set(requiredArray);
@@ -734,16 +736,16 @@ async function addTypesInSchema(
             }
 
             if (enumArray !== undefined) {
-                let predicate: (x: any) => boolean;
+                let predicate: (x: unknown) => boolean;
                 switch (name) {
                     case "null":
-                        predicate = (x: any) => x === null;
+                        predicate = (x: unknown) => x === null;
                         break;
                     case "integer":
-                        predicate = (x: any) => typeof x === "number" && x === Math.floor(x);
+                        predicate = (x: unknown) => typeof x === "number" && x === Math.floor(x);
                         break;
                     default:
-                        predicate = (x: any) => typeof x === name;
+                        predicate = (x: unknown) => typeof x === name;
                         break;
                 }
 
@@ -916,13 +918,12 @@ async function addTypesInSchema(
             return await makeObject(loc, objectAttributes, properties, required, additionalProperties, orderKey);
         }
 
-        async function makeTypesFromCases(cases: any, kind: string): Promise<TypeRef[]> {
+        async function makeTypesFromCases(cases: unknown[], kind: string): Promise<TypeRef[]> {
             const kindLoc = loc.push(kind);
             if (!Array.isArray(cases)) {
                 return messageError("SchemaSetOperationCasesIsNotArray", withRef(kindLoc, { operation: kind, cases }));
             }
 
-            // FIXME: This cast shouldn't be necessary, but TypeScript forces our hand.
             return await arrayMapSync(cases, async (t, index) => {
                 const caseLoc = kindLoc.push(index.toString());
                 return await toType(
@@ -936,7 +937,7 @@ async function addTypesInSchema(
         const intersectionType = typeBuilder.getUniqueIntersectionType(typeAttributes, undefined);
         setTypeForLocation(loc, intersectionType);
 
-        async function convertOneOrAnyOf(cases: any, kind: string): Promise<TypeRef> {
+        async function convertOneOrAnyOf(cases: unknown[], kind: string): Promise<TypeRef> {
             const typeRefs = await makeTypesFromCases(cases, kind);
             let unionAttributes = makeTypeAttributesInferred(typeAttributes);
             if (kind === "oneOf") {
@@ -971,7 +972,7 @@ async function addTypesInSchema(
         const needStringEnum =
             includedTypes.has("string") &&
             enumArray !== undefined &&
-            enumArray.find((x: any) => typeof x === "string") !== undefined;
+            enumArray.find(x => typeof x === "string") !== undefined;
         const needUnion =
             typeSet !== undefined ||
             schema.properties !== undefined ||
@@ -1007,9 +1008,7 @@ async function addTypesInSchema(
             );
 
             if (needStringEnum || isConst) {
-                const cases = isConst
-                    ? [schema.const]
-                    : ((enumArray as any[]).filter(x => typeof x === "string") as string[]);
+                const cases = isConst ? [schema.const] : enumArray?.filter(x => typeof x === "string") ?? [];
                 unionTypes.push(typeBuilder.getStringType(stringAttributes, StringTypes.fromCases(cases)));
             } else if (includedTypes.has("string")) {
                 unionTypes.push(makeStringType(stringAttributes));

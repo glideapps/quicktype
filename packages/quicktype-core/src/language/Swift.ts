@@ -47,6 +47,7 @@ import {
     type UnionType
 } from "../Type";
 import { type StringTypeMapping } from "../TypeBuilder";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
 const MAX_SAMELINE_PROPERTIES = 4;
@@ -141,7 +142,7 @@ export class SwiftTargetLanguage extends TargetLanguage {
         super("Swift", ["swift", "swift4"], "swift");
     }
 
-    protected getOptions(): Array<Option<any>> {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [
             swiftOptions.justTypes,
             swiftOptions.useClasses,
@@ -177,7 +178,7 @@ export class SwiftTargetLanguage extends TargetLanguage {
         return true;
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): SwiftRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): SwiftRenderer {
         return new SwiftRenderer(this, renderContext, getOptionValues(swiftOptions, untypedOptionValues));
     }
 

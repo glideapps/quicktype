@@ -6,6 +6,7 @@ import { camelCase, utf16StringEscape } from "../support/Strings";
 import { defined, panic } from "../support/Support";
 import { type TargetLanguage } from "../TargetLanguage";
 import { ArrayType, type ClassType, EnumType, type Type, UnionType } from "../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
 import { isNamedType, matchType, nullableFromUnion } from "../TypeUtils";
 
 import {
@@ -41,7 +42,7 @@ const tsFlowTypeAnnotations = {
 };
 
 export abstract class TypeScriptFlowBaseTargetLanguage extends JavaScriptTargetLanguage {
-    protected getOptions(): Array<Option<any>> {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [
             tsFlowOptions.justTypes,
             tsFlowOptions.nicePropertyNames,
@@ -64,7 +65,7 @@ export abstract class TypeScriptFlowBaseTargetLanguage extends JavaScriptTargetL
 
     protected abstract makeRenderer(
         renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
+        untypedOptionValues: FixMeOptionsType
     ): JavaScriptRenderer;
 }
 
@@ -73,10 +74,7 @@ export class TypeScriptTargetLanguage extends TypeScriptFlowBaseTargetLanguage {
         super("TypeScript", ["typescript", "ts", "tsx"], "ts");
     }
 
-    protected makeRenderer(
-        renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
-    ): TypeScriptRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): TypeScriptRenderer {
         return new TypeScriptRenderer(this, renderContext, getOptionValues(tsFlowOptions, untypedOptionValues));
     }
 }
@@ -348,7 +346,7 @@ export class FlowTargetLanguage extends TypeScriptFlowBaseTargetLanguage {
         super("Flow", ["flow"], "js");
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): FlowRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): FlowRenderer {
         return new FlowRenderer(this, renderContext, getOptionValues(tsFlowOptions, untypedOptionValues));
     }
 }

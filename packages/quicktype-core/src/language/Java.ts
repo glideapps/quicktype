@@ -40,6 +40,7 @@ import {
     type TypeKind,
     UnionType
 } from "../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
 import { directlyReachableSingleNamedType, matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
 export const javaOptions = {
@@ -74,7 +75,7 @@ export class JavaTargetLanguage extends TargetLanguage {
         super("Java", ["java"], "java");
     }
 
-    protected getOptions(): Array<Option<any>> {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [
             javaOptions.useList,
             javaOptions.justTypes,
@@ -90,7 +91,7 @@ export class JavaTargetLanguage extends TargetLanguage {
         return true;
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): JavaRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): JavaRenderer {
         const options = getOptionValues(javaOptions, untypedOptionValues);
         if (options.justTypes) {
             return new JavaRenderer(this, renderContext, options);

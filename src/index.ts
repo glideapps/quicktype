@@ -60,6 +60,7 @@ const wordWrap: (s: string) => string = _wordwrap(90);
 
 export interface CLIOptions {
     // We use this to access the inference flags
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [option: string]: any;
     additionalSchema: string[];
     allPropertiesOptional: boolean;
@@ -199,7 +200,8 @@ async function samplesFromDirectory(dataDir: string, httpHeaders?: string[]): Pr
             return messageError("DriverCannotMixJSONWithOtherSamples", { dir: dir });
         }
 
-        const oneUnlessEmpty = (xs: any[]) => Math.sign(xs.length);
+        // FIXME: rewrite this to be clearer
+        const oneUnlessEmpty = (xs: TypeSource[]) => Math.sign(xs.length);
         if (oneUnlessEmpty(schemaSources) + oneUnlessEmpty(graphQLSources) > 1) {
             return messageError("DriverCannotMixNonJSONInputs", { dir: dir });
         }
@@ -594,6 +596,8 @@ export function parseCLIOptions(argv: string[], targetLanguage?: TargetLanguage)
 // according to each option definition's `renderer` field.  If `partial` is false this
 // will throw if it encounters an unknown option.
 function parseOptions(definitions: OptionDefinition[], argv: string[], partial: boolean): Partial<CLIOptions> {
+    // FIXME: update this when options strongly typed
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let opts: { [key: string]: any };
     try {
         opts = commandLineArgs(definitions, { argv, partial });
@@ -610,6 +614,7 @@ function parseOptions(definitions: OptionDefinition[], argv: string[], partial: 
         }
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const options: { [key: string]: any; rendererOptions: RendererOptions } = { rendererOptions: {} };
     for (const o of definitions) {
         if (!hasOwnProperty(opts, o.name)) continue;

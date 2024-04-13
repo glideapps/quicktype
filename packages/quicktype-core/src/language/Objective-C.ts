@@ -29,6 +29,7 @@ import {
 import { assert, defined } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
 import { ArrayType, type ClassProperty, ClassType, EnumType, MapType, Type, UnionType } from "../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
 import { isAnyOrNull, matchType, nullableFromUnion } from "../TypeUtils";
 
 export type MemoryAttribute = "assign" | "strong" | "copy";
@@ -57,7 +58,7 @@ export class ObjectiveCTargetLanguage extends TargetLanguage {
         super("Objective-C", ["objc", "objective-c", "objectivec"], "m");
     }
 
-    protected getOptions(): Array<Option<any>> {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [
             objcOptions.justTypes,
             objcOptions.classPrefix,
@@ -67,10 +68,7 @@ export class ObjectiveCTargetLanguage extends TargetLanguage {
         ];
     }
 
-    protected makeRenderer(
-        renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
-    ): ObjectiveCRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): ObjectiveCRenderer {
         return new ObjectiveCRenderer(this, renderContext, getOptionValues(objcOptions, untypedOptionValues));
     }
 }

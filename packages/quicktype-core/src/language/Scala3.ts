@@ -27,6 +27,7 @@ import {
     type Type,
     type UnionType
 } from "../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
 export enum Framework {
@@ -745,7 +746,7 @@ export class Scala3TargetLanguage extends TargetLanguage {
         super("Scala3", ["scala3"], "scala");
     }
 
-    protected getOptions(): Array<Option<any>> {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [scala3Options.framework, scala3Options.packageName];
     }
 
@@ -757,10 +758,7 @@ export class Scala3TargetLanguage extends TargetLanguage {
         return true;
     }
 
-    protected makeRenderer(
-        renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
-    ): ConvenienceRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): ConvenienceRenderer {
         const options = getOptionValues(scala3Options, untypedOptionValues);
 
         switch (options.framework) {

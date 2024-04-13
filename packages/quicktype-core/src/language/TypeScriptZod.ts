@@ -30,6 +30,7 @@ import {
     type Type
 } from "../Type";
 import { type StringTypeMapping } from "../TypeBuilder";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
 import { matchType } from "../TypeUtils";
 
 import { legalizeName } from "./JavaScript";
@@ -39,7 +40,7 @@ export const typeScriptZodOptions = {
 };
 
 export class TypeScriptZodTargetLanguage extends TargetLanguage {
-    protected getOptions(): Array<Option<any>> {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [];
     }
 
@@ -62,10 +63,7 @@ export class TypeScriptZodTargetLanguage extends TargetLanguage {
         return true;
     }
 
-    protected makeRenderer(
-        renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
-    ): TypeScriptZodRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): TypeScriptZodRenderer {
         return new TypeScriptZodRenderer(
             this,
             renderContext,

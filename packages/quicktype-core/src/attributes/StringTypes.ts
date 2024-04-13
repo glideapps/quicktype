@@ -109,7 +109,7 @@ export class StringTypes {
         return new StringTypes(this.cases, new Set(kinds));
     }
 
-    public equals(other: any): boolean {
+    public equals<T extends StringTypes>(other: T): boolean {
         if (!(other instanceof StringTypes)) return false;
         return areEqual(this.cases, other.cases) && areEqual(this.transformations, other.transformations);
     }

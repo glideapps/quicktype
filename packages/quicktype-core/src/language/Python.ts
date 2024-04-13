@@ -48,6 +48,7 @@ import {
     UnionType
 } from "../Type";
 import { type StringTypeMapping } from "../TypeBuilder";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
 const forbiddenTypeNames = [
@@ -130,7 +131,7 @@ export const pythonOptions = {
 };
 
 export class PythonTargetLanguage extends TargetLanguage {
-    protected getOptions(): Array<Option<any>> {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [pythonOptions.features, pythonOptions.justTypes, pythonOptions.nicePropertyNames];
     }
 
@@ -162,7 +163,7 @@ export class PythonTargetLanguage extends TargetLanguage {
         return t.kind === "integer-string" || t.kind === "bool-string";
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): PythonRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): PythonRenderer {
         const options = getOptionValues(pythonOptions, untypedOptionValues);
         if (options.justTypes) {
             return new PythonRenderer(this, renderContext, options);

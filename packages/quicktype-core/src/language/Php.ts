@@ -25,6 +25,7 @@ import {
 import { defined } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
 import { type ClassProperty, type ClassType, type EnumType, type Type, type UnionType } from "../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
 import { directlyReachableSingleNamedType, matchType, nullableFromUnion } from "../TypeUtils";
 
 export const phpOptions = {
@@ -40,7 +41,7 @@ export class PhpTargetLanguage extends TargetLanguage {
         super("PHP", ["php"], "php");
     }
 
-    protected getOptions(): Array<Option<any>> {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return _.values(phpOptions);
     }
 
@@ -48,7 +49,7 @@ export class PhpTargetLanguage extends TargetLanguage {
         return true;
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): PhpRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): PhpRenderer {
         const options = getOptionValues(phpOptions, untypedOptionValues);
         return new PhpRenderer(this, renderContext, options);
     }

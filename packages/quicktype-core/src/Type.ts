@@ -112,7 +112,8 @@ export class TypeIdentity {
 
     public constructor(
         private readonly _kind: TypeKind,
-        private readonly _components: readonly any[]
+        // FIXME: strongly type this
+        private readonly _components: readonly unknown[]
     ) {
         let h = hashCodeInit;
         h = addHashCode(h, hashCodeOf(this._kind));
@@ -123,7 +124,7 @@ export class TypeIdentity {
         this._hashCode = h;
     }
 
-    public equals(other: any): boolean {
+    public equals<T extends TypeIdentity>(other: T): boolean {
         if (!(other instanceof TypeIdentity)) return false;
         if (this._kind !== other._kind) return false;
         const n = this._components.length;
@@ -197,7 +198,7 @@ export abstract class Type {
         return this.kind;
     }
 
-    public equals(other: any): boolean {
+    public equals<T extends Type>(other: T): boolean {
         if (!(other instanceof Type)) return false;
         return this.typeRef === other.typeRef;
     }
@@ -434,7 +435,7 @@ export class GenericClassProperty<T> {
         public readonly isOptional: boolean
     ) {}
 
-    public equals(other: any): boolean {
+    public equals(other: GenericClassProperty<unknown>): boolean {
         if (!(other instanceof GenericClassProperty)) {
             return false;
         }

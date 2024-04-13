@@ -3,6 +3,7 @@ import { hasOwnProperty } from "collection-utils";
 
 import { messageError } from "./Messages";
 import { assert } from "./support/Support";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "./types";
 
 /**
  * Primary options show up in the web UI in the "Language" settings tab,
@@ -13,7 +14,7 @@ export type OptionKind = "primary" | "secondary";
 export interface OptionDefinition {
     alias?: string;
     defaultOption?: boolean;
-    defaultValue?: any;
+    defaultValue?: FixMeOptionsAnyType;
     description: string;
     kind?: OptionKind;
     legalValues?: string[];
@@ -37,7 +38,7 @@ export abstract class Option<T> {
         assert(definition.kind !== undefined, "Renderer option kind must be defined");
     }
 
-    public getValue(values: { [name: string]: any }): T {
+    public getValue(values: FixMeOptionsType): T {
         const value = values[this.definition.name];
         if (value === undefined) {
             return this.definition.defaultValue;
@@ -54,11 +55,11 @@ export abstract class Option<T> {
 export type OptionValueType<O> = O extends Option<infer T> ? T : never;
 export type OptionValues<T> = { [P in keyof T]: OptionValueType<T[P]> };
 
-export function getOptionValues<T extends { [name: string]: Option<any> }>(
+export function getOptionValues<T extends { [name: string]: Option<FixMeOptionsAnyType> }>(
     options: T,
-    untypedOptionValues: { [name: string]: any }
+    untypedOptionValues: FixMeOptionsType
 ): OptionValues<T> {
-    const optionValues: { [name: string]: any } = {};
+    const optionValues: FixMeOptionsType = {};
     for (const name of Object.getOwnPropertyNames(options)) {
         optionValues[name] = options[name].getValue(untypedOptionValues);
     }
@@ -101,7 +102,7 @@ export class BooleanOption extends Option<boolean> {
         };
     }
 
-    public getValue(values: { [name: string]: any }): boolean {
+    public getValue(values: FixMeOptionsType): boolean {
         let value = values[this.definition.name];
         if (value === undefined) {
             value = this.definition.defaultValue;
@@ -177,7 +178,7 @@ export class EnumOption<T> extends Option<T> {
         }
     }
 
-    public getValue(values: { [name: string]: any }): T {
+    public getValue(values: FixMeOptionsType): T {
         let name: string = values[this.definition.name];
         if (name === undefined) {
             name = this.definition.defaultValue;
