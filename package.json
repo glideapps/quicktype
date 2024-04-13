@@ -13,13 +13,14 @@
         "build": "npm run build --workspaces --if-present && tsc",
         "test": "script/test",
         "start": "script/watch",
-        "clean": "rm -rf dist node_modules *~ packages/*/{dist,node_modules}",
+        "clean": "rm -rf dist node_modules *~ packages/*/{dist,node_modules,out}",
         "debug": "node --inspect-brk --max-old-space-size=4096 ./dist/index.js"
     },
     "workspaces": [
         "./packages/quicktype-core",
         "./packages/quicktype-graphql-input",
-        "./packages/quicktype-typescript-input"
+        "./packages/quicktype-typescript-input",
+        "./packages/quicktype-vscode"
     ],
     "dependencies": {
         "@glideapps/ts-necessities": "^2.1.3",
@@ -30,7 +31,7 @@
         "cross-fetch": "^4.0.0",
         "graphql": "^0.11.7",
         "lodash": "^4.17.21",
-        "moment": "^2.29.4",
+        "moment": "^2.30.1",
         "quicktype-core": "20.0.12",
         "quicktype-graphql-input": "20.0.2",
         "quicktype-typescript-input": "20.0.2",
@@ -46,11 +47,12 @@
         "@types/graphql": "^0.11.7",
         "@types/lodash": "^4.14.197",
         "@types/semver": "^7.5.0",
-        "@types/shelljs": "^0.8.12",
+        "@types/shelljs": "^0.8.15",
         "@types/stream-json": "^1.7.3",
         "@types/urijs": "^1.19.25",
         "ajv": "^5.5.2",
         "deep-equal": "^2.2.2",
+        "esbuild": "^0.20.2",
         "exit": "^0.1.2",
         "prettier": "^3.0.1",
         "promise-timeout": "^1.3.0",
