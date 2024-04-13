@@ -16,7 +16,14 @@ import {
 } from "../../support/Strings";
 import { panic } from "../../support/Support";
 import { type TargetLanguage } from "../../TargetLanguage";
-import { type ClassProperty, type ClassType, type ObjectType, PrimitiveType, type Type } from "../../Type";
+import {
+    type ArrayType,
+    type ClassProperty,
+    type ClassType,
+    type ObjectType,
+    PrimitiveType,
+    type Type
+} from "../../Type";
 import { directlyReachableSingleNamedType, matchType } from "../../TypeUtils";
 import { isES3IdentifierStart } from "../JavaScript/unicodeMaps";
 import { legalizeName } from "../JavaScript/utils";
