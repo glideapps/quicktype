@@ -1,73 +1,19 @@
 import { iterableFirst, mapFirst } from "collection-utils";
 
-import { addDescriptionToSchema } from "../attributes/Description";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { type Name, type Namer, funPrefixNamer } from "../Naming";
-import { type RenderContext } from "../Renderer";
-import { type Option } from "../RendererOptions";
-import {
-    allUpperWordStyle,
-    combineWords,
-    firstUpperWordStyle,
-    legalizeCharacters,
-    splitIntoWords
-} from "../support/Strings";
-import { defined, panic } from "../support/Support";
-import { TargetLanguage } from "../TargetLanguage";
+import { addDescriptionToSchema } from "../../attributes/Description";
+import { ConvenienceRenderer } from "../../ConvenienceRenderer";
+import { type Name, type Namer } from "../../Naming";
+import { defined, panic } from "../../support/Support";
 import {
     type EnumType,
     type ObjectType,
     type Type,
     type UnionType,
     transformedStringTypeTargetTypeKindsMap
-} from "../Type";
-import { type StringTypeMapping, getNoStringTypeMapping } from "../TypeBuilder";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
-import { matchTypeExhaustive } from "../TypeUtils";
+} from "../../Type";
+import { matchTypeExhaustive } from "../../TypeUtils";
 
-export class JSONSchemaTargetLanguage extends TargetLanguage {
-    public constructor() {
-        super("JSON Schema", ["schema", "json-schema"], "schema");
-    }
-
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [];
-    }
-
-    public get stringTypeMapping(): StringTypeMapping {
-        return getNoStringTypeMapping();
-    }
-
-    public get supportsOptionalClassProperties(): boolean {
-        return true;
-    }
-
-    public get supportsFullObjectType(): boolean {
-        return true;
-    }
-
-    protected makeRenderer(renderContext: RenderContext, _untypedOptionValues: FixMeOptionsType): JSONSchemaRenderer {
-        return new JSONSchemaRenderer(this, renderContext);
-    }
-}
-
-const namingFunction = funPrefixNamer("namer", jsonNameStyle);
-
-const legalizeName = legalizeCharacters(cp => cp >= 32 && cp < 128 && cp !== 0x2f /* slash */);
-
-function jsonNameStyle(original: string): string {
-    const words = splitIntoWords(original);
-    return combineWords(
-        words,
-        legalizeName,
-        firstUpperWordStyle,
-        firstUpperWordStyle,
-        allUpperWordStyle,
-        allUpperWordStyle,
-        "",
-        _ => true
-    );
-}
+import { namingFunction } from "./utils";
 
 interface Schema {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
