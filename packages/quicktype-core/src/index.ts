@@ -111,7 +111,7 @@ export { SmithyTargetLanguage, Smithy4sRenderer, SmithyOptions } from "./languag
 export { ElmTargetLanguage, ElmRenderer, elmOptions } from "./language/Elm";
 export { JSONSchemaTargetLanguage, JSONSchemaRenderer } from "./language/JSONSchema";
 export { RustTargetLanguage, RustRenderer, rustOptions } from "./language/Rust";
-export { RubyTargetLanguage, RubyRenderer, rubyOptions } from "./language/ruby";
+export { RubyTargetLanguage, RubyRenderer, rubyOptions } from "./language/Ruby";
 export { CrystalTargetLanguage, CrystalRenderer } from "./language/Crystal";
 export { HaskellTargetLanguage, HaskellRenderer, haskellOptions } from "./language/Haskell";
 export { DartTargetLanguage, DartRenderer, dartOptions } from "./language/Dart";

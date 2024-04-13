@@ -21,7 +21,7 @@ import { ObjectiveCTargetLanguage } from "./Objective-C";
 import { PhpTargetLanguage } from "./Php";
 import { PikeTargetLanguage } from "./Pike";
 import { PythonTargetLanguage } from "./Python";
-import { RubyTargetLanguage } from "./ruby";
+import { RubyTargetLanguage } from "./Ruby";
 import { RustTargetLanguage } from "./Rust";
 import { Scala3TargetLanguage } from "./Scala3";
 import { SmithyTargetLanguage } from "./Smithy4s";
