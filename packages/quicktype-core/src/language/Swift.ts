@@ -49,8 +49,13 @@ export const swiftOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     convenienceInitializers: new BooleanOption("initializers", "Generate initializers and mutators", true),
     explicitCodingKeys: new BooleanOption("coding-keys", "Explicit CodingKey values in Codable types", true),
-    codingKeysProtocol: new StringOption("coding-keys-protocol", "CodingKeys implements protocols",
-        "protocol1, protocol2...", "", "secondary"),
+    codingKeysProtocol: new StringOption(
+        "coding-keys-protocol",
+        "CodingKeys implements protocols",
+        "protocol1, protocol2...",
+        "",
+        "secondary"
+    ),
     alamofire: new BooleanOption("alamofire", "Alamofire extensions", false),
     namedTypePrefix: new StringOption("type-prefix", "Prefix for type names", "PREFIX", "", "secondary"),
     useClasses: new EnumOption("struct-or-class", "Structs or classes", [
