@@ -1,12 +1,12 @@
 import { arrayIntercalate } from "collection-utils";
 
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { type Name, type Namer, funPrefixNamer } from "../Naming";
-import { type RenderContext } from "../Renderer";
-import { BooleanOption, EnumOption, type Option, type OptionValues, getOptionValues } from "../RendererOptions";
-import { type Sourcelike, modifySource } from "../Source";
-import { AcronymStyleOptions, acronymOption, acronymStyle } from "../support/Acronyms";
-import { ConvertersOptions, convertersOption } from "../support/Converters";
+import { ConvenienceRenderer } from "../../ConvenienceRenderer";
+import { type Name, type Namer, funPrefixNamer } from "../../Naming";
+import { type RenderContext } from "../../Renderer";
+import { type OptionValues } from "../../RendererOptions";
+import { type Sourcelike, modifySource } from "../../Source";
+import { acronymStyle } from "../../support/Acronyms";
+import { ConvertersOptions } from "../../support/Converters";
 import {
     allLowerWordStyle,
     camelCase,
@@ -14,46 +14,16 @@ import {
     combineWords,
     firstUpperWordStyle,
     splitIntoWords,
-    utf16LegalizeCharacters,
     utf16StringEscape
-} from "../support/Strings";
-import { panic } from "../support/Support";
-import { TargetLanguage } from "../TargetLanguage";
-import {
-    type ClassProperty,
-    type ClassType,
-    type ObjectType,
-    type PrimitiveStringTypeKind,
-    type TransformedStringTypeKind,
-    type Type
-} from "../Type";
-import { type StringTypeMapping } from "../TypeBuilder";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
-import { directlyReachableSingleNamedType, matchType } from "../TypeUtils";
+} from "../../support/Strings";
+import { panic } from "../../support/Support";
+import { type TargetLanguage } from "../../TargetLanguage";
+import { type ClassProperty, type ClassType, type ObjectType, type Type } from "../../Type";
+import { directlyReachableSingleNamedType, matchType } from "../../TypeUtils";
 
-import { isES3IdentifierPart, isES3IdentifierStart } from "./JavaScriptUnicodeMaps";
-
-export const javaScriptOptions = {
-    acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
-    runtimeTypecheck: new BooleanOption("runtime-typecheck", "Verify JSON.parse results at runtime", true),
-    runtimeTypecheckIgnoreUnknownProperties: new BooleanOption(
-        "runtime-typecheck-ignore-unknown-properties",
-        "Ignore unknown properties when verifying at runtime",
-        false,
-        "secondary"
-    ),
-    converters: convertersOption(),
-    rawType: new EnumOption<"json" | "any">(
-        "raw-type",
-        "Type of raw input (json by default)",
-        [
-            ["json", "json"],
-            ["any", "any"]
-        ],
-        "json",
-        "secondary"
-    )
-};
+import { type javaScriptOptions } from "./language";
+import { isES3IdentifierStart } from "./unicodeMaps";
+import { legalizeName } from "./utils";
 
 export interface JavaScriptTypeAnnotations {
     any: string;
@@ -64,44 +34,6 @@ export interface JavaScriptTypeAnnotations {
     string: string;
     stringArray: string;
 }
-
-export class JavaScriptTargetLanguage extends TargetLanguage {
-    public constructor(displayName = "JavaScript", names: string[] = ["javascript", "js", "jsx"], extension = "js") {
-        super(displayName, names, extension);
-    }
-
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [
-            javaScriptOptions.runtimeTypecheck,
-            javaScriptOptions.runtimeTypecheckIgnoreUnknownProperties,
-            javaScriptOptions.acronymStyle,
-            javaScriptOptions.converters,
-            javaScriptOptions.rawType
-        ];
-    }
-
-    public get stringTypeMapping(): StringTypeMapping {
-        const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
-        const dateTimeType = "date-time";
-        mapping.set("date", dateTimeType);
-        mapping.set("date-time", dateTimeType);
-        return mapping;
-    }
-
-    public get supportsOptionalClassProperties(): boolean {
-        return true;
-    }
-
-    public get supportsFullObjectType(): boolean {
-        return true;
-    }
-
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): JavaScriptRenderer {
-        return new JavaScriptRenderer(this, renderContext, getOptionValues(javaScriptOptions, untypedOptionValues));
-    }
-}
-
-export const legalizeName = utf16LegalizeCharacters(isES3IdentifierPart);
 
 const identityNamingFunction = funPrefixNamer("properties", s => s);
 
