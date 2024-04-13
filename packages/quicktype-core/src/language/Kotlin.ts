@@ -181,6 +181,7 @@ function unicodeEscape(codePoint: number): string {
     return "\\u" + intToHex(codePoint, 4);
 }
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const _stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
 
 function stringEscape(s: string): string {

@@ -48,7 +48,7 @@ export class CompressedJSONFromStream extends CompressedJSON<Readable> {
 
     protected handleNumberChunk = (s: string): void => {
         const ctx = this.context;
-        if (!ctx.currentNumberIsDouble && /[\.e]/i.test(s)) {
+        if (!ctx.currentNumberIsDouble && /[.e]/i.test(s)) {
             ctx.currentNumberIsDouble = true;
         }
     };

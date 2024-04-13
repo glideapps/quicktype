@@ -52,6 +52,7 @@ function precomputedCodePointPredicate(p: CodePointPredicate): CodePointPredicat
 export function utf16ConcatMap(mapper: (utf16Unit: number) => string): (s: string) => string {
     const { charStringMap, charNoEscapeMap } = computeAsciiMap(mapper);
 
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     return function stringConcatMap_inner(s: string): string {
         let cs: string[] | null = null;
         let start = 0;
@@ -94,6 +95,7 @@ function isLowSurrogate(cc: number): boolean {
 export function utf32ConcatMap(mapper: (codePoint: number) => string): (s: string) => string {
     const { charStringMap, charNoEscapeMap } = computeAsciiMap(mapper);
 
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     return function stringConcatMap_inner(s: string): string {
         let cs: string[] | null = null;
         let start = 0;

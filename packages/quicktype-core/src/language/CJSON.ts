@@ -1,3 +1,6 @@
+// FIXME: NEEDS REFACTOR
+/* eslint-disable @typescript-eslint/no-shadow */
+/* eslint-disable @typescript-eslint/naming-convention */
 /**
  * CJSON.ts
  * This file is used to generate cJSON code with quicktype
@@ -784,6 +787,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
      * @param unionType: union type
      */
     protected emitUnionTypedef(unionType: UnionType): void {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const [_hasNull, nonNulls] = removeNullFromUnion(unionType);
         const unionName = this.nameForNamedType(unionType);
 

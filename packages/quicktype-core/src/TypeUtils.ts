@@ -40,11 +40,7 @@ export function assertIsClass(t: Type): ClassType {
 }
 
 export function setOperationMembersRecursively<T extends SetOperationType>(
-    setOperation: T,
-    combinationKind: CombinationKind | undefined
-): [ReadonlySet<Type>, TypeAttributes];
-export function setOperationMembersRecursively<T extends SetOperationType>(
-    setOperations: T[],
+    setOperations: T | T[],
     combinationKind: CombinationKind | undefined
 ): [ReadonlySet<Type>, TypeAttributes];
 export function setOperationMembersRecursively<T extends SetOperationType>(

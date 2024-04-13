@@ -403,6 +403,7 @@ export class TypeGraph {
     }
 
     public rewriteFixedPoint(alphabetizeProperties: boolean, debugPrintReconstitution: boolean): TypeGraph {
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
         let graph: TypeGraph = this;
         for (;;) {
             const newGraph = this.rewrite(

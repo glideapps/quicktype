@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/brace-style */
 import {
     iterableEvery,
     iterableFind,
@@ -186,7 +187,7 @@ class IntersectionAccumulator
 
     public addType(t: Type): TypeAttributes {
         let attributes = t.getAttributes();
-        matchTypeExhaustive<void>(
+        matchTypeExhaustive(
             t,
             _noneType => {
                 return panic("There shouldn't be a none type");

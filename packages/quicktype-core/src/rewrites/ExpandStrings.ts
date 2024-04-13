@@ -68,7 +68,7 @@ export function expandStrings(ctx: RunContext, graph: TypeGraph, inference: Enum
             const keys = Array.from(cases.keys());
             if (isAlwaysEmptyString(keys)) return undefined;
 
-            const someCaseIsNotNumber = iterableSome(keys, key => /^(\-|\+)?[0-9]+(\.[0-9]+)?$/.test(key) === false);
+            const someCaseIsNotNumber = iterableSome(keys, key => /^[-+]?[0-9]+(\.[0-9]+)?$/.test(key) === false);
             if (!someCaseIsNotNumber) return undefined;
         }
 
@@ -85,6 +85,8 @@ export function expandStrings(ctx: RunContext, graph: TypeGraph, inference: Enum
             enumInfos.set(t, enumInfo);
         }
 
+        // FIXME: refactor this
+        // eslint-disable-next-line no-inner-declarations
         function findOverlap(newCases: ReadonlySet<string>, newAreSubordinate: boolean): number {
             return enumSets.findIndex(s => enumCasesOverlap(newCases, s, newAreSubordinate));
         }

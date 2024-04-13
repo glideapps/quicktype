@@ -300,6 +300,9 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
                         let found = false;
                         // find this childs's ordinal, if it has already been added
                         // faster to go through what we've defined so far than all definitions
+
+                        // FIXME: refactor this
+                        // eslint-disable-next-line @typescript-eslint/prefer-for-of
                         for (let j = 0; j < order.length; j++) {
                             const childIndex = order[j];
                             if (mapTypeRef[childIndex] === childRef) {

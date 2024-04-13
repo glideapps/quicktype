@@ -50,15 +50,15 @@ export async function getStream(inputStream: Readable, opts: Options = {}) {
         };
     });
 
-    p.then(clean, clean);
-
-    return await p.then(() => stream.getBufferedValue());
+    return await p.then(clean, clean).then(() => stream.getBufferedValue());
 }
 
+// FIXME: should these be async ?
 export function buffer(stream: Readable, opts: Options = {}) {
-    getStream(stream, Object.assign({}, opts, { encoding: "buffer" }));
+    void getStream(stream, Object.assign({}, opts, { encoding: "buffer" }));
 }
 
+// FIXME: should these be async ?
 export function array(stream: Readable, opts: Options = {}) {
-    getStream(stream, Object.assign({}, opts, { array: true }));
+    void getStream(stream, Object.assign({}, opts, { array: true }));
 }

@@ -181,7 +181,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
         }
     }
 
-    protected walkObjectNames(type: ObjectType) {
+    protected walkObjectNames(objectType: ObjectType) {
         const names: Name[] = [];
 
         const recurse = (type: Type) => {
@@ -201,7 +201,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
             }
         };
 
-        this.forEachClassProperty(type, "none", (_, __, prop) => {
+        this.forEachClassProperty(objectType, "none", (_, __, prop) => {
             recurse(prop.type);
         });
 
@@ -232,18 +232,18 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
             const names = this.walkObjectNames(source);
 
             // must be behind all these names
-            for (let i = 0; i < names.length; i++) {
-                const depName = names[i];
+            names.forEach(name => {
+                const depName = name;
 
                 // find this name's ordinal, if it has already been added
-                for (let j = 0; j < order.length; j++) {
-                    const depIndex = order[j];
+                order.forEach(orderItem => {
+                    const depIndex = orderItem;
                     if (mapKey[depIndex] === depName) {
                         // this is the index of the dependency, so make sure we come after it
                         ordinal = Math.max(ordinal, depIndex + 1);
                     }
-                }
-            }
+                });
+            });
 
             // insert index
             order.splice(ordinal, 0, index);

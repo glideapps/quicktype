@@ -17,7 +17,7 @@ import {
     utf16StringEscape
 } from "../support/Strings";
 import { TargetLanguage } from "../TargetLanguage";
-import { type ClassProperty, type ClassType, type ObjectType, PrimitiveType, type Type, ArrayType } from "../Type";
+import { type ArrayType, type ClassProperty, type ClassType, type ObjectType, PrimitiveType, type Type } from "../Type";
 import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
 import { directlyReachableSingleNamedType, matchType } from "../TypeUtils";
 
@@ -244,18 +244,18 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
             const names = source.filter(value => value as Name);
 
             // must be behind all these names
-            for (let i = 0; i < names.length; i++) {
-                const depName = names[i];
+            names.forEach(name => {
+                const depName = name;
 
                 // find this name's ordinal, if it has already been added
-                for (let j = 0; j < order.length; j++) {
-                    const depIndex = order[j];
+                order.forEach(orderItem => {
+                    const depIndex = orderItem;
                     if (mapKey[depIndex] === depName) {
                         // this is the index of the dependency, so make sure we come after it
                         ordinal = Math.max(ordinal, depIndex + 1);
                     }
-                }
-            }
+                });
+            });
 
             // insert index
             order.splice(ordinal, 0, index);

@@ -208,7 +208,7 @@ export class Ref {
     }
 
     public push(...keys: string[]): Ref {
-        let ref: Ref = this;
+        let ref: Ref = { ...this };
         for (const key of keys) {
             ref = ref.pushElement({ kind: PathElementKind.KeyOrIndex, key });
         }

@@ -367,7 +367,7 @@ export class PhpRenderer extends ConvenienceRenderer {
     }
 
     protected phpToObjConvert(className: Name, t: Type, lhs: Sourcelike[], args: Sourcelike[]) {
-        matchType<void>(
+        matchType(
             t,
             _anyType => this.emitLine(...lhs, ...args, "; /*any*/"),
             _nullType => this.emitLine(...lhs, ...args, "; /*null*/"),
@@ -429,7 +429,7 @@ export class PhpRenderer extends ConvenienceRenderer {
     }
 
     protected phpFromObjConvert(className: Name, t: Type, lhs: Sourcelike[], args: Sourcelike[]) {
-        matchType<void>(
+        matchType(
             t,
             _anyType => this.emitLine(...lhs, ...args, "; /*any*/"),
             _nullType => this.emitLine(...lhs, ...args, "; /*null*/"),
@@ -492,7 +492,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         idx: number,
         suffix: Sourcelike
     ) {
-        matchType<void>(
+        matchType(
             t,
             _anyType =>
                 this.emitLine(
@@ -593,7 +593,7 @@ export class PhpRenderer extends ConvenienceRenderer {
             );
         };
 
-        matchType<void>(
+        matchType(
             t,
             _anyType => is("defined"),
             _nullType => is("is_null"),

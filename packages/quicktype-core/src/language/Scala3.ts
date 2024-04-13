@@ -558,7 +558,7 @@ export class Smithy4sRenderer extends Scala3Renderer {
 export class CirceRenderer extends Scala3Renderer {
     private seenUnionTypes: string[] = [];
 
-    protected circeEncoderForType(t: Type, _ = false, noOptional = false, paramName: string = ""): Sourcelike {
+    protected circeEncoderForType(t: Type, __ = false, noOptional = false, paramName: string = ""): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => ["Encoder.encodeJson(", paramName, ")"],

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 import { mapFirst } from "collection-utils";
 
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
@@ -414,7 +415,10 @@ export class RustRenderer extends ConvenienceRenderer {
             this.forEachClassProperty(c, blankLines, (name, jsonName, prop) => {
                 this.emitDescription(this.descriptionForClassProperty(c, jsonName));
                 this.emitRenameAttribute(name, jsonName, defaultStyle, preferedNamingStyle);
-                this._options.skipSerializingNone && this.emitSkipSerializeNone(prop.type);
+                if (this._options.skipSerializingNone) {
+                    this.emitSkipSerializeNone(prop.type);
+                }
+
                 this.emitLine(this.visibility, name, ": ", this.breakCycle(prop.type, true), ",");
             });
 

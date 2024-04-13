@@ -25,7 +25,9 @@ export abstract class JSONSchemaStore {
 
         try {
             schema = await this.fetch(address);
-        } catch {}
+        } catch (e) {
+            // FIXME: handle or log this error
+        }
 
         if (schema === undefined) {
             if (debugPrint) {

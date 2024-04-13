@@ -461,9 +461,11 @@ export class DartRenderer extends ConvenienceRenderer {
         return [this.nameForNamedType(classType), ".", this.fromJson, "(", dynamic, ")"];
     }
 
+    // FIXME: refactor this
     // If the first time is the unionType type, after nullableFromUnion conversion,
     // the isNullable property will become false, which is obviously wrong,
     // so add isNullable property
+    // eslint-disable-next-line @typescript-eslint/default-param-last
     protected fromDynamicExpression(isNullable: boolean = false, t: Type, ...dynamic: Sourcelike[]): Sourcelike {
         return matchType<Sourcelike>(
             t,
@@ -524,9 +526,11 @@ export class DartRenderer extends ConvenienceRenderer {
         );
     }
 
+    // FIXME: refactor this
     // If the first time is the unionType type, after nullableFromUnion conversion,
     // the isNullable property will become false, which is obviously wrong,
     // so add isNullable property
+    // eslint-disable-next-line @typescript-eslint/default-param-last
     protected toDynamicExpression(isNullable: boolean = false, t: Type, ...dynamic: Sourcelike[]): Sourcelike {
         return matchType<Sourcelike>(
             t,
