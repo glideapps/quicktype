@@ -28,7 +28,11 @@ function getNumberOfNodes(xfer: Transformer | undefined): number {
 }
 
 export abstract class Transformer {
-    constructor(readonly kind: string, protected readonly graph: TypeGraph, readonly sourceTypeRef: TypeRef) {}
+    constructor(
+        readonly kind: string,
+        protected readonly graph: TypeGraph,
+        readonly sourceTypeRef: TypeRef
+    ) {}
 
     get sourceType(): Type {
         return derefTypeRef(this.sourceTypeRef, this.graph);
@@ -73,7 +77,12 @@ export abstract class Transformer {
 }
 
 export abstract class ProducerTransformer extends Transformer {
-    constructor(kind: string, graph: TypeGraph, sourceTypeRef: TypeRef, readonly consumer: Transformer | undefined) {
+    constructor(
+        kind: string,
+        graph: TypeGraph,
+        sourceTypeRef: TypeRef,
+        readonly consumer: Transformer | undefined
+    ) {
         super(kind, graph, sourceTypeRef);
     }
 
@@ -105,7 +114,12 @@ export abstract class ProducerTransformer extends Transformer {
 }
 
 export abstract class MatchTransformer extends Transformer {
-    constructor(kind: string, graph: TypeGraph, sourceTypeRef: TypeRef, readonly transformer: Transformer) {
+    constructor(
+        kind: string,
+        graph: TypeGraph,
+        sourceTypeRef: TypeRef,
+        readonly transformer: Transformer
+    ) {
         super(kind, graph, sourceTypeRef);
     }
 
@@ -342,7 +356,11 @@ export class ArrayEncodingTransformer extends Transformer {
 }
 
 export class ChoiceTransformer extends Transformer {
-    constructor(graph: TypeGraph, sourceTypeRef: TypeRef, public readonly transformers: ReadonlyArray<Transformer>) {
+    constructor(
+        graph: TypeGraph,
+        sourceTypeRef: TypeRef,
+        public readonly transformers: ReadonlyArray<Transformer>
+    ) {
         super("choice", graph, sourceTypeRef);
         assert(transformers.length > 0, "Choice must have at least one transformer");
     }
@@ -603,7 +621,12 @@ export class DecodingChoiceTransformer extends Transformer {
 }
 
 export class UnionMemberMatchTransformer extends MatchTransformer {
-    constructor(graph: TypeGraph, sourceTypeRef: TypeRef, transformer: Transformer, readonly memberTypeRef: TypeRef) {
+    constructor(
+        graph: TypeGraph,
+        sourceTypeRef: TypeRef,
+        transformer: Transformer,
+        readonly memberTypeRef: TypeRef
+    ) {
         super("union-member-match", graph, sourceTypeRef, transformer);
     }
 
@@ -660,7 +683,12 @@ export class UnionMemberMatchTransformer extends MatchTransformer {
  * This matches strings and enum cases.
  */
 export class StringMatchTransformer extends MatchTransformer {
-    constructor(graph: TypeGraph, sourceTypeRef: TypeRef, transformer: Transformer, readonly stringCase: string) {
+    constructor(
+        graph: TypeGraph,
+        sourceTypeRef: TypeRef,
+        transformer: Transformer,
+        readonly stringCase: string
+    ) {
         super("string-match", graph, sourceTypeRef, transformer);
     }
 
@@ -744,7 +772,12 @@ export class UnionInstantiationTransformer extends Transformer {
  * Produces a string or an enum case.
  */
 export class StringProducerTransformer extends ProducerTransformer {
-    constructor(graph: TypeGraph, sourceTypeRef: TypeRef, consumer: Transformer | undefined, readonly result: string) {
+    constructor(
+        graph: TypeGraph,
+        sourceTypeRef: TypeRef,
+        consumer: Transformer | undefined,
+        readonly result: string
+    ) {
         super("string-producer", graph, sourceTypeRef, consumer);
     }
 

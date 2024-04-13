@@ -10,7 +10,7 @@ const obj = JSON.parse(json);
 const results = checkPropTypes({ obj: TopLevel }, { obj }, "prop", "MyComponent");
 
 if (results) {
-  console.log("Failure:", results);
+    console.log("Failure:", results);
 } else {
-  console.log("Success");
+    console.log("Success");
 }

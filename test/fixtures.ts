@@ -254,7 +254,10 @@ abstract class LanguageFixture extends Fixture {
 }
 
 class JSONFixture extends LanguageFixture {
-    constructor(language: languages.Language, public name: string = language.name) {
+    constructor(
+        language: languages.Language,
+        public name: string = language.name
+    ) {
         super(language);
     }
 
@@ -568,7 +571,10 @@ class JSONTypeScriptFixture extends JSONToXToYFixture {
 
 // This fixture tests generating code from JSON Schema.
 class JSONSchemaFixture extends LanguageFixture {
-    constructor(language: languages.Language, readonly name: string = `schema-${language.name}`) {
+    constructor(
+        language: languages.Language,
+        readonly name: string = `schema-${language.name}`
+    ) {
         super(language);
     }
 
@@ -699,7 +705,10 @@ class GraphQLFixture extends LanguageFixture {
 }
 
 class CommandSuccessfulLanguageFixture extends LanguageFixture {
-    constructor(language: languages.Language, public name: string = language.name) {
+    constructor(
+        language: languages.Language,
+        public name: string = language.name
+    ) {
         super(language);
     }
 

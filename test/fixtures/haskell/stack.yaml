@@ -1,6 +1,6 @@
 resolver: lts-15.12
 packages:
-  - .
+    - .
 # extra-deps: []
 # flags: {}
 # extra-package-dbs: []

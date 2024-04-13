@@ -2,7 +2,6 @@ import * as TopLevel from "./TopLevel";
 import fs from "fs";
 import process from "process";
 
-
 const sample = process.argv[2];
 const json = fs.readFileSync(sample);
 

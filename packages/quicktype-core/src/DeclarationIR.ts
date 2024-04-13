@@ -16,7 +16,10 @@ export interface Declaration {
 export class DeclarationIR {
     readonly declarations: ReadonlyArray<Declaration>;
 
-    constructor(declarations: Iterable<Declaration>, readonly forwardedTypes: Set<Type>) {
+    constructor(
+        declarations: Iterable<Declaration>,
+        readonly forwardedTypes: Set<Type>
+    ) {
         this.declarations = Array.from(declarations);
     }
 }

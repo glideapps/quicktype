@@ -4,9 +4,9 @@ quicktype has facilities for transforming JSON strings into other data types, pr
 
 There are two different sorts of transformed string types:
 
-- Those that transform strings into other JSON-representable types, such as stringified integers.
+-   Those that transform strings into other JSON-representable types, such as stringified integers.
 
-- Those that transform into types that are not directly representable in JSON (other than as strings), such as date/time types.
+-   Those that transform into types that are not directly representable in JSON (other than as strings), such as date/time types.
 
 Several pieces need to be implemented to add a new transformed string type:
 
@@ -22,8 +22,8 @@ Several pieces need to be implemented to add a new transformed string type:
 
 ## Stuff we need to improve
 
-- Automatic generation of tests. We should have a test generator that produces test files with all string types in all reasonable combinations.
+-   Automatic generation of tests. We should have a test generator that produces test files with all string types in all reasonable combinations.
 
-- One CLI option for all string types. No CLI option work should be necessary to implement a new string type.
+-   One CLI option for all string types. No CLI option work should be necessary to implement a new string type.
 
-- The AJV thing should be automated, too. We have almost all the validation code necessary in `StringTypes.ts` anyway.
+-   The AJV thing should be automated, too. We have almost all the validation code necessary in `StringTypes.ts` anyway.

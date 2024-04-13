@@ -164,9 +164,8 @@ const errorMessages: ErrorMessages = {
     TypeScriptCompilerError: "TypeScript error: ${message}"
 };
 
-export type ErrorPropertiesForName<K> = Extract<ErrorProperties, { kind: K }> extends { properties: infer P }
-    ? P
-    : never;
+export type ErrorPropertiesForName<K> =
+    Extract<ErrorProperties, { kind: K }> extends { properties: infer P } ? P : never;
 
 export class QuickTypeError extends Error {
     constructor(

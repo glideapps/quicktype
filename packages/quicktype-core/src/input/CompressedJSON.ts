@@ -55,7 +55,10 @@ export abstract class CompressedJSON<T> {
     private _objects: Value[][] = [];
     private _arrays: Value[][] = [];
 
-    constructor(readonly dateTimeRecognizer: DateTimeRecognizer, readonly handleRefs: boolean) {}
+    constructor(
+        readonly dateTimeRecognizer: DateTimeRecognizer,
+        readonly handleRefs: boolean
+    ) {}
 
     abstract parse(input: T): Promise<Value>;
 
