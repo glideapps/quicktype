@@ -1,11 +1,11 @@
 import { arrayIntercalate } from "collection-utils";
 
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { type Name, type Namer, funPrefixNamer } from "../Naming";
-import { type RenderContext } from "../Renderer";
-import { BooleanOption, type Option, type OptionValues, getOptionValues } from "../RendererOptions";
-import { type Sourcelike } from "../Source";
-import { AcronymStyleOptions, acronymStyle } from "../support/Acronyms";
+import { ConvenienceRenderer } from "../../ConvenienceRenderer";
+import { type Name, type Namer, funPrefixNamer } from "../../Naming";
+import { type RenderContext } from "../../Renderer";
+import { type OptionValues } from "../../RendererOptions";
+import { type Sourcelike } from "../../Source";
+import { AcronymStyleOptions, acronymStyle } from "../../support/Acronyms";
 import {
     allLowerWordStyle,
     capitalize,
@@ -15,43 +15,14 @@ import {
     splitIntoWords,
     stringEscape,
     utf16StringEscape
-} from "../support/Strings";
-import { panic } from "../support/Support";
-import { TargetLanguage } from "../TargetLanguage";
-import { ArrayType, type ClassProperty, EnumType, MapType, type ObjectType, type Type } from "../Type";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
-import { matchType } from "../TypeUtils";
+} from "../../support/Strings";
+import { panic } from "../../support/Support";
+import { type TargetLanguage } from "../../TargetLanguage";
+import { ArrayType, type ClassProperty, EnumType, MapType, type ObjectType, type Type } from "../../Type";
+import { matchType } from "../../TypeUtils";
+import { legalizeName } from "../JavaScript";
 
-import { legalizeName } from "./JavaScript";
-
-export const typeScriptEffectSchemaOptions = {
-    justSchema: new BooleanOption("just-schema", "Schema only", false)
-};
-
-export class TypeScriptEffectSchemaTargetLanguage extends TargetLanguage {
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [];
-    }
-
-    public constructor(
-        displayName: string = "TypeScript Effect Schema",
-        names: string[] = ["typescript-effect-schema"],
-        extension: string = "ts"
-    ) {
-        super(displayName, names, extension);
-    }
-
-    protected makeRenderer(
-        renderContext: RenderContext,
-        untypedOptionValues: FixMeOptionsType
-    ): TypeScriptEffectSchemaRenderer {
-        return new TypeScriptEffectSchemaRenderer(
-            this,
-            renderContext,
-            getOptionValues(typeScriptEffectSchemaOptions, untypedOptionValues)
-        );
-    }
-}
+import { type typeScriptEffectSchemaOptions } from "./language";
 
 export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
     private emittedObjects = new Set<Name>();
