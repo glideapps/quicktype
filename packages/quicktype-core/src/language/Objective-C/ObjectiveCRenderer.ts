@@ -1,231 +1,27 @@
 import { iterableFirst, iterableSome, mapContains, mapFirst, mapSome } from "collection-utils";
-import unicode from "unicode-properties";
 
-import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { type Name, Namer, funPrefixNamer } from "../Naming";
-import { type RenderContext } from "../Renderer";
-import {
-    BooleanOption,
-    EnumOption,
-    type Option,
-    type OptionValues,
-    StringOption,
-    getOptionValues
-} from "../RendererOptions";
-import { type Sourcelike, modifySource } from "../Source";
-import {
-    addPrefixIfNecessary,
-    allLowerWordStyle,
-    allUpperWordStyle,
-    camelCase,
-    combineWords,
-    fastIsUpperCase,
-    firstUpperWordStyle,
-    repeatString,
-    splitIntoWords,
-    stringEscape,
-    utf16LegalizeCharacters
-} from "../support/Strings";
-import { assert, defined } from "../support/Support";
-import { TargetLanguage } from "../TargetLanguage";
-import { ArrayType, type ClassProperty, ClassType, EnumType, MapType, Type, UnionType } from "../Type";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
-import { isAnyOrNull, matchType, nullableFromUnion } from "../TypeUtils";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../../ConvenienceRenderer";
+import { type Name, Namer, funPrefixNamer } from "../../Naming";
+import { type RenderContext } from "../../Renderer";
+import { type OptionValues } from "../../RendererOptions";
+import { type Sourcelike, modifySource } from "../../Source";
+import { camelCase, fastIsUpperCase, repeatString, stringEscape } from "../../support/Strings";
+import { assert, defined } from "../../support/Support";
+import { type TargetLanguage } from "../../TargetLanguage";
+import { ArrayType, type ClassProperty, ClassType, EnumType, MapType, Type, UnionType } from "../../Type";
+import { isAnyOrNull, matchType, nullableFromUnion } from "../../TypeUtils";
 
-export type MemoryAttribute = "assign" | "strong" | "copy";
-export interface OutputFeatures {
-    implementation: boolean;
-    interface: boolean;
-}
+import { forbiddenPropertyNames, keywords } from "./constants";
+import { DEFAULT_CLASS_PREFIX, type MemoryAttribute, type objectiveCOptions } from "./language";
+import {
+    forbiddenForEnumCases,
+    propertyNameStyle,
+    splitExtension,
+    staticEnumValuesIdentifier,
+    typeNameStyle
+} from "./utils";
 
 const DEBUG = false;
-const DEFAULT_CLASS_PREFIX = "QT";
-
-export const objcOptions = {
-    features: new EnumOption("features", "Interface and implementation", [
-        ["all", { interface: true, implementation: true }],
-        ["interface", { interface: true, implementation: false }],
-        ["implementation", { interface: false, implementation: true }]
-    ]),
-    justTypes: new BooleanOption("just-types", "Plain types only", false),
-    marshallingFunctions: new BooleanOption("functions", "C-style functions", false),
-    classPrefix: new StringOption("class-prefix", "Class prefix", "PREFIX", DEFAULT_CLASS_PREFIX),
-    extraComments: new BooleanOption("extra-comments", "Extra comments", false)
-};
-
-export class ObjectiveCTargetLanguage extends TargetLanguage {
-    public constructor() {
-        super("Objective-C", ["objc", "objective-c", "objectivec"], "m");
-    }
-
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [
-            objcOptions.justTypes,
-            objcOptions.classPrefix,
-            objcOptions.features,
-            objcOptions.extraComments,
-            objcOptions.marshallingFunctions
-        ];
-    }
-
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): ObjectiveCRenderer {
-        return new ObjectiveCRenderer(this, renderContext, getOptionValues(objcOptions, untypedOptionValues));
-    }
-}
-
-function typeNameStyle(prefix: string, original: string): string {
-    const words = splitIntoWords(original);
-    const result = combineWords(
-        words,
-        legalizeName,
-        firstUpperWordStyle,
-        firstUpperWordStyle,
-        allUpperWordStyle,
-        allUpperWordStyle,
-        "",
-        isStartCharacter
-    );
-    return addPrefixIfNecessary(prefix, result);
-}
-
-function propertyNameStyle(original: string, isBool = false): string {
-    // Objective-C developers are uncomfortable with property "id"
-    // so we use an alternate name in this special case.
-    if (original === "id") {
-        original = "identifier";
-    }
-
-    let words = splitIntoWords(original);
-
-    if (isBool) {
-        if (words.length === 0) {
-            words = [{ word: "flag", isAcronym: false }];
-        } else if (!words[0].isAcronym && !booleanPrefixes.includes(words[0].word)) {
-            words = [{ word: "is", isAcronym: false }, ...words];
-        }
-    }
-
-    // Properties cannot even begin with any of the forbidden names
-    // For example, properies named new* are treated differently by ARC
-    if (words.length > 0 && forbiddenPropertyNames.includes(words[0].word)) {
-        words = [{ word: "the", isAcronym: false }, ...words];
-    }
-
-    return combineWords(
-        words,
-        legalizeName,
-        allLowerWordStyle,
-        firstUpperWordStyle,
-        allLowerWordStyle,
-        allUpperWordStyle,
-        "",
-        isStartCharacter
-    );
-}
-
-const keywords = [
-    /*
-    "_Bool",
-    "_Complex",
-    "_Imaginary",
-    */
-    "asm",
-    "atomic",
-    "auto",
-    "bool",
-    "break",
-    "case",
-    "char",
-    "const",
-    "continue",
-    "default",
-    "do",
-    "double",
-    "else",
-    "enum",
-    "extern",
-    "false",
-    "float",
-    "for",
-    "goto",
-    "if",
-    "inline",
-    "int",
-    "long",
-    "nil",
-    "nonatomic",
-    "register",
-    "restrict",
-    "retain",
-    "return",
-    "short",
-    "signed",
-    "sizeof",
-    "static",
-    "struct",
-    "switch",
-    "typedef",
-    "typeof",
-    "true",
-    "union",
-    "unsigned",
-    "void",
-    "volatile",
-    "while"
-];
-
-const forbiddenPropertyNames = [
-    "id",
-    "hash",
-    "description",
-    "init",
-    "copy",
-    "mutableCopy",
-    "superclass",
-    "debugDescription",
-    "new"
-];
-
-const booleanPrefixes = [
-    "is",
-    "are",
-    "were",
-    "was",
-    "will",
-    "all",
-    "some",
-    "many",
-    "has",
-    "have",
-    "had",
-    "does",
-    "do",
-    "requires",
-    "require",
-    "needs",
-    "need"
-];
-
-function isStartCharacter(utf16Unit: number): boolean {
-    return unicode.isAlphabetic(utf16Unit) || utf16Unit === 0x5f; // underscore
-}
-
-function isPartCharacter(utf16Unit: number): boolean {
-    const category: string = unicode.getCategory(utf16Unit);
-    return ["Nd", "Pc", "Mn", "Mc"].includes(category) || isStartCharacter(utf16Unit);
-}
-
-const legalizeName = utf16LegalizeCharacters(isPartCharacter);
-
-const staticEnumValuesIdentifier = "values";
-const forbiddenForEnumCases = ["new", staticEnumValuesIdentifier];
-
-function splitExtension(filename: string): [string, string] {
-    const i = filename.lastIndexOf(".");
-    const extension = i !== -1 ? filename.split(".").pop() : "m";
-    filename = i !== -1 ? filename.slice(0, i) : filename;
-    return [filename, extension ?? "m"];
-}
 
 export class ObjectiveCRenderer extends ConvenienceRenderer {
     private _currentFilename: string | undefined;
@@ -235,7 +31,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
     public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        private readonly _options: OptionValues<typeof objcOptions>
+        private readonly _options: OptionValues<typeof objectiveCOptions>
     ) {
         super(targetLanguage, renderContext);
 
@@ -259,12 +55,12 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         return name.slice(0, firstNonUpper - 1);
     }
 
-    protected forbiddenNamesForGlobalNamespace(): string[] {
+    protected forbiddenNamesForGlobalNamespace(): readonly string[] {
         return keywords;
     }
 
     protected forbiddenForObjectProperties(_c: ClassType, _className: Name): ForbiddenWordsInfo {
-        return { names: forbiddenPropertyNames, includeGlobalForbidden: true };
+        return { names: forbiddenPropertyNames as unknown as string[], includeGlobalForbidden: true };
     }
 
     protected forbiddenForEnumCases(_e: EnumType, _enumName: Name): ForbiddenWordsInfo {
@@ -1087,15 +883,15 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
     protected emitMapFunction(): void {
         if (this.needsMap) {
             this.emitMultiline(`static id map(id collection, id (^f)(id value)) {
-    id result = nil;
-    if ([collection isKindOfClass:NSArray.class]) {
-        result = [NSMutableArray arrayWithCapacity:[collection count]];
-        for (id x in collection) [result addObject:f(x)];
-    } else if ([collection isKindOfClass:NSDictionary.class]) {
-        result = [NSMutableDictionary dictionaryWithCapacity:[collection count]];
-        for (id key in collection) [result setObject:f([collection objectForKey:key]) forKey:key];
-    }
-    return result;
+	id result = nil;
+	if ([collection isKindOfClass:NSArray.class]) {
+			result = [NSMutableArray arrayWithCapacity:[collection count]];
+			for (id x in collection) [result addObject:f(x)];
+	} else if ([collection isKindOfClass:NSDictionary.class]) {
+			result = [NSMutableDictionary dictionaryWithCapacity:[collection count]];
+			for (id key in collection) [result setObject:f([collection objectForKey:key]) forKey:key];
+	}
+	return result;
 }`);
         }
     }
