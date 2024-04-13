@@ -13,7 +13,7 @@
         "build": "npm run build --workspaces --if-present && tsc",
         "test": "script/test",
         "start": "script/watch",
-        "clean": "rm -rf dist node_modules *~ packages/*/{dist,node_modules}",
+        "clean": "rm -rf dist node_modules *~ packages/*/{dist,node_modules,out}",
         "debug": "node --inspect-brk --max-old-space-size=4096 ./dist/index.js"
     },
     "workspaces": [

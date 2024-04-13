@@ -27,3 +27,18 @@ jq --arg version $VERSION \
 mv package.1.json packages/quicktype-graphql-input/package.json
 
 npm publish --workspaces --if-present
+
+pushd packages/quicktype-vscode
+
+# Fix up dependencies for vscode extension
+jq --arg version $VERSION \
+    '.dependencies."quicktype-core" = $version' \
+    package.json > package.1.json
+jq --arg version $VERSION \
+    '.dependencies."quicktype-typescript-input" = $version' \
+    package.1.json > package.2.json
+rm package.1.json
+mv package.2.json package.json
+
+npm publish
+popd
