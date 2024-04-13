@@ -360,7 +360,7 @@ export class RustRenderer extends ConvenienceRenderer {
         jsonName: string,
         defaultNamingStyle: string,
         preferedNamingStyle: string
-    ) {
+    ): void {
         const escapedName = rustStringEscape(jsonName);
         const name = namingStyles[defaultNamingStyle].fromParts(this.sourcelikeToString(propName).split(" "));
         const styledName = nameToNamingStyle(name, preferedNamingStyle);
@@ -370,7 +370,7 @@ export class RustRenderer extends ConvenienceRenderer {
         }
     }
 
-    private emitSkipSerializeNone(t: Type) {
+    private emitSkipSerializeNone(t: Type): void {
         if (t instanceof UnionType) {
             const nullable = nullableFromUnion(t);
             if (nullable !== null) this.emitLine('#[serde(skip_serializing_if = "Option::is_none")]');
@@ -411,7 +411,7 @@ export class RustRenderer extends ConvenienceRenderer {
         }
 
         const blankLines = this._options.density === Density.Dense ? "none" : "interposing";
-        const structBody = () =>
+        const structBody = (): void =>
             this.forEachClassProperty(c, blankLines, (name, jsonName, prop) => {
                 this.emitDescription(this.descriptionForClassProperty(c, jsonName));
                 this.emitRenameAttribute(name, jsonName, defaultStyle, preferedNamingStyle);

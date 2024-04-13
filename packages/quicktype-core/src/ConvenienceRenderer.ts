@@ -681,7 +681,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     protected forEachDeclaration(
         blankLocations: BlankLineConfig,
         f: (decl: Declaration, position: ForEachPosition) => void
-    ) {
+    ): void {
         this.forEachWithBlankLines(
             iterableEnumerate(defined(this._declarationIR).declarations),
             blankLocations,
@@ -748,7 +748,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     ): void {
         const iterateMembers = members ?? u.members;
         if (sortOrder === null) {
-            sortOrder = n => defined(this.names.get(n));
+            sortOrder = (n): string => defined(this.names.get(n));
         }
 
         const memberNames = mapFilter(defined(this._memberNamesStoreView).get(u), (_, t) => iterateMembers.has(t));
@@ -922,7 +922,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         makePropertyRow: (name: Name, jsonName: string, p: ClassProperty) => Sourcelike[]
     ): void {
         let table: Sourcelike[][] = [];
-        const emitTable = () => {
+        const emitTable = (): void => {
             if (table.length === 0) return;
             this.emitTable(table);
             table = [];
@@ -943,7 +943,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     private processGraph(): void {
         this._declarationIR = declarationsForGraph(
             this.typeGraph,
-            this.needsTypeDeclarationBeforeUse ? t => this.canBeForwardDeclared(t) : undefined,
+            this.needsTypeDeclarationBeforeUse ? (t): boolean => this.canBeForwardDeclared(t) : undefined,
             t => this.childrenOfType(t),
             t => {
                 if (t instanceof UnionType) {
@@ -976,7 +976,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         const processed = new Set<TResult>();
         const queue = Array.from(this.typeGraph.topLevels.values());
 
-        function visit(t: Type) {
+        function visit(t: Type): void {
             if (visitedTypes.has(t)) return;
             for (const c of t.getChildren()) {
                 queue.push(c);

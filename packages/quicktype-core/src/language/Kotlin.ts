@@ -323,7 +323,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
             return;
         }
 
-        const kotlinType = (p: ClassProperty) => {
+        const kotlinType = (p: ClassProperty): Sourcelike => {
             if (p.isOptional) {
                 return [this.kotlinType(p.type, true, true), "?"];
             } else {
@@ -371,15 +371,15 @@ export class KotlinRenderer extends ConvenienceRenderer {
         this.emitClassDefinitionMethods(c, className);
     }
 
-    protected emitClassDefinitionMethods(_c: ClassType, _className: Name) {
+    protected emitClassDefinitionMethods(_c: ClassType, _className: Name): void {
         this.emitLine(")");
     }
 
-    protected emitClassAnnotations(_c: Type, _className: Name) {
+    protected emitClassAnnotations(_c: Type, _className: Name): void {
         // to be overridden
     }
 
-    protected renameAttribute(_name: Name, _jsonName: string, _required: boolean, _meta: Array<() => void>) {
+    protected renameAttribute(_name: Name, _jsonName: string, _required: boolean, _meta: Array<() => void>): void {
         // to be overridden
     }
 
@@ -433,7 +433,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
         _nonNulls: ReadonlySet<Type>,
         _maybeNull: PrimitiveType | null,
         _unionName: Name
-    ) {
+    ): void {
         // to be overridden
     }
 
@@ -630,7 +630,7 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
         this.emitLine("typealias ", className, " = JsonObject");
     }
 
-    protected emitClassDefinitionMethods(c: ClassType, className: Name) {
+    protected emitClassDefinitionMethods(c: ClassType, className: Name): void {
         const isTopLevel = iterableSome(this.topLevels, ([_, top]) => top === c);
         if (isTopLevel) {
             this.emitBlock(")", () => {
@@ -645,7 +645,7 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
         }
     }
 
-    protected renameAttribute(name: Name, jsonName: string, _required: boolean, meta: Array<() => void>) {
+    protected renameAttribute(name: Name, jsonName: string, _required: boolean, meta: Array<() => void>): void {
         const rename = this.klaxonRenameAttribute(name, jsonName);
         if (rename !== undefined) {
             meta.push(() => this.emitLine(rename));
@@ -701,7 +701,7 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
         nonNulls: ReadonlySet<Type>,
         maybeNull: PrimitiveType | null,
         unionName: Name
-    ) {
+    ): void {
         this.ensureBlankLine();
         this.emitLine("public fun toJson(): String = klaxon.toJsonString(when (this) {");
         this.indent(() => {
@@ -911,7 +911,7 @@ import com.fasterxml.jackson.module.kotlin.*`);
         this.emitLine("typealias ", className, " = JsonNode");
     }
 
-    protected emitClassDefinitionMethods(c: ClassType, className: Name) {
+    protected emitClassDefinitionMethods(c: ClassType, className: Name): void {
         const isTopLevel = iterableSome(this.topLevels, ([_, top]) => top === c);
         if (isTopLevel) {
             this.emitBlock(")", () => {
@@ -926,7 +926,7 @@ import com.fasterxml.jackson.module.kotlin.*`);
         }
     }
 
-    protected renameAttribute(name: Name, jsonName: string, required: boolean, meta: Array<() => void>) {
+    protected renameAttribute(name: Name, jsonName: string, required: boolean, meta: Array<() => void>): void {
         const rename = this.jacksonRenameAttribute(name, jsonName, required);
         if (rename !== undefined) {
             meta.push(() => this.emitLine(rename));
@@ -974,7 +974,7 @@ private fun <T> ObjectMapper.convert(k: kotlin.reflect.KClass<*>, fromJson: (Jso
         nonNulls: ReadonlySet<Type>,
         maybeNull: PrimitiveType | null,
         unionName: Name
-    ) {
+    ): void {
         this.ensureBlankLine();
         this.emitLine("fun toJson(): String = mapper.writeValueAsString(when (this) {");
         this.indent(() => {
@@ -1086,11 +1086,11 @@ export class KotlinXRenderer extends KotlinRenderer {
         this.emitLine("import kotlinx.serialization.encoding.*");
     }
 
-    protected emitClassAnnotations(_c: Type, _className: Name) {
+    protected emitClassAnnotations(_c: Type, _className: Name): void {
         this.emitLine("@Serializable");
     }
 
-    protected renameAttribute(name: Name, jsonName: string, _required: boolean, meta: Array<() => void>) {
+    protected renameAttribute(name: Name, jsonName: string, _required: boolean, meta: Array<() => void>): void {
         const rename = this._rename(name, jsonName);
         if (rename !== undefined) {
             meta.push(() => this.emitLine(rename));

@@ -664,7 +664,7 @@ export class JavaRenderer extends ConvenienceRenderer {
         this.emitLine("}");
     }
 
-    public emitTryCatch(main: () => void, handler: () => void, exception = "Exception") {
+    public emitTryCatch(main: () => void, handler: () => void, exception = "Exception"): void {
         this.emitLine("try {");
         this.indent(main);
         this.emitLine("} catch (", exception, " ex) {");
@@ -672,7 +672,7 @@ export class JavaRenderer extends ConvenienceRenderer {
         this.emitLine("}");
     }
 
-    public emitIgnoredTryCatchBlock(f: () => void) {
+    public emitIgnoredTryCatchBlock(f: () => void): void {
         this.emitTryCatch(f, () => this.emitLine("// Ignored"));
     }
 
@@ -913,11 +913,11 @@ export class JavaRenderer extends ConvenienceRenderer {
         this.finishFile();
     }
 
-    protected emitEnumSerializationAttributes(_e: EnumType) {
+    protected emitEnumSerializationAttributes(_e: EnumType): void {
         // Empty
     }
 
-    protected emitEnumDeserializationAttributes(_e: EnumType) {
+    protected emitEnumDeserializationAttributes(_e: EnumType): void {
         // Empty
     }
 
@@ -1158,7 +1158,7 @@ export class JacksonRenderer extends JavaRenderer {
             });
         };
 
-        const emitStringDeserializer = () => {
+        const emitStringDeserializer = (): void => {
             const enumType = u.findMember("enum");
             const stringType = u.findMember("string");
 
@@ -1307,11 +1307,11 @@ export class JacksonRenderer extends JavaRenderer {
         });
     }
 
-    protected emitEnumSerializationAttributes(_e: EnumType) {
+    protected emitEnumSerializationAttributes(_e: EnumType): void {
         this.emitLine("@JsonValue");
     }
 
-    protected emitEnumDeserializationAttributes(_e: EnumType) {
+    protected emitEnumDeserializationAttributes(_e: EnumType): void {
         this.emitLine("@JsonCreator");
     }
 

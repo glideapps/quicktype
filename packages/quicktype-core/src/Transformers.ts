@@ -449,7 +449,7 @@ export class DecodingChoiceTransformer extends Transformer {
 
     public get transformers(): readonly Transformer[] {
         const transformers: Transformer[] = [];
-        function add(xfer: Transformer | undefined) {
+        function add(xfer: Transformer | undefined): void {
             if (xfer === undefined) return;
             transformers.push(xfer);
         }
@@ -496,7 +496,7 @@ export class DecodingChoiceTransformer extends Transformer {
         let transformers = new Map<TypeKind, Transformer[]>();
         let memberMatchTransformers = new Map<Type, Transformer[]>();
 
-        function addCase(reversed: Transformer) {
+        function addCase(reversed: Transformer): void {
             if (reversed instanceof UnionMemberMatchTransformer) {
                 const memberType = reversed.memberType;
                 let arr = memberMatchTransformers.get(memberType);
@@ -518,7 +518,7 @@ export class DecodingChoiceTransformer extends Transformer {
             }
         }
 
-        function reverseAndAdd(transformer: Transformer) {
+        function reverseAndAdd(transformer: Transformer): void {
             const reversed = transformer.reverse(targetTypeRef, undefined);
             let cases: readonly Transformer[] = [];
             // Flatten nested ChoiceTransformers
@@ -578,7 +578,7 @@ export class DecodingChoiceTransformer extends Transformer {
     }
 
     public reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
-        function reconstitute(xf: Transformer | undefined) {
+        function reconstitute(xf: Transformer | undefined): Transformer | undefined {
             if (xf === undefined) return undefined;
             return xf.reconstitute(builder);
         }

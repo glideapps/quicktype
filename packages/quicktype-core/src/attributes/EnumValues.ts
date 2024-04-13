@@ -12,7 +12,7 @@ class EnumValuesTypeAttributeKind extends TypeAttributeKind<AccessorNames> {
         super("enumValues");
     }
 
-    public makeInferred(_: AccessorNames) {
+    public makeInferred(_: AccessorNames): undefined {
         return undefined;
     }
 }

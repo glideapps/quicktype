@@ -260,7 +260,7 @@ export class RubyRenderer extends ConvenienceRenderer {
     }
 
     private jsonSample(t: Type): Sourcelike {
-        function inner() {
+        function inner(): string {
             if (t instanceof ArrayType) {
                 return "[…]";
             } else if (t instanceof MapType) {
@@ -401,14 +401,14 @@ export class RubyRenderer extends ConvenienceRenderer {
         );
     }
 
-    private emitBlock(source: Sourcelike, emit: () => void) {
+    private emitBlock(source: Sourcelike, emit: () => void): void {
         this.emitLine(source);
         this.indent(emit);
         this.emitLine("end");
     }
 
-    private emitModule(emit: () => void) {
-        const emitModuleInner = (moduleName: string) => {
+    private emitModule(emit: () => void): void {
+        const emitModuleInner = (moduleName: string): void => {
             const [firstModule, ...subModules] = moduleName.split("::");
             if (subModules.length > 0) {
                 this.emitBlock(["module ", firstModule], () => {
@@ -426,7 +426,7 @@ export class RubyRenderer extends ConvenienceRenderer {
         }
     }
 
-    private emitClass(c: ClassType, className: Name) {
+    private emitClass(c: ClassType, className: Name): void {
         this.emitDescription(this.descriptionForType(c));
         this.emitBlock(["class ", className, " < Dry::Struct"], () => {
             let table: Sourcelike[][] = [];
@@ -518,7 +518,7 @@ export class RubyRenderer extends ConvenienceRenderer {
         });
     }
 
-    private emitEnum(e: EnumType, enumName: Name) {
+    private emitEnum(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
         this.emitBlock(["module ", enumName], () => {
             const table: Sourcelike[][] = [];
@@ -529,7 +529,7 @@ export class RubyRenderer extends ConvenienceRenderer {
         });
     }
 
-    private emitUnion(u: UnionType, unionName: Name) {
+    private emitUnion(u: UnionType, unionName: Name): void {
         this.emitDescription(this.descriptionForType(u));
         this.emitBlock(["class ", unionName, " < Dry::Struct"], () => {
             const table: Sourcelike[][] = [];
@@ -601,7 +601,7 @@ export class RubyRenderer extends ConvenienceRenderer {
         });
     }
 
-    private emitTypesModule() {
+    private emitTypesModule(): void {
         this.emitBlock(["module Types"], () => {
             this.emitLine("include Dry.Types(default: :nominal)");
 
@@ -649,7 +649,7 @@ export class RubyRenderer extends ConvenienceRenderer {
         });
     }
 
-    protected emitSourceStructure() {
+    protected emitSourceStructure(): void {
         if (this.leadingComments !== undefined) {
             this.emitComments(this.leadingComments);
         } else if (!this._options.justTypes) {
@@ -704,7 +704,7 @@ export class RubyRenderer extends ConvenienceRenderer {
                         // it for arrays.
                         const needsToJsonDefined = "array" === topLevel.kind;
 
-                        const classDeclaration = () => {
+                        const classDeclaration = (): void => {
                             this.emitBlock(["class ", name], () => {
                                 this.emitBlock(["def self.from_json!(json)"], () => {
                                     if (needsToJsonDefined) {

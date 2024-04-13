@@ -296,7 +296,7 @@ export function matchType<U>(
     unionType: (unionType: UnionType) => U,
     transformedStringType?: (transformedStringType: PrimitiveType) => U
 ): U {
-    function typeNotSupported(t: Type) {
+    function typeNotSupported(t: Type): never {
         return panic(`Unsupported type ${t.kind} in non-exhaustive match`);
     }
 

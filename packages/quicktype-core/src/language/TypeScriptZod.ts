@@ -93,7 +93,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
             legalizeName,
             upper ? firstUpperWordStyle : allLowerWordStyle,
             firstUpperWordStyle,
-            upper ? s => capitalize(acronyms(s)) : allLowerWordStyle,
+            upper ? (s): string => capitalize(acronyms(s)) : allLowerWordStyle,
             acronyms,
             "",
             isLetterOrUnderscore
@@ -169,7 +169,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         return match;
     }
 
-    protected emitObject(name: Name, t: ObjectType) {
+    protected emitObject(name: Name, t: ObjectType): void {
         this.ensureBlankLine();
         this.emitLine("\nexport const ", name, "Schema = ", "z.object({");
         this.indent(() => {

@@ -373,7 +373,7 @@ export class ArrayType extends Type {
         super(typeRef, graph);
     }
 
-    public setItems(itemsRef: TypeRef) {
+    public setItems(itemsRef: TypeRef): void {
         if (this._itemsRef !== undefined) {
             return panic("Can only set array items once");
         }
@@ -514,7 +514,10 @@ export class ObjectType extends Type {
         }
     }
 
-    public setProperties(properties: ReadonlyMap<string, ClassProperty>, additionalPropertiesRef: TypeRef | undefined) {
+    public setProperties(
+        properties: ReadonlyMap<string, ClassProperty>,
+        additionalPropertiesRef: TypeRef | undefined
+    ): void {
         assert(this._properties === undefined, "Tried to set object properties twice");
 
         if (this instanceof MapType) {

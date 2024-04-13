@@ -261,7 +261,7 @@ export class PhpRenderer extends ConvenienceRenderer {
     }
 
     protected phpType(_reference: boolean, t: Type, isOptional = false, prefix = "?", suffix = ""): Sourcelike {
-        function optionalize(s: Sourcelike) {
+        function optionalize(s: Sourcelike): Sourcelike {
             return [isOptional ? prefix : "", s, isOptional ? suffix : ""];
         }
 
@@ -366,7 +366,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         );
     }
 
-    protected phpToObjConvert(className: Name, t: Type, lhs: Sourcelike[], args: Sourcelike[]) {
+    protected phpToObjConvert(className: Name, t: Type, lhs: Sourcelike[], args: Sourcelike[]): void {
         matchType(
             t,
             _anyType => this.emitLine(...lhs, ...args, "; /*any*/"),
@@ -419,7 +419,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         );
     }
 
-    private transformDateTime(className: Name, attrName: Sourcelike, scopeAttrName: Sourcelike[]) {
+    private transformDateTime(className: Name, attrName: Sourcelike, scopeAttrName: Sourcelike[]): void {
         this.emitBlock(["if (!is_a(", scopeAttrName, ", 'DateTime'))"], () =>
             this.emitLine("throw new Exception('Attribute Error:", className, "::", attrName, "');")
         );
@@ -428,7 +428,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         // }
     }
 
-    protected phpFromObjConvert(className: Name, t: Type, lhs: Sourcelike[], args: Sourcelike[]) {
+    protected phpFromObjConvert(className: Name, t: Type, lhs: Sourcelike[], args: Sourcelike[]): void {
         matchType(
             t,
             _anyType => this.emitLine(...lhs, ...args, "; /*any*/"),
@@ -491,7 +491,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         args: Sourcelike[],
         idx: number,
         suffix: Sourcelike
-    ) {
+    ): void {
         matchType(
             t,
             _anyType =>
@@ -586,8 +586,8 @@ export class PhpRenderer extends ConvenienceRenderer {
         );
     }
 
-    private phpValidate(className: Name, t: Type, attrName: Sourcelike, scopeAttrName: string) {
-        const is = (isfn: string, myT: Name = className) => {
+    private phpValidate(className: Name, t: Type, attrName: Sourcelike, scopeAttrName: string): void {
+        const is = (isfn: string, myT: Name = className): void => {
             this.emitBlock(["if (!", isfn, "(", scopeAttrName, "))"], () =>
                 this.emitLine('throw new Exception("Attribute Error:', myT, "::", attrName, '");')
             );
@@ -644,7 +644,13 @@ export class PhpRenderer extends ConvenienceRenderer {
         );
     }
 
-    protected emitFromMethod(names: FunctionNames, p: ClassProperty, className: Name, _name: Name, desc?: string[]) {
+    protected emitFromMethod(
+        names: FunctionNames,
+        p: ClassProperty,
+        className: Name,
+        _name: Name,
+        desc?: string[]
+    ): void {
         this.emitLine("/**");
         if (desc !== undefined) {
             this.emitLine(" * ", desc);
@@ -672,7 +678,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         );
     }
 
-    protected emitToMethod(names: FunctionNames, p: ClassProperty, className: Name, name: Name, desc?: string[]) {
+    protected emitToMethod(names: FunctionNames, p: ClassProperty, className: Name, name: Name, desc?: string[]): void {
         this.emitLine("/**");
         if (desc !== undefined) {
             this.emitLine(" * ", desc);
@@ -690,7 +696,13 @@ export class PhpRenderer extends ConvenienceRenderer {
         });
     }
 
-    protected emitValidateMethod(names: FunctionNames, p: ClassProperty, className: Name, name: Name, desc?: string[]) {
+    protected emitValidateMethod(
+        names: FunctionNames,
+        p: ClassProperty,
+        className: Name,
+        name: Name,
+        desc?: string[]
+    ): void {
         this.emitLine("/**");
         if (desc !== undefined) {
             this.emitLine(" * ", desc);
@@ -710,7 +722,13 @@ export class PhpRenderer extends ConvenienceRenderer {
         );
     }
 
-    protected emitGetMethod(names: FunctionNames, p: ClassProperty, className: Name, name: Name, desc?: string[]) {
+    protected emitGetMethod(
+        names: FunctionNames,
+        p: ClassProperty,
+        className: Name,
+        name: Name,
+        desc?: string[]
+    ): void {
         if (this._options.withGet) {
             this.emitLine("/**");
             if (desc !== undefined) {
@@ -746,7 +764,13 @@ export class PhpRenderer extends ConvenienceRenderer {
         }
     }
 
-    protected emitSetMethod(names: FunctionNames, p: ClassProperty, className: Name, name: Name, desc?: string[]) {
+    protected emitSetMethod(
+        names: FunctionNames,
+        p: ClassProperty,
+        className: Name,
+        name: Name,
+        desc?: string[]
+    ): void {
         if (this._options.withSet) {
             this.emitLine("/**");
             if (desc !== undefined) {
@@ -772,7 +796,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         name: Name,
         desc: string[] | undefined,
         idx: number
-    ) {
+    ): void {
         if (this._options.withGet) {
             this.emitLine("/**");
             if (desc !== undefined) {
@@ -937,11 +961,11 @@ export class PhpRenderer extends ConvenienceRenderer {
         throw Error("emitUnionDefinition not implemented");
     }
 
-    protected emitEnumSerializationAttributes(_e: EnumType) {
+    protected emitEnumSerializationAttributes(_e: EnumType): void {
         // Empty
     }
 
-    protected emitEnumDeserializationAttributes(_e: EnumType) {
+    protected emitEnumDeserializationAttributes(_e: EnumType): void {
         // Empty
     }
 

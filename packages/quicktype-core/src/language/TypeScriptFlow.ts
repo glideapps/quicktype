@@ -190,12 +190,12 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
         }
     }
 
-    private emitClass(c: ClassType, className: Name) {
+    private emitClass(c: ClassType, className: Name): void {
         this.emitDescription(this.descriptionForType(c));
         this.emitClassBlock(c, className);
     }
 
-    protected emitUnion(u: UnionType, unionName: Name) {
+    protected emitUnion(u: UnionType, unionName: Name): void {
         if (!this._tsFlowOptions.declareUnions) {
             return;
         }
@@ -383,7 +383,7 @@ export class FlowRenderer extends TypeScriptFlowBaseRenderer {
         });
     }
 
-    protected emitSourceStructure() {
+    protected emitSourceStructure(): void {
         this.emitLine("// @flow");
         this.ensureBlankLine();
         super.emitSourceStructure();

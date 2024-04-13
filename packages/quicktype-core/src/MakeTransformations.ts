@@ -118,7 +118,7 @@ function replaceUnion(
         ? builder.getUnionType(union.getAttributes(), reconstitutedMemberSet)
         : defined(iterableFirst(reconstitutedMemberSet));
 
-    function memberForKind(kind: TypeKind) {
+    function memberForKind(kind: TypeKind): number {
         return defined(reconstitutedMembersByKind.get(kind));
     }
 
@@ -127,7 +127,7 @@ function replaceUnion(
         return new UnionInstantiationTransformer(graph, memberTypeRef);
     }
 
-    function transformerForKind(kind: TypeKind) {
+    function transformerForKind(kind: TypeKind): DecodingTransformer | undefined {
         const member = union.findMember(kind);
         if (member === undefined) return undefined;
         const memberTypeRef = memberForKind(kind);

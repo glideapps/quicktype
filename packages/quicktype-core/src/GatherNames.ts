@@ -102,7 +102,7 @@ export function gatherNames(graph: TypeGraph, destructive: boolean, debugPrint: 
     // null means there are too many
     const namesForType = new Map<Type, ReadonlySet<string> | null>();
 
-    function addNames(t: Type, names: ReadonlySet<string> | null) {
+    function addNames(t: Type, names: ReadonlySet<string> | null): void {
         // Always use the type's given names if it has some
         if (t.hasNames) {
             const originalNames = t.getNames();
@@ -217,7 +217,7 @@ export function gatherNames(graph: TypeGraph, destructive: boolean, debugPrint: 
         return null;
     }
 
-    function processType(ancestor: Type | undefined, t: Type, alternativeSuffix: string | undefined) {
+    function processType(ancestor: Type | undefined, t: Type, alternativeSuffix: string | undefined): void {
         const names = defined(namesForType.get(t));
 
         let processedEntry = pairsProcessed.get(ancestor);

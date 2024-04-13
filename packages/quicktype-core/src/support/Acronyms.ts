@@ -1108,7 +1108,7 @@ export enum AcronymStyleOptions {
     Pascal = "pascal"
 }
 
-export const acronymOption = function (defaultOption: AcronymStyleOptions) {
+export const acronymOption = function (defaultOption: AcronymStyleOptions): EnumOption<AcronymStyleOptions> {
     return new EnumOption(
         "acronym-style",
         "Acronym naming style",

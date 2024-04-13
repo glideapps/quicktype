@@ -82,7 +82,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
             legalizeName,
             upper ? firstUpperWordStyle : allLowerWordStyle,
             firstUpperWordStyle,
-            upper ? s => capitalize(acronyms(s)) : allLowerWordStyle,
+            upper ? (s): string => capitalize(acronyms(s)) : allLowerWordStyle,
             acronyms,
             "",
             isES3IdentifierStart
@@ -187,7 +187,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         );
     }
 
-    protected emitBlock(source: Sourcelike, end: Sourcelike, emit: () => void) {
+    protected emitBlock(source: Sourcelike, end: Sourcelike, emit: () => void): void {
         this.emitLine(source, "{");
         this.indent(emit);
         this.emitLine("}", end);
@@ -281,7 +281,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         });
     }
 
-    private emitObject(name: Name, t: ObjectType) {
+    private emitObject(name: Name, t: ObjectType): void {
         this.ensureBlankLine();
         this.emitLine("_", name, " = PropTypes.shape({");
         this.indent(() => {

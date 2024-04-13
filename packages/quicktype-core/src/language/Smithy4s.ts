@@ -314,7 +314,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
             return;
         }
 
-        const scalaType = (p: ClassProperty) => {
+        const scalaType = (p: ClassProperty): Sourcelike => {
             if (p.isOptional) {
                 return [this.scalaType(p.type, true, true)];
             } else {
@@ -375,7 +375,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
         this.emitClassDefinitionMethods(emitLater);
     }
 
-    protected emitClassDefinitionMethods(arrayTypes: ClassProperty[]) {
+    protected emitClassDefinitionMethods(arrayTypes: ClassProperty[]): void {
         this.emitLine("}");
         arrayTypes.forEach(p => {
             function ignore<T extends Type>(_: T): void {

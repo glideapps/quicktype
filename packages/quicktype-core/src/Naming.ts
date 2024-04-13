@@ -319,7 +319,7 @@ export class DependencyName extends Name {
     }
 }
 
-export function keywordNamespace(name: string, keywords: string[]) {
+export function keywordNamespace(name: string, keywords: string[]): Namespace {
     const ns = new Namespace(name, undefined, [], []);
     for (const kw of keywords) {
         ns.add(new FixedName(kw));

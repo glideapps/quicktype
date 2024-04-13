@@ -14,6 +14,7 @@ import { type RenderContext } from "../Renderer";
 import { BooleanOption, EnumOption, type Option, type OptionValues, getOptionValues } from "../RendererOptions";
 import { type MultiWord, type Sourcelike, modifySource, multiWord, parenIfNeeded, singleWord } from "../Source";
 import {
+    type WordStyle,
     allLowerWordStyle,
     allUpperWordStyle,
     combineWords,
@@ -223,7 +224,7 @@ function classNameStyle(original: string): string {
     );
 }
 
-function getWordStyle(uppercase: boolean, forceSnakeNameStyle: boolean) {
+function getWordStyle(uppercase: boolean, forceSnakeNameStyle: boolean): WordStyle {
     if (!forceSnakeNameStyle) {
         return originalWord;
     }
@@ -1016,7 +1017,7 @@ export class JSONPythonRenderer extends PythonRenderer {
     }
 
     protected transformer(inputTransformer: ValueOrLambda, xfer: Transformer, targetType: Type): ValueOrLambda {
-        const consume = (consumer: Transformer | undefined, vol: ValueOrLambda) => {
+        const consume = (consumer: Transformer | undefined, vol: ValueOrLambda): ValueOrLambda => {
             if (consumer === undefined) {
                 return vol;
             }

@@ -296,7 +296,7 @@ export class Ref {
     }
 
     private lookup(local: unknown, path: readonly PathElement[], root: JSONSchema): JSONSchema {
-        const refMaker = () => new Ref(this.addressURI, path);
+        const refMaker = (): Ref => new Ref(this.addressURI, path);
         const first = path[0];
         if (first === undefined) {
             return checkJSONSchema(local, refMaker);
@@ -391,7 +391,7 @@ class Location {
         this.virtualRef = virtualRef ?? canonicalRef;
     }
 
-    public updateWithID(id: string | unknown) {
+    public updateWithID(id: string | unknown): Location {
         if (typeof id !== "string") return this;
         const parsed = Ref.parse(id);
         const virtual = this.haveID ? parsed.resolveAgainst(this.virtualRef) : parsed;
@@ -426,7 +426,7 @@ class Canonizer {
 
     public constructor(private readonly _ctx: RunContext) {}
 
-    private addIDs(schema: unknown, loc: Location) {
+    private addIDs(schema: unknown, loc: Location): void {
         if (schema === null) return;
         if (Array.isArray(schema)) {
             for (let i = 0; i < schema.length; i++) {
@@ -681,7 +681,7 @@ async function addTypesInSchema(
         properties: StringMap,
         requiredArray: string[],
         additionalProperties: unknown,
-        sortKey: (k: string) => number | string = (k: string) => k.toLowerCase()
+        sortKey: (k: string) => number | string = (k: string): string => k.toLowerCase()
     ): Promise<TypeRef> {
         const required = new Set(requiredArray);
         const propertiesMap = mapSortBy(mapFromObject(properties), (_, k) => sortKey(k));
@@ -739,13 +739,13 @@ async function addTypesInSchema(
                 let predicate: (x: unknown) => boolean;
                 switch (name) {
                     case "null":
-                        predicate = (x: unknown) => x === null;
+                        predicate = (x): x is null => x === null;
                         break;
                     case "integer":
-                        predicate = (x: unknown) => typeof x === "number" && x === Math.floor(x);
+                        predicate = (x): x is number => typeof x === "number" && x === Math.floor(x);
                         break;
                     default:
-                        predicate = (x: unknown) => typeof x === name;
+                        predicate = (x): x is typeof name => typeof x === name;
                         break;
                 }
 
@@ -908,7 +908,7 @@ async function addTypesInSchema(
                 combineProducedAttributes(({ forObject }) => forObject)
             );
             const order = schema.quicktypePropertyOrder ? schema.quicktypePropertyOrder : [];
-            const orderKey = (propertyName: string) => {
+            const orderKey = (propertyName: string): string => {
                 // use the index of the order array
                 const index = order.indexOf(propertyName);
                 // if no index then use the property name

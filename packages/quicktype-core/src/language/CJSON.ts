@@ -498,7 +498,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
      * @param fieldType: the variable type
      * @param fieldName: name of the variable
      */
-    protected emitTypdefAlias(fieldType: Type, fieldName: Name) {
+    protected emitTypedefAlias(fieldType: Type, fieldName: Name) {
         if (this._options.addTypedefAlias) {
             this.emitLine("typedef ", this.quicktypeTypeToCJSON(fieldType, false).cType, " ", fieldName, ";");
             this.ensureBlankLine();
@@ -686,7 +686,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
             true
         );
         this.ensureBlankLine();
-        this.emitTypdefAlias(enumType, enumName);
+        this.emitTypedefAlias(enumType, enumName);
     }
 
     /**
@@ -819,7 +819,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
             true
         );
         this.ensureBlankLine();
-        this.emitTypdefAlias(unionType, unionName);
+        this.emitTypedefAlias(unionType, unionName);
     }
 
     /**
@@ -1697,7 +1697,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
             true
         );
         this.ensureBlankLine();
-        this.emitTypdefAlias(classType, className);
+        this.emitTypedefAlias(classType, className);
     }
 
     /**
@@ -3295,7 +3295,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
             true
         );
         this.ensureBlankLine();
-        this.emitTypdefAlias(type, className);
+        this.emitTypedefAlias(type, className);
     }
 
     /**

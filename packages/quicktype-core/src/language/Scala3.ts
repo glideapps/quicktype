@@ -348,7 +348,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
             return;
         }
 
-        const scalaType = (p: ClassProperty) => {
+        const scalaType = (p: ClassProperty): Sourcelike => {
             if (p.isOptional) {
                 return ["Option[", this.scalaType(p.type, true, true), "]"];
             } else {
@@ -402,7 +402,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
         this.emitClassDefinitionMethods();
     }
 
-    protected emitClassDefinitionMethods() {
+    protected emitClassDefinitionMethods(): void {
         this.emitLine(")");
     }
 
@@ -489,7 +489,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
 }
 
 export class UpickleRenderer extends Scala3Renderer {
-    protected emitClassDefinitionMethods() {
+    protected emitClassDefinitionMethods(): void {
         this.emitLine(") derives ReadWriter ");
     }
 
@@ -596,7 +596,7 @@ export class CirceRenderer extends Scala3Renderer {
         return [wrapOption("Json", optional)];
     }
 
-    protected emitClassDefinitionMethods() {
+    protected emitClassDefinitionMethods(): void {
         this.emitLine(") derives Encoder.AsObject, Decoder");
     }
 

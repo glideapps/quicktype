@@ -444,7 +444,7 @@ export class DartRenderer extends ConvenienceRenderer {
         return ["Map.from(", map, ").map((k, v) => MapEntry<String, ", valueType, ">(k, ", valueMapper, "))"];
     }
 
-    protected mapClass(isNullable: boolean, classType: ClassType, dynamic: Sourcelike) {
+    protected mapClass(isNullable: boolean, classType: ClassType, dynamic: Sourcelike): Sourcelike {
         if (this._options.nullSafety && isNullable && !this._options.requiredProperties) {
             return [
                 dynamic,

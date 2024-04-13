@@ -402,7 +402,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
         else return notJustTypes;
     }
 
-    private get lowerNamingFunction() {
+    private get lowerNamingFunction(): Namer {
         return funPrefixNamer("lower", s => swiftNameStyle("", false, s, acronymStyle(this._options.acronymStyle)));
     }
 
@@ -601,7 +601,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
         return protocols.length > 0 ? ": " + protocols.join(", ") : "";
     }
 
-    private getEnumPropertyGroups(c: ClassType) {
+    private getEnumPropertyGroups(c: ClassType): typeof groups {
         type PropertyGroup = Array<{ label?: string; name: Name }>;
 
         let groups: PropertyGroup[] = [];
@@ -699,7 +699,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 let lastProperty: ClassProperty | undefined = undefined;
                 let lastNames: Name[] = [];
 
-                const emitLastProperty = () => {
+                const emitLastProperty = (): void => {
                     if (lastProperty === undefined) return;
 
                     const useMutableProperties = this._options.mutableProperties;
@@ -1400,7 +1400,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         this.endFile();
     };
 
-    private emitConvenienceMutator(c: ClassType, className: Name) {
+    private emitConvenienceMutator(c: ClassType, className: Name): void {
         this.emitLine("func with(");
         this.indent(() => {
             this.forEachClassProperty(c, "none", (name, _, p, position) => {
@@ -1431,7 +1431,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         });
     }
 
-    protected emitMark(line: Sourcelike, horizontalLine = false) {
+    protected emitMark(line: Sourcelike, horizontalLine = false): void {
         this.emitLine("// MARK:", horizontalLine ? " - " : " ", line);
     }
 
@@ -1452,7 +1452,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         }
     }
 
-    private emitAlamofireExtension() {
+    private emitAlamofireExtension(): void {
         this.ensureBlankLine();
         this.emitBlockWithAccess("extension DataRequest", () => {
             this

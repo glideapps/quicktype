@@ -322,7 +322,7 @@ export class CrystalRenderer extends ConvenienceRenderer {
     protected emitStructDefinition(c: ClassType, className: Name): void {
         this.emitDescription(this.descriptionForType(c));
 
-        const structBody = () =>
+        const structBody = (): void =>
             this.forEachClassProperty(c, "none", (name, jsonName, prop) => {
                 this.ensureBlankLine();
                 this.emitDescription(this.descriptionForClassProperty(c, jsonName));

@@ -201,7 +201,7 @@ async function samplesFromDirectory(dataDir: string, httpHeaders?: string[]): Pr
         }
 
         // FIXME: rewrite this to be clearer
-        const oneUnlessEmpty = (xs: TypeSource[]) => Math.sign(xs.length);
+        const oneUnlessEmpty = (xs: TypeSource[]): 0 | 1 => Math.sign(xs.length) as 0 | 1;
         if (oneUnlessEmpty(schemaSources) + oneUnlessEmpty(graphQLSources) > 1) {
             return messageError("DriverCannotMixNonJSONInputs", { dir: dir });
         }
@@ -629,7 +629,7 @@ function parseOptions(definitions: OptionDefinition[], argv: string[], partial: 
     return options;
 }
 
-function usage(targetLanguages: TargetLanguage[]) {
+function usage(targetLanguages: TargetLanguage[]): void {
     const rendererSections: UsageSection[] = [];
 
     for (const language of targetLanguages) {
@@ -978,7 +978,7 @@ export function writeOutput(
     }
 }
 
-export async function main(args: string[] | Partial<CLIOptions>) {
+export async function main(args: string[] | Partial<CLIOptions>): Promise<void> {
     let cliOptions: CLIOptions;
     if (Array.isArray(args)) {
         cliOptions = parseCLIOptions(args);

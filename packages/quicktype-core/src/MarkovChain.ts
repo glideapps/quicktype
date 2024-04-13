@@ -123,7 +123,7 @@ export function evaluate(mc: MarkovChain, word: string): number {
     return evaluateFull(mc, word)[0];
 }
 
-function randomInt(lower: number, upper: number) {
+function randomInt(lower: number, upper: number): number {
     const range = upper - lower;
     return lower + Math.floor(Math.random() * range);
 }

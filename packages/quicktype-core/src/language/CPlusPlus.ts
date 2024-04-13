@@ -1136,7 +1136,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
      */
     protected generatedTypes(isClassMember: boolean, theType: Type): TypeRecord[] {
         const result: TypeRecord[] = [];
-        const recur = (forceInclude: boolean, isVariant: boolean, l: number, t: Type) => {
+        const recur = (forceInclude: boolean, isVariant: boolean, l: number, t: Type): void => {
             if (t instanceof ArrayType) {
                 recur(true, isVariant, l + 1, t.items);
             } else if (t instanceof ClassType) {
@@ -1953,7 +1953,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitLine("void to_json(json & j, ", this.withConst([ourQualifier, enumName]), " & x);");
     }
 
-    private isLargeEnum(e: EnumType) {
+    private isLargeEnum(e: EnumType): boolean {
         // This is just an estimation. Someone might want to do some
         // benchmarks to find the optimum value here
         return e.cases.size > 15;
@@ -2125,7 +2125,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitLine("#define NLOHMANN_OPT_HELPER");
 
         this.emitNamespaces(["nlohmann"], () => {
-            const emitAdlStruct = (optType: string, factory: string) => {
+            const emitAdlStruct = (optType: string, factory: string): void => {
                 this.emitLine("template <typename T>");
                 this.emitBlock(["struct adl_serializer<", optType, "<T>>"], true, () => {
                     this.emitBlock(
@@ -2995,7 +2995,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
     }
 
-    protected isConversionRequired(t: Type) {
+    protected isConversionRequired(t: Type): boolean {
         const originalType = this.cppType(
             t,
             {

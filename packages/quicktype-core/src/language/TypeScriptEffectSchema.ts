@@ -76,7 +76,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
             legalizeName,
             upper ? firstUpperWordStyle : allLowerWordStyle,
             firstUpperWordStyle,
-            upper ? s => capitalize(acronyms(s)) : allLowerWordStyle,
+            upper ? (s): string => capitalize(acronyms(s)) : allLowerWordStyle,
             acronyms,
             "",
             isLetterOrUnderscore
@@ -153,7 +153,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
         return match;
     }
 
-    private emitObject(name: Name, t: ObjectType) {
+    private emitObject(name: Name, t: ObjectType): void {
         this.emittedObjects.add(name);
         this.ensureBlankLine();
         this.emitLine("\nexport class ", name, " extends S.Class<", name, '>("', name, '")({');
@@ -181,10 +181,10 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
         }
     }
 
-    protected walkObjectNames(objectType: ObjectType) {
+    protected walkObjectNames(objectType: ObjectType): Name[] {
         const names: Name[] = [];
 
-        const recurse = (type: Type) => {
+        const recurse = (type: Type): void => {
             if (type.kind === "object" || type.kind === "class") {
                 names.push(this.nameForNamedType(type));
                 this.forEachClassProperty(type as ObjectType, "none", (_, __, prop) => {

@@ -122,7 +122,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
             legalizeName,
             upper ? firstUpperWordStyle : allLowerWordStyle,
             firstUpperWordStyle,
-            upper ? s => capitalize(acronyms(s)) : allLowerWordStyle,
+            upper ? (s): string => capitalize(acronyms(s)) : allLowerWordStyle,
             acronyms,
             "",
             isES3IdentifierStart
@@ -204,13 +204,13 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
         return ["u(undefined, ", typeMap, ")"];
     }
 
-    protected emitBlock(source: Sourcelike, end: Sourcelike, emit: () => void) {
+    protected emitBlock(source: Sourcelike, end: Sourcelike, emit: () => void): void {
         this.emitLine(source, "{");
         this.indent(emit);
         this.emitLine("}", end);
     }
 
-    private emitTypeMap() {
+    private emitTypeMap(): void {
         const { any: anyAnnotation } = this.typeAnnotations;
 
         this.emitBlock(`const typeMap${anyAnnotation} = `, ";", () => {
@@ -284,7 +284,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
     }
 
     protected emitConvertModuleBody(): void {
-        const converter = (t: Type, name: Name) => {
+        const converter = (t: Type, name: Name): void => {
             const typeMap = this.typeMapTypeFor(t);
             this.emitBlock([this.deserializerFunctionLine(t, name), " "], "", () => {
                 const parsedJson = this._jsOptions.rawType === "json" ? "JSON.parse(json)" : "json";
@@ -553,7 +553,7 @@ function r(name${stringAnnotation}) {
         });
     }
 
-    protected emitSourceStructure() {
+    protected emitSourceStructure(): void {
         if (this.leadingComments !== undefined) {
             this.emitComments(this.leadingComments);
         } else {
