@@ -1,218 +1,18 @@
-import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { DependencyName, type Name, type Namer, funPrefixNamer } from "../Naming";
-import { type RenderContext } from "../Renderer";
-import { BooleanOption, type Option, type OptionValues, StringOption, getOptionValues } from "../RendererOptions";
-import { type Sourcelike, maybeAnnotated, modifySource } from "../Source";
-import {
-    allLowerWordStyle,
-    allUpperWordStyle,
-    combineWords,
-    decapitalize,
-    escapeNonPrintableMapper,
-    firstUpperWordStyle,
-    isAscii,
-    isDigit,
-    isLetter,
-    isPrintable,
-    snakeCase,
-    splitIntoWords,
-    standardUnicodeHexEscape,
-    utf16ConcatMap,
-    utf16LegalizeCharacters
-} from "../support/Strings";
-import { defined } from "../support/Support";
-import { TargetLanguage } from "../TargetLanguage";
-import {
-    type ClassProperty,
-    type ClassType,
-    EnumType,
-    type PrimitiveStringTypeKind,
-    type TransformedStringTypeKind,
-    type Type,
-    type UnionType
-} from "../Type";
-import { type StringTypeMapping } from "../TypeBuilder";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
-import { directlyReachableSingleNamedType, matchType, nullableFromUnion } from "../TypeUtils";
+import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../../Annotation";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../../ConvenienceRenderer";
+import { DependencyName, type Name, type Namer } from "../../Naming";
+import { type RenderContext } from "../../Renderer";
+import { type OptionValues } from "../../RendererOptions";
+import { type Sourcelike, maybeAnnotated, modifySource } from "../../Source";
+import { decapitalize, snakeCase, stringEscape } from "../../support/Strings";
+import { defined } from "../../support/Support";
+import { type TargetLanguage } from "../../TargetLanguage";
+import { type ClassProperty, type ClassType, EnumType, type Type, type UnionType } from "../../Type";
+import { directlyReachableSingleNamedType, matchType, nullableFromUnion } from "../../TypeUtils";
 
-export const dartOptions = {
-    nullSafety: new BooleanOption("null-safety", "Null Safety", true),
-    justTypes: new BooleanOption("just-types", "Types only", false),
-    codersInClass: new BooleanOption("coders-in-class", "Put encoder & decoder in Class", false),
-    methodNamesWithMap: new BooleanOption("from-map", "Use method names fromMap() & toMap()", false, "secondary"),
-    requiredProperties: new BooleanOption("required-props", "Make all properties required", false),
-    finalProperties: new BooleanOption("final-props", "Make all properties final", false),
-    generateCopyWith: new BooleanOption("copy-with", "Generate CopyWith method", false),
-    useFreezed: new BooleanOption(
-        "use-freezed",
-        "Generate class definitions with @freezed compatibility",
-        false,
-        "secondary"
-    ),
-    useHive: new BooleanOption("use-hive", "Generate annotations for Hive type adapters", false, "secondary"),
-    useJsonAnnotation: new BooleanOption(
-        "use-json-annotation",
-        "Generate annotations for json_serializable",
-        false,
-        "secondary"
-    ),
-    partName: new StringOption("part-name", "Use this name in `part` directive", "NAME", "", "secondary")
-};
-
-export class DartTargetLanguage extends TargetLanguage {
-    public constructor() {
-        super("Dart", ["dart"], "dart");
-    }
-
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [
-            dartOptions.nullSafety,
-            dartOptions.justTypes,
-            dartOptions.codersInClass,
-            dartOptions.methodNamesWithMap,
-            dartOptions.requiredProperties,
-            dartOptions.finalProperties,
-            dartOptions.generateCopyWith,
-            dartOptions.useFreezed,
-            dartOptions.useHive,
-            dartOptions.useJsonAnnotation,
-            dartOptions.partName
-        ];
-    }
-
-    public get supportsUnionsWithBothNumberTypes(): boolean {
-        return true;
-    }
-
-    public get stringTypeMapping(): StringTypeMapping {
-        const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
-        mapping.set("date", "date");
-        mapping.set("date-time", "date-time");
-        return mapping;
-    }
-
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): DartRenderer {
-        const options = getOptionValues(dartOptions, untypedOptionValues);
-        return new DartRenderer(this, renderContext, options);
-    }
-}
-
-const keywords = [
-    "abstract",
-    "do",
-    "import",
-    "super",
-    "as",
-    "dynamic",
-    "in",
-    "switch",
-    "assert",
-    "else",
-    "interface",
-    "sync*",
-    "async",
-    "enum",
-    "is",
-    "this",
-    "async*",
-    "export",
-    "library",
-    "throw",
-    "await",
-    "external",
-    "mixin",
-    "true",
-    "break",
-    "extends",
-    "new",
-    "try",
-    "case",
-    "factory",
-    "null",
-    "typedef",
-    "catch",
-    "false",
-    "operator",
-    "var",
-    "class",
-    "final",
-    "part",
-    "void",
-    "const",
-    "finally",
-    "rethrow",
-    "while",
-    "continue",
-    "for",
-    "return",
-    "with",
-    "covariant",
-    "get",
-    "set",
-    "yield",
-    "default",
-    "if",
-    "static",
-    "yield*",
-    "deferred",
-    "implements",
-    "int",
-    "double",
-    "bool",
-    "Map",
-    "List",
-    "String",
-    "File",
-    "fromJson",
-    "toJson",
-    "fromMap",
-    "toMap"
-];
-
-const typeNamingFunction = funPrefixNamer("types", n => dartNameStyle(true, false, n));
-const propertyNamingFunction = funPrefixNamer("properties", n => dartNameStyle(false, false, n));
-const enumCaseNamingFunction = funPrefixNamer("enum-cases", n => dartNameStyle(true, true, n));
-
-// Escape the dollar sign, which is used in string interpolation
-const stringEscape = utf16ConcatMap(
-    escapeNonPrintableMapper(cp => isPrintable(cp) && cp !== 0x24, standardUnicodeHexEscape)
-);
-
-function isStartCharacter(codePoint: number): boolean {
-    if (codePoint === 0x5f) return false; // underscore
-    return isAscii(codePoint) && isLetter(codePoint);
-}
-
-function isPartCharacter(codePoint: number): boolean {
-    return isStartCharacter(codePoint) || (isAscii(codePoint) && isDigit(codePoint));
-}
-
-const legalizeName = utf16LegalizeCharacters(isPartCharacter);
-
-// FIXME: Handle acronyms consistently.  In particular, that means that
-// we have to use namers to produce the getter and setter names - we can't
-// just capitalize and concatenate.
-// https://stackoverflow.com/questions/8277355/naming-convention-for-upper-case-abbreviations
-function dartNameStyle(startWithUpper: boolean, upperUnderscore: boolean, original: string): string {
-    const words = splitIntoWords(original);
-    const firstWordStyle = upperUnderscore
-        ? allUpperWordStyle
-        : startWithUpper
-          ? firstUpperWordStyle
-          : allLowerWordStyle;
-    const restWordStyle = upperUnderscore ? allUpperWordStyle : firstUpperWordStyle;
-    return combineWords(
-        words,
-        legalizeName,
-        firstWordStyle,
-        restWordStyle,
-        firstWordStyle,
-        restWordStyle,
-        upperUnderscore ? "_" : "",
-        isStartCharacter
-    );
-}
+import { keywords } from "./constants";
+import { type dartOptions } from "./language";
+import { enumCaseNamingFunction, propertyNamingFunction, typeNamingFunction } from "./utils";
 
 interface TopLevelDependents {
     decoder: Name;
@@ -240,7 +40,7 @@ export class DartRenderer extends ConvenienceRenderer {
         super(targetLanguage, renderContext);
     }
 
-    protected forbiddenNamesForGlobalNamespace(): string[] {
+    protected forbiddenNamesForGlobalNamespace(): readonly string[] {
         return keywords;
     }
 
@@ -879,15 +679,15 @@ export class DartRenderer extends ConvenienceRenderer {
     protected emitEnumValues(): void {
         this.ensureBlankLine();
         this.emitMultiline(`class EnumValues<T> {
-    Map<String, T> map;
-    late Map<T, String> reverseMap;
+	Map<String, T> map;
+	late Map<T, String> reverseMap;
 
-    EnumValues(this.map);
+	EnumValues(this.map);
 
-    Map<T, String> get reverse {
-        reverseMap = map.map((k, v) => MapEntry(v, k));
-        return reverseMap;
-    }
+	Map<T, String> get reverse {
+			reverseMap = map.map((k, v) => MapEntry(v, k));
+			return reverseMap;
+	}
 }`);
     }
 
