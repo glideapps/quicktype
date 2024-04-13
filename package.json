@@ -13,13 +13,14 @@
         "build": "npm run build --workspaces --if-present && tsc",
         "test": "script/test",
         "start": "script/watch",
-        "clean": "rm -rf dist node_modules *~ packages/*/{dist,node_modules}",
+        "clean": "rm -rf dist node_modules *~ packages/*/{dist,node_modules,out}",
         "debug": "node --inspect-brk --max-old-space-size=4096 ./dist/index.js"
     },
     "workspaces": [
         "./packages/quicktype-core",
         "./packages/quicktype-graphql-input",
-        "./packages/quicktype-typescript-input"
+        "./packages/quicktype-typescript-input",
+        "./packages/quicktype-vscode"
     ],
     "dependencies": {
         "@glideapps/ts-necessities": "^2.1.3",
