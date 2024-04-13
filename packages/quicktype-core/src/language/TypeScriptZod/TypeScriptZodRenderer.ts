@@ -1,11 +1,11 @@
 import { arrayIntercalate } from "collection-utils";
 
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { type Name, type Namer, funPrefixNamer } from "../Naming";
-import { type RenderContext } from "../Renderer";
-import { BooleanOption, type Option, type OptionValues, getOptionValues } from "../RendererOptions";
-import { type Sourcelike } from "../Source";
-import { AcronymStyleOptions, acronymStyle } from "../support/Acronyms";
+import { ConvenienceRenderer } from "../../ConvenienceRenderer";
+import { type Name, type Namer, funPrefixNamer } from "../../Naming";
+import { type RenderContext } from "../../Renderer";
+import { type OptionValues } from "../../RendererOptions";
+import { type Sourcelike } from "../../Source";
+import { AcronymStyleOptions, acronymStyle } from "../../support/Acronyms";
 import {
     allLowerWordStyle,
     capitalize,
@@ -15,62 +15,22 @@ import {
     splitIntoWords,
     stringEscape,
     utf16StringEscape
-} from "../support/Strings";
-import { panic } from "../support/Support";
-import { TargetLanguage } from "../TargetLanguage";
+} from "../../support/Strings";
+import { panic } from "../../support/Support";
+import { type TargetLanguage } from "../../TargetLanguage";
 import {
     ArrayType,
     type ClassProperty,
     ClassType,
     type EnumType,
     ObjectType,
-    type PrimitiveStringTypeKind,
     SetOperationType,
-    type TransformedStringTypeKind,
     type Type
-} from "../Type";
-import { type StringTypeMapping } from "../TypeBuilder";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
-import { matchType } from "../TypeUtils";
+} from "../../Type";
+import { matchType } from "../../TypeUtils";
+import { legalizeName } from "../JavaScript";
 
-import { legalizeName } from "./JavaScript";
-
-export const typeScriptZodOptions = {
-    justSchema: new BooleanOption("just-schema", "Schema only", false)
-};
-
-export class TypeScriptZodTargetLanguage extends TargetLanguage {
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [];
-    }
-
-    public constructor(
-        displayName: string = "TypeScript Zod",
-        names: string[] = ["typescript-zod"],
-        extension: string = "ts"
-    ) {
-        super(displayName, names, extension);
-    }
-
-    public get stringTypeMapping(): StringTypeMapping {
-        const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
-        const dateTimeType = "date-time";
-        mapping.set("date-time", dateTimeType);
-        return mapping;
-    }
-
-    public get supportsOptionalClassProperties(): boolean {
-        return true;
-    }
-
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): TypeScriptZodRenderer {
-        return new TypeScriptZodRenderer(
-            this,
-            renderContext,
-            getOptionValues(typeScriptZodOptions, untypedOptionValues)
-        );
-    }
-}
+import { type typeScriptZodOptions } from "./language";
 
 export class TypeScriptZodRenderer extends ConvenienceRenderer {
     public constructor(
