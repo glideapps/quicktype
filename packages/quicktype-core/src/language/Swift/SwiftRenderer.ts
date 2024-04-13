@@ -1,337 +1,30 @@
 import { arrayIntercalate } from "collection-utils";
 
-import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { type DateTimeRecognizer, DefaultDateTimeRecognizer } from "../DateTime";
-import { type Name, type Namer, funPrefixNamer } from "../Naming";
-import { type ForEachPosition, type RenderContext } from "../Renderer";
-import {
-    BooleanOption,
-    EnumOption,
-    type Option,
-    type OptionValues,
-    StringOption,
-    getOptionValues
-} from "../RendererOptions";
-import { type Sourcelike, maybeAnnotated, modifySource } from "../Source";
-import { AcronymStyleOptions, acronymOption, acronymStyle } from "../support/Acronyms";
-import {
-    addPrefixIfNecessary,
-    allLowerWordStyle,
-    allUpperWordStyle,
-    camelCase,
-    combineWords,
-    escapeNonPrintableMapper,
-    firstUpperWordStyle,
-    intToHex,
-    isDigit,
-    isLetterOrUnderscore,
-    isNumeric,
-    isPrintable,
-    legalizeCharacters,
-    splitIntoWords,
-    utf32ConcatMap
-} from "../support/Strings";
-import { assert, defined, panic } from "../support/Support";
-import { TargetLanguage } from "../TargetLanguage";
+import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../../Annotation";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../../ConvenienceRenderer";
+import { type Name, type Namer, funPrefixNamer } from "../../Naming";
+import { type RenderContext } from "../../Renderer";
+import { type OptionValues } from "../../RendererOptions";
+import { type Sourcelike, maybeAnnotated, modifySource } from "../../Source";
+import { acronymStyle } from "../../support/Acronyms";
+import { camelCase, stringEscape } from "../../support/Strings";
+import { assert, defined, panic } from "../../support/Support";
+import { type TargetLanguage } from "../../TargetLanguage";
 import {
     ArrayType,
     type ClassProperty,
     type ClassType,
     EnumType,
     MapType,
-    type PrimitiveStringTypeKind,
-    type TransformedStringTypeKind,
     type Type,
     type TypeKind,
     type UnionType
-} from "../Type";
-import { type StringTypeMapping } from "../TypeBuilder";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
-import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
+} from "../../Type";
+import { matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
 
-const MAX_SAMELINE_PROPERTIES = 4;
-
-export const swiftOptions = {
-    justTypes: new BooleanOption("just-types", "Plain types only", false),
-    convenienceInitializers: new BooleanOption("initializers", "Generate initializers and mutators", true),
-    explicitCodingKeys: new BooleanOption("coding-keys", "Explicit CodingKey values in Codable types", true),
-    codingKeysProtocol: new StringOption(
-        "coding-keys-protocol",
-        "CodingKeys implements protocols",
-        "protocol1, protocol2...",
-        "",
-        "secondary"
-    ),
-    alamofire: new BooleanOption("alamofire", "Alamofire extensions", false),
-    namedTypePrefix: new StringOption("type-prefix", "Prefix for type names", "PREFIX", "", "secondary"),
-    useClasses: new EnumOption("struct-or-class", "Structs or classes", [
-        ["struct", false],
-        ["class", true]
-    ]),
-    mutableProperties: new BooleanOption("mutable-properties", "Use var instead of let for object properties", false),
-    acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
-    dense: new EnumOption(
-        "density",
-        "Code density",
-        [
-            ["dense", true],
-            ["normal", false]
-        ],
-        "dense",
-        "secondary"
-    ),
-    linux: new BooleanOption("support-linux", "Support Linux", false, "secondary"),
-    objcSupport: new BooleanOption(
-        "objective-c-support",
-        "Objects inherit from NSObject and @objcMembers is added to classes",
-        false
-    ),
-    optionalEnums: new BooleanOption("optional-enums", "If no matching case is found enum value is set to null", false),
-    swift5Support: new BooleanOption("swift-5-support", "Renders output in a Swift 5 compatible mode", false),
-    sendable: new BooleanOption("sendable", "Mark generated models as Sendable", false),
-    multiFileOutput: new BooleanOption(
-        "multi-file-output",
-        "Renders each top-level object in its own Swift file",
-        false
-    ),
-    accessLevel: new EnumOption(
-        "access-level",
-        "Access level",
-        [
-            ["internal", "internal"],
-            ["public", "public"]
-        ],
-        "internal",
-        "secondary"
-    ),
-    protocol: new EnumOption(
-        "protocol",
-        "Make types implement protocol",
-        [
-            ["none", { equatable: false, hashable: false }],
-            ["equatable", { equatable: true, hashable: false }],
-            ["hashable", { equatable: false, hashable: true }]
-        ],
-        "none",
-        "secondary"
-    )
-};
-
-// These are all recognized by Swift as ISO8601 date-times:
-//
-// 2018-08-14T02:45:50+00:00
-// 2018-08-14T02:45:50+00
-// 2018-08-14T02:45:50+1
-// 2018-08-14T02:45:50+1111
-// 2018-08-14T02:45:50+1111:1:33
-// 2018-08-14T02:45:50-00
-// 2018-08-14T02:45:50z
-// 2018-00008-1T002:45:3Z
-
-const swiftDateTimeRegex = /^\d+-\d+-\d+T\d+:\d+:\d+([zZ]|[+-]\d+(:\d+)?)$/;
-
-class SwiftDateTimeRecognizer extends DefaultDateTimeRecognizer {
-    public isDateTime(str: string): boolean {
-        return swiftDateTimeRegex.exec(str) !== null;
-    }
-}
-
-export interface SwiftProperty {
-    jsonName: string;
-    name: Name;
-    parameter: ClassProperty;
-    position: ForEachPosition;
-}
-
-export class SwiftTargetLanguage extends TargetLanguage {
-    public constructor() {
-        super("Swift", ["swift", "swift4"], "swift");
-    }
-
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [
-            swiftOptions.justTypes,
-            swiftOptions.useClasses,
-            swiftOptions.dense,
-            swiftOptions.convenienceInitializers,
-            swiftOptions.explicitCodingKeys,
-            swiftOptions.codingKeysProtocol,
-            swiftOptions.accessLevel,
-            swiftOptions.alamofire,
-            swiftOptions.linux,
-            swiftOptions.namedTypePrefix,
-            swiftOptions.protocol,
-            swiftOptions.acronymStyle,
-            swiftOptions.objcSupport,
-            swiftOptions.optionalEnums,
-            swiftOptions.sendable,
-            swiftOptions.swift5Support,
-            swiftOptions.multiFileOutput,
-            swiftOptions.mutableProperties
-        ];
-    }
-
-    public get stringTypeMapping(): StringTypeMapping {
-        const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
-        mapping.set("date-time", "date-time");
-        return mapping;
-    }
-
-    public get supportsOptionalClassProperties(): boolean {
-        return true;
-    }
-
-    public get supportsUnionsWithBothNumberTypes(): boolean {
-        return true;
-    }
-
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): SwiftRenderer {
-        return new SwiftRenderer(this, renderContext, getOptionValues(swiftOptions, untypedOptionValues));
-    }
-
-    public get dateTimeRecognizer(): DateTimeRecognizer {
-        return new SwiftDateTimeRecognizer();
-    }
-}
-
-const keywords = [
-    "await",
-    "associatedtype",
-    "class",
-    "deinit",
-    "enum",
-    "extension",
-    "fileprivate",
-    "func",
-    "import",
-    "init",
-    "inout",
-    "internal",
-    "let",
-    "open",
-    "operator",
-    "private",
-    "protocol",
-    "public",
-    "static",
-    "struct",
-    "subscript",
-    "typealias",
-    "var",
-    "break",
-    "case",
-    "continue",
-    "default",
-    "defer",
-    "do",
-    "else",
-    "fallthrough",
-    "for",
-    "guard",
-    "if",
-    "in",
-    "repeat",
-    "return",
-    "switch",
-    "where",
-    "while",
-    "as",
-    "Any",
-    "catch",
-    "false",
-    "is",
-    "nil",
-    "rethrows",
-    "super",
-    "self",
-    "Self",
-    "throw",
-    "throws",
-    "true",
-    "try",
-    "_",
-    "associativity",
-    "convenience",
-    "dynamic",
-    "didSet",
-    "final",
-    "get",
-    "infix",
-    "indirect",
-    "lazy",
-    "left",
-    "mutating",
-    "nonmutating",
-    "optional",
-    "override",
-    "postfix",
-    "precedence",
-    "prefix",
-    "Protocol",
-    "required",
-    "right",
-    "set",
-    "Type",
-    "unowned",
-    "weak",
-    "willSet",
-    "String",
-    "Int",
-    "Double",
-    "Bool",
-    "Data",
-    "Date",
-    "URL",
-    "CommandLine",
-    "FileHandle",
-    "JSONSerialization",
-    "checkNull",
-    "removeNSNull",
-    "nilToNSNull",
-    "convertArray",
-    "convertOptional",
-    "convertDict",
-    "convertDouble",
-    "jsonString",
-    "jsonData"
-];
-
-function isPartCharacter(codePoint: number): boolean {
-    return isLetterOrUnderscore(codePoint) || isNumeric(codePoint);
-}
-
-function isStartCharacter(codePoint: number): boolean {
-    return isPartCharacter(codePoint) && !isDigit(codePoint);
-}
-
-const legalizeName = legalizeCharacters(isPartCharacter);
-
-function swiftNameStyle(
-    prefix: string,
-    isUpper: boolean,
-    original: string,
-    acronymsStyle: (s: string) => string = allUpperWordStyle
-): string {
-    const words = splitIntoWords(original);
-    const combined = combineWords(
-        words,
-        legalizeName,
-        isUpper ? firstUpperWordStyle : allLowerWordStyle,
-        firstUpperWordStyle,
-        isUpper ? allUpperWordStyle : allLowerWordStyle,
-        acronymsStyle,
-        "",
-        isStartCharacter
-    );
-    return addPrefixIfNecessary(prefix, combined);
-}
-
-function unicodeEscape(codePoint: number): string {
-    return "\\u{" + intToHex(codePoint, 0) + "}";
-}
-
-const stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
+import { keywords } from "./constants";
+import { type swiftOptions } from "./language";
+import { MAX_SAMELINE_PROPERTIES, type SwiftProperty, swiftNameStyle } from "./utils";
 
 export class SwiftRenderer extends ConvenienceRenderer {
     private _currentFilename: string | undefined;
@@ -348,9 +41,9 @@ export class SwiftRenderer extends ConvenienceRenderer {
         super(targetLanguage, renderContext);
     }
 
-    protected forbiddenNamesForGlobalNamespace(): string[] {
+    protected forbiddenNamesForGlobalNamespace(): readonly string[] {
         if (this._options.alamofire) {
-            return ["DataRequest", ...keywords];
+            return ["DataRequest", ...keywords] as const;
         }
 
         return keywords;
@@ -859,22 +552,22 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 });
             } else {
                 this.emitMultiline(`decoder.dateDecodingStrategy = .custom({ (decoder) -> Date in
-    let container = try decoder.singleValueContainer()
-    let dateStr = try container.decode(String.self)
+	let container = try decoder.singleValueContainer()
+	let dateStr = try container.decode(String.self)
 
-    let formatter = DateFormatter()
-    formatter.calendar = Calendar(identifier: .iso8601)
-    formatter.locale = Locale(identifier: "en_US_POSIX")
-    formatter.timeZone = TimeZone(secondsFromGMT: 0)
-    formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSXXXXX"
-    if let date = formatter.date(from: dateStr) {
-        return date
-    }
-    formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssXXXXX"
-    if let date = formatter.date(from: dateStr) {
-        return date
-    }
-    throw DecodingError.typeMismatch(Date.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Could not decode date"))
+	let formatter = DateFormatter()
+	formatter.calendar = Calendar(identifier: .iso8601)
+	formatter.locale = Locale(identifier: "en_US_POSIX")
+	formatter.timeZone = TimeZone(secondsFromGMT: 0)
+	formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSXXXXX"
+	if let date = formatter.date(from: dateStr) {
+			return date
+	}
+	formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssXXXXX"
+	if let date = formatter.date(from: dateStr) {
+			return date
+	}
+	throw DecodingError.typeMismatch(Date.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Could not decode date"))
 })`);
             }
 
@@ -1148,20 +841,20 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
 
             this.ensureBlankLine();
             this.emitMultiline(`    public static func == (lhs: JSONNull, rhs: JSONNull) -> Bool {
-        return true
-    }`);
+			return true
+	}`);
 
             if (this._options.objcSupport === false) {
                 this.ensureBlankLine();
                 this.emitMultiline(`    public var hashValue: Int {
-        return 0
-    }`);
+			return 0
+	}`);
 
                 if (this._options.swift5Support) {
                     this.ensureBlankLine();
                     this.emitMultiline(`    public func hash(into hasher: inout Hasher) {
-        // No-op
-    }`);
+			// No-op
+	}`);
                 }
             }
 
@@ -1173,41 +866,41 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             }
 
             this.emitMultiline(`public init() {}
-    
-    public required init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        if !container.decodeNil() {
-            throw DecodingError.typeMismatch(JSONNull.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Wrong type for JSONNull"))
-        }
-    }
-    
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        try container.encodeNil()
-    }
+	
+	public required init(from decoder: Decoder) throws {
+			let container = try decoder.singleValueContainer()
+			if !container.decodeNil() {
+					throw DecodingError.typeMismatch(JSONNull.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Wrong type for JSONNull"))
+			}
+	}
+	
+	public func encode(to encoder: Encoder) throws {
+			var container = encoder.singleValueContainer()
+			try container.encodeNil()
+	}
 }`);
         }
 
         if (this._needAny) {
             this.ensureBlankLine();
             this.emitMultiline(`class JSONCodingKey: CodingKey {
-    let key: String
-    
-    required init?(intValue: Int) {
-        return nil
-    }
-    
-    required init?(stringValue: String) {
-        key = stringValue
-    }
-    
-    var intValue: Int? {
-        return nil
-    }
-    
-    var stringValue: String {
-        return key
-    }
+	let key: String
+	
+	required init?(intValue: Int) {
+			return nil
+	}
+	
+	required init?(stringValue: String) {
+			key = stringValue
+	}
+	
+	var intValue: Int? {
+			return nil
+	}
+	
+	var stringValue: String {
+			return key
+	}
 }`);
 
             this.ensureBlankLine();
@@ -1219,196 +912,196 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
 
             this.ensureBlankLine();
             this.emitMultiline(`    ${this.accessLevel}let value: Any
-    
-    static func decodingError(forCodingPath codingPath: [CodingKey]) -> DecodingError {
-        let context = DecodingError.Context(codingPath: codingPath, debugDescription: "Cannot decode JSONAny")
-        return DecodingError.typeMismatch(JSONAny.self, context)
-    }
-    
-    static func encodingError(forValue value: Any, codingPath: [CodingKey]) -> EncodingError {
-        let context = EncodingError.Context(codingPath: codingPath, debugDescription: "Cannot encode JSONAny")
-        return EncodingError.invalidValue(value, context)
-    }
+	
+	static func decodingError(forCodingPath codingPath: [CodingKey]) -> DecodingError {
+			let context = DecodingError.Context(codingPath: codingPath, debugDescription: "Cannot decode JSONAny")
+			return DecodingError.typeMismatch(JSONAny.self, context)
+	}
+	
+	static func encodingError(forValue value: Any, codingPath: [CodingKey]) -> EncodingError {
+			let context = EncodingError.Context(codingPath: codingPath, debugDescription: "Cannot encode JSONAny")
+			return EncodingError.invalidValue(value, context)
+	}
 
-    static func decode(from container: SingleValueDecodingContainer) throws -> Any {
-        if let value = try? container.decode(Bool.self) {
-            return value
-        }
-        if let value = try? container.decode(Int64.self) {
-            return value
-        }
-        if let value = try? container.decode(Double.self) {
-            return value
-        }
-        if let value = try? container.decode(String.self) {
-            return value
-        }
-        if container.decodeNil() {
-            return JSONNull()
-        }
-        throw decodingError(forCodingPath: container.codingPath)
-    }
-    
-    static func decode(from container: inout UnkeyedDecodingContainer) throws -> Any {
-        if let value = try? container.decode(Bool.self) {
-            return value
-        }
-        if let value = try? container.decode(Int64.self) {
-            return value
-        }
-        if let value = try? container.decode(Double.self) {
-            return value
-        }
-        if let value = try? container.decode(String.self) {
-            return value
-        }
-        if let value = try? container.decodeNil() {
-            if value {
-                return JSONNull()
-            }
-        }
-        if var container = try? container.nestedUnkeyedContainer() {
-            return try decodeArray(from: &container)
-        }
-        if var container = try? container.nestedContainer(keyedBy: JSONCodingKey.self) {
-            return try decodeDictionary(from: &container)
-        }
-        throw decodingError(forCodingPath: container.codingPath)
-    }
-    
-    static func decode(from container: inout KeyedDecodingContainer<JSONCodingKey>, forKey key: JSONCodingKey) throws -> Any {
-        if let value = try? container.decode(Bool.self, forKey: key) {
-            return value
-        }
-        if let value = try? container.decode(Int64.self, forKey: key) {
-            return value
-        }
-        if let value = try? container.decode(Double.self, forKey: key) {
-            return value
-        }
-        if let value = try? container.decode(String.self, forKey: key) {
-            return value
-        }
-        if let value = try? container.decodeNil(forKey: key) {
-            if value {
-                return JSONNull()
-            }
-        }
-        if var container = try? container.nestedUnkeyedContainer(forKey: key) {
-            return try decodeArray(from: &container)
-        }
-        if var container = try? container.nestedContainer(keyedBy: JSONCodingKey.self, forKey: key) {
-            return try decodeDictionary(from: &container)
-        }
-        throw decodingError(forCodingPath: container.codingPath)
-    }
-    
-    static func decodeArray(from container: inout UnkeyedDecodingContainer) throws -> [Any] {
-        var arr: [Any] = []
-        while !container.isAtEnd {
-            let value = try decode(from: &container)
-            arr.append(value)
-        }
-        return arr
-    }
+	static func decode(from container: SingleValueDecodingContainer) throws -> Any {
+			if let value = try? container.decode(Bool.self) {
+					return value
+			}
+			if let value = try? container.decode(Int64.self) {
+					return value
+			}
+			if let value = try? container.decode(Double.self) {
+					return value
+			}
+			if let value = try? container.decode(String.self) {
+					return value
+			}
+			if container.decodeNil() {
+					return JSONNull()
+			}
+			throw decodingError(forCodingPath: container.codingPath)
+	}
+	
+	static func decode(from container: inout UnkeyedDecodingContainer) throws -> Any {
+			if let value = try? container.decode(Bool.self) {
+					return value
+			}
+			if let value = try? container.decode(Int64.self) {
+					return value
+			}
+			if let value = try? container.decode(Double.self) {
+					return value
+			}
+			if let value = try? container.decode(String.self) {
+					return value
+			}
+			if let value = try? container.decodeNil() {
+					if value {
+							return JSONNull()
+					}
+			}
+			if var container = try? container.nestedUnkeyedContainer() {
+					return try decodeArray(from: &container)
+			}
+			if var container = try? container.nestedContainer(keyedBy: JSONCodingKey.self) {
+					return try decodeDictionary(from: &container)
+			}
+			throw decodingError(forCodingPath: container.codingPath)
+	}
+	
+	static func decode(from container: inout KeyedDecodingContainer<JSONCodingKey>, forKey key: JSONCodingKey) throws -> Any {
+			if let value = try? container.decode(Bool.self, forKey: key) {
+					return value
+			}
+			if let value = try? container.decode(Int64.self, forKey: key) {
+					return value
+			}
+			if let value = try? container.decode(Double.self, forKey: key) {
+					return value
+			}
+			if let value = try? container.decode(String.self, forKey: key) {
+					return value
+			}
+			if let value = try? container.decodeNil(forKey: key) {
+					if value {
+							return JSONNull()
+					}
+			}
+			if var container = try? container.nestedUnkeyedContainer(forKey: key) {
+					return try decodeArray(from: &container)
+			}
+			if var container = try? container.nestedContainer(keyedBy: JSONCodingKey.self, forKey: key) {
+					return try decodeDictionary(from: &container)
+			}
+			throw decodingError(forCodingPath: container.codingPath)
+	}
+	
+	static func decodeArray(from container: inout UnkeyedDecodingContainer) throws -> [Any] {
+			var arr: [Any] = []
+			while !container.isAtEnd {
+					let value = try decode(from: &container)
+					arr.append(value)
+			}
+			return arr
+	}
 
-    static func decodeDictionary(from container: inout KeyedDecodingContainer<JSONCodingKey>) throws -> [String: Any] {
-        var dict = [String: Any]()
-        for key in container.allKeys {
-            let value = try decode(from: &container, forKey: key)
-            dict[key.stringValue] = value
-        }
-        return dict
-    }
-    
-    static func encode(to container: inout UnkeyedEncodingContainer, array: [Any]) throws {
-        for value in array {
-            if let value = value as? Bool {
-                try container.encode(value)
-            } else if let value = value as? Int64 {
-                try container.encode(value)
-            } else if let value = value as? Double {
-                try container.encode(value)
-            } else if let value = value as? String {
-                try container.encode(value)
-            } else if value is JSONNull {
-                try container.encodeNil()
-            } else if let value = value as? [Any] {
-                var container = container.nestedUnkeyedContainer()
-                try encode(to: &container, array: value)
-            } else if let value = value as? [String: Any] {
-                var container = container.nestedContainer(keyedBy: JSONCodingKey.self)
-                try encode(to: &container, dictionary: value)
-            } else {
-                throw encodingError(forValue: value, codingPath: container.codingPath)
-            }
-        }
-    }
-    
-    static func encode(to container: inout KeyedEncodingContainer<JSONCodingKey>, dictionary: [String: Any]) throws {
-        for (key, value) in dictionary {
-            let key = JSONCodingKey(stringValue: key)!
-            if let value = value as? Bool {
-                try container.encode(value, forKey: key)
-            } else if let value = value as? Int64 {
-                try container.encode(value, forKey: key)
-            } else if let value = value as? Double {
-                try container.encode(value, forKey: key)
-            } else if let value = value as? String {
-                try container.encode(value, forKey: key)
-            } else if value is JSONNull {
-                try container.encodeNil(forKey: key)
-            } else if let value = value as? [Any] {
-                var container = container.nestedUnkeyedContainer(forKey: key)
-                try encode(to: &container, array: value)
-            } else if let value = value as? [String: Any] {
-                var container = container.nestedContainer(keyedBy: JSONCodingKey.self, forKey: key)
-                try encode(to: &container, dictionary: value)
-            } else {
-                throw encodingError(forValue: value, codingPath: container.codingPath)
-            }
-        }
-    }
+	static func decodeDictionary(from container: inout KeyedDecodingContainer<JSONCodingKey>) throws -> [String: Any] {
+			var dict = [String: Any]()
+			for key in container.allKeys {
+					let value = try decode(from: &container, forKey: key)
+					dict[key.stringValue] = value
+			}
+			return dict
+	}
+	
+	static func encode(to container: inout UnkeyedEncodingContainer, array: [Any]) throws {
+			for value in array {
+					if let value = value as? Bool {
+							try container.encode(value)
+					} else if let value = value as? Int64 {
+							try container.encode(value)
+					} else if let value = value as? Double {
+							try container.encode(value)
+					} else if let value = value as? String {
+							try container.encode(value)
+					} else if value is JSONNull {
+							try container.encodeNil()
+					} else if let value = value as? [Any] {
+							var container = container.nestedUnkeyedContainer()
+							try encode(to: &container, array: value)
+					} else if let value = value as? [String: Any] {
+							var container = container.nestedContainer(keyedBy: JSONCodingKey.self)
+							try encode(to: &container, dictionary: value)
+					} else {
+							throw encodingError(forValue: value, codingPath: container.codingPath)
+					}
+			}
+	}
+	
+	static func encode(to container: inout KeyedEncodingContainer<JSONCodingKey>, dictionary: [String: Any]) throws {
+			for (key, value) in dictionary {
+					let key = JSONCodingKey(stringValue: key)!
+					if let value = value as? Bool {
+							try container.encode(value, forKey: key)
+					} else if let value = value as? Int64 {
+							try container.encode(value, forKey: key)
+					} else if let value = value as? Double {
+							try container.encode(value, forKey: key)
+					} else if let value = value as? String {
+							try container.encode(value, forKey: key)
+					} else if value is JSONNull {
+							try container.encodeNil(forKey: key)
+					} else if let value = value as? [Any] {
+							var container = container.nestedUnkeyedContainer(forKey: key)
+							try encode(to: &container, array: value)
+					} else if let value = value as? [String: Any] {
+							var container = container.nestedContainer(keyedBy: JSONCodingKey.self, forKey: key)
+							try encode(to: &container, dictionary: value)
+					} else {
+							throw encodingError(forValue: value, codingPath: container.codingPath)
+					}
+			}
+	}
 
-    static func encode(to container: inout SingleValueEncodingContainer, value: Any) throws {
-        if let value = value as? Bool {
-            try container.encode(value)
-        } else if let value = value as? Int64 {
-            try container.encode(value)
-        } else if let value = value as? Double {
-            try container.encode(value)
-        } else if let value = value as? String {
-            try container.encode(value)
-        } else if value is JSONNull {
-            try container.encodeNil()
-        } else {
-            throw encodingError(forValue: value, codingPath: container.codingPath)
-        }
-    }
-    
-    public required init(from decoder: Decoder) throws {
-        if var arrayContainer = try? decoder.unkeyedContainer() {
-            self.value = try JSONAny.decodeArray(from: &arrayContainer)
-        } else if var container = try? decoder.container(keyedBy: JSONCodingKey.self) {
-            self.value = try JSONAny.decodeDictionary(from: &container)
-        } else {
-            let container = try decoder.singleValueContainer()
-            self.value = try JSONAny.decode(from: container)
-        }
-    }
-    
-    public func encode(to encoder: Encoder) throws {
-        if let arr = self.value as? [Any] {
-            var container = encoder.unkeyedContainer()
-            try JSONAny.encode(to: &container, array: arr)
-        } else if let dict = self.value as? [String: Any] {
-            var container = encoder.container(keyedBy: JSONCodingKey.self)
-            try JSONAny.encode(to: &container, dictionary: dict)
-        } else {
-            var container = encoder.singleValueContainer()
-            try JSONAny.encode(to: &container, value: self.value)
-        }
-    }
+	static func encode(to container: inout SingleValueEncodingContainer, value: Any) throws {
+			if let value = value as? Bool {
+					try container.encode(value)
+			} else if let value = value as? Int64 {
+					try container.encode(value)
+			} else if let value = value as? Double {
+					try container.encode(value)
+			} else if let value = value as? String {
+					try container.encode(value)
+			} else if value is JSONNull {
+					try container.encodeNil()
+			} else {
+					throw encodingError(forValue: value, codingPath: container.codingPath)
+			}
+	}
+	
+	public required init(from decoder: Decoder) throws {
+			if var arrayContainer = try? decoder.unkeyedContainer() {
+					self.value = try JSONAny.decodeArray(from: &arrayContainer)
+			} else if var container = try? decoder.container(keyedBy: JSONCodingKey.self) {
+					self.value = try JSONAny.decodeDictionary(from: &container)
+			} else {
+					let container = try decoder.singleValueContainer()
+					self.value = try JSONAny.decode(from: container)
+			}
+	}
+	
+	public func encode(to encoder: Encoder) throws {
+			if let arr = self.value as? [Any] {
+					var container = encoder.unkeyedContainer()
+					try JSONAny.encode(to: &container, array: arr)
+			} else if let dict = self.value as? [String: Any] {
+					var container = encoder.container(keyedBy: JSONCodingKey.self)
+					try JSONAny.encode(to: &container, dictionary: dict)
+			} else {
+					var container = encoder.singleValueContainer()
+					try JSONAny.encode(to: &container, value: self.value)
+			}
+	}
 }`);
         }
 
@@ -1472,20 +1165,20 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         this.emitBlockWithAccess("extension DataRequest", () => {
             this
                 .emitMultiline(`fileprivate func decodableResponseSerializer<T: Decodable>() -> DataResponseSerializer<T> {
-    return DataResponseSerializer { _, response, data, error in
-        guard error == nil else { return .failure(error!) }
-        
-        guard let data = data else {
-            return .failure(AFError.responseSerializationFailed(reason: .inputDataNil))
-        }
-        
-        return Result { try newJSONDecoder().decode(T.self, from: data) }
-    }
+	return DataResponseSerializer { _, response, data, error in
+			guard error == nil else { return .failure(error!) }
+			
+			guard let data = data else {
+					return .failure(AFError.responseSerializationFailed(reason: .inputDataNil))
+			}
+			
+			return Result { try newJSONDecoder().decode(T.self, from: data) }
+	}
 }
 
 @discardableResult
 fileprivate func responseDecodable<T: Decodable>(queue: DispatchQueue? = nil, completionHandler: @escaping (DataResponse<T>) -> Void) -> Self {
-    return response(queue: queue, responseSerializer: decodableResponseSerializer(), completionHandler: completionHandler)
+	return response(queue: queue, responseSerializer: decodableResponseSerializer(), completionHandler: completionHandler)
 }`);
             this.ensureBlankLine();
             this.forEachTopLevel("leading-and-interposing", (_, name) => {
