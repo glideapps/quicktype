@@ -403,7 +403,9 @@ export function assignNames(rootNamespaces: Iterable<Namespace>): ReadonlyMap<Na
         //    cycle.
 
         const unfinishedNamespaces = setFilter(ctx.namespaces, ns => ctx.areForbiddensFullyNamed(ns));
-        const readyNamespace = iterableFind(unfinishedNamespaces, ns => iterableSome(ns.members, ctx.isReadyToBeNamed));
+        const readyNamespace = iterableFind(unfinishedNamespaces, ns =>
+            iterableSome(ns.members, member => ctx.isReadyToBeNamed(member))
+        );
 
         if (readyNamespace === undefined) {
             // FIXME: Check for cycles?
@@ -418,7 +420,7 @@ export function assignNames(rootNamespaces: Iterable<Namespace>): ReadonlyMap<Na
         //    function.
 
         for (;;) {
-            const allReadyNames = setFilter(readyNamespace.members, ctx.isReadyToBeNamed);
+            const allReadyNames = setFilter(readyNamespace.members, member => ctx.isReadyToBeNamed(member));
             const minOrderName = iterableMinBy(allReadyNames, n => n.order);
             if (minOrderName === undefined) break;
             const minOrder = minOrderName.order;

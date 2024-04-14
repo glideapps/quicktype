@@ -201,14 +201,15 @@ export class Ref {
         return this.path.length === 1 && this.path[0].kind === PathElementKind.Root;
     }
 
-    public pushElement(pe: PathElement): Ref {
+    private pushElement(pe: PathElement): Ref {
         const newPath = Array.from(this.path);
         newPath.push(pe);
         return new Ref(this.addressURI, newPath);
     }
 
     public push(...keys: string[]): Ref {
-        let ref: Ref = { ...this };
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
+        let ref: Ref = this;
         for (const key of keys) {
             ref = ref.pushElement({ kind: PathElementKind.KeyOrIndex, key });
         }

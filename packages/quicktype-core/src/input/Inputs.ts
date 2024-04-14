@@ -169,7 +169,7 @@ export class InputData {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private _inputs: Set<Input<any>> = new Set();
 
-    protected addInput<T>(input: Input<T>): void {
+    public addInput<T>(input: Input<T>): void {
         this._inputs = this._inputs.add(input);
     }
 
