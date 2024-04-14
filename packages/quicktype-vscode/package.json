@@ -1,0 +1,163 @@
+{
+    "name": "quicktype",
+    "displayName": "Paste JSON as Code",
+    "description": "Copy JSON, paste as Go, TypeScript, C#, C++ and more.",
+    "version": "23.0.122",
+    "publisher": "quicktype",
+    "icon": "media/icon.png",
+    "galleryBanner": {
+        "color": "#00212b",
+        "theme": "dark"
+    },
+    "homepage": "https://quicktype.io",
+    "author": {
+        "name": "quicktype.io",
+        "email": "hello@quicktype.io"
+    },
+    "bugs": {
+        "url": "https://github.com/quicktype/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/glideapps/quicktype"
+    },
+    "engines": {
+        "vscode": "^1.87.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "keywords": [
+        "json",
+        "converter"
+    ],
+    "markdown": "github",
+    "main": "dist/extension.js",
+    "vsce": {
+        "dependencies": false
+    },
+    "contributes": {
+        "configuration": {
+            "type": "object",
+            "title": "quicktype",
+            "properties": {
+                "quicktype.justTypes": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Produce only types; no (de-)serialization code"
+                },
+                "quicktype.inferMaps": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Infer maps when object keys look like map keys."
+                },
+                "quicktype.inferEnums": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Infer enums when there aren't many different string values."
+                },
+                "quicktype.inferDateTimes": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Use date-time types for strings that look like date-times."
+                },
+                "quicktype.inferUuids": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Use UUID types for strings that look like UUIDs."
+                },
+                "quicktype.inferIntegerStrings": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Convert stringified integers into integers, and back."
+                },
+                "quicktype.inferBooleanStrings": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Convert stringified booleans into booleans, and back."
+                }
+            }
+        },
+        "commands": [
+            {
+                "command": "quicktype.pasteJSONAsTypes",
+                "title": "Paste JSON as Types"
+            },
+            {
+                "command": "quicktype.pasteJSONAsTypesAndSerialization",
+                "title": "Paste JSON as Code"
+            },
+            {
+                "command": "quicktype.pasteJSONSchemaAsTypes",
+                "title": "Paste JSON Schema as Types"
+            },
+            {
+                "command": "quicktype.pasteJSONSchemaAsTypesAndSerialization",
+                "title": "Paste JSON Schema as Code"
+            },
+            {
+                "command": "quicktype.pasteTypeScriptAsTypesAndSerialization",
+                "title": "Paste TypeScript as Code"
+            },
+            {
+                "command": "quicktype.openForJSON",
+                "title": "Open quicktype for JSON"
+            },
+            {
+                "command": "quicktype.openForJSONSchema",
+                "title": "Open quicktype for JSON Schema"
+            },
+            {
+                "command": "quicktype.openForTypeScript",
+                "title": "Open quicktype for TypeScript"
+            },
+            {
+                "command": "quicktype.changeTargetLanguage",
+                "title": "Set quicktype target language"
+            }
+        ],
+        "keybindings": [
+            {
+                "command": "quicktype.pasteJSONAsTypesAndSerialization",
+                "key": "ctrl+shift+V",
+                "mac": "cmd+shift+V",
+                "when": "editorTextFocus && editorLangId != 'markdown'"
+            },
+            {
+                "command": "quicktype.pasteJSONAsTypes",
+                "key": "ctrl+shift+alt+V",
+                "mac": "cmd+shift+alt+V",
+                "when": "editorTextFocus"
+            }
+        ]
+    },
+    "scripts": {
+        "pub": "vsce publish -p $VSCE_TOKEN",
+        "package": "vsce package",
+        "build": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "test": "npm run build && node ./node_modules/vscode/bin/test",
+        "vscode:prepublish": "npm run esbuild-base -- --minify",
+        "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
+        "esbuild": "npm run esbuild-base -- --sourcemap",
+        "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch"
+    },
+    "devDependencies": {
+        "@types/mocha": "^10.0.6",
+        "@types/node": "18.x",
+        "@types/node-persist": "^3.1.8",
+        "@types/readable-stream": "^4.0.10",
+        "@types/vscode": "^1.87.0",
+        "@typescript-eslint/eslint-plugin": "^7.0.2",
+        "@typescript-eslint/parser": "^7.0.2",
+        "@vscode/test-cli": "^0.0.6",
+        "@vscode/test-electron": "^2.3.9",
+        "@vscode/vsce": "^2.25.0",
+        "eslint": "^8.56.0",
+        "typescript": "^5.3.3",
+        "node-persist": "^4.0.1",
+        "quicktype-core": "file:../quicktype-core",
+        "quicktype-typescript-input": "file:../quicktype-typescript-input",
+        "unicode-properties": "github:quicktype/unicode-properties#dist"
+    }
+}
