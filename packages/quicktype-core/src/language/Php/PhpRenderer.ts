@@ -7,14 +7,13 @@ import { type RenderContext } from "../../Renderer";
 import { type OptionValues } from "../../RendererOptions";
 import { type Sourcelike, maybeAnnotated } from "../../Source";
 import { acronymStyle } from "../../support/Acronyms";
-import { stringEscape } from "../../support/Strings";
 import { defined } from "../../support/Support";
 import { type TargetLanguage } from "../../TargetLanguage";
 import { type ClassProperty, type ClassType, type EnumType, type Type, type UnionType } from "../../Type";
 import { directlyReachableSingleNamedType, matchType, nullableFromUnion } from "../../TypeUtils";
 
 import { type phpOptions } from "./language";
-import { phpNameStyle } from "./utils";
+import { phpNameStyle, stringEscape } from "./utils";
 
 export interface FunctionNames {
     readonly from: Name;

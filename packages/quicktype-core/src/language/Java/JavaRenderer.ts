@@ -5,7 +5,7 @@ import { type RenderContext } from "../../Renderer";
 import { type OptionValues } from "../../RendererOptions";
 import { type Sourcelike, maybeAnnotated } from "../../Source";
 import { acronymStyle } from "../../support/Acronyms";
-import { capitalize, stringEscape } from "../../support/Strings";
+import { capitalize } from "../../support/Strings";
 import { assert, assertNever, defined } from "../../support/Support";
 import { type TargetLanguage } from "../../TargetLanguage";
 import { ArrayType, type ClassProperty, ClassType, EnumType, MapType, type Type, UnionType } from "../../Type";
@@ -14,7 +14,7 @@ import { directlyReachableSingleNamedType, matchType, nullableFromUnion, removeN
 import { javaKeywords } from "./constants";
 import { Java8DateTimeProvider, type JavaDateTimeProvider, JavaLegacyDateTimeProvider } from "./DateTimeProvider";
 import { type javaOptions } from "./language";
-import { javaNameStyle } from "./utils";
+import { javaNameStyle, stringEscape } from "./utils";
 
 export class JavaRenderer extends ConvenienceRenderer {
     private _currentFilename: string | undefined;

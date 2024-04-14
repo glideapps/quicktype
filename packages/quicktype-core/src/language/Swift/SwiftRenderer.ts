@@ -7,7 +7,7 @@ import { type RenderContext } from "../../Renderer";
 import { type OptionValues } from "../../RendererOptions";
 import { type Sourcelike, maybeAnnotated, modifySource } from "../../Source";
 import { acronymStyle } from "../../support/Acronyms";
-import { camelCase, stringEscape } from "../../support/Strings";
+import { camelCase } from "../../support/Strings";
 import { assert, defined, panic } from "../../support/Support";
 import { type TargetLanguage } from "../../TargetLanguage";
 import {
@@ -24,7 +24,7 @@ import { matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUti
 
 import { keywords } from "./constants";
 import { type swiftOptions } from "./language";
-import { MAX_SAMELINE_PROPERTIES, type SwiftProperty, swiftNameStyle } from "./utils";
+import { MAX_SAMELINE_PROPERTIES, type SwiftProperty, stringEscape, swiftNameStyle } from "./utils";
 
 export class SwiftRenderer extends ConvenienceRenderer {
     private _currentFilename: string | undefined;
