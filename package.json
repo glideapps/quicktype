@@ -51,7 +51,7 @@
         "@types/stream-json": "^1.7.3",
         "@types/urijs": "^1.19.25",
         "ajv": "^5.5.2",
-        "deep-equal": "^2.2.2",
+        "deep-equal": "^2.2.3",
         "esbuild": "^0.20.2",
         "exit": "^0.1.2",
         "prettier": "^3.0.1",
