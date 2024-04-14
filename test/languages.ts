@@ -1101,7 +1101,8 @@ export const KotlinLanguage: Language = {
         "keyword-enum.schema",
         "keyword-unions.schema",
         // Klaxon does not support top-level primitives
-        "top-level-enum.schema"
+        "top-level-enum.schema",
+        "top-level-primitive.schema"
     ],
     skipMiscJSON: false,
     rendererOptions: {},
@@ -1184,7 +1185,8 @@ export const KotlinJacksonLanguage: Language = {
         "keyword-enum.schema",
         "keyword-unions.schema",
         // Klaxon does not support top-level primitives
-        "top-level-enum.schema"
+        "top-level-enum.schema",
+        "top-level-primitive.schema"
     ],
     skipMiscJSON: false,
     rendererOptions: { framework: "jackson" },
