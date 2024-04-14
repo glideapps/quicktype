@@ -1,214 +1,22 @@
-import * as unicode from "unicode-properties";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../../ConvenienceRenderer";
+import { type Name, Namer } from "../../Naming";
+import { type RenderContext } from "../../Renderer";
+import { type OptionValues } from "../../RendererOptions";
+import { type Sourcelike } from "../../Source";
+import { type TargetLanguage } from "../../TargetLanguage";
+import { ArrayType, ClassType, EnumType, MapType, PrimitiveType, type Type, UnionType } from "../../Type";
+import { matchType, nullableFromUnion } from "../../TypeUtils";
 
-import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { type Name, Namer } from "../Naming";
-import { type RenderContext } from "../Renderer";
-import { BooleanOption, type Option, type OptionValues, StringOption, getOptionValues } from "../RendererOptions";
-import { type Sourcelike } from "../Source";
+import { forbiddenModuleNames, reservedWords } from "./constants";
+import { type elixirOptions } from "./language";
 import {
-    allLowerWordStyle,
-    allUpperWordStyle,
-    combineWords,
-    escapeNonPrintableMapper,
-    firstUpperWordStyle,
-    intToHex,
-    isLetterOrUnderscore,
-    isPrintable,
-    legalizeCharacters,
-    splitIntoWords,
-    utf32ConcatMap
-} from "../support/Strings";
-import { TargetLanguage } from "../TargetLanguage";
-import { ArrayType, ClassType, EnumType, MapType, PrimitiveType, type Type, UnionType } from "../Type";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
-import { matchType, nullableFromUnion } from "../TypeUtils";
-
-const forbiddenModuleNames = [
-    "Access",
-    "Agent",
-    "Any",
-    "Application",
-    "ArgumentError",
-    "ArithmeticError",
-    "Atom",
-    "BadArityError",
-    "BadBooleanError",
-    "BadFunctionError",
-    "BadMapError",
-    "BadStructError",
-    "Base",
-    "Behaviour",
-    "Bitwise",
-    "Calendar",
-    "CaseClauseError",
-    "Code",
-    "Collectable",
-    "CondClauseError",
-    "Config",
-    "Date",
-    "DateTime",
-    "Dict",
-    "DynamicSupervisor",
-    "Enum",
-    "ErlangError",
-    "Exception",
-    "File",
-    "Float",
-    "Function",
-    "FunctionClauseError",
-    "GenEvent",
-    "GenServer",
-    "HashDict",
-    "HashSet",
-    "IO",
-    "Inspect",
-    "Integer",
-    "Kernel",
-    "KeyError",
-    "Keyword",
-    "List",
-    "Macro",
-    "Map",
-    "MapSet",
-    "MatchError",
-    "Module",
-    "Node",
-    "OptionParser",
-    "Path",
-    "Port",
-    "Process",
-    "Protocol",
-    "Range",
-    "Record",
-    "Regex",
-    "Registry",
-    "RuntimeError",
-    "Set",
-    "Stream",
-    "String",
-    "StringIO",
-    "Supervisor",
-    "SyntaxError",
-    "System",
-    "SystemLimitError",
-    "Task",
-    "Time",
-    "TokenMissingError",
-    "Tuple",
-    "URI",
-    "UndefinedFunctionError",
-    "UnicodeConversionError",
-    "Version",
-    "WithClauseError"
-];
-const reservedWords = [
-    "def",
-    "defmodule",
-    "use",
-    "import",
-    "alias",
-    "true",
-    "false",
-    "nil",
-    "when",
-    "and",
-    "or",
-    "not",
-    "in",
-    "fn",
-    "do",
-    "end",
-    "catch",
-    "rescue",
-    "after",
-    "else"
-];
-
-function unicodeEscape(codePoint: number): string {
-    return `\\u{${intToHex(codePoint, 0)}}`;
-}
-
-function capitalizeFirstLetter(str: string): string {
-    return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-const stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
-
-function escapeDoubleQuotes(str: string): string {
-    return str.replace(/"/g, '\\"');
-}
-
-function escapeNewLines(str: string): string {
-    return str.replace(/\n/g, "\\n");
-}
-
-export const elixirOptions = {
-    justTypes: new BooleanOption("just-types", "Plain types only", false),
-    namespace: new StringOption("namespace", "Specify a module namespace", "NAME", "")
-};
-
-export class ElixirTargetLanguage extends TargetLanguage {
-    public constructor() {
-        super("Elixir", ["elixir"], "ex");
-    }
-
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [elixirOptions.justTypes, elixirOptions.namespace];
-    }
-
-    public get supportsOptionalClassProperties(): boolean {
-        return true;
-    }
-
-    protected get defaultIndentation(): string {
-        return "  ";
-    }
-
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): ElixirRenderer {
-        return new ElixirRenderer(this, renderContext, getOptionValues(elixirOptions, untypedOptionValues));
-    }
-}
-
-const isStartCharacter = isLetterOrUnderscore;
-
-function isPartCharacter(utf16Unit: number): boolean {
-    const category: string = unicode.getCategory(utf16Unit);
-    return ["Nd", "Pc", "Mn", "Mc"].includes(category) || isStartCharacter(utf16Unit);
-}
-
-const legalizeName = legalizeCharacters(isPartCharacter);
-
-function simpleNameStyle(original: string, uppercase: boolean): string {
-    if (/^[0-9]+$/.test(original)) {
-        original = `${original}N`;
-    }
-
-    const words = splitIntoWords(original);
-    return combineWords(
-        words,
-        legalizeName,
-        uppercase ? firstUpperWordStyle : allLowerWordStyle,
-        uppercase ? firstUpperWordStyle : allLowerWordStyle,
-        allUpperWordStyle,
-        allUpperWordStyle,
-        "",
-        isStartCharacter
-    );
-}
-
-function memberNameStyle(original: string): string {
-    const words = splitIntoWords(original);
-    return combineWords(
-        words,
-        legalizeName,
-        allLowerWordStyle,
-        allLowerWordStyle,
-        allLowerWordStyle,
-        allLowerWordStyle,
-        "_",
-        isStartCharacter
-    );
-}
+    capitalizeFirstLetter,
+    escapeDoubleQuotes,
+    escapeNewLines,
+    memberNameStyle,
+    simpleNameStyle,
+    stringEscape
+} from "./utils";
 
 export class ElixirRenderer extends ConvenienceRenderer {
     public constructor(
@@ -236,7 +44,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
     }
 
     protected forbiddenForObjectProperties(_c: ClassType, _classNamed: Name): ForbiddenWordsInfo {
-        return { names: reservedWords, includeGlobalForbidden: true };
+        return { names: reservedWords as unknown as string[], includeGlobalForbidden: true };
     }
 
     protected makeNamedTypeNamer(): Namer {
@@ -890,8 +698,8 @@ export class ElixirRenderer extends ConvenienceRenderer {
             this.ensureBlankLine();
             this.emitBlock("def from_json(json) do", () => {
                 this.emitMultiline(`json
-        |> Jason.decode!()
-        |> from_map()`);
+			|> Jason.decode!()
+			|> from_map()`);
             });
             this.ensureBlankLine();
             this.emitBlock([`def to_map(${isEmpty ? "_" : ""}struct) do`], () => {
@@ -907,8 +715,8 @@ export class ElixirRenderer extends ConvenienceRenderer {
             this.ensureBlankLine();
             this.emitBlock("def to_json(struct) do", () => {
                 this.emitMultiline(`struct
-        |> to_map()
-        |> Jason.encode!()`);
+			|> to_map()
+			|> Jason.encode!()`);
             });
         });
     }
@@ -963,40 +771,40 @@ export class ElixirRenderer extends ConvenienceRenderer {
             this.emitMultiline(`def valid_atom?(value), do: value in @valid_enum_members
 
 def valid_atom_string?(value) do
-    try do
-        atom = String.to_existing_atom(value)
-        atom in @valid_enum_members
-    rescue
-        ArgumentError -> false
-    end
+	try do
+			atom = String.to_existing_atom(value)
+			atom in @valid_enum_members
+	rescue
+			ArgumentError -> false
+	end
 end
 
 def encode(value) do
-    if valid_atom?(value) do
-        Atom.to_string(value)
-    else
-        {:error, "Unexpected value when encoding atom: #{inspect(value)}"}
-    end
+	if valid_atom?(value) do
+			Atom.to_string(value)
+	else
+			{:error, "Unexpected value when encoding atom: #{inspect(value)}"}
+	end
 end
 
 def decode(value) do
-    if valid_atom_string?(value) do
-        String.to_existing_atom(value)
-    else
-        {:error, "Unexpected value when decoding atom: #{inspect(value)}"}
-    end
+	if valid_atom_string?(value) do
+			String.to_existing_atom(value)
+	else
+			{:error, "Unexpected value when decoding atom: #{inspect(value)}"}
+	end
 end
 
 def from_json(json) do
-    json
-    |> Jason.decode!()
-    |> decode()
+	json
+	|> Jason.decode!()
+	|> decode()
 end
 
 def to_json(data) do
-    data
-    |> encode()
-    |> Jason.encode!()
+	data
+	|> encode()
+	|> Jason.encode!()
 end`);
         });
     }

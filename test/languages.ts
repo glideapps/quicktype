@@ -1696,5 +1696,5 @@ export const ElixirLanguage: Language = {
     ],
     rendererOptions: {},
     quickTestRendererOptions: [],
-    sourceFiles: ["src/language/Elixir.ts"]
+    sourceFiles: ["src/language/Elixir/index.ts"]
 };
