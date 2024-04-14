@@ -746,7 +746,7 @@ export class JSONPythonRenderer extends PythonRenderer {
 
     protected emitToFloatConverter(): void {
         this.emitBlock(["def to_float(", this.typingDecl("x", "Any"), ")", this.typeHint(" -> float"), ":"], () => {
-            this.emitLine("assert isinstance(x, float)");
+            this.emitLine("assert isinstance(x, (int, float))");
             this.emitLine("return x");
         });
     }

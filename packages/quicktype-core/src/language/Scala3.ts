@@ -501,60 +501,6 @@ export class UpickleRenderer extends Scala3Renderer {
     }
 }
 
-export class Smithy4sRenderer extends Scala3Renderer {
-    protected emitHeader(): void {
-        if (this.leadingComments !== undefined) {
-            this.emitComments(this.leadingComments);
-        } else {
-            this.emitUsageHeader();
-        }
-
-        this.ensureBlankLine();
-        this.emitLine("namespace ", this._scalaOptions.packageName);
-        this.ensureBlankLine();
-    }
-
-    protected emitTopLevelArray(t: ArrayType, name: Name): void {
-        const elementType = this.scalaType(t.items);
-        this.emitLine(["list ", name, " { member : ", elementType, "}"]);
-    }
-
-    protected emitTopLevelMap(t: MapType, name: Name): void {
-        const elementType = this.scalaType(t.values);
-        this.emitLine(["map ", name, " { map[ key : String , value : ", elementType, "}"]);
-    }
-
-    protected emitEmptyClassDefinition(c: ClassType, className: Name): void {
-        this.emitDescription(this.descriptionForType(c));
-        this.emitLine("structure ", className, "{}");
-    }
-
-    protected emitEnumDefinition(e: EnumType, enumName: Name): void {
-        this.emitDescription(this.descriptionForType(e));
-
-        this.ensureBlankLine();
-        this.emitItem(["enum ", enumName, " { "]);
-        let count = e.cases.size;
-        this.forEachEnumCase(e, "none", (name, jsonName) => {
-            // if (!(jsonName == "")) {
-            /*                 const backticks = 
-                                shouldAddBacktick(jsonName) || 
-                                jsonName.includes(" ") || 
-                                !isNaN(parseInt(jsonName.charAt(0)))
-                            if (backticks) {this.emitItem("`")} else  */
-            this.emitLine();
-            this.emitItem([name, ' = "', jsonName, '"']);
-            //                if (backticks) {this.emitItem("`")}
-            if (--count > 0) this.emitItem([","]);
-            // } else {
-            // --count
-            // }
-        });
-        this.ensureBlankLine();
-        this.emitItem(["}"]);
-    }
-}
-
 export class CirceRenderer extends Scala3Renderer {
     private seenUnionTypes: string[] = [];
 
