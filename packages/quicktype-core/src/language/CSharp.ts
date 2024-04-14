@@ -2433,19 +2433,19 @@ internal class IsoDateTimeOffsetConverter : JsonConverter<DateTimeOffset>
 
     public DateTimeStyles DateTimeStyles
     {
-public get => _dateTimeStyles;
+        get => _dateTimeStyles;
         set => _dateTimeStyles = value;
     }
 
     public string? DateTimeFormat
     {
-public get => _dateTimeFormat ?? string.Empty;
+        get => _dateTimeFormat ?? string.Empty;
         set => _dateTimeFormat = (string.IsNullOrEmpty(value)) ? null : value;
     }
 
     public CultureInfo Culture
     {
-public get => _culture ?? CultureInfo.CurrentCulture;
+        get => _culture ?? CultureInfo.CurrentCulture;
         set => _culture = value;
     }
 
