@@ -70,7 +70,7 @@ export const CSharpLanguage: Language = {
         { "number-type": "decimal" },
         { "any-type": "dynamic" }
     ],
-    sourceFiles: ["src/language/CSharp/index/index.ts"]
+    sourceFiles: ["src/language/CSharp/index.ts"]
 };
 
 export const CSharpLanguageSystemTextJson: Language = {
@@ -770,7 +770,7 @@ export const TypeScriptLanguage: Language = {
     ],
     allowMissingNull: false,
     features: ["enum", "union", "no-defaults", "strict-optional", "date-time"],
-    output: "TopLevel/index.ts",
+    output: "TopLevel.ts",
     topLevel: "TopLevel",
     skipJSON: [
         "7681c.json" // year 0 is out of range
@@ -847,7 +847,7 @@ export const JavaScriptPropTypesLanguage: Language = {
         { "runtime-typecheck-ignore-unknown-properties": "true" },
         { converters: "top-level" }
     ],
-    sourceFiles: ["src/Language/JavaScriptPropTypes/index.ts"]
+    sourceFiles: ["src/language/JavaScriptPropTypes/index.ts"]
 };
 
 export const FlowLanguage: Language = {
@@ -956,7 +956,7 @@ I havea no idea how to encode these tests correctly.
     skipMiscJSON: false,
     rendererOptions: { framework: "circe" },
     quickTestRendererOptions: [],
-    sourceFiles: ["src/Language/Scala3/index.ts"]
+    sourceFiles: ["src/language/Scala3/index.ts"]
 };
 
 export const Smithy4sLanguage: Language = {
@@ -1022,7 +1022,7 @@ I havea no idea how to encode these tests correctly.
     skipMiscJSON: false,
     rendererOptions: { framework: "just-types" },
     quickTestRendererOptions: [],
-    sourceFiles: ["src/Language/Smithy4s/index.ts"]
+    sourceFiles: ["src/language/Smithy4s/index.ts"]
 };
 
 export const KotlinLanguage: Language = {
@@ -1107,7 +1107,7 @@ export const KotlinLanguage: Language = {
     skipMiscJSON: false,
     rendererOptions: {},
     quickTestRendererOptions: [],
-    sourceFiles: ["src/Language/Kotlin/index.ts"]
+    sourceFiles: ["src/language/Kotlin/index.ts"]
 };
 
 export const KotlinJacksonLanguage: Language = {
@@ -1191,7 +1191,7 @@ export const KotlinJacksonLanguage: Language = {
     skipMiscJSON: false,
     rendererOptions: { framework: "jackson" },
     quickTestRendererOptions: [],
-    sourceFiles: ["src/Language/Kotlin/index.ts"]
+    sourceFiles: ["src/language/Kotlin/index.ts"]
 };
 
 export const DartLanguage: Language = {
@@ -1241,7 +1241,7 @@ export const DartLanguage: Language = {
     skipMiscJSON: true,
     rendererOptions: {},
     quickTestRendererOptions: [],
-    sourceFiles: ["src/Language/Dart/index.ts"]
+    sourceFiles: ["src/language/Dart/index.ts"]
 };
 
 export const PikeLanguage: Language = {
@@ -1294,7 +1294,7 @@ export const PikeLanguage: Language = {
     ],
     rendererOptions: {},
     quickTestRendererOptions: [],
-    sourceFiles: ["src/Language/Pike/index.ts"]
+    sourceFiles: ["src/language/Pike/index.ts"]
 };
 
 export const HaskellLanguage: Language = {
@@ -1401,7 +1401,7 @@ export const PHPLanguage: Language = {
     skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [],
-    sourceFiles: ["src/Language/Php/index.ts"]
+    sourceFiles: ["src/language/Php/index.ts"]
 };
 
 export const TypeScriptZodLanguage: Language = {
@@ -1439,7 +1439,7 @@ export const TypeScriptZodLanguage: Language = {
     ],
     allowMissingNull: false,
     features: ["enum", "union", "no-defaults", "date-time"],
-    output: "TopLevel/index.ts",
+    output: "TopLevel.ts",
     topLevel: "TopLevel",
     skipJSON: [
         // Uses generated schema before it's defined
@@ -1557,7 +1557,7 @@ export const TypeScriptEffectSchemaLanguage: Language = {
     ],
     allowMissingNull: false,
     features: ["enum", "union", "no-defaults"],
-    output: "TopLevel/index.ts",
+    output: "TopLevel.ts",
     topLevel: "TopLevel",
     skipJSON: [
         // Uses generated schema before it's defined
