@@ -3,7 +3,7 @@ import { type Name, Namer } from "../../Naming";
 import { type RenderContext } from "../../Renderer";
 import { type OptionValues } from "../../RendererOptions";
 import { type Sourcelike, modifySource } from "../../Source";
-import { snakeCase, stringEscape } from "../../support/Strings";
+import { snakeCase } from "../../support/Strings";
 import { type TargetLanguage } from "../../TargetLanguage";
 import {
     ArrayType,
@@ -18,7 +18,7 @@ import { matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUti
 
 import { globals } from "./constants";
 import { Strictness, type rubyOptions } from "./language";
-import { forbiddenForObjectProperties, memberNameStyle, simpleNameStyle } from "./utils";
+import { forbiddenForObjectProperties, memberNameStyle, simpleNameStyle, stringEscape } from "./utils";
 
 export class RubyRenderer extends ConvenienceRenderer {
     public constructor(
