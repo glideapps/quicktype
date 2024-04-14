@@ -13,3 +13,4 @@ jobs:
             - run: npm run pub
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+                  VSCE_TOKEN: ${{ secrets.VSCE_TOKEN }}
