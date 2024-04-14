@@ -201,7 +201,7 @@ export class Ref {
         return this.path.length === 1 && this.path[0].kind === PathElementKind.Root;
     }
 
-    private pushElement(pe: PathElement): Ref {
+    public pushElement(pe: PathElement): Ref {
         const newPath = Array.from(this.path);
         newPath.push(pe);
         return new Ref(this.addressURI, newPath);
