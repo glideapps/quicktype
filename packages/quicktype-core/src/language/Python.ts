@@ -48,7 +48,7 @@ import {
     iterableFirst
 } from "collection-utils";
 
-import unicode from "unicode-properties";
+import * as unicode from "unicode-properties";
 
 const forbiddenTypeNames = [
     "Any",
