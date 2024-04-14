@@ -1,4 +1,4 @@
-import unicode from "unicode-properties";
+import * as unicode from "unicode-properties";
 
 import { Sourcelike } from "../Source";
 import { Namer, Name } from "../Naming";
