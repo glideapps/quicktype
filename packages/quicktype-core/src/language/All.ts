@@ -7,6 +7,7 @@ import { CPlusPlusTargetLanguage } from "./CPlusPlus";
 import { CrystalTargetLanguage } from "./Crystal";
 import { CSharpTargetLanguage } from "./CSharp";
 import { DartTargetLanguage } from "./Dart";
+import { ElixirTargetLanguage } from "./Elixir";
 import { ElmTargetLanguage } from "./Elm";
 import { GoTargetLanguage } from "./Golang";
 import { HaskellTargetLanguage } from "./Haskell";
@@ -55,6 +56,7 @@ export const all: TargetLanguage[] = [
     new HaskellTargetLanguage(),
     new TypeScriptZodTargetLanguage(),
     new TypeScriptEffectSchemaTargetLanguage(),
+    new ElixirTargetLanguage(),
     new PhpTargetLanguage()
 ];
 
