@@ -773,6 +773,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                         enumDeclaration += ", ";
                         enumDeclaration += this._options.codingKeysProtocol;
                     }
+
                     this.emitBlock(enumDeclaration, () => {
                         for (const group of groups) {
                             const { name, label } = group[0];

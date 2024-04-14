@@ -2,22 +2,24 @@
 
 import * as path from "path";
 
+import {
+    InputData,
+    JSONSchemaInput,
+    defaultTargetLanguages,
+    inferenceFlagNames,
+    jsonInputForTargetLanguage,
+    languageNamed,
+    quicktype
+} from "quicktype-core";
+import {
+    type Options,
+    type RendererOptions,
+    type SerializedRenderResult,
+    type TargetLanguage} from "quicktype-core";
+import { schemaForTypeScriptSources } from "quicktype-typescript-input";
 import * as vscode from "vscode";
 import { Range } from "vscode";
-import {
-    quicktype,
-    languageNamed,
-    SerializedRenderResult,
-    defaultTargetLanguages,
-    JSONSchemaInput,
-    InputData,
-    TargetLanguage,
-    jsonInputForTargetLanguage,
-    RendererOptions,
-    Options,
-    inferenceFlagNames
-} from "quicktype-core";
-import { schemaForTypeScriptSources } from "quicktype-typescript-input";
+
 
 const configurationSection = "quicktype";
 
@@ -39,6 +41,7 @@ function jsonIsValid(json: string) {
     } catch (e) {
         return false;
     }
+
     return true;
 }
 
@@ -53,10 +56,10 @@ async function promptTopLevelName(): Promise<{ cancelled: boolean; name: string 
     };
 }
 
-type TargetLanguagePick = {
+interface TargetLanguagePick {
     cancelled: boolean;
     lang: TargetLanguage;
-};
+}
 
 async function pickTargetLanguage(): Promise<TargetLanguagePick> {
     const languageChoices = defaultTargetLanguages.map(l => l.displayName).sort();
@@ -65,6 +68,7 @@ async function pickTargetLanguage(): Promise<TargetLanguagePick> {
     if (chosenName === undefined) {
         chosenName = "typescript";
     }
+
     return { cancelled, lang: languageNamed(chosenName)! };
 }
 
@@ -77,6 +81,7 @@ async function getTargetLanguage(editor: vscode.TextEditor): Promise<TargetLangu
             lang: currentLanguage
         };
     }
+
     return await pickTargetLanguage();
 }
 
@@ -97,9 +102,9 @@ async function runQuicktype(
     if (justTypes) {
         // FIXME: The target language should have a property to return these options.
         if (lang.name === "csharp") {
-            rendererOptions["features"] = "just-types";
+            rendererOptions.features = "just-types";
         } else if (lang.name === "kotlin") {
-            rendererOptions["framework"] = "just-types";
+            rendererOptions.framework = "just-types";
         } else {
             rendererOptions["just-types"] = "true";
         }
@@ -184,6 +189,7 @@ async function pasteAsTypes(editor: vscode.TextEditor, kind: InputKind, justType
         if (tln.cancelled) {
             return;
         }
+
         topLevelName = tln.name;
     }
 
@@ -210,17 +216,23 @@ async function pasteAsTypes(editor: vscode.TextEditor, kind: InputKind, justType
 
 class CodeProvider implements vscode.TextDocumentContentProvider {
     readonly scheme: string = "quicktype";
+
     readonly uri: vscode.Uri;
 
     private _documentText: string = "{}";
+
     private _targetCode = "";
 
     private readonly _onDidChange = new vscode.EventEmitter<vscode.Uri>();
+
     private readonly _changeSubscription: vscode.Disposable;
+
     private readonly _onDidChangeVisibleTextEditors: vscode.Disposable;
+
     private readonly _onDidChangeConfiguration: vscode.Disposable;
 
     private _isOpen = false;
+
     private _timer: NodeJS.Timeout | undefined = undefined;
 
     constructor(
@@ -279,6 +291,7 @@ class CodeProvider implements vscode.TextDocumentContentProvider {
         if (!this._isOpen && isOpen) {
             this.update();
         }
+
         this._isOpen = isOpen;
     }
 
@@ -296,6 +309,7 @@ class CodeProvider implements vscode.TextDocumentContentProvider {
         if (this._timer) {
             clearTimeout(this._timer);
         }
+
         this._timer = setTimeout(() => {
             this._timer = undefined;
             this.update();
@@ -338,14 +352,17 @@ function deduceTargetLanguage(): TargetLanguage {
         if (count === undefined) {
             count = 0;
         }
+
         count += 1;
         counts.set(name, count);
     }
+
     const sorted = Array.from(counts).sort(([_na, ca], [_nb, cb]) => cb - ca);
     for (const [name] of sorted) {
         const lang = languageNamed(name);
         if (lang !== undefined) return lang;
     }
+
     return languageNamed("typescript")!;
 }
 
@@ -382,12 +399,13 @@ async function openQuicktype(
         const doc = lastCodeProvider.document;
         originalEditor = vscode.window.visibleTextEditors.find(e => e.document === doc);
     }
+
     if (originalEditor === undefined) {
         originalEditor = vscode.window.activeTextEditor;
     }
 
     let column: number;
-    if (originalEditor !== undefined && originalEditor.viewColumn !== undefined) {
+    if (originalEditor?.viewColumn !== undefined) {
         column = originalEditor.viewColumn + 1;
     } else {
         column = 0;
@@ -422,29 +440,29 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     extensionContext = context;
 
     context.subscriptions.push(
-        vscode.commands.registerTextEditorCommand(Command.PasteJSONAsTypes, editor =>
-            pasteAsTypes(editor, "json", true)
+        vscode.commands.registerTextEditorCommand(Command.PasteJSONAsTypes, async editor =>
+            await pasteAsTypes(editor, "json", true)
         ),
-        vscode.commands.registerTextEditorCommand(Command.PasteJSONAsTypesAndSerialization, editor =>
-            pasteAsTypes(editor, "json", false)
+        vscode.commands.registerTextEditorCommand(Command.PasteJSONAsTypesAndSerialization, async editor =>
+            await pasteAsTypes(editor, "json", false)
         ),
-        vscode.commands.registerTextEditorCommand(Command.PasteSchemaAsTypes, editor =>
-            pasteAsTypes(editor, "schema", true)
+        vscode.commands.registerTextEditorCommand(Command.PasteSchemaAsTypes, async editor =>
+            await pasteAsTypes(editor, "schema", true)
         ),
-        vscode.commands.registerTextEditorCommand(Command.PasteSchemaAsTypesAndSerialization, editor =>
-            pasteAsTypes(editor, "schema", false)
+        vscode.commands.registerTextEditorCommand(Command.PasteSchemaAsTypesAndSerialization, async editor =>
+            await pasteAsTypes(editor, "schema", false)
         ),
-        vscode.commands.registerTextEditorCommand(Command.PasteTypeScriptAsTypesAndSerialization, editor =>
-            pasteAsTypes(editor, "typescript", false)
+        vscode.commands.registerTextEditorCommand(Command.PasteTypeScriptAsTypesAndSerialization, async editor =>
+            await pasteAsTypes(editor, "typescript", false)
         ),
-        vscode.commands.registerTextEditorCommand(Command.OpenQuicktypeForJSON, editor =>
-            openForEditor(editor, "json")
+        vscode.commands.registerTextEditorCommand(Command.OpenQuicktypeForJSON, async editor =>
+            await openForEditor(editor, "json")
         ),
-        vscode.commands.registerTextEditorCommand(Command.OpenQuicktypeForJSONSchema, editor =>
-            openForEditor(editor, "schema")
+        vscode.commands.registerTextEditorCommand(Command.OpenQuicktypeForJSONSchema, async editor =>
+            await openForEditor(editor, "schema")
         ),
-        vscode.commands.registerTextEditorCommand(Command.OpenQuicktypeForTypeScript, editor =>
-            openForEditor(editor, "typescript")
+        vscode.commands.registerTextEditorCommand(Command.OpenQuicktypeForTypeScript, async editor =>
+            await openForEditor(editor, "typescript")
         ),
         vscode.commands.registerCommand(Command.ChangeTargetLanguage, changeTargetLanguage)
     );

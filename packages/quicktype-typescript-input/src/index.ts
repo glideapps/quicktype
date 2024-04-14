@@ -34,13 +34,13 @@ export function schemaForTypeScriptSources(sourceFileNames: string[]): JSONSchem
 
     const schema = generateSchema(program, "*", settings);
     const uris: string[] = [];
-    let topLevelName: string = "";
+    let topLevelName = "";
 
     // if there is a type that is `export default`, swap the corresponding ref
     if (schema?.definitions?.default) {
         const defaultDefinition = schema?.definitions?.default;
         const matchingDefaultName = Object.entries(schema?.definitions ?? {}).find(
-            ([_name, definition]) => (definition as Record<string, unknown>)["$ref"] === "#/definitions/default"
+            ([_name, definition]) => (definition as Record<string, unknown>).$ref === "#/definitions/default"
         )?.[0];
 
         if (matchingDefaultName) {
