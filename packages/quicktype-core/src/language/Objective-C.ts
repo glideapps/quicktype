@@ -23,7 +23,7 @@ import { StringOption, BooleanOption, EnumOption, Option, getOptionValues, Optio
 import { assert, defined } from "../support/Support";
 import { RenderContext } from "../Renderer";
 
-import unicode from "unicode-properties";
+import * as unicode from "unicode-properties";
 
 export type MemoryAttribute = "assign" | "strong" | "copy";
 export type OutputFeatures = { interface: boolean; implementation: boolean };
@@ -290,7 +290,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
     }
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
-        this.emitCommentLines(lines, "/// ");
+        this.emitCommentLines(lines, { lineStart: "/// " });
     }
 
     protected emitBlock(line: Sourcelike, f: () => void): void {
@@ -912,7 +912,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             this.startFile(filename, "h");
 
             if (this.leadingComments !== undefined) {
-                this.emitCommentLines(this.leadingComments);
+                this.emitComments(this.leadingComments);
             } else if (!this._options.justTypes) {
                 this.emitCommentLines(["To parse this JSON:", ""]);
                 this.emitLine("//   NSError *error;");

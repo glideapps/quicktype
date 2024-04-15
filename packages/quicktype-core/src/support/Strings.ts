@@ -10,7 +10,7 @@ export type NamingStyle =
     | "pascal-upper-acronyms"
     | "camel-upper-acronyms";
 
-import unicode from "unicode-properties";
+import * as unicode from "unicode-properties";
 
 function computeAsciiMap(mapper: (codePoint: number) => string): {
     charStringMap: string[];

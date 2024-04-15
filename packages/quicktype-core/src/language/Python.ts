@@ -48,7 +48,7 @@ import {
     iterableFirst
 } from "collection-utils";
 
-import unicode from "unicode-properties";
+import * as unicode from "unicode-properties";
 
 const forbiddenTypeNames = [
     "Any",
@@ -282,9 +282,13 @@ export class PythonRenderer extends ConvenienceRenderer {
 
                 return content;
             }, lines[0]);
-            this.emitLine('"""', docstring, '"""');
+            this.emitComments([{ customLines: [docstring], lineStart: '"""', lineEnd: '"""' }]);
         } else {
-            this.emitCommentLines(lines, "", undefined, '"""', '"""');
+            this.emitCommentLines(lines, {
+                firstLineStart: '"""',
+                lineStart: "",
+                afterComment: '"""'
+            });
         }
     }
 
@@ -509,7 +513,7 @@ export class PythonRenderer extends ConvenienceRenderer {
         const supportLines = this.gatherSource(() => this.emitSupportCode());
 
         if (this.leadingComments !== undefined) {
-            this.emitCommentLines(this.leadingComments);
+            this.emitComments(this.leadingComments);
         }
         this.ensureBlankLine();
         this.emitImports();
@@ -708,7 +712,7 @@ export class JSONPythonRenderer extends PythonRenderer {
 
     protected emitToFloatConverter(): void {
         this.emitBlock(["def to_float(", this.typingDecl("x", "Any"), ")", this.typeHint(" -> float"), ":"], () => {
-            this.emitLine("assert isinstance(x, float)");
+            this.emitLine("assert isinstance(x, (int, float))");
             this.emitLine("return x");
         });
     }

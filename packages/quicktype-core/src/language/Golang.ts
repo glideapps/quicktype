@@ -19,6 +19,7 @@ import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { TargetLanguage } from "../TargetLanguage";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { RenderContext } from "../Renderer";
+import { StringTypeMapping, TransformedStringTypeKind, PrimitiveStringTypeKind } from "..";
 
 export const goOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
@@ -26,7 +27,11 @@ export const goOptions = {
     packageName: new StringOption("package", "Generated package name", "NAME", "main"),
     multiFileOutput: new BooleanOption("multi-file-output", "Renders each top-level object in its own Go file", false),
     fieldTags: new StringOption("field-tags", "list of tags which should be generated for fields", "TAGS", "json"),
-    omitEmpty: new BooleanOption("omit-empty", "If set, all non-required objects will be tagged with ,omitempty", false)
+    omitEmpty: new BooleanOption(
+        "omit-empty",
+        'If set, all non-required objects will be tagged with ",omitempty"',
+        false
+    )
 };
 
 export class GoTargetLanguage extends TargetLanguage {
@@ -37,15 +42,22 @@ export class GoTargetLanguage extends TargetLanguage {
     protected getOptions(): Option<any>[] {
         return [
             goOptions.justTypes,
+            goOptions.justTypesAndPackage,
             goOptions.packageName,
             goOptions.multiFileOutput,
-            goOptions.justTypesAndPackage,
-            goOptions.fieldTags
+            goOptions.fieldTags,
+            goOptions.omitEmpty
         ];
     }
 
     get supportsUnionsWithBothNumberTypes(): boolean {
         return true;
+    }
+
+    get stringTypeMapping(): StringTypeMapping {
+        const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
+        mapping.set("date-time", "date-time");
+        return mapping;
     }
 
     get supportsOptionalClassProperties(): boolean {
@@ -84,12 +96,12 @@ const compoundTypeKinds: TypeKind[] = ["array", "class", "map", "enum"];
 
 function isValueType(t: Type): boolean {
     const kind = t.kind;
-    return primitiveValueTypeKinds.indexOf(kind) >= 0 || kind === "class" || kind === "enum";
+    return primitiveValueTypeKinds.indexOf(kind) >= 0 || kind === "class" || kind === "enum" || kind === "date-time";
 }
 
-function canOmitEmpty(cp: ClassProperty): boolean {
+function canOmitEmpty(cp: ClassProperty, omitEmptyOption: boolean): boolean {
     if (!cp.isOptional) return false;
-    if (goOptions.omitEmpty) return true;
+    if (omitEmptyOption) return true;
     const t = cp.type;
     return ["union", "null", "any"].indexOf(t.kind) < 0;
 }
@@ -217,6 +229,13 @@ export class GoRenderer extends ConvenienceRenderer {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) return this.nullableGoType(nullable, withIssues);
                 return this.nameForNamedType(unionType);
+            },
+            transformedStringType => {
+                if (transformedStringType.kind === "date-time") {
+                    return "time.Time";
+                }
+
+                return "string";
             }
         );
     }
@@ -264,14 +283,14 @@ export class GoRenderer extends ConvenienceRenderer {
 
     private emitClass(c: ClassType, className: Name): void {
         this.startFile(className);
-        this.emitPackageDefinitons(false);
         let columns: Sourcelike[][] = [];
+        const usedTypes = new Set<string>();
         this.forEachClassProperty(c, "none", (name, jsonName, p) => {
             const description = this.descriptionForClassProperty(c, jsonName);
             const docStrings =
                 description !== undefined && description.length > 0 ? description.map(d => "// " + d) : [];
             const goType = this.propertyGoType(p);
-            const omitEmpty = canOmitEmpty(p) ? ",omitempty" : [];
+            const omitEmpty = canOmitEmpty(p, this._options.omitEmpty) ? ",omitempty" : [];
 
             docStrings.forEach(doc => columns.push([doc]));
             const tags = this._options.fieldTags
@@ -283,7 +302,15 @@ export class GoRenderer extends ConvenienceRenderer {
                 [goType, " "],
                 ["`", tags, "`"]
             ]);
+            usedTypes.add(goType.toString());
         });
+
+        this.emitPackageDefinitons(
+            false,
+            usedTypes.has("time.Time") || usedTypes.has("*,time.Time") || usedTypes.has("[],time.Time")
+                ? new Set<string>(["time"])
+                : undefined
+        );
         this.emitDescription(this.descriptionForType(c));
         this.emitStruct(className, columns);
         this.endFile();
@@ -411,7 +438,7 @@ export class GoRenderer extends ConvenienceRenderer {
         });
     }
 
-    private emitPackageDefinitons(includeJSONEncodingImport: boolean): void {
+    private emitPackageDefinitons(includeJSONEncodingImport: boolean, imports: Set<string> = new Set<string>()): void {
         if (!this._options.justTypes || this._options.justTypesAndPackage) {
             this.ensureBlankLine();
             const packageDeclaration = "package " + this._options.packageName;
@@ -420,27 +447,42 @@ export class GoRenderer extends ConvenienceRenderer {
         }
 
         if (!this._options.justTypes && !this._options.justTypesAndPackage) {
-            this.ensureBlankLine();
             if (this.haveNamedUnions && this._options.multiFileOutput === false) {
-                this.emitLineOnce('import "bytes"');
-                this.emitLineOnce('import "errors"');
+                imports.add("bytes");
+                imports.add("errors");
             }
 
             if (includeJSONEncodingImport) {
-                this.emitLineOnce('import "encoding/json"');
+                imports.add("encoding/json");
             }
-            this.ensureBlankLine();
         }
+
+        this.emitImports(imports);
+    }
+
+    private emitImports(imports: Set<string>): void {
+        const sortedImports = Array.from(imports).sort((a, b) => a.localeCompare(b));
+
+        if (sortedImports.length === 0) {
+            return;
+        }
+
+        sortedImports.forEach(packageName => {
+            this.emitLineOnce(`import "${packageName}"`);
+        });
+        this.ensureBlankLine();
     }
 
     private emitHelperFunctions(): void {
         if (this.haveNamedUnions) {
             this.startFile("JSONSchemaSupport");
-            this.emitPackageDefinitons(true);
+            const imports = new Set<string>();
             if (this._options.multiFileOutput) {
-                this.emitLineOnce('import "bytes"');
-                this.emitLineOnce('import "errors"');
+                imports.add("bytes");
+                imports.add("errors");
             }
+
+            this.emitPackageDefinitons(true, imports);
             this.ensureBlankLine();
             this
                 .emitMultiline(`func unmarshalUnion(data []byte, pi **int64, pf **float64, pb **bool, ps **string, haveArray bool, pa interface{}, haveObject bool, pc interface{}, haveMap bool, pm interface{}, haveEnum bool, pe interface{}, nullable bool) (bool, error) {
@@ -568,6 +610,7 @@ func marshalUnion(pi *int64, pf *float64, pb *bool, ps *string, haveArray bool, 
             this.leadingComments === undefined
         ) {
             this.emitSingleFileHeaderComments();
+            this.emitPackageDefinitons(false, this.collectAllImports());
         }
 
         this.forEachTopLevel(
@@ -586,5 +629,66 @@ func marshalUnion(pi *int64, pf *float64, pb *bool, ps *string, haveArray bool, 
         }
 
         this.emitHelperFunctions();
+    }
+
+    private collectAllImports(): Set<string> {
+        let imports = new Set<string>();
+        this.forEachObject("leading-and-interposing", (c: ClassType, _className: Name) => {
+            const classImports = this.collectClassImports(c);
+            imports = new Set([...imports, ...classImports]);
+        });
+
+        this.forEachUnion("leading-and-interposing", (u: UnionType, _unionName: Name) => {
+            const unionImports = this.collectUnionImports(u);
+            imports = new Set([...imports, ...unionImports]);
+        });
+        return imports;
+    }
+
+    private collectClassImports(c: ClassType): Set<string> {
+        const usedTypes = new Set<string>();
+        const mapping: Map<string, string> = new Map();
+        mapping.set("time.Time", "time");
+        mapping.set("*,time.Time", "time");
+        mapping.set("[],time.Time", "time");
+
+        this.forEachClassProperty(c, "none", (_name, _jsonName, p) => {
+            const goType = this.propertyGoType(p);
+            usedTypes.add(goType.toString());
+        });
+
+        const imports = new Set<string>();
+        usedTypes.forEach(k => {
+            const typeImport = mapping.get(k);
+            if (typeImport) {
+                imports.add(typeImport);
+            }
+        });
+
+        return imports;
+    }
+
+    private collectUnionImports(u: UnionType): Set<string> {
+        const usedTypes = new Set<string>();
+        const mapping: Map<string, string> = new Map();
+        mapping.set("time.Time", "time");
+        mapping.set("*,time.Time", "time");
+
+        this.forEachUnionMember(u, null, "none", null, (_fieldName, t) => {
+            const goType = this.nullableGoType(t, true);
+            usedTypes.add(goType.toString());
+        });
+
+        const imports = new Set<string>();
+        usedTypes.forEach(k => {
+            const typeImport = mapping.get(k);
+            if (!typeImport) {
+                return;
+            }
+
+            imports.add(typeImport);
+        });
+
+        return imports;
     }
 }

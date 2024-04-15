@@ -808,7 +808,7 @@ async function addTypesInSchema(
             } else if (typeof items === "object") {
                 const itemsLoc = loc.push("items");
                 itemType = await toType(checkJSONSchema(items, itemsLoc.canonicalRef), itemsLoc, singularAttributes);
-            } else if (items !== undefined) {
+            } else if (items !== undefined && items !== true) {
                 return messageError("SchemaArrayItemsMustBeStringOrArray", withRef(loc, { actual: items }));
             } else {
                 itemType = typeBuilder.getPrimitiveType("any");

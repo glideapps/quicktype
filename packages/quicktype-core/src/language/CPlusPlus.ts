@@ -383,7 +383,10 @@ function addQualifier(qualifier: Sourcelike, qualified: Sourcelike[]): Sourcelik
 }
 
 class WrappingCode {
-    constructor(private readonly start: Sourcelike[], private readonly end: Sourcelike[]) {}
+    constructor(
+        private readonly start: Sourcelike[],
+        private readonly end: Sourcelike[]
+    ) {}
 
     wrap(qualifier: Sourcelike, inner: Sourcelike): Sourcelike {
         return [addQualifier(qualifier, this.start), inner, this.end];
@@ -780,7 +783,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
 
         if (this.leadingComments !== undefined) {
-            this.emitCommentLines(this.leadingComments);
+            this.emitComments(this.leadingComments);
         } else if (!this._options.justTypes) {
             this.emitCommentLines([" To parse this JSON data, first install", ""]);
             if (this._options.boost) {
@@ -857,7 +860,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
-        this.emitCommentLines(lines, " * ", "/**", " */");
+        this.emitCommentLines(lines, { lineStart: " * ", beforeComment: "/**", afterComment: " */" });
     }
 
     protected emitBlock(line: Sourcelike, withSemicolon: boolean, f: () => void, withIndent = true): void {
@@ -1075,7 +1078,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         const result: TypeRecord[] = [];
         const recur = (forceInclude: boolean, isVariant: boolean, l: number, t: Type) => {
             if (t instanceof ArrayType) {
-                recur(forceInclude, isVariant, l + 1, t.items);
+                recur(true, isVariant, l + 1, t.items);
             } else if (t instanceof ClassType) {
                 result.push({
                     name: this.nameForNamedType(t),
@@ -1085,7 +1088,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     forceInclude
                 });
             } else if (t instanceof MapType) {
-                recur(forceInclude, isVariant, l + 1, t.values);
+                recur(true, isVariant, l + 1, t.values);
             } else if (t instanceof EnumType) {
                 result.push({
                     name: this.nameForNamedType(t),
@@ -1982,7 +1985,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             "; break;"
                         );
                     });
-                    this.emitLine('default: throw std::runtime_error("This should not happen");');
+                    this.emitLine(
+                        `default: throw std::runtime_error("Unexpected value in enumeration \\"${enumName}\\": " + std::to_string(static_cast<int>(x)));`
+                    );
                 });
             }
         );

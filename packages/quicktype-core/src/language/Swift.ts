@@ -49,6 +49,13 @@ export const swiftOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     convenienceInitializers: new BooleanOption("initializers", "Generate initializers and mutators", true),
     explicitCodingKeys: new BooleanOption("coding-keys", "Explicit CodingKey values in Codable types", true),
+    codingKeysProtocol: new StringOption(
+        "coding-keys-protocol",
+        "CodingKeys implements protocols",
+        "protocol1, protocol2...",
+        "",
+        "secondary"
+    ),
     alamofire: new BooleanOption("alamofire", "Alamofire extensions", false),
     namedTypePrefix: new StringOption("type-prefix", "Prefix for type names", "PREFIX", "", "secondary"),
     useClasses: new EnumOption("struct-or-class", "Structs or classes", [
@@ -142,6 +149,7 @@ export class SwiftTargetLanguage extends TargetLanguage {
             swiftOptions.dense,
             swiftOptions.convenienceInitializers,
             swiftOptions.explicitCodingKeys,
+            swiftOptions.codingKeysProtocol,
             swiftOptions.accessLevel,
             swiftOptions.alamofire,
             swiftOptions.linux,
@@ -374,7 +382,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
     }
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
-        this.emitCommentLines(lines, "/// ");
+        this.emitCommentLines(lines, { lineStart: "/// " });
     }
 
     private emitBlock(line: Sourcelike, f: () => void): void {
@@ -485,7 +493,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
 
     private renderHeader(type: Type, name: Name): void {
         if (this.leadingComments !== undefined) {
-            this.emitCommentLines(this.leadingComments);
+            this.emitComments(this.leadingComments);
         } else if (!this._options.justTypes) {
             if (this._options.multiFileOutput) {
                 this.emitLineOnce(
@@ -536,7 +544,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
             this.emitLineOnce("import Alamofire");
         }
         if (this._options.optionalEnums) {
-            this.emitLineOnce("import OptionallyDecodable // https://github.com/idrougge/OptionallyDecodable");    
+            this.emitLineOnce("import OptionallyDecodable // https://github.com/idrougge/OptionallyDecodable");
         }
         this.ensureBlankLine();
     }
@@ -567,14 +575,17 @@ export class SwiftRenderer extends ConvenienceRenderer {
             protocols.push("Equatable");
         }
 
-        if (this._options.sendable && !this._options.mutableProperties && !this._options.objcSupport) {
+        if (this._options.sendable && (!this._options.mutableProperties || !isClass) && !this._options.objcSupport) {
             protocols.push("Sendable");
         }
 
         return protocols;
     }
 
-    private getProtocolString(kind: "struct" | "class" | "enum", baseClass: string | undefined = undefined): Sourcelike {
+    private getProtocolString(
+        kind: "struct" | "class" | "enum",
+        baseClass: string | undefined = undefined
+    ): Sourcelike {
         let protocols = this.getProtocolsArray(kind);
         if (baseClass) {
             protocols.unshift(baseClass);
@@ -742,7 +753,13 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 });
                 if (!allPropertiesRedundant && c.getProperties().size > 0) {
                     this.ensureBlankLine();
-                    this.emitBlock("enum CodingKeys: String, CodingKey", () => {
+                    let enumDeclaration = this.accessLevel;
+                    enumDeclaration += "enum CodingKeys: String, CodingKey";
+                    if (this._options.codingKeysProtocol && this._options.codingKeysProtocol.length > 0) {
+                        enumDeclaration += ", ";
+                        enumDeclaration += this._options.codingKeysProtocol;
+                    }
+                    this.emitBlock(enumDeclaration, () => {
                         for (const group of groups) {
                             const { name, label } = group[0];
                             if (this._options.explicitCodingKeys && label !== undefined) {
@@ -1416,7 +1433,6 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         if (!this._options.justTypes) {
             this.emitSupportFunctions4();
         }
-
     }
 
     private emitAlamofireExtension() {

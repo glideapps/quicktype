@@ -24,6 +24,7 @@ import { descriptionTypeAttributeKind, propertyDescriptionsTypeAttributeKind } f
 import { enumCaseNames, objectPropertyNames, unionMemberName, getAccessorName } from "./attributes/AccessorNames";
 import { transformationForType, followTargetType, Transformation } from "./Transformers";
 import { TargetLanguage } from "./TargetLanguage";
+import { type Comment, isStringComment, type CommentOptions } from "./support/Comments";
 
 const wordWrap: (s: string) => string = require("wordwrap")(90);
 
@@ -803,33 +804,52 @@ export abstract class ConvenienceRenderer extends Renderer {
         return "// ";
     }
 
+    protected emitComments(comments: Comment[]): void {
+        comments.forEach(comment => {
+            if (isStringComment(comment)) {
+                this.emitCommentLines([comment]);
+            } else if ("lines" in comment) {
+                this.emitCommentLines(comment.lines);
+            } else if ("descriptionBlock" in comment) {
+                this.emitDescriptionBlock(comment.descriptionBlock);
+            } else {
+                this.emitCommentLines(comment.customLines, comment);
+            }
+
+            this.ensureBlankLine();
+        });
+    }
+
     protected emitCommentLines(
         lines: Sourcelike[],
-        lineStart?: string,
-        beforeLine?: string,
-        afterLine?: string,
-        firstLineStart?: string
+        {
+            lineStart = this.commentLineStart,
+            firstLineStart = lineStart,
+            lineEnd,
+            beforeComment,
+            afterComment
+        }: CommentOptions = {}
     ): void {
-        if (lineStart === undefined) {
-            lineStart = this.commentLineStart;
-        }
-        if (firstLineStart === undefined) {
-            firstLineStart = lineStart;
-        }
-        if (beforeLine !== undefined) {
-            this.emitLine(beforeLine);
+        if (beforeComment !== undefined) {
+            this.emitLine(beforeComment);
         }
         let first = true;
         for (const line of lines) {
             let start = first ? firstLineStart : lineStart;
+            first = false;
+
             if (this.sourcelikeToString(line) === "") {
                 start = trimEnd(start);
             }
-            this.emitLine(start, line);
-            first = false;
+
+            if (lineEnd) {
+                this.emitLine(start, line, lineEnd);
+            } else {
+                this.emitLine(start, line);
+            }
         }
-        if (afterLine !== undefined) {
-            this.emitLine(afterLine);
+        if (afterComment !== undefined) {
+            this.emitLine(afterComment);
         }
     }
 

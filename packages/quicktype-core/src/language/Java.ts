@@ -195,7 +195,10 @@ export function javaNameStyle(
 }
 
 abstract class JavaDateTimeProvider {
-    constructor(protected readonly _renderer: JavaRenderer, protected readonly _className: string) {}
+    constructor(
+        protected readonly _renderer: JavaRenderer,
+        protected readonly _className: string
+    ) {}
     abstract keywords: string[];
 
     abstract dateTimeImports: string[];
@@ -574,7 +577,7 @@ export class JavaRenderer extends ConvenienceRenderer {
         // FIXME: Why is this necessary?
         this.ensureBlankLine();
         if (!this._haveEmittedLeadingComments && this.leadingComments !== undefined) {
-            this.emitCommentLines(this.leadingComments);
+            this.emitComments(this.leadingComments);
             this.ensureBlankLine();
             this._haveEmittedLeadingComments = true;
         }
@@ -600,7 +603,7 @@ export class JavaRenderer extends ConvenienceRenderer {
     }
 
     public emitDescriptionBlock(lines: Sourcelike[]): void {
-        this.emitCommentLines(lines, " * ", "/**", " */");
+        this.emitCommentLines(lines, { lineStart: " * ", beforeComment: "/**", afterComment: " */" });
     }
 
     public emitBlock(line: Sourcelike, f: () => void): void {

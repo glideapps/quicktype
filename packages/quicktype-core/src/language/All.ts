@@ -27,6 +27,7 @@ import { HaskellTargetLanguage } from "./Haskell";
 import { TypeScriptZodTargetLanguage } from "./TypeScriptZod";
 import { PhpTargetLanguage } from "./Php";
 import { TypeScriptEffectSchemaTargetLanguage } from "./TypeScriptEffectSchema";
+import { ElixirTargetLanguage } from "./Elixir";
 
 export const all: TargetLanguage[] = [
     new CSharpTargetLanguage(),
@@ -54,6 +55,7 @@ export const all: TargetLanguage[] = [
     new HaskellTargetLanguage(),
     new TypeScriptZodTargetLanguage(),
     new TypeScriptEffectSchemaTargetLanguage(),
+    new ElixirTargetLanguage(),
     new PhpTargetLanguage()
 ];
 
