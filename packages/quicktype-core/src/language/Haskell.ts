@@ -29,9 +29,17 @@ export const haskellOptions = {
     moduleName: new StringOption("module", "Generated module name", "NAME", "QuickType")
 };
 
-export class HaskellTargetLanguage extends TargetLanguage<"Haskell", ["haskell"], "haskell"> {
-    constructor() {
-        super("Haskell", ["haskell"], "haskell");
+export class HaskellTargetLanguage<
+    const DisplayName extends string = "Haskell",
+    const Names extends readonly string[] = readonly ["haskell"],
+    const Extension extends string = "haskell"
+> extends TargetLanguage<DisplayName, Names, Extension> {
+    constructor(
+        displayName = "Haskell" as DisplayName,
+        names = ["haskell"] as unknown as Names,
+        extension = "haskell" as Extension
+    ) {
+        super(displayName, names, extension);
     }
 
     protected getOptions(): Option<any>[] {

@@ -39,13 +39,17 @@ export const javaScriptPropTypesOptions = {
     )
 };
 
-export class JavaScriptPropTypesTargetLanguage extends TargetLanguage<
-    "JavaScript PropTypes",
-    ["javascript-prop-types"],
-    "js"
-> {
-    constructor() {
-        super("JavaScript PropTypes", ["javascript-prop-types"], "js");
+export class JavaScriptPropTypesTargetLanguage<
+    const DisplayName extends string = "JavaScript PropTypes",
+    const Names extends readonly string[] = readonly ["javascript-prop-types"],
+    const Extension extends string = "js"
+> extends TargetLanguage<DisplayName, Names, Extension> {
+    constructor(
+        displayName = "JavaScript PropTypes" as DisplayName,
+        names = ["javascript-prop-types"] as unknown as Names,
+        extension = "js" as Extension
+    ) {
+        super(displayName, names, extension);
     }
 
     protected getOptions(): Option<any>[] {

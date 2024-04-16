@@ -76,13 +76,17 @@ export abstract class TypeScriptFlowBaseTargetLanguage<
     ): JavaScriptRenderer;
 }
 
-export class TypeScriptTargetLanguage extends TypeScriptFlowBaseTargetLanguage<
-    "TypeScript",
-    ["typescript", "ts", "tsx"],
-    "ts"
-> {
-    constructor() {
-        super("TypeScript", ["typescript", "ts", "tsx"], "ts");
+export class TypeScriptTargetLanguage<
+    const DisplayName extends string = "TypeScript",
+    const Names extends readonly string[] = readonly ["typescript", "ts", "tsx"],
+    const Extension extends string = "ts"
+> extends TypeScriptFlowBaseTargetLanguage<DisplayName, Names, Extension> {
+    constructor(
+        displayName = "TypeScript" as DisplayName,
+        names = ["typescript", "ts", "tsx"] as unknown as Names,
+        extension = "ts" as Extension
+    ) {
+        super(displayName, names, extension);
     }
 
     protected makeRenderer(
@@ -351,9 +355,17 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
     }
 }
 
-export class FlowTargetLanguage extends TypeScriptFlowBaseTargetLanguage<"Flow", ["flow"], "js"> {
-    constructor() {
-        super("Flow", ["flow"], "js");
+export class FlowTargetLanguage<
+    const DisplayName extends string = "Flow",
+    const Names extends readonly string[] = readonly ["flow"],
+    const Extension extends string = "js"
+> extends TypeScriptFlowBaseTargetLanguage<DisplayName, Names, Extension> {
+    constructor(
+        displayName = "Flow" as DisplayName,
+        names = ["flow"] as unknown as Names,
+        extension = "js" as Extension
+    ) {
+        super(displayName, names, extension);
     }
 
     protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): FlowRenderer {

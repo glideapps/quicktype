@@ -70,9 +70,17 @@ const enumNamingFunction = funPrefixNamer("enumNamer", makeNameStyle("upper-unde
 const namingFunction = funPrefixNamer("genericNamer", makeNameStyle("underscore", legalizeName));
 const namedTypeNamingFunction = funPrefixNamer("typeNamer", makeNameStyle("pascal", legalizeName));
 
-export class PikeTargetLanguage extends TargetLanguage<"Pike", ["pike", "pikelang"], "pmod"> {
-    constructor() {
-        super("Pike", ["pike", "pikelang"], "pmod");
+export class PikeTargetLanguage<
+    const DisplayName extends string = "Pike",
+    const Names extends readonly string[] = readonly ["pike", "pikelang"],
+    const Extension extends string = "pmod"
+> extends TargetLanguage<DisplayName, Names, Extension> {
+    constructor(
+        displayName = "Pike" as DisplayName,
+        names = ["pike", "pikelang"] as unknown as Names,
+        extension = "pmod" as Extension
+    ) {
+        super(displayName, names, extension);
     }
     protected getOptions(): Option<any>[] {
         return [];

@@ -111,9 +111,17 @@ const namingStyles: Record<string, NamingStyle> = {
     }
 };
 
-export class RustTargetLanguage extends TargetLanguage<"Rust", ["rust", "rs", "rustlang"], "rs"> {
-    constructor() {
-        super("Rust", ["rust", "rs", "rustlang"], "rs");
+export class RustTargetLanguage<
+    const DisplayName extends string = "Rust",
+    const Names extends readonly string[] = readonly ["rust", "rs", "rustlang"],
+    const Extension extends string = "rs"
+> extends TargetLanguage<DisplayName, Names, Extension> {
+    constructor(
+        displayName = "Rust" as DisplayName,
+        names = ["rust", "rs", "rustlang"] as unknown as Names,
+        extension = "rs" as Extension
+    ) {
+        super(displayName, names, extension);
     }
 
     protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): RustRenderer {

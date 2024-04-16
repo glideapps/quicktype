@@ -34,9 +34,17 @@ export const elmOptions = {
     moduleName: new StringOption("module", "Generated module name", "NAME", "QuickType")
 };
 
-export class ElmTargetLanguage extends TargetLanguage<"Elm", ["elm"], "elm"> {
-    constructor() {
-        super("Elm", ["elm"], "elm");
+export class ElmTargetLanguage<
+    const DisplayName extends string = "Elm",
+    const Names extends readonly string[] = readonly ["elm"],
+    const Extension extends string = "elm"
+> extends TargetLanguage<DisplayName, Names, Extension> {
+    constructor(
+        displayName = "Elm" as DisplayName,
+        names = ["elm"] as unknown as Names,
+        extension = "elm" as Extension
+    ) {
+        super(displayName, names, extension);
     }
 
     protected getOptions(): Option<any>[] {

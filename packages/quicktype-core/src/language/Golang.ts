@@ -34,9 +34,17 @@ export const goOptions = {
     )
 };
 
-export class GoTargetLanguage extends TargetLanguage<"Go", ["go", "golang"], "go"> {
-    constructor() {
-        super("Go", ["go", "golang"], "go");
+export class GoTargetLanguage<
+    const DisplayName extends string = "Go",
+    const Names extends readonly string[] = readonly ["go", "golang"],
+    const Extension extends string = "go"
+> extends TargetLanguage<DisplayName, Names, Extension> {
+    constructor(
+        displayName = "Go" as DisplayName,
+        names = ["go", "golang"] as unknown as Names,
+        extension = "go" as Extension
+    ) {
+        super(displayName, names, extension);
     }
 
     protected getOptions(): Option<any>[] {

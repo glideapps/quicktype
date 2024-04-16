@@ -18,9 +18,17 @@ import { addDescriptionToSchema } from "../attributes/Description";
 import { Option } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
 
-export class JSONSchemaTargetLanguage extends TargetLanguage<"JSON Schema", ["schema", "json-schema"], "schema"> {
-    constructor() {
-        super("JSON Schema", ["schema", "json-schema"], "schema");
+export class JSONSchemaTargetLanguage<
+    const DisplayName extends string = "JSON Schema",
+    const Names extends readonly string[] = readonly ["schema", "json-schema"],
+    const Extension extends string = "schema"
+> extends TargetLanguage<DisplayName, Names, Extension> {
+    constructor(
+        displayName = "JSON Schema" as DisplayName,
+        names = ["schema", "json-schema"] as unknown as Names,
+        extension = "schema" as Extension
+    ) {
+        super(displayName, names, extension);
     }
 
     protected getOptions(): Option<any>[] {

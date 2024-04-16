@@ -34,9 +34,17 @@ export const phpOptions = {
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal)
 };
 
-export class PhpTargetLanguage extends TargetLanguage<"PHP", ["php"], "php"> {
-    constructor() {
-        super("PHP", ["php"], "php");
+export class PhpTargetLanguage<
+    const DisplayName extends string = "PHP",
+    const Names extends readonly string[] = readonly ["php"],
+    const Extension extends string = "php"
+> extends TargetLanguage<DisplayName, Names, Extension> {
+    constructor(
+        displayName = "PHP" as DisplayName,
+        names = ["php"] as unknown as Names,
+        extension = "php" as Extension
+    ) {
+        super(displayName, names, extension);
     }
 
     protected getOptions(): Option<any>[] {

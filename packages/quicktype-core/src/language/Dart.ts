@@ -61,9 +61,17 @@ export const dartOptions = {
     partName: new StringOption("part-name", "Use this name in `part` directive", "NAME", "", "secondary")
 };
 
-export class DartTargetLanguage extends TargetLanguage<"Dart", ["dart"], "dart"> {
-    constructor() {
-        super("Dart", ["dart"], "dart");
+export class DartTargetLanguage<
+    const DisplayName extends string = "Dart",
+    const Names extends readonly string[] = readonly ["dart"],
+    const Extension extends string = "dart"
+> extends TargetLanguage<DisplayName, Names, Extension> {
+    constructor(
+        displayName = "Dart" as DisplayName,
+        names = ["dart"] as unknown as Names,
+        extension = "dart" as Extension
+    ) {
+        super(displayName, names, extension);
     }
 
     protected getOptions(): Option<any>[] {
@@ -200,8 +208,8 @@ function dartNameStyle(startWithUpper: boolean, upperUnderscore: boolean, origin
     const firstWordStyle = upperUnderscore
         ? allUpperWordStyle
         : startWithUpper
-        ? firstUpperWordStyle
-        : allLowerWordStyle;
+          ? firstUpperWordStyle
+          : allLowerWordStyle;
     const restWordStyle = upperUnderscore ? allUpperWordStyle : firstUpperWordStyle;
     return combineWords(
         words,

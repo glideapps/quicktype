@@ -245,10 +245,10 @@ export class Scala3Renderer extends ConvenienceRenderer {
             delimiter === "curly"
                 ? ["{", "}"]
                 : delimiter === "paren"
-                ? ["(", ")"]
-                : delimiter === "none"
-                ? ["", ""]
-                : ["{", "})"];
+                  ? ["(", ")"]
+                  : delimiter === "none"
+                    ? ["", ""]
+                    : ["{", "})"];
         this.emitLine(line, " ", open);
         this.indent(f);
         this.emitLine(close);
@@ -670,9 +670,17 @@ export class CirceRenderer extends Scala3Renderer {
     }
 }
 
-export class Scala3TargetLanguage extends TargetLanguage<"Scala3", ["scala3"], "scala"> {
-    constructor() {
-        super("Scala3", ["scala3"], "scala");
+export class Scala3TargetLanguage<
+    const DisplayName extends string = "Scala3",
+    const Names extends readonly string[] = readonly ["scala3"],
+    const Extension extends string = "scala"
+> extends TargetLanguage<DisplayName, Names, Extension> {
+    constructor(
+        displayName = "Scala3" as DisplayName,
+        names = ["scala3"] as unknown as Names,
+        extension = "scala" as Extension
+    ) {
+        super(displayName, names, extension);
     }
 
     protected getOptions(): Option<any>[] {

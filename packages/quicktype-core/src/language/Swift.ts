@@ -137,9 +137,17 @@ export interface SwiftProperty {
     position: ForEachPosition;
 }
 
-export class SwiftTargetLanguage extends TargetLanguage<"Swift", ["swift", "swift4"], "swift"> {
-    constructor() {
-        super("Swift", ["swift", "swift4"], "swift");
+export class SwiftTargetLanguage<
+    const DisplayName extends string = "Swift",
+    const Names extends readonly string[] = readonly ["swift", "swift4"],
+    const Extension extends string = "swift"
+> extends TargetLanguage<DisplayName, Names, Extension> {
+    constructor(
+        displayName = "Swift" as DisplayName,
+        names = ["swift", "swift4"] as unknown as Names,
+        extension = "swift" as Extension
+    ) {
+        super(displayName, names, extension);
     }
 
     protected getOptions(): Option<any>[] {

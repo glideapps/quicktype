@@ -51,9 +51,17 @@ export const rubyOptions = {
     namespace: new StringOption("namespace", "Specify a wrapping Namespace", "NAME", "", "secondary")
 };
 
-export class RubyTargetLanguage extends TargetLanguage<"Ruby", ["ruby"], "rb"> {
-    constructor() {
-        super("Ruby", ["ruby"], "rb");
+export class RubyTargetLanguage<
+    const DisplayName extends string = "Ruby",
+    const Names extends readonly string[] = readonly ["ruby"],
+    const Extension extends string = "rb"
+> extends TargetLanguage<DisplayName, Names, Extension> {
+    constructor(
+        displayName = "Ruby" as DisplayName,
+        names = ["ruby"] as unknown as Names,
+        extension = "rb" as Extension
+    ) {
+        super(displayName, names, extension);
     }
 
     protected getOptions(): Option<any>[] {

@@ -22,9 +22,17 @@ import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { Option } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
 
-export class CrystalTargetLanguage extends TargetLanguage<"Crystal", ["crystal", "cr", "crystallang"], "cr"> {
-    constructor() {
-        super("Crystal", ["crystal", "cr", "crystallang"], "cr");
+export class CrystalTargetLanguage<
+    const DisplayName extends string = "Crystal",
+    const Names extends readonly string[] = readonly ["crystal", "cr", "crystallang"],
+    const Extension extends string = "cr"
+> extends TargetLanguage<DisplayName, Names, Extension> {
+    constructor(
+        displayName = "Crystal" as DisplayName,
+        names = ["crystal", "cr", "crystallang"] as unknown as Names,
+        extension = "cr" as Extension
+    ) {
+        super(displayName, names, extension);
     }
 
     protected makeRenderer(renderContext: RenderContext): CrystalRenderer {

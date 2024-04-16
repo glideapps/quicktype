@@ -43,13 +43,17 @@ export const objcOptions = {
     extraComments: new BooleanOption("extra-comments", "Extra comments", false)
 };
 
-export class ObjectiveCTargetLanguage extends TargetLanguage<
-    "Objective-C",
-    ["objc", "objective-c", "objectivec"],
-    "m"
-> {
-    constructor() {
-        super("Objective-C", ["objc", "objective-c", "objectivec"], "m");
+export class ObjectiveCTargetLanguage<
+    const DisplayName extends string = "Objective-C",
+    const Names extends readonly string[] = readonly ["objc", "objective-c", "objectivec"],
+    const Extension extends string = "m"
+> extends TargetLanguage<DisplayName, Names, Extension> {
+    constructor(
+        displayName = "Objective-C" as DisplayName,
+        names = ["objc", "objective-c", "objectivec"] as unknown as Names,
+        extension = "m" as Extension
+    ) {
+        super(displayName, names, extension);
     }
 
     protected getOptions(): Option<any>[] {

@@ -194,9 +194,17 @@ export const cSharpOptions = {
     keepPropertyName: new BooleanOption("keep-property-name", "Keep original field name generate", false)
 };
 
-export class CSharpTargetLanguage extends TargetLanguage<"C#", ["cs", "csharp"], "cs"> {
-    constructor() {
-        super("C#", ["cs", "csharp"], "cs");
+export class CSharpTargetLanguage<
+    const DisplayName extends string = "C#",
+    const Names extends readonly string[] = readonly ["cs", "csharp"],
+    const Extension extends string = "cs"
+> extends TargetLanguage<DisplayName, Names, Extension> {
+    constructor(
+        displayName = "C#" as DisplayName,
+        names = ["cs", "csharp"] as unknown as Names,
+        extension = "cs" as Extension
+    ) {
+        super(displayName, names, extension);
     }
 
     protected getOptions(): Option<any>[] {
