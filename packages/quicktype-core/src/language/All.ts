@@ -27,7 +27,7 @@ import { PhpTargetLanguage } from "./Php";
 import { TypeScriptEffectSchemaTargetLanguage } from "./TypeScriptEffectSchema";
 import { ElixirTargetLanguage } from "./Elixir";
 
-import type { LanguageName, LanguageNameMap } from "../types";
+import type { LanguageDisplayName, LanguageName, LanguageNameMap } from "../types";
 
 export const all = [
     new CJSONTargetLanguage(),
@@ -71,4 +71,17 @@ export function languageNamed<Name extends LanguageName>(
     }
 
     return foundLanguage as LanguageNameMap[Name];
+}
+
+export function isLanguageName(maybeName: string): maybeName is LanguageName {
+    if (all.some(lang => (lang.names as readonly string[]).includes(maybeName))) {
+        return true;
+    }
+    return false;
+}
+export function isLanguageDisplayName(maybeName: string): maybeName is LanguageDisplayName {
+    if (all.some(lang => lang.displayName === maybeName)) {
+        return true;
+    }
+    return false;
 }

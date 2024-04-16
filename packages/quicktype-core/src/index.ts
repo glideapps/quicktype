@@ -21,7 +21,7 @@ export { Ref, JSONSchemaType, JSONSchemaAttributes } from "./input/JSONSchemaInp
 export { RenderContext } from "./Renderer";
 export { Option, OptionDefinition, getOptionValues, OptionValues } from "./RendererOptions";
 export { TargetLanguage, MultiFileRenderResult } from "./TargetLanguage";
-export { all as defaultTargetLanguages, languageNamed } from "./language/All";
+export { all as defaultTargetLanguages, languageNamed, isLanguageName } from "./language/All";
 export {
     MultiWord,
     Sourcelike,
@@ -81,6 +81,7 @@ export { StringTypes } from "./attributes/StringTypes";
 export { removeNullFromUnion, matchType, nullableFromUnion } from "./TypeUtils";
 export { ConvenienceRenderer } from "./ConvenienceRenderer";
 export { uriTypeAttributeKind } from "./attributes/URIAttributes";
+export { type LanguageName, type LanguageDisplayName } from "./types";
 
 export { CJSONTargetLanguage, CJSONRenderer, cJSONOptions } from "./language/CJSON";
 export { CPlusPlusTargetLanguage, CPlusPlusRenderer, cPlusPlusOptions } from "./language/CPlusPlus";
