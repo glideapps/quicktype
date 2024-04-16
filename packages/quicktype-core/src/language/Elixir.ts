@@ -147,11 +147,18 @@ export const elixirOptions = {
     namespace: new StringOption("namespace", "Specify a module namespace", "NAME", "")
 };
 
-export class ElixirTargetLanguage extends TargetLanguage {
-    constructor() {
-        super("Elixir", ["elixir"], "ex");
+export class ElixirTargetLanguage<
+    const DisplayName extends string = "Elixir",
+    const Names extends readonly string[] = readonly ["elixir"],
+    const Extension extends string = "ex"
+> extends TargetLanguage<DisplayName, Names, Extension> {
+    constructor(
+        displayName = "Elixir" as DisplayName,
+        names = ["elixir"] as unknown as Names,
+        extension = "ex" as Extension
+    ) {
+        super(displayName, names, extension);
     }
-
     protected getOptions(): Option<any>[] {
         return [elixirOptions.justTypes, elixirOptions.namespace];
     }
