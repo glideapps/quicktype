@@ -19,9 +19,9 @@ import { Option } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
 
 export class JSONSchemaTargetLanguage<
-    const DisplayName extends string = "JSON Schema",
-    const Names extends readonly string[] = readonly ["schema", "json-schema"],
-    const Extension extends string = "schema"
+    DisplayName extends string = "JSON Schema",
+    Names extends readonly string[] = readonly ["schema", "json-schema"],
+    Extension extends string = "schema"
 > extends TargetLanguage<DisplayName, Names, Extension> {
     constructor(
         displayName = "JSON Schema" as DisplayName,

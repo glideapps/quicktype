@@ -62,9 +62,9 @@ export const dartOptions = {
 };
 
 export class DartTargetLanguage<
-    const DisplayName extends string = "Dart",
-    const Names extends readonly string[] = readonly ["dart"],
-    const Extension extends string = "dart"
+    DisplayName extends string = "Dart",
+    Names extends readonly string[] = readonly ["dart"],
+    Extension extends string = "dart"
 > extends TargetLanguage<DisplayName, Names, Extension> {
     constructor(
         displayName = "Dart" as DisplayName,

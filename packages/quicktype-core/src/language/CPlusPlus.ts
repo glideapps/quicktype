@@ -119,9 +119,9 @@ export const cPlusPlusOptions = {
 };
 
 export class CPlusPlusTargetLanguage<
-    const DisplayName extends string = "C++",
-    const Names extends readonly string[] = readonly ["c++", "cpp", "cplusplus"],
-    const Extension extends string = "cpp"
+    DisplayName extends string = "C++",
+    Names extends readonly string[] = readonly ["c++", "cpp", "cplusplus"],
+    Extension extends string = "cpp"
 > extends TargetLanguage<DisplayName, Names, Extension> {
     constructor(
         displayName = "C++" as DisplayName,

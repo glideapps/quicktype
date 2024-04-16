@@ -26,9 +26,9 @@ export const typeScriptEffectSchemaOptions = {
 };
 
 export class TypeScriptEffectSchemaTargetLanguage<
-    const DisplayName extends string = "TypeScript Effect Schema",
-    const Names extends readonly string[] = readonly ["typescript-effect-schema"],
-    const Extension extends string = "ts"
+    DisplayName extends string = "TypeScript Effect Schema",
+    Names extends readonly string[] = readonly ["typescript-effect-schema"],
+    Extension extends string = "ts"
 > extends TargetLanguage<DisplayName, Names, Extension> {
     constructor(
         displayName = "TypeScript Effect Schema" as DisplayName,

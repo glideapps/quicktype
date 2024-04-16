@@ -38,9 +38,9 @@ export const typeScriptZodOptions = {
 };
 
 export class TypeScriptZodTargetLanguage<
-    const DisplayName extends string = "TypeScript Zod",
-    const Names extends readonly string[] = readonly ["typescript-zod"],
-    const Extension extends string = "ts"
+    DisplayName extends string = "TypeScript Zod",
+    Names extends readonly string[] = readonly ["typescript-zod"],
+    Extension extends string = "ts"
 > extends TargetLanguage<DisplayName, Names, Extension> {
     constructor(
         displayName = "TypeScript Zod" as DisplayName,

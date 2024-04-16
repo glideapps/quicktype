@@ -35,9 +35,9 @@ export const phpOptions = {
 };
 
 export class PhpTargetLanguage<
-    const DisplayName extends string = "PHP",
-    const Names extends readonly string[] = readonly ["php"],
-    const Extension extends string = "php"
+    DisplayName extends string = "PHP",
+    Names extends readonly string[] = readonly ["php"],
+    Extension extends string = "php"
 > extends TargetLanguage<DisplayName, Names, Extension> {
     constructor(
         displayName = "PHP" as DisplayName,

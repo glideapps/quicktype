@@ -35,9 +35,9 @@ export const elmOptions = {
 };
 
 export class ElmTargetLanguage<
-    const DisplayName extends string = "Elm",
-    const Names extends readonly string[] = readonly ["elm"],
-    const Extension extends string = "elm"
+    DisplayName extends string = "Elm",
+    Names extends readonly string[] = readonly ["elm"],
+    Extension extends string = "elm"
 > extends TargetLanguage<DisplayName, Names, Extension> {
     constructor(
         displayName = "Elm" as DisplayName,

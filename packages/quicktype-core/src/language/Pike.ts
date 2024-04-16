@@ -71,9 +71,9 @@ const namingFunction = funPrefixNamer("genericNamer", makeNameStyle("underscore"
 const namedTypeNamingFunction = funPrefixNamer("typeNamer", makeNameStyle("pascal", legalizeName));
 
 export class PikeTargetLanguage<
-    const DisplayName extends string = "Pike",
-    const Names extends readonly string[] = readonly ["pike", "pikelang"],
-    const Extension extends string = "pmod"
+    DisplayName extends string = "Pike",
+    Names extends readonly string[] = readonly ["pike", "pikelang"],
+    Extension extends string = "pmod"
 > extends TargetLanguage<DisplayName, Names, Extension> {
     constructor(
         displayName = "Pike" as DisplayName,

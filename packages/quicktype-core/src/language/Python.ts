@@ -130,9 +130,9 @@ export const pythonOptions = {
 };
 
 export class PythonTargetLanguage<
-    const DisplayName extends string = "Python",
-    const Names extends readonly string[] = readonly ["python", "py"],
-    const Extension extends string = "py"
+    DisplayName extends string = "Python",
+    Names extends readonly string[] = readonly ["python", "py"],
+    Extension extends string = "py"
 > extends TargetLanguage<DisplayName, Names, Extension> {
     constructor(
         displayName = "Python" as DisplayName,

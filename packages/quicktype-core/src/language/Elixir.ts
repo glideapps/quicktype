@@ -148,9 +148,9 @@ export const elixirOptions = {
 };
 
 export class ElixirTargetLanguage<
-    const DisplayName extends string = "Elixir",
-    const Names extends readonly string[] = readonly ["elixir"],
-    const Extension extends string = "ex"
+    DisplayName extends string = "Elixir",
+    Names extends readonly string[] = readonly ["elixir"],
+    Extension extends string = "ex"
 > extends TargetLanguage<DisplayName, Names, Extension> {
     constructor(
         displayName = "Elixir" as DisplayName,

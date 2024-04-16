@@ -62,9 +62,9 @@ export const kotlinOptions = {
 };
 
 export class KotlinTargetLanguage<
-    const DisplayName extends string = "Kotlin",
-    const Names extends readonly string[] = readonly ["kotlin"],
-    const Extension extends string = "kt"
+    DisplayName extends string = "Kotlin",
+    Names extends readonly string[] = readonly ["kotlin"],
+    Extension extends string = "kt"
 > extends TargetLanguage<DisplayName, Names, Extension> {
     constructor(
         displayName = "Kotlin" as DisplayName,

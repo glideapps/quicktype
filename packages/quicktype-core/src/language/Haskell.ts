@@ -30,9 +30,9 @@ export const haskellOptions = {
 };
 
 export class HaskellTargetLanguage<
-    const DisplayName extends string = "Haskell",
-    const Names extends readonly string[] = readonly ["haskell"],
-    const Extension extends string = "haskell"
+    DisplayName extends string = "Haskell",
+    Names extends readonly string[] = readonly ["haskell"],
+    Extension extends string = "haskell"
 > extends TargetLanguage<DisplayName, Names, Extension> {
     constructor(
         displayName = "Haskell" as DisplayName,

@@ -77,9 +77,9 @@ export abstract class TypeScriptFlowBaseTargetLanguage<
 }
 
 export class TypeScriptTargetLanguage<
-    const DisplayName extends string = "TypeScript",
-    const Names extends readonly string[] = readonly ["typescript", "ts", "tsx"],
-    const Extension extends string = "ts"
+    DisplayName extends string = "TypeScript",
+    Names extends readonly string[] = readonly ["typescript", "ts", "tsx"],
+    Extension extends string = "ts"
 > extends TypeScriptFlowBaseTargetLanguage<DisplayName, Names, Extension> {
     constructor(
         displayName = "TypeScript" as DisplayName,
@@ -356,9 +356,9 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
 }
 
 export class FlowTargetLanguage<
-    const DisplayName extends string = "Flow",
-    const Names extends readonly string[] = readonly ["flow"],
-    const Extension extends string = "js"
+    DisplayName extends string = "Flow",
+    Names extends readonly string[] = readonly ["flow"],
+    Extension extends string = "js"
 > extends TypeScriptFlowBaseTargetLanguage<DisplayName, Names, Extension> {
     constructor(
         displayName = "Flow" as DisplayName,

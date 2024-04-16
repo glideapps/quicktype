@@ -511,9 +511,9 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
 }
 
 export class SmithyTargetLanguage<
-    const DisplayName extends string = "Smithy",
-    const Names extends readonly string[] = readonly ["Smithy"],
-    const Extension extends string = "smithy"
+    DisplayName extends string = "Smithy",
+    Names extends readonly string[] = readonly ["Smithy"],
+    Extension extends string = "smithy"
 > extends TargetLanguage<DisplayName, Names, Extension> {
     constructor(
         displayName = "Smithy" as DisplayName,

@@ -112,9 +112,9 @@ const namingStyles: Record<string, NamingStyle> = {
 };
 
 export class RustTargetLanguage<
-    const DisplayName extends string = "Rust",
-    const Names extends readonly string[] = readonly ["rust", "rs", "rustlang"],
-    const Extension extends string = "rs"
+    DisplayName extends string = "Rust",
+    Names extends readonly string[] = readonly ["rust", "rs", "rustlang"],
+    Extension extends string = "rs"
 > extends TargetLanguage<DisplayName, Names, Extension> {
     constructor(
         displayName = "Rust" as DisplayName,

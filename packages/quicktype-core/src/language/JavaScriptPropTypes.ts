@@ -40,9 +40,9 @@ export const javaScriptPropTypesOptions = {
 };
 
 export class JavaScriptPropTypesTargetLanguage<
-    const DisplayName extends string = "JavaScript PropTypes",
-    const Names extends readonly string[] = readonly ["javascript-prop-types"],
-    const Extension extends string = "js"
+    DisplayName extends string = "JavaScript PropTypes",
+    Names extends readonly string[] = readonly ["javascript-prop-types"],
+    Extension extends string = "js"
 > extends TargetLanguage<DisplayName, Names, Extension> {
     constructor(
         displayName = "JavaScript PropTypes" as DisplayName,

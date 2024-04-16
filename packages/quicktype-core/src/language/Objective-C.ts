@@ -44,9 +44,9 @@ export const objcOptions = {
 };
 
 export class ObjectiveCTargetLanguage<
-    const DisplayName extends string = "Objective-C",
-    const Names extends readonly string[] = readonly ["objc", "objective-c", "objectivec"],
-    const Extension extends string = "m"
+    DisplayName extends string = "Objective-C",
+    Names extends readonly string[] = readonly ["objc", "objective-c", "objectivec"],
+    Extension extends string = "m"
 > extends TargetLanguage<DisplayName, Names, Extension> {
     constructor(
         displayName = "Objective-C" as DisplayName,

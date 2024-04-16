@@ -23,9 +23,9 @@ import { Option } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
 
 export class CrystalTargetLanguage<
-    const DisplayName extends string = "Crystal",
-    const Names extends readonly string[] = readonly ["crystal", "cr", "crystallang"],
-    const Extension extends string = "cr"
+    DisplayName extends string = "Crystal",
+    Names extends readonly string[] = readonly ["crystal", "cr", "crystallang"],
+    Extension extends string = "cr"
 > extends TargetLanguage<DisplayName, Names, Extension> {
     constructor(
         displayName = "Crystal" as DisplayName,

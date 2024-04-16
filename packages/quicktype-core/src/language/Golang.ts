@@ -35,9 +35,9 @@ export const goOptions = {
 };
 
 export class GoTargetLanguage<
-    const DisplayName extends string = "Go",
-    const Names extends readonly string[] = readonly ["go", "golang"],
-    const Extension extends string = "go"
+    DisplayName extends string = "Go",
+    Names extends readonly string[] = readonly ["go", "golang"],
+    Extension extends string = "go"
 > extends TargetLanguage<DisplayName, Names, Extension> {
     constructor(
         displayName = "Go" as DisplayName,

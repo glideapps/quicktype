@@ -54,9 +54,9 @@ export const javaOptions = {
 };
 
 export class JavaTargetLanguage<
-    const DisplayName extends string = "Java",
-    const Names extends readonly string[] = readonly ["java"],
-    const Extension extends string = "java"
+    DisplayName extends string = "Java",
+    Names extends readonly string[] = readonly ["java"],
+    Extension extends string = "java"
 > extends TargetLanguage<DisplayName, Names, Extension> {
     constructor(
         displayName = "Java" as DisplayName,

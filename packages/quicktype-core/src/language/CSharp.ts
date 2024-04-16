@@ -195,9 +195,9 @@ export const cSharpOptions = {
 };
 
 export class CSharpTargetLanguage<
-    const DisplayName extends string = "C#",
-    const Names extends readonly string[] = readonly ["cs", "csharp"],
-    const Extension extends string = "cs"
+    DisplayName extends string = "C#",
+    Names extends readonly string[] = readonly ["cs", "csharp"],
+    Extension extends string = "cs"
 > extends TargetLanguage<DisplayName, Names, Extension> {
     constructor(
         displayName = "C#" as DisplayName,

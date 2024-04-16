@@ -52,9 +52,9 @@ export const rubyOptions = {
 };
 
 export class RubyTargetLanguage<
-    const DisplayName extends string = "Ruby",
-    const Names extends readonly string[] = readonly ["ruby"],
-    const Extension extends string = "rb"
+    DisplayName extends string = "Ruby",
+    Names extends readonly string[] = readonly ["ruby"],
+    Extension extends string = "rb"
 > extends TargetLanguage<DisplayName, Names, Extension> {
     constructor(
         displayName = "Ruby" as DisplayName,

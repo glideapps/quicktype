@@ -671,9 +671,9 @@ export class CirceRenderer extends Scala3Renderer {
 }
 
 export class Scala3TargetLanguage<
-    const DisplayName extends string = "Scala3",
-    const Names extends readonly string[] = readonly ["scala3"],
-    const Extension extends string = "scala"
+    DisplayName extends string = "Scala3",
+    Names extends readonly string[] = readonly ["scala3"],
+    Extension extends string = "scala"
 > extends TargetLanguage<DisplayName, Names, Extension> {
     constructor(
         displayName = "Scala3" as DisplayName,
