@@ -15,7 +15,8 @@ import {
     jsonInputForTargetLanguage,
     RendererOptions,
     Options,
-    inferenceFlagNames
+    inferenceFlagNames,
+    isLanguageName
 } from "quicktype-core";
 import { schemaForTypeScriptSources } from "quicktype-typescript-input";
 
@@ -62,15 +63,16 @@ async function pickTargetLanguage(): Promise<TargetLanguagePick> {
     const languageChoices = defaultTargetLanguages.map(l => l.displayName).sort();
     let chosenName = await vscode.window.showQuickPick(languageChoices);
     const cancelled = chosenName === undefined;
-    if (chosenName === undefined) {
-        chosenName = "typescript";
+    if (chosenName === undefined || !isLanguageName(chosenName)) {
+        return { cancelled, lang: languageNamed("typescript") };
     }
-    return { cancelled, lang: languageNamed(chosenName)! };
+    return { cancelled, lang: languageNamed(chosenName) };
 }
 
 async function getTargetLanguage(editor: vscode.TextEditor): Promise<TargetLanguagePick> {
     const documentLanguage = editor.document.languageId;
-    const currentLanguage = languageNamed(documentLanguage);
+    const languageName = isLanguageName(documentLanguage) ? documentLanguage : "typescript";
+    const currentLanguage = languageNamed(languageName);
     if (currentLanguage !== undefined) {
         return {
             cancelled: false,
@@ -343,8 +345,9 @@ function deduceTargetLanguage(): TargetLanguage {
     }
     const sorted = Array.from(counts).sort(([_na, ca], [_nb, cb]) => cb - ca);
     for (const [name] of sorted) {
-        const lang = languageNamed(name);
-        if (lang !== undefined) return lang;
+        if (isLanguageName(name)) {
+            return languageNamed(name);
+        }
     }
     return languageNamed("typescript")!;
 }
@@ -450,7 +453,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     );
 
     const maybeName = extensionContext.workspaceState.get<string>(lastTargetLanguageUsedKey);
-    if (typeof maybeName === "string") {
+    if (typeof maybeName === "string" && isLanguageName(maybeName)) {
         explicitlySetTargetLanguage = languageNamed(maybeName);
     }
 }
