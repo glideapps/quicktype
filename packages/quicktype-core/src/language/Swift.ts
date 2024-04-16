@@ -49,6 +49,13 @@ export const swiftOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     convenienceInitializers: new BooleanOption("initializers", "Generate initializers and mutators", true),
     explicitCodingKeys: new BooleanOption("coding-keys", "Explicit CodingKey values in Codable types", true),
+    codingKeysProtocol: new StringOption(
+        "coding-keys-protocol",
+        "CodingKeys implements protocols",
+        "protocol1, protocol2...",
+        "",
+        "secondary"
+    ),
     alamofire: new BooleanOption("alamofire", "Alamofire extensions", false),
     namedTypePrefix: new StringOption("type-prefix", "Prefix for type names", "PREFIX", "", "secondary"),
     useClasses: new EnumOption("struct-or-class", "Structs or classes", [
@@ -142,6 +149,7 @@ export class SwiftTargetLanguage extends TargetLanguage<"Swift", ["swift", "swif
             swiftOptions.dense,
             swiftOptions.convenienceInitializers,
             swiftOptions.explicitCodingKeys,
+            swiftOptions.codingKeysProtocol,
             swiftOptions.accessLevel,
             swiftOptions.alamofire,
             swiftOptions.linux,
@@ -745,7 +753,13 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 });
                 if (!allPropertiesRedundant && c.getProperties().size > 0) {
                     this.ensureBlankLine();
-                    this.emitBlock("enum CodingKeys: String, CodingKey", () => {
+                    let enumDeclaration = this.accessLevel;
+                    enumDeclaration += "enum CodingKeys: String, CodingKey";
+                    if (this._options.codingKeysProtocol && this._options.codingKeysProtocol.length > 0) {
+                        enumDeclaration += ", ";
+                        enumDeclaration += this._options.codingKeysProtocol;
+                    }
+                    this.emitBlock(enumDeclaration, () => {
                         for (const group of groups) {
                             const { name, label } = group[0];
                             if (this._options.explicitCodingKeys && label !== undefined) {

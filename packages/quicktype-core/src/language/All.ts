@@ -25,6 +25,7 @@ import { HaskellTargetLanguage } from "./Haskell";
 import { TypeScriptZodTargetLanguage } from "./TypeScriptZod";
 import { PhpTargetLanguage } from "./Php";
 import { TypeScriptEffectSchemaTargetLanguage } from "./TypeScriptEffectSchema";
+import { ElixirTargetLanguage } from "./Elixir";
 
 import type { LanguageName, LanguageNameMap } from "../types";
 
@@ -35,6 +36,7 @@ export const all = [
     new CSharpTargetLanguage(),
     new ElmTargetLanguage(),
     new DartTargetLanguage(),
+    new ElixirTargetLanguage(),
     new FlowTargetLanguage(),
     new GoTargetLanguage(),
     new HaskellTargetLanguage(),

@@ -36,6 +36,7 @@ jobs:
                     - ruby
                     - php
                     - scala3,schema-scala3
+                    - elixir,schema-elixir,graphql-elixir
 
                     # Partially working
                     # - schema-typescript # TODO Unify with typescript once fixed
@@ -175,6 +176,13 @@ jobs:
               uses: VirtusLab/scala-cli-setup@main
             - run: echo '@main def hello() = println("We need this spam print statement for bloop to exit correctly...")' | scala-cli _
               if: ${{ contains(matrix.fixture, 'scala3') }}
+
+            - name: Install Elixir
+              if: ${{ contains(matrix.fixture, 'elixir') }}
+              uses: erlef/setup-beam@v1
+              with:
+                  elixir-version: "1.15.7"
+                  otp-version: "26.0"
 
             - run: QUICKTEST=true FIXTURE=${{ matrix.fixture }} npm test
 

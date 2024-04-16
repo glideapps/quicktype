@@ -48,7 +48,7 @@ import {
     iterableFirst
 } from "collection-utils";
 
-import unicode from "unicode-properties";
+import * as unicode from "unicode-properties";
 
 const forbiddenTypeNames = [
     "Any",
@@ -716,7 +716,7 @@ export class JSONPythonRenderer extends PythonRenderer {
 
     protected emitToFloatConverter(): void {
         this.emitBlock(["def to_float(", this.typingDecl("x", "Any"), ")", this.typeHint(" -> float"), ":"], () => {
-            this.emitLine("assert isinstance(x, float)");
+            this.emitLine("assert isinstance(x, (int, float))");
             this.emitLine("return x");
         });
     }

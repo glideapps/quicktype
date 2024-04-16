@@ -51,7 +51,7 @@ import {
 } from "../Transformers";
 import { RenderContext } from "../Renderer";
 import { minMaxLengthForType, minMaxValueForType } from "../attributes/Constraints";
-import unicode from "unicode-properties";
+import * as unicode from "unicode-properties";
 
 export enum Framework {
     Newtonsoft,

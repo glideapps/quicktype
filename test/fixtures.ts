@@ -254,7 +254,10 @@ abstract class LanguageFixture extends Fixture {
 }
 
 class JSONFixture extends LanguageFixture {
-    constructor(language: languages.Language, public name: string = language.name) {
+    constructor(
+        language: languages.Language,
+        public name: string = language.name
+    ) {
         super(language);
     }
 
@@ -568,7 +571,10 @@ class JSONTypeScriptFixture extends JSONToXToYFixture {
 
 // This fixture tests generating code from JSON Schema.
 class JSONSchemaFixture extends LanguageFixture {
-    constructor(language: languages.Language, readonly name: string = `schema-${language.name}`) {
+    constructor(
+        language: languages.Language,
+        readonly name: string = `schema-${language.name}`
+    ) {
         super(language);
     }
 
@@ -699,7 +705,10 @@ class GraphQLFixture extends LanguageFixture {
 }
 
 class CommandSuccessfulLanguageFixture extends LanguageFixture {
-    constructor(language: languages.Language, public name: string = language.name) {
+    constructor(
+        language: languages.Language,
+        public name: string = language.name
+    ) {
         super(language);
     }
 
@@ -821,6 +830,7 @@ export const allFixtures: Fixture[] = [
     new JSONFixture(languages.DartLanguage),
     new JSONFixture(languages.PikeLanguage),
     new JSONFixture(languages.HaskellLanguage),
+    new JSONFixture(languages.ElixirLanguage),
     new JSONSchemaJSONFixture(languages.CSharpLanguage),
     new JSONTypeScriptFixture(languages.CSharpLanguage),
     // new JSONSchemaFixture(languages.CrystalLanguage),
@@ -845,6 +855,7 @@ export const allFixtures: Fixture[] = [
     new JSONSchemaFixture(languages.DartLanguage),
     new JSONSchemaFixture(languages.PikeLanguage),
     new JSONSchemaFixture(languages.HaskellLanguage),
+    new JSONSchemaFixture(languages.ElixirLanguage),
     // FIXME: Why are we missing so many language with GraphQL?
     new GraphQLFixture(languages.CSharpLanguage),
     new GraphQLFixture(languages.JavaLanguage),
@@ -863,5 +874,6 @@ export const allFixtures: Fixture[] = [
     new GraphQLFixture(languages.PikeLanguage),
     new GraphQLFixture(languages.HaskellLanguage),
     new GraphQLFixture(languages.PHPLanguage),
+    new GraphQLFixture(languages.ElixirLanguage),
     new CommandSuccessfulLanguageFixture(languages.JavaScriptPropTypesLanguage)
 ];
