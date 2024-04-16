@@ -37,7 +37,8 @@ import {
     getStream,
     readableFromFileOrURL,
     readFromFileOrURL,
-    FetchingJSONSchemaStore
+    FetchingJSONSchemaStore,
+    isLanguageName
 } from "quicktype-core";
 import { schemaForTypeScriptSources } from "quicktype-typescript-input";
 import { GraphQLInput } from "quicktype-graphql-input";
@@ -264,11 +265,12 @@ function inferCLIOptions(opts: Partial<CLIOptions>, targetLanguage: TargetLangua
         language = targetLanguage;
     } else {
         const languageName = opts.lang !== undefined ? opts.lang : inferLang(opts, defaultDefaultTargetLanguageName);
-        const maybeLanguage = languageNamed(languageName);
-        if (maybeLanguage === undefined) {
+
+        if (isLanguageName(languageName)) {
+            language = languageNamed(languageName);
+        } else {
             return messageError("DriverUnknownOutputLanguage", { lang: languageName });
         }
-        language = maybeLanguage;
     }
 
     /* tslint:disable:strict-boolean-expressions */
@@ -303,7 +305,7 @@ function inferCLIOptions(opts: Partial<CLIOptions>, targetLanguage: TargetLangua
     return options;
 }
 
-function makeLangTypeLabel(targetLanguages: TargetLanguage[]): string {
+function makeLangTypeLabel(targetLanguages: readonly TargetLanguage[]): string {
     assert(targetLanguages.length > 0, "Must have at least one target language");
     return targetLanguages.map(r => _.minBy(r.names, s => s.length)).join("|");
 }
@@ -322,7 +324,7 @@ function dashedFromCamelCase(name: string): string {
         .join("-");
 }
 
-function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinition[] {
+function makeOptionDefinitions(targetLanguages: readonly TargetLanguage[]): OptionDefinition[] {
     const beforeLang: OptionDefinition[] = [
         {
             name: "out",
@@ -504,7 +506,7 @@ const tableOptionsForOptions: TableOptions = {
     ]
 };
 
-function makeSectionsBeforeRenderers(targetLanguages: TargetLanguage[]): UsageSection[] {
+function makeSectionsBeforeRenderers(targetLanguages: readonly TargetLanguage[]): UsageSection[] {
     const langDisplayNames = targetLanguages.map(r => r.displayName).join(", ");
 
     return [
@@ -574,7 +576,8 @@ export function parseCLIOptions(argv: string[], targetLanguage?: TargetLanguage)
     // twice.  This is the first parse to get the renderer:
     const incompleteOptions = inferCLIOptions(parseOptions(optionDefinitions, argv, true), targetLanguage);
     if (targetLanguage === undefined) {
-        targetLanguage = getTargetLanguage(incompleteOptions.lang);
+        const languageName = isLanguageName(incompleteOptions.lang) ? incompleteOptions.lang : "typescript";
+        targetLanguage = getTargetLanguage(languageName);
     }
     const rendererOptionDefinitions = targetLanguage.cliOptionDefinitions.actual;
     // Use the global options as well as the renderer options from now on:
@@ -615,7 +618,7 @@ function parseOptions(definitions: OptionDefinition[], argv: string[], partial: 
     return options;
 }
 
-function usage(targetLanguages: TargetLanguage[]) {
+function usage(targetLanguages: readonly TargetLanguage[]) {
     const rendererSections: UsageSection[] = [];
 
     for (const language of targetLanguages) {
@@ -696,7 +699,8 @@ export function jsonInputForTargetLanguage(
     handleJSONRefs = false
 ): JSONInput<Readable> {
     if (typeof targetLanguage === "string") {
-        targetLanguage = defined(languageNamed(targetLanguage, languages));
+        const languageName = isLanguageName(targetLanguage) ? targetLanguage : "typescript";
+        targetLanguage = defined(languageNamed(languageName, languages));
     }
     const compressedJSON = new CompressedJSONFromStream(targetLanguage.dateTimeRecognizer, handleJSONRefs);
     return new JSONInput(compressedJSON);
@@ -870,10 +874,10 @@ export async function makeQuicktypeOptions(
         }
     }
 
-    const lang = languageNamed(options.lang, targetLanguages);
-    if (lang === undefined) {
+    if (!isLanguageName(options.lang)) {
         return messageError("DriverUnknownOutputLanguage", { lang: options.lang });
     }
+    const lang = languageNamed(options.lang, targetLanguages);
 
     const quicktypeOptions: Partial<Options> = {
         lang,
