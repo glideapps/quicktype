@@ -6,7 +6,8 @@ import { defined, exceptionToString } from "@glideapps/ts-necessities";
 import { messageError, panic } from "../../index";
 
 const isURL = require("is-url");
-import fetch from "cross-fetch";
+
+const fetch = (global as any).fetch ?? require("cross-fetch").default;
 
 interface HttpHeaders {
     [key: string]: string;
