@@ -206,6 +206,16 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
     }
 
     protected emitTypes(): void {
+        // emit primitive top levels
+        this.forEachTopLevel("none", (t, name) => {
+            if (!t.isPrimitive()) {
+                return;
+            }
+            this.ensureBlankLine();
+            this.emitDescription(this.descriptionForType(t));
+            this.emitLine("type ", name, " = ", this.sourceFor(t).source, ";");
+        });
+
         this.forEachNamedType(
             "leading-and-interposing",
             (c: ClassType, n: Name) => this.emitClass(c, n),
@@ -336,6 +346,10 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
                 this.emitClassBlockBody(c);
             }
         );
+    }
+
+    protected emitSourceStructure() {
+        super.emitSourceStructure();
     }
 }
 
