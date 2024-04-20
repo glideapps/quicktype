@@ -8,71 +8,76 @@ import { hasOwnProperty } from "collection-utils";
  */
 export type OptionKind = "primary" | "secondary";
 
-export interface OptionDefinition {
-    name: string;
+export interface OptionDefinition<Name extends string, T> {
+    name: Name;
+    description: string;
     type: StringConstructor | BooleanConstructor;
     kind?: OptionKind;
     renderer?: boolean;
     alias?: string;
     multiple?: boolean;
     defaultOption?: boolean;
-    defaultValue?: any;
+    defaultValue?: T;
     typeLabel?: string;
-    description: string;
-    legalValues?: string[];
 }
 
 /**
  * The superclass for target language options.  You probably want to use one of its
  * subclasses, `BooleanOption`, `EnumOption`, or `StringOption`.
  */
-export abstract class Option<T> {
-    readonly definition: OptionDefinition;
+export abstract class Option<Name extends string, T> {
+    readonly definition: OptionDefinition<Name, T>;
 
-    constructor(definition: OptionDefinition) {
+    constructor(definition: OptionDefinition<Name, T>) {
         definition.renderer = true;
         this.definition = definition;
         assert(definition.kind !== undefined, "Renderer option kind must be defined");
     }
 
-    getValue(values: { [name: string]: any }): T {
-        const value = values[this.definition.name];
-        if (value === undefined) {
-            return this.definition.defaultValue;
-        }
-        return value;
+    getValue(values: Record<string, unknown>): T {
+        return (values[this.name] ?? this.definition.defaultValue) as T;
     }
 
-    get cliDefinitions(): { display: OptionDefinition[]; actual: OptionDefinition[] } {
+    get name(): Name {
+        return this.definition.name;
+    }
+
+    get cliDefinitions(): { display: OptionDefinition<Name, T>[]; actual: OptionDefinition<Name, T>[] } {
         return { actual: [this.definition], display: [this.definition] };
     }
 }
 
-export type OptionValueType<O> = O extends Option<infer T> ? T : never;
+export type OptionValueType<O> = O extends Option<infer Name, infer T> ? T : never;
 export type OptionValues<T> = { [P in keyof T]: OptionValueType<T[P]> };
 
-export function getOptionValues<T extends { [name: string]: Option<any> }>(
-    options: T,
+export function getOptionValues<Name extends string, T, Options extends Record<string, Option<Name, T>>>(
+    options: Options,
     untypedOptionValues: { [name: string]: any }
-): OptionValues<T> {
+): OptionValues<Options> {
     const optionValues: { [name: string]: any } = {};
     for (const name of Object.getOwnPropertyNames(options)) {
-        optionValues[name] = options[name].getValue(untypedOptionValues);
+        const option = options[name];
+        const value = option.getValue(untypedOptionValues);
+        if (option instanceof EnumOption) {
+            optionValues[name] = option.getEnumValue(value);
+        } else {
+            optionValues[name] = value;
+        }
     }
-    return optionValues as OptionValues<T>;
+    return optionValues as OptionValues<Options>;
 }
 
 /**
  * A target language option that allows setting a boolean flag.
  */
-export class BooleanOption extends Option<boolean> {
+export class BooleanOption<Name extends string> extends Option<Name, boolean> {
     /**
      * @param name The shorthand name.
      * @param description Short-ish description of the option.
      * @param defaultValue The default value.
      * @param kind Whether it's a primary or secondary option.
      */
-    constructor(name: string, description: string, defaultValue: boolean, kind: OptionKind = "primary") {
+    constructor(name: Name, description: string, defaultValue: boolean, kind: OptionKind = "primary") {
         super({
             name,
             kind,
@@ -82,13 +87,13 @@ export class BooleanOption extends Option<boolean> {
         });
     }
 
-    get cliDefinitions(): { display: OptionDefinition[]; actual: OptionDefinition[] } {
+    get cliDefinitions(): { display: OptionDefinition<Name, boolean>[]; actual: OptionDefinition<Name, boolean>[] } {
         const negated = Object.assign({}, this.definition, {
-            name: `no-${this.definition.name}`,
+            name: `no-${this.name}`,
             defaultValue: !this.definition.defaultValue
         });
         const display = Object.assign({}, this.definition, {
-            name: `[no-]${this.definition.name}`,
+            name: `[no-]${this.name}`,
             description: `${this.definition.description} (${this.definition.defaultValue ? "on" : "off"} by default)`
         });
         return {
@@ -97,13 +102,13 @@ export class BooleanOption extends Option<boolean> {
         };
     }
 
-    getValue(values: { [name: string]: any }): boolean {
-        let value = values[this.definition.name];
+    getValue(values: Record<string, unknown>): boolean {
+        let value = values[this.name];
         if (value === undefined) {
             value = this.definition.defaultValue;
         }
 
-        let negated = values[`no-${this.definition.name}`];
+        let negated = values[`no-${this.name}`];
         if (negated === undefined) {
             negated = !this.definition.defaultValue;
         }
@@ -115,16 +120,16 @@ export class BooleanOption extends Option<boolean> {
         }
 
         if (this.definition.defaultValue) {
-            return value && !negated;
+            return (value && !negated) as boolean;
         } else {
-            return value || !negated;
+            return (value || !negated) as boolean;
         }
     }
 }
 
-export class StringOption extends Option<string> {
+export class StringOption<Name extends string> extends Option<Name, string> {
     constructor(
-        name: string,
+        name: Name,
         description: string,
         typeLabel: string,
         defaultValue: string,
@@ -142,43 +147,38 @@ export class StringOption extends Option<string> {
     }
 }
 
-export class EnumOption<T> extends Option<T> {
-    private readonly _values: { [name: string]: T };
+type NoInfer<T> = [T][T extends any ? 0 : never];
+
+export class EnumOption<
+    Name extends string,
+    EnumMap extends Record<string, unknown>,
+    EnumKey = keyof EnumMap
+> extends Option<Name, EnumKey> {
+    private readonly _values: EnumMap;
 
     constructor(
-        name: string,
+        name: Name,
         description: string,
-        values: [string, T][],
-        defaultValue: string | undefined = undefined,
+        values: EnumMap,
+        defaultValue: NoInfer<EnumKey>,
         kind: OptionKind = "primary"
     ) {
-        if (defaultValue === undefined) {
-            defaultValue = values[0][0];
-        }
         const definition = {
             name,
             kind,
             type: String,
             description,
-            typeLabel: values.map(([n, _]) => n).join("|"),
-            legalValues: values.map(([n, _]) => n),
+            typeLabel: Object.keys(values).join("|"),
             defaultValue
         };
         super(definition);
 
-        this._values = {};
-        for (const [n, v] of values) {
-            this._values[n] = v;
-        }
+        this._values = values;
     }
 
-    getValue(values: { [name: string]: any }): T {
-        let name: string = values[this.definition.name];
-        if (name === undefined) {
-            name = this.definition.defaultValue;
-        }
+    getEnumValue<Key extends EnumKey & string>(name: Key): EnumMap[Key] {
         if (!hasOwnProperty(this._values, name)) {
-            return messageError("RendererUnknownOptionValue", { value: name, name: this.definition.name });
+            return messageError("RendererUnknownOptionValue", { value: name, name: this.name });
         }
         return this._values[name];
     }
