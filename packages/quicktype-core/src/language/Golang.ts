@@ -117,7 +117,7 @@ export class GoRenderer extends ConvenienceRenderer {
     private _currentFilename: string | undefined;
 
     constructor(
-        targetLanguage: GoTargetLanguage,
+        targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof goOptions>
     ) {

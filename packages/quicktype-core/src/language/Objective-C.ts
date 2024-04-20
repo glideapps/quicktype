@@ -231,7 +231,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
     private readonly _classPrefix: string;
 
     constructor(
-        targetLanguage: ObjectiveCTargetLanguage,
+        targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof objcOptions>
     ) {

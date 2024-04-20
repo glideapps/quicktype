@@ -231,7 +231,7 @@ export class DartRenderer extends ConvenienceRenderer {
     private readonly _enumValues = new Map<EnumType, Name>();
 
     constructor(
-        targetLanguage: DartTargetLanguage,
+        targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof dartOptions>
     ) {

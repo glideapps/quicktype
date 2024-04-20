@@ -121,7 +121,7 @@ function memberNameStyle(original: string): string {
 
 export class RubyRenderer extends ConvenienceRenderer {
     constructor(
-        targetLanguage: RubyTargetLanguage,
+        targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof rubyOptions>
     ) {

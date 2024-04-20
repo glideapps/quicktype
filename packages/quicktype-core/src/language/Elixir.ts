@@ -216,7 +216,7 @@ function memberNameStyle(original: string): string {
 
 export class ElixirRenderer extends ConvenienceRenderer {
     constructor(
-        targetLanguage: ElixirTargetLanguage,
+        targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof elixirOptions>
     ) {

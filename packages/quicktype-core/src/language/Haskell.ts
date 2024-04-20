@@ -136,7 +136,7 @@ const lowerNamingFunction = funPrefixNamer("lower", n => haskellNameStyle(n, fal
 
 export class HaskellRenderer extends ConvenienceRenderer {
     constructor(
-        targetLanguage: HaskellTargetLanguage,
+        targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof haskellOptions>
     ) {

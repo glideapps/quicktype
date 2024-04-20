@@ -244,7 +244,7 @@ export class PythonRenderer extends ConvenienceRenderer {
     private readonly declaredTypes: Set<Type> = new Set();
 
     constructor(
-        targetLanguage: PythonTargetLanguage,
+        targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         protected readonly pyOptions: OptionValues<typeof pythonOptions>
     ) {

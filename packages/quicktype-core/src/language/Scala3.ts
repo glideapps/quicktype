@@ -189,7 +189,7 @@ const lowerNamingFunction = funPrefixNamer("lower", s => scalaNameStyle(false, s
 
 export class Scala3Renderer extends ConvenienceRenderer {
     constructor(
-        targetLanguage: Scala3TargetLanguage,
+        targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         protected readonly _scalaOptions: OptionValues<typeof scala3Options>
     ) {

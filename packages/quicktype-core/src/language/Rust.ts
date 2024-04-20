@@ -269,7 +269,7 @@ const rustStringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, st
 
 export class RustRenderer extends ConvenienceRenderer {
     constructor(
-        targetLanguage: RustTargetLanguage,
+        targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof rustOptions>
     ) {

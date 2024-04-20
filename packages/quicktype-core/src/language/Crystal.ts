@@ -234,7 +234,7 @@ function standardUnicodeCrystalEscape(codePoint: number): string {
 const crystalStringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, standardUnicodeCrystalEscape));
 
 export class CrystalRenderer extends ConvenienceRenderer {
-    constructor(targetLanguage: CrystalTargetLanguage, renderContext: RenderContext) {
+    constructor(targetLanguage: TargetLanguage, renderContext: RenderContext) {
         super(targetLanguage, renderContext);
     }
 

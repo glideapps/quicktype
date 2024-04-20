@@ -441,7 +441,7 @@ export class JavaRenderer extends ConvenienceRenderer {
     protected readonly _converterKeywords: string[] = [];
 
     constructor(
-        targetLanguage: JavaTargetLanguage,
+        targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         protected readonly _options: OptionValues<typeof javaOptions>
     ) {
@@ -910,7 +910,7 @@ export class JavaRenderer extends ConvenienceRenderer {
 
 export class JacksonRenderer extends JavaRenderer {
     constructor(
-        targetLanguage: JavaTargetLanguage,
+        targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         options: OptionValues<typeof javaOptions>
     ) {

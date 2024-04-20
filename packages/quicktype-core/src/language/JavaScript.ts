@@ -116,7 +116,7 @@ const identityNamingFunction = funPrefixNamer("properties", s => s);
 
 export class JavaScriptRenderer extends ConvenienceRenderer {
     constructor(
-        targetLanguage: JavaScriptTargetLanguage,
+        targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _jsOptions: OptionValues<typeof javaScriptOptions>
     ) {

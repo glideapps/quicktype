@@ -483,7 +483,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     protected readonly enumeratorNamingStyle: NamingStyle;
 
     constructor(
-        targetLanguage: CPlusPlusTargetLanguage,
+        targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof cPlusPlusOptions>
     ) {

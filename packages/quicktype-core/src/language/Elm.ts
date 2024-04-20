@@ -156,7 +156,7 @@ export class ElmRenderer extends ConvenienceRenderer {
     private readonly _namedTypeDependents = new Map<Name, NamedTypeDependent>();
 
     constructor(
-        targetLanguage: ElmTargetLanguage,
+        targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof elmOptions>
     ) {

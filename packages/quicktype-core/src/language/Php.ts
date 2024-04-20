@@ -116,7 +116,7 @@ export class PhpRenderer extends ConvenienceRenderer {
     protected readonly _converterKeywords: string[] = [];
 
     constructor(
-        targetLanguage: PhpTargetLanguage,
+        targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         protected readonly _options: OptionValues<typeof phpOptions>
     ) {

@@ -418,7 +418,7 @@ function isValueType(t: Type): boolean {
 
 export class CSharpRenderer extends ConvenienceRenderer {
     constructor(
-        targetLanguage: CSharpTargetLanguage,
+        targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _csOptions: OptionValues<typeof cSharpOptions>
     ) {
@@ -787,7 +787,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
     private readonly _needNamespaces: boolean;
 
     constructor(
-        targetLanguage: CSharpTargetLanguage,
+        targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof newtonsoftCSharpOptions>
     ) {
@@ -1514,7 +1514,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
     private readonly _needNamespaces: boolean;
 
     constructor(
-        targetLanguage: CSharpTargetLanguage,
+        targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof systemTextJsonCSharpOptions>
     ) {

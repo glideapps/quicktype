@@ -19,7 +19,7 @@ export type LanguageConfig = {
     readonly extension: string;
 };
 
-export abstract class TargetLanguage<Config extends LanguageConfig> {
+export abstract class TargetLanguage<Config extends LanguageConfig = LanguageConfig> {
     displayName: Config["displayName"];
     names: Config["names"];
     extension: Config["extension"];

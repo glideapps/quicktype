@@ -77,7 +77,7 @@ export class TypeScriptZodTargetLanguage extends TargetLanguage<typeof typeScrip
 
 export class TypeScriptZodRenderer extends ConvenienceRenderer {
     constructor(
-        targetLanguage: TypeScriptZodTargetLanguage,
+        targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         protected readonly _options: OptionValues<typeof typeScriptZodOptions>
     ) {

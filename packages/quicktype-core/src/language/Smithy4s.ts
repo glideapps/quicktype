@@ -149,7 +149,7 @@ const lowerNamingFunction = funPrefixNamer("lower", s => scalaNameStyle(false, s
 
 export class Smithy4sRenderer extends ConvenienceRenderer {
     constructor(
-        targetLanguage: SmithyTargetLanguage,
+        targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         protected readonly _scalaOptions: OptionValues<typeof SmithyOptions>
     ) {

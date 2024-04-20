@@ -198,7 +198,7 @@ function stringEscape(s: string): string {
 
 export class KotlinRenderer extends ConvenienceRenderer {
     constructor(
-        targetLanguage: KotlinTargetLanguage,
+        targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         protected readonly _kotlinOptions: OptionValues<typeof kotlinOptions>
     ) {
@@ -466,7 +466,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
 
 export class KotlinKlaxonRenderer extends KotlinRenderer {
     constructor(
-        targetLanguage: KotlinTargetLanguage,
+        targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         _kotlinOptions: OptionValues<typeof kotlinOptions>
     ) {
@@ -744,7 +744,7 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
 
 export class KotlinJacksonRenderer extends KotlinRenderer {
     constructor(
-        targetLanguage: KotlinTargetLanguage,
+        targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         _kotlinOptions: OptionValues<typeof kotlinOptions>
     ) {
@@ -1014,7 +1014,7 @@ private fun <T> ObjectMapper.convert(k: kotlin.reflect.KClass<*>, fromJson: (Jso
  */
 export class KotlinXRenderer extends KotlinRenderer {
     constructor(
-        targetLanguage: KotlinTargetLanguage,
+        targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         _kotlinOptions: OptionValues<typeof kotlinOptions>
     ) {

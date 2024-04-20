@@ -377,7 +377,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
      * @param _options: renderer options
      */
     constructor(
-        targetLanguage: CJSONTargetLanguage,
+        targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof cJSONOptions>
     ) {

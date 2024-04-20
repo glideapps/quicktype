@@ -338,7 +338,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
     private _needNull = false;
 
     constructor(
-        targetLanguage: SwiftTargetLanguage,
+        targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof swiftOptions>
     ) {

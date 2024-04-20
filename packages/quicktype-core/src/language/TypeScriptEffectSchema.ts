@@ -54,7 +54,7 @@ export class TypeScriptEffectSchemaTargetLanguage extends TargetLanguage<typeof 
 
 export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
     constructor(
-        targetLanguage: TypeScriptEffectSchemaTargetLanguage,
+        targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof typeScriptEffectSchemaOptions>
     ) {
