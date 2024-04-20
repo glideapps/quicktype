@@ -149,17 +149,22 @@ export class StringOption<Name extends string> extends Option<Name, string> {
 
 type NoInfer<T> = [T][T extends any ? 0 : never];
 
+// FIXME: remove tuples and use map
 export class EnumOption<
     Name extends string,
-    EnumMap extends Record<string, unknown>,
-    EnumKey = keyof EnumMap
+    // EnumMap extends Record<string, unknown>,
+    // EnumKey = keyof EnumMap
+    EnumTuples extends [string, unknown][],
+    EnumKey = EnumTuples[number][0],
+    EnumMap = { [Key in EnumTuples[number][0]]: Extract<EnumTuples[number], [Key, any]>[1] }
 > extends Option<Name, EnumKey> {
     private readonly _values: EnumMap;
 
     constructor(
         name: Name,
         description: string,
-        values: EnumMap,
+        // values: EnumMap,
+        values: EnumTuples,
         defaultValue: NoInfer<EnumKey>,
         kind: OptionKind = "primary"
     ) {
@@ -168,15 +173,18 @@ export class EnumOption<
             kind,
             type: String,
             description,
-            typeLabel: Object.keys(values).join("|"),
+            // typeLabel: Object.keys(values).join("|"),
+            typeLabel: values.map(([key, _]) => key).join("|"),
             defaultValue
         };
         super(definition);
 
-        this._values = values;
+        // this._values = values;
+        this._values = values.reduce((acc, [key, val]) => ({ ...acc, [key]: val }), {} as Partial<EnumMap>) as EnumMap;
     }
 
-    getEnumValue<Key extends EnumKey & string>(name: Key): EnumMap[Key] {
+    // getEnumValue<Key extends EnumKey & string>(name: Key): EnumMap[Key] {
+    getEnumValue<Key extends keyof EnumMap & string>(name: Key): EnumMap[Key] {
         if (!hasOwnProperty(this._values, name)) {
             return messageError("RendererUnknownOptionValue", { value: name, name: this.name });
         }
