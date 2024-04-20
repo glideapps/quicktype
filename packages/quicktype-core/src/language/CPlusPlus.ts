@@ -118,17 +118,15 @@ export const cPlusPlusOptions = {
     hideNullOptional: new BooleanOption("hide-null-optional", "Hide null value for optional field", false)
 };
 
-export class CPlusPlusTargetLanguage<
-    DisplayName extends string = "C++",
-    Names extends readonly string[] = readonly ["c++", "cpp", "cplusplus"],
-    Extension extends string = "cpp"
-> extends TargetLanguage<DisplayName, Names, Extension> {
-    constructor(
-        displayName = "C++" as DisplayName,
-        names = ["c++", "cpp", "cplusplus"] as unknown as Names,
-        extension = "cpp" as Extension
-    ) {
-        super(displayName, names, extension);
+export const cPlusPlusLanguageConfig = {
+    displayName: "C++",
+    names: ["c++", "cpp", "cplusplus"],
+    extension: "cpp"
+} as const;
+
+export class CPlusPlusTargetLanguage extends TargetLanguage<typeof cPlusPlusLanguageConfig> {
+    constructor() {
+        super(cPlusPlusLanguageConfig);
     }
 
     protected getOptions(): Option<any>[] {
@@ -485,7 +483,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     protected readonly enumeratorNamingStyle: NamingStyle;
 
     constructor(
-        targetLanguage: TargetLanguage,
+        targetLanguage: CPlusPlusTargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof cPlusPlusOptions>
     ) {

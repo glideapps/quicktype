@@ -61,17 +61,11 @@ export const dartOptions = {
     partName: new StringOption("part-name", "Use this name in `part` directive", "NAME", "", "secondary")
 };
 
-export class DartTargetLanguage<
-    DisplayName extends string = "Dart",
-    Names extends readonly string[] = readonly ["dart"],
-    Extension extends string = "dart"
-> extends TargetLanguage<DisplayName, Names, Extension> {
-    constructor(
-        displayName = "Dart" as DisplayName,
-        names = ["dart"] as unknown as Names,
-        extension = "dart" as Extension
-    ) {
-        super(displayName, names, extension);
+export const dartLanguageConfig = { displayName: "Dart", names: ["dart"], extension: "dart" } as const;
+
+export class DartTargetLanguage extends TargetLanguage<typeof dartLanguageConfig> {
+    constructor() {
+        super(dartLanguageConfig);
     }
 
     protected getOptions(): Option<any>[] {
@@ -208,8 +202,8 @@ function dartNameStyle(startWithUpper: boolean, upperUnderscore: boolean, origin
     const firstWordStyle = upperUnderscore
         ? allUpperWordStyle
         : startWithUpper
-          ? firstUpperWordStyle
-          : allLowerWordStyle;
+        ? firstUpperWordStyle
+        : allLowerWordStyle;
     const restWordStyle = upperUnderscore ? allUpperWordStyle : firstUpperWordStyle;
     return combineWords(
         words,
@@ -237,7 +231,7 @@ export class DartRenderer extends ConvenienceRenderer {
     private readonly _enumValues = new Map<EnumType, Name>();
 
     constructor(
-        targetLanguage: TargetLanguage,
+        targetLanguage: DartTargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof dartOptions>
     ) {

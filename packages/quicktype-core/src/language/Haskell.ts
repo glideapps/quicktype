@@ -29,17 +29,15 @@ export const haskellOptions = {
     moduleName: new StringOption("module", "Generated module name", "NAME", "QuickType")
 };
 
-export class HaskellTargetLanguage<
-    DisplayName extends string = "Haskell",
-    Names extends readonly string[] = readonly ["haskell"],
-    Extension extends string = "haskell"
-> extends TargetLanguage<DisplayName, Names, Extension> {
-    constructor(
-        displayName = "Haskell" as DisplayName,
-        names = ["haskell"] as unknown as Names,
-        extension = "haskell" as Extension
-    ) {
-        super(displayName, names, extension);
+export const haskellLanguageConfig = {
+    displayName: "Haskell",
+    names: ["haskell"],
+    extension: "haskell"
+} as const;
+
+export class HaskellTargetLanguage extends TargetLanguage<typeof haskellLanguageConfig> {
+    constructor() {
+        super(haskellLanguageConfig);
     }
 
     protected getOptions(): Option<any>[] {
@@ -138,7 +136,7 @@ const lowerNamingFunction = funPrefixNamer("lower", n => haskellNameStyle(n, fal
 
 export class HaskellRenderer extends ConvenienceRenderer {
     constructor(
-        targetLanguage: TargetLanguage,
+        targetLanguage: HaskellTargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof haskellOptions>
     ) {

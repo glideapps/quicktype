@@ -111,17 +111,15 @@ const namingStyles: Record<string, NamingStyle> = {
     }
 };
 
-export class RustTargetLanguage<
-    DisplayName extends string = "Rust",
-    Names extends readonly string[] = readonly ["rust", "rs", "rustlang"],
-    Extension extends string = "rs"
-> extends TargetLanguage<DisplayName, Names, Extension> {
-    constructor(
-        displayName = "Rust" as DisplayName,
-        names = ["rust", "rs", "rustlang"] as unknown as Names,
-        extension = "rs" as Extension
-    ) {
-        super(displayName, names, extension);
+export const rustLanguageConfig = {
+    displayName: "Rust",
+    names: ["rust", "rs", "rustlang"],
+    extension: "rs"
+} as const;
+
+export class RustTargetLanguage extends TargetLanguage<typeof rustLanguageConfig> {
+    constructor() {
+        super(rustLanguageConfig);
     }
 
     protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): RustRenderer {
@@ -271,7 +269,7 @@ const rustStringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, st
 
 export class RustRenderer extends ConvenienceRenderer {
     constructor(
-        targetLanguage: TargetLanguage,
+        targetLanguage: RustTargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof rustOptions>
     ) {

@@ -61,17 +61,15 @@ export const kotlinOptions = {
     packageName: new StringOption("package", "Package", "PACKAGE", "quicktype")
 };
 
-export class KotlinTargetLanguage<
-    DisplayName extends string = "Kotlin",
-    Names extends readonly string[] = readonly ["kotlin"],
-    Extension extends string = "kt"
-> extends TargetLanguage<DisplayName, Names, Extension> {
-    constructor(
-        displayName = "Kotlin" as DisplayName,
-        names = ["kotlin"] as unknown as Names,
-        extension = "kt" as Extension
-    ) {
-        super(displayName, names, extension);
+export const kotlinLanguageConfig = {
+    displayName: "Kotlin",
+    names: ["kotlin"],
+    extension: "kt"
+} as const;
+
+export class KotlinTargetLanguage extends TargetLanguage<typeof kotlinLanguageConfig> {
+    constructor() {
+        super(kotlinLanguageConfig);
     }
 
     protected getOptions(): Option<any>[] {
@@ -200,7 +198,7 @@ function stringEscape(s: string): string {
 
 export class KotlinRenderer extends ConvenienceRenderer {
     constructor(
-        targetLanguage: TargetLanguage,
+        targetLanguage: KotlinTargetLanguage,
         renderContext: RenderContext,
         protected readonly _kotlinOptions: OptionValues<typeof kotlinOptions>
     ) {
@@ -468,7 +466,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
 
 export class KotlinKlaxonRenderer extends KotlinRenderer {
     constructor(
-        targetLanguage: TargetLanguage,
+        targetLanguage: KotlinTargetLanguage,
         renderContext: RenderContext,
         _kotlinOptions: OptionValues<typeof kotlinOptions>
     ) {
@@ -746,7 +744,7 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
 
 export class KotlinJacksonRenderer extends KotlinRenderer {
     constructor(
-        targetLanguage: TargetLanguage,
+        targetLanguage: KotlinTargetLanguage,
         renderContext: RenderContext,
         _kotlinOptions: OptionValues<typeof kotlinOptions>
     ) {
@@ -1016,7 +1014,7 @@ private fun <T> ObjectMapper.convert(k: kotlin.reflect.KClass<*>, fromJson: (Jso
  */
 export class KotlinXRenderer extends KotlinRenderer {
     constructor(
-        targetLanguage: TargetLanguage,
+        targetLanguage: KotlinTargetLanguage,
         renderContext: RenderContext,
         _kotlinOptions: OptionValues<typeof kotlinOptions>
     ) {

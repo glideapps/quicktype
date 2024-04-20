@@ -22,17 +22,15 @@ import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { Option } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
 
-export class CrystalTargetLanguage<
-    DisplayName extends string = "Crystal",
-    Names extends readonly string[] = readonly ["crystal", "cr", "crystallang"],
-    Extension extends string = "cr"
-> extends TargetLanguage<DisplayName, Names, Extension> {
-    constructor(
-        displayName = "Crystal" as DisplayName,
-        names = ["crystal", "cr", "crystallang"] as unknown as Names,
-        extension = "cr" as Extension
-    ) {
-        super(displayName, names, extension);
+export const crystalLanguageConfig = {
+    displayName: "Crystal",
+    names: ["crystal", "cr", "crystallang"],
+    extension: "cr"
+} as const;
+
+export class CrystalTargetLanguage extends TargetLanguage<typeof crystalLanguageConfig> {
+    constructor() {
+        super(crystalLanguageConfig);
     }
 
     protected makeRenderer(renderContext: RenderContext): CrystalRenderer {
@@ -236,7 +234,7 @@ function standardUnicodeCrystalEscape(codePoint: number): string {
 const crystalStringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, standardUnicodeCrystalEscape));
 
 export class CrystalRenderer extends ConvenienceRenderer {
-    constructor(targetLanguage: TargetLanguage, renderContext: RenderContext) {
+    constructor(targetLanguage: CrystalTargetLanguage, renderContext: RenderContext) {
         super(targetLanguage, renderContext);
     }
 

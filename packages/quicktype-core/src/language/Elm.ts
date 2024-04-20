@@ -34,17 +34,15 @@ export const elmOptions = {
     moduleName: new StringOption("module", "Generated module name", "NAME", "QuickType")
 };
 
-export class ElmTargetLanguage<
-    DisplayName extends string = "Elm",
-    Names extends readonly string[] = readonly ["elm"],
-    Extension extends string = "elm"
-> extends TargetLanguage<DisplayName, Names, Extension> {
-    constructor(
-        displayName = "Elm" as DisplayName,
-        names = ["elm"] as unknown as Names,
-        extension = "elm" as Extension
-    ) {
-        super(displayName, names, extension);
+export const elmLanguageConfig = {
+    displayName: "Elm",
+    names: ["elm"],
+    extension: "elm"
+} as const;
+
+export class ElmTargetLanguage extends TargetLanguage<typeof elmLanguageConfig> {
+    constructor() {
+        super(elmLanguageConfig);
     }
 
     protected getOptions(): Option<any>[] {
@@ -158,7 +156,7 @@ export class ElmRenderer extends ConvenienceRenderer {
     private readonly _namedTypeDependents = new Map<Name, NamedTypeDependent>();
 
     constructor(
-        targetLanguage: TargetLanguage,
+        targetLanguage: ElmTargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof elmOptions>
     ) {

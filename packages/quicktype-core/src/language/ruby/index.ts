@@ -51,17 +51,15 @@ export const rubyOptions = {
     namespace: new StringOption("namespace", "Specify a wrapping Namespace", "NAME", "", "secondary")
 };
 
-export class RubyTargetLanguage<
-    DisplayName extends string = "Ruby",
-    Names extends readonly string[] = readonly ["ruby"],
-    Extension extends string = "rb"
-> extends TargetLanguage<DisplayName, Names, Extension> {
-    constructor(
-        displayName = "Ruby" as DisplayName,
-        names = ["ruby"] as unknown as Names,
-        extension = "rb" as Extension
-    ) {
-        super(displayName, names, extension);
+export const rubyLanguageConfig = {
+    displayName: "Ruby",
+    names: ["ruby"],
+    extension: "rb"
+} as const;
+
+export class RubyTargetLanguage extends TargetLanguage<typeof rubyLanguageConfig> {
+    constructor() {
+        super(rubyLanguageConfig);
     }
 
     protected getOptions(): Option<any>[] {
@@ -123,7 +121,7 @@ function memberNameStyle(original: string): string {
 
 export class RubyRenderer extends ConvenienceRenderer {
     constructor(
-        targetLanguage: TargetLanguage,
+        targetLanguage: RubyTargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof rubyOptions>
     ) {

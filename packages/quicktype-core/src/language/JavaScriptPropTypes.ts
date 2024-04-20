@@ -39,17 +39,15 @@ export const javaScriptPropTypesOptions = {
     )
 };
 
-export class JavaScriptPropTypesTargetLanguage<
-    DisplayName extends string = "JavaScript PropTypes",
-    Names extends readonly string[] = readonly ["javascript-prop-types"],
-    Extension extends string = "js"
-> extends TargetLanguage<DisplayName, Names, Extension> {
-    constructor(
-        displayName = "JavaScript PropTypes" as DisplayName,
-        names = ["javascript-prop-types"] as unknown as Names,
-        extension = "js" as Extension
-    ) {
-        super(displayName, names, extension);
+export const javaScriptPropTypesLanguageConfig = {
+    displayName: "JavaScript PropTypes",
+    names: ["javascript-prop-types"],
+    extension: "js"
+} as const;
+
+export class JavaScriptPropTypesTargetLanguage extends TargetLanguage<typeof javaScriptPropTypesLanguageConfig> {
+    constructor() {
+        super(javaScriptPropTypesLanguageConfig);
     }
 
     protected getOptions(): Option<any>[] {
@@ -72,7 +70,7 @@ const identityNamingFunction = funPrefixNamer("properties", s => s);
 
 export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
     constructor(
-        targetLanguage: TargetLanguage,
+        targetLanguage: JavaScriptPropTypesTargetLanguage,
         renderContext: RenderContext,
         private readonly _jsOptions: OptionValues<typeof javaScriptPropTypesOptions>
     ) {

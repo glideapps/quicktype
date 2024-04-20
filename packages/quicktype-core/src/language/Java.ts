@@ -53,17 +53,15 @@ export const javaOptions = {
     lombokCopyAnnotations: new BooleanOption("lombok-copy-annotations", "Copy accessor annotations", true, "secondary")
 };
 
-export class JavaTargetLanguage<
-    DisplayName extends string = "Java",
-    Names extends readonly string[] = readonly ["java"],
-    Extension extends string = "java"
-> extends TargetLanguage<DisplayName, Names, Extension> {
-    constructor(
-        displayName = "Java" as DisplayName,
-        names = ["java"] as unknown as Names,
-        extension = "java" as Extension
-    ) {
-        super(displayName, names, extension);
+export const javaLanguageConfig = {
+    displayName: "Java",
+    names: ["java"],
+    extension: "java"
+} as const;
+
+export class JavaTargetLanguage extends TargetLanguage<typeof javaLanguageConfig> {
+    constructor() {
+        super(javaLanguageConfig);
     }
 
     protected getOptions(): Option<any>[] {
@@ -443,7 +441,7 @@ export class JavaRenderer extends ConvenienceRenderer {
     protected readonly _converterKeywords: string[] = [];
 
     constructor(
-        targetLanguage: TargetLanguage,
+        targetLanguage: JavaTargetLanguage,
         renderContext: RenderContext,
         protected readonly _options: OptionValues<typeof javaOptions>
     ) {
@@ -912,7 +910,7 @@ export class JavaRenderer extends ConvenienceRenderer {
 
 export class JacksonRenderer extends JavaRenderer {
     constructor(
-        targetLanguage: TargetLanguage,
+        targetLanguage: JavaTargetLanguage,
         renderContext: RenderContext,
         options: OptionValues<typeof javaOptions>
     ) {

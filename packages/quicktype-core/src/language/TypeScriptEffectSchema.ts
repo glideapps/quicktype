@@ -25,17 +25,15 @@ export const typeScriptEffectSchemaOptions = {
     justSchema: new BooleanOption("just-schema", "Schema only", false)
 };
 
-export class TypeScriptEffectSchemaTargetLanguage<
-    DisplayName extends string = "TypeScript Effect Schema",
-    Names extends readonly string[] = readonly ["typescript-effect-schema"],
-    Extension extends string = "ts"
-> extends TargetLanguage<DisplayName, Names, Extension> {
-    constructor(
-        displayName = "TypeScript Effect Schema" as DisplayName,
-        names = ["typescript-effect-schema"] as unknown as Names,
-        extension = "ts" as Extension
-    ) {
-        super(displayName, names, extension);
+export const typeScriptEffectSchemaLanguageConfig = {
+    displayName: "TypeScript Effect Schema",
+    names: ["typescript-effect-schema"],
+    extension: "ts"
+} as const;
+
+export class TypeScriptEffectSchemaTargetLanguage extends TargetLanguage<typeof typeScriptEffectSchemaLanguageConfig> {
+    constructor() {
+        super(typeScriptEffectSchemaLanguageConfig);
     }
 
     protected getOptions(): Option<any>[] {
@@ -56,7 +54,7 @@ export class TypeScriptEffectSchemaTargetLanguage<
 
 export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
     constructor(
-        targetLanguage: TargetLanguage,
+        targetLanguage: TypeScriptEffectSchemaTargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof typeScriptEffectSchemaOptions>
     ) {

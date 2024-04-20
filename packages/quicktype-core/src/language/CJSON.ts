@@ -128,17 +128,15 @@ export const cJSONOptions = {
 };
 
 /* cJSON generator target language */
-export class CJSONTargetLanguage<
-    DisplayName extends string = "C (cJSON)",
-    Names extends readonly string[] = readonly ["cjson", "cJSON"],
-    Extension extends string = "h"
-> extends TargetLanguage<DisplayName, Names, Extension> {
-    constructor(
-        displayName = "C (cJSON)" as DisplayName,
-        names = ["cjson", "cJSON"] as unknown as Names,
-        extension = "h" as Extension
-    ) {
-        super(displayName, names, extension);
+export const cJSONLanguageConfig = {
+    displayName: "C (cJSON)",
+    names: ["cjson", "cJSON"],
+    extension: "h"
+} as const;
+
+export class CJSONTargetLanguage extends TargetLanguage<typeof cJSONLanguageConfig> {
+    constructor() {
+        super(cJSONLanguageConfig);
     }
 
     /**
@@ -379,7 +377,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
      * @param _options: renderer options
      */
     constructor(
-        targetLanguage: TargetLanguage,
+        targetLanguage: CJSONTargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof cJSONOptions>
     ) {

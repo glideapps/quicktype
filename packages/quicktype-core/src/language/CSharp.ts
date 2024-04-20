@@ -194,17 +194,11 @@ export const cSharpOptions = {
     keepPropertyName: new BooleanOption("keep-property-name", "Keep original field name generate", false)
 };
 
-export class CSharpTargetLanguage<
-    DisplayName extends string = "C#",
-    Names extends readonly string[] = readonly ["cs", "csharp"],
-    Extension extends string = "cs"
-> extends TargetLanguage<DisplayName, Names, Extension> {
-    constructor(
-        displayName = "C#" as DisplayName,
-        names = ["cs", "csharp"] as unknown as Names,
-        extension = "cs" as Extension
-    ) {
-        super(displayName, names, extension);
+export const cSharpLanguageConfig = { displayName: "C#", names: ["cs", "csharp"], extension: "cs" } as const;
+
+export class CSharpTargetLanguage extends TargetLanguage<typeof cSharpLanguageConfig> {
+    constructor() {
+        super(cSharpLanguageConfig);
     }
 
     protected getOptions(): Option<any>[] {
@@ -424,7 +418,7 @@ function isValueType(t: Type): boolean {
 
 export class CSharpRenderer extends ConvenienceRenderer {
     constructor(
-        targetLanguage: TargetLanguage,
+        targetLanguage: CSharpTargetLanguage,
         renderContext: RenderContext,
         private readonly _csOptions: OptionValues<typeof cSharpOptions>
     ) {
@@ -793,7 +787,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
     private readonly _needNamespaces: boolean;
 
     constructor(
-        targetLanguage: TargetLanguage,
+        targetLanguage: CSharpTargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof newtonsoftCSharpOptions>
     ) {
@@ -1520,7 +1514,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
     private readonly _needNamespaces: boolean;
 
     constructor(
-        targetLanguage: TargetLanguage,
+        targetLanguage: CSharpTargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof systemTextJsonCSharpOptions>
     ) {

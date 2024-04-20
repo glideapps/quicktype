@@ -34,17 +34,15 @@ export const phpOptions = {
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal)
 };
 
-export class PhpTargetLanguage<
-    DisplayName extends string = "PHP",
-    Names extends readonly string[] = readonly ["php"],
-    Extension extends string = "php"
-> extends TargetLanguage<DisplayName, Names, Extension> {
-    constructor(
-        displayName = "PHP" as DisplayName,
-        names = ["php"] as unknown as Names,
-        extension = "php" as Extension
-    ) {
-        super(displayName, names, extension);
+export const phpLanguageConfig = {
+    displayName: "PHP",
+    names: ["php"],
+    extension: "php"
+} as const;
+
+export class PhpTargetLanguage extends TargetLanguage<typeof phpLanguageConfig> {
+    constructor() {
+        super(phpLanguageConfig);
     }
 
     protected getOptions(): Option<any>[] {
@@ -118,7 +116,7 @@ export class PhpRenderer extends ConvenienceRenderer {
     protected readonly _converterKeywords: string[] = [];
 
     constructor(
-        targetLanguage: TargetLanguage,
+        targetLanguage: PhpTargetLanguage,
         renderContext: RenderContext,
         protected readonly _options: OptionValues<typeof phpOptions>
     ) {

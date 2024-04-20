@@ -147,17 +147,15 @@ export const elixirOptions = {
     namespace: new StringOption("namespace", "Specify a module namespace", "NAME", "")
 };
 
-export class ElixirTargetLanguage<
-    DisplayName extends string = "Elixir",
-    Names extends readonly string[] = readonly ["elixir"],
-    Extension extends string = "ex"
-> extends TargetLanguage<DisplayName, Names, Extension> {
-    constructor(
-        displayName = "Elixir" as DisplayName,
-        names = ["elixir"] as unknown as Names,
-        extension = "ex" as Extension
-    ) {
-        super(displayName, names, extension);
+export const elixirLanguageConfig = {
+    displayName: "Elixir",
+    names: ["elixir"],
+    extension: "ex"
+} as const;
+
+export class ElixirTargetLanguage extends TargetLanguage<typeof elixirLanguageConfig> {
+    constructor() {
+        super(elixirLanguageConfig);
     }
     protected getOptions(): Option<any>[] {
         return [elixirOptions.justTypes, elixirOptions.namespace];
@@ -218,7 +216,7 @@ function memberNameStyle(original: string): string {
 
 export class ElixirRenderer extends ConvenienceRenderer {
     constructor(
-        targetLanguage: TargetLanguage,
+        targetLanguage: ElixirTargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof elixirOptions>
     ) {
