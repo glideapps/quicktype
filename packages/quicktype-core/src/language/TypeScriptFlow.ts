@@ -1,21 +1,24 @@
-import { Type, ArrayType, UnionType, ClassType, EnumType } from "../Type";
+import {
+    Type,
+    ArrayType,
+    UnionType,
+    ClassType,
+    EnumType,
+    PrimitiveStringTypeKind,
+    TransformedStringTypeKind
+} from "../Type";
 import { matchType, nullableFromUnion, isNamedType } from "../TypeUtils";
 import { utf16StringEscape, camelCase } from "../support/Strings";
 
 import { Sourcelike, modifySource, MultiWord, singleWord, parenIfNeeded, multiWord } from "../Source";
 import { Name, Namer, funPrefixNamer } from "../Naming";
 import { BooleanOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
-import {
-    javaScriptOptions,
-    JavaScriptTargetLanguage,
-    JavaScriptRenderer,
-    JavaScriptTypeAnnotations,
-    legalizeName
-} from "./JavaScript";
+import { javaScriptOptions, JavaScriptRenderer, JavaScriptTypeAnnotations, legalizeName } from "./JavaScript";
 import { defined, panic } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
 import { RenderContext } from "../Renderer";
 import { isES3IdentifierStart } from "./JavaScriptUnicodeMaps";
+import { StringTypeMapping } from "../TypeBuilder";
 
 export const tsFlowOptions = Object.assign({}, javaScriptOptions, {
     justTypes: new BooleanOption("just-types", "Interfaces only", false),
@@ -40,13 +43,15 @@ const tsFlowTypeAnnotations = {
     boolean: ": boolean"
 };
 
-export abstract class TypeScriptFlowBaseTargetLanguage<
-    DisplayName extends string,
-    Names extends readonly string[],
-    Extension extends string
-> extends JavaScriptTargetLanguage<DisplayName, Names, Extension> {
-    protected constructor(displayName: DisplayName, names: Names, extension: Extension) {
-        super(displayName, names, extension);
+export const typeScriptLanguageConfig = {
+    displayName: "TypeScript",
+    names: ["typescript", "ts", "tsx"],
+    extension: "ts"
+} as const;
+
+export class TypeScriptTargetLanguage extends TargetLanguage<typeof typeScriptLanguageConfig> {
+    constructor() {
+        super(typeScriptLanguageConfig);
     }
 
     protected getOptions(): Option<any>[] {
@@ -66,27 +71,20 @@ export abstract class TypeScriptFlowBaseTargetLanguage<
         ];
     }
 
+    get stringTypeMapping(): StringTypeMapping {
+        const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
+        const dateTimeType = "date-time";
+        mapping.set("date", dateTimeType);
+        mapping.set("date-time", dateTimeType);
+        return mapping;
+    }
+
     get supportsOptionalClassProperties(): boolean {
         return true;
     }
 
-    protected abstract makeRenderer(
-        renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
-    ): JavaScriptRenderer;
-}
-
-export class TypeScriptTargetLanguage<
-    DisplayName extends string = "TypeScript",
-    Names extends readonly string[] = readonly ["typescript", "ts", "tsx"],
-    Extension extends string = "ts"
-> extends TypeScriptFlowBaseTargetLanguage<DisplayName, Names, Extension> {
-    constructor(
-        displayName = "TypeScript" as DisplayName,
-        names = ["typescript", "ts", "tsx"] as unknown as Names,
-        extension = "ts" as Extension
-    ) {
-        super(displayName, names, extension);
+    get supportsFullObjectType(): boolean {
+        return true;
     }
 
     protected makeRenderer(
@@ -355,17 +353,48 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
     }
 }
 
-export class FlowTargetLanguage<
-    DisplayName extends string = "Flow",
-    Names extends readonly string[] = readonly ["flow"],
-    Extension extends string = "js"
-> extends TypeScriptFlowBaseTargetLanguage<DisplayName, Names, Extension> {
-    constructor(
-        displayName = "Flow" as DisplayName,
-        names = ["flow"] as unknown as Names,
-        extension = "js" as Extension
-    ) {
-        super(displayName, names, extension);
+export const flowLanguageConfig = {
+    displayName: "Flow",
+    names: ["flow"],
+    extension: "js"
+} as const;
+
+export class FlowTargetLanguage extends TargetLanguage<typeof flowLanguageConfig> {
+    constructor() {
+        super(flowLanguageConfig);
+    }
+
+    protected getOptions(): Option<any>[] {
+        return [
+            tsFlowOptions.justTypes,
+            tsFlowOptions.nicePropertyNames,
+            tsFlowOptions.declareUnions,
+            tsFlowOptions.runtimeTypecheck,
+            tsFlowOptions.runtimeTypecheckIgnoreUnknownProperties,
+            tsFlowOptions.acronymStyle,
+            tsFlowOptions.converters,
+            tsFlowOptions.rawType,
+            tsFlowOptions.preferUnions,
+            tsFlowOptions.preferTypes,
+            tsFlowOptions.preferConstValues,
+            tsFlowOptions.readonly
+        ];
+    }
+
+    get stringTypeMapping(): StringTypeMapping {
+        const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
+        const dateTimeType = "date-time";
+        mapping.set("date", dateTimeType);
+        mapping.set("date-time", dateTimeType);
+        return mapping;
+    }
+
+    get supportsOptionalClassProperties(): boolean {
+        return true;
+    }
+
+    get supportsFullObjectType(): boolean {
+        return true;
     }
 
     protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): FlowRenderer {

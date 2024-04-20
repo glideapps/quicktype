@@ -129,17 +129,11 @@ export const pythonOptions = {
     nicePropertyNames: new BooleanOption("nice-property-names", "Transform property names to be Pythonic", true)
 };
 
-export class PythonTargetLanguage<
-    DisplayName extends string = "Python",
-    Names extends readonly string[] = readonly ["python", "py"],
-    Extension extends string = "py"
-> extends TargetLanguage<DisplayName, Names, Extension> {
-    constructor(
-        displayName = "Python" as DisplayName,
-        names = ["python", "py"] as unknown as Names,
-        extension = "py" as Extension
-    ) {
-        super(displayName, names, extension);
+export const pythonLanguageConfig = { displayName: "Python", names: ["python", "py"], extension: "py" } as const;
+
+export class PythonTargetLanguage extends TargetLanguage<typeof pythonLanguageConfig> {
+    constructor() {
+        super(pythonLanguageConfig);
     }
 
     protected getOptions(): Option<any>[] {

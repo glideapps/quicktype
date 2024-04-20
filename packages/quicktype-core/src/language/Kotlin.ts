@@ -61,17 +61,15 @@ export const kotlinOptions = {
     packageName: new StringOption("package", "Package", "PACKAGE", "quicktype")
 };
 
-export class KotlinTargetLanguage<
-    DisplayName extends string = "Kotlin",
-    Names extends readonly string[] = readonly ["kotlin"],
-    Extension extends string = "kt"
-> extends TargetLanguage<DisplayName, Names, Extension> {
-    constructor(
-        displayName = "Kotlin" as DisplayName,
-        names = ["kotlin"] as unknown as Names,
-        extension = "kt" as Extension
-    ) {
-        super(displayName, names, extension);
+export const kotlinLanguageConfig = {
+    displayName: "Kotlin",
+    names: ["kotlin"],
+    extension: "kt"
+} as const;
+
+export class KotlinTargetLanguage extends TargetLanguage<typeof kotlinLanguageConfig> {
+    constructor() {
+        super(kotlinLanguageConfig);
     }
 
     protected getOptions(): Option<any>[] {

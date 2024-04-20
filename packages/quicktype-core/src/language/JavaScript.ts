@@ -65,17 +65,15 @@ export type JavaScriptTypeAnnotations = {
     never: string;
 };
 
-export class JavaScriptTargetLanguage<
-    DisplayName extends string = "JavaScript",
-    Names extends readonly string[] = readonly ["javascript", "js", "jsx"],
-    Extension extends string = "js"
-> extends TargetLanguage<DisplayName, Names, Extension> {
-    constructor(
-        displayName = "JavaScript" as DisplayName,
-        names = ["javascript", "js", "jsx"] as unknown as Names,
-        extension = "js" as Extension
-    ) {
-        super(displayName, names, extension);
+export const javaScriptLanguageConfig = {
+    displayName: "JavaScript",
+    names: ["javascript", "js", "jsx"],
+    extension: "js"
+} as const;
+
+export class JavaScriptTargetLanguage extends TargetLanguage<typeof javaScriptLanguageConfig> {
+    constructor() {
+        super(javaScriptLanguageConfig);
     }
 
     protected getOptions(): Option<any>[] {
