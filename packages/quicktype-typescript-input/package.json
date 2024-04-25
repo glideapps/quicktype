@@ -16,7 +16,7 @@
         "@mark.probst/typescript-json-schema": "0.55.0"
     },
     "devDependencies": {
-        "@types/node": "18.14.0"
+        "@types/node": "18.19.31"
     },
     "files": [
         "dist"
