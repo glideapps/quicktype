@@ -1,12 +1,14 @@
 import * as fs from "fs";
 import { Readable } from "readable-stream";
+import { Readable as NodeReadable } from "stream";
 import { isNode } from "browser-or-node";
 import { getStream } from "./get-stream";
 import { defined, exceptionToString } from "@glideapps/ts-necessities";
 import { messageError, panic } from "../../index";
 
 const isURL = require("is-url");
-import fetch from "cross-fetch";
+
+const fetch = (global as any).fetch ?? require("cross-fetch").default;
 
 interface HttpHeaders {
     [key: string]: string;
@@ -40,8 +42,13 @@ export async function readableFromFileOrURL(fileOrURL: string, httpHeaders?: str
             const response = await fetch(fileOrURL, {
                 headers: parseHeaders(httpHeaders)
             });
+            const maybeWebReadable = defined(response.body)!;
 
-            return defined(response.body) as unknown as Readable;
+            if (!maybeWebReadable.once) {
+                // if the `once` function does not exist, this is likely a web [ReadableStream](https://developer.mozilla.org/docs/Web/API/ReadableStream) instead of a node one
+                return NodeReadable.fromWeb(maybeWebReadable) as Readable;
+            }
+            return maybeWebReadable as Readable;
         } else if (isNode) {
             if (fileOrURL === "-") {
                 // Cast node readable to isomorphic readable from readable-stream
