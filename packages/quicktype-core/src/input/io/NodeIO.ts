@@ -1,14 +1,15 @@
 import * as fs from "fs";
-import { Readable } from "readable-stream";
-import { Readable as NodeReadable } from "stream";
-import { isNode } from "browser-or-node";
-import { getStream } from "./get-stream";
 import { defined, exceptionToString } from "@glideapps/ts-necessities";
+import { Readable } from "readable-stream";
+import { isNode } from "browser-or-node";
+import _fetch from "cross-fetch";
+import { getStream } from "./get-stream";
 import { messageError, panic } from "../../index";
 
 const isURL = require("is-url");
 
-const fetch = (global as any).fetch ?? require("cross-fetch").default;
+// Only use cross-fetch in CI
+const fetch = process.env.CI ? _fetch : (global as any).fetch ?? _fetch;
 
 interface HttpHeaders {
     [key: string]: string;
@@ -42,15 +43,8 @@ export async function readableFromFileOrURL(fileOrURL: string, httpHeaders?: str
             const response = await fetch(fileOrURL, {
                 headers: parseHeaders(httpHeaders)
             });
-            const maybeWebReadable = defined(response.body)!;
 
-            if (!maybeWebReadable.once) {
-                // FIXME: hack for CI, this does not occur in general usage
-                // result of #2573
-                // retuns a web [ReadableStream](https://developer.mozilla.org/docs/Web/API/ReadableStream) instead of a node one in CI only
-                return NodeReadable.fromWeb(maybeWebReadable) as Readable;
-            }
-            return maybeWebReadable as Readable;
+            return defined(response.body) as unknown as Readable;
         } else if (isNode) {
             if (fileOrURL === "-") {
                 // Cast node readable to isomorphic readable from readable-stream
