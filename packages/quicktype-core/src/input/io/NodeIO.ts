@@ -45,7 +45,9 @@ export async function readableFromFileOrURL(fileOrURL: string, httpHeaders?: str
             const maybeWebReadable = defined(response.body)!;
 
             if (!maybeWebReadable.once) {
-                // if the `once` function does not exist, this is likely a web [ReadableStream](https://developer.mozilla.org/docs/Web/API/ReadableStream) instead of a node one
+                // FIXME: hack for CI, this does not occur in general usage
+                // result of #2573
+                // retuns a web [ReadableStream](https://developer.mozilla.org/docs/Web/API/ReadableStream) instead of a node one in CI only
                 return NodeReadable.fromWeb(maybeWebReadable) as Readable;
             }
             return maybeWebReadable as Readable;
