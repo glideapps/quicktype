@@ -45,6 +45,7 @@ export async function readableFromFileOrURL(fileOrURL: string, httpHeaders?: str
             const maybeWebReadable = defined(response.body)!;
 
             if (!maybeWebReadable.once) {
+                // if the `once` function does not exist, this is likely a web [ReadableStream](https://developer.mozilla.org/docs/Web/API/ReadableStream) instead of a node one
                 return NodeReadable.fromWeb(maybeWebReadable) as Readable;
             }
             return maybeWebReadable as Readable;
