@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import { Readable } from "readable-stream";
+import { Readable as NodeReadable } from "stream";
 import { isNode } from "browser-or-node";
 import { getStream } from "./get-stream";
 import { defined, exceptionToString } from "@glideapps/ts-necessities";
@@ -41,7 +42,12 @@ export async function readableFromFileOrURL(fileOrURL: string, httpHeaders?: str
             const response = await fetch(fileOrURL, {
                 headers: parseHeaders(httpHeaders)
             });
-            return defined(response.body) as unknown as Readable;
+            const maybeWebReadable = defined(response.body)!;
+
+            if (!maybeWebReadable.once) {
+                return NodeReadable.fromWeb(maybeWebReadable) as Readable;
+            }
+            return maybeWebReadable as Readable;
         } else if (isNode) {
             if (fileOrURL === "-") {
                 // Cast node readable to isomorphic readable from readable-stream
