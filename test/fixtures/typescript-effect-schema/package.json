@@ -10,9 +10,9 @@
     "license": "Apache-2.0",
     "devDependencies": {
         "tsx": "^3.12.2",
-        "typescript": "^5.0.0"
+        "typescript": "^5.4.0"
     },
     "dependencies": {
-        "@effect/schema": "^0.64.10"
+        "@effect/schema": "^0.66.5"
     }
 }
