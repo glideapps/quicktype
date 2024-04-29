@@ -29,13 +29,11 @@
     },
     "devDependencies": {
         "@types/browser-or-node": "^1.3.2",
-        "@types/js-base64": "^3.3.1",
         "@types/node": "18.19.31",
         "@types/pako": "^1.0.0",
         "@types/pluralize": "0.0.30",
         "@types/readable-stream": "4.0.10",
         "@types/unicode-properties": "^1.3.0",
-        "@types/yaml": "^1.9.7",
         "typescript": "4.9.5"
     },
     "files": [
