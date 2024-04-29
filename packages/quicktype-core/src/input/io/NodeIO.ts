@@ -1,13 +1,15 @@
 import * as fs from "fs";
+import { defined, exceptionToString } from "@glideapps/ts-necessities";
 import { Readable } from "readable-stream";
 import { isNode } from "browser-or-node";
+import _fetch from "cross-fetch";
 import { getStream } from "./get-stream";
-import { defined, exceptionToString } from "@glideapps/ts-necessities";
 import { messageError, panic } from "../../index";
 
 const isURL = require("is-url");
 
-const fetch = (global as any).fetch ?? require("cross-fetch").default;
+// Only use cross-fetch in CI
+const fetch = process.env.CI ? _fetch : (global as any).fetch ?? _fetch;
 
 interface HttpHeaders {
     [key: string]: string;
@@ -41,6 +43,7 @@ export async function readableFromFileOrURL(fileOrURL: string, httpHeaders?: str
             const response = await fetch(fileOrURL, {
                 headers: parseHeaders(httpHeaders)
             });
+
             return defined(response.body) as unknown as Readable;
         } else if (isNode) {
             if (fileOrURL === "-") {
