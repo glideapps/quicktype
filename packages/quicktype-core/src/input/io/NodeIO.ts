@@ -2,14 +2,13 @@ import * as fs from "fs";
 import { defined, exceptionToString } from "@glideapps/ts-necessities";
 import { Readable } from "readable-stream";
 import { isNode } from "browser-or-node";
-import _fetch from "cross-fetch";
 import { getStream } from "./get-stream";
 import { messageError, panic } from "../../index";
 
 const isURL = require("is-url");
 
 // Only use cross-fetch in CI
-const fetch = process.env.CI ? _fetch : (global as any).fetch ?? _fetch;
+const fetch = process.env.CI ? require("cross-fetch").default : (global as any).fetch ?? require("cross-fetch").default;
 
 interface HttpHeaders {
     [key: string]: string;
