@@ -12,6 +12,8 @@ import { messageError, panic } from "../../index";
 import { getStream } from "./get-stream";
 
 // Only use cross-fetch in CI
+// FIXME: type global
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const fetch = process.env.CI ? _fetch : (global as any).fetch ?? _fetch;
 
 interface HttpHeaders {

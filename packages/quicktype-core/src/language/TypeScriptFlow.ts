@@ -212,6 +212,7 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
             if (!t.isPrimitive()) {
                 return;
             }
+
             this.ensureBlankLine();
             this.emitDescription(this.descriptionForType(t));
             this.emitLine("type ", name, " = ", this.sourceFor(t).source, ";");
