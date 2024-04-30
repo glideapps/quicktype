@@ -12,11 +12,20 @@ import {
     firstUpperWordStyle,
     allUpperWordStyle
 } from "../support/Strings";
-import { defined, panic } from "../support/Support";
+import { assert, defined, panic } from "../support/Support";
 import { StringTypeMapping, getNoStringTypeMapping } from "../TypeBuilder";
 import { addDescriptionToSchema } from "../attributes/Description";
-import { Option } from "../RendererOptions";
+import { BooleanOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
+import { Sourcelike } from "Source";
+
+export const jsonSchemaOptions = {
+    multiFileOutput: new BooleanOption(
+        "multi-file-output",
+        "Renders each top-level object in its own JSON schema file",
+        false
+    )
+};
 
 export class JSONSchemaTargetLanguage extends TargetLanguage {
     constructor() {
@@ -24,7 +33,7 @@ export class JSONSchemaTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [];
+        return [jsonSchemaOptions.multiFileOutput];
     }
 
     get stringTypeMapping(): StringTypeMapping {
@@ -41,9 +50,9 @@ export class JSONSchemaTargetLanguage extends TargetLanguage {
 
     protected makeRenderer(
         renderContext: RenderContext,
-        _untypedOptionValues: { [name: string]: any }
+        untypedOptionValues: { [name: string]: any }
     ): JSONSchemaRenderer {
-        return new JSONSchemaRenderer(this, renderContext);
+        return new JSONSchemaRenderer(this, renderContext, getOptionValues(jsonSchemaOptions, untypedOptionValues));
     }
 }
 
@@ -68,6 +77,16 @@ function jsonNameStyle(original: string): string {
 type Schema = { [name: string]: any };
 
 export class JSONSchemaRenderer extends ConvenienceRenderer {
+    private _currentFilename: string | undefined;
+
+    constructor(
+        targetLanguage: TargetLanguage,
+        renderContext: RenderContext,
+        private readonly _options: OptionValues<typeof jsonSchemaOptions>
+    ) {
+        super(targetLanguage, renderContext);
+    }
+
     protected makeNamedTypeNamer(): Namer {
         return namingFunction;
     }
@@ -199,25 +218,63 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
     }
 
     protected emitSourceStructure(): void {
-        // FIXME: Find a good way to do multiple top-levels.  Maybe multiple files?
-        const topLevelType = this.topLevels.size === 1 ? this.schemaForType(defined(mapFirst(this.topLevels))) : {};
-        const schema = Object.assign({ $schema: "http://json-schema.org/draft-06/schema#" }, topLevelType);
         const definitions: { [name: string]: Schema } = {};
         this.forEachObject("none", (o: ObjectType, name: Name) => {
             const title = defined(this.names.get(name));
-            definitions[title] = this.definitionForObject(o, title);
+            if (this._options.multiFileOutput === true)
+                this.outputFile(title, {
+                    [title]: this.definitionForObject(o, title)
+                });
+            else definitions[title] = this.definitionForObject(o, title);
         });
         this.forEachUnion("none", (u, name) => {
             if (!this.unionNeedsName(u)) return;
             const title = defined(this.names.get(name));
-            definitions[title] = this.definitionForUnion(u, title);
+            if (this._options.multiFileOutput === true)
+                this.outputFile(title, {
+                    [title]: this.definitionForUnion(u, title)
+                });
+            else definitions[title] = this.definitionForUnion(u, title);
         });
         this.forEachEnum("none", (e, name) => {
             const title = defined(this.names.get(name));
-            definitions[title] = this.definitionForEnum(e, title);
+            if (this._options.multiFileOutput === true)
+                this.outputFile(title, {
+                    [title]: this.definitionForEnum(e, title)
+                });
+            else definitions[title] = this.definitionForEnum(e, title);
         });
-        schema.definitions = definitions;
+        if (this._options.multiFileOutput === false) this.outputFile("stdout", definitions);
+    }
 
+    outputFile(title: string, definitions: { [name: string]: Schema }) {
+        // FIXME: Find a good way to do multiple top-levels.  Maybe multiple files?
+        const topLevelType = this.topLevels.size === 1 ? this.schemaForType(defined(mapFirst(this.topLevels))) : {};
+        const schema = Object.assign({ $schema: "http://json-schema.org/draft-06/schema#" }, topLevelType);
+        schema.definitions = definitions;
+        this.startFile(title);
         this.emitMultiline(JSON.stringify(schema, undefined, "    "));
+        this.endFile();
+    }
+
+    /// startFile takes a file name, lowercases it, appends ".schema" to it, and sets it as the current filename.
+    protected startFile(basename: Sourcelike): void {
+        if (this._options.multiFileOutput === false) {
+            return;
+        }
+
+        assert(this._currentFilename === undefined, "Previous file wasn't finished: " + this._currentFilename);
+        this._currentFilename = `${this.sourcelikeToString(basename)}.schema`;
+        this.initializeEmitContextForFilename(this._currentFilename);
+    }
+
+    /// endFile pushes the current file name onto the collection of finished files and then resets the current file name. These finished files are used in index.ts to write the output.
+    protected endFile(): void {
+        if (this._options.multiFileOutput === false) {
+            return;
+        }
+
+        this.finishFile(defined(this._currentFilename));
+        this._currentFilename = undefined;
     }
 }
