@@ -301,6 +301,11 @@ export class KotlinRenderer extends ConvenienceRenderer {
         this.ensureBlankLine();
     }
 
+    protected emitTopLevelPrimitive(t: PrimitiveType, name: Name): void {
+        const elementType = this.kotlinType(t);
+        this.emitLine(["typealias ", name, " = ", elementType, ""]);
+    }
+
     protected emitTopLevelArray(t: ArrayType, name: Name): void {
         const elementType = this.kotlinType(t.items);
         this.emitLine(["typealias ", name, " = ArrayList<", elementType, ">"]);
@@ -446,6 +451,8 @@ export class KotlinRenderer extends ConvenienceRenderer {
                 this.emitTopLevelArray(t, name);
             } else if (t instanceof MapType) {
                 this.emitTopLevelMap(t, name);
+            } else if (t.isPrimitive()) {
+                this.emitTopLevelPrimitive(t, name);
             }
         });
 

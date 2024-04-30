@@ -1,4 +1,4 @@
-import unicode from "unicode-properties";
+import * as unicode from "unicode-properties";
 
 import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../../ConvenienceRenderer";
 import { type Name, Namer } from "../../Naming";

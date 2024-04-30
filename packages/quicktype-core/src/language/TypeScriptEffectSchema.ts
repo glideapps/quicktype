@@ -125,24 +125,24 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
 
         const match = matchType<Sourcelike>(
             t,
-            _anyType => "S.any",
-            _nullType => "S.null",
-            _boolType => "S.boolean",
-            _integerType => "S.number",
-            _doubleType => "S.number",
-            _stringType => "S.string",
-            arrayType => ["S.array(", this.typeMapTypeFor(arrayType.items, false), ")"],
+            _anyType => "S.Any",
+            _nullType => "S.Null",
+            _boolType => "S.Boolean",
+            _integerType => "S.Number",
+            _doubleType => "S.Number",
+            _stringType => "S.String",
+            arrayType => ["S.Array(", this.typeMapTypeFor(arrayType.items, false), ")"],
             _classType => panic("Should already be handled."),
-            _mapType => ["S.record(S.string, ", this.typeMapTypeFor(_mapType.values, false), ")"],
+            _mapType => ["S.Record(S.String, ", this.typeMapTypeFor(_mapType.values, false), ")"],
             _enumType => panic("Should already be handled."),
             unionType => {
                 const children = Array.from(unionType.getChildren()).map((type: Type) =>
                     this.typeMapTypeFor(type, false)
                 );
-                return ["S.union(", ...arrayIntercalate(", ", children), ")"];
+                return ["S.Union(", ...arrayIntercalate(", ", children), ")"];
             },
             _transformedStringType => {
-                return "S.string";
+                return "S.String";
             }
         );
 
@@ -169,7 +169,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
         this.emittedObjects.add(enumName);
         this.ensureBlankLine();
         this.emitDescription(this.descriptionForType(e));
-        this.emitLine("\nexport const ", enumName, " = ", "S.literal(");
+        this.emitLine("\nexport const ", enumName, " = ", "S.Literal(");
         this.indent(() =>
             this.forEachEnumCase(e, "none", (_, jsonName) => {
                 this.emitLine('"', stringEscape(jsonName), '",');
