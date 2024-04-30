@@ -271,7 +271,6 @@ function inferCLIOptions(opts: Partial<CLIOptions>, targetLanguage: TargetLangua
         language = maybeLanguage;
     }
 
-    /* tslint:disable:strict-boolean-expressions */
     const options: CLIOptions = {
         src: opts.src || [],
         srcUrls: opts.srcUrls,
@@ -295,7 +294,6 @@ function inferCLIOptions(opts: Partial<CLIOptions>, targetLanguage: TargetLangua
         debug: opts.debug,
         telemetry: opts.telemetry
     };
-    /* tslint:enable */
     for (const flagName of inferenceFlagNames) {
         const cliName = negatedInferenceFlagName(flagName);
         options[cliName] = !!opts[cliName];

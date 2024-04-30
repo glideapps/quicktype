@@ -36,4 +36,3 @@ test/fixtures/objective-c/quicktype
 /.bsp
 .metals
 .scala-build
-.vscode

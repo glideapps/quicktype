@@ -1,5 +1,3 @@
-/* tslint:disable:strict-boolean-expressions */
-
 import {
     DocumentNode,
     SelectionSetNode,
