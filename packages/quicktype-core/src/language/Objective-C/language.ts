@@ -4,14 +4,13 @@ import { TargetLanguage } from "../../TargetLanguage";
 import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
 
 import { ObjectiveCRenderer } from "./ObjectiveCRenderer";
+import { DEFAULT_CLASS_PREFIX } from "./utils";
 
 export type MemoryAttribute = "assign" | "strong" | "copy";
 export interface OutputFeatures {
     implementation: boolean;
     interface: boolean;
 }
-
-export const DEFAULT_CLASS_PREFIX = "QT";
 
 export const objectiveCOptions = {
     features: new EnumOption("features", "Interface and implementation", [

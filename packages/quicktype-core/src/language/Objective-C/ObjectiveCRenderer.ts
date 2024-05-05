@@ -12,8 +12,9 @@ import { ArrayType, type ClassProperty, ClassType, EnumType, MapType, Type, Unio
 import { isAnyOrNull, matchType, nullableFromUnion } from "../../TypeUtils";
 
 import { forbiddenPropertyNames, keywords } from "./constants";
-import { DEFAULT_CLASS_PREFIX, type MemoryAttribute, type objectiveCOptions } from "./language";
+import { type MemoryAttribute, type objectiveCOptions } from "./language";
 import {
+    DEFAULT_CLASS_PREFIX,
     forbiddenForEnumCases,
     propertyNameStyle,
     splitExtension,

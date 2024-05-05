@@ -12,6 +12,8 @@ import {
 
 import { booleanPrefixes, forbiddenPropertyNames } from "./constants";
 
+export const DEFAULT_CLASS_PREFIX = "QT";
+
 export function typeNameStyle(prefix: string, original: string): string {
     const words = splitIntoWords(original);
     const result = combineWords(
