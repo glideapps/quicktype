@@ -14,6 +14,17 @@ import {
     utf32ConcatMap
 } from "../../support/Strings";
 
+export enum Density {
+    Normal = "Normal",
+    Dense = "Dense"
+}
+
+export enum Visibility {
+    Private = "Private",
+    Crate = "Crate",
+    Public = "Public"
+}
+
 type NameToParts = (name: string) => string[];
 type PartsToName = (parts: string[]) => string;
 interface NamingStyle {

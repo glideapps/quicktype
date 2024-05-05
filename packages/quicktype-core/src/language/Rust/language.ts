@@ -4,17 +4,7 @@ import { TargetLanguage } from "../../TargetLanguage";
 import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
 
 import { RustRenderer } from "./RustRenderer";
-
-export enum Density {
-    Normal = "Normal",
-    Dense = "Dense"
-}
-
-export enum Visibility {
-    Private = "Private",
-    Crate = "Crate",
-    Public = "Public"
-}
+import { Density, Visibility } from "./utils";
 
 export const rustOptions = {
     density: new EnumOption("density", "Density", [

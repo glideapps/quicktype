@@ -13,8 +13,10 @@ import { type ClassType, type EnumType, type Type, UnionType } from "../../Type"
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
 
 import { keywords } from "./constants";
-import { Density, Visibility, type rustOptions } from "./language";
+import { type rustOptions } from "./language";
 import {
+    Density,
+    Visibility,
     camelNamingFunction,
     getPreferedNamingStyle,
     listMatchingNamingStyles,
