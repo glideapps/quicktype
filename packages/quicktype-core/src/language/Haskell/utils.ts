@@ -1,14 +1,14 @@
 import { funPrefixNamer } from "../../Naming";
 import {
-    legalizeCharacters,
-    isLetterOrUnderscoreOrDigit,
-    isLetterOrUnderscore,
-    isAscii,
-    splitIntoWords,
+    allLowerWordStyle,
+    allUpperWordStyle,
     combineWords,
     firstUpperWordStyle,
-    allLowerWordStyle,
-    allUpperWordStyle
+    isAscii,
+    isLetterOrUnderscore,
+    isLetterOrUnderscoreOrDigit,
+    legalizeCharacters,
+    splitIntoWords
 } from "../../support/Strings";
 
 const legalizeName = legalizeCharacters(cp => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp));

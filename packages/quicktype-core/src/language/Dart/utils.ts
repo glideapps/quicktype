@@ -1,3 +1,4 @@
+import { funPrefixNamer } from "../../Naming";
 import {
     allLowerWordStyle,
     allUpperWordStyle,
@@ -13,8 +14,6 @@ import {
     utf16ConcatMap,
     utf16LegalizeCharacters
 } from "../../support/Strings";
-
-import { funPrefixNamer } from "../../Naming";
 
 export const typeNamingFunction = funPrefixNamer("types", n => dartNameStyle(true, false, n));
 export const propertyNamingFunction = funPrefixNamer("properties", n => dartNameStyle(false, false, n));

@@ -1,34 +1,34 @@
 import unicode from "unicode-properties";
 
 import {
+    allLowerWordStyle,
+    allUpperWordStyle,
+    combineWords,
+    escapeNonPrintableMapper,
+    firstUpperWordStyle,
+    intToHex,
+    isLetterOrUnderscore,
+    isPrintable,
     legalizeCharacters,
     splitIntoWords,
-    combineWords,
-    firstUpperWordStyle,
-    allUpperWordStyle,
-    allLowerWordStyle,
-    utf32ConcatMap,
-    isPrintable,
-    escapeNonPrintableMapper,
-    intToHex,
-    isLetterOrUnderscore
+    utf32ConcatMap
 } from "../../support/Strings";
 
 function unicodeEscape(codePoint: number): string {
     return `\\u{${intToHex(codePoint, 0)}}`;
 }
 
-export function capitalizeFirstLetter(str: string) {
+export function capitalizeFirstLetter(str: string): string {
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 export const stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
 
-export function escapeDoubleQuotes(str: string) {
+export function escapeDoubleQuotes(str: string): string {
     return str.replace(/"/g, '\\"');
 }
 
-export function escapeNewLines(str: string) {
+export function escapeNewLines(str: string): string {
     return str.replace(/\n/g, "\\n");
 }
 
@@ -36,7 +36,7 @@ const isStartCharacter = isLetterOrUnderscore;
 
 function isPartCharacter(utf16Unit: number): boolean {
     const category: string = unicode.getCategory(utf16Unit);
-    return ["Nd", "Pc", "Mn", "Mc"].indexOf(category) >= 0 || isStartCharacter(utf16Unit);
+    return ["Nd", "Pc", "Mn", "Mc"].includes(category) || isStartCharacter(utf16Unit);
 }
 
 const legalizeName = legalizeCharacters(isPartCharacter);
@@ -45,6 +45,7 @@ export function simpleNameStyle(original: string, uppercase: boolean): string {
     if (/^[0-9]+$/.test(original)) {
         original = `${original}N`;
     }
+
     const words = splitIntoWords(original);
     return combineWords(
         words,

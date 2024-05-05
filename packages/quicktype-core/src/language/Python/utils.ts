@@ -1,26 +1,26 @@
+import unicode from "unicode-properties";
+
 import {
-    splitIntoWords,
+    allLowerWordStyle,
+    allUpperWordStyle,
     combineWords,
     firstUpperWordStyle,
-    utf16LegalizeCharacters,
-    allUpperWordStyle,
-    allLowerWordStyle,
-    originalWord
+    originalWord,
+    splitIntoWords,
+    utf16LegalizeCharacters
 } from "../../support/Strings";
-
-import unicode from "unicode-properties";
 
 function isNormalizedStartCharacter3(utf16Unit: number): boolean {
     // FIXME: add Other_ID_Start - https://docs.python.org/3/reference/lexical_analysis.html#identifiers
     const category: string = unicode.getCategory(utf16Unit);
-    return ["Lu", "Ll", "Lt", "Lm", "Lo", "Nl"].indexOf(category) >= 0;
+    return ["Lu", "Ll", "Lt", "Lm", "Lo", "Nl"].includes(category);
 }
 
 function isNormalizedPartCharacter3(utf16Unit: number): boolean {
     // FIXME: add Other_ID_Continue - https://docs.python.org/3/reference/lexical_analysis.html#identifiers
     if (isNormalizedStartCharacter3(utf16Unit)) return true;
     const category: string = unicode.getCategory(utf16Unit);
-    return ["Mn", "Mc", "Nd", "Pc"].indexOf(category) >= 0;
+    return ["Mn", "Mc", "Nd", "Pc"].includes(category);
 }
 
 function isStartCharacter3(utf16Unit: number): boolean {
@@ -30,6 +30,7 @@ function isStartCharacter3(utf16Unit: number): boolean {
     for (let i = 1; i < l; i++) {
         if (!isNormalizedPartCharacter3(s.charCodeAt(i))) return false;
     }
+
     return true;
 }
 
@@ -39,6 +40,7 @@ function isPartCharacter3(utf16Unit: number): boolean {
     for (let i = 0; i < l; i++) {
         if (!isNormalizedPartCharacter3(s.charCodeAt(i))) return false;
     }
+
     return true;
 }
 
@@ -62,6 +64,7 @@ function getWordStyle(uppercase: boolean, forceSnakeNameStyle: boolean) {
     if (!forceSnakeNameStyle) {
         return originalWord;
     }
+
     return uppercase ? allUpperWordStyle : allLowerWordStyle;
 }
 

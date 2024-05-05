@@ -1,5 +1,5 @@
 import { funPrefixNamer } from "../../Naming";
-import { legalizeCharacters, isLetterOrUnderscoreOrDigit, makeNameStyle } from "../../support/Strings";
+import { isLetterOrUnderscoreOrDigit, legalizeCharacters, makeNameStyle } from "../../support/Strings";
 
 const legalizeName = legalizeCharacters(isLetterOrUnderscoreOrDigit);
 export const enumNamingFunction = funPrefixNamer("enumNamer", makeNameStyle("upper-underscore", legalizeName));

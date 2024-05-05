@@ -175,6 +175,7 @@ export class DartRenderer extends ConvenienceRenderer {
             if (this._options.useFreezed) {
                 this.emitLine("part '", name, ".freezed.dart';");
             }
+
             if (!this._options.justTypes) {
                 this.emitLine("part '", name, ".g.dart';");
             }
@@ -212,6 +213,7 @@ export class DartRenderer extends ConvenienceRenderer {
                 if (maybeNullable === null) {
                     return "dynamic";
                 }
+
                 return withNullable(this.dartType(maybeNullable, withIssues));
             },
             transformedStringType => {
@@ -230,6 +232,7 @@ export class DartRenderer extends ConvenienceRenderer {
         if (this._options.nullSafety && isNullable && !this._options.requiredProperties) {
             return [list, " == null ? [] : ", "List<", itemType, ">.from(", list, "!.map((x) => ", mapper, "))"];
         }
+
         return ["List<", itemType, ">.from(", list, ".map((x) => ", mapper, "))"];
     }
 
@@ -300,6 +303,7 @@ export class DartRenderer extends ConvenienceRenderer {
                 if (maybeNullable === null) {
                     return dynamic;
                 }
+
                 return this.fromDynamicExpression(unionType.isNullable, maybeNullable, dynamic);
             },
             transformedStringType => {
@@ -313,6 +317,7 @@ export class DartRenderer extends ConvenienceRenderer {
                         ) {
                             return [dynamic, " == null ? null : ", "DateTime.parse(", dynamic, ")"];
                         }
+
                         return ["DateTime.parse(", dynamic, ")"];
                     default:
                         return dynamic;
@@ -350,6 +355,7 @@ export class DartRenderer extends ConvenienceRenderer {
                 ) {
                     return [dynamic, "?.", this.toJson, "()"];
                 }
+
                 return [dynamic, ".", this.toJson, "()"];
             },
             mapType =>
@@ -367,6 +373,7 @@ export class DartRenderer extends ConvenienceRenderer {
                 if (maybeNullable === null) {
                     return dynamic;
                 }
+
                 return this.toDynamicExpression(unionType.isNullable, maybeNullable, dynamic);
             },
             transformedStringType => {
@@ -379,6 +386,7 @@ export class DartRenderer extends ConvenienceRenderer {
                         ) {
                             return [dynamic, "?.toIso8601String()"];
                         }
+
                         return [dynamic, ".toIso8601String()"];
                     case "date":
                         if (
@@ -397,6 +405,7 @@ export class DartRenderer extends ConvenienceRenderer {
                                 "!.day.toString().padLeft(2, '0')}\""
                             ];
                         }
+
                         return [
                             '"${',
                             dynamic,
@@ -615,6 +624,7 @@ export class DartRenderer extends ConvenienceRenderer {
                             this.classPropertyCounter++;
                             this.emitLine(`@JsonKey(name: "${jsonName}")`);
                         }
+
                         this.emitLine(required ? "required " : "", this.dartType(prop.type, true), " ", name, ",");
                     });
                 });
@@ -645,6 +655,7 @@ export class DartRenderer extends ConvenienceRenderer {
                 if (this._options.useJsonAnnotation) {
                     this.emitLine('@JsonValue("', stringEscape(jsonName), '")');
                 }
+
                 this.emitLine(name, comma);
             });
         });

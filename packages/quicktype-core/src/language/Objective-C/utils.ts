@@ -1,14 +1,15 @@
+import unicode from "unicode-properties";
+
 import {
-    splitIntoWords,
+    addPrefixIfNecessary,
+    allLowerWordStyle,
+    allUpperWordStyle,
     combineWords,
     firstUpperWordStyle,
-    allUpperWordStyle,
-    allLowerWordStyle,
-    utf16LegalizeCharacters,
-    addPrefixIfNecessary
+    splitIntoWords,
+    utf16LegalizeCharacters
 } from "../../support/Strings";
 
-import unicode from "unicode-properties";
 import { booleanPrefixes, forbiddenPropertyNames } from "./constants";
 
 export function typeNameStyle(prefix: string, original: string): string {
@@ -39,7 +40,7 @@ export function propertyNameStyle(original: string, isBool = false): string {
         if (words.length === 0) {
             words = [{ word: "flag", isAcronym: false }];
             // @ts-expect-error needs strict type
-        } else if (!words[0].isAcronym && booleanPrefixes.indexOf(words[0].word) < 0) {
+        } else if (!words[0].isAcronym && !booleanPrefixes.includes(words[0].word)) {
             words = [{ word: "is", isAcronym: false }, ...words];
         }
     }
@@ -47,7 +48,7 @@ export function propertyNameStyle(original: string, isBool = false): string {
     // Properties cannot even begin with any of the forbidden names
     // For example, properies named new* are treated differently by ARC
     // @ts-expect-error needs strict type
-    if (words.length > 0 && forbiddenPropertyNames.indexOf(words[0].word) >= 0) {
+    if (words.length > 0 && forbiddenPropertyNames.includes(words[0].word)) {
         words = [{ word: "the", isAcronym: false }, ...words];
     }
 
@@ -69,7 +70,7 @@ function isStartCharacter(utf16Unit: number): boolean {
 
 function isPartCharacter(utf16Unit: number): boolean {
     const category: string = unicode.getCategory(utf16Unit);
-    return ["Nd", "Pc", "Mn", "Mc"].indexOf(category) >= 0 || isStartCharacter(utf16Unit);
+    return ["Nd", "Pc", "Mn", "Mc"].includes(category) || isStartCharacter(utf16Unit);
 }
 
 const legalizeName = utf16LegalizeCharacters(isPartCharacter);
@@ -81,5 +82,5 @@ export function splitExtension(filename: string): [string, string] {
     const i = filename.lastIndexOf(".");
     const extension = i !== -1 ? filename.split(".").pop() : "m";
     filename = i !== -1 ? filename.slice(0, i) : filename;
-    return [filename, extension === undefined ? "m" : extension];
+    return [filename, extension ?? "m"];
 }

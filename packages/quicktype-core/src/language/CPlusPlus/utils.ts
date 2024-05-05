@@ -1,13 +1,13 @@
-import { Type, TypeKind } from "../../Type";
-import { Name } from "../../Naming";
-import { Sourcelike } from "../../Source";
-import { legalizeCharacters, isAscii, isLetterOrUnderscoreOrDigit } from "../../support/Strings";
 import {
-    minMaxValueForType,
+    type MinMaxConstraint,
     minMaxLengthForType,
-    patternForType,
-    MinMaxConstraint
+    minMaxValueForType,
+    patternForType
 } from "../../attributes/Constraints";
+import { type Name } from "../../Naming";
+import { type Sourcelike } from "../../Source";
+import { isAscii, isLetterOrUnderscoreOrDigit, legalizeCharacters } from "../../support/Strings";
+import { type Type, type TypeKind } from "../../Type";
 
 export function constraintsForType(t: Type):
     | {
@@ -36,65 +36,67 @@ export const optionalFactoryAsSharedType = "std::make_shared";
  * but in vector or in variant) we can forward declare them;
  */
 export enum IncludeKind {
-    ForwardDeclare,
-    Include
+    ForwardDeclare = "ForwardDeclare",
+    Include = "Include"
 }
 
+// FIXME: make these string enums eventually
 export enum GlobalNames {
-    ClassMemberConstraints,
-    ClassMemberConstraintException,
-    ValueTooLowException,
-    ValueTooHighException,
-    ValueTooShortException,
-    ValueTooLongException,
-    InvalidPatternException,
-    CheckConstraint
+    ClassMemberConstraints = 1,
+    ClassMemberConstraintException = 2,
+    ValueTooLowException = 3,
+    ValueTooHighException = 4,
+    ValueTooShortException = 5,
+    ValueTooLongException = 6,
+    InvalidPatternException = 7,
+    CheckConstraint = 8
 }
 
+// FIXME: make these string enums eventually
 export enum MemberNames {
-    MinIntValue,
-    GetMinIntValue,
-    SetMinIntValue,
-    MaxIntValue,
-    GetMaxIntValue,
-    SetMaxIntValue,
-    MinDoubleValue,
-    GetMinDoubleValue,
-    SetMinDoubleValue,
-    MaxDoubleValue,
-    GetMaxDoubleValue,
-    SetMaxDoubleValue,
-    MinLength,
-    GetMinLength,
-    SetMinLength,
-    MaxLength,
-    GetMaxLength,
-    SetMaxLength,
-    Pattern,
-    GetPattern,
-    SetPattern
+    MinIntValue = 1,
+    GetMinIntValue = 2,
+    SetMinIntValue = 3,
+    MaxIntValue = 4,
+    GetMaxIntValue = 5,
+    SetMaxIntValue = 6,
+    MinDoubleValue = 7,
+    GetMinDoubleValue = 8,
+    SetMinDoubleValue = 9,
+    MaxDoubleValue = 10,
+    GetMaxDoubleValue = 11,
+    SetMaxDoubleValue = 12,
+    MinLength = 13,
+    GetMinLength = 14,
+    SetMinLength = 15,
+    MaxLength = 16,
+    GetMaxLength = 17,
+    SetMaxLength = 18,
+    Pattern = 19,
+    GetPattern = 20,
+    SetPattern = 21
 }
 
-export type ConstraintMember = {
-    name: MemberNames;
-    getter: MemberNames;
-    setter: MemberNames;
-    cppType: string;
+export interface ConstraintMember {
     cppConstType?: string;
-};
+    cppType: string;
+    getter: MemberNames;
+    name: MemberNames;
+    setter: MemberNames;
+}
 
-export type IncludeRecord = {
+export interface IncludeRecord {
     kind: IncludeKind | undefined /** How to include that */;
     typeKind: TypeKind | undefined /** What exactly to include */;
-};
+}
 
-export type TypeRecord = {
+export interface TypeRecord {
+    forceInclude: boolean;
+    level: number;
     name: Name;
     type: Type;
-    level: number;
     variant: boolean;
-    forceInclude: boolean;
-};
+}
 
 /**
  * We map each and every unique type to a include kind, e.g. how
@@ -102,57 +104,65 @@ export type TypeRecord = {
  */
 export type IncludeMap = Map<string, IncludeRecord>;
 
-export type TypeContext = {
+export interface TypeContext {
+    inJsonNamespace: boolean;
     needsForwardIndirection: boolean;
     needsOptionalIndirection: boolean;
-    inJsonNamespace: boolean;
-};
+}
 
 export interface StringType {
-    getType(): string;
-    getConstType(): string;
-    getSMatch(): string;
-    getRegex(): string;
-    createStringLiteral(inner: Sourcelike): Sourcelike;
-    wrapToString(inner: Sourcelike): Sourcelike;
-    wrapEncodingChange(
+    createStringLiteral: (inner: Sourcelike) => Sourcelike;
+    emitHelperFunctions: () => void;
+    getConstType: () => string;
+    getRegex: () => string;
+    getSMatch: () => string;
+    getType: () => string;
+    wrapEncodingChange: (
         qualifier: Sourcelike[],
         fromType: Sourcelike,
         toType: Sourcelike,
         inner: Sourcelike
-    ): Sourcelike;
-    emitHelperFunctions(): void;
+    ) => Sourcelike;
+    wrapToString: (inner: Sourcelike) => Sourcelike;
 }
 
 export function addQualifier(qualifier: Sourcelike, qualified: Sourcelike[]): Sourcelike[] {
     if (qualified.length === 0) {
         return [];
     }
+
     return [qualifier, qualified];
 }
 
-export class WrappingCode {
-    constructor(
+class WrappingCode {
+    public constructor(
         private readonly start: Sourcelike[],
         private readonly end: Sourcelike[]
     ) {}
 
-    wrap(qualifier: Sourcelike, inner: Sourcelike): Sourcelike {
+    public wrap(qualifier: Sourcelike, inner: Sourcelike): Sourcelike {
         return [addQualifier(qualifier, this.start), inner, this.end];
     }
 }
 
 export class BaseString {
     public _stringType: string;
+
     public _constStringType: string;
+
     public _smatch: string;
+
     public _regex: string;
+
     public _stringLiteralPrefix: string;
+
     public _toString: WrappingCode;
+
     public _encodingClass: Sourcelike;
+
     public _encodingFunction: Sourcelike;
 
-    constructor(
+    public constructor(
         stringType: string,
         constStringType: string,
         smatch: string,

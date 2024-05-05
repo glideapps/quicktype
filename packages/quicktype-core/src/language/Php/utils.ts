@@ -1,3 +1,5 @@
+import * as _ from "lodash";
+
 import {
     allLowerWordStyle,
     allUpperWordStyle,
@@ -12,7 +14,6 @@ import {
     utf16ConcatMap,
     utf16LegalizeCharacters
 } from "../../support/Strings";
-import * as _ from "lodash";
 
 export const stringEscape = utf16ConcatMap(escapeNonPrintableMapper(isAscii, standardUnicodeHexEscape));
 

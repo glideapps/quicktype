@@ -10,6 +10,7 @@ import {
     legalizeCharacters,
     splitIntoWords
 } from "../../support/Strings";
+
 import { invalidSymbols, keywords } from "./constants";
 
 /**
@@ -61,7 +62,7 @@ export function scalaNameStyle(isUpper: boolean, original: string): string {
 	return "\\u" + intToHex(codePoint, 4);
 } */
 
-//const _stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
+// const _stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
 
 /* function stringEscape(s: string): string {
 	// "$this" is a template string in Kotlin so we have to escape $

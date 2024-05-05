@@ -1,26 +1,26 @@
+import { funPrefixNamer } from "../../Naming";
 import {
-    legalizeCharacters,
-    splitIntoWords,
-    isLetterOrUnderscoreOrDigit,
-    combineWords,
     allLowerWordStyle,
+    combineWords,
+    escapeNonPrintableMapper,
     firstUpperWordStyle,
     intToHex,
-    utf32ConcatMap,
-    escapeNonPrintableMapper,
-    isPrintable,
     isAscii,
-    isLetterOrUnderscore
+    isLetterOrUnderscore,
+    isLetterOrUnderscoreOrDigit,
+    isPrintable,
+    legalizeCharacters,
+    splitIntoWords,
+    utf32ConcatMap
 } from "../../support/Strings";
-import { funPrefixNamer } from "../../Naming";
 
 type NameToParts = (name: string) => string[];
 type PartsToName = (parts: string[]) => string;
-type NamingStyle = {
+interface NamingStyle {
+    fromParts: PartsToName;
     regex: RegExp;
     toParts: NameToParts;
-    fromParts: PartsToName;
-};
+}
 
 export const namingStyles: Record<string, NamingStyle> = {
     snake_case: {
@@ -131,6 +131,7 @@ export function getPreferedNamingStyle(namingStyleOccurences: string[], defaultS
     if (preferedStyles.includes(defaultStyle)) {
         return defaultStyle;
     }
+
     return preferedStyles[0];
 }
 
@@ -144,9 +145,11 @@ export function nameToNamingStyle(name: string, style: string): string {
     if (namingStyles[style].regex.test(name)) {
         return name;
     }
+
     const fromStyle = listMatchingNamingStyles(name)[0];
     if (fromStyle === undefined) {
         return name;
     }
+
     return namingStyles[style].fromParts(namingStyles[fromStyle].toParts(name));
 }

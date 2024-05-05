@@ -1,10 +1,10 @@
 import { funPrefixNamer } from "../../Naming";
 import {
-    legalizeCharacters,
-    splitIntoWords,
+    allUpperWordStyle,
     combineWords,
     firstUpperWordStyle,
-    allUpperWordStyle
+    legalizeCharacters,
+    splitIntoWords
 } from "../../support/Strings";
 
 export const namingFunction = funPrefixNamer("namer", jsonNameStyle);

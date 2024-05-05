@@ -1,18 +1,20 @@
-import { Type, EnumType, UnionType, ArrayType, PrimitiveType } from "../../Type";
-import { nullableFromUnion } from "../../TypeUtils";
-import { Sourcelike } from "../../Source";
+import unicode from "unicode-properties";
+
+import { minMaxLengthForType, minMaxValueForType } from "../../attributes/Constraints";
+import { funPrefixNamer } from "../../Naming";
+import { type Sourcelike } from "../../Source";
 import {
-    utf16LegalizeCharacters,
-    splitIntoWords,
+    type WordInName,
     combineWords,
     firstUpperWordStyle,
-    WordInName
+    splitIntoWords,
+    utf16LegalizeCharacters
 } from "../../support/Strings";
 import { panic } from "../../support/Support";
-import { funPrefixNamer } from "../../Naming";
-import { Transformation } from "../../Transformers";
-import { minMaxLengthForType, minMaxValueForType } from "../../attributes/Constraints";
-import unicode from "unicode-properties";
+import { type Transformation } from "../../Transformers";
+import { ArrayType, EnumType, type PrimitiveType, type Type, UnionType } from "../../Type";
+import { nullableFromUnion } from "../../TypeUtils";
+
 import { keywords } from "./constants";
 
 export function noFollow(t: Type): Type {
@@ -26,17 +28,20 @@ export function needTransformerForType(t: Type): "automatic" | "manual" | "nulla
         if (needTransformerForType(maybeNullable) === "manual") return "nullable";
         return "none";
     }
+
     if (t instanceof ArrayType) {
         const itemsNeed = needTransformerForType(t.items);
         if (itemsNeed === "manual" || itemsNeed === "nullable") return "automatic";
         return "none";
     }
+
     if (t instanceof EnumType) return "automatic";
     if (t.kind === "double") return minMaxValueForType(t) !== undefined ? "manual" : "none";
     if (t.kind === "integer-string" || t.kind === "bool-string") return "manual";
     if (t.kind === "string") {
         return minMaxLengthForType(t) !== undefined ? "manual" : "none";
     }
+
     return "none";
 }
 
@@ -75,14 +80,16 @@ export function isStartCharacter(utf16Unit: number): boolean {
     if (unicode.isAlphabetic(utf16Unit)) {
         return true;
     }
+
     return utf16Unit === 0x5f; // underscore
 }
 
 function isPartCharacter(utf16Unit: number): boolean {
     const category: string = unicode.getCategory(utf16Unit);
-    if (["Nd", "Pc", "Mn", "Mc"].indexOf(category) >= 0) {
+    if (["Nd", "Pc", "Mn", "Mc"].includes(category)) {
         return true;
     }
+
     return isStartCharacter(utf16Unit);
 }
 
@@ -129,5 +136,6 @@ export function isValueType(t: Type): boolean {
     if (t instanceof UnionType) {
         return nullableFromUnion(t) === null;
     }
-    return ["integer", "double", "bool", "enum", "date-time", "uuid"].indexOf(t.kind) >= 0;
+
+    return ["integer", "double", "bool", "enum", "date-time", "uuid"].includes(t.kind);
 }

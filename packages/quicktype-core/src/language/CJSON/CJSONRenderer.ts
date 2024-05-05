@@ -1,3 +1,7 @@
+// FIXME: NEEDS REFACTOR
+/* eslint-disable @typescript-eslint/no-shadow */
+/* eslint-disable @typescript-eslint/naming-convention */
+
 import { getAccessorName } from "../../attributes/AccessorNames";
 import { enumCaseValues } from "../../attributes/EnumValues";
 import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../../ConvenienceRenderer";

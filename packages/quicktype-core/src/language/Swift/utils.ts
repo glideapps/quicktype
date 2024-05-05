@@ -1,23 +1,23 @@
-import { ClassProperty } from "../../Type";
-import { Name } from "../../Naming";
+import { DefaultDateTimeRecognizer } from "../../DateTime";
+import { type Name } from "../../Naming";
+import { type ForEachPosition } from "../../Renderer";
 import {
-    legalizeCharacters,
-    isLetterOrUnderscore,
-    isNumeric,
-    isDigit,
-    utf32ConcatMap,
-    escapeNonPrintableMapper,
-    isPrintable,
-    intToHex,
-    splitIntoWords,
-    combineWords,
-    firstUpperWordStyle,
+    addPrefixIfNecessary,
     allLowerWordStyle,
     allUpperWordStyle,
-    addPrefixIfNecessary
+    combineWords,
+    escapeNonPrintableMapper,
+    firstUpperWordStyle,
+    intToHex,
+    isDigit,
+    isLetterOrUnderscore,
+    isNumeric,
+    isPrintable,
+    legalizeCharacters,
+    splitIntoWords,
+    utf32ConcatMap
 } from "../../support/Strings";
-import { ForEachPosition } from "../../Renderer";
-import { DefaultDateTimeRecognizer } from "../../DateTime";
+import { type ClassProperty } from "../../Type";
 
 export const MAX_SAMELINE_PROPERTIES = 4;
 
@@ -35,14 +35,14 @@ export const MAX_SAMELINE_PROPERTIES = 4;
 const swiftDateTimeRegex = /^\d+-\d+-\d+T\d+:\d+:\d+([zZ]|[+-]\d+(:\d+)?)$/;
 
 export class SwiftDateTimeRecognizer extends DefaultDateTimeRecognizer {
-    isDateTime(str: string): boolean {
-        return str.match(swiftDateTimeRegex) !== null;
+    public isDateTime(str: string): boolean {
+        return swiftDateTimeRegex.exec(str) !== null;
     }
 }
 
 export interface SwiftProperty {
-    name: Name;
     jsonName: string;
+    name: Name;
     parameter: ClassProperty;
     position: ForEachPosition;
 }

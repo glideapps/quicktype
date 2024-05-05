@@ -1,16 +1,18 @@
+import { isDigit } from "unicode-properties";
+
 import { funPrefixNamer } from "../../Naming";
 import {
+    allLowerWordStyle,
+    allUpperWordStyle,
+    combineWords,
+    firstUpperWordStyle,
     isLetterOrUnderscore,
     isNumeric,
     legalizeCharacters,
-    splitIntoWords,
-    combineWords,
-    firstUpperWordStyle,
-    allLowerWordStyle,
-    allUpperWordStyle
+    splitIntoWords
 } from "../../support/Strings";
-import { isDigit } from "unicode-properties";
-import { keywords, invalidSymbols } from "./constants";
+
+import { invalidSymbols, keywords } from "./constants";
 
 /**
  * Check if given parameter name should be wrapped in a backtick

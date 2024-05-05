@@ -1,23 +1,24 @@
+import { funPrefixNamer } from "../../Naming";
 import {
-    legalizeCharacters,
-    splitIntoWords,
-    isLetterOrUnderscoreOrDigit,
-    combineWords,
     allLowerWordStyle,
+    combineWords,
+    escapeNonPrintableMapper,
     firstUpperWordStyle,
     intToHex,
-    utf32ConcatMap,
-    escapeNonPrintableMapper,
-    isPrintable,
     isAscii,
-    isLetterOrUnderscore
+    isLetterOrUnderscore,
+    isLetterOrUnderscoreOrDigit,
+    isPrintable,
+    legalizeCharacters,
+    splitIntoWords,
+    utf32ConcatMap
 } from "../../support/Strings";
-import { funPrefixNamer } from "../../Naming";
 
 function isAsciiLetterOrUnderscoreOrDigit(codePoint: number): boolean {
     if (!isAscii(codePoint)) {
         return false;
     }
+
     return isLetterOrUnderscoreOrDigit(codePoint);
 }
 
@@ -25,6 +26,7 @@ function isAsciiLetterOrUnderscore(codePoint: number): boolean {
     if (!isAscii(codePoint)) {
         return false;
     }
+
     return isLetterOrUnderscore(codePoint);
 }
 

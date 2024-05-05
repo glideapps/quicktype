@@ -1,6 +1,6 @@
+import { utf16StringEscape } from "../../support/Strings";
 import { isES3IdentifierStart } from "../JavaScript/unicodeMaps";
 import { legalizeName } from "../JavaScript/utils";
-import { utf16StringEscape } from "../../support/Strings";
 
 export const tsFlowTypeAnnotations = {
     any: ": any",
