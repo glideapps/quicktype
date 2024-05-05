@@ -1,47 +1,54 @@
 import { arrayIntercalate } from "collection-utils";
-import { assert, defined } from "../support/Support";
 
-import { TargetLanguage } from "../TargetLanguage";
-import {
-    Type,
-    ClassType,
-    EnumType,
-    UnionType,
-    ArrayType,
-    MapType,
-    TypeKind,
-    ClassProperty,
-    TransformedStringTypeKind,
-    PrimitiveStringTypeKind
-} from "../Type";
-import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
-import { Name, Namer, funPrefixNamer } from "../Naming";
-import { BooleanOption, EnumOption, Option, StringOption, OptionValues, getOptionValues } from "../RendererOptions";
-import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { type DateTimeRecognizer, DefaultDateTimeRecognizer } from "../DateTime";
+import { type Name, type Namer, funPrefixNamer } from "../Naming";
+import { type ForEachPosition, type RenderContext } from "../Renderer";
 import {
-    legalizeCharacters,
-    isLetterOrUnderscore,
-    isNumeric,
-    isDigit,
-    utf32ConcatMap,
-    escapeNonPrintableMapper,
-    isPrintable,
-    intToHex,
-    splitIntoWords,
-    combineWords,
-    firstUpperWordStyle,
+    BooleanOption,
+    EnumOption,
+    type Option,
+    type OptionValues,
+    StringOption,
+    getOptionValues
+} from "../RendererOptions";
+import { type Sourcelike, maybeAnnotated, modifySource } from "../Source";
+import { AcronymStyleOptions, acronymOption, acronymStyle } from "../support/Acronyms";
+import {
+    addPrefixIfNecessary,
     allLowerWordStyle,
     allUpperWordStyle,
     camelCase,
-    addPrefixIfNecessary
+    combineWords,
+    escapeNonPrintableMapper,
+    firstUpperWordStyle,
+    intToHex,
+    isDigit,
+    isLetterOrUnderscore,
+    isNumeric,
+    isPrintable,
+    legalizeCharacters,
+    splitIntoWords,
+    utf32ConcatMap
 } from "../support/Strings";
-import { RenderContext, ForEachPosition } from "../Renderer";
-import { StringTypeMapping } from "../TypeBuilder";
-import { panic } from "../support/Support";
-import { DefaultDateTimeRecognizer, DateTimeRecognizer } from "../DateTime";
-import { acronymOption, acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
+import { assert, defined, panic } from "../support/Support";
+import { TargetLanguage } from "../TargetLanguage";
+import {
+    ArrayType,
+    type ClassProperty,
+    type ClassType,
+    EnumType,
+    MapType,
+    type PrimitiveStringTypeKind,
+    type TransformedStringTypeKind,
+    type Type,
+    type TypeKind,
+    type UnionType
+} from "../Type";
+import { type StringTypeMapping } from "../TypeBuilder";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
+import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
 const MAX_SAMELINE_PROPERTIES = 4;
 
@@ -125,24 +132,24 @@ export const swiftOptions = {
 const swiftDateTimeRegex = /^\d+-\d+-\d+T\d+:\d+:\d+([zZ]|[+-]\d+(:\d+)?)$/;
 
 class SwiftDateTimeRecognizer extends DefaultDateTimeRecognizer {
-    isDateTime(str: string): boolean {
-        return str.match(swiftDateTimeRegex) !== null;
+    public isDateTime(str: string): boolean {
+        return swiftDateTimeRegex.exec(str) !== null;
     }
 }
 
 export interface SwiftProperty {
-    name: Name;
     jsonName: string;
+    name: Name;
     parameter: ClassProperty;
     position: ForEachPosition;
 }
 
 export class SwiftTargetLanguage extends TargetLanguage {
-    constructor() {
+    public constructor() {
         super("Swift", ["swift", "swift4"], "swift");
     }
 
-    protected getOptions(): Option<any>[] {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [
             swiftOptions.justTypes,
             swiftOptions.useClasses,
@@ -165,25 +172,25 @@ export class SwiftTargetLanguage extends TargetLanguage {
         ];
     }
 
-    get stringTypeMapping(): StringTypeMapping {
+    public get stringTypeMapping(): StringTypeMapping {
         const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
         mapping.set("date-time", "date-time");
         return mapping;
     }
 
-    get supportsOptionalClassProperties(): boolean {
+    public get supportsOptionalClassProperties(): boolean {
         return true;
     }
 
-    get supportsUnionsWithBothNumberTypes(): boolean {
+    public get supportsUnionsWithBothNumberTypes(): boolean {
         return true;
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): SwiftRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): SwiftRenderer {
         return new SwiftRenderer(this, renderContext, getOptionValues(swiftOptions, untypedOptionValues));
     }
 
-    get dateTimeRecognizer(): DateTimeRecognizer {
+    public get dateTimeRecognizer(): DateTimeRecognizer {
         return new SwiftDateTimeRecognizer();
     }
 }
@@ -328,10 +335,12 @@ const stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicod
 
 export class SwiftRenderer extends ConvenienceRenderer {
     private _currentFilename: string | undefined;
+
     private _needAny = false;
+
     private _needNull = false;
 
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof swiftOptions>
@@ -343,6 +352,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
         if (this._options.alamofire) {
             return ["DataRequest", ...keywords];
         }
+
         return keywords;
     }
 
@@ -400,7 +410,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
         else return notJustTypes;
     }
 
-    private get lowerNamingFunction() {
+    private get lowerNamingFunction(): Namer {
         return funPrefixNamer("lower", s => swiftNameStyle("", false, s, acronymStyle(this._options.acronymStyle)));
     }
 
@@ -459,9 +469,11 @@ export class SwiftRenderer extends ConvenienceRenderer {
         if (kind === "enum") {
             return "enumeration";
         }
+
         if (kind === "union") {
             return "one_of";
         }
+
         return null;
     }
 
@@ -538,14 +550,17 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 this.emitLine("// synthesized for types that have collections (such as arrays or dictionaries).");
             }
         }
+
         this.ensureBlankLine();
         this.emitLineOnce("import Foundation");
         if (!this._options.justTypes && this._options.alamofire) {
             this.emitLineOnce("import Alamofire");
         }
+
         if (this._options.optionalEnums) {
             this.emitLineOnce("import OptionallyDecodable // https://github.com/idrougge/OptionallyDecodable");
         }
+
         this.ensureBlankLine();
     }
 
@@ -590,11 +605,12 @@ export class SwiftRenderer extends ConvenienceRenderer {
         if (baseClass) {
             protocols.unshift(baseClass);
         }
+
         return protocols.length > 0 ? ": " + protocols.join(", ") : "";
     }
 
-    private getEnumPropertyGroups(c: ClassType) {
-        type PropertyGroup = { name: Name; label?: string }[];
+    private getEnumPropertyGroups(c: ClassType): typeof groups {
+        type PropertyGroup = Array<{ label?: string; name: Name }>;
 
         let groups: PropertyGroup[] = [];
         let group: PropertyGroup = [];
@@ -610,6 +626,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                     groups.push(group);
                     group = [];
                 }
+
                 groups.push([{ name, label }]);
             }
         });
@@ -690,7 +707,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 let lastProperty: ClassProperty | undefined = undefined;
                 let lastNames: Name[] = [];
 
-                const emitLastProperty = () => {
+                const emitLastProperty = (): void => {
                     if (lastProperty === undefined) return;
 
                     const useMutableProperties = this._options.mutableProperties;
@@ -698,7 +715,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                     let sources: Sourcelike[] = [
                         [
                             this._options.optionalEnums && lastProperty.type.kind === "enum"
-                                ? `@OptionallyDecodable `
+                                ? "@OptionallyDecodable "
                                 : "",
                             this.accessLevel,
                             useMutableProperties || (this._options.optionalEnums && lastProperty.type.kind === "enum")
@@ -721,15 +738,17 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 this.forEachClassProperty(c, "none", (name, jsonName, p) => {
                     const description = this.descriptionForClassProperty(c, jsonName);
                     if (
-                        !p.equals(lastProperty) ||
+                        (lastProperty && !p.equals(lastProperty)) ||
                         lastNames.length >= MAX_SAMELINE_PROPERTIES ||
                         description !== undefined
                     ) {
                         emitLastProperty();
                     }
+
                     if (lastProperty === undefined) {
                         lastProperty = p;
                     }
+
                     lastNames.push(name);
                     if (description !== undefined) {
                         this.emitDescription(description);
@@ -759,6 +778,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                         enumDeclaration += ", ";
                         enumDeclaration += this._options.codingKeysProtocol;
                     }
+
                     this.emitBlock(enumDeclaration, () => {
                         for (const group of groups) {
                             const { name, label } = group[0];
@@ -792,6 +812,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                     if (propertiesLines.length > 0) propertiesLines.push(", ");
                     propertiesLines.push(property.name, ": ", this.swiftPropertyType(property.parameter));
                 }
+
                 if (this.propertyCount(c) === 0 && this._options.objcSupport) {
                     this.emitBlockWithAccess(["override init()"], () => {
                         return "";
@@ -856,6 +877,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
     throw DecodingError.typeMismatch(Date.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Could not decode date"))
 })`);
             }
+
             this.emitLine("return decoder");
         });
         this.ensureBlankLine();
@@ -873,6 +895,7 @@ formatter.timeZone = TimeZone(secondsFromGMT: 0)
 formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssXXXXX"
 encoder.dateEncodingStrategy = .formatted(formatter)`);
             }
+
             this.emitLine("return encoder");
         });
     }
@@ -889,6 +912,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
                     } else {
                         this.emitLine("let _ = try newJSONDecoder().decode(", this.swiftType(c), ".self, from: data)");
                     }
+
                     let args: Sourcelike[] = [];
                     this.forEachClassProperty(c, "none", name => {
                         if (args.length > 0) args.push(", ");
@@ -901,18 +925,19 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
                     this.emitLine("self = try newJSONDecoder().decode(", this.swiftType(c), ".self, from: data)");
                 });
             }
+
             this.ensureBlankLine();
             this.emitBlock(
                 [convenience, "init(_ json: String, using encoding: String.Encoding = .utf8) throws"],
                 () => {
                     this.emitBlock("guard let data = json.data(using: encoding) else", () => {
-                        this.emitLine(`throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)`);
+                        this.emitLine('throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)');
                     });
                     this.emitLine("try self.init(data: data)");
                 }
             );
             this.ensureBlankLine();
-            this.emitBlock([convenience, `init(fromURL url: URL) throws`], () => {
+            this.emitBlock([convenience, "init(fromURL url: URL) throws"], () => {
                 this.emitLine("try self.init(data: try Data(contentsOf: url))");
             });
 
@@ -921,11 +946,11 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
 
             // Convenience serializers
             this.ensureBlankLine();
-            this.emitBlock(`func jsonData() throws -> Data`, () => {
+            this.emitBlock("func jsonData() throws -> Data", () => {
                 this.emitLine("return try newJSONEncoder().encode(self)");
             });
             this.ensureBlankLine();
-            this.emitBlock(`func jsonString(encoding: String.Encoding = .utf8) throws -> String?`, () => {
+            this.emitBlock("func jsonString(encoding: String.Encoding = .utf8) throws -> String?", () => {
                 this.emitLine("return String(data: try self.jsonData(), encoding: encoding)");
             });
         });
@@ -1000,12 +1025,14 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
                         if (t.kind === "bool" || t.kind === "integer") continue;
                         renderUnionCase(t);
                     }
+
                     if (maybeNull !== null) {
                         this.emitBlock("if container.decodeNil()", () => {
                             this.emitLine("self = .", this.nameForUnionMember(u, maybeNull));
                             this.emitLine("return");
                         });
                     }
+
                     this.emitDecodingError(unionName);
                 });
                 this.ensureBlankLine();
@@ -1020,6 +1047,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
                         this.emitLine("case .", this.nameForUnionMember(u, maybeNull), ":");
                         this.indent(() => this.emitLine("try container.encodeNil()"));
                     }
+
                     this.emitLine("}");
                 });
             }
@@ -1045,12 +1073,12 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             this.ensureBlankLine();
             this.emitBlock("init(_ json: String, using encoding: String.Encoding = .utf8) throws", () => {
                 this.emitBlock("guard let data = json.data(using: encoding) else", () => {
-                    this.emitLine(`throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)`);
+                    this.emitLine('throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)');
                 });
                 this.emitLine("try self.init(data: data)");
             });
             this.ensureBlankLine();
-            this.emitBlock(`init(fromURL url: URL) throws`, () => {
+            this.emitBlock("init(fromURL url: URL) throws", () => {
                 this.emitLine("try self.init(data: try Data(contentsOf: url))");
             });
             this.ensureBlankLine();
@@ -1074,7 +1102,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         );
     }
 
-    private emitSupportFunctions4 = (): void => {
+    private readonly emitSupportFunctions4 = (): void => {
         this.startFile("JSONSchemaSupport");
 
         this.emitLineOnce("import Foundation");
@@ -1117,6 +1145,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             } else {
                 this.emitLine(this.accessLevel, "class JSONNull: Codable, Hashable {");
             }
+
             this.ensureBlankLine();
             this.emitMultiline(`    public static func == (lhs: JSONNull, rhs: JSONNull) -> Bool {
         return true
@@ -1142,6 +1171,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             } else {
                 this.emitItem("    ");
             }
+
             this.emitMultiline(`public init() {}
     
     public required init(from decoder: Decoder) throws {
@@ -1157,6 +1187,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
     }
 }`);
         }
+
         if (this._needAny) {
             this.ensureBlankLine();
             this.emitMultiline(`class JSONCodingKey: CodingKey {
@@ -1185,6 +1216,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             } else {
                 this.emitLine(this.accessLevel, "class JSONAny: Codable {");
             }
+
             this.ensureBlankLine();
             this.emitMultiline(`    ${this.accessLevel}let value: Any
     
@@ -1383,7 +1415,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         this.endFile();
     };
 
-    private emitConvenienceMutator(c: ClassType, className: Name) {
+    private emitConvenienceMutator(c: ClassType, className: Name): void {
         this.emitLine("func with(");
         this.indent(() => {
             this.forEachClassProperty(c, "none", (name, _, p, position) => {
@@ -1414,7 +1446,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         });
     }
 
-    protected emitMark(line: Sourcelike, horizontalLine = false) {
+    protected emitMark(line: Sourcelike, horizontalLine = false): void {
         this.emitLine("// MARK:", horizontalLine ? " - " : " ", line);
     }
 
@@ -1435,7 +1467,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         }
     }
 
-    private emitAlamofireExtension() {
+    private emitAlamofireExtension(): void {
         this.ensureBlankLine();
         this.emitBlockWithAccess("extension DataRequest", () => {
             this
@@ -1467,7 +1499,7 @@ fileprivate func responseDecodable<T: Decodable>(queue: DispatchQueue? = nil, co
                         ">) -> Void) -> Self"
                     ],
                     () => {
-                        this.emitLine(`return responseDecodable(queue: queue, completionHandler: completionHandler)`);
+                        this.emitLine("return responseDecodable(queue: queue, completionHandler: completionHandler)");
                     }
                 );
             });

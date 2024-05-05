@@ -1,10 +1,11 @@
 import { arrayIntercalate } from "collection-utils";
-import { ArrayType, ClassProperty, EnumType, MapType, ObjectType, Type } from "../Type";
-import { matchType } from "../TypeUtils";
-import { funPrefixNamer, Name, Namer } from "../Naming";
-import { RenderContext } from "../Renderer";
-import { BooleanOption, getOptionValues, Option, OptionValues } from "../RendererOptions";
-import { acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
+
+import { ConvenienceRenderer } from "../ConvenienceRenderer";
+import { type Name, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import { BooleanOption, type Option, type OptionValues, getOptionValues } from "../RendererOptions";
+import { type Sourcelike } from "../Source";
+import { AcronymStyleOptions, acronymStyle } from "../support/Acronyms";
 import {
     allLowerWordStyle,
     capitalize,
@@ -15,22 +16,24 @@ import {
     stringEscape,
     utf16StringEscape
 } from "../support/Strings";
-import { TargetLanguage } from "../TargetLanguage";
-import { legalizeName } from "./JavaScript";
-import { Sourcelike } from "../Source";
 import { panic } from "../support/Support";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
+import { TargetLanguage } from "../TargetLanguage";
+import { ArrayType, type ClassProperty, EnumType, MapType, type ObjectType, type Type } from "../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
+import { matchType } from "../TypeUtils";
+
+import { legalizeName } from "./JavaScript";
 
 export const typeScriptEffectSchemaOptions = {
     justSchema: new BooleanOption("just-schema", "Schema only", false)
 };
 
 export class TypeScriptEffectSchemaTargetLanguage extends TargetLanguage {
-    protected getOptions(): Option<any>[] {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [];
     }
 
-    constructor(
+    public constructor(
         displayName: string = "TypeScript Effect Schema",
         names: string[] = ["typescript-effect-schema"],
         extension: string = "ts"
@@ -40,7 +43,7 @@ export class TypeScriptEffectSchemaTargetLanguage extends TargetLanguage {
 
     protected makeRenderer(
         renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
+        untypedOptionValues: FixMeOptionsType
     ): TypeScriptEffectSchemaRenderer {
         return new TypeScriptEffectSchemaRenderer(
             this,
@@ -51,7 +54,9 @@ export class TypeScriptEffectSchemaTargetLanguage extends TargetLanguage {
 }
 
 export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
-    constructor(
+    private emittedObjects = new Set<Name>();
+
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof typeScriptEffectSchemaOptions>
@@ -71,7 +76,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
             legalizeName,
             upper ? firstUpperWordStyle : allLowerWordStyle,
             firstUpperWordStyle,
-            upper ? s => capitalize(acronyms(s)) : allLowerWordStyle,
+            upper ? (s): string => capitalize(acronyms(s)) : allLowerWordStyle,
             acronyms,
             "",
             isLetterOrUnderscore
@@ -103,19 +108,18 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
         this.emitLine(this.importStatement("* as S", '"@effect/schema/Schema"'));
     }
 
-    typeMapTypeForProperty(p: ClassProperty): Sourcelike {
+    private typeMapTypeForProperty(p: ClassProperty): Sourcelike {
         const typeMap = this.typeMapTypeFor(p.type);
         return p.isOptional ? ["S.optional(", typeMap, ")"] : typeMap;
     }
 
-    emittedObjects = new Set<Name>();
-
-    typeMapTypeFor(t: Type, required: boolean = true): Sourcelike {
+    private typeMapTypeFor(t: Type, required: boolean = true): Sourcelike {
         if (t.kind === "class" || t.kind === "object" || t.kind === "enum") {
             const name = this.nameForNamedType(t);
             if (this.emittedObjects.has(name)) {
                 return [name];
             }
+
             return ["S.suspend(() => ", name, ")"];
         }
 
@@ -149,7 +153,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
         return match;
     }
 
-    private emitObject(name: Name, t: ObjectType) {
+    private emitObject(name: Name, t: ObjectType): void {
         this.emittedObjects.add(name);
         this.ensureBlankLine();
         this.emitLine("\nexport class ", name, " extends S.Class<", name, '>("', name, '")({');
@@ -177,10 +181,10 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
         }
     }
 
-    protected walkObjectNames(type: ObjectType) {
-        const names: Array<Name> = [];
+    protected walkObjectNames(objectType: ObjectType): Name[] {
+        const names: Name[] = [];
 
-        const recurse = (type: Type) => {
+        const recurse = (type: Type): void => {
             if (type.kind === "object" || type.kind === "class") {
                 names.push(this.nameForNamedType(type));
                 this.forEachClassProperty(type as ObjectType, "none", (_, __, prop) => {
@@ -197,7 +201,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
             }
         };
 
-        this.forEachClassProperty(type, "none", (_, __, prop) => {
+        this.forEachClassProperty(objectType, "none", (_, __, prop) => {
             recurse(prop.type);
         });
 
@@ -228,18 +232,18 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
             const names = this.walkObjectNames(source);
 
             // must be behind all these names
-            for (let i = 0; i < names.length; i++) {
-                const depName = names[i];
+            names.forEach(name => {
+                const depName = name;
 
                 // find this name's ordinal, if it has already been added
-                for (let j = 0; j < order.length; j++) {
-                    const depIndex = order[j];
+                order.forEach(orderItem => {
+                    const depIndex = orderItem;
                     if (mapKey[depIndex] === depName) {
                         // this is the index of the dependency, so make sure we come after it
                         ordinal = Math.max(ordinal, depIndex + 1);
                     }
-                }
-            }
+                });
+            });
 
             // insert index
             order.splice(ordinal, 0, index);

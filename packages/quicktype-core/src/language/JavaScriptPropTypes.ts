@@ -1,29 +1,28 @@
-import { TargetLanguage } from "../TargetLanguage";
-import { getOptionValues, Option, OptionValues, EnumOption } from "../RendererOptions";
-import { RenderContext } from "../Renderer";
+import { panic } from "@glideapps/ts-necessities";
+import { arrayIntercalate } from "collection-utils";
+
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { funPrefixNamer, Name, Namer } from "../Naming";
-import { acronymOption, acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
+import { type Name, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import { EnumOption, type Option, type OptionValues, getOptionValues } from "../RendererOptions";
+import { type Sourcelike } from "../Source";
+import { AcronymStyleOptions, acronymOption, acronymStyle } from "../support/Acronyms";
+import { convertersOption } from "../support/Converters";
 import {
+    allLowerWordStyle,
     capitalize,
-    ClassProperty,
-    ClassType,
     combineWords,
     firstUpperWordStyle,
-    matchType,
-    ObjectType,
-    panic,
-    Sourcelike,
     splitIntoWords,
-    Type
-} from "..";
-import { allLowerWordStyle, utf16StringEscape } from "../support/Strings";
-import { isES3IdentifierStart } from "./JavaScriptUnicodeMaps";
+    utf16StringEscape
+} from "../support/Strings";
+import { TargetLanguage } from "../TargetLanguage";
+import { type ArrayType, type ClassProperty, type ClassType, type ObjectType, PrimitiveType, type Type } from "../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
+import { directlyReachableSingleNamedType, matchType } from "../TypeUtils";
+
 import { legalizeName } from "./JavaScript";
-import { convertersOption } from "../support/Converters";
-import { directlyReachableSingleNamedType } from "../TypeUtils";
-import { arrayIntercalate } from "collection-utils";
-import { PrimitiveType } from "../Type";
+import { isES3IdentifierStart } from "./JavaScriptUnicodeMaps";
 
 export const javaScriptPropTypesOptions = {
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
@@ -40,17 +39,21 @@ export const javaScriptPropTypesOptions = {
 };
 
 export class JavaScriptPropTypesTargetLanguage extends TargetLanguage {
-    protected getOptions(): Option<any>[] {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [javaScriptPropTypesOptions.acronymStyle, javaScriptPropTypesOptions.converters];
     }
 
-    constructor(displayName = "JavaScript PropTypes", names: string[] = ["javascript-prop-types"], extension = "js") {
+    public constructor(
+        displayName = "JavaScript PropTypes",
+        names: string[] = ["javascript-prop-types"],
+        extension = "js"
+    ) {
         super(displayName, names, extension);
     }
 
     protected makeRenderer(
         renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
+        untypedOptionValues: FixMeOptionsType
     ): JavaScriptPropTypesRenderer {
         return new JavaScriptPropTypesRenderer(
             this,
@@ -63,7 +66,7 @@ export class JavaScriptPropTypesTargetLanguage extends TargetLanguage {
 const identityNamingFunction = funPrefixNamer("properties", s => s);
 
 export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _jsOptions: OptionValues<typeof javaScriptPropTypesOptions>
@@ -79,7 +82,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
             legalizeName,
             upper ? firstUpperWordStyle : allLowerWordStyle,
             firstUpperWordStyle,
-            upper ? s => capitalize(acronyms(s)) : allLowerWordStyle,
+            upper ? (s): string => capitalize(acronyms(s)) : allLowerWordStyle,
             acronyms,
             "",
             isES3IdentifierStart
@@ -117,8 +120,8 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         return super.makeNameForProperty(c, className, p, jsonName, undefined);
     }
 
-    typeMapTypeFor(t: Type, required = true): Sourcelike {
-        if (["class", "object", "enum"].indexOf(t.kind) >= 0) {
+    private typeMapTypeFor(t: Type, required = true): Sourcelike {
+        if (["class", "object", "enum"].includes(t.kind)) {
             return ["_", this.nameForNamedType(t)];
         }
 
@@ -152,7 +155,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         return match;
     }
 
-    typeMapTypeForProperty(p: ClassProperty): Sourcelike {
+    private typeMapTypeForProperty(p: ClassProperty): Sourcelike {
         return this.typeMapTypeFor(p.type);
     }
 
@@ -184,7 +187,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         );
     }
 
-    protected emitBlock(source: Sourcelike, end: Sourcelike, emit: () => void) {
+    protected emitBlock(source: Sourcelike, end: Sourcelike, emit: () => void): void {
         this.emitLine(source, "{");
         this.indent(emit);
         this.emitLine("}", end);
@@ -241,18 +244,18 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
             const names = source.filter(value => value as Name);
 
             // must be behind all these names
-            for (let i = 0; i < names.length; i++) {
-                const depName = names[i];
+            names.forEach(name => {
+                const depName = name;
 
                 // find this name's ordinal, if it has already been added
-                for (let j = 0; j < order.length; j++) {
-                    const depIndex = order[j];
+                order.forEach(orderItem => {
+                    const depIndex = orderItem;
                     if (mapKey[depIndex] === depName) {
                         // this is the index of the dependency, so make sure we come after it
                         ordinal = Math.max(ordinal, depIndex + 1);
                     }
-                }
-            }
+                });
+            });
 
             // insert index
             order.splice(ordinal, 0, index);
@@ -269,7 +272,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
             } else {
                 if (type.kind === "array") {
                     this.ensureBlankLine();
-                    this.emitExport(name, ["PropTypes.arrayOf(", this.typeMapTypeFor((type as any).items), ")"]);
+                    this.emitExport(name, ["PropTypes.arrayOf(", this.typeMapTypeFor((type as ArrayType).items), ")"]);
                 } else {
                     this.ensureBlankLine();
                     this.emitExport(name, ["_", name]);
@@ -278,7 +281,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         });
     }
 
-    private emitObject(name: Name, t: ObjectType) {
+    private emitObject(name: Name, t: ObjectType): void {
         this.ensureBlankLine();
         this.emitLine("_", name, " = PropTypes.shape({");
         this.indent(() => {

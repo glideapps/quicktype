@@ -1,5 +1,6 @@
-import { StringMap } from "./support/Support";
-import { Ref } from "./input/JSONSchemaInput";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { type Ref } from "./input/JSONSchemaInput";
+import { type StringMap } from "./support/Support";
 
 export type ErrorProperties =
     | { kind: "InternalError"; properties: { message: string } }
@@ -7,11 +8,11 @@ export type ErrorProperties =
     // Misc
     | {
           kind: "MiscJSONParseError";
-          properties: { description: string; address: string; message: string };
+          properties: { address: string; description: string; message: string };
       }
     | { kind: "MiscReadError"; properties: { fileOrURL: string; message: string } }
     | { kind: "MiscUnicodeHighSurrogateWithoutLowSurrogate"; properties: {} }
-    | { kind: "MiscInvalidMinMaxConstraint"; properties: { min: number; max: number } }
+    | { kind: "MiscInvalidMinMaxConstraint"; properties: { max: number; min: number } }
 
     // Inference
     | { kind: "InferenceJSONReferenceNotRooted"; properties: { reference: string } }
@@ -25,9 +26,9 @@ export type ErrorProperties =
     | { kind: "SchemaRefMustBeString"; properties: { actual: string; ref: Ref } }
     | { kind: "SchemaAdditionalTypesForbidRequired"; properties: { ref: Ref } }
     | { kind: "SchemaNoTypeSpecified"; properties: { ref: Ref } }
-    | { kind: "SchemaInvalidType"; properties: { type: string; ref: Ref } }
+    | { kind: "SchemaInvalidType"; properties: { ref: Ref; type: string } }
     | { kind: "SchemaFalseNotSupported"; properties: { ref: Ref } }
-    | { kind: "SchemaInvalidJSONSchemaType"; properties: { type: string; ref: Ref } }
+    | { kind: "SchemaInvalidJSONSchemaType"; properties: { ref: Ref; type: string } }
     | { kind: "SchemaRequiredMustBeStringOrStringArray"; properties: { actual: any; ref: Ref } }
     | { kind: "SchemaRequiredElementMustBeString"; properties: { element: any; ref: Ref } }
     | { kind: "SchemaTypeMustBeStringOrStringArray"; properties: { actual: any } }
@@ -37,7 +38,7 @@ export type ErrorProperties =
     | { kind: "SchemaWrongAccessorEntryArrayLength"; properties: { operation: string; ref: Ref } }
     | {
           kind: "SchemaSetOperationCasesIsNotArray";
-          properties: { operation: string; cases: any; ref: Ref };
+          properties: { cases: any; operation: string; ref: Ref };
       }
     | { kind: "SchemaMoreThanOneUnionMemberName"; properties: { names: string[] } }
     | { kind: "SchemaCannotGetTypesFromBoolean"; properties: { ref: string } }
@@ -74,7 +75,7 @@ export type ErrorProperties =
     | { kind: "IRNoEmptyUnions"; properties: {} }
 
     // Rendering
-    | { kind: "RendererUnknownOptionValue"; properties: { value: string; name: string } }
+    | { kind: "RendererUnknownOptionValue"; properties: { name: string; value: string } }
 
     // TypeScript input
     | { kind: "TypeScriptCompilerError"; properties: { message: string } };
@@ -164,16 +165,15 @@ const errorMessages: ErrorMessages = {
     TypeScriptCompilerError: "TypeScript error: ${message}"
 };
 
-export type ErrorPropertiesForName<K> = Extract<ErrorProperties, { kind: K }> extends { properties: infer P }
-    ? P
-    : never;
+export type ErrorPropertiesForName<K> =
+    Extract<ErrorProperties, { kind: K }> extends { properties: infer P } ? P : never;
 
 export class QuickTypeError extends Error {
-    constructor(
-        readonly errorMessage: string,
-        readonly messageName: string,
-        userMessage: string,
-        readonly properties: StringMap
+    public constructor(
+        public readonly errorMessage: string,
+        public readonly messageName: string,
+        public userMessage: string,
+        public readonly properties: StringMap
     ) {
         super(userMessage);
     }
@@ -193,6 +193,7 @@ export function messageError<N extends ErrorKinds>(kind: N, properties: ErrorPro
         } else if (typeof value !== "string") {
             value = JSON.stringify(value);
         }
+
         userMessage = userMessage.replace("${" + name + "}", value);
     }
 

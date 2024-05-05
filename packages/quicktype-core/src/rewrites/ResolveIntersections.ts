@@ -1,41 +1,42 @@
+/* eslint-disable @typescript-eslint/brace-style */
 import {
-    iterableFirst,
     iterableEvery,
-    setFilter,
+    iterableFind,
+    iterableFirst,
+    mapMap,
     mapMapEntries,
     mapMergeWithInto,
-    mapMap,
     mapUpdateInto,
-    setMap,
-    iterableFind,
+    setFilter,
     setIntersect,
+    setMap,
     setUnionInto
 } from "collection-utils";
 
-import { TypeGraph, TypeRef } from "../TypeGraph";
-import { StringTypeMapping, TypeBuilder } from "../TypeBuilder";
-import { GraphRewriteBuilder, TypeLookerUp } from "../GraphRewriting";
-import { UnionTypeProvider, UnionBuilder, TypeAttributeMap } from "../UnionBuilder";
 import {
-    IntersectionType,
-    Type,
-    UnionType,
-    PrimitiveTypeKind,
-    ArrayType,
-    isPrimitiveTypeKind,
-    isNumberTypeKind,
-    GenericClassProperty,
-    TypeKind,
-    ObjectType
-} from "../Type";
-import { setOperationMembersRecursively, matchTypeExhaustive, makeGroupsToFlatten } from "../TypeUtils";
-import { assert, defined, panic, mustNotHappen } from "../support/Support";
-import {
+    type TypeAttributes,
     combineTypeAttributes,
-    TypeAttributes,
     emptyTypeAttributes,
     makeTypeAttributesInferred
 } from "../attributes/TypeAttributes";
+import { type GraphRewriteBuilder, type TypeLookerUp } from "../GraphRewriting";
+import { assert, defined, mustNotHappen, panic } from "../support/Support";
+import {
+    ArrayType,
+    GenericClassProperty,
+    IntersectionType,
+    ObjectType,
+    type PrimitiveTypeKind,
+    type Type,
+    type TypeKind,
+    UnionType,
+    isNumberTypeKind,
+    isPrimitiveTypeKind
+} from "../Type";
+import { type StringTypeMapping, type TypeBuilder } from "../TypeBuilder";
+import { type TypeGraph, type TypeRef } from "../TypeGraph";
+import { makeGroupsToFlatten, matchTypeExhaustive, setOperationMembersRecursively } from "../TypeUtils";
+import { type TypeAttributeMap, UnionBuilder, type UnionTypeProvider } from "../UnionBuilder";
 
 function canResolve(t: IntersectionType): boolean {
     const members = setOperationMembersRecursively(t, undefined)[0];
@@ -53,12 +54,14 @@ class IntersectionAccumulator
     implements UnionTypeProvider<ReadonlySet<Type>, [PropertyMap, ReadonlySet<Type> | undefined] | undefined>
 {
     private _primitiveTypes: Set<PrimitiveTypeKind> | undefined;
+
     private readonly _primitiveAttributes: TypeAttributeMap<PrimitiveTypeKind> = new Map();
 
     // * undefined: We haven't seen any types yet.
     // * Set: All types we've seen can be arrays.
     // * false: At least one of the types seen can't be an array.
     private _arrayItemTypes: Set<Type> | undefined | false;
+
     private _arrayAttributes: TypeAttributes = emptyTypeAttributes;
 
     // We start out with all object types allowed, which means
@@ -70,7 +73,9 @@ class IntersectionAccumulator
     // undefined, no object types are allowed, in which case
     // _additionalPropertyTypes must also be undefined;
     private _objectProperties: PropertyMap | undefined = new Map();
+
     private _objectAttributes: TypeAttributes = emptyTypeAttributes;
+
     private _additionalPropertyTypes: Set<Type> | undefined = new Set();
 
     private _lostTypeAttributes = false;
@@ -180,9 +185,9 @@ class IntersectionAccumulator
         this.updateObjectProperties(members);
     }
 
-    addType(t: Type): TypeAttributes {
+    public addType(t: Type): TypeAttributes {
         let attributes = t.getAttributes();
-        matchTypeExhaustive<void>(
+        matchTypeExhaustive(
             t,
             _noneType => {
                 return panic("There shouldn't be a none type");
@@ -212,14 +217,15 @@ class IntersectionAccumulator
         return makeTypeAttributesInferred(attributes);
     }
 
-    get arrayData(): ReadonlySet<Type> {
+    public get arrayData(): ReadonlySet<Type> {
         if (this._arrayItemTypes === undefined || this._arrayItemTypes === false) {
             return panic("This should not be called if the type can't be an array");
         }
+
         return this._arrayItemTypes;
     }
 
-    get objectData(): [PropertyMap, ReadonlySet<Type> | undefined] | undefined {
+    public get objectData(): [PropertyMap, ReadonlySet<Type> | undefined] | undefined {
         if (this._objectProperties === undefined) {
             assert(this._additionalPropertyTypes === undefined);
             return undefined;
@@ -228,11 +234,11 @@ class IntersectionAccumulator
         return [this._objectProperties, this._additionalPropertyTypes];
     }
 
-    get enumCases(): ReadonlySet<string> {
+    public get enumCases(): ReadonlySet<string> {
         return panic("We don't support enums in intersections");
     }
 
-    getMemberKinds(): TypeAttributeMap<TypeKind> {
+    public getMemberKinds(): TypeAttributeMap<TypeKind> {
         const kinds: TypeAttributeMap<TypeKind> = mapMap(defined(this._primitiveTypes).entries(), k =>
             defined(this._primitiveAttributes.get(k))
         );
@@ -260,7 +266,7 @@ class IntersectionAccumulator
         return kinds;
     }
 
-    get lostTypeAttributes(): boolean {
+    public get lostTypeAttributes(): boolean {
         return this._lostTypeAttributes;
     }
 }
@@ -285,7 +291,7 @@ class IntersectionUnionBuilder extends UnionBuilder<
         return this.typeBuilder.getUniqueIntersectionType(attributes, reconstitutedMembers);
     }
 
-    get createdNewIntersections(): boolean {
+    public get createdNewIntersections(): boolean {
         return this._createdNewIntersections;
     }
 
@@ -338,6 +344,7 @@ export function resolveIntersections(
             const t = builder.getPrimitiveType("any", intersectionAttributes, forwardingRef);
             return t;
         }
+
         if (members.size === 1) {
             return builder.reconstituteType(defined(iterableFirst(members)), intersectionAttributes, forwardingRef);
         }
@@ -356,8 +363,10 @@ export function resolveIntersections(
         if (unionBuilder.createdNewIntersections) {
             needsRepeat = true;
         }
+
         return tref;
     }
+
     // FIXME: We need to handle intersections that resolve to the same set of types.
     // See for example the intersections-nested.schema example.
     const allIntersections = setFilter(

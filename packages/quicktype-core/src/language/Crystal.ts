@@ -1,33 +1,34 @@
-import { TargetLanguage } from "../TargetLanguage";
-import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { type Name, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import { type Option } from "../RendererOptions";
+import { type Sourcelike, maybeAnnotated } from "../Source";
 import {
-    legalizeCharacters,
-    splitIntoWords,
-    isLetterOrUnderscoreOrDigit,
-    combineWords,
     allLowerWordStyle,
+    combineWords,
+    escapeNonPrintableMapper,
     firstUpperWordStyle,
     intToHex,
-    utf32ConcatMap,
-    escapeNonPrintableMapper,
-    isPrintable,
     isAscii,
-    isLetterOrUnderscore
+    isLetterOrUnderscore,
+    isLetterOrUnderscoreOrDigit,
+    isPrintable,
+    legalizeCharacters,
+    splitIntoWords,
+    utf32ConcatMap
 } from "../support/Strings";
-import { Name, Namer, funPrefixNamer } from "../Naming";
-import { UnionType, Type, ClassType, EnumType } from "../Type";
+import { TargetLanguage } from "../TargetLanguage";
+import { type ClassType, type EnumType, type Type, type UnionType } from "../Type";
+import { type FixMeOptionsAnyType } from "../types";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
-import { Sourcelike, maybeAnnotated } from "../Source";
-import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { Option } from "../RendererOptions";
-import { RenderContext } from "../Renderer";
 
 export class CrystalTargetLanguage extends TargetLanguage {
     protected makeRenderer(renderContext: RenderContext): CrystalRenderer {
         return new CrystalRenderer(this, renderContext);
     }
 
-    constructor() {
+    public constructor() {
         super("Crystal", ["crystal", "cr", "crystallang"], "cr");
     }
 
@@ -35,7 +36,7 @@ export class CrystalTargetLanguage extends TargetLanguage {
         return "  ";
     }
 
-    protected getOptions(): Option<any>[] {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [];
     }
 }
@@ -183,6 +184,7 @@ function isAsciiLetterOrUnderscoreOrDigit(codePoint: number): boolean {
     if (!isAscii(codePoint)) {
         return false;
     }
+
     return isLetterOrUnderscoreOrDigit(codePoint);
 }
 
@@ -190,6 +192,7 @@ function isAsciiLetterOrUnderscore(codePoint: number): boolean {
     if (!isAscii(codePoint)) {
         return false;
     }
+
     return isLetterOrUnderscore(codePoint);
 }
 
@@ -228,7 +231,7 @@ function standardUnicodeCrystalEscape(codePoint: number): string {
 const crystalStringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, standardUnicodeCrystalEscape));
 
 export class CrystalRenderer extends ConvenienceRenderer {
-    constructor(targetLanguage: TargetLanguage, renderContext: RenderContext) {
+    public constructor(targetLanguage: TargetLanguage, renderContext: RenderContext) {
         super(targetLanguage, renderContext);
     }
 
@@ -319,7 +322,7 @@ export class CrystalRenderer extends ConvenienceRenderer {
     protected emitStructDefinition(c: ClassType, className: Name): void {
         this.emitDescription(this.descriptionForType(c));
 
-        const structBody = () =>
+        const structBody = (): void =>
             this.forEachClassProperty(c, "none", (name, jsonName, prop) => {
                 this.ensureBlankLine();
                 this.emitDescription(this.descriptionForClassProperty(c, jsonName));

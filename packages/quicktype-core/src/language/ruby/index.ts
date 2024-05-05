@@ -1,33 +1,47 @@
 import * as unicode from "unicode-properties";
 
-import { Sourcelike, modifySource } from "../../Source";
-import { Namer, Name } from "../../Naming";
-import { ConvenienceRenderer, ForbiddenWordsInfo } from "../../ConvenienceRenderer";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../../ConvenienceRenderer";
+import { type Name, Namer } from "../../Naming";
+import { type RenderContext } from "../../Renderer";
+import {
+    BooleanOption,
+    EnumOption,
+    type Option,
+    type OptionValues,
+    StringOption,
+    getOptionValues
+} from "../../RendererOptions";
+import { type Sourcelike, modifySource } from "../../Source";
+import {
+    allLowerWordStyle,
+    allUpperWordStyle,
+    combineWords,
+    escapeNonPrintableMapper,
+    firstUpperWordStyle,
+    intToHex,
+    isLetterOrUnderscore,
+    isPrintable,
+    legalizeCharacters,
+    snakeCase,
+    splitIntoWords,
+    utf32ConcatMap
+} from "../../support/Strings";
 import { TargetLanguage } from "../../TargetLanguage";
-import { Option, BooleanOption, EnumOption, OptionValues, getOptionValues, StringOption } from "../../RendererOptions";
+import {
+    ArrayType,
+    type ClassProperty,
+    ClassType,
+    type EnumType,
+    MapType,
+    type Type,
+    type UnionType
+} from "../../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import { matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
 
 import * as keywords from "./keywords";
 
 const forbiddenForObjectProperties = Array.from(new Set([...keywords.keywords, ...keywords.reservedProperties]));
-
-import { Type, EnumType, ClassType, UnionType, ArrayType, MapType, ClassProperty } from "../../Type";
-import { matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
-
-import {
-    legalizeCharacters,
-    splitIntoWords,
-    combineWords,
-    firstUpperWordStyle,
-    allUpperWordStyle,
-    allLowerWordStyle,
-    utf32ConcatMap,
-    isPrintable,
-    escapeNonPrintableMapper,
-    intToHex,
-    snakeCase,
-    isLetterOrUnderscore
-} from "../../support/Strings";
-import { RenderContext } from "../../Renderer";
 
 function unicodeEscape(codePoint: number): string {
     return "\\u{" + intToHex(codePoint, 0) + "}";
@@ -36,9 +50,9 @@ function unicodeEscape(codePoint: number): string {
 const stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
 
 export enum Strictness {
-    Strict = "Strict::",
     Coercible = "Coercible::",
-    None = "Types::"
+    None = "Types::",
+    Strict = "Strict::"
 }
 
 export const rubyOptions = {
@@ -52,15 +66,15 @@ export const rubyOptions = {
 };
 
 export class RubyTargetLanguage extends TargetLanguage {
-    constructor() {
+    public constructor() {
         super("Ruby", ["ruby"], "rb");
     }
 
-    protected getOptions(): Option<any>[] {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [rubyOptions.justTypes, rubyOptions.strictness, rubyOptions.namespace];
     }
 
-    get supportsOptionalClassProperties(): boolean {
+    public get supportsOptionalClassProperties(): boolean {
         return true;
     }
 
@@ -68,7 +82,7 @@ export class RubyTargetLanguage extends TargetLanguage {
         return "  ";
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): RubyRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): RubyRenderer {
         return new RubyRenderer(this, renderContext, getOptionValues(rubyOptions, untypedOptionValues));
     }
 }
@@ -77,7 +91,7 @@ const isStartCharacter = isLetterOrUnderscore;
 
 function isPartCharacter(utf16Unit: number): boolean {
     const category: string = unicode.getCategory(utf16Unit);
-    return ["Nd", "Pc", "Mn", "Mc"].indexOf(category) >= 0 || isStartCharacter(utf16Unit);
+    return ["Nd", "Pc", "Mn", "Mc"].includes(category) || isStartCharacter(utf16Unit);
 }
 
 const legalizeName = legalizeCharacters(isPartCharacter);
@@ -86,6 +100,7 @@ function simpleNameStyle(original: string, uppercase: boolean): string {
     if (/^[0-9]+$/.test(original)) {
         original = original + "N";
     }
+
     const words = splitIntoWords(original);
     return combineWords(
         words,
@@ -114,7 +129,7 @@ function memberNameStyle(original: string): string {
 }
 
 export class RubyRenderer extends ConvenienceRenderer {
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof rubyOptions>
@@ -177,6 +192,7 @@ export class RubyRenderer extends ConvenienceRenderer {
                 if (nullable !== null) {
                     return [this.dryType(nullable), ".optional"];
                 }
+
                 return ["Types.Instance(", this.nameForNamedType(unionType), ")", optional];
             }
         );
@@ -201,7 +217,7 @@ export class RubyRenderer extends ConvenienceRenderer {
             classType => {
                 let info: { name: Name; prop: ClassProperty } | undefined;
                 this.forEachClassProperty(classType, "none", (name, _json, prop) => {
-                    if (["class", "map", "array"].indexOf(prop.type.kind) >= 0) {
+                    if (["class", "map", "array"].includes(prop.type.kind)) {
                         info = { name, prop };
                     } else if (info === undefined) {
                         info = { name, prop };
@@ -210,9 +226,10 @@ export class RubyRenderer extends ConvenienceRenderer {
                 if (info !== undefined) {
                     return this.exampleUse(info.prop.type, [exp, safeNav, ".", info.name], depth, info.prop.isOptional);
                 }
+
                 return exp;
             },
-            mapType => this.exampleUse(mapType.values, [exp, safeNav, `["…"]`], depth),
+            mapType => this.exampleUse(mapType.values, [exp, safeNav, '["…"]'], depth),
             enumType => {
                 let name: Name | undefined;
                 // FIXME: This is a terrible way to get the first enum case name.
@@ -224,23 +241,26 @@ export class RubyRenderer extends ConvenienceRenderer {
                 if (name !== undefined) {
                     return [exp, " == ", this.nameForNamedType(enumType), "::", name];
                 }
+
                 return exp;
             },
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
-                    if (["class", "map", "array"].indexOf(nullable.kind) >= 0) {
+                    if (["class", "map", "array"].includes(nullable.kind)) {
                         return this.exampleUse(nullable, exp, depth, true);
                     }
+
                     return [exp, ".nil?"];
                 }
+
                 return exp;
             }
         );
     }
 
     private jsonSample(t: Type): Sourcelike {
-        function inner() {
+        function inner(): string {
             if (t instanceof ArrayType) {
                 return "[…]";
             } else if (t instanceof MapType) {
@@ -251,6 +271,7 @@ export class RubyRenderer extends ConvenienceRenderer {
                 return "…";
             }
         }
+
         return `"${inner()}"`;
     }
 
@@ -289,6 +310,7 @@ export class RubyRenderer extends ConvenienceRenderer {
                 if (nullable !== null) {
                     return this.fromDynamic(nullable, e, true);
                 }
+
                 const expression = [this.nameForNamedType(unionType), ".from_dynamic!(", e, ")"];
                 return optional ? [e, " ? ", expression, " : nil"] : expression;
             }
@@ -299,6 +321,7 @@ export class RubyRenderer extends ConvenienceRenderer {
         if (this.marshalsImplicitlyToDynamic(t)) {
             return e;
         }
+
         return matchType<Sourcelike>(
             t,
             _anyType => e,
@@ -316,9 +339,11 @@ export class RubyRenderer extends ConvenienceRenderer {
                 if (nullable !== null) {
                     return this.toDynamic(nullable, e, true);
                 }
+
                 if (this.marshalsImplicitlyToDynamic(unionType)) {
                     return e;
                 }
+
                 return [e, optional ? "&" : "", ".to_dynamic"];
             }
         );
@@ -342,6 +367,7 @@ export class RubyRenderer extends ConvenienceRenderer {
                 if (nullable !== null) {
                     return this.marshalsImplicitlyToDynamic(nullable);
                 }
+
                 return false;
             }
         );
@@ -369,19 +395,20 @@ export class RubyRenderer extends ConvenienceRenderer {
                 if (nullable !== null) {
                     return this.propertyTypeMarshalsImplicitlyFromDynamic(nullable);
                 }
+
                 return false;
             }
         );
     }
 
-    private emitBlock(source: Sourcelike, emit: () => void) {
+    private emitBlock(source: Sourcelike, emit: () => void): void {
         this.emitLine(source);
         this.indent(emit);
         this.emitLine("end");
     }
 
-    private emitModule(emit: () => void) {
-        const emitModuleInner = (moduleName: string) => {
+    private emitModule(emit: () => void): void {
+        const emitModuleInner = (moduleName: string): void => {
             const [firstModule, ...subModules] = moduleName.split("::");
             if (subModules.length > 0) {
                 this.emitBlock(["module ", firstModule], () => {
@@ -391,6 +418,7 @@ export class RubyRenderer extends ConvenienceRenderer {
                 this.emitBlock(["module ", moduleName], emit);
             }
         };
+
         if (this._options.namespace !== undefined && this._options.namespace !== "") {
             emitModuleInner(this._options.namespace);
         } else {
@@ -398,7 +426,7 @@ export class RubyRenderer extends ConvenienceRenderer {
         }
     }
 
-    private emitClass(c: ClassType, className: Name) {
+    private emitClass(c: ClassType, className: Name): void {
         this.emitDescription(this.descriptionForType(c));
         this.emitBlock(["class ", className, " < Dry::Struct"], () => {
             let table: Sourcelike[][] = [];
@@ -415,6 +443,7 @@ export class RubyRenderer extends ConvenienceRenderer {
                         this.emitTable(table);
                         table = [];
                     }
+
                     this.ensureBlankLine();
                     this.emitDescriptionBlock(description);
                     this.emitLine(attribute);
@@ -489,7 +518,7 @@ export class RubyRenderer extends ConvenienceRenderer {
         });
     }
 
-    private emitEnum(e: EnumType, enumName: Name) {
+    private emitEnum(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
         this.emitBlock(["module ", enumName], () => {
             const table: Sourcelike[][] = [];
@@ -500,7 +529,7 @@ export class RubyRenderer extends ConvenienceRenderer {
         });
     }
 
-    private emitUnion(u: UnionType, unionName: Name) {
+    private emitUnion(u: UnionType, unionName: Name): void {
         this.emitDescription(this.descriptionForType(u));
         this.emitBlock(["class ", unionName, " < Dry::Struct"], () => {
             const table: Sourcelike[][] = [];
@@ -537,7 +566,7 @@ export class RubyRenderer extends ConvenienceRenderer {
                         this.emitLine("end");
                     }
                 });
-                this.emitLine(`raise "Invalid union"`);
+                this.emitLine('raise "Invalid union"');
             });
 
             this.ensureBlankLine();
@@ -561,6 +590,7 @@ export class RubyRenderer extends ConvenienceRenderer {
                         this.emitLine("nil");
                     });
                 }
+
                 this.emitLine("end");
             });
 
@@ -571,7 +601,7 @@ export class RubyRenderer extends ConvenienceRenderer {
         });
     }
 
-    private emitTypesModule() {
+    private emitTypesModule(): void {
         this.emitBlock(["module Types"], () => {
             this.emitLine("include Dry.Types(default: :nominal)");
 
@@ -593,6 +623,7 @@ export class RubyRenderer extends ConvenienceRenderer {
                 if (this._options.strictness === Strictness.Strict) {
                     if (has.nil) declarations.push([["Nil"], [` = ${this._options.strictness}Nil`]]);
                 }
+
                 if (has.bool) declarations.push([["Bool"], [` = ${this._options.strictness}Bool`]]);
                 if (has.hash) declarations.push([["Hash"], [` = ${this._options.strictness}Hash`]]);
                 if (has.string) declarations.push([["String"], [` = ${this._options.strictness}String`]]);
@@ -618,7 +649,7 @@ export class RubyRenderer extends ConvenienceRenderer {
         });
     }
 
-    protected emitSourceStructure() {
+    protected emitSourceStructure(): void {
         if (this.leadingComments !== undefined) {
             this.emitComments(this.leadingComments);
         } else if (!this._options.justTypes) {
@@ -635,6 +666,7 @@ export class RubyRenderer extends ConvenienceRenderer {
             });
             this.emitLine("# If from_json! succeeds, the value returned matches the schema.");
         }
+
         this.ensureBlankLine();
 
         this.emitLine("require 'json'");
@@ -672,7 +704,7 @@ export class RubyRenderer extends ConvenienceRenderer {
                         // it for arrays.
                         const needsToJsonDefined = "array" === topLevel.kind;
 
-                        const classDeclaration = () => {
+                        const classDeclaration = (): void => {
                             this.emitBlock(["class ", name], () => {
                                 this.emitBlock(["def self.from_json!(json)"], () => {
                                     if (needsToJsonDefined) {

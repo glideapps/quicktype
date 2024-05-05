@@ -1,27 +1,27 @@
 import * as unicode from "unicode-properties";
 
-import { Sourcelike } from "../Source";
-import { Namer, Name } from "../Naming";
-import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { TargetLanguage } from "../TargetLanguage";
-import { Option, BooleanOption, OptionValues, getOptionValues, StringOption } from "../RendererOptions";
-import { Type, EnumType, ClassType, UnionType, ArrayType, MapType, PrimitiveType } from "../Type";
-import { matchType, nullableFromUnion } from "../TypeUtils";
-
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { type Name, Namer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import { BooleanOption, type Option, type OptionValues, StringOption, getOptionValues } from "../RendererOptions";
+import { type Sourcelike } from "../Source";
 import {
+    allLowerWordStyle,
+    allUpperWordStyle,
+    combineWords,
+    escapeNonPrintableMapper,
+    firstUpperWordStyle,
+    intToHex,
+    isLetterOrUnderscore,
+    isPrintable,
     legalizeCharacters,
     splitIntoWords,
-    combineWords,
-    firstUpperWordStyle,
-    allUpperWordStyle,
-    allLowerWordStyle,
-    utf32ConcatMap,
-    isPrintable,
-    escapeNonPrintableMapper,
-    intToHex,
-    isLetterOrUnderscore
+    utf32ConcatMap
 } from "../support/Strings";
-import { RenderContext } from "../Renderer";
+import { TargetLanguage } from "../TargetLanguage";
+import { ArrayType, ClassType, EnumType, MapType, PrimitiveType, type Type, UnionType } from "../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
+import { matchType, nullableFromUnion } from "../TypeUtils";
 
 const forbiddenModuleNames = [
     "Access",
@@ -128,17 +128,17 @@ function unicodeEscape(codePoint: number): string {
     return `\\u{${intToHex(codePoint, 0)}}`;
 }
 
-function capitalizeFirstLetter(str: string) {
+function capitalizeFirstLetter(str: string): string {
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 const stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
 
-function escapeDoubleQuotes(str: string) {
+function escapeDoubleQuotes(str: string): string {
     return str.replace(/"/g, '\\"');
 }
 
-function escapeNewLines(str: string) {
+function escapeNewLines(str: string): string {
     return str.replace(/\n/g, "\\n");
 }
 
@@ -148,15 +148,15 @@ export const elixirOptions = {
 };
 
 export class ElixirTargetLanguage extends TargetLanguage {
-    constructor() {
+    public constructor() {
         super("Elixir", ["elixir"], "ex");
     }
 
-    protected getOptions(): Option<any>[] {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [elixirOptions.justTypes, elixirOptions.namespace];
     }
 
-    get supportsOptionalClassProperties(): boolean {
+    public get supportsOptionalClassProperties(): boolean {
         return true;
     }
 
@@ -164,7 +164,7 @@ export class ElixirTargetLanguage extends TargetLanguage {
         return "  ";
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): ElixirRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): ElixirRenderer {
         return new ElixirRenderer(this, renderContext, getOptionValues(elixirOptions, untypedOptionValues));
     }
 }
@@ -173,7 +173,7 @@ const isStartCharacter = isLetterOrUnderscore;
 
 function isPartCharacter(utf16Unit: number): boolean {
     const category: string = unicode.getCategory(utf16Unit);
-    return ["Nd", "Pc", "Mn", "Mc"].indexOf(category) >= 0 || isStartCharacter(utf16Unit);
+    return ["Nd", "Pc", "Mn", "Mc"].includes(category) || isStartCharacter(utf16Unit);
 }
 
 const legalizeName = legalizeCharacters(isPartCharacter);
@@ -182,6 +182,7 @@ function simpleNameStyle(original: string, uppercase: boolean): string {
     if (/^[0-9]+$/.test(original)) {
         original = `${original}N`;
     }
+
     const words = splitIntoWords(original);
     return combineWords(
         words,
@@ -210,7 +211,7 @@ function memberNameStyle(original: string): string {
 }
 
 export class ElixirRenderer extends ConvenienceRenderer {
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof elixirOptions>
@@ -285,7 +286,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
             mapType => ["%{String.t() => ", this.elixirType(mapType.values), "}", optional],
             enumType => [this.nameForNamedTypeWithNamespace(enumType), ".t()", optional],
             unionType => {
-                const children = [...unionType.getChildren()].map(t => this.elixirType(t));
+                const children = [...unionType.getChildren()].map(ut => this.elixirType(ut));
                 return [
                     children.flatMap((element, index) => (index === children.length - 1 ? element : [element, " | "])),
                     optional
@@ -422,7 +423,13 @@ export class ElixirRenderer extends ConvenienceRenderer {
             });
     }
 
-    private emitPatternMatches(types: Type[], name: Sourcelike, parentName: Sourcelike, suffix = "", optional = false) {
+    private emitPatternMatches(
+        types: Type[],
+        name: Sourcelike,
+        parentName: Sourcelike,
+        suffix = "",
+        optional = false
+    ): void {
         this.ensureBlankLine();
 
         let typesToMatch = this.sortAndFilterPatternMatchTypes(types);
@@ -482,6 +489,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
         if (encode) {
             mode = "encode";
         }
+
         return matchType<Sourcelike>(
             t,
             _anyType => [],
@@ -574,6 +582,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                             "(value)} end)"
                         ];
                     }
+
                     return [primitive];
                 }
             },
@@ -604,8 +613,10 @@ export class ElixirRenderer extends ConvenienceRenderer {
                     if (nullableTypes.length < 2) {
                         return this.fromDynamic(nullable, jsonName, name, true);
                     }
+
                     return ['m["', jsonName, '"] && decode_', name, '(m["', jsonName, '"])'];
                 }
+
                 return ["decode_", name, '(m["', jsonName, '"])'];
             }
         );
@@ -626,6 +637,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 if (arrayElement instanceof ArrayType) {
                     return expression;
                 }
+
                 if (arrayElement.isPrimitive()) {
                     return expression;
                 } else if (arrayElement instanceof MapType) {
@@ -689,6 +701,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                             "(value)} end)"
                         ];
                     }
+
                     return [expression];
                 }
             },
@@ -721,12 +734,13 @@ export class ElixirRenderer extends ConvenienceRenderer {
 
                     return ["struct.", e, " && encode_", e, "(struct.", e, ")"];
                 }
+
                 return ["encode_", e, "(struct.", e, ")"];
             }
         );
     }
 
-    private emitBlock(source: Sourcelike, emit: () => void) {
+    private emitBlock(source: Sourcelike, emit: () => void): void {
         this.emitLine(source);
         this.indent(emit);
         this.emitLine("end");
@@ -740,7 +754,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
         });
     }
 
-    private emitModule(c: ClassType, moduleName: Name) {
+    private emitModule(c: ClassType, moduleName: Name): void {
         this.emitBlock(["defmodule ", this.nameWithNamespace(moduleName), " do"], () => {
             const structDescription = this.descriptionForType(c) ?? [];
             const attributeDescriptions: Sourcelike[][] = [];
@@ -754,6 +768,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 this.emitDescription([...structDescription, ...attributeDescriptions]);
                 this.ensureBlankLine();
             }
+
             const requiredAttributes: Sourcelike[] = [];
             this.forEachClassProperty(c, "none", (name, _jsonName, p) => {
                 if (!p.isOptional) {
@@ -767,6 +782,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
             if (requiredAttributes.length) {
                 this.emitLine(["@enforce_keys [", requiredAttributes, "]"]);
             }
+
             const attributeNames: Sourcelike[] = [];
             this.forEachClassProperty(c, "none", (name, _jsonName, _p) => {
                 if (attributeNames.length === 0) {
@@ -794,6 +810,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
             if (this._options.justTypes) {
                 return;
             }
+
             this.forEachClassProperty(c, "none", (name, _jsonName, p) => {
                 if (p.type.kind === "union") {
                     const unionTypes = [...p.type.getChildren()];
@@ -925,7 +942,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
         return true;
     }
 
-    private emitEnum(e: EnumType, enumName: Name) {
+    private emitEnum(e: EnumType, enumName: Name): void {
         this.emitBlock(["defmodule ", this.nameWithNamespace(enumName), " do"], () => {
             this.emitDescription(this.descriptionForType(e));
             this.emitLine("@valid_enum_members [");
@@ -984,11 +1001,11 @@ end`);
         });
     }
 
-    private emitUnion(_u: UnionType, _unionName: Name) {
+    private emitUnion(_u: UnionType, _unionName: Name): void {
         return;
     }
 
-    protected emitSourceStructure() {
+    protected emitSourceStructure(): void {
         if (this.leadingComments !== undefined) {
             this.emitComments(this.leadingComments);
         } else if (!this._options.justTypes) {

@@ -39,7 +39,7 @@ export const keywords = [
     "until",
     "when",
     "while",
-    "yield"
+    "yield",
 ];
 
 const globalClasses = [
@@ -133,7 +133,7 @@ const globalClasses = [
     "Undefined",
     "UnicodeNormalize",
     "Warning",
-    "ZeroDivisionError"
+    "ZeroDivisionError",
 ];
 
 const kernel = [
@@ -286,7 +286,7 @@ const kernel = [
     "untrace_var",
     "untrust",
     "untrusted?",
-    "warn"
+    "warn",
 ];
 
 export const globals = kernel.concat(globalClasses);
@@ -355,5 +355,5 @@ export const reservedProperties = [
     "undef",
     "untrust",
     "while",
-    "with"
+    "with",
 ];

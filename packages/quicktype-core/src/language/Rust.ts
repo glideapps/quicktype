@@ -1,39 +1,41 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 import { mapFirst } from "collection-utils";
 
-import { TargetLanguage } from "../TargetLanguage";
-import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { type Name, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import { BooleanOption, EnumOption, type Option, type OptionValues, getOptionValues } from "../RendererOptions";
+import { type Sourcelike, maybeAnnotated } from "../Source";
 import {
-    legalizeCharacters,
-    splitIntoWords,
-    isLetterOrUnderscoreOrDigit,
-    combineWords,
     allLowerWordStyle,
+    combineWords,
+    escapeNonPrintableMapper,
     firstUpperWordStyle,
     intToHex,
-    utf32ConcatMap,
-    escapeNonPrintableMapper,
-    isPrintable,
     isAscii,
-    isLetterOrUnderscore
+    isLetterOrUnderscore,
+    isLetterOrUnderscoreOrDigit,
+    isPrintable,
+    legalizeCharacters,
+    splitIntoWords,
+    utf32ConcatMap
 } from "../support/Strings";
-import { Name, Namer, funPrefixNamer } from "../Naming";
-import { UnionType, Type, ClassType, EnumType } from "../Type";
-import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
-import { Sourcelike, maybeAnnotated } from "../Source";
-import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { BooleanOption, EnumOption, Option, getOptionValues, OptionValues } from "../RendererOptions";
 import { defined } from "../support/Support";
-import { RenderContext } from "../Renderer";
+import { TargetLanguage } from "../TargetLanguage";
+import { type ClassType, type EnumType, type Type, UnionType } from "../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
+import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
 export enum Density {
-    Normal,
-    Dense
+    Normal = "Normal",
+    Dense = "Dense"
 }
 
 export enum Visibility {
-    Private,
-    Crate,
-    Public
+    Private = "Private",
+    Crate = "Crate",
+    Public = "Public"
 }
 
 export const rustOptions = {
@@ -56,11 +58,11 @@ export const rustOptions = {
 
 type NameToParts = (name: string) => string[];
 type PartsToName = (parts: string[]) => string;
-type NamingStyle = {
+interface NamingStyle {
+    fromParts: PartsToName;
     regex: RegExp;
     toParts: NameToParts;
-    fromParts: PartsToName;
-};
+}
 
 const namingStyles: Record<string, NamingStyle> = {
     snake_case: {
@@ -112,15 +114,15 @@ const namingStyles: Record<string, NamingStyle> = {
 };
 
 export class RustTargetLanguage extends TargetLanguage {
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): RustRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): RustRenderer {
         return new RustRenderer(this, renderContext, getOptionValues(rustOptions, untypedOptionValues));
     }
 
-    constructor() {
+    public constructor() {
         super("Rust", ["rust", "rs", "rustlang"], "rs");
     }
 
-    protected getOptions(): Option<any>[] {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [
             rustOptions.density,
             rustOptions.visibility,
@@ -262,7 +264,7 @@ const standardUnicodeRustEscape = (codePoint: number): string => {
 const rustStringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, standardUnicodeRustEscape));
 
 export class RustRenderer extends ConvenienceRenderer {
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof rustOptions>
@@ -346,7 +348,7 @@ export class RustRenderer extends ConvenienceRenderer {
         );
     }
 
-    private breakCycle(t: Type, withIssues: boolean): any {
+    private breakCycle(t: Type, withIssues: boolean): Sourcelike {
         const rustType = this.rustType(t, withIssues);
         const isCycleBreaker = this.isCycleBreakerType(t);
 
@@ -358,7 +360,7 @@ export class RustRenderer extends ConvenienceRenderer {
         jsonName: string,
         defaultNamingStyle: string,
         preferedNamingStyle: string
-    ) {
+    ): void {
         const escapedName = rustStringEscape(jsonName);
         const name = namingStyles[defaultNamingStyle].fromParts(this.sourcelikeToString(propName).split(" "));
         const styledName = nameToNamingStyle(name, preferedNamingStyle);
@@ -368,7 +370,7 @@ export class RustRenderer extends ConvenienceRenderer {
         }
     }
 
-    private emitSkipSerializeNone(t: Type) {
+    private emitSkipSerializeNone(t: Type): void {
         if (t instanceof UnionType) {
             const nullable = nullableFromUnion(t);
             if (nullable !== null) this.emitLine('#[serde(skip_serializing_if = "Option::is_none")]');
@@ -381,6 +383,7 @@ export class RustRenderer extends ConvenienceRenderer {
         } else if (this._options.visibility === Visibility.Public) {
             return "pub ";
         }
+
         return "";
     }
 
@@ -408,11 +411,14 @@ export class RustRenderer extends ConvenienceRenderer {
         }
 
         const blankLines = this._options.density === Density.Dense ? "none" : "interposing";
-        const structBody = () =>
+        const structBody = (): void =>
             this.forEachClassProperty(c, blankLines, (name, jsonName, prop) => {
                 this.emitDescription(this.descriptionForClassProperty(c, jsonName));
                 this.emitRenameAttribute(name, jsonName, defaultStyle, preferedNamingStyle);
-                this._options.skipSerializingNone && this.emitSkipSerializeNone(prop.type);
+                if (this._options.skipSerializingNone) {
+                    this.emitSkipSerializeNone(prop.type);
+                }
+
                 this.emitLine(this.visibility, name, ": ", this.breakCycle(prop.type, true), ",");
             });
 
@@ -516,6 +522,7 @@ export class RustRenderer extends ConvenienceRenderer {
         if (this._options.leadingComments) {
             this.emitLeadingComments();
         }
+
         this.ensureBlankLine();
         if (this._options.edition2018) {
             this.emitLine("use serde::{Serialize, Deserialize};");
@@ -552,6 +559,7 @@ function getPreferedNamingStyle(namingStyleOccurences: string[], defaultStyle: s
     if (preferedStyles.includes(defaultStyle)) {
         return defaultStyle;
     }
+
     return preferedStyles[0];
 }
 
@@ -565,9 +573,11 @@ function nameToNamingStyle(name: string, style: string): string {
     if (namingStyles[style].regex.test(name)) {
         return name;
     }
+
     const fromStyle = listMatchingNamingStyles(name)[0];
     if (fromStyle === undefined) {
         return name;
     }
+
     return namingStyles[style].fromParts(namingStyles[fromStyle].toParts(name));
 }

@@ -1,14 +1,9 @@
-import {
-    ClassProperty,
-    ClassType,
-    EnumType,
-    PrimitiveStringTypeKind,
-    TransformedStringTypeKind,
-    Type,
-    UnionType
-} from "../Type";
-import { directlyReachableSingleNamedType, matchType, nullableFromUnion } from "../TypeUtils";
-import { maybeAnnotated, modifySource, Sourcelike } from "../Source";
+import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { DependencyName, type Name, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import { BooleanOption, type Option, type OptionValues, StringOption, getOptionValues } from "../RendererOptions";
+import { type Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import {
     allLowerWordStyle,
     allUpperWordStyle,
@@ -26,16 +21,20 @@ import {
     utf16ConcatMap,
     utf16LegalizeCharacters
 } from "../support/Strings";
-
-import { StringTypeMapping } from "../TypeBuilder";
-
-import { DependencyName, funPrefixNamer, Name, Namer } from "../Naming";
-import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { TargetLanguage } from "../TargetLanguage";
-import { BooleanOption, getOptionValues, Option, OptionValues, StringOption } from "../RendererOptions";
-import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { defined } from "../support/Support";
-import { RenderContext } from "../Renderer";
+import { TargetLanguage } from "../TargetLanguage";
+import {
+    type ClassProperty,
+    type ClassType,
+    EnumType,
+    type PrimitiveStringTypeKind,
+    type TransformedStringTypeKind,
+    type Type,
+    type UnionType
+} from "../Type";
+import { type StringTypeMapping } from "../TypeBuilder";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
+import { directlyReachableSingleNamedType, matchType, nullableFromUnion } from "../TypeUtils";
 
 export const dartOptions = {
     nullSafety: new BooleanOption("null-safety", "Null Safety", true),
@@ -62,11 +61,11 @@ export const dartOptions = {
 };
 
 export class DartTargetLanguage extends TargetLanguage {
-    constructor() {
+    public constructor() {
         super("Dart", ["dart"], "dart");
     }
 
-    protected getOptions(): Option<any>[] {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [
             dartOptions.nullSafety,
             dartOptions.justTypes,
@@ -82,18 +81,18 @@ export class DartTargetLanguage extends TargetLanguage {
         ];
     }
 
-    get supportsUnionsWithBothNumberTypes(): boolean {
+    public get supportsUnionsWithBothNumberTypes(): boolean {
         return true;
     }
 
-    get stringTypeMapping(): StringTypeMapping {
+    public get stringTypeMapping(): StringTypeMapping {
         const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
         mapping.set("date", "date");
         mapping.set("date-time", "date-time");
         return mapping;
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): DartRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): DartRenderer {
         const options = getOptionValues(dartOptions, untypedOptionValues);
         return new DartRenderer(this, renderContext, options);
     }
@@ -215,20 +214,25 @@ function dartNameStyle(startWithUpper: boolean, upperUnderscore: boolean, origin
     );
 }
 
-type TopLevelDependents = {
-    encoder: Name;
+interface TopLevelDependents {
     decoder: Name;
-};
+    encoder: Name;
+}
 
 export class DartRenderer extends ConvenienceRenderer {
     private readonly _gettersAndSettersForPropertyName = new Map<Name, [Name, Name]>();
+
     private _needEnumValues = false;
+
     private classCounter = 0;
+
     private classPropertyCounter = 0;
+
     private readonly _topLevelDependents = new Map<Name, TopLevelDependents>();
+
     private readonly _enumValues = new Map<EnumType, Name>();
 
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof dartOptions>
@@ -345,12 +349,15 @@ export class DartRenderer extends ConvenienceRenderer {
         if (this._options.requiredProperties) {
             this.emitLine("import 'package:meta/meta.dart';");
         }
+
         if (this._options.useFreezed) {
             this.emitLine("import 'package:freezed_annotation/freezed_annotation.dart';");
         }
+
         if (this._options.useHive) {
             this.emitLine("import 'package:hive/hive.dart';");
         }
+
         if (this._options.useJsonAnnotation && !this._options.useFreezed) {
             // The freezed annotatation import already provides the import for json_annotation
             this.emitLine("import 'package:json_annotation/json_annotation.dart';");
@@ -368,6 +375,7 @@ export class DartRenderer extends ConvenienceRenderer {
             if (this._options.useFreezed) {
                 this.emitLine("part '", name, ".freezed.dart';");
             }
+
             if (!this._options.justTypes) {
                 this.emitLine("part '", name, ".g.dart';");
             }
@@ -405,6 +413,7 @@ export class DartRenderer extends ConvenienceRenderer {
                 if (maybeNullable === null) {
                     return "dynamic";
                 }
+
                 return withNullable(this.dartType(maybeNullable, withIssues));
             },
             transformedStringType => {
@@ -423,6 +432,7 @@ export class DartRenderer extends ConvenienceRenderer {
         if (this._options.nullSafety && isNullable && !this._options.requiredProperties) {
             return [list, " == null ? [] : ", "List<", itemType, ">.from(", list, "!.map((x) => ", mapper, "))"];
         }
+
         return ["List<", itemType, ">.from(", list, ".map((x) => ", mapper, "))"];
     }
 
@@ -430,10 +440,11 @@ export class DartRenderer extends ConvenienceRenderer {
         if (this._options.nullSafety && isNullable && !this._options.requiredProperties) {
             return ["Map.from(", map, "!).map((k, v) => MapEntry<String, ", valueType, ">(k, ", valueMapper, "))"];
         }
+
         return ["Map.from(", map, ").map((k, v) => MapEntry<String, ", valueType, ">(k, ", valueMapper, "))"];
     }
 
-    protected mapClass(isNullable: boolean, classType: ClassType, dynamic: Sourcelike) {
+    protected mapClass(isNullable: boolean, classType: ClassType, dynamic: Sourcelike): Sourcelike {
         if (this._options.nullSafety && isNullable && !this._options.requiredProperties) {
             return [
                 dynamic,
@@ -446,12 +457,15 @@ export class DartRenderer extends ConvenienceRenderer {
                 ")"
             ];
         }
+
         return [this.nameForNamedType(classType), ".", this.fromJson, "(", dynamic, ")"];
     }
 
-    //If the first time is the unionType type, after nullableFromUnion conversion,
-    //the isNullable property will become false, which is obviously wrong,
-    //so add isNullable property
+    // FIXME: refactor this
+    // If the first time is the unionType type, after nullableFromUnion conversion,
+    // the isNullable property will become false, which is obviously wrong,
+    // so add isNullable property
+    // eslint-disable-next-line @typescript-eslint/default-param-last
     protected fromDynamicExpression(isNullable: boolean = false, t: Type, ...dynamic: Sourcelike[]): Sourcelike {
         return matchType<Sourcelike>(
             t,
@@ -489,6 +503,7 @@ export class DartRenderer extends ConvenienceRenderer {
                 if (maybeNullable === null) {
                     return dynamic;
                 }
+
                 return this.fromDynamicExpression(unionType.isNullable, maybeNullable, dynamic);
             },
             transformedStringType => {
@@ -502,6 +517,7 @@ export class DartRenderer extends ConvenienceRenderer {
                         ) {
                             return [dynamic, " == null ? null : ", "DateTime.parse(", dynamic, ")"];
                         }
+
                         return ["DateTime.parse(", dynamic, ")"];
                     default:
                         return dynamic;
@@ -510,9 +526,11 @@ export class DartRenderer extends ConvenienceRenderer {
         );
     }
 
-    //If the first time is the unionType type, after nullableFromUnion conversion,
-    //the isNullable property will become false, which is obviously wrong,
-    //so add isNullable property
+    // FIXME: refactor this
+    // If the first time is the unionType type, after nullableFromUnion conversion,
+    // the isNullable property will become false, which is obviously wrong,
+    // so add isNullable property
+    // eslint-disable-next-line @typescript-eslint/default-param-last
     protected toDynamicExpression(isNullable: boolean = false, t: Type, ...dynamic: Sourcelike[]): Sourcelike {
         return matchType<Sourcelike>(
             t,
@@ -537,6 +555,7 @@ export class DartRenderer extends ConvenienceRenderer {
                 ) {
                     return [dynamic, "?.", this.toJson, "()"];
                 }
+
                 return [dynamic, ".", this.toJson, "()"];
             },
             mapType =>
@@ -554,6 +573,7 @@ export class DartRenderer extends ConvenienceRenderer {
                 if (maybeNullable === null) {
                     return dynamic;
                 }
+
                 return this.toDynamicExpression(unionType.isNullable, maybeNullable, dynamic);
             },
             transformedStringType => {
@@ -566,6 +586,7 @@ export class DartRenderer extends ConvenienceRenderer {
                         ) {
                             return [dynamic, "?.toIso8601String()"];
                         }
+
                         return [dynamic, ".toIso8601String()"];
                     case "date":
                         if (
@@ -584,6 +605,7 @@ export class DartRenderer extends ConvenienceRenderer {
                                 "!.day.toString().padLeft(2, '0')}\""
                             ];
                         }
+
                         return [
                             '"${',
                             dynamic,
@@ -729,9 +751,11 @@ export class DartRenderer extends ConvenienceRenderer {
             this.emitLine(`@HiveType(typeId: ${this.classCounter})`);
             this.classPropertyCounter = 0;
         }
+
         if (this._options.useJsonAnnotation) {
-            this.emitLine(`@JsonSerializable()`);
+            this.emitLine("@JsonSerializable()");
         }
+
         this.emitBlock(["class ", className], () => {
             if (c.getProperties().size === 0) {
                 this._emitEmptyConstructor(className);
@@ -800,6 +824,7 @@ export class DartRenderer extends ConvenienceRenderer {
                             this.classPropertyCounter++;
                             this.emitLine(`@JsonKey(name: "${jsonName}")`);
                         }
+
                         this.emitLine(required ? "required " : "", this.dartType(prop.type, true), " ", name, ",");
                     });
                 });
@@ -830,6 +855,7 @@ export class DartRenderer extends ConvenienceRenderer {
                 if (this._options.useJsonAnnotation) {
                     this.emitLine('@JsonValue("', stringEscape(jsonName), '")');
                 }
+
                 this.emitLine(name, comma);
             });
         });

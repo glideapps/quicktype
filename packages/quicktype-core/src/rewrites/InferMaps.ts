@@ -1,13 +1,13 @@
-import { iterableFirst, iterableEvery, setMap } from "collection-utils";
+import { iterableEvery, iterableFirst, setMap } from "collection-utils";
 
-import { Type, ClassType, setOperationCasesEqual, ClassProperty, isPrimitiveStringTypeKind } from "../Type";
-import { removeNullFromType } from "../TypeUtils";
+import { type GraphRewriteBuilder } from "../GraphRewriting";
+import { type MarkovChain, evaluate, load } from "../MarkovChain";
 import { defined, panic } from "../support/Support";
-import { TypeGraph, TypeRef } from "../TypeGraph";
-import { StringTypeMapping } from "../TypeBuilder";
-import { GraphRewriteBuilder } from "../GraphRewriting";
+import { type ClassProperty, ClassType, type Type, isPrimitiveStringTypeKind, setOperationCasesEqual } from "../Type";
+import { type StringTypeMapping } from "../TypeBuilder";
+import { type TypeGraph, type TypeRef } from "../TypeGraph";
+import { removeNullFromType } from "../TypeUtils";
 import { unifyTypes, unionBuilderForUnification } from "../UnifyClasses";
-import { MarkovChain, load, evaluate } from "../MarkovChain";
 
 const mapSizeThreshold = 20;
 const stringMapSizeThreshold = 50;
@@ -18,6 +18,7 @@ function nameProbability(name: string): number {
     if (markovChain === undefined) {
         markovChain = load();
     }
+
     return evaluate(markovChain, name);
 }
 
@@ -94,11 +95,14 @@ function shouldBeMap(properties: ReadonlyMap<string, ClassProperty>): ReadonlySe
                 firstNonNullCases = nn;
             }
         }
+
         allCases.add(p.type);
     }
+
     if (!canBeMap) {
         return undefined;
     }
+
     return allCases;
 }
 

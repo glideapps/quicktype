@@ -1,10 +1,13 @@
+import * as _ from "lodash";
+
+import { type PrimitiveStringTypeKind, type StringTypeMapping, type TransformedStringTypeKind } from "..";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { DependencyName, funPrefixNamer, Name, Namer } from "../Naming";
-import { RenderContext } from "../Renderer";
-import { BooleanOption, getOptionValues, Option, OptionValues } from "../RendererOptions";
-import { maybeAnnotated, Sourcelike } from "../Source";
-import { acronymOption, acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { DependencyName, type Name, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import { BooleanOption, type Option, type OptionValues, getOptionValues } from "../RendererOptions";
+import { type Sourcelike, maybeAnnotated } from "../Source";
+import { AcronymStyleOptions, acronymOption, acronymStyle } from "../support/Acronyms";
 import {
     allLowerWordStyle,
     allUpperWordStyle,
@@ -21,10 +24,9 @@ import {
 } from "../support/Strings";
 import { defined } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
-import { ClassProperty, ClassType, EnumType, Type, UnionType } from "../Type";
+import { type ClassProperty, type ClassType, type EnumType, type Type, type UnionType } from "../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
 import { directlyReachableSingleNamedType, matchType, nullableFromUnion } from "../TypeUtils";
-import { StringTypeMapping, TransformedStringTypeKind, PrimitiveStringTypeKind } from "..";
-import * as _ from "lodash";
 
 export const phpOptions = {
     withGet: new BooleanOption("with-get", "Create Getter", true),
@@ -35,24 +37,24 @@ export const phpOptions = {
 };
 
 export class PhpTargetLanguage extends TargetLanguage {
-    constructor() {
+    public constructor() {
         super("PHP", ["php"], "php");
     }
 
-    protected getOptions(): Option<any>[] {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return _.values(phpOptions);
     }
 
-    get supportsUnionsWithBothNumberTypes(): boolean {
+    public get supportsUnionsWithBothNumberTypes(): boolean {
         return true;
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): PhpRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): PhpRenderer {
         const options = getOptionValues(phpOptions, untypedOptionValues);
         return new PhpRenderer(this, renderContext, options);
     }
 
-    get stringTypeMapping(): StringTypeMapping {
+    public get stringTypeMapping(): StringTypeMapping {
         const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
         mapping.set("date", "date"); // TODO is not implemented yet
         mapping.set("time", "time"); // TODO is not implemented yet
@@ -95,21 +97,24 @@ export function phpNameStyle(
 }
 
 export interface FunctionNames {
-    readonly getter: Name;
-    readonly setter: Name;
-    readonly validate: Name;
     readonly from: Name;
-    readonly to: Name;
+    readonly getter: Name;
     readonly sample: Name;
+    readonly setter: Name;
+    readonly to: Name;
+    readonly validate: Name;
 }
 
 export class PhpRenderer extends ConvenienceRenderer {
     private readonly _gettersAndSettersForPropertyName = new Map<Name, FunctionNames>();
+
     private _haveEmittedLeadingComments = false;
+
     protected readonly _converterClassname: string = "Converter";
+
     protected readonly _converterKeywords: string[] = [];
 
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         protected readonly _options: OptionValues<typeof phpOptions>
@@ -256,9 +261,10 @@ export class PhpRenderer extends ConvenienceRenderer {
     }
 
     protected phpType(_reference: boolean, t: Type, isOptional = false, prefix = "?", suffix = ""): Sourcelike {
-        function optionalize(s: Sourcelike) {
+        function optionalize(s: Sourcelike): Sourcelike {
             return [isOptional ? prefix : "", s, isOptional ? suffix : ""];
         }
+
         return matchType<Sourcelike>(
             t,
             _anyType => maybeAnnotated(isOptional, anyTypeIssueAnnotation, "Object"),
@@ -280,15 +286,19 @@ export class PhpRenderer extends ConvenienceRenderer {
                 if (transformedStringType.kind === "time") {
                     throw Error('transformedStringType.kind === "time"');
                 }
+
                 if (transformedStringType.kind === "date") {
                     throw Error('transformedStringType.kind === "date"');
                 }
+
                 if (transformedStringType.kind === "date-time") {
                     return "DateTime";
                 }
+
                 if (transformedStringType.kind === "uuid") {
                     throw Error('transformedStringType.kind === "uuid"');
                 }
+
                 return "string";
             }
         );
@@ -312,12 +322,14 @@ export class PhpRenderer extends ConvenienceRenderer {
                 if (nullable !== null) {
                     return [this.phpDocConvertType(className, nullable), "|null"];
                 }
+
                 throw Error("union are not supported");
             },
             transformedStringType => {
                 if (transformedStringType.kind === "date-time") {
                     return "DateTime";
                 }
+
                 throw Error('transformedStringType.kind === "unknown"');
             }
         );
@@ -341,19 +353,21 @@ export class PhpRenderer extends ConvenienceRenderer {
                 if (nullable !== null) {
                     return ["?", this.phpConvertType(className, nullable)];
                 }
+
                 throw Error("union are not supported");
             },
             transformedStringType => {
                 if (transformedStringType.kind === "date-time") {
                     return "string";
                 }
+
                 throw Error('transformedStringType.kind === "unknown"');
             }
         );
     }
 
-    protected phpToObjConvert(className: Name, t: Type, lhs: Sourcelike[], args: Sourcelike[]) {
-        return matchType<void>(
+    protected phpToObjConvert(className: Name, t: Type, lhs: Sourcelike[], args: Sourcelike[]): void {
+        matchType(
             t,
             _anyType => this.emitLine(...lhs, ...args, "; /*any*/"),
             _nullType => this.emitLine(...lhs, ...args, "; /*null*/"),
@@ -391,6 +405,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                     this.emitLine("}");
                     return;
                 }
+
                 throw Error("union are not supported");
             },
             transformedStringType => {
@@ -398,12 +413,13 @@ export class PhpRenderer extends ConvenienceRenderer {
                     this.emitLine(...lhs, ...args, "->format(DateTimeInterface::ISO8601);");
                     return;
                 }
+
                 throw Error('transformedStringType.kind === "unknown"');
             }
         );
     }
 
-    private transformDateTime(className: Name, attrName: Sourcelike, scopeAttrName: Sourcelike[]) {
+    private transformDateTime(className: Name, attrName: Sourcelike, scopeAttrName: Sourcelike[]): void {
         this.emitBlock(["if (!is_a(", scopeAttrName, ", 'DateTime'))"], () =>
             this.emitLine("throw new Exception('Attribute Error:", className, "::", attrName, "');")
         );
@@ -412,8 +428,8 @@ export class PhpRenderer extends ConvenienceRenderer {
         // }
     }
 
-    protected phpFromObjConvert(className: Name, t: Type, lhs: Sourcelike[], args: Sourcelike[]) {
-        return matchType<void>(
+    protected phpFromObjConvert(className: Name, t: Type, lhs: Sourcelike[], args: Sourcelike[]): void {
+        matchType(
             t,
             _anyType => this.emitLine(...lhs, ...args, "; /*any*/"),
             _nullType => this.emitLine(...lhs, ...args, "; /*null*/"),
@@ -452,6 +468,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                     this.emitLine("}");
                     return;
                 }
+
                 throw Error("union are not supported");
             },
             transformedStringType => {
@@ -461,6 +478,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                     this.emitLine("return $tmp;");
                     return;
                 }
+
                 throw Error('transformedStringType.kind === "unknown"');
             }
         );
@@ -473,8 +491,8 @@ export class PhpRenderer extends ConvenienceRenderer {
         args: Sourcelike[],
         idx: number,
         suffix: Sourcelike
-    ) {
-        return matchType<void>(
+    ): void {
+        matchType(
             t,
             _anyType =>
                 this.emitLine(
@@ -546,6 +564,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                     this.phpSampleConvert(className, nullable, lhs, args, idx, suffix);
                     return;
                 }
+
                 throw Error("union are not supported:" + unionType);
             },
             transformedStringType => {
@@ -561,18 +580,20 @@ export class PhpRenderer extends ConvenienceRenderer {
                     // this.emitLine("return sample();");
                     return;
                 }
+
                 throw Error('transformedStringType.kind === "unknown"');
             }
         );
     }
 
-    private phpValidate(className: Name, t: Type, attrName: Sourcelike, scopeAttrName: string) {
-        const is = (isfn: string, myT: Name = className) => {
+    private phpValidate(className: Name, t: Type, attrName: Sourcelike, scopeAttrName: string): void {
+        const is = (isfn: string, myT: Name = className): void => {
             this.emitBlock(["if (!", isfn, "(", scopeAttrName, "))"], () =>
                 this.emitLine('throw new Exception("Attribute Error:', myT, "::", attrName, '");')
             );
         };
-        return matchType<void>(
+
+        matchType(
             t,
             _anyType => is("defined"),
             _nullType => is("is_null"),
@@ -609,6 +630,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                     });
                     return;
                 }
+
                 throw Error("not implemented");
             },
             transformedStringType => {
@@ -616,17 +638,25 @@ export class PhpRenderer extends ConvenienceRenderer {
                     this.transformDateTime(className, attrName, [scopeAttrName]);
                     return;
                 }
+
                 throw Error(`transformedStringType.kind === ${transformedStringType.kind}`);
             }
         );
     }
 
-    protected emitFromMethod(names: FunctionNames, p: ClassProperty, className: Name, _name: Name, desc?: string[]) {
+    protected emitFromMethod(
+        names: FunctionNames,
+        p: ClassProperty,
+        className: Name,
+        _name: Name,
+        desc?: string[]
+    ): void {
         this.emitLine("/**");
         if (desc !== undefined) {
             this.emitLine(" * ", desc);
             this.emitLine(" *");
         }
+
         // this.emitLine(" * @param ", this.phpType(false, p.type, false, "", "|null"));
         this.emitLine(" * @param ", this.phpConvertType(className, p.type), " $value");
         this.emitLine(" * @throws Exception");
@@ -642,17 +672,19 @@ export class PhpRenderer extends ConvenienceRenderer {
                 this.phpType(false, p.type)
             ],
             () => {
-                this.phpFromObjConvert(className, p.type, ["return "], [`$value`]);
+                this.phpFromObjConvert(className, p.type, ["return "], ["$value"]);
                 // this.emitLine("return $ret;");
             }
         );
     }
-    protected emitToMethod(names: FunctionNames, p: ClassProperty, className: Name, name: Name, desc?: string[]) {
+
+    protected emitToMethod(names: FunctionNames, p: ClassProperty, className: Name, name: Name, desc?: string[]): void {
         this.emitLine("/**");
         if (desc !== undefined) {
             this.emitLine(" * ", desc);
             this.emitLine(" *");
         }
+
         this.emitLine(" * @throws Exception");
         this.emitLine(" * @return ", this.phpConvertType(className, p.type));
         this.emitLine(" */");
@@ -663,12 +695,20 @@ export class PhpRenderer extends ConvenienceRenderer {
             this.emitLine("throw new Exception('never get to this ", className, "::", name, "');");
         });
     }
-    protected emitValidateMethod(names: FunctionNames, p: ClassProperty, className: Name, name: Name, desc?: string[]) {
+
+    protected emitValidateMethod(
+        names: FunctionNames,
+        p: ClassProperty,
+        className: Name,
+        name: Name,
+        desc?: string[]
+    ): void {
         this.emitLine("/**");
         if (desc !== undefined) {
             this.emitLine(" * ", desc);
             this.emitLine(" *");
         }
+
         this.emitLine(" * @param ", this.phpType(false, p.type, false, "", "|null"));
         this.emitLine(" * @return bool");
         this.emitLine(" * @throws Exception");
@@ -676,21 +716,30 @@ export class PhpRenderer extends ConvenienceRenderer {
         this.emitBlock(
             ["public static function ", names.validate, "(", this.phpType(false, p.type), " $value): bool"],
             () => {
-                this.phpValidate(className, p.type, name, `$value`);
+                this.phpValidate(className, p.type, name, "$value");
                 this.emitLine("return true;");
             }
         );
     }
-    protected emitGetMethod(names: FunctionNames, p: ClassProperty, className: Name, name: Name, desc?: string[]) {
+
+    protected emitGetMethod(
+        names: FunctionNames,
+        p: ClassProperty,
+        className: Name,
+        name: Name,
+        desc?: string[]
+    ): void {
         if (this._options.withGet) {
             this.emitLine("/**");
             if (desc !== undefined) {
                 this.emitLine(" * ", desc);
                 this.emitLine(" *");
             }
+
             if (!this._options.fastGet) {
-                this.emitLine(` * @throws Exception`);
+                this.emitLine(" * @throws Exception");
             }
+
             const rendered = this.phpType(false, p.type);
             this.emitLine(" * @return ", rendered);
             this.emitLine(" */");
@@ -714,15 +763,23 @@ export class PhpRenderer extends ConvenienceRenderer {
             });
         }
     }
-    protected emitSetMethod(names: FunctionNames, p: ClassProperty, className: Name, name: Name, desc?: string[]) {
+
+    protected emitSetMethod(
+        names: FunctionNames,
+        p: ClassProperty,
+        className: Name,
+        name: Name,
+        desc?: string[]
+    ): void {
         if (this._options.withSet) {
             this.emitLine("/**");
             if (desc !== undefined) {
                 this.emitLine(" * ", desc);
                 this.emitLine(" *");
             }
+
             this.emitLine(" * @param ", this.phpType(false, p.type, false, "", "|null"));
-            this.emitLine(` * @throws Exception`);
+            this.emitLine(" * @throws Exception");
             this.emitLine(" */");
             this.emitBlock(["public function ", names.setter, "(", this.phpType(false, p.type), " $value)"], () => {
                 this.emitBlock(["if (", className, "::", names.validate, "($value)) "], () => {
@@ -731,6 +788,7 @@ export class PhpRenderer extends ConvenienceRenderer {
             });
         }
     }
+
     protected emitSampleMethod(
         names: FunctionNames,
         p: ClassProperty,
@@ -738,13 +796,14 @@ export class PhpRenderer extends ConvenienceRenderer {
         name: Name,
         desc: string[] | undefined,
         idx: number
-    ) {
+    ): void {
         if (this._options.withGet) {
             this.emitLine("/**");
             if (desc !== undefined) {
                 this.emitLine(" * ", desc);
                 this.emitLine(" *");
             }
+
             const rendered = this.phpType(false, p.type);
             this.emitLine(" * @return ", rendered);
             this.emitLine(" */");
@@ -807,7 +866,7 @@ export class PhpRenderer extends ConvenienceRenderer {
 
             this.ensureBlankLine();
             this.emitBlock(
-                ["/**\n", ` * @throws Exception\n`, ` * @return bool\n`, " */\n", "public function validate(): bool"],
+                ["/**\n", " * @throws Exception\n", " * @return bool\n", " */\n", "public function validate(): bool"],
                 () => {
                     let lines: Sourcelike[][] = [];
                     let p = "return ";
@@ -826,8 +885,8 @@ export class PhpRenderer extends ConvenienceRenderer {
             this.emitBlock(
                 [
                     "/**\n",
-                    ` * @return stdClass\n`,
-                    ` * @throws Exception\n`,
+                    " * @return stdClass\n",
+                    " * @throws Exception\n",
                     " */\n",
                     "public function to(): stdClass "
                 ],
@@ -845,11 +904,11 @@ export class PhpRenderer extends ConvenienceRenderer {
             this.emitBlock(
                 [
                     "/**\n",
-                    ` * @param stdClass $obj\n`,
-                    ` * @return `,
+                    " * @param stdClass $obj\n",
+                    " * @return ",
                     className,
-                    `\n`,
-                    ` * @throws Exception\n`,
+                    "\n",
+                    " * @throws Exception\n",
                     " */\n",
                     "public static function from(stdClass $obj): ",
                     className
@@ -861,6 +920,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                             this.emitLine(className, "::", names.validate, "($this->", name, ", true);");
                         });
                     }
+
                     this.emitLine("return new ", className, "(");
                     let comma = " ";
                     this.forEachClassProperty(c, "none", (name, jsonName) => {
@@ -901,11 +961,11 @@ export class PhpRenderer extends ConvenienceRenderer {
         throw Error("emitUnionDefinition not implemented");
     }
 
-    protected emitEnumSerializationAttributes(_e: EnumType) {
+    protected emitEnumSerializationAttributes(_e: EnumType): void {
         // Empty
     }
 
-    protected emitEnumDeserializationAttributes(_e: EnumType) {
+    protected emitEnumDeserializationAttributes(_e: EnumType): void {
         // Empty
     }
 
@@ -937,13 +997,13 @@ export class PhpRenderer extends ConvenienceRenderer {
             this.emitBlock(
                 [
                     "/**\n",
-                    ` * @param `,
+                    " * @param ",
                     enumName,
-                    `\n`,
-                    ` * @return `,
+                    "\n",
+                    " * @return ",
                     enumSerdeType,
-                    `\n`,
-                    ` * @throws Exception\n`,
+                    "\n",
+                    " * @throws Exception\n",
                     " */\n",
                     "public static function to(",
                     enumName,
@@ -976,11 +1036,11 @@ export class PhpRenderer extends ConvenienceRenderer {
             this.emitBlock(
                 [
                     "/**\n",
-                    ` * @param mixed\n`,
-                    ` * @return `,
+                    " * @param mixed\n",
+                    " * @return ",
                     enumName,
                     "\n",
-                    ` * @throws Exception\n`,
+                    " * @throws Exception\n",
                     " */\n",
                     "public static function from($obj): ",
                     enumName
@@ -999,7 +1059,7 @@ export class PhpRenderer extends ConvenienceRenderer {
             );
             this.ensureBlankLine();
             this.emitBlock(
-                ["/**\n", ` * @return `, enumName, "\n", " */\n", "public static function sample(): ", enumName],
+                ["/**\n", " * @return ", enumName, "\n", " */\n", "public static function sample(): ", enumName],
                 () => {
                     const lines: Sourcelike[] = [];
                     this.forEachEnumCase(e, "none", name => {
@@ -1024,6 +1084,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         if (this._options.withClosing) {
             this.emitLine("?>");
         }
+
         super.finishFile(defined(givenFilename));
     }
 }

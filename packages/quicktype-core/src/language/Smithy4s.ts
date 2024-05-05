@@ -1,8 +1,9 @@
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { Name, Namer, funPrefixNamer } from "../Naming";
-import { EnumOption, Option, StringOption, OptionValues, getOptionValues } from "../RendererOptions";
-import { Sourcelike, maybeAnnotated } from "../Source";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { type Name, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import { EnumOption, type Option, type OptionValues, StringOption, getOptionValues } from "../RendererOptions";
+import { type Sourcelike, maybeAnnotated } from "../Source";
 import {
     allLowerWordStyle,
     allUpperWordStyle,
@@ -16,12 +17,21 @@ import {
 } from "../support/Strings";
 import { assertNever } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
-import { ArrayType, ClassProperty, ClassType, EnumType, MapType, ObjectType, Type, UnionType } from "../Type";
+import {
+    ArrayType,
+    type ClassProperty,
+    type ClassType,
+    type EnumType,
+    MapType,
+    type ObjectType,
+    type Type,
+    type UnionType
+} from "../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
 import { matchCompoundType, matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
-import { RenderContext } from "../Renderer";
 
 export enum Framework {
-    None
+    None = "None"
 }
 
 export const SmithyOptions = {
@@ -148,7 +158,7 @@ const upperNamingFunction = funPrefixNamer("upper", s => scalaNameStyle(true, s)
 const lowerNamingFunction = funPrefixNamer("lower", s => scalaNameStyle(false, s));
 
 export class Smithy4sRenderer extends ConvenienceRenderer {
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         protected readonly _scalaOptions: OptionValues<typeof SmithyOptions>
@@ -221,7 +231,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
     // (asarazan): I've broken out the following two functions
     // because some renderers, such as kotlinx, can cope with `any`, while some get mad.
     protected arrayType(arrayType: ArrayType, _ = false): Sourcelike {
-        //this.emitTopLevelArray(arrayType, new Name(arrayType.getCombinedName().toString() + "List"))
+        // this.emitTopLevelArray(arrayType, new Name(arrayType.getCombinedName().toString() + "List"))
         return arrayType.getCombinedName().toString() + "List";
     }
 
@@ -231,7 +241,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
 
     protected mapType(mapType: MapType, _ = false): Sourcelike {
         return mapType.getCombinedName().toString() + "Map";
-        //return [this.scalaType(mapType.values, withIssues), "Map"];
+        // return [this.scalaType(mapType.values, withIssues), "Map"];
     }
 
     protected scalaType(t: Type, withIssues = false, noOptional = false): Sourcelike {
@@ -241,7 +251,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
                 return maybeAnnotated(withIssues, anyTypeIssueAnnotation, this.anySourceType(!noOptional));
             },
             _nullType => {
-                //return "None.type"
+                // return "None.type"
                 return maybeAnnotated(withIssues, nullTypeIssueAnnotation, this.anySourceType(!noOptional));
             },
             _boolType => "Boolean",
@@ -257,6 +267,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
                 if (nullable !== null) {
                     return [this.scalaType(nullable, withIssues)];
                 }
+
                 return this.nameForNamedType(unionType);
             }
         );
@@ -303,7 +314,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
             return;
         }
 
-        const scalaType = (p: ClassProperty) => {
+        const scalaType = (p: ClassProperty): Sourcelike => {
             if (p.isOptional) {
                 return [this.scalaType(p.type, true, true)];
             } else {
@@ -311,7 +322,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
             }
         };
 
-        const emitLater: Array<ClassProperty> = [];
+        const emitLater: ClassProperty[] = [];
 
         this.emitDescription(this.descriptionForType(c));
         this.emitLine("structure ", className, " {");
@@ -342,6 +353,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
                 for (const emit of meta) {
                     emit();
                 }
+
                 const nameNeedsBackticks = jsonName.endsWith("_") || shouldAddBacktick(jsonName);
                 const nameWithBackticks = nameNeedsBackticks ? "`" + jsonName + "`" : jsonName;
                 this.emitLine(
@@ -363,12 +375,13 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
         this.emitClassDefinitionMethods(emitLater);
     }
 
-    protected emitClassDefinitionMethods(arrayTypes: ClassProperty[]) {
+    protected emitClassDefinitionMethods(arrayTypes: ClassProperty[]): void {
         this.emitLine("}");
         arrayTypes.forEach(p => {
             function ignore<T extends Type>(_: T): void {
                 return;
             }
+
             matchCompoundType(
                 p.type,
                 at => {
@@ -416,9 +429,9 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
 
             //                if (backticks) {this.emitItem("`")}
             if (--count > 0) this.emitItem([","]);
-            //} else {
-            //--count
-            //}
+            // } else {
+            // --count
+            // }
         });
 
         this.ensureBlankLine();
@@ -432,17 +445,18 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
             return "_" + kind;
         }
 
-        const emitLater: Array<Type> = [];
+        const emitLater: Type[] = [];
 
         this.emitDescription(this.descriptionForType(u));
 
         const [maybeNull, nonNulls] = removeNullFromUnion(u, sortBy);
-        const theTypes: Array<Sourcelike> = [];
+        const theTypes: Sourcelike[] = [];
         this.forEachUnionMember(u, nonNulls, "none", null, (_, t) => {
             const laterType = t.kind === "array" || t.kind === "map";
             if (laterType) {
                 emitLater.push(t);
             }
+
             theTypes.push(this.scalaType(t));
         });
         if (maybeNull !== null) {
@@ -462,6 +476,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
             function ignore<T extends Type>(_: T): void {
                 return;
             }
+
             matchCompoundType(
                 p,
                 at => {
@@ -511,26 +526,23 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
 }
 
 export class SmithyTargetLanguage extends TargetLanguage {
-    constructor() {
+    public constructor() {
         super("Smithy", ["Smithy"], "smithy");
     }
 
-    protected getOptions(): Option<any>[] {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [SmithyOptions.framework, SmithyOptions.packageName];
     }
 
-    get supportsOptionalClassProperties(): boolean {
+    public get supportsOptionalClassProperties(): boolean {
         return true;
     }
 
-    get supportsUnionsWithBothNumberTypes(): boolean {
+    public get supportsUnionsWithBothNumberTypes(): boolean {
         return true;
     }
 
-    protected makeRenderer(
-        renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
-    ): ConvenienceRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): ConvenienceRenderer {
         const options = getOptionValues(SmithyOptions, untypedOptionValues);
 
         switch (options.framework) {
