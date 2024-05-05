@@ -4,12 +4,7 @@ import { TargetLanguage } from "../../TargetLanguage";
 import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
 
 import { RubyRenderer } from "./RubyRenderer";
-
-export enum Strictness {
-    Strict = "Strict::",
-    Coercible = "Coercible::",
-    None = "Types::"
-}
+import { Strictness } from "./utils";
 
 export const rubyOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),

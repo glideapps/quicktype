@@ -17,8 +17,8 @@ import {
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
 
 import { globals } from "./constants";
-import { Strictness, type rubyOptions } from "./language";
-import { forbiddenForObjectProperties, memberNameStyle, simpleNameStyle, stringEscape } from "./utils";
+import { type rubyOptions } from "./language";
+import { Strictness, forbiddenForObjectProperties, memberNameStyle, simpleNameStyle, stringEscape } from "./utils";
 
 export class RubyRenderer extends ConvenienceRenderer {
     public constructor(

@@ -16,6 +16,12 @@ import {
 
 import * as keywords from "./constants";
 
+export enum Strictness {
+    Strict = "Strict::",
+    Coercible = "Coercible::",
+    None = "Types::"
+}
+
 export const forbiddenForObjectProperties = Array.from(new Set([...keywords.keywords, ...keywords.reservedProperties]));
 function unicodeEscape(codePoint: number): string {
     return "\\u{" + intToHex(codePoint, 0) + "}";
