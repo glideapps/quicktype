@@ -17,6 +17,12 @@ import { nullableFromUnion } from "../../TypeUtils";
 
 import { keywords } from "./constants";
 
+export enum AccessModifier {
+    None = "None",
+    Public = "Public",
+    Internal = "Internal"
+}
+
 export function noFollow(t: Type): Type {
     return t;
 }

@@ -12,8 +12,15 @@ import { followTargetType } from "../../Transformers";
 import { type ClassProperty, type ClassType, type EnumType, type Type, type UnionType } from "../../Type";
 import { directlyReachableSingleNamedType, matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
 
-import { AccessModifier, type cSharpOptions } from "./language";
-import { csTypeForTransformedStringType, isValueType, namingFunction, namingFunctionKeep, noFollow } from "./utils";
+import { type cSharpOptions } from "./language";
+import {
+    AccessModifier,
+    csTypeForTransformedStringType,
+    isValueType,
+    namingFunction,
+    namingFunctionKeep,
+    noFollow
+} from "./utils";
 
 export class CSharpRenderer extends ConvenienceRenderer {
     public constructor(

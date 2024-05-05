@@ -22,12 +22,6 @@ export interface OutputFeatures {
     helpers: boolean;
 }
 
-export enum AccessModifier {
-    None = "None",
-    Public = "Public",
-    Internal = "Internal"
-}
-
 export type CSharpTypeForAny = "object" | "dynamic";
 
 export const cSharpOptions = {

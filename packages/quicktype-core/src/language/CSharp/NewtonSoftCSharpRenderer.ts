@@ -32,8 +32,9 @@ import { ArrayType, type ClassProperty, ClassType, EnumType, type Type, UnionTyp
 import { nullableFromUnion } from "../../TypeUtils";
 
 import { CSharpRenderer } from "./CSharpRenderer";
-import { AccessModifier, type newtonsoftCSharpOptions } from "./language";
+import { type newtonsoftCSharpOptions } from "./language";
 import {
+    AccessModifier,
     alwaysApplyTransformation,
     denseJsonPropertyName,
     denseNullValueHandlingEnumName,
