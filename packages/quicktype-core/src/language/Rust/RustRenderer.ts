@@ -16,11 +16,12 @@ import { keywords } from "./constants";
 import { type rustOptions } from "./language";
 import {
     Density,
+    type NamingStyleKey,
     Visibility,
     camelNamingFunction,
     getPreferedNamingStyle,
     listMatchingNamingStyles,
-    nameToNamingStyle,
+    nameWithNamingStyle,
     namingStyles,
     rustStringEscape,
     snakeNamingFunction
@@ -121,12 +122,12 @@ export class RustRenderer extends ConvenienceRenderer {
     private emitRenameAttribute(
         propName: Name,
         jsonName: string,
-        defaultNamingStyle: string,
-        preferedNamingStyle: string
+        defaultNamingStyle: NamingStyleKey,
+        preferedNamingStyle: NamingStyleKey
     ): void {
         const escapedName = rustStringEscape(jsonName);
         const name = namingStyles[defaultNamingStyle].fromParts(this.sourcelikeToString(propName).split(" "));
-        const styledName = nameToNamingStyle(name, preferedNamingStyle);
+        const styledName = nameWithNamingStyle(name, preferedNamingStyle);
         const namesDiffer = escapedName !== styledName;
         if (namesDiffer) {
             this.emitLine('#[serde(rename = "', escapedName, '")]');

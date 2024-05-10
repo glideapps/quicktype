@@ -33,7 +33,7 @@ interface NamingStyle {
     toParts: NameToParts;
 }
 
-export const namingStyles: Record<string, NamingStyle> = {
+export const namingStyles = {
     snake_case: {
         regex: /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/,
         toParts: (name: string): string[] => name.split("_"),
@@ -80,7 +80,11 @@ export const namingStyles: Record<string, NamingStyle> = {
         toParts: (name: string): string[] => [name],
         fromParts: (parts: string[]): string => parts.map(p => p.toUpperCase()).join("")
     }
-};
+} as const;
+
+namingStyles satisfies Record<string, NamingStyle>;
+
+export type NamingStyleKey = keyof typeof namingStyles;
 
 const isAsciiLetterOrUnderscoreOrDigit = (codePoint: number): boolean => {
     if (!isAscii(codePoint)) {
@@ -132,13 +136,13 @@ const standardUnicodeRustEscape = (codePoint: number): string => {
 
 export const rustStringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, standardUnicodeRustEscape));
 
-export function getPreferedNamingStyle(namingStyleOccurences: string[], defaultStyle: string): string {
+export function getPreferedNamingStyle(namingStyleOccurences: string[], defaultStyle: NamingStyleKey): NamingStyleKey {
     const occurrences = Object.fromEntries(Object.keys(namingStyles).map(key => [key, 0]));
     namingStyleOccurences.forEach(style => ++occurrences[style]);
     const max = Math.max(...Object.values(occurrences));
-    const preferedStyles = Object.entries(occurrences)
-        .filter(([_style, num]) => num === max)
-        .map(([style, _num]) => style);
+    const preferedStyles = Object.entries(occurrences).flatMap(([style, num]) =>
+        num === max ? [style] : []
+    ) as NamingStyleKey[];
     if (preferedStyles.includes(defaultStyle)) {
         return defaultStyle;
     }
@@ -146,13 +150,13 @@ export function getPreferedNamingStyle(namingStyleOccurences: string[], defaultS
     return preferedStyles[0];
 }
 
-export function listMatchingNamingStyles(name: string): string[] {
-    return Object.entries(namingStyles)
-        .filter(([_, { regex }]) => regex.test(name))
-        .map(([namingStyle, _]) => namingStyle);
+export function listMatchingNamingStyles(name: string): NamingStyleKey[] {
+    return Object.entries(namingStyles).flatMap(([namingStyleKey, { regex }]) =>
+        regex.test(name) ? [namingStyleKey] : []
+    ) as NamingStyleKey[];
 }
 
-export function nameToNamingStyle(name: string, style: string): string {
+export function nameWithNamingStyle(name: string, style: NamingStyleKey): string {
     if (namingStyles[style].regex.test(name)) {
         return name;
     }
