@@ -99,7 +99,7 @@ export const cPlusPlusLanguageConfig = {
 } as const;
 
 export class CPlusPlusTargetLanguage extends TargetLanguage<typeof cPlusPlusLanguageConfig> {
-    constructor() {
+    public constructor() {
         super(cPlusPlusLanguageConfig);
     }
 

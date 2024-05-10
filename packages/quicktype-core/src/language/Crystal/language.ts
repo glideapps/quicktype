@@ -12,7 +12,7 @@ export const crystalLanguageConfig = {
 } as const;
 
 export class CrystalTargetLanguage extends TargetLanguage<typeof crystalLanguageConfig> {
-    constructor() {
+    public constructor() {
         super(crystalLanguageConfig);
     }
 

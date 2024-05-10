@@ -22,7 +22,7 @@ export const elmLanguageConfig = {
 } as const;
 
 export class ElmTargetLanguage extends TargetLanguage<typeof elmLanguageConfig> {
-    constructor() {
+    public constructor() {
         super(elmLanguageConfig);
     }
 

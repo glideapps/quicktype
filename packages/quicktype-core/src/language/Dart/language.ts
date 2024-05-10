@@ -34,7 +34,7 @@ export const dartOptions = {
 export const dartLanguageConfig = { displayName: "Dart", names: ["dart"], extension: "dart" } as const;
 
 export class DartTargetLanguage extends TargetLanguage<typeof dartLanguageConfig> {
-    constructor() {
+    public constructor() {
         super(dartLanguageConfig);
     }
 

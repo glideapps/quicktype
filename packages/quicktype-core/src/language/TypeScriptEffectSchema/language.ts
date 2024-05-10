@@ -16,7 +16,7 @@ export const typeScriptEffectSchemaLanguageConfig = {
 } as const;
 
 export class TypeScriptEffectSchemaTargetLanguage extends TargetLanguage<typeof typeScriptEffectSchemaLanguageConfig> {
-    constructor() {
+    public constructor() {
         super(typeScriptEffectSchemaLanguageConfig);
     }
 

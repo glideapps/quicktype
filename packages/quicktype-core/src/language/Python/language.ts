@@ -33,7 +33,7 @@ export const pythonOptions = {
 export const pythonLanguageConfig = { displayName: "Python", names: ["python", "py"], extension: "py" } as const;
 
 export class PythonTargetLanguage extends TargetLanguage<typeof pythonLanguageConfig> {
-    constructor() {
+    public constructor() {
         super(pythonLanguageConfig);
     }
 

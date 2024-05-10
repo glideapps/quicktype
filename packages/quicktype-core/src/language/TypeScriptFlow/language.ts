@@ -1,13 +1,13 @@
-import { TargetLanguage } from "../../TargetLanguage";
 import { type RenderContext } from "../../Renderer";
 import { BooleanOption, type Option, getOptionValues } from "../../RendererOptions";
-import { type FixMeOptionsType } from "../../types";
+import { TargetLanguage } from "../../TargetLanguage";
+import { type PrimitiveStringTypeKind, type TransformedStringTypeKind } from "../../Type";
+import { type StringTypeMapping } from "../../TypeBuilder";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
 import { javaScriptOptions } from "../JavaScript";
 
 import { FlowRenderer } from "./FlowRenderer";
 import { TypeScriptRenderer } from "./TypeScriptRenderer";
-import { type TransformedStringTypeKind, type PrimitiveStringTypeKind } from "../../Type";
-import { type StringTypeMapping } from "../../TypeBuilder";
 
 export const tsFlowOptions = Object.assign({}, javaScriptOptions, {
     justTypes: new BooleanOption("just-types", "Interfaces only", false),
@@ -30,11 +30,11 @@ export const typeScriptLanguageConfig = {
 } as const;
 
 export class TypeScriptTargetLanguage extends TargetLanguage<typeof typeScriptLanguageConfig> {
-    constructor() {
+    public constructor() {
         super(typeScriptLanguageConfig);
     }
 
-    protected getOptions(): Option<any>[] {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [
             tsFlowOptions.justTypes,
             tsFlowOptions.nicePropertyNames,
@@ -51,7 +51,7 @@ export class TypeScriptTargetLanguage extends TargetLanguage<typeof typeScriptLa
         ];
     }
 
-    get stringTypeMapping(): StringTypeMapping {
+    public get stringTypeMapping(): StringTypeMapping {
         const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
         const dateTimeType = "date-time";
         mapping.set("date", dateTimeType);
@@ -59,11 +59,11 @@ export class TypeScriptTargetLanguage extends TargetLanguage<typeof typeScriptLa
         return mapping;
     }
 
-    get supportsOptionalClassProperties(): boolean {
+    public get supportsOptionalClassProperties(): boolean {
         return true;
     }
 
-    get supportsFullObjectType(): boolean {
+    public get supportsFullObjectType(): boolean {
         return true;
     }
 
@@ -79,11 +79,11 @@ export const flowLanguageConfig = {
 } as const;
 
 export class FlowTargetLanguage extends TargetLanguage<typeof flowLanguageConfig> {
-    constructor() {
+    public constructor() {
         super(flowLanguageConfig);
     }
 
-    protected getOptions(): Option<any>[] {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [
             tsFlowOptions.justTypes,
             tsFlowOptions.nicePropertyNames,
@@ -100,7 +100,7 @@ export class FlowTargetLanguage extends TargetLanguage<typeof flowLanguageConfig
         ];
     }
 
-    get stringTypeMapping(): StringTypeMapping {
+    public get stringTypeMapping(): StringTypeMapping {
         const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
         const dateTimeType = "date-time";
         mapping.set("date", dateTimeType);
@@ -108,11 +108,11 @@ export class FlowTargetLanguage extends TargetLanguage<typeof flowLanguageConfig
         return mapping;
     }
 
-    get supportsOptionalClassProperties(): boolean {
+    public get supportsOptionalClassProperties(): boolean {
         return true;
     }
 
-    get supportsFullObjectType(): boolean {
+    public get supportsFullObjectType(): boolean {
         return true;
     }
 

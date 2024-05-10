@@ -31,9 +31,10 @@ export const objectiveCLanguageConfig = {
 } as const;
 
 export class ObjectiveCTargetLanguage extends TargetLanguage<typeof objectiveCLanguageConfig> {
-    constructor() {
+    public constructor() {
         super(objectiveCLanguageConfig);
     }
+
     protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [
             objectiveCOptions.justTypes,

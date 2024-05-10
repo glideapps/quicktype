@@ -17,7 +17,7 @@ export const elixirLanguageConfig = {
 } as const;
 
 export class ElixirTargetLanguage extends TargetLanguage<typeof elixirLanguageConfig> {
-    constructor() {
+    public constructor() {
         super(elixirLanguageConfig);
     }
 

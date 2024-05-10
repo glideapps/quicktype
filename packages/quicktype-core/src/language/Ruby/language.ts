@@ -23,7 +23,7 @@ export const rubyLanguageConfig = {
 } as const;
 
 export class RubyTargetLanguage extends TargetLanguage<typeof rubyLanguageConfig> {
-    constructor() {
+    public constructor() {
         super(rubyLanguageConfig);
     }
 

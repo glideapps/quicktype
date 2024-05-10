@@ -36,7 +36,7 @@ export const scala3LanguageConfig = {
 } as const;
 
 export class Scala3TargetLanguage extends TargetLanguage<typeof scala3LanguageConfig> {
-    constructor() {
+    public constructor() {
         super(scala3LanguageConfig);
     }
 

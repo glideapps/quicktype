@@ -9,10 +9,11 @@ import { type RunContext } from "../Run";
 import { defined, errorMessage, panic } from "../support/Support";
 import { type TargetLanguage } from "../TargetLanguage";
 import { type TypeBuilder } from "../TypeBuilder";
+import { type LanguageName } from "../types";
 
 import { type CompressedJSON, CompressedJSONFromString, type Value } from "./CompressedJSON";
 import { TypeInference } from "./Inference";
-import { LanguageName } from "../types";
+
 
 export interface Input<T> {
     addSource: (source: T) => Promise<void>;

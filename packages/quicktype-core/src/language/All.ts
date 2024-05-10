@@ -1,4 +1,5 @@
 import { type TargetLanguage } from "../TargetLanguage";
+import { type LanguageDisplayName, type LanguageName, type LanguageNameMap } from "../types";
 
 import { CJSONTargetLanguage } from "./CJSON";
 import { CPlusPlusTargetLanguage } from "./CPlusPlus";
@@ -28,7 +29,6 @@ import { TypeScriptEffectSchemaTargetLanguage } from "./TypeScriptEffectSchema";
 import { FlowTargetLanguage, TypeScriptTargetLanguage } from "./TypeScriptFlow";
 import { TypeScriptZodTargetLanguage } from "./TypeScriptZod";
 
-import type { LanguageDisplayName, LanguageName, LanguageNameMap } from "../types";
 
 export const all = [
     new CJSONTargetLanguage(),

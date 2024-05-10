@@ -11,8 +11,8 @@ import {
     type TargetLanguage,
     defaultTargetLanguages,
     inferenceFlagNames,
-    jsonInputForTargetLanguage,
     isLanguageName,
+    jsonInputForTargetLanguage,
     languageNamed,
     quicktype
 } from "quicktype-core";

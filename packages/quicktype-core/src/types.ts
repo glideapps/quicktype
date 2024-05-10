@@ -1,5 +1,6 @@
+import { type all } from "./language/All";
 import { type TargetLanguage } from "./TargetLanguage";
-import type { all } from "./language/All";
+
 
 type AllLanguages = (typeof all)[number];
 

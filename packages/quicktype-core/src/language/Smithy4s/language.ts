@@ -23,7 +23,7 @@ export const smithyLanguageConfig = {
 } as const;
 
 export class SmithyTargetLanguage extends TargetLanguage<typeof smithyLanguageConfig> {
-    constructor() {
+    public constructor() {
         super(smithyLanguageConfig);
     }
 

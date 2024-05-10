@@ -25,7 +25,7 @@ export const phpLanguageConfig = {
 } as const;
 
 export class PhpTargetLanguage extends TargetLanguage<typeof phpLanguageConfig> {
-    constructor() {
+    public constructor() {
         super(phpLanguageConfig);
     }
 

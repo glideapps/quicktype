@@ -21,11 +21,11 @@
  * See test/languages.ts for the test cases which are not implmented/checked.
  */
 
-import { type FixMeOptionsType, type FixMeOptionsAnyType } from "../../types";
 import { type RenderContext } from "../../Renderer";
 import { EnumOption, type Option, StringOption, getOptionValues } from "../../RendererOptions";
 import { type NamingStyle } from "../../support/Strings";
 import { TargetLanguage } from "../../TargetLanguage";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
 
 import { CJSONRenderer } from "./CJSONRenderer";
 
@@ -121,7 +121,7 @@ export const cJSONLanguageConfig = {
 } as const;
 
 export class CJSONTargetLanguage extends TargetLanguage<typeof cJSONLanguageConfig> {
-    constructor() {
+    public constructor() {
         super(cJSONLanguageConfig);
     }
 

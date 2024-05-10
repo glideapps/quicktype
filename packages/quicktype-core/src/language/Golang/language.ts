@@ -27,7 +27,7 @@ const golangLanguageConfig = {
 } as const;
 
 export class GoTargetLanguage extends TargetLanguage<typeof golangLanguageConfig> {
-    constructor() {
+    public constructor() {
         super(golangLanguageConfig);
     }
 

@@ -43,7 +43,7 @@ export const javaLanguageConfig = {
 } as const;
 
 export class JavaTargetLanguage extends TargetLanguage<typeof javaLanguageConfig> {
-    constructor() {
+    public constructor() {
         super(javaLanguageConfig);
     }
 

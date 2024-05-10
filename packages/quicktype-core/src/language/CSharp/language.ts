@@ -108,7 +108,7 @@ export const systemTextJsonCSharpOptions = Object.assign({}, cSharpOptions, {});
 export const cSharpLanguageConfig = { displayName: "C#", names: ["cs", "csharp"], extension: "cs" } as const;
 
 export class CSharpTargetLanguage extends TargetLanguage<typeof cSharpLanguageConfig> {
-    constructor() {
+    public constructor() {
         super(cSharpLanguageConfig);
     }
 

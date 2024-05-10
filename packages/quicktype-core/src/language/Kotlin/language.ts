@@ -35,15 +35,16 @@ export const kotlinOptions = {
 };
 
 export const kotlinLanguageConfig = {
-	displayName: "Kotlin",
-	names: ["kotlin"],
-	extension: "kt"
+    displayName: "Kotlin",
+    names: ["kotlin"],
+    extension: "kt"
 } as const;
 
 export class KotlinTargetLanguage extends TargetLanguage<typeof kotlinLanguageConfig> {
-	constructor() {
-			super(kotlinLanguageConfig);
-	}
+    public constructor() {
+        super(kotlinLanguageConfig);
+    }
+
     protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [kotlinOptions.framework, kotlinOptions.acronymStyle, kotlinOptions.packageName];
     }

@@ -271,7 +271,7 @@ function inferCLIOptions(opts: Partial<CLIOptions>, targetLanguage: TargetLangua
     if (targetLanguage !== undefined) {
         language = targetLanguage;
     } else {
-        const languageName = opts.lang !== undefined ? opts.lang : inferLang(opts, defaultDefaultTargetLanguageName);
+        const languageName = opts.lang ?? inferLang(opts, defaultDefaultTargetLanguageName);
 
         if (isLanguageName(languageName)) {
             language = languageNamed(languageName);
@@ -906,6 +906,7 @@ export async function makeQuicktypeOptions(
     if (!isLanguageName(options.lang)) {
         return messageError("DriverUnknownOutputLanguage", { lang: options.lang });
     }
+
     const lang = languageNamed(options.lang, targetLanguages);
 
     const quicktypeOptions: Partial<Options> = {

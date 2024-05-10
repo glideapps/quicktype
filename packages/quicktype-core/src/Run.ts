@@ -15,13 +15,12 @@ import { replaceObjectType } from "./rewrites/ReplaceObjectType";
 import { resolveIntersections } from "./rewrites/ResolveIntersections";
 import { type Annotation, type Location, type SerializedRenderResult, type Span } from "./Source";
 import { type Comment } from "./support/Comments";
-import type { LanguageName } from "./types";
 import { assert } from "./support/Support";
 import { type MultiFileRenderResult, type TargetLanguage } from "./TargetLanguage";
 import { type TransformedStringTypeKind } from "./Type";
 import { type StringTypeMapping, TypeBuilder } from "./TypeBuilder";
 import { type TypeGraph, noneToAny, optionalToNullable, removeIndirectionIntersections } from "./TypeGraph";
-import { type FixMeOptionsType } from "./types";
+import { type FixMeOptionsType, type LanguageName } from "./types";
 
 export function getTargetLanguage(nameOrInstance: LanguageName | TargetLanguage): TargetLanguage {
     if (typeof nameOrInstance === "object") {
@@ -123,19 +122,11 @@ export type InferenceFlags = { [F in InferenceFlagName]: boolean };
  * The options type for the main quicktype entry points,
  * `quicktypeMultiFile` and `quicktype`.
  */
-export type NonInferenceOptions = {
-    /**
-     * The target language for which to produce code.  This can be either an instance of `TargetLanguage`,
-     * or a string specifying one of the names for quicktype's built-in target languages.  For example,
-     * both `cs` and `csharp` will generate C#.
-     */
-    lang: LanguageName | TargetLanguage;
-    /** The input data from which to produce types */
-    inputData: InputData;
-    /** Put class properties in alphabetical order, instead of in the order found in the JSON */
-    alphabetizeProperties: boolean;
+export interface NonInferenceOptions {
     /** Make all class property optional */
     allPropertiesOptional: boolean;
+    /** Put class properties in alphabetical order, instead of in the order found in the JSON */
+    alphabetizeProperties: boolean;
     /** Check that we're propagating all type attributes (unless we actually can't) */
     checkProvenance: boolean;
     /**
@@ -163,6 +154,14 @@ export type NonInferenceOptions = {
     fixedTopLevels: boolean;
     /** String to use for one indentation level.  If not given, use the target language's default. */
     indentation: string | undefined;
+    /** The input data from which to produce types */
+    inputData: InputData;
+    /**
+     * The target language for which to produce code.  This can be either an instance of `TargetLanguage`,
+     * or a string specifying one of the names for quicktype's built-in target languages.  For example,
+     * both `cs` and `csharp` will generate C#.
+     */
+    lang: LanguageName | TargetLanguage;
     /** If given, output these comments at the beginning of the main output file */
     leadingComments?: Comment[];
     /** Don't render output.  This is mainly useful for benchmarking. */
@@ -173,7 +172,7 @@ export type NonInferenceOptions = {
     outputFilename: string;
     /** Options for the target language's renderer */
     rendererOptions: RendererOptions;
-};
+}
 
 export type Options = NonInferenceOptions & InferenceFlags;
 

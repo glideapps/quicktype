@@ -21,7 +21,7 @@ export const haskellLanguageConfig = {
 } as const;
 
 export class HaskellTargetLanguage extends TargetLanguage<typeof haskellLanguageConfig> {
-    constructor() {
+    public constructor() {
         super(haskellLanguageConfig);
     }
 

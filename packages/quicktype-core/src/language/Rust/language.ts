@@ -31,7 +31,7 @@ export const rustLanguageConfig = {
 } as const;
 
 export class RustTargetLanguage extends TargetLanguage<typeof rustLanguageConfig> {
-    constructor() {
+    public constructor() {
         super(rustLanguageConfig);
     }
 

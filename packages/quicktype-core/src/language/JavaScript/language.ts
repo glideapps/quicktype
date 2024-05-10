@@ -38,7 +38,7 @@ export const javaScriptLanguageConfig = {
 } as const;
 
 export class JavaScriptTargetLanguage extends TargetLanguage<typeof javaScriptLanguageConfig> {
-    constructor() {
+    public constructor() {
         super(javaScriptLanguageConfig);
     }
 
