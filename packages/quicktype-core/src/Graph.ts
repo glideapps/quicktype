@@ -1,6 +1,6 @@
 import { setMap } from "collection-utils";
 
-import { defined, repeated, assert, repeatedCall } from "./support/Support";
+import { assert, defined, repeated, repeatedCall } from "./support/Support";
 
 function countComponentGraphNodes(components: number[][]): number {
     if (components.length === 0) return 0;
@@ -64,6 +64,7 @@ function stronglyConnectedComponents(successors: number[][]): number[][] {
                 onStack[w] = false;
                 scc.push(w);
             } while (w !== v);
+
             sccs.push(scc);
         }
     }
@@ -92,6 +93,7 @@ function buildComponentOfNodeMap(successors: number[][], components: number[][])
             componentOfNode[n] = c;
         }
     }
+
     return componentOfNode;
 }
 
@@ -166,11 +168,17 @@ function findRoots(successors: number[][]): number[] {
 }
 
 export class Graph<T> {
-    private readonly _nodes: ReadonlyArray<T>;
+    private readonly _nodes: readonly T[];
+
     private readonly _indexByNode: ReadonlyMap<T, number>;
+
     private readonly _successors: number[][];
 
-    constructor(nodes: Iterable<T>, invertDirection: boolean, edges: number[][] | ((node: T) => ReadonlySet<T>)) {
+    public constructor(
+        nodes: Iterable<T>,
+        invertDirection: boolean,
+        edges: number[][] | ((node: T) => ReadonlySet<T>)
+    ) {
         this._nodes = Array.from(nodes);
         this._indexByNode = new Map(this._nodes.map((n, i): [T, number] => [n, i]));
         let edgesArray: number[][];
@@ -183,24 +191,25 @@ export class Graph<T> {
         if (invertDirection) {
             edgesArray = invertEdges(edgesArray);
         }
+
         this._successors = edgesArray;
     }
 
-    get size(): number {
+    public get size(): number {
         return this._nodes.length;
     }
 
-    get nodes(): ReadonlyArray<T> {
+    public get nodes(): readonly T[] {
         return this._nodes;
     }
 
-    findRoots(): ReadonlySet<T> {
+    public findRoots(): ReadonlySet<T> {
         const roots = findRoots(this._successors);
         return new Set(roots.map(n => this._nodes[n]));
     }
 
     // The subgraph starting at `root` must be acyclic.
-    dfsTraversal(root: T, preOrder: boolean, process: (node: T) => void): void {
+    public dfsTraversal(root: T, preOrder: boolean, process: (node: T) => void): void {
         const visited = repeated(this.size, false);
 
         const visit = (v: number): void => {
@@ -223,7 +232,7 @@ export class Graph<T> {
         visit(defined(this._indexByNode.get(root)));
     }
 
-    stronglyConnectedComponents(): Graph<ReadonlySet<T>> {
+    public stronglyConnectedComponents(): Graph<ReadonlySet<T>> {
         const components = stronglyConnectedComponents(this._successors);
         const componentSuccessors = buildMetaSuccessors(this._successors, components);
         return new Graph(
@@ -233,7 +242,7 @@ export class Graph<T> {
         );
     }
 
-    makeDot(includeNode: (n: T) => boolean, nodeLabel: (n: T) => string): string {
+    public makeDot(includeNode: (n: T) => boolean, nodeLabel: (n: T) => string): string {
         const lines: string[] = [];
         lines.push("digraph G {");
         lines.push("    ordering = out;");

@@ -1,44 +1,49 @@
 import { mapFirst } from "collection-utils";
 
-import * as targetLanguages from "./language/All";
-import { TargetLanguage, MultiFileRenderResult } from "./TargetLanguage";
-import { SerializedRenderResult, Annotation, Location, Span } from "./Source";
-import { assert } from "./support/Support";
-import { combineClasses } from "./rewrites/CombineClasses";
-import { inferMaps } from "./rewrites/InferMaps";
-import { TypeBuilder, StringTypeMapping } from "./TypeBuilder";
-import { TypeGraph, noneToAny, optionalToNullable, removeIndirectionIntersections } from "./TypeGraph";
 import { initTypeNames } from "./attributes/TypeNames";
 import { gatherNames } from "./GatherNames";
-import { expandStrings } from "./rewrites/ExpandStrings";
-import { flattenUnions } from "./rewrites/FlattenUnions";
-import { resolveIntersections } from "./rewrites/ResolveIntersections";
-import { replaceObjectType } from "./rewrites/ReplaceObjectType";
-import { messageError } from "./Messages";
 import { InputData } from "./input/Inputs";
-import { flattenStrings } from "./rewrites/FlattenStrings";
+import * as targetLanguages from "./language/All";
 import { makeTransformations } from "./MakeTransformations";
-import { TransformedStringTypeKind } from "./Type";
+import { messageError } from "./Messages";
+import { combineClasses } from "./rewrites/CombineClasses";
+import { expandStrings } from "./rewrites/ExpandStrings";
+import { flattenStrings } from "./rewrites/FlattenStrings";
+import { flattenUnions } from "./rewrites/FlattenUnions";
+import { inferMaps } from "./rewrites/InferMaps";
+import { replaceObjectType } from "./rewrites/ReplaceObjectType";
+import { resolveIntersections } from "./rewrites/ResolveIntersections";
+import { type Annotation, type Location, type SerializedRenderResult, type Span } from "./Source";
 import { type Comment } from "./support/Comments";
 import type { LanguageName } from "./types";
+import { assert } from "./support/Support";
+import { type MultiFileRenderResult, type TargetLanguage } from "./TargetLanguage";
+import { type TransformedStringTypeKind } from "./Type";
+import { type StringTypeMapping, TypeBuilder } from "./TypeBuilder";
+import { type TypeGraph, noneToAny, optionalToNullable, removeIndirectionIntersections } from "./TypeGraph";
+import { type FixMeOptionsType } from "./types";
 
 export function getTargetLanguage(nameOrInstance: LanguageName | TargetLanguage): TargetLanguage {
     if (typeof nameOrInstance === "object") {
         return nameOrInstance;
     }
+
     const language = targetLanguages.languageNamed(nameOrInstance);
     if (language !== undefined) {
         return language;
     }
+
     return messageError("DriverUnknownOutputLanguage", { lang: nameOrInstance });
 }
 
-export type RendererOptions = { [name: string]: string | boolean };
+export interface RendererOptions {
+    [name: string]: string | boolean;
+}
 
 export interface InferenceFlag {
     description: string;
-    negationDescription: string;
     explanation: string;
+    negationDescription: string;
     order: number;
     stringType?: TransformedStringTypeKind;
 }
@@ -131,43 +136,43 @@ export type NonInferenceOptions = {
     alphabetizeProperties: boolean;
     /** Make all class property optional */
     allPropertiesOptional: boolean;
-    /**
-     * Make top-levels classes from JSON fixed.  That means even if two top-level classes are exactly
-     * the same, quicktype will still generate two separate types for them.
-     */
-    fixedTopLevels: boolean;
-    /** Don't render output.  This is mainly useful for benchmarking. */
-    noRender: boolean;
-    /** If given, output these comments at the beginning of the main output file */
-    leadingComments?: Comment[];
-    /** Options for the target language's renderer */
-    rendererOptions: RendererOptions;
-    /** String to use for one indentation level.  If not given, use the target language's default. */
-    indentation: string | undefined;
-    /** Name of the output file.  Note that quicktype will not write that file, but you'll get its name
-     * back as a key in the resulting `Map`.
-     */
-    outputFilename: string;
-    /** Print the type graph to the console at every processing step */
-    debugPrintGraph: boolean;
     /** Check that we're propagating all type attributes (unless we actually can't) */
     checkProvenance: boolean;
-    /**
-     * Print type reconstitution debug information to the console.  You'll only ever need this if
-     * you're working deep inside quicktype-core.
-     */
-    debugPrintReconstitution: boolean;
     /**
      * Print name gathering debug information to the console.  This might help to figure out why
      * your types get weird names, but the output is quite arcane.
      */
     debugPrintGatherNames: boolean;
-    /** Print all transformations to the console prior to generating code */
-    debugPrintTransformations: boolean;
-    /** Print the time it took for each pass to run */
-    debugPrintTimes: boolean;
+    /** Print the type graph to the console at every processing step */
+    debugPrintGraph: boolean;
+    /**
+     * Print type reconstitution debug information to the console.  You'll only ever need this if
+     * you're working deep inside quicktype-core.
+     */
+    debugPrintReconstitution: boolean;
     /** Print schema resolving steps */
     debugPrintSchemaResolving: boolean;
+    /** Print the time it took for each pass to run */
+    debugPrintTimes: boolean;
+    /** Print all transformations to the console prior to generating code */
+    debugPrintTransformations: boolean;
+    /**
+     * Make top-levels classes from JSON fixed.  That means even if two top-level classes are exactly
+     * the same, quicktype will still generate two separate types for them.
+     */
+    fixedTopLevels: boolean;
+    /** String to use for one indentation level.  If not given, use the target language's default. */
+    indentation: string | undefined;
+    /** If given, output these comments at the beginning of the main output file */
+    leadingComments?: Comment[];
+    /** Don't render output.  This is mainly useful for benchmarking. */
+    noRender: boolean;
+    /** Name of the output file.  Note that quicktype will not write that file, but you'll get its name
+     * back as a key in the resulting `Map`.
+     */
+    outputFilename: string;
+    /** Options for the target language's renderer */
+    rendererOptions: RendererOptions;
 };
 
 export type Options = NonInferenceOptions & InferenceFlags;
@@ -193,19 +198,19 @@ const defaultOptions: NonInferenceOptions = {
 };
 
 export interface RunContext {
-    stringTypeMapping: StringTypeMapping;
     debugPrintReconstitution: boolean;
-    debugPrintTransformations: boolean;
     debugPrintSchemaResolving: boolean;
+    debugPrintTransformations: boolean;
+    stringTypeMapping: StringTypeMapping;
 
-    timeSync<T>(name: string, f: () => Promise<T>): Promise<T>;
-    time<T>(name: string, f: () => T): T;
+    time: <T>(name: string, f: () => T) => T;
+    timeSync: <T>(name: string, f: () => Promise<T>) => Promise<T>;
 }
 
 interface GraphInputs {
-    targetLanguage: TargetLanguage;
-    stringTypeMapping: StringTypeMapping;
     conflateNumbers: boolean;
+    stringTypeMapping: StringTypeMapping;
+    targetLanguage: TargetLanguage;
     typeBuilder: TypeBuilder;
 }
 
@@ -214,6 +219,7 @@ function makeDefaultInferenceFlags(): InferenceFlags {
     for (const flag of inferenceFlagNames) {
         flags[flag] = true;
     }
+
     return flags;
 }
 
@@ -222,19 +228,19 @@ export const defaultInferenceFlags = makeDefaultInferenceFlags();
 class Run implements RunContext {
     private readonly _options: Options;
 
-    constructor(options: Partial<Options>) {
+    public constructor(options: Partial<Options>) {
         // We must not overwrite defaults with undefined values, which
         // we sometimes get.
         this._options = Object.assign({}, defaultOptions, defaultInferenceFlags);
         for (const k of Object.getOwnPropertyNames(options)) {
-            const v = (options as any)[k];
+            const v = (options as FixMeOptionsType)[k];
             if (v !== undefined) {
-                (this._options as any)[k] = v;
+                (this._options as FixMeOptionsType)[k] = v;
             }
         }
     }
 
-    get stringTypeMapping(): StringTypeMapping {
+    public get stringTypeMapping(): StringTypeMapping {
         const targetLanguage = getTargetLanguage(this._options.lang);
         const mapping = new Map(targetLanguage.stringTypeMapping);
         for (const flag of inferenceFlagNames) {
@@ -243,38 +249,41 @@ class Run implements RunContext {
                 mapping.set(stringType, "string");
             }
         }
+
         return mapping;
     }
 
-    get debugPrintReconstitution(): boolean {
+    public get debugPrintReconstitution(): boolean {
         return this._options.debugPrintReconstitution === true;
     }
 
-    get debugPrintTransformations(): boolean {
+    public get debugPrintTransformations(): boolean {
         return this._options.debugPrintTransformations;
     }
 
-    get debugPrintSchemaResolving(): boolean {
+    public get debugPrintSchemaResolving(): boolean {
         return this._options.debugPrintSchemaResolving;
     }
 
-    async timeSync<T>(name: string, f: () => Promise<T>): Promise<T> {
+    public async timeSync<T>(name: string, f: () => Promise<T>): Promise<T> {
         const start = Date.now();
         const result = await f();
         const end = Date.now();
         if (this._options.debugPrintTimes) {
             console.log(`${name} took ${end - start}ms`);
         }
+
         return result;
     }
 
-    time<T>(name: string, f: () => T): T {
+    public time<T>(name: string, f: () => T): T {
         const start = Date.now();
         const result = f();
         const end = Date.now();
         if (this._options.debugPrintTimes) {
             console.log(`${name} took ${end - start}ms`);
         }
+
         return result;
     }
 
@@ -362,6 +371,7 @@ class Run implements RunContext {
                             ))
                     );
                 }
+
                 if (!unionsDone) {
                     this.time(
                         "flatten unions",
@@ -437,6 +447,7 @@ class Run implements RunContext {
                 if (newGraph === graph) {
                     break;
                 }
+
                 graph = newGraph;
             }
         }
@@ -503,6 +514,7 @@ class Run implements RunContext {
         if (this._options.debugPrintGraph) {
             console.log("\n# gather names");
         }
+
         this.time("gather names", () =>
             gatherNames(graph, !allInputs.needSchemaProcessing, this._options.debugPrintGatherNames)
         );
@@ -514,10 +526,9 @@ class Run implements RunContext {
     }
 
     private makeSimpleTextResult(lines: string[]): MultiFileRenderResult {
-        return new Map([[this._options.outputFilename, { lines, annotations: [] }]] as [
-            string,
-            SerializedRenderResult
-        ][]);
+        return new Map([[this._options.outputFilename, { lines, annotations: [] }]] as Array<
+            [string, SerializedRenderResult]
+        >);
     }
 
     private preRun(): MultiFileRenderResult | [InputData, TargetLanguage] {
@@ -526,7 +537,7 @@ class Run implements RunContext {
 
         const targetLanguage = getTargetLanguage(this._options.lang);
         const inputData = this._options.inputData;
-        const needIR = inputData.needIR || targetLanguage.names.indexOf("schema") < 0;
+        const needIR = inputData.needIR || !targetLanguage.names.includes("schema");
 
         const schemaString = needIR ? undefined : inputData.singleStringSchemaSource();
         if (schemaString !== undefined) {
@@ -539,7 +550,7 @@ class Run implements RunContext {
         return [inputData, targetLanguage];
     }
 
-    async run(): Promise<MultiFileRenderResult> {
+    public async run(): Promise<MultiFileRenderResult> {
         const preRunResult = this.preRun();
         if (!Array.isArray(preRunResult)) {
             return preRunResult;
@@ -552,7 +563,7 @@ class Run implements RunContext {
         return this.renderGraph(targetLanguage, graph);
     }
 
-    runSync(): MultiFileRenderResult {
+    public runSync(): MultiFileRenderResult {
         const preRunResult = this.preRun();
         if (!Array.isArray(preRunResult)) {
             return preRunResult;
@@ -614,8 +625,10 @@ export function combineRenderResults(result: MultiFileRenderResult): SerializedR
         if (first === undefined) {
             return { lines: [], annotations: [] };
         }
+
         return first;
     }
+
     let lines: string[] = [];
     let annotations: Annotation[] = [];
     for (const [filename, srr] of result) {
@@ -625,6 +638,7 @@ export function combineRenderResults(result: MultiFileRenderResult): SerializedR
             srr.annotations.map(ann => ({ annotation: ann.annotation, span: offsetSpan(ann.span, offset) }))
         );
     }
+
     return { lines, annotations };
 }
 

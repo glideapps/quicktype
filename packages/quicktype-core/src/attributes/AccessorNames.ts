@@ -1,29 +1,30 @@
 import {
     iterableFirst,
     mapFromIterable,
-    mapMap,
     mapFromObject,
-    setUnionManyInto,
-    mapMergeInto
+    mapMap,
+    mapMergeInto,
+    setUnionManyInto
 } from "collection-utils";
 
-import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
-import { defined, isStringMap, checkStringMap, checkArray } from "../support/Support";
-import { EnumType, UnionType, Type, ObjectType } from "../Type";
+import { type JSONSchemaAttributes, type JSONSchemaType, type Ref } from "../input/JSONSchemaInput";
+import { type JSONSchema } from "../input/JSONSchemaStore";
 import { messageAssert } from "../Messages";
-import { JSONSchema } from "../input/JSONSchemaStore";
-import { Ref, JSONSchemaType, JSONSchemaAttributes } from "../input/JSONSchemaInput";
+import { checkArray, checkStringMap, defined, isStringMap } from "../support/Support";
+import { type EnumType, type ObjectType, type Type, type UnionType } from "../Type";
+
+import { TypeAttributeKind, type TypeAttributes } from "./TypeAttributes";
 
 export type AccessorEntry = string | Map<string, string>;
 
 export type AccessorNames = Map<string, AccessorEntry>;
 
 class AccessorNamesTypeAttributeKind extends TypeAttributeKind<AccessorNames> {
-    constructor() {
+    public constructor() {
         super("accessorNames");
     }
 
-    makeInferred(_: AccessorNames): undefined {
+    public makeInferred(_: AccessorNames): undefined {
         return undefined;
     }
 }
@@ -79,15 +80,15 @@ export function getAccessorName(
 // up its union's identifier(s), and then look up the member's accessor entries for that
 // identifier.  Of course we might find more than one, potentially conflicting.
 class UnionIdentifierTypeAttributeKind extends TypeAttributeKind<ReadonlySet<number>> {
-    constructor() {
+    public constructor() {
         super("unionIdentifier");
     }
 
-    combine(arr: ReadonlySet<number>[]): ReadonlySet<number> {
+    public combine(arr: Array<ReadonlySet<number>>): ReadonlySet<number> {
         return setUnionManyInto(new Set(), arr);
     }
 
-    makeInferred(_: ReadonlySet<number>): ReadonlySet<number> {
+    public makeInferred(_: ReadonlySet<number>): ReadonlySet<number> {
         return new Set();
     }
 }
@@ -104,15 +105,16 @@ export function makeUnionIdentifierAttribute(): TypeAttributes {
 }
 
 class UnionMemberNamesTypeAttributeKind extends TypeAttributeKind<Map<number, AccessorEntry>> {
-    constructor() {
+    public constructor() {
         super("unionMemberNames");
     }
 
-    combine(arr: Map<number, AccessorEntry>[]): Map<number, AccessorEntry> {
+    public combine(arr: Array<Map<number, AccessorEntry>>): Map<number, AccessorEntry> {
         const result = new Map<number, AccessorEntry>();
         for (const m of arr) {
             mapMergeInto(result, m);
         }
+
         return result;
     }
 }
@@ -166,11 +168,12 @@ export function unionMemberName(u: UnionType, member: Type, language: string): [
     return [first, isFixed];
 }
 
-function isAccessorEntry(x: any): x is string | { [language: string]: string } {
+function isAccessorEntry(x: unknown): x is string | { [language: string]: string } {
     if (typeof x === "string") {
         return true;
     }
-    return isStringMap(x, (v: any): v is string => typeof v === "string");
+
+    return isStringMap(x, (v: unknown): v is string => typeof v === "string");
 }
 
 function makeAccessorEntry(ae: string | { [language: string]: string }): AccessorEntry {
@@ -178,7 +181,7 @@ function makeAccessorEntry(ae: string | { [language: string]: string }): Accesso
     return mapFromObject(ae);
 }
 
-export function makeAccessorNames(x: any): AccessorNames {
+export function makeAccessorNames(x: unknown): AccessorNames {
     // FIXME: Do proper error reporting
     const stringMap = checkStringMap(x, isAccessorEntry);
     return mapMap(mapFromObject(stringMap), makeAccessorEntry);

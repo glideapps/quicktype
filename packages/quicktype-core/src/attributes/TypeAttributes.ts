@@ -1,62 +1,62 @@
-import { mapFilterMap, mapFilter, mapTranspose, hashString } from "collection-utils";
+import { hashString, mapFilter, mapFilterMap, mapTranspose } from "collection-utils";
 
-import { panic, assert } from "../support/Support";
-import { Type, TypeKind } from "../Type";
-import { BaseGraphRewriteBuilder } from "../GraphRewriting";
+import { type BaseGraphRewriteBuilder } from "../GraphRewriting";
+import { assert, panic } from "../support/Support";
+import { type Type, type TypeKind } from "../Type";
 
 export class TypeAttributeKind<T> {
-    constructor(readonly name: string) {}
+    public constructor(public readonly name: string) {}
 
-    appliesToTypeKind(kind: TypeKind): boolean {
+    public appliesToTypeKind(kind: TypeKind): boolean {
         return kind !== "any";
     }
 
-    combine(_attrs: T[]): T | undefined {
+    public combine(_attrs: T[]): T | undefined {
         return panic(`Cannot combine type attribute ${this.name}`);
     }
 
-    intersect(attrs: T[]): T | undefined {
+    public intersect(attrs: T[]): T | undefined {
         return this.combine(attrs);
     }
 
-    makeInferred(_: T): T | undefined {
+    public makeInferred(_: T): T | undefined {
         return panic(`Cannot make type attribute ${this.name} inferred`);
     }
 
-    increaseDistance(attrs: T): T | undefined {
+    public increaseDistance(attrs: T): T | undefined {
         return attrs;
     }
 
-    addToSchema(_schema: { [name: string]: unknown }, _t: Type, _attrs: T): void {
+    public addToSchema(_schema: { [name: string]: unknown }, _t: Type, _attrs: T): void {
         return;
     }
 
-    children(_: T): ReadonlySet<Type> {
+    public children(_: T): ReadonlySet<Type> {
         return new Set();
     }
 
-    stringify(_: T): string | undefined {
+    public stringify(_: T): string | undefined {
         return undefined;
     }
 
-    get inIdentity(): boolean {
+    public get inIdentity(): boolean {
         return false;
     }
 
-    requiresUniqueIdentity(_: T): boolean {
+    public requiresUniqueIdentity(_: T): boolean {
         return false;
     }
 
-    reconstitute<TBuilder extends BaseGraphRewriteBuilder>(_builder: TBuilder, a: T): T {
+    public reconstitute<TBuilder extends BaseGraphRewriteBuilder>(_builder: TBuilder, a: T): T {
         return a;
     }
 
-    makeAttributes(value: T): TypeAttributes {
-        const kvps: [this, T][] = [[this, value]];
+    public makeAttributes(value: T): TypeAttributes {
+        const kvps: Array<[this, T]> = [[this, value]];
         return new Map(kvps);
     }
 
-    tryGetInAttributes(a: TypeAttributes): T | undefined {
+    public tryGetInAttributes(a: TypeAttributes): T | undefined {
         return a.get(this);
     }
 
@@ -65,7 +65,7 @@ export class TypeAttributeKind<T> {
         return new Map(a).set(this, value);
     }
 
-    modifyInAttributes(a: TypeAttributes, modify: (value: T | undefined) => T | undefined): TypeAttributes {
+    public modifyInAttributes(a: TypeAttributes, modify: (value: T | undefined) => T | undefined): TypeAttributes {
         const modified = modify(this.tryGetInAttributes(a));
         if (modified === undefined) {
             // FIXME: This is potentially super slow
@@ -73,30 +73,34 @@ export class TypeAttributeKind<T> {
             result.delete(this);
             return result;
         }
+
         return this.setInAttributes(a, modified);
     }
 
-    setDefaultInAttributes(a: TypeAttributes, makeDefault: () => T): TypeAttributes {
+    public setDefaultInAttributes(a: TypeAttributes, makeDefault: () => T): TypeAttributes {
         if (this.tryGetInAttributes(a) !== undefined) return a;
         return this.modifyInAttributes(a, makeDefault);
     }
 
-    removeInAttributes(a: TypeAttributes): TypeAttributes {
+    public removeInAttributes(a: TypeAttributes): TypeAttributes {
         return mapFilter(a, (_, k) => k !== this);
     }
 
-    equals(other: any): boolean {
+    public equals(other: TypeAttributeKind<unknown>): boolean {
         if (!(other instanceof TypeAttributeKind)) {
             return false;
         }
+
         return this.name === other.name;
     }
 
-    hashCode(): number {
+    public hashCode(): number {
         return hashString(this.name);
     }
 }
 
+// FIXME: strongly type this
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type TypeAttributes = ReadonlyMap<TypeAttributeKind<any>, any>;
 
 export const emptyTypeAttributes: TypeAttributes = new Map();
@@ -118,11 +122,14 @@ export function combineTypeAttributes(
         if (second === undefined) {
             return panic("Must have on array or two attributes");
         }
+
         attributeArray = [firstOrArray, second];
     }
 
     const attributesByKind = mapTranspose(attributeArray);
 
+    // FIXME: strongly type this
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     function combine(attrs: any[], kind: TypeAttributeKind<any>): any {
         assert(attrs.length > 0, "Cannot combine zero type attributes");
         if (attrs.length === 1) return attrs[0];

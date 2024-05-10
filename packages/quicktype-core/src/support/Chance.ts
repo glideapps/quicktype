@@ -1,3 +1,4 @@
+/* eslint-disable */
 // Mersenne Twister from https://gist.github.com/banksean/300494
 /*
 A C-program for MT19937, with initialization improved 2002/1/26.
@@ -34,20 +35,26 @@ email: m-mat @ math.sci.hiroshima-u.ac.jp (remove space)
 */
 
 class MersenneTwister {
-    private N: number;
-    private M: number;
-    private MATRIX_A: number;
-    private UPPER_MASK: number;
-    private LOWER_MASK: number;
+    private readonly N: number;
+
+    private readonly M: number;
+
+    private readonly MATRIX_A: number;
+
+    private readonly UPPER_MASK: number;
+
+    private readonly LOWER_MASK: number;
 
     private mt: number[];
+
     private mti: number;
 
-    constructor(seed: number) {
+    public constructor(seed: number) {
         if (seed === undefined) {
             // kept random number same size as time used previously to ensure no unexpected results downstream
             seed = Math.floor(Math.random() * Math.pow(10, 13));
         }
+
         /* Period parameters */
         this.N = 624;
         this.M = 397;
@@ -80,7 +87,7 @@ class MersenneTwister {
     /* generates a random number on [0,0xffffffff]-interval */
     private genrand_int32() {
         let y;
-        let mag01 = new Array(0x0, this.MATRIX_A);
+        let mag01 = [0x0, this.MATRIX_A];
         /* mag01[x] = x * MATRIX_A  for x=0,1 */
 
         if (this.mti >= this.N) {
@@ -91,14 +98,17 @@ class MersenneTwister {
                 /* if init_genrand() has not been called, */
                 this.init_genrand(5489); /* a default initial seed is used */
             }
+
             for (kk = 0; kk < this.N - this.M; kk++) {
                 y = (this.mt[kk] & this.UPPER_MASK) | (this.mt[kk + 1] & this.LOWER_MASK);
                 this.mt[kk] = this.mt[kk + this.M] ^ (y >>> 1) ^ mag01[y & 0x1];
             }
+
             for (; kk < this.N - 1; kk++) {
                 y = (this.mt[kk] & this.UPPER_MASK) | (this.mt[kk + 1] & this.LOWER_MASK);
                 this.mt[kk] = this.mt[kk + (this.M - this.N)] ^ (y >>> 1) ^ mag01[y & 0x1];
             }
+
             y = (this.mt[this.N - 1] & this.UPPER_MASK) | (this.mt[0] & this.LOWER_MASK);
             this.mt[this.N - 1] = this.mt[this.M - 1] ^ (y >>> 1) ^ mag01[y & 0x1];
 
@@ -125,9 +135,9 @@ class MersenneTwister {
 
 // https://github.com/chancejs/chancejs
 export class Chance {
-    private mt: MersenneTwister;
+    private readonly mt: MersenneTwister;
 
-    constructor(readonly seed: number) {
+    public constructor(readonly seed: number) {
         // If no generator function was provided, use our MT
         this.mt = new MersenneTwister(this.seed);
     }
@@ -147,7 +157,7 @@ export class Chance {
      *  @returns {Number} a single random integer number
      *  @throws {RangeError} min cannot be greater than max
      */
-    integer(options: { min: number; max: number }): number {
+    integer(options: { max: number; min: number }): number {
         return Math.floor(this.random() * (options.max - options.min + 1) + options.min);
     }
 
@@ -170,6 +180,7 @@ export class Chance {
         if (arr.length === 0) {
             throw new RangeError("Chance: Cannot pick() from an empty array");
         }
+
         return arr[this.natural({ max: arr.length - 1 })];
     }
 

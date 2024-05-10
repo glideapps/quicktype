@@ -1,8 +1,8 @@
-import { panic } from "quicktype-core";
-import { introspectionQuery } from "graphql";
 import { exceptionToString } from "@glideapps/ts-necessities";
-
 import fetch from "cross-fetch";
+import { introspectionQuery } from "graphql";
+
+import { panic } from "quicktype-core";
 
 // https://github.com/apollographql/apollo-codegen/blob/master/src/downloadSchema.ts
 const defaultHeaders: { [name: string]: string } = {
@@ -18,11 +18,13 @@ export async function introspectServer(url: string, method: string, headerString
     for (const name of Object.getOwnPropertyNames(defaultHeaders)) {
         headers[name] = defaultHeaders[name];
     }
+
     for (const str of headerStrings) {
-        const matches = str.match(headerRegExp);
+        const matches = headerRegExp.exec(str);
         if (matches === null) {
             return panic(`Not a valid HTTP header: "${str}"`);
         }
+
         headers[matches[1]] = matches[2];
     }
 
