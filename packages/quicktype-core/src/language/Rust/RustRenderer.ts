@@ -19,7 +19,7 @@ import {
     type NamingStyleKey,
     Visibility,
     camelNamingFunction,
-    getPreferedNamingStyle,
+    getPreferredNamingStyle,
     listMatchingNamingStyles,
     nameWithNamingStyle,
     namingStyles,
@@ -123,11 +123,11 @@ export class RustRenderer extends ConvenienceRenderer {
         propName: Name,
         jsonName: string,
         defaultNamingStyle: NamingStyleKey,
-        preferedNamingStyle: NamingStyleKey
+        preferredNamingStyle: NamingStyleKey
     ): void {
         const escapedName = rustStringEscape(jsonName);
         const name = namingStyles[defaultNamingStyle].fromParts(this.sourcelikeToString(propName).split(" "));
-        const styledName = nameWithNamingStyle(name, preferedNamingStyle);
+        const styledName = nameWithNamingStyle(name, preferredNamingStyle);
         const namesDiffer = escapedName !== styledName;
         if (namesDiffer) {
             this.emitLine('#[serde(rename = "', escapedName, '")]');
@@ -169,16 +169,19 @@ export class RustRenderer extends ConvenienceRenderer {
 
         // Set the default naming style on the struct
         const defaultStyle = "snake_case";
-        const preferedNamingStyle = getPreferedNamingStyle(Object.values(propertiesNamingStyles).flat(), defaultStyle);
-        if (preferedNamingStyle !== defaultStyle) {
-            this.emitLine(`#[serde(rename_all = "${preferedNamingStyle}")]`);
+        const preferredNamingStyle = getPreferredNamingStyle(
+            Object.values(propertiesNamingStyles).flat(),
+            defaultStyle
+        );
+        if (preferredNamingStyle !== defaultStyle) {
+            this.emitLine(`#[serde(rename_all = "${preferredNamingStyle}")]`);
         }
 
         const blankLines = this._options.density === Density.Dense ? "none" : "interposing";
         const structBody = (): void =>
             this.forEachClassProperty(c, blankLines, (name, jsonName, prop) => {
                 this.emitDescription(this.descriptionForClassProperty(c, jsonName));
-                this.emitRenameAttribute(name, jsonName, defaultStyle, preferedNamingStyle);
+                this.emitRenameAttribute(name, jsonName, defaultStyle, preferredNamingStyle);
                 if (this._options.skipSerializingNone) {
                     this.emitSkipSerializeNone(prop.type);
                 }
@@ -241,15 +244,15 @@ export class RustRenderer extends ConvenienceRenderer {
 
         // Set the default naming style on the enum
         const defaultStyle = "PascalCase";
-        const preferedNamingStyle = getPreferedNamingStyle(Object.values(enumCasesNamingStyles).flat(), defaultStyle);
-        if (preferedNamingStyle !== defaultStyle) {
-            this.emitLine(`#[serde(rename_all = "${preferedNamingStyle}")]`);
+        const preferredNamingStyle = getPreferredNamingStyle(Object.values(enumCasesNamingStyles).flat(), defaultStyle);
+        if (preferredNamingStyle !== defaultStyle) {
+            this.emitLine(`#[serde(rename_all = "${preferredNamingStyle}")]`);
         }
 
         const blankLines = this._options.density === Density.Dense ? "none" : "interposing";
         this.emitBlock(["pub enum ", enumName], () =>
             this.forEachEnumCase(e, blankLines, (name, jsonName) => {
-                this.emitRenameAttribute(name, jsonName, defaultStyle, preferedNamingStyle);
+                this.emitRenameAttribute(name, jsonName, defaultStyle, preferredNamingStyle);
                 this.emitLine([name, ","]);
             })
         );

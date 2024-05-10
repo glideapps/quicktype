@@ -136,7 +136,7 @@ const standardUnicodeRustEscape = (codePoint: number): string => {
 
 export const rustStringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, standardUnicodeRustEscape));
 
-export function getPreferedNamingStyle(namingStyleOccurences: string[], defaultStyle: NamingStyleKey): NamingStyleKey {
+export function getPreferredNamingStyle(namingStyleOccurences: string[], defaultStyle: NamingStyleKey): NamingStyleKey {
     const occurrences = Object.fromEntries(Object.keys(namingStyles).map(key => [key, 0]));
     namingStyleOccurences.forEach(style => ++occurrences[style]);
     const max = Math.max(...Object.values(occurrences));
