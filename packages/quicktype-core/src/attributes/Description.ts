@@ -1,20 +1,28 @@
 import {
+    iterableFirst,
     mapFilterMap,
     mapFromObject,
-    setUnion,
-    iterableFirst,
-    setUnionManyInto,
     mapMergeWithInto,
-    setSubtract
+    setSubtract,
+    setUnion,
+    setUnionManyInto
 } from "collection-utils";
 
 // There's a cyclic import here. Ignoring now because it requires a large refactor.
 // skipcq: JS-E1008
-import { TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
 // FIXME: This is a circular import
-import { JSONSchemaType, Ref, JSONSchemaAttributes, PathElementKind, PathElement } from "../input/JSONSchemaInput";
-import { JSONSchema } from "../input/JSONSchemaStore";
-import { Type } from "../Type";
+// eslint-disable-next-line import/no-cycle
+import {
+    type JSONSchemaAttributes,
+    type JSONSchemaType,
+    type PathElement,
+    PathElementKind,
+    type Ref
+} from "../input/JSONSchemaInput";
+import { type JSONSchema } from "../input/JSONSchemaStore";
+import { type Type } from "../Type";
+
+import { TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
 
 export function addDescriptionToSchema(
     schema: { [name: string]: unknown },
@@ -25,31 +33,33 @@ export function addDescriptionToSchema(
 }
 
 class DescriptionTypeAttributeKind extends TypeAttributeKind<ReadonlySet<string>> {
-    constructor() {
+    public constructor() {
         super("description");
     }
 
-    combine(attrs: ReadonlySet<string>[]): ReadonlySet<string> {
+    public combine(attrs: Array<ReadonlySet<string>>): ReadonlySet<string> {
         return setUnionManyInto(new Set(), attrs);
     }
 
-    makeInferred(_: ReadonlySet<string>): undefined {
+    public makeInferred(_: ReadonlySet<string>): undefined {
         return undefined;
     }
 
-    addToSchema(schema: { [name: string]: unknown }, _t: Type, attrs: ReadonlySet<string>): void {
+    public addToSchema(schema: { [name: string]: unknown }, _t: Type, attrs: ReadonlySet<string>): void {
         addDescriptionToSchema(schema, attrs);
     }
 
-    stringify(descriptions: ReadonlySet<string>): string | undefined {
+    public stringify(descriptions: ReadonlySet<string>): string | undefined {
         let result = iterableFirst(descriptions);
         if (result === undefined) return undefined;
         if (result.length > 5 + 3) {
             result = `${result.slice(0, 5)}...`;
         }
+
         if (descriptions.size > 1) {
             result = `${result}, ...`;
         }
+
         return result;
     }
 }
@@ -57,24 +67,25 @@ class DescriptionTypeAttributeKind extends TypeAttributeKind<ReadonlySet<string>
 export const descriptionTypeAttributeKind: TypeAttributeKind<ReadonlySet<string>> = new DescriptionTypeAttributeKind();
 
 class PropertyDescriptionsTypeAttributeKind extends TypeAttributeKind<Map<string, ReadonlySet<string>>> {
-    constructor() {
+    public constructor() {
         super("propertyDescriptions");
     }
 
-    combine(attrs: Map<string, ReadonlySet<string>>[]): Map<string, ReadonlySet<string>> {
+    public combine(attrs: Array<Map<string, ReadonlySet<string>>>): Map<string, ReadonlySet<string>> {
         // FIXME: Implement this with mutable sets
         const result = new Map<string, ReadonlySet<string>>();
         for (const attr of attrs) {
             mapMergeWithInto(result, (sa, sb) => setUnion(sa, sb), attr);
         }
+
         return result;
     }
 
-    makeInferred(_: Map<string, ReadonlySet<string>>): undefined {
+    public makeInferred(_: Map<string, ReadonlySet<string>>): undefined {
         return undefined;
     }
 
-    stringify(propertyDescriptions: Map<string, ReadonlySet<string>>): string | undefined {
+    public stringify(propertyDescriptions: Map<string, ReadonlySet<string>>): string | undefined {
         if (propertyDescriptions.size === 0) return undefined;
         return `prop descs: ${propertyDescriptions.size}`;
     }
@@ -112,13 +123,14 @@ export function descriptionAttributeProducer(
     }
 
     if (types.has("object") && typeof schema.properties === "object") {
-        const propertyDescriptions = mapFilterMap(mapFromObject<any>(schema.properties), propSchema => {
-            if (typeof propSchema === "object") {
+        const propertyDescriptions = mapFilterMap(mapFromObject(schema.properties), propSchema => {
+            if (propSchema && typeof propSchema === "object" && "description" in propSchema) {
                 const desc = propSchema.description;
                 if (typeof desc === "string") {
                     return new Set([desc]);
                 }
             }
+
             return undefined;
         });
         if (propertyDescriptions.size > 0) {

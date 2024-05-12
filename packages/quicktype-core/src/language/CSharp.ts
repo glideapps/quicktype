@@ -1,70 +1,81 @@
 import { arrayIntercalate } from "collection-utils";
+import unicode from "unicode-properties";
 
+import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
+import { minMaxLengthForType, minMaxValueForType } from "../attributes/Constraints";
+import { ConvenienceRenderer, type ForbiddenWordsInfo, inferredNameOrder } from "../ConvenienceRenderer";
+import { DependencyName, type Name, type Namer, SimpleName, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
 import {
-    Type,
-    EnumType,
-    UnionType,
-    ClassType,
-    ClassProperty,
-    ArrayType,
-    TransformedStringTypeKind,
-    PrimitiveStringTypeKind,
-    PrimitiveType
-} from "../Type";
-import { matchType, nullableFromUnion, removeNullFromUnion, directlyReachableSingleNamedType } from "../TypeUtils";
-import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
+    BooleanOption,
+    EnumOption,
+    type Option,
+    type OptionValues,
+    StringOption,
+    getOptionValues
+} from "../RendererOptions";
+import { type Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import {
-    utf16LegalizeCharacters,
-    utf16StringEscape,
-    splitIntoWords,
+    type WordInName,
+    camelCase,
     combineWords,
     firstUpperWordStyle,
-    camelCase,
-    WordInName
+    splitIntoWords,
+    utf16LegalizeCharacters,
+    utf16StringEscape
 } from "../support/Strings";
-import { defined, assert, panic, assertNever } from "../support/Support";
-import { Name, DependencyName, Namer, funPrefixNamer, SimpleName } from "../Naming";
-import { ConvenienceRenderer, ForbiddenWordsInfo, inferredNameOrder } from "../ConvenienceRenderer";
+import { assert, assertNever, defined, panic } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
-import { StringOption, EnumOption, Option, BooleanOption, OptionValues, getOptionValues } from "../RendererOptions";
-import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { StringTypeMapping } from "../TypeBuilder";
 import {
-    followTargetType,
-    transformationForType,
-    Transformer,
-    DecodingTransformer,
-    DecodingChoiceTransformer,
-    UnionInstantiationTransformer,
-    ChoiceTransformer,
-    UnionMemberMatchTransformer,
-    EncodingTransformer,
-    StringMatchTransformer,
-    StringProducerTransformer,
-    ParseStringTransformer,
-    StringifyTransformer,
-    Transformation,
     ArrayDecodingTransformer,
     ArrayEncodingTransformer,
+    ChoiceTransformer,
+    DecodingChoiceTransformer,
+    DecodingTransformer,
+    EncodingTransformer,
     MinMaxLengthCheckTransformer,
-    MinMaxValueTransformer
+    MinMaxValueTransformer,
+    ParseStringTransformer,
+    StringMatchTransformer,
+    StringProducerTransformer,
+    StringifyTransformer,
+    type Transformation,
+    type Transformer,
+    UnionInstantiationTransformer,
+    UnionMemberMatchTransformer,
+    followTargetType,
+    transformationForType
 } from "../Transformers";
-import { RenderContext } from "../Renderer";
-import { minMaxLengthForType, minMaxValueForType } from "../attributes/Constraints";
-import * as unicode from "unicode-properties";
+import {
+    ArrayType,
+    type ClassProperty,
+    ClassType,
+    EnumType,
+    type PrimitiveStringTypeKind,
+    type PrimitiveType,
+    type TransformedStringTypeKind,
+    type Type,
+    UnionType
+} from "../Type";
+import { type StringTypeMapping } from "../TypeBuilder";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
+import { directlyReachableSingleNamedType, matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
 export enum Framework {
-    Newtonsoft,
-    SystemTextJson
+    Newtonsoft = "Newtonsoft",
+    SystemTextJson = "SystemTextJson"
 }
 
 export type Version = 5 | 6;
-export type OutputFeatures = { helpers: boolean; attributes: boolean };
+export interface OutputFeatures {
+    attributes: boolean;
+    helpers: boolean;
+}
 
 export enum AccessModifier {
-    None,
-    Public,
-    Internal
+    None = "None",
+    Public = "Public",
+    Internal = "Internal"
 }
 
 export type CSharpTypeForAny = "object" | "dynamic";
@@ -80,17 +91,20 @@ function needTransformerForType(t: Type): "automatic" | "manual" | "nullable" | 
         if (needTransformerForType(maybeNullable) === "manual") return "nullable";
         return "none";
     }
+
     if (t instanceof ArrayType) {
         const itemsNeed = needTransformerForType(t.items);
         if (itemsNeed === "manual" || itemsNeed === "nullable") return "automatic";
         return "none";
     }
+
     if (t instanceof EnumType) return "automatic";
     if (t.kind === "double") return minMaxValueForType(t) !== undefined ? "manual" : "none";
     if (t.kind === "integer-string" || t.kind === "bool-string") return "manual";
     if (t.kind === "string") {
         return minMaxLengthForType(t) !== undefined ? "manual" : "none";
     }
+
     return "none";
 }
 
@@ -195,11 +209,11 @@ export const cSharpOptions = {
 };
 
 export class CSharpTargetLanguage extends TargetLanguage {
-    constructor() {
+    public constructor() {
         super("C#", ["cs", "csharp"], "cs");
     }
 
-    protected getOptions(): Option<any>[] {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [
             cSharpOptions.framework,
             cSharpOptions.namespace,
@@ -216,7 +230,7 @@ export class CSharpTargetLanguage extends TargetLanguage {
         ];
     }
 
-    get stringTypeMapping(): StringTypeMapping {
+    public get stringTypeMapping(): StringTypeMapping {
         const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
         mapping.set("date", "date-time");
         mapping.set("time", "date-time");
@@ -228,23 +242,20 @@ export class CSharpTargetLanguage extends TargetLanguage {
         return mapping;
     }
 
-    get supportsUnionsWithBothNumberTypes(): boolean {
+    public get supportsUnionsWithBothNumberTypes(): boolean {
         return true;
     }
 
-    get supportsOptionalClassProperties(): boolean {
+    public get supportsOptionalClassProperties(): boolean {
         return true;
     }
 
-    needsTransformerForType(t: Type): boolean {
+    public needsTransformerForType(t: Type): boolean {
         const need = needTransformerForType(t);
         return need !== "none" && need !== "nullable";
     }
 
-    protected makeRenderer(
-        renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
-    ): ConvenienceRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): ConvenienceRenderer {
         const options = getOptionValues(cSharpOptions, untypedOptionValues);
 
         switch (options.framework) {
@@ -278,14 +289,16 @@ function isStartCharacter(utf16Unit: number): boolean {
     if (unicode.isAlphabetic(utf16Unit)) {
         return true;
     }
+
     return utf16Unit === 0x5f; // underscore
 }
 
 function isPartCharacter(utf16Unit: number): boolean {
     const category: string = unicode.getCategory(utf16Unit);
-    if (["Nd", "Pc", "Mn", "Mc"].indexOf(category) >= 0) {
+    if (["Nd", "Pc", "Mn", "Mc"].includes(category)) {
         return true;
     }
+
     return isStartCharacter(utf16Unit);
 }
 
@@ -411,11 +424,12 @@ function isValueType(t: Type): boolean {
     if (t instanceof UnionType) {
         return nullableFromUnion(t) === null;
     }
-    return ["integer", "double", "bool", "enum", "date-time", "uuid"].indexOf(t.kind) >= 0;
+
+    return ["integer", "double", "bool", "enum", "date-time", "uuid"].includes(t.kind);
 }
 
 export class CSharpRenderer extends ConvenienceRenderer {
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _csOptions: OptionValues<typeof cSharpOptions>
@@ -523,9 +537,11 @@ export class CSharpRenderer extends ConvenienceRenderer {
             return csType;
         }
     }
+
     protected baseclassForType(_t: Type): Sourcelike | undefined {
         return undefined;
     }
+
     protected emitType(
         description: string[] | undefined,
         accessModifier: AccessModifier,
@@ -544,12 +560,14 @@ export class CSharpRenderer extends ConvenienceRenderer {
             default:
                 break;
         }
+
         this.emitDescription(description);
         if (baseclass === undefined) {
             this.emitLine(declaration, " ", name);
         } else {
             this.emitLine(declaration, " ", name, " : ", baseclass);
         }
+
         this.emitBlock(emitter);
     }
 
@@ -614,6 +632,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
                         ) {
                             this.ensureBlankLine();
                         }
+
                         this.emitDescription(description);
                         this.emitLine(property);
                     } else if (this._csOptions.dense && attributes.length > 0) {
@@ -624,6 +643,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
                         for (const attribute of attributes) {
                             this.emitLine(attribute);
                         }
+
                         this.emitLine(property);
                     }
 
@@ -781,10 +801,12 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
     private readonly _enumExtensionsNames = new Map<Name, Name>();
 
     private readonly _needHelpers: boolean;
+
     private readonly _needAttributes: boolean;
+
     private readonly _needNamespaces: boolean;
 
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof newtonsoftCSharpOptions>
@@ -812,9 +834,11 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         if (this._options.dense) {
             forbidden.push("J", "R", "N");
         }
+
         if (this._options.baseclass !== undefined) {
             forbidden.push(this._options.baseclass);
         }
+
         return super.forbiddenNamesForGlobalNamespace().concat(forbidden);
     }
 
@@ -830,8 +854,10 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             if (xfer instanceof DecodingTransformer && xfer.consumer !== undefined) {
                 xfer = xfer.consumer;
             }
+
             return new SimpleName([`${xfer.kind}_converter`], namingFunction, inferredNameOrder + 30);
         }
+
         return new DependencyName(namingFunction, typeName.order + 30, lookup => `${lookup(typeName)}_converter`);
     }
 
@@ -863,13 +889,16 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             this.emitUsing([denseRequiredEnumName, " = Newtonsoft.Json.Required"]);
             this.emitUsing([denseNullValueHandlingEnumName, " = Newtonsoft.Json.NullValueHandling"]);
         }
+
         if (this._options.baseclass === "EntityData") {
             this.emitUsing("Microsoft.Azure.Mobile.Server");
         }
     }
+
     protected baseclassForType(_t: Type): Sourcelike | undefined {
         return this._options.baseclass;
     }
+
     protected emitDefaultLeadingComments(): void {
         if (!this._needHelpers) return;
 
@@ -890,6 +919,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             } else {
                 rhs = [topLevelName, ".FromJson(jsonString)"];
             }
+
             this.emitLine("//    var ", modifySource(camelCase, topLevelName), " = ", rhs, ";");
         });
     }
@@ -940,6 +970,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         } else {
             required = [", Required = ", requiredClass, ".Always", nullValueHandling];
         }
+
         attributes.push(["[", jsonProperty, '("', escapedName, '"', required, ")]"]);
 
         const converter = this.converterForType(property.type);
@@ -972,6 +1003,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             partial = "";
             typeKind = "class";
         }
+
         const csType = this.topLevelResultType(t);
         this.emitType(undefined, AccessModifier.Public, [partial, typeKind], name, this.baseclassForType(t), () => {
             // FIXME: Make FromJson a Named
@@ -1063,9 +1095,10 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                             this.emitLine(this.converterObject(converter), ",");
                         }
                     }
+
                     this.emitLine("new IsoDateTimeConverter { DateTimeStyles = DateTimeStyles.AssumeUniversal }");
                 });
-                this.emitLine(`},`);
+                this.emitLine("},");
             }, true);
         });
     }
@@ -1082,6 +1115,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         for (const tokenCase of tokenCases) {
             this.emitTokenCase(tokenCase);
         }
+
         this.indent(() => {
             const allHandled = this.emitDecodeTransformer(xfer, targetType, emitFinish, variableName);
             if (!allHandled) {
@@ -1129,12 +1163,14 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 let output = targetType.kind === "double" ? targetType : source;
                 this.emitLine("var ", variableName, " = ", this.deserializeTypeCode(this.csType(output)), ";");
             }
+
             return this.emitConsume(variableName, xfer.consumer, targetType, emitFinish);
         } else if (xfer instanceof ArrayDecodingTransformer) {
             // FIXME: Consume StartArray
             if (!(targetType instanceof ArrayType)) {
                 return panic("Array decoding must produce an array type");
             }
+
             // FIXME: handle EOF
             this.emitLine("reader.Read();");
             this.emitLine("var ", variableName, " = new List<", this.csType(targetType.items), ">();");
@@ -1153,6 +1189,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             if (!this._options.useList) {
                 result = [result, ".ToArray()"];
             }
+
             emitFinish(result);
             return true;
         } else if (xfer instanceof DecodingChoiceTransformer) {
@@ -1167,6 +1204,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                         }
                     });
                 }
+
                 this.emitDecoderTransformerCase(
                     ["Integer"],
                     "integerValue",
@@ -1216,6 +1254,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         } else if (t instanceof EnumType) {
             return [this.nameForNamedType(t), ".", this.nameForEnumCase(t, stringCase)];
         }
+
         return panic(`Type ${t.kind} does not have string cases`);
     }
 
@@ -1229,6 +1268,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             if (continuation === undefined) {
                 return targetType;
             }
+
             return followTargetType(continuation.sourceType);
         }
 
@@ -1285,9 +1325,11 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 member = [variable, ".", memberName];
                 test = [member, " != null"];
             }
+
             if (memberType.kind !== "null" && isValueType(memberType)) {
                 member = [member, ".Value"];
             }
+
             this.emitLine("if (", test, ")");
             this.emitBlock(() => this.emitTransformer(member, xfer.transformer, targetType, emitFinish));
         } else if (xfer instanceof StringMatchTransformer) {
@@ -1302,6 +1344,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             } else {
                 this.emitLine(this.serializeValueCode(variable), ";");
             }
+
             emitFinish([]);
             return true;
         } else if (xfer instanceof ArrayEncodingTransformer) {
@@ -1386,9 +1429,11 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             if (min !== undefined) {
                 conditions.push([variable, ".Length >= ", min.toString()]);
             }
+
             if (max !== undefined) {
                 conditions.push([variable, ".Length <= ", max.toString()]);
             }
+
             this.emitLine("if (", arrayIntercalate([" && "], conditions), ")");
             this.emitBlock(() => this.emitConsume(variable, xfer.consumer, targetType, emitFinish));
             return false;
@@ -1400,9 +1445,11 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             if (min !== undefined) {
                 conditions.push([variable, " >= ", min.toString()]);
             }
+
             if (max !== undefined) {
                 conditions.push([variable, " <= ", max.toString()]);
             }
+
             this.emitLine("if (", arrayIntercalate([" && "], conditions), ")");
             this.emitBlock(() => this.emitConsume(variable, xfer.consumer, targetType, emitFinish));
             return false;
@@ -1410,6 +1457,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             if (!(targetType instanceof UnionType)) {
                 return panic("Union instantiation transformer must produce a union type");
             }
+
             const maybeNullable = nullableFromUnion(targetType);
             if (maybeNullable !== null) {
                 emitFinish(variable);
@@ -1422,12 +1470,15 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                     const memberName = this.nameForUnionMember(targetType, xfer.sourceType);
                     initializer = [" ", memberName, " = ", variable, " "];
                 }
+
                 emitFinish(["new ", unionName, " {", initializer, "}"]);
             }
+
             return true;
         } else {
             return panic("Unknown transformer");
         }
+
         return false;
     }
 
@@ -1443,6 +1494,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             if (haveNullable) {
                 canConvertExpr = [canConvertExpr, " || t == typeof(", csType, "?)"];
             }
+
             this.emitCanConvert(canConvertExpr);
             this.ensureBlankLine();
             this.emitReadJson(() => {
@@ -1471,6 +1523,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                         this.emitLine("return;");
                     });
                 }
+
                 this.emitLine("var value = (", csType, ")untypedValue;");
                 const allHandled = this.emitTransformer("value", reverse.transformer, reverse.targetType, () =>
                     this.emitLine("return;")
@@ -1490,6 +1543,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             this.ensureBlankLine();
             this.emitSerializeClass();
         }
+
         if (this._needHelpers || (this._needAttributes && (this.haveNamedUnions || this.haveEnums))) {
             this.ensureBlankLine();
             this.emitConverterClass();
@@ -1508,10 +1562,12 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
     private readonly _enumExtensionsNames = new Map<Name, Name>();
 
     private readonly _needHelpers: boolean;
+
     private readonly _needAttributes: boolean;
+
     private readonly _needNamespaces: boolean;
 
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof systemTextJsonCSharpOptions>
@@ -1540,9 +1596,11 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
         if (this._options.dense) {
             forbidden.push("J", "R", "N");
         }
+
         if (this._options.baseclass !== undefined) {
             forbidden.push(this._options.baseclass);
         }
+
         return super.forbiddenNamesForGlobalNamespace().concat(forbidden);
     }
 
@@ -1558,8 +1616,10 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
             if (xfer instanceof DecodingTransformer && xfer.consumer !== undefined) {
                 xfer = xfer.consumer;
             }
+
             return new SimpleName([`${xfer.kind}_converter`], namingFunction, inferredNameOrder + 30);
         }
+
         return new DependencyName(namingFunction, typeName.order + 30, lookup => `${lookup(typeName)}_converter`);
     }
 
@@ -1591,6 +1651,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
             // this.emitUsing([denseRequiredEnumName, " = Newtonsoft.Json.Required"]);
             this.emitUsing([denseNullValueHandlingEnumName, " = System.Text.Json.Serialization.JsonIgnoreCondition"]);
         }
+
         if (this._options.baseclass === "EntityData") {
             this.emitUsing("Microsoft.Azure.Mobile.Server");
         }
@@ -1628,6 +1689,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
             } else {
                 rhs = [topLevelName, ".FromJson(jsonString)"];
             }
+
             this.emitLine("//    var ", modifySource(camelCase, topLevelName), " = ", rhs, ";");
         });
 
@@ -1721,6 +1783,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
             partial = "";
             typeKind = "class";
         }
+
         const csType = this.topLevelResultType(t);
         this.emitType(undefined, AccessModifier.Public, [partial, typeKind], name, this.baseclassForType(t), () => {
             // FIXME: Make FromJson a Named
@@ -1833,12 +1896,13 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
                             this.emitLine(this.converterObject(converter), ",");
                         }
                     }
+
                     this.emitLine("new DateOnlyConverter(),");
                     this.emitLine("new TimeOnlyConverter(),");
                     this.emitLine("IsoDateTimeOffsetConverter.Singleton");
                     // this.emitLine("new IsoDateTimeConverter { DateTimeStyles = DateTimeStyles.AssumeUniversal }");
                 });
-                this.emitLine(`},`);
+                this.emitLine("},");
             }, true);
         });
     }
@@ -1855,6 +1919,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
         for (const tokenCase of tokenCases) {
             this.emitTokenCase(tokenCase);
         }
+
         this.indent(() => {
             const allHandled = this.emitDecodeTransformer(xfer, targetType, emitFinish, variableName);
             if (!allHandled) {
@@ -1902,12 +1967,14 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
                 let output = targetType.kind === "double" ? targetType : source;
                 this.emitLine("var ", variableName, " = ", this.deserializeTypeCode(this.csType(output)), ";");
             }
+
             return this.emitConsume(variableName, xfer.consumer, targetType, emitFinish);
         } else if (xfer instanceof ArrayDecodingTransformer) {
             // FIXME: Consume StartArray
             if (!(targetType instanceof ArrayType)) {
                 return panic("Array decoding must produce an array type");
             }
+
             // FIXME: handle EOF
             this.emitLine("reader.Read();");
             this.emitLine("var ", variableName, " = new List<", this.csType(targetType.items), ">();");
@@ -1926,6 +1993,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
             if (!this._options.useList) {
                 result = [result, ".ToArray()"];
             }
+
             emitFinish(result);
             return true;
         } else if (xfer instanceof DecodingChoiceTransformer) {
@@ -1940,6 +2008,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
                         }
                     });
                 }
+
                 this.emitDecoderTransformerCase(
                     ["Number"],
                     "integerValue",
@@ -1997,6 +2066,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
         } else if (t instanceof EnumType) {
             return [this.nameForNamedType(t), ".", this.nameForEnumCase(t, stringCase)];
         }
+
         return panic(`Type ${t.kind} does not have string cases`);
     }
 
@@ -2010,6 +2080,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
             if (continuation === undefined) {
                 return targetType;
             }
+
             return followTargetType(continuation.sourceType);
         }
 
@@ -2066,9 +2137,11 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
                 member = [variable, ".", memberName];
                 test = [member, " != null"];
             }
+
             if (memberType.kind !== "null" && isValueType(memberType)) {
                 member = [member, ".Value"];
             }
+
             this.emitLine("if (", test, ")");
             this.emitBlock(() => this.emitTransformer(member, xfer.transformer, targetType, emitFinish));
         } else if (xfer instanceof StringMatchTransformer) {
@@ -2083,6 +2156,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
             } else {
                 this.emitLine(this.serializeValueCode(variable), ";");
             }
+
             emitFinish([]);
             return true;
         } else if (xfer instanceof ArrayEncodingTransformer) {
@@ -2173,9 +2247,11 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
             if (min !== undefined) {
                 conditions.push([variable, ".Length >= ", min.toString()]);
             }
+
             if (max !== undefined) {
                 conditions.push([variable, ".Length <= ", max.toString()]);
             }
+
             this.emitLine("if (", arrayIntercalate([" && "], conditions), ")");
             this.emitBlock(() => this.emitConsume(variable, xfer.consumer, targetType, emitFinish));
             return false;
@@ -2187,9 +2263,11 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
             if (min !== undefined) {
                 conditions.push([variable, " >= ", min.toString()]);
             }
+
             if (max !== undefined) {
                 conditions.push([variable, " <= ", max.toString()]);
             }
+
             this.emitLine("if (", arrayIntercalate([" && "], conditions), ")");
             this.emitBlock(() => this.emitConsume(variable, xfer.consumer, targetType, emitFinish));
             return false;
@@ -2197,6 +2275,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
             if (!(targetType instanceof UnionType)) {
                 return panic("Union instantiation transformer must produce a union type");
             }
+
             const maybeNullable = nullableFromUnion(targetType);
             if (maybeNullable !== null) {
                 emitFinish(variable);
@@ -2209,12 +2288,15 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
                     const memberName = this.nameForUnionMember(targetType, xfer.sourceType);
                     initializer = [" ", memberName, " = ", variable, " "];
                 }
+
                 emitFinish(["new ", unionName, " {", initializer, "}"]);
             }
+
             return true;
         } else {
             return panic("Unknown transformer");
         }
+
         return false;
     }
 
@@ -2292,6 +2374,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
             this.ensureBlankLine();
             this.emitSerializeClass();
         }
+
         if (this._needHelpers || (this._needAttributes && (this.haveNamedUnions || this.haveEnums))) {
             this.ensureBlankLine();
             this.emitConverterClass();

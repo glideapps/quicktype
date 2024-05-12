@@ -1,12 +1,12 @@
 import { iterableFirst } from "collection-utils";
 
-import { PrimitiveType, UnionType, Type } from "../Type";
-import { stringTypesForType, combineTypeAttributesOfTypes } from "../TypeUtils";
-import { TypeGraph, TypeRef } from "../TypeGraph";
-import { StringTypeMapping } from "../TypeBuilder";
-import { GraphRewriteBuilder } from "../GraphRewriting";
-import { assert, defined } from "../support/Support";
 import { combineTypeAttributes } from "../attributes/TypeAttributes";
+import { type GraphRewriteBuilder } from "../GraphRewriting";
+import { assert, defined } from "../support/Support";
+import { type PrimitiveType, type Type, type UnionType } from "../Type";
+import { type StringTypeMapping } from "../TypeBuilder";
+import { type TypeGraph, type TypeRef } from "../TypeGraph";
+import { combineTypeAttributesOfTypes, stringTypesForType } from "../TypeUtils";
 
 // A union needs replacing if it contains more than one string type, one of them being
 // a basic string type.
@@ -37,6 +37,7 @@ function replaceUnion(
         if (stringMembers.has(t)) continue;
         types.push(builder.reconstituteType(t));
     }
+
     if (types.length === 0) {
         return builder.getStringType(
             combineTypeAttributes("union", stringAttributes, u.getAttributes()),
@@ -44,6 +45,7 @@ function replaceUnion(
             forwardingRef
         );
     }
+
     types.push(builder.getStringType(stringAttributes, undefined));
     return builder.getUnionType(u.getAttributes(), new Set(types), forwardingRef);
 }

@@ -1,28 +1,36 @@
-import { mapContains, arrayIntercalate } from "collection-utils";
+import { arrayIntercalate, mapContains } from "collection-utils";
 
-import { TargetLanguage } from "../TargetLanguage";
-import { EnumOption, StringOption, BooleanOption, Option, getOptionValues, OptionValues } from "../RendererOptions";
-import { Type, ClassType, UnionType, EnumType, ClassProperty } from "../Type";
-import { matchType, nullableFromUnion } from "../TypeUtils";
-import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { Namer, Name, DependencyName, funPrefixNamer } from "../Naming";
+import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { DependencyName, type Name, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
 import {
-    legalizeCharacters,
-    isLetterOrUnderscoreOrDigit,
-    isLetterOrUnderscore,
-    decapitalize,
-    stringEscape,
-    isAscii,
-    splitIntoWords,
-    combineWords,
-    firstUpperWordStyle,
+    BooleanOption,
+    EnumOption,
+    type Option,
+    type OptionValues,
+    StringOption,
+    getOptionValues
+} from "../RendererOptions";
+import { type MultiWord, type Sourcelike, annotated, multiWord, parenIfNeeded, singleWord } from "../Source";
+import {
     allLowerWordStyle,
-    allUpperWordStyle
+    allUpperWordStyle,
+    combineWords,
+    decapitalize,
+    firstUpperWordStyle,
+    isAscii,
+    isLetterOrUnderscore,
+    isLetterOrUnderscoreOrDigit,
+    legalizeCharacters,
+    splitIntoWords,
+    stringEscape
 } from "../support/Strings";
 import { defined } from "../support/Support";
-import { Sourcelike, annotated, MultiWord, singleWord, multiWord, parenIfNeeded } from "../Source";
-import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { RenderContext } from "../Renderer";
+import { TargetLanguage } from "../TargetLanguage";
+import { type ClassProperty, type ClassType, type EnumType, type Type, UnionType } from "../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
+import { matchType, nullableFromUnion } from "../TypeUtils";
 
 export const elmOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
@@ -35,23 +43,23 @@ export const elmOptions = {
 };
 
 export class ElmTargetLanguage extends TargetLanguage {
-    constructor() {
+    public constructor() {
         super("Elm", ["elm"], "elm");
     }
 
-    protected getOptions(): Option<any>[] {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [elmOptions.justTypes, elmOptions.moduleName, elmOptions.useList];
     }
 
-    get supportsOptionalClassProperties(): boolean {
+    public get supportsOptionalClassProperties(): boolean {
         return true;
     }
 
-    get supportsUnionsWithBothNumberTypes(): boolean {
+    public get supportsUnionsWithBothNumberTypes(): boolean {
         return true;
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): ElmRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): ElmRenderer {
         return new ElmRenderer(this, renderContext, getOptionValues(elmOptions, untypedOptionValues));
     }
 }
@@ -116,40 +124,44 @@ function elmNameStyle(original: string, upper: boolean): string {
 const upperNamingFunction = funPrefixNamer("upper", n => elmNameStyle(n, true));
 const lowerNamingFunction = funPrefixNamer("lower", n => elmNameStyle(n, false));
 
-type RequiredOrOptional = {
-    reqOrOpt: string;
+interface RequiredOrOptional {
     fallback: string;
-};
+    reqOrOpt: string;
+}
 
 function requiredOrOptional(p: ClassProperty): RequiredOrOptional {
     function optional(fallback: string): RequiredOrOptional {
         return { reqOrOpt: "Jpipe.optional", fallback };
     }
+
     const t = p.type;
     if (p.isOptional || (t instanceof UnionType && nullableFromUnion(t) !== null)) {
         return optional(" Nothing");
     }
+
     if (t.kind === "null") {
         return optional(" ()");
     }
+
     return { reqOrOpt: "Jpipe.required", fallback: "" };
 }
 
-type TopLevelDependent = {
-    encoder: Name;
+interface TopLevelDependent {
     decoder?: Name;
-};
-
-type NamedTypeDependent = {
     encoder: Name;
+}
+
+interface NamedTypeDependent {
     decoder: Name;
-};
+    encoder: Name;
+}
 
 export class ElmRenderer extends ConvenienceRenderer {
     private readonly _topLevelDependents = new Map<Name, TopLevelDependent>();
+
     private readonly _namedTypeDependents = new Map<Name, NamedTypeDependent>();
 
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof elmOptions>
@@ -171,10 +183,12 @@ export class ElmRenderer extends ConvenienceRenderer {
         if (this.namedTypeToNameForTopLevel(t) === undefined) {
             decoder = new DependencyName(lowerNamingFunction, topLevelName.order, lookup => lookup(topLevelName));
         }
+
         this._topLevelDependents.set(topLevelName, { encoder, decoder });
         if (decoder !== undefined) {
             return [encoder, decoder];
         }
+
         return [encoder];
     }
 
@@ -259,6 +273,7 @@ export class ElmRenderer extends ConvenienceRenderer {
                     if (noOptional) return nullableType;
                     return multiWord(" ", "Maybe", parenIfNeeded(nullableType));
                 }
+
                 return singleWord(this.nameForNamedType(unionType));
             }
         );
@@ -302,6 +317,7 @@ export class ElmRenderer extends ConvenienceRenderer {
                     if (noOptional) return nullableDecoder;
                     return multiWord(" ", "Jdec.nullable", parenIfNeeded(nullableDecoder));
                 }
+
                 return singleWord(this.decoderNameForNamedType(unionType));
             }
         );
@@ -345,6 +361,7 @@ export class ElmRenderer extends ConvenienceRenderer {
                     if (noOptional) return nullableEncoder;
                     return multiWord(" ", "makeNullableEncoder", parenIfNeeded(nullableEncoder));
                 }
+
                 return singleWord(this.encoderNameForNamedType(unionType));
             }
         );
@@ -373,6 +390,7 @@ export class ElmRenderer extends ConvenienceRenderer {
             } else {
                 description.push("");
             }
+
             description.push(`${this.sourcelikeToString(name)}:`);
             description.push(...propertyDescription);
         });
@@ -388,6 +406,7 @@ export class ElmRenderer extends ConvenienceRenderer {
             if (onFirst) {
                 this.emitLine("{");
             }
+
             this.emitLine("}");
         });
     }
@@ -417,6 +436,7 @@ export class ElmRenderer extends ConvenienceRenderer {
                 } else {
                     this.emitLine(equalsOrPipe, " ", constructor, " ", parenIfNeeded(this.elmType(t)));
                 }
+
                 onFirst = false;
             });
         });
@@ -429,6 +449,7 @@ export class ElmRenderer extends ConvenienceRenderer {
             this.emitLine(defined(decoder), " = ", this.decoderNameForType(t).source);
             this.ensureBlankLine();
         }
+
         this.emitLine(encoder, " : ", topLevelName, " -> String");
         this.emitLine(encoder, " r = Jenc.encode 0 (", this.encoderNameForType(t).source, " r)");
     }
@@ -465,6 +486,7 @@ export class ElmRenderer extends ConvenienceRenderer {
                 if (onFirst) {
                     this.emitLine("[");
                 }
+
                 this.emitLine("]");
             });
         });
@@ -512,6 +534,7 @@ export class ElmRenderer extends ConvenienceRenderer {
             } else if (t.isPrimitive()) {
                 return " " + t.kind;
             }
+
             return t.kind;
         }
 
@@ -530,6 +553,7 @@ export class ElmRenderer extends ConvenienceRenderer {
                         const decoder = parenIfNeeded(this.decoderNameForType(t));
                         this.emitLine(bracketOrComma, " Jdec.map ", constructor, " ", decoder);
                     }
+
                     onFirst = false;
                 });
                 this.emitLine("]");
@@ -560,6 +584,7 @@ export class ElmRenderer extends ConvenienceRenderer {
             if (decoder === undefined) {
                 decoder = defined(this._namedTypeDependents.get(name)).decoder;
             }
+
             topLevelDecoders.push(decoder);
             exports.push(name, encoder, decoder);
         });
@@ -600,6 +625,7 @@ export class ElmRenderer extends ConvenienceRenderer {
                 if (decoder === undefined) {
                     decoder = defined(this._namedTypeDependents.get(name)).decoder;
                 }
+
                 this.emitLine("--     decodeString ", decoder, " myJsonString");
             });
         }
@@ -611,6 +637,7 @@ export class ElmRenderer extends ConvenienceRenderer {
                 for (let i = 0; i < exports.length; i++) {
                     this.emitLine(i === 0 ? "(" : ",", " ", exports[i]);
                 }
+
                 this.emitLine(")");
             });
             this.ensureBlankLine();

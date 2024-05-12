@@ -1,7 +1,6 @@
+import { type PartialArgs, generateSchema } from "@mark.probst/typescript-json-schema";
+import { type JSONSchemaSourceData, defined, messageError } from "quicktype-core";
 import * as ts from "typescript";
-import { PartialArgs, generateSchema } from "@mark.probst/typescript-json-schema";
-
-import { defined, JSONSchemaSourceData, messageError } from "quicktype-core";
 
 const settings: PartialArgs = {
     required: true,
@@ -35,13 +34,13 @@ export function schemaForTypeScriptSources(sourceFileNames: string[]): JSONSchem
 
     const schema = generateSchema(program, "*", settings);
     const uris: string[] = [];
-    let topLevelName: string = "";
+    let topLevelName = "";
 
     // if there is a type that is `export default`, swap the corresponding ref
     if (schema?.definitions?.default) {
         const defaultDefinition = schema?.definitions?.default;
         const matchingDefaultName = Object.entries(schema?.definitions ?? {}).find(
-            ([_name, definition]) => (definition as Record<string, unknown>)["$ref"] === "#/definitions/default"
+            ([_name, definition]) => (definition as Record<string, unknown>).$ref === "#/definitions/default"
         )?.[0];
 
         if (matchingDefaultName) {
@@ -66,7 +65,7 @@ export function schemaForTypeScriptSources(sourceFileNames: string[]): JSONSchem
             }
 
             const description = definition.description as string;
-            const matches = description.match(/#TopLevel/);
+            const matches = /#TopLevel/.exec(description);
             if (matches === null) {
                 continue;
             }
@@ -85,6 +84,7 @@ export function schemaForTypeScriptSources(sourceFileNames: string[]): JSONSchem
             }
         }
     }
+
     if (uris.length === 0) {
         uris.push("#/definitions/");
     }

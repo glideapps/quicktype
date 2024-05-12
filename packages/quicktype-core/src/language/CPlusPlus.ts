@@ -1,36 +1,57 @@
 import {
-    setUnion,
     arrayIntercalate,
-    toReadonlyArray,
-    iterableFirst,
     iterableFind,
+    iterableFirst,
     iterableSome,
+    setUnion,
+    toReadonlyArray,
     withDefault
 } from "collection-utils";
 
-import { TargetLanguage } from "../TargetLanguage";
-import { Type, TypeKind, ClassType, ClassProperty, ArrayType, MapType, EnumType, UnionType } from "../Type";
-import { nullableFromUnion, matchType, removeNullFromUnion, isNamedType, directlyReachableTypes } from "../TypeUtils";
-import { NameStyle, Name, Namer, funPrefixNamer, DependencyName } from "../Naming";
-import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
+import { getAccessorName } from "../attributes/AccessorNames";
 import {
-    legalizeCharacters,
+    type MinMaxConstraint,
+    minMaxLengthForType,
+    minMaxValueForType,
+    patternForType
+} from "../attributes/Constraints";
+import { enumCaseValues } from "../attributes/EnumValues";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { type Declaration } from "../DeclarationIR";
+import { DependencyName, type Name, type NameStyle, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import {
+    BooleanOption,
+    EnumOption,
+    type Option,
+    type OptionValues,
+    StringOption,
+    getOptionValues
+} from "../RendererOptions";
+import { type Sourcelike, maybeAnnotated } from "../Source";
+import {
+    type NamingStyle,
     isAscii,
     isLetterOrUnderscoreOrDigit,
-    stringEscape,
-    NamingStyle,
-    makeNameStyle
+    legalizeCharacters,
+    makeNameStyle,
+    stringEscape
 } from "../support/Strings";
-import { defined, assertNever, panic, numberEnumValues } from "../support/Support";
-import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { StringOption, EnumOption, BooleanOption, Option, getOptionValues, OptionValues } from "../RendererOptions";
-import { assert } from "../support/Support";
-import { Declaration } from "../DeclarationIR";
-import { RenderContext } from "../Renderer";
-import { getAccessorName } from "../attributes/AccessorNames";
-import { enumCaseValues } from "../attributes/EnumValues";
-import { minMaxValueForType, minMaxLengthForType, patternForType, MinMaxConstraint } from "../attributes/Constraints";
+import { assert, assertNever, defined, numberEnumValues, panic } from "../support/Support";
+import { TargetLanguage } from "../TargetLanguage";
+import {
+    ArrayType,
+    type ClassProperty,
+    ClassType,
+    EnumType,
+    MapType,
+    type Type,
+    type TypeKind,
+    UnionType
+} from "../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
+import { directlyReachableTypes, isNamedType, matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
 const pascalValue: [string, NamingStyle] = ["pascal-case", "pascal"];
 const underscoreValue: [string, NamingStyle] = ["underscore-case", "underscore"];
@@ -119,11 +140,11 @@ export const cPlusPlusOptions = {
 };
 
 export class CPlusPlusTargetLanguage extends TargetLanguage {
-    constructor(displayName = "C++", names: string[] = ["c++", "cpp", "cplusplus"], extension = "cpp") {
+    public constructor(displayName = "C++", names: string[] = ["c++", "cpp", "cplusplus"], extension = "cpp") {
         super(displayName, names, extension);
     }
 
-    protected getOptions(): Option<any>[] {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [
             cPlusPlusOptions.justTypes,
             cPlusPlusOptions.namespace,
@@ -141,18 +162,15 @@ export class CPlusPlusTargetLanguage extends TargetLanguage {
         ];
     }
 
-    get supportsUnionsWithBothNumberTypes(): boolean {
+    public get supportsUnionsWithBothNumberTypes(): boolean {
         return true;
     }
 
-    get supportsOptionalClassProperties(): boolean {
+    public get supportsOptionalClassProperties(): boolean {
         return true;
     }
 
-    protected makeRenderer(
-        renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
-    ): CPlusPlusRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): CPlusPlusRenderer {
         return new CPlusPlusRenderer(this, renderContext, getOptionValues(cPlusPlusOptions, untypedOptionValues));
     }
 }
@@ -287,65 +305,67 @@ const optionalFactoryAsSharedType = "std::make_shared";
  * but in vector or in variant) we can forward declare them;
  */
 export enum IncludeKind {
-    ForwardDeclare,
-    Include
+    ForwardDeclare = "ForwardDeclare",
+    Include = "Include"
 }
 
+// FIXME: make these string enums eventually
 export enum GlobalNames {
-    ClassMemberConstraints,
-    ClassMemberConstraintException,
-    ValueTooLowException,
-    ValueTooHighException,
-    ValueTooShortException,
-    ValueTooLongException,
-    InvalidPatternException,
-    CheckConstraint
+    ClassMemberConstraints = 1,
+    ClassMemberConstraintException = 2,
+    ValueTooLowException = 3,
+    ValueTooHighException = 4,
+    ValueTooShortException = 5,
+    ValueTooLongException = 6,
+    InvalidPatternException = 7,
+    CheckConstraint = 8
 }
 
+// FIXME: make these string enums eventually
 export enum MemberNames {
-    MinIntValue,
-    GetMinIntValue,
-    SetMinIntValue,
-    MaxIntValue,
-    GetMaxIntValue,
-    SetMaxIntValue,
-    MinDoubleValue,
-    GetMinDoubleValue,
-    SetMinDoubleValue,
-    MaxDoubleValue,
-    GetMaxDoubleValue,
-    SetMaxDoubleValue,
-    MinLength,
-    GetMinLength,
-    SetMinLength,
-    MaxLength,
-    GetMaxLength,
-    SetMaxLength,
-    Pattern,
-    GetPattern,
-    SetPattern
+    MinIntValue = 1,
+    GetMinIntValue = 2,
+    SetMinIntValue = 3,
+    MaxIntValue = 4,
+    GetMaxIntValue = 5,
+    SetMaxIntValue = 6,
+    MinDoubleValue = 7,
+    GetMinDoubleValue = 8,
+    SetMinDoubleValue = 9,
+    MaxDoubleValue = 10,
+    GetMaxDoubleValue = 11,
+    SetMaxDoubleValue = 12,
+    MinLength = 13,
+    GetMinLength = 14,
+    SetMinLength = 15,
+    MaxLength = 16,
+    GetMaxLength = 17,
+    SetMaxLength = 18,
+    Pattern = 19,
+    GetPattern = 20,
+    SetPattern = 21
 }
 
-type ConstraintMember = {
-    name: MemberNames;
-    getter: MemberNames;
-    setter: MemberNames;
-    cppType: string;
+interface ConstraintMember {
     cppConstType?: string;
-};
+    cppType: string;
+    getter: MemberNames;
+    name: MemberNames;
+    setter: MemberNames;
+}
 
-export type IncludeRecord = {
+export interface IncludeRecord {
     kind: IncludeKind | undefined /** How to include that */;
     typeKind: TypeKind | undefined /** What exactly to include */;
-};
+}
 
-export type TypeRecord = {
+export interface TypeRecord {
+    forceInclude: boolean;
+    level: number;
     name: Name;
     type: Type;
-    level: number;
     variant: boolean;
-    forceInclude: boolean;
-};
+}
 
 /**
  * We map each and every unique type to a include kind, e.g. how
@@ -353,57 +373,65 @@ export type TypeRecord = {
  */
 export type IncludeMap = Map<string, IncludeRecord>;
 
-export type TypeContext = {
+export interface TypeContext {
+    inJsonNamespace: boolean;
     needsForwardIndirection: boolean;
     needsOptionalIndirection: boolean;
-    inJsonNamespace: boolean;
-};
+}
 
 interface StringType {
-    getType(): string;
-    getConstType(): string;
-    getSMatch(): string;
-    getRegex(): string;
-    createStringLiteral(inner: Sourcelike): Sourcelike;
-    wrapToString(inner: Sourcelike): Sourcelike;
-    wrapEncodingChange(
+    createStringLiteral: (inner: Sourcelike) => Sourcelike;
+    emitHelperFunctions: () => void;
+    getConstType: () => string;
+    getRegex: () => string;
+    getSMatch: () => string;
+    getType: () => string;
+    wrapEncodingChange: (
         qualifier: Sourcelike[],
         fromType: Sourcelike,
         toType: Sourcelike,
         inner: Sourcelike
-    ): Sourcelike;
-    emitHelperFunctions(): void;
+    ) => Sourcelike;
+    wrapToString: (inner: Sourcelike) => Sourcelike;
 }
 
 function addQualifier(qualifier: Sourcelike, qualified: Sourcelike[]): Sourcelike[] {
     if (qualified.length === 0) {
         return [];
     }
+
     return [qualifier, qualified];
 }
 
 class WrappingCode {
-    constructor(
+    public constructor(
         private readonly start: Sourcelike[],
         private readonly end: Sourcelike[]
     ) {}
 
-    wrap(qualifier: Sourcelike, inner: Sourcelike): Sourcelike {
+    public wrap(qualifier: Sourcelike, inner: Sourcelike): Sourcelike {
         return [addQualifier(qualifier, this.start), inner, this.end];
     }
 }
 
 class BaseString {
     public _stringType: string;
+
     public _constStringType: string;
+
     public _smatch: string;
+
     public _regex: string;
+
     public _stringLiteralPrefix: string;
+
     public _toString: WrappingCode;
+
     public _encodingClass: Sourcelike;
+
     public _encodingFunction: Sourcelike;
 
-    constructor(
+    public constructor(
         stringType: string,
         constStringType: string,
         smatch: string,
@@ -455,28 +483,45 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     private readonly _enumType: string;
 
     private readonly _generatedFiles: Set<string>;
+
     private _currentFilename: string | undefined;
+
     private _allTypeNames: Set<string>;
+
     private readonly _gettersAndSettersForPropertyName = new Map<Name, [Name, Name, Name]>();
-    private readonly _namespaceNames: ReadonlyArray<string>;
+
+    private readonly _namespaceNames: readonly string[];
+
     private readonly _memberNameStyle: NameStyle;
+
     private readonly _namedTypeNameStyle: NameStyle;
+
     private readonly _generatedGlobalNames: Map<GlobalNames, string>;
+
     private readonly _generatedMemberNames: Map<MemberNames, string>;
+
     private readonly _forbiddenGlobalNames: string[];
+
     private readonly _memberNamingFunction: Namer;
+
     private readonly _stringType: StringType;
+
     /// The type to use as an optional  (std::optional or std::shared)
     private readonly _optionalType: string;
+
     private readonly _optionalFactory: string;
+
     private readonly _nulloptType: string;
+
     private readonly _variantType: string;
+
     private readonly _variantIndexMethodName: string;
 
     protected readonly typeNamingStyle: NamingStyle;
+
     protected readonly enumeratorNamingStyle: NamingStyle;
 
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof cPlusPlusOptions>
@@ -524,14 +569,14 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     // union typeguard
-    isUnion(t: Type | UnionType): t is UnionType {
+    private isUnion(t: Type | UnionType): t is UnionType {
         return t.kind === "union";
     }
 
     // Returns true if the type can be stored in
     // a stack based optional type. This requires
     // that the type does not require forward declaration.
-    isOptionalAsValuePossible(t: Type): boolean {
+    private isOptionalAsValuePossible(t: Type): boolean {
         if (this.isForwardDeclaredType(t)) return false;
 
         if (this.isUnion(t)) {
@@ -589,45 +634,46 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 return !this.isCycleBreakerType(tt);
             }
         }
+
         return !this.isCycleBreakerType(t);
     }
 
-    isImplicitCycleBreaker(t: Type): boolean {
+    public isImplicitCycleBreaker(t: Type): boolean {
         const kind = t.kind;
         return kind === "array" || kind === "map";
     }
 
     // Is likely to return std::optional or boost::optional
-    optionalTypeStack(): string {
+    private optionalTypeStack(): string {
         return this._optionalType;
     }
 
     // Is likely to return std::make_optional or boost::optional
-    optionalFactoryStack(): string {
+    private optionalFactoryStack(): string {
         return this._optionalFactory;
     }
 
     // Is likely to return std::shared_ptr
-    optionalTypeHeap(): string {
+    private optionalTypeHeap(): string {
         return optionalAsSharedType;
     }
 
     // Is likely to return std::make_shared
-    optionalFactoryHeap(): string {
+    private optionalFactoryHeap(): string {
         return optionalFactoryAsSharedType;
     }
 
     // Returns the optional type most suitable for the given type.
     // Classes that don't require forward declarations can be stored
     // in std::optional ( or boost::optional )
-    optionalType(t: Type): string {
+    private optionalType(t: Type): string {
         if (this.isOptionalAsValuePossible(t)) return this.optionalTypeStack();
         else return this.optionalTypeHeap();
     }
 
     // Returns a label that can be used to distinguish between
     // heap and stack based optional handling methods
-    optionalTypeLabel(t: Type): string {
+    private optionalTypeLabel(t: Type): string {
         if (this.isOptionalAsValuePossible(t)) return "stack";
         else return "heap";
     }
@@ -702,6 +748,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         for (const v of numberEnumValues(GlobalNames)) {
             this.addGlobalName(v);
         }
+
         for (const v of numberEnumValues(MemberNames)) {
             this.addMemberName(v);
         }
@@ -789,6 +836,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             if (this._options.boost) {
                 this.emitCommentLines(["     Boost     http://www.boost.org"]);
             }
+
             this.emitCommentLines([
                 "     json.hpp  https://github.com/nlohmann/json",
                 "",
@@ -803,6 +851,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             } else {
                 this.emitLine("//     ", basename, " data = nlohmann::json::parse(jsonString);");
             }
+
             if (this._options.wstring) {
                 this.emitLine("//");
                 this.emitLine("//  You can get std::wstring data back out using");
@@ -812,6 +861,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 });
             }
         }
+
         this.ensureBlankLine();
 
         this.emitLine("#pragma once");
@@ -824,6 +874,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.emitInclude(true, "optional");
             }
         }
+
         if (this.haveNamedUnions) {
             if (this._options.boost) {
                 this.emitInclude(true, "boost/variant.hpp");
@@ -831,6 +882,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.emitInclude(true, "variant");
             }
         }
+
         if (!this._options.justTypes) {
             if (!this._options.includeLocation) {
                 this.emitInclude(true, "nlohmann/json.hpp");
@@ -842,6 +894,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.emitInclude(false, "helper.hpp");
             }
         }
+
         this.ensureBlankLine();
     }
 
@@ -871,6 +924,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         } else {
             f();
         }
+
         this.preventBlankLine();
         if (withSemicolon) {
             this.emitLine("};");
@@ -903,11 +957,13 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         if (nonNulls.size === 1) {
             return this.cppType(defined(iterableFirst(nonNulls)), ctx, withIssues, forceNarrowString, false);
         }
+
         const typeList: Sourcelike = [];
         for (const t of nonNulls) {
             if (typeList.length !== 0) {
                 typeList.push(", ");
             }
+
             typeList.push(
                 this.cppType(
                     t,
@@ -922,6 +978,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 )
             );
         }
+
         return [this._variantType, "<", typeList, ">"];
     }
 
@@ -942,6 +999,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         if (!indirection) {
             return variant;
         }
+
         return [this.optionalType(u), "<", variant, ">"];
     }
 
@@ -975,6 +1033,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 }
             }
         }
+
         const typeSource = matchType<Sourcelike>(
             t,
             _anyType => {
@@ -1027,6 +1086,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 if (forceNarrowString) {
                     keyType = "std::string";
                 }
+
                 return [
                     "std::map<",
                     keyType,
@@ -1076,7 +1136,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
      */
     protected generatedTypes(isClassMember: boolean, theType: Type): TypeRecord[] {
         const result: TypeRecord[] = [];
-        const recur = (forceInclude: boolean, isVariant: boolean, l: number, t: Type) => {
+        const recur = (forceInclude: boolean, isVariant: boolean, l: number, t: Type): void => {
             if (t instanceof ArrayType) {
                 recur(true, isVariant, l + 1, t.items);
             } else if (t instanceof ClassType) {
@@ -1132,6 +1192,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 }
             }
         };
+
         recur(false, false, 0, theType);
         return result;
     }
@@ -1268,6 +1329,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         );
                     }
                 }
+
                 this.ensureBlankLine();
             }
         });
@@ -1522,6 +1584,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         );
                         return;
                     }
+
                     if (p.isOptional || propType instanceof UnionType) {
                         const [nullOrOptional, typeSet] = (function (): [boolean, ReadonlySet<Type>] {
                             if (propType instanceof UnionType) {
@@ -1583,6 +1646,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             return;
                         }
                     }
+
                     cppType = this.cppType(
                         propType,
                         {
@@ -1664,6 +1728,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     } else {
                         getter = [name];
                     }
+
                     const assignment: Sourcelike[] = [
                         "j[",
                         this._stringType.wrapEncodingChange(
@@ -1750,7 +1815,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
         const ourQualifier = this.ourQualifier(true) as string;
 
-        const functionForKind: [string, string][] = [
+        const functionForKind: Array<[string, string]> = [
             ["bool", "is_boolean"],
             ["integer", "is_number_integer"],
             ["double", "is_number"],
@@ -1824,6 +1889,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     });
                     onFirst = false;
                 }
+
                 this.emitLine('else throw std::runtime_error("Could not deserialise!");');
             }
         );
@@ -1873,6 +1939,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         });
                         i++;
                     }
+
                     this.emitLine('default: throw std::runtime_error("Input JSON does not conform to schema!");');
                 });
             }
@@ -1886,7 +1953,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitLine("void to_json(json & j, ", this.withConst([ourQualifier, enumName]), " & x);");
     }
 
-    private isLargeEnum(e: EnumType) {
+    private isLargeEnum(e: EnumType): boolean {
         // This is just an estimation. Someone might want to do some
         // benchmarks to find the optimum value here
         return e.cases.size > 15;
@@ -2058,7 +2125,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitLine("#define NLOHMANN_OPT_HELPER");
 
         this.emitNamespaces(["nlohmann"], () => {
-            const emitAdlStruct = (optType: string, factory: string) => {
+            const emitAdlStruct = (optType: string, factory: string): void => {
                 this.emitLine("template <typename T>");
                 this.emitBlock(["struct adl_serializer<", optType, "<T>>"], true, () => {
                     this.emitBlock(
@@ -2082,6 +2149,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     );
                 });
             };
+
             emitAdlStruct(this.optionalTypeHeap(), this.optionalFactoryHeap());
             emitAdlStruct(this.optionalTypeStack(), this.optionalFactoryStack());
         });
@@ -2211,6 +2279,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             for (const member of constraintMembers) {
                 this.emitMember([this._optionalType, "<", member.cppType, ">"], this.lookupMemberName(member.name));
             }
+
             this.ensureBlankLine();
             this.emitLine("public:");
             this.emitLine(classConstraint, "(");
@@ -2499,6 +2568,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     }
                 );
             };
+
             emitGetOptional(this.optionalTypeHeap(), "heap");
             emitGetOptional(this.optionalTypeStack(), "stack");
 
@@ -2517,6 +2587,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             } else {
                 this.emitInclude(true, "optional");
             }
+
             this.emitInclude(true, "stdexcept");
             this.emitInclude(true, "regex");
         }
@@ -2561,6 +2632,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.ensureBlankLine();
             this.emitHelperFunctions();
         }
+
         this.forEachDeclaration("interposing", decl => this.emitDeclaration(decl));
         if (this._options.justTypes) return;
         this.forEachTopLevel(
@@ -2572,11 +2644,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
     protected gatherUserNamespaceForwardDecls(): Sourcelike[] {
         return this.gatherSource(() => {
-            this.forEachObject("leading-and-interposing", (_: any, className: Name) =>
+            this.forEachObject("leading-and-interposing", (_: unknown, className: Name) =>
                 this.emitClassHeaders(className)
             );
 
-            this.forEachEnum("leading-and-interposing", (_: any, enumName: Name) => this.emitEnumHeaders(enumName));
+            this.forEachEnum("leading-and-interposing", (_: unknown, enumName: Name) => this.emitEnumHeaders(enumName));
         });
     }
 
@@ -2674,6 +2746,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.emitOptionalHelpers();
                 this.ensureBlankLine();
             }
+
             this.emitNamespaces(this._namespaceNames, () => this.emitTypes());
         }
 
@@ -2922,7 +2995,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
     }
 
-    protected isConversionRequired(t: Type) {
+    protected isConversionRequired(t: Type): boolean {
         const originalType = this.cppType(
             t,
             {
@@ -2951,7 +3024,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     public NarrowString = new (class extends BaseString implements StringType {
-        constructor() {
+        public constructor() {
             super(
                 "std::string",
                 "const std::string & ",
@@ -2979,7 +3052,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     })();
 
     public WideString = new (class extends BaseString implements StringType {
-        constructor(public superThis: CPlusPlusRenderer) {
+        public constructor(public superThis: CPlusPlusRenderer) {
             super(
                 "std::wstring",
                 "const std::wstring & ",

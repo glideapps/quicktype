@@ -1,25 +1,26 @@
-import { TypeKind, Type, ClassType, EnumType, UnionType, ClassProperty } from "../Type";
-import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
-import { Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
+import { type PrimitiveStringTypeKind, type StringTypeMapping, type TransformedStringTypeKind } from "..";
+import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
+import { ConvenienceRenderer } from "../ConvenienceRenderer";
+import { DependencyName, type Name, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import { BooleanOption, type Option, type OptionValues, StringOption, getOptionValues } from "../RendererOptions";
+import { type Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import {
-    legalizeCharacters,
-    isLetterOrUnderscore,
-    isLetterOrUnderscoreOrDigit,
-    stringEscape,
-    splitIntoWords,
+    allUpperWordStyle,
+    camelCase,
     combineWords,
     firstUpperWordStyle,
-    allUpperWordStyle,
-    camelCase
+    isLetterOrUnderscore,
+    isLetterOrUnderscoreOrDigit,
+    legalizeCharacters,
+    splitIntoWords,
+    stringEscape
 } from "../support/Strings";
 import { assert, defined } from "../support/Support";
-import { StringOption, BooleanOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
-import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
-import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { TargetLanguage } from "../TargetLanguage";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { RenderContext } from "../Renderer";
-import { StringTypeMapping, TransformedStringTypeKind, PrimitiveStringTypeKind } from "..";
+import { type ClassProperty, type ClassType, type EnumType, type Type, type TypeKind, UnionType } from "../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
+import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
 export const goOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
@@ -35,11 +36,11 @@ export const goOptions = {
 };
 
 export class GoTargetLanguage extends TargetLanguage {
-    constructor() {
+    public constructor() {
         super("Go", ["go", "golang"], "go");
     }
 
-    protected getOptions(): Option<any>[] {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [
             goOptions.justTypes,
             goOptions.justTypesAndPackage,
@@ -50,21 +51,21 @@ export class GoTargetLanguage extends TargetLanguage {
         ];
     }
 
-    get supportsUnionsWithBothNumberTypes(): boolean {
+    public get supportsUnionsWithBothNumberTypes(): boolean {
         return true;
     }
 
-    get stringTypeMapping(): StringTypeMapping {
+    public get stringTypeMapping(): StringTypeMapping {
         const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
         mapping.set("date-time", "date-time");
         return mapping;
     }
 
-    get supportsOptionalClassProperties(): boolean {
+    public get supportsOptionalClassProperties(): boolean {
         return true;
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): GoRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): GoRenderer {
         return new GoRenderer(this, renderContext, getOptionValues(goOptions, untypedOptionValues));
     }
 
@@ -96,21 +97,22 @@ const compoundTypeKinds: TypeKind[] = ["array", "class", "map", "enum"];
 
 function isValueType(t: Type): boolean {
     const kind = t.kind;
-    return primitiveValueTypeKinds.indexOf(kind) >= 0 || kind === "class" || kind === "enum" || kind === "date-time";
+    return primitiveValueTypeKinds.includes(kind) || kind === "class" || kind === "enum" || kind === "date-time";
 }
 
 function canOmitEmpty(cp: ClassProperty, omitEmptyOption: boolean): boolean {
     if (!cp.isOptional) return false;
     if (omitEmptyOption) return true;
     const t = cp.type;
-    return ["union", "null", "any"].indexOf(t.kind) < 0;
+    return !["union", "null", "any"].includes(t.kind);
 }
 
 export class GoRenderer extends ConvenienceRenderer {
     private readonly _topLevelUnmarshalNames = new Map<Name, Name>();
+
     private _currentFilename: string | undefined;
 
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof goOptions>
@@ -197,9 +199,11 @@ export class GoRenderer extends ConvenienceRenderer {
         if (t instanceof UnionType && nullableFromUnion(t) === null) {
             return ["*", this.goType(t, true)];
         }
+
         if (cp.isOptional) {
             return this.nullableGoType(t, true);
         }
+
         return this.goType(t, true);
     }
 
@@ -222,6 +226,7 @@ export class GoRenderer extends ConvenienceRenderer {
                 } else {
                     valueSource = this.goType(v, withIssues);
                 }
+
                 return ["map[string]", valueSource];
             },
             enumType => this.nameForNamedType(enumType),
@@ -356,6 +361,7 @@ export class GoRenderer extends ConvenienceRenderer {
                 this.emitLine("x.", fieldName, " = nil");
             });
         };
+
         const makeArgs = (
             primitiveArg: (fieldName: Sourcelike) => Sourcelike,
             compoundArg: (isClass: boolean, fieldName: Sourcelike) => Sourcelike
@@ -367,12 +373,14 @@ export class GoRenderer extends ConvenienceRenderer {
                     ", "
                 );
             }
+
             for (const kind of compoundTypeKinds) {
                 args.push(
                     ifMember(kind, "false, nil", (t, fieldName, _) => compoundArg(t.kind === "class", fieldName)),
                     ", "
                 );
             }
+
             args.push(isNullableArg);
             return args;
         };
@@ -392,6 +400,7 @@ export class GoRenderer extends ConvenienceRenderer {
             for (const kind of compoundTypeKinds) {
                 maybeAssignNil(kind);
             }
+
             ifMember("class", undefined, (_1, _2, goType) => {
                 this.emitLine("var c ", goType);
             });

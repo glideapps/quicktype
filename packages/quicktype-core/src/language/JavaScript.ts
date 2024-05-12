@@ -1,36 +1,36 @@
 import { arrayIntercalate } from "collection-utils";
 
+import { ConvenienceRenderer } from "../ConvenienceRenderer";
+import { type Name, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import { BooleanOption, EnumOption, type Option, type OptionValues, getOptionValues } from "../RendererOptions";
+import { type Sourcelike, modifySource } from "../Source";
+import { AcronymStyleOptions, acronymOption, acronymStyle } from "../support/Acronyms";
+import { ConvertersOptions, convertersOption } from "../support/Converters";
 import {
-    TransformedStringTypeKind,
-    PrimitiveStringTypeKind,
-    Type,
-    ClassProperty,
-    ClassType,
-    ObjectType
-} from "../Type";
-import { matchType, directlyReachableSingleNamedType } from "../TypeUtils";
-import { acronymOption, acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
-import { convertersOption, ConvertersOptions } from "../support/Converters";
-
-import {
-    utf16LegalizeCharacters,
-    utf16StringEscape,
-    splitIntoWords,
+    allLowerWordStyle,
+    camelCase,
     capitalize,
     combineWords,
     firstUpperWordStyle,
-    camelCase,
-    allLowerWordStyle
+    splitIntoWords,
+    utf16LegalizeCharacters,
+    utf16StringEscape
 } from "../support/Strings";
 import { panic } from "../support/Support";
-
-import { Sourcelike, modifySource } from "../Source";
-import { Namer, Name, funPrefixNamer } from "../Naming";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
-import { StringTypeMapping } from "../TypeBuilder";
-import { BooleanOption, Option, OptionValues, getOptionValues, EnumOption } from "../RendererOptions";
-import { RenderContext } from "../Renderer";
+import {
+    type ClassProperty,
+    type ClassType,
+    type ObjectType,
+    type PrimitiveStringTypeKind,
+    type TransformedStringTypeKind,
+    type Type
+} from "../Type";
+import { type StringTypeMapping } from "../TypeBuilder";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
+import { directlyReachableSingleNamedType, matchType } from "../TypeUtils";
+
 import { isES3IdentifierPart, isES3IdentifierStart } from "./JavaScriptUnicodeMaps";
 
 export const javaScriptOptions = {
@@ -55,22 +55,22 @@ export const javaScriptOptions = {
     )
 };
 
-export type JavaScriptTypeAnnotations = {
+export interface JavaScriptTypeAnnotations {
     any: string;
     anyArray: string;
     anyMap: string;
-    string: string;
-    stringArray: string;
     boolean: string;
     never: string;
-};
+    string: string;
+    stringArray: string;
+}
 
 export class JavaScriptTargetLanguage extends TargetLanguage {
-    constructor(displayName = "JavaScript", names: string[] = ["javascript", "js", "jsx"], extension = "js") {
+    public constructor(displayName = "JavaScript", names: string[] = ["javascript", "js", "jsx"], extension = "js") {
         super(displayName, names, extension);
     }
 
-    protected getOptions(): Option<any>[] {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [
             javaScriptOptions.runtimeTypecheck,
             javaScriptOptions.runtimeTypecheckIgnoreUnknownProperties,
@@ -80,7 +80,7 @@ export class JavaScriptTargetLanguage extends TargetLanguage {
         ];
     }
 
-    get stringTypeMapping(): StringTypeMapping {
+    public get stringTypeMapping(): StringTypeMapping {
         const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
         const dateTimeType = "date-time";
         mapping.set("date", dateTimeType);
@@ -88,18 +88,15 @@ export class JavaScriptTargetLanguage extends TargetLanguage {
         return mapping;
     }
 
-    get supportsOptionalClassProperties(): boolean {
+    public get supportsOptionalClassProperties(): boolean {
         return true;
     }
 
-    get supportsFullObjectType(): boolean {
+    public get supportsFullObjectType(): boolean {
         return true;
     }
 
-    protected makeRenderer(
-        renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
-    ): JavaScriptRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): JavaScriptRenderer {
         return new JavaScriptRenderer(this, renderContext, getOptionValues(javaScriptOptions, untypedOptionValues));
     }
 }
@@ -109,7 +106,7 @@ export const legalizeName = utf16LegalizeCharacters(isES3IdentifierPart);
 const identityNamingFunction = funPrefixNamer("properties", s => s);
 
 export class JavaScriptRenderer extends ConvenienceRenderer {
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _jsOptions: OptionValues<typeof javaScriptOptions>
@@ -125,7 +122,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
             legalizeName,
             upper ? firstUpperWordStyle : allLowerWordStyle,
             firstUpperWordStyle,
-            upper ? s => capitalize(acronyms(s)) : allLowerWordStyle,
+            upper ? (s): string => capitalize(acronyms(s)) : allLowerWordStyle,
             acronyms,
             "",
             isES3IdentifierStart
@@ -167,18 +164,19 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
         this.emitCommentLines(lines, { lineStart: " * ", beforeComment: "/**", afterComment: " */" });
     }
 
-    typeMapTypeFor(t: Type): Sourcelike {
-        if (["class", "object", "enum"].indexOf(t.kind) >= 0) {
+    private typeMapTypeFor(t: Type): Sourcelike {
+        if (["class", "object", "enum"].includes(t.kind)) {
             return ['r("', this.nameForNamedType(t), '")'];
         }
+
         return matchType<Sourcelike>(
             t,
             _anyType => '"any"',
-            _nullType => `null`,
-            _boolType => `true`,
-            _integerType => `0`,
-            _doubleType => `3.14`,
-            _stringType => `""`,
+            _nullType => "null",
+            _boolType => "true",
+            _integerType => "0",
+            _doubleType => "3.14",
+            _stringType => '""',
             arrayType => ["a(", this.typeMapTypeFor(arrayType.items), ")"],
             _classType => panic("We handled this above"),
             mapType => ["m(", this.typeMapTypeFor(mapType.values), ")"],
@@ -191,26 +189,28 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
                 if (transformedStringType.kind === "date-time") {
                     return "Date";
                 }
-                return `""`;
+
+                return '""';
             }
         );
     }
 
-    typeMapTypeForProperty(p: ClassProperty): Sourcelike {
+    private typeMapTypeForProperty(p: ClassProperty): Sourcelike {
         const typeMap = this.typeMapTypeFor(p.type);
         if (!p.isOptional) {
             return typeMap;
         }
+
         return ["u(undefined, ", typeMap, ")"];
     }
 
-    emitBlock(source: Sourcelike, end: Sourcelike, emit: () => void) {
+    protected emitBlock(source: Sourcelike, end: Sourcelike, emit: () => void): void {
         this.emitLine(source, "{");
         this.indent(emit);
         this.emitLine("}", end);
     }
 
-    emitTypeMap() {
+    private emitTypeMap(): void {
         const { any: anyAnnotation } = this.typeAnnotations;
 
         this.emitBlock(`const typeMap${anyAnnotation} = `, ";", () => {
@@ -284,7 +284,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
     }
 
     protected emitConvertModuleBody(): void {
-        const converter = (t: Type, name: Name) => {
+        const converter = (t: Type, name: Name): void => {
             const typeMap = this.typeMapTypeFor(t);
             this.emitBlock([this.deserializerFunctionLine(t, name), " "], "", () => {
                 const parsedJson = this._jsOptions.rawType === "json" ? "JSON.parse(json)" : "json";
@@ -429,8 +429,8 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
             if (!Object.prototype.hasOwnProperty.call(props, key)) {
                 result[key] = ${
                     this._jsOptions.runtimeTypecheckIgnoreUnknownProperties
-                        ? `val[key]`
-                        : `transform(val[key], additional, getProps, key, ref)`
+                        ? "val[key]"
+                        : "transform(val[key], additional, getProps, key, ref)"
                 };
             }
         });
@@ -506,6 +506,7 @@ function r(name${stringAnnotation}) {
                 `// and asserts the results${this._jsOptions.rawType === "json" ? " of JSON.parse" : ""} at runtime`
             );
         }
+
         const moduleLine = this.moduleLine;
         if (moduleLine === undefined) {
             this.emitConvertModuleBody();
@@ -552,7 +553,7 @@ function r(name${stringAnnotation}) {
         });
     }
 
-    protected emitSourceStructure() {
+    protected emitSourceStructure(): void {
         if (this.leadingComments !== undefined) {
             this.emitComments(this.leadingComments);
         } else {

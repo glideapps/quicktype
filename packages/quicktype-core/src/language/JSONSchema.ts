@@ -1,48 +1,52 @@
-import { mapFirst, iterableFirst } from "collection-utils";
+import { iterableFirst, mapFirst } from "collection-utils";
 
-import { TargetLanguage } from "../TargetLanguage";
-import { Type, UnionType, EnumType, ObjectType, transformedStringTypeTargetTypeKindsMap } from "../Type";
-import { matchTypeExhaustive } from "../TypeUtils";
+import { addDescriptionToSchema } from "../attributes/Description";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { Namer, funPrefixNamer, Name } from "../Naming";
+import { type Name, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import { type Option } from "../RendererOptions";
 import {
-    legalizeCharacters,
-    splitIntoWords,
+    allUpperWordStyle,
     combineWords,
     firstUpperWordStyle,
-    allUpperWordStyle
+    legalizeCharacters,
+    splitIntoWords
 } from "../support/Strings";
 import { defined, panic } from "../support/Support";
-import { StringTypeMapping, getNoStringTypeMapping } from "../TypeBuilder";
-import { addDescriptionToSchema } from "../attributes/Description";
-import { Option } from "../RendererOptions";
-import { RenderContext } from "../Renderer";
+import { TargetLanguage } from "../TargetLanguage";
+import {
+    type EnumType,
+    type ObjectType,
+    type Type,
+    type UnionType,
+    transformedStringTypeTargetTypeKindsMap
+} from "../Type";
+import { type StringTypeMapping, getNoStringTypeMapping } from "../TypeBuilder";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
+import { matchTypeExhaustive } from "../TypeUtils";
 
 export class JSONSchemaTargetLanguage extends TargetLanguage {
-    constructor() {
+    public constructor() {
         super("JSON Schema", ["schema", "json-schema"], "schema");
     }
 
-    protected getOptions(): Option<any>[] {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [];
     }
 
-    get stringTypeMapping(): StringTypeMapping {
+    public get stringTypeMapping(): StringTypeMapping {
         return getNoStringTypeMapping();
     }
 
-    get supportsOptionalClassProperties(): boolean {
+    public get supportsOptionalClassProperties(): boolean {
         return true;
     }
 
-    get supportsFullObjectType(): boolean {
+    public get supportsFullObjectType(): boolean {
         return true;
     }
 
-    protected makeRenderer(
-        renderContext: RenderContext,
-        _untypedOptionValues: { [name: string]: any }
-    ): JSONSchemaRenderer {
+    protected makeRenderer(renderContext: RenderContext, _untypedOptionValues: FixMeOptionsType): JSONSchemaRenderer {
         return new JSONSchemaRenderer(this, renderContext);
     }
 }
@@ -65,7 +69,10 @@ function jsonNameStyle(original: string): string {
     );
 }
 
-type Schema = { [name: string]: any };
+interface Schema {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    [name: string]: any;
+}
 
 export class JSONSchemaRenderer extends ConvenienceRenderer {
     protected makeNamedTypeNamer(): Namer {
@@ -93,9 +100,11 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
         if (first === undefined) {
             return panic("Must have at least one type for oneOf");
         }
+
         if (types.size === 1) {
             return this.schemaForType(first);
         }
+
         return { anyOf: Array.from(types).map((t: Type) => this.schemaForType(t)) };
     }
 
@@ -111,7 +120,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
     }
 
     private schemaForType(t: Type): Schema {
-        const schema = matchTypeExhaustive<{ [name: string]: any }>(
+        const schema = matchTypeExhaustive(
             t,
             _noneType => {
                 return panic("none type should have been replaced");
@@ -139,12 +148,14 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
                 if (target === undefined) {
                     return panic(`Unknown transformed string type ${transformedStringType.kind}`);
                 }
+
                 return { type: "string", format: target.jsonSchema };
             }
         );
         if (schema.$ref === undefined) {
             this.addAttributesToSchema(t, schema);
         }
+
         return schema;
     }
 
@@ -162,14 +173,17 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
                 if (prop.description === undefined) {
                     addDescriptionToSchema(prop, this.descriptionForClassProperty(o, name));
                 }
+
                 props[name] = prop;
                 if (!p.isOptional) {
                     req.push(name);
                 }
             }
+
             properties = props;
             required = req.sort();
         }
+
         const additional = o.getAdditionalProperties();
         const additionalProperties = additional !== undefined ? this.schemaForType(additional) : false;
         const schema = {
@@ -188,6 +202,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
         if (title !== undefined) {
             oneOf.title = title;
         }
+
         this.addAttributesToSchema(u, oneOf);
         return oneOf;
     }

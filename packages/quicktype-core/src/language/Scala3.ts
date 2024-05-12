@@ -1,8 +1,9 @@
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { Name, Namer, funPrefixNamer } from "../Naming";
-import { EnumOption, Option, StringOption, OptionValues, getOptionValues } from "../RendererOptions";
-import { Sourcelike, maybeAnnotated } from "../Source";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { type Name, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import { EnumOption, type Option, type OptionValues, StringOption, getOptionValues } from "../RendererOptions";
+import { type Sourcelike, maybeAnnotated } from "../Source";
 import {
     allLowerWordStyle,
     allUpperWordStyle,
@@ -16,14 +17,23 @@ import {
 } from "../support/Strings";
 import { assertNever } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
-import { ArrayType, ClassProperty, ClassType, EnumType, MapType, ObjectType, Type, UnionType } from "../Type";
+import {
+    ArrayType,
+    type ClassProperty,
+    type ClassType,
+    type EnumType,
+    MapType,
+    type ObjectType,
+    type Type,
+    type UnionType
+} from "../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
-import { RenderContext } from "../Renderer";
 
 export enum Framework {
-    None,
-    Upickle,
-    Circe
+    None = "None",
+    Upickle = "Upickle",
+    Circe = "Circe"
 }
 
 export const scala3Options = {
@@ -177,7 +187,7 @@ function scalaNameStyle(isUpper: boolean, original: string): string {
     return "\\u" + intToHex(codePoint, 4);
 } */
 
-//const _stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
+// const _stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
 
 /* function stringEscape(s: string): string {
     // "$this" is a template string in Kotlin so we have to escape $
@@ -188,7 +198,7 @@ const upperNamingFunction = funPrefixNamer("upper", s => scalaNameStyle(true, s)
 const lowerNamingFunction = funPrefixNamer("lower", s => scalaNameStyle(false, s));
 
 export class Scala3Renderer extends ConvenienceRenderer {
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         protected readonly _scalaOptions: OptionValues<typeof scala3Options>
@@ -275,7 +285,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
                 return maybeAnnotated(withIssues, anyTypeIssueAnnotation, this.anySourceType(!noOptional));
             },
             _nullType => {
-                //return "None.type"
+                // return "None.type"
                 return maybeAnnotated(withIssues, nullTypeIssueAnnotation, this.anySourceType(!noOptional));
             },
             _boolType => "Boolean",
@@ -295,10 +305,12 @@ export class Scala3Renderer extends ConvenienceRenderer {
                         return ["Option[", this.scalaType(nullable, withIssues), "]"];
                     }
                 }
+
                 return this.nameForNamedType(unionType);
             }
         );
     }
+
     protected emitUsageHeader(): void {
         // To be overridden
     }
@@ -336,7 +348,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
             return;
         }
 
-        const scalaType = (p: ClassProperty) => {
+        const scalaType = (p: ClassProperty): Sourcelike => {
             if (p.isOptional) {
                 return ["Option[", this.scalaType(p.type, true, true), "]"];
             } else {
@@ -367,6 +379,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
                 for (const emit of meta) {
                     emit();
                 }
+
                 const nameNeedsBackticks = jsonName.endsWith("_") || shouldAddBacktick(jsonName);
                 const nameWithBackticks = nameNeedsBackticks ? "`" + jsonName + "`" : jsonName;
                 this.emitLine(
@@ -389,7 +402,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
         this.emitClassDefinitionMethods();
     }
 
-    protected emitClassDefinitionMethods() {
+    protected emitClassDefinitionMethods(): void {
         this.emitLine(")");
     }
 
@@ -403,6 +416,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
                 if (count > 0) {
                     this.emitItem("\t case ");
                 }
+
                 this.forEachEnumCase(e, "none", (name, jsonName) => {
                     if (!(jsonName == "")) {
                         const backticks =
@@ -412,10 +426,12 @@ export class Scala3Renderer extends ConvenienceRenderer {
                         if (backticks) {
                             this.emitItem("`");
                         }
+
                         this.emitItemOnce([name]);
                         if (backticks) {
                             this.emitItem("`");
                         }
+
                         if (--count > 0) this.emitItem([","]);
                     } else {
                         --count;
@@ -436,7 +452,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
         this.emitDescription(this.descriptionForType(u));
 
         const [maybeNull, nonNulls] = removeNullFromUnion(u, sortBy);
-        const theTypes: Array<Sourcelike> = [];
+        const theTypes: Sourcelike[] = [];
         this.forEachUnionMember(u, nonNulls, "none", null, (_, t) => {
             theTypes.push(this.scalaType(t));
         });
@@ -473,7 +489,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
 }
 
 export class UpickleRenderer extends Scala3Renderer {
-    protected emitClassDefinitionMethods() {
+    protected emitClassDefinitionMethods(): void {
         this.emitLine(") derives ReadWriter ");
     }
 
@@ -486,9 +502,9 @@ export class UpickleRenderer extends Scala3Renderer {
 }
 
 export class CirceRenderer extends Scala3Renderer {
-    seenUnionTypes: Array<string> = [];
+    private seenUnionTypes: string[] = [];
 
-    protected circeEncoderForType(t: Type, _ = false, noOptional = false, paramName: string = ""): Sourcelike {
+    protected circeEncoderForType(t: Type, __ = false, noOptional = false, paramName: string = ""): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => ["Encoder.encodeJson(", paramName, ")"],
@@ -510,6 +526,7 @@ export class CirceRenderer extends Scala3Renderer {
                         return ["Encoder.AsObject[Option[", this.nameForNamedType(nullable), "]]"];
                     }
                 }
+
                 return ["Encoder.AsObject[", this.nameForNamedType(unionType), "]"];
             }
         );
@@ -525,7 +542,7 @@ export class CirceRenderer extends Scala3Renderer {
         return [wrapOption("Json", optional)];
     }
 
-    protected emitClassDefinitionMethods() {
+    protected emitClassDefinitionMethods(): void {
         this.emitLine(") derives Encoder.AsObject, Decoder");
     }
 
@@ -545,9 +562,9 @@ export class CirceRenderer extends Scala3Renderer {
             this.emitItem(['"', jsonName, '"']);
             //                if (backticks) {this.emitItem("`")}
             if (--count > 0) this.emitItem([" | "]);
-            //} else {
-            //--count
-            //}
+            // } else {
+            // --count
+            // }
         });
         this.ensureBlankLine();
     }
@@ -612,7 +629,7 @@ export class CirceRenderer extends Scala3Renderer {
         this.emitDescription(this.descriptionForType(u));
 
         const [maybeNull, nonNulls] = removeNullFromUnion(u, sortBy);
-        const theTypes: Array<Sourcelike> = [];
+        const theTypes: Sourcelike[] = [];
         this.forEachUnionMember(u, nonNulls, "none", null, (_, t) => {
             theTypes.push(this.scalaType(t));
         });
@@ -671,26 +688,23 @@ export class CirceRenderer extends Scala3Renderer {
 }
 
 export class Scala3TargetLanguage extends TargetLanguage {
-    constructor() {
+    public constructor() {
         super("Scala3", ["scala3"], "scala");
     }
 
-    protected getOptions(): Option<any>[] {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [scala3Options.framework, scala3Options.packageName];
     }
 
-    get supportsOptionalClassProperties(): boolean {
+    public get supportsOptionalClassProperties(): boolean {
         return true;
     }
 
-    get supportsUnionsWithBothNumberTypes(): boolean {
+    public get supportsUnionsWithBothNumberTypes(): boolean {
         return true;
     }
 
-    protected makeRenderer(
-        renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
-    ): ConvenienceRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): ConvenienceRenderer {
         const options = getOptionValues(scala3Options, untypedOptionValues);
 
         switch (options.framework) {

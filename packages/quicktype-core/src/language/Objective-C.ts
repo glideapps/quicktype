@@ -1,32 +1,42 @@
-import { iterableSome, iterableFirst, mapContains, mapFirst, mapSome } from "collection-utils";
+import { iterableFirst, iterableSome, mapContains, mapFirst, mapSome } from "collection-utils";
+import unicode from "unicode-properties";
 
-import { TargetLanguage } from "../TargetLanguage";
-import { Type, ClassType, EnumType, ArrayType, MapType, UnionType, ClassProperty } from "../Type";
-import { matchType, nullableFromUnion, isAnyOrNull } from "../TypeUtils";
-import { Name, Namer, funPrefixNamer } from "../Naming";
-import { Sourcelike, modifySource } from "../Source";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { type Name, Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
 import {
-    splitIntoWords,
-    combineWords,
-    firstUpperWordStyle,
-    allUpperWordStyle,
-    allLowerWordStyle,
-    camelCase,
-    utf16LegalizeCharacters,
-    stringEscape,
+    BooleanOption,
+    EnumOption,
+    type Option,
+    type OptionValues,
+    StringOption,
+    getOptionValues
+} from "../RendererOptions";
+import { type Sourcelike, modifySource } from "../Source";
+import {
     addPrefixIfNecessary,
+    allLowerWordStyle,
+    allUpperWordStyle,
+    camelCase,
+    combineWords,
+    fastIsUpperCase,
+    firstUpperWordStyle,
     repeatString,
-    fastIsUpperCase
+    splitIntoWords,
+    stringEscape,
+    utf16LegalizeCharacters
 } from "../support/Strings";
-import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { StringOption, BooleanOption, EnumOption, Option, getOptionValues, OptionValues } from "../RendererOptions";
 import { assert, defined } from "../support/Support";
-import { RenderContext } from "../Renderer";
-
-import * as unicode from "unicode-properties";
+import { TargetLanguage } from "../TargetLanguage";
+import { ArrayType, type ClassProperty, ClassType, EnumType, MapType, Type, UnionType } from "../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
+import { isAnyOrNull, matchType, nullableFromUnion } from "../TypeUtils";
 
 export type MemoryAttribute = "assign" | "strong" | "copy";
-export type OutputFeatures = { interface: boolean; implementation: boolean };
+export interface OutputFeatures {
+    implementation: boolean;
+    interface: boolean;
+}
 
 const DEBUG = false;
 const DEFAULT_CLASS_PREFIX = "QT";
@@ -44,11 +54,11 @@ export const objcOptions = {
 };
 
 export class ObjectiveCTargetLanguage extends TargetLanguage {
-    constructor() {
+    public constructor() {
         super("Objective-C", ["objc", "objective-c", "objectivec"], "m");
     }
 
-    protected getOptions(): Option<any>[] {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [
             objcOptions.justTypes,
             objcOptions.classPrefix,
@@ -58,10 +68,7 @@ export class ObjectiveCTargetLanguage extends TargetLanguage {
         ];
     }
 
-    protected makeRenderer(
-        renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
-    ): ObjectiveCRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): ObjectiveCRenderer {
         return new ObjectiveCRenderer(this, renderContext, getOptionValues(objcOptions, untypedOptionValues));
     }
 }
@@ -93,14 +100,14 @@ function propertyNameStyle(original: string, isBool = false): string {
     if (isBool) {
         if (words.length === 0) {
             words = [{ word: "flag", isAcronym: false }];
-        } else if (!words[0].isAcronym && booleanPrefixes.indexOf(words[0].word) < 0) {
+        } else if (!words[0].isAcronym && !booleanPrefixes.includes(words[0].word)) {
             words = [{ word: "is", isAcronym: false }, ...words];
         }
     }
 
     // Properties cannot even begin with any of the forbidden names
     // For example, properies named new* are treated differently by ARC
-    if (words.length > 0 && forbiddenPropertyNames.indexOf(words[0].word) >= 0) {
+    if (words.length > 0 && forbiddenPropertyNames.includes(words[0].word)) {
         words = [{ word: "the", isAcronym: false }, ...words];
     }
 
@@ -205,7 +212,7 @@ function isStartCharacter(utf16Unit: number): boolean {
 
 function isPartCharacter(utf16Unit: number): boolean {
     const category: string = unicode.getCategory(utf16Unit);
-    return ["Nd", "Pc", "Mn", "Mc"].indexOf(category) >= 0 || isStartCharacter(utf16Unit);
+    return ["Nd", "Pc", "Mn", "Mc"].includes(category) || isStartCharacter(utf16Unit);
 }
 
 const legalizeName = utf16LegalizeCharacters(isPartCharacter);
@@ -217,14 +224,15 @@ function splitExtension(filename: string): [string, string] {
     const i = filename.lastIndexOf(".");
     const extension = i !== -1 ? filename.split(".").pop() : "m";
     filename = i !== -1 ? filename.slice(0, i) : filename;
-    return [filename, extension === undefined ? "m" : extension];
+    return [filename, extension ?? "m"];
 }
 
 export class ObjectiveCRenderer extends ConvenienceRenderer {
     private _currentFilename: string | undefined;
+
     private readonly _classPrefix: string;
 
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof objcOptions>
@@ -246,6 +254,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         while (firstNonUpper < l && fastIsUpperCase(name.charCodeAt(firstNonUpper))) {
             firstNonUpper += 1;
         }
+
         if (firstNonUpper < 2) return DEFAULT_CLASS_PREFIX;
         return name.slice(0, firstNonUpper - 1);
     }
@@ -299,14 +308,14 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         this.emitLine("}");
     }
 
-    protected emitMethod(declaration: Sourcelike, f: () => void) {
+    protected emitMethod(declaration: Sourcelike, f: () => void): void {
         this.emitLine(declaration);
         this.emitLine("{");
         this.indent(f);
         this.emitLine("}");
     }
 
-    protected emitExtraComments(...comments: Sourcelike[]) {
+    protected emitExtraComments(...comments: Sourcelike[]): void {
         if (!this._options.extraComments) return;
         for (const comment of comments) {
             this.emitLine("// ", comment);
@@ -361,6 +370,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 if (isAnyOrNull(itemType)) {
                     return ["NSArray", " *"];
                 }
+
                 return [["NSArray<", itemTypeName, ">"], " *"];
             },
             classType => [this.nameForNamedType(classType), " *"],
@@ -420,7 +430,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             _anyType => ["NSNullify(", typed, ")"],
             _nullType => ["NSNullify(", typed, ")"],
             // Sadly, KVC
-            _boolType => [typed, ` ? @YES : @NO`],
+            _boolType => [typed, " ? @YES : @NO"],
             _integerType => typed,
             _doubleType => typed,
             _stringType => typed,
@@ -429,6 +439,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                     // TODO check each value type
                     return typed;
                 }
+
                 return ["map(", typed, ", λ(id x, ", this.toDynamicExpression(arrayType.items, "x"), "))"];
             },
             _classType => ["[", typed, " JSONDictionary]"],
@@ -437,6 +448,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                     // TODO check each value type
                     return typed;
                 }
+
                 return ["map(", typed, ", λ(id x, ", this.toDynamicExpression(mapType.values, "x"), "))"];
             },
             _enumType => ["[", typed, " value]"],
@@ -484,7 +496,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         return this.implicitlyConvertsFromJSON(t) && "bool" !== t.kind;
     }
 
-    protected emitPropertyAssignment(propertyName: Name, jsonName: string, propertyType: Type) {
+    protected emitPropertyAssignment(propertyName: Name, jsonName: string, propertyType: Type): void {
         const name = ["_", propertyName];
         matchType(
             propertyType,
@@ -575,13 +587,13 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         this.emitLine(this.topLevelToJSONPrototype(name, true), ";");
     }
 
-    private emitTryCatchAsError(inTry: () => void, inCatch: () => void) {
+    private emitTryCatchAsError(inTry: () => void, inCatch: () => void): void {
         this.emitLine("@try {");
         this.indent(inTry);
         this.emitLine("} @catch (NSException *exception) {");
         this.indent(() => {
             this.emitLine(
-                `*error = [NSError errorWithDomain:@"JSONSerialization" code:-1 userInfo:@{ @"exception": exception }];`
+                '*error = [NSError errorWithDomain:@"JSONSerialization" code:-1 userInfo:@{ @"exception": exception }];'
             );
             inCatch();
         });
@@ -644,6 +656,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             if (property.type.isNullable) {
                 attributes.push("nullable");
             }
+
             attributes.push(this.memoryAttribute(property.type, property.type.isNullable));
             return [
                 ["@property ", ["(", attributes.join(", "), ")"], " "],
@@ -663,10 +676,11 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             );
             this.emitLine("- (NSData *_Nullable)toData:(NSError *_Nullable *)error;");
         }
+
         this.emitLine("@end");
     }
 
-    protected hasIrregularProperties(t: ClassType) {
+    protected hasIrregularProperties(t: ClassType): boolean {
         let irregular = false;
         this.forEachClassProperty(t, "none", (name, jsonName) => {
             irregular = irregular || stringEscape(jsonName) !== this.sourcelikeToString(name);
@@ -674,7 +688,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         return irregular;
     }
 
-    protected hasUnsafeProperties(t: ClassType) {
+    protected hasUnsafeProperties(t: ClassType): boolean {
         let unsafe = false;
         this.forEachClassProperty(t, "none", (_, __, property) => {
             unsafe = unsafe || !this.implicitlyConvertsToJSON(property.type);
@@ -696,7 +710,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 this.emitLine("return properties = properties ? properties : @{");
                 this.indent(() => {
                     this.forEachClassProperty(t, "none", (name, jsonName) =>
-                        this.emitLine(`@"${stringEscape(jsonName)}": @"`, name, `",`)
+                        this.emitLine(`@"${stringEscape(jsonName)}": @"`, name, '",')
                     );
                 });
                 this.emitLine("};");
@@ -770,10 +784,10 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 if (hasIrregularProperties) {
                     this.emitExtraComments("Rewrite property names that differ in JSON");
                     this.emitBlock(["for (id jsonName in ", className, ".properties)"], () => {
-                        this.emitLine(`id propertyName = `, className, `.properties[jsonName];`);
-                        this.emitBlock(`if (![jsonName isEqualToString:propertyName])`, () => {
-                            this.emitLine(`dict[jsonName] = dict[propertyName];`);
-                            this.emitLine(`[dict removeObjectForKey:propertyName];`);
+                        this.emitLine("id propertyName = ", className, ".properties[jsonName];");
+                        this.emitBlock("if (![jsonName isEqualToString:propertyName])", () => {
+                            this.emitLine("dict[jsonName] = dict[propertyName];");
+                            this.emitLine("[dict removeObjectForKey:propertyName];");
                         });
                     });
                 }
@@ -800,12 +814,12 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
 
             if (isTopLevel) {
                 this.ensureBlankLine();
-                this.emitMethod(`- (NSData *_Nullable)toData:(NSError *_Nullable *)error`, () => {
+                this.emitMethod("- (NSData *_Nullable)toData:(NSError *_Nullable *)error", () => {
                     this.emitLine("return ", className, "ToData(self, error);");
                 });
                 this.ensureBlankLine();
                 this.emitMethod(
-                    `- (NSString *_Nullable)toJSON:(NSStringEncoding)encoding error:(NSError *_Nullable *)error`,
+                    "- (NSString *_Nullable)toJSON:(NSStringEncoding)encoding error:(NSError *_Nullable *)error",
                     () => {
                         this.emitLine("return ", className, "ToJSON(self, encoding, error);");
                     }
@@ -816,7 +830,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         this.emitLine("@end");
     }
 
-    protected emitMark(label: string) {
+    protected emitMark(label: string): void {
         this.ensureBlankLine();
         this.emitLine(`#pragma mark - ${label}`);
         this.ensureBlankLine();
@@ -832,7 +846,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         return camelCaseName;
     }
 
-    private emitPseudoEnumInterface(enumType: EnumType, enumName: Name) {
+    private emitPseudoEnumInterface(enumType: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(enumType));
 
         this.emitLine("@interface ", enumName, " : NSObject");
@@ -844,7 +858,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         this.emitLine("@end");
     }
 
-    private emitPseudoEnumImplementation(enumType: EnumType, enumName: Name) {
+    private emitPseudoEnumImplementation(enumType: EnumType, enumName: Name): void {
         this.emitLine("@implementation ", enumName);
 
         const instances = [enumName, ".", staticEnumValuesIdentifier];
@@ -906,6 +920,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             const firstTopLevel = defined(mapFirst(this.topLevels));
             proposedFilename = this.sourcelikeToString(this.nameForNamedType(firstTopLevel)) + ".m";
         }
+
         const [filename, extension] = splitExtension(proposedFilename);
 
         if (this._options.features.interface) {
@@ -933,7 +948,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             }
 
             this.ensureBlankLine();
-            this.emitLine(`#import <Foundation/Foundation.h>`);
+            this.emitLine("#import <Foundation/Foundation.h>");
             this.ensureBlankLine();
 
             // Emit @class declarations for top-level array+maps and classes
@@ -996,7 +1011,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             if (!this._options.justTypes) {
                 this.ensureBlankLine();
                 this.emitExtraComments("Shorthand for simple blocks");
-                this.emitLine(`#define λ(decl, expr) (^(decl) { return (expr); })`);
+                this.emitLine("#define λ(decl, expr) (^(decl) { return (expr); })");
                 this.ensureBlankLine();
                 this.emitExtraComments("nil → NSNull conversion for JSON dictionaries");
                 this.emitBlock("static id NSNullify(id _Nullable x)", () =>
@@ -1028,6 +1043,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                         );
                         this.ensureBlankLine();
                     }
+
                     this.forEachEnum("leading-and-interposing", (t, n) => this.emitPseudoEnumImplementation(t, n));
                 }
 
@@ -1054,6 +1070,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             this.finishFile();
         }
     }
+
     private get needsMap(): boolean {
         // TODO this isn't complete (needs union support, for example)
         function needsMap(t: Type): boolean {
@@ -1063,10 +1080,11 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 (t instanceof ClassType && mapSome(t.getProperties(), p => needsMap(p.type)))
             );
         }
+
         return iterableSome(this.typeGraph.allTypesUnordered(), needsMap);
     }
 
-    protected emitMapFunction() {
+    protected emitMapFunction(): void {
         if (this.needsMap) {
             this.emitMultiline(`static id map(id collection, id (^f)(id value)) {
     id result = nil;

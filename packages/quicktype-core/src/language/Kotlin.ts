@@ -1,10 +1,12 @@
-import { iterableSome, arrayIntercalate } from "collection-utils";
+import { arrayIntercalate, iterableSome } from "collection-utils";
 
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { Name, Namer, funPrefixNamer } from "../Naming";
-import { EnumOption, Option, StringOption, OptionValues, getOptionValues } from "../RendererOptions";
-import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { type Name, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import { EnumOption, type Option, type OptionValues, StringOption, getOptionValues } from "../RendererOptions";
+import { type Sourcelike, maybeAnnotated, modifySource } from "../Source";
+import { AcronymStyleOptions, acronymOption, acronymStyle } from "../support/Acronyms";
 import {
     allLowerWordStyle,
     allUpperWordStyle,
@@ -25,24 +27,23 @@ import { assertNever, mustNotHappen } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
 import {
     ArrayType,
-    ClassProperty,
+    type ClassProperty,
     ClassType,
-    EnumType,
+    type EnumType,
     MapType,
-    ObjectType,
-    PrimitiveType,
-    Type,
+    type ObjectType,
+    type PrimitiveType,
+    type Type,
     UnionType
 } from "../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
-import { RenderContext } from "../Renderer";
-import { acronymOption, acronymStyle, AcronymStyleOptions } from "../support/Acronyms";
 
 export enum Framework {
-    None,
-    Jackson,
-    Klaxon,
-    KotlinX
+    None = "None",
+    Jackson = "Jackson",
+    Klaxon = "Klaxon",
+    KotlinX = "KotlinX"
 }
 
 export const kotlinOptions = {
@@ -62,26 +63,23 @@ export const kotlinOptions = {
 };
 
 export class KotlinTargetLanguage extends TargetLanguage {
-    constructor() {
+    public constructor() {
         super("Kotlin", ["kotlin"], "kt");
     }
 
-    protected getOptions(): Option<any>[] {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [kotlinOptions.framework, kotlinOptions.acronymStyle, kotlinOptions.packageName];
     }
 
-    get supportsOptionalClassProperties(): boolean {
+    public get supportsOptionalClassProperties(): boolean {
         return true;
     }
 
-    get supportsUnionsWithBothNumberTypes(): boolean {
+    public get supportsUnionsWithBothNumberTypes(): boolean {
         return true;
     }
 
-    protected makeRenderer(
-        renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
-    ): ConvenienceRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): ConvenienceRenderer {
         const options = getOptionValues(kotlinOptions, untypedOptionValues);
 
         switch (options.framework) {
@@ -183,6 +181,7 @@ function unicodeEscape(codePoint: number): string {
     return "\\u" + intToHex(codePoint, 4);
 }
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const _stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
 
 function stringEscape(s: string): string {
@@ -191,7 +190,7 @@ function stringEscape(s: string): string {
 }
 
 export class KotlinRenderer extends ConvenienceRenderer {
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         protected readonly _kotlinOptions: OptionValues<typeof kotlinOptions>
@@ -329,7 +328,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
             return;
         }
 
-        const kotlinType = (p: ClassProperty) => {
+        const kotlinType = (p: ClassProperty): Sourcelike => {
             if (p.isOptional) {
                 return [this.kotlinType(p.type, true, true), "?"];
             } else {
@@ -377,15 +376,15 @@ export class KotlinRenderer extends ConvenienceRenderer {
         this.emitClassDefinitionMethods(c, className);
     }
 
-    protected emitClassDefinitionMethods(_c: ClassType, _className: Name) {
+    protected emitClassDefinitionMethods(_c: ClassType, _className: Name): void {
         this.emitLine(")");
     }
 
-    protected emitClassAnnotations(_c: Type, _className: Name) {
+    protected emitClassAnnotations(_c: Type, _className: Name): void {
         // to be overridden
     }
 
-    protected renameAttribute(_name: Name, _jsonName: string, _required: boolean, _meta: Array<() => void>) {
+    protected renameAttribute(_name: Name, _jsonName: string, _required: boolean, _meta: Array<() => void>): void {
         // to be overridden
     }
 
@@ -426,6 +425,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
                         [" : ", unionName, "()"]
                     ]);
                 }
+
                 this.emitTable(table);
             }
 
@@ -438,7 +438,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
         _nonNulls: ReadonlySet<Type>,
         _maybeNull: PrimitiveType | null,
         _unionName: Name
-    ) {
+    ): void {
         // to be overridden
     }
 
@@ -466,7 +466,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
 }
 
 export class KotlinKlaxonRenderer extends KotlinRenderer {
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         _kotlinOptions: OptionValues<typeof kotlinOptions>
@@ -541,6 +541,7 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
         if (hasEmptyObjects) {
             converters.push([[".convert(JsonObject::class,"], [" { it.obj!! },"], [" { it.toJsonString() })"]]);
         }
+
         this.forEachEnum("none", (_, name) => {
             converters.push([
                 [".convert(", name, "::class,"],
@@ -622,9 +623,11 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
         if (namesDiffer) {
             properties.push(['name = "', escapedName, '"']);
         }
+
         if (ignore) {
             properties.push("ignored = true");
         }
+
         return properties.length === 0 ? undefined : ["@Json(", arrayIntercalate(", ", properties), ")"];
     }
 
@@ -634,7 +637,7 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
         this.emitLine("typealias ", className, " = JsonObject");
     }
 
-    protected emitClassDefinitionMethods(c: ClassType, className: Name) {
+    protected emitClassDefinitionMethods(c: ClassType, className: Name): void {
         const isTopLevel = iterableSome(this.topLevels, ([_, top]) => top === c);
         if (isTopLevel) {
             this.emitBlock(")", () => {
@@ -649,7 +652,7 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
         }
     }
 
-    protected renameAttribute(name: Name, jsonName: string, _required: boolean, meta: Array<() => void>) {
+    protected renameAttribute(name: Name, jsonName: string, _required: boolean, meta: Array<() => void>): void {
         const rename = this.klaxonRenameAttribute(name, jsonName);
         if (rename !== undefined) {
             meta.push(() => this.emitLine(rename));
@@ -686,7 +689,7 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
         this.indent(() => {
             this.emitLine("this.converter(object: Converter {");
             this.indent(() => {
-                this.emitLine(`@Suppress("UNCHECKED_CAST")`);
+                this.emitLine('@Suppress("UNCHECKED_CAST")');
                 this.emitTable([
                     ["override fun toJson(value: Any)", " = toJson(value as T)"],
                     ["override fun fromJson(jv: JsonValue)", " = fromJson(jv) as Any"],
@@ -705,7 +708,7 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
         nonNulls: ReadonlySet<Type>,
         maybeNull: PrimitiveType | null,
         unionName: Name
-    ) {
+    ): void {
         this.ensureBlankLine();
         this.emitLine("public fun toJson(): String = klaxon.toJsonString(when (this) {");
         this.indent(() => {
@@ -717,6 +720,7 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
                 const name = this.nameForUnionMember(u, maybeNull);
                 toJsonTable.push([["is ", name], [' -> "null"']]);
             }
+
             this.emitTable(toJsonTable);
         });
         this.emitLine("})");
@@ -735,6 +739,7 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
                     const name = this.nameForUnionMember(u, maybeNull);
                     table.push([[this.unionMemberJsonValueGuard(maybeNull, "jv.inside")], [" -> ", name, "()"]]);
                 }
+
                 table.push([["else"], [" -> throw IllegalArgumentException()"]]);
                 this.emitTable(table);
             });
@@ -744,7 +749,7 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
 }
 
 export class KotlinJacksonRenderer extends KotlinRenderer {
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         _kotlinOptions: OptionValues<typeof kotlinOptions>
@@ -889,6 +894,7 @@ import com.fasterxml.jackson.module.kotlin.*`);
         if (namesDiffer || isPrefixBool) {
             propertyOpts.push('"' + escapedName + '"');
         }
+
         if (required) {
             propertyOpts.push("required=true");
         }
@@ -902,6 +908,7 @@ import com.fasterxml.jackson.module.kotlin.*`);
             properties.push("@get:JsonIgnore");
             properties.push("@field:JsonIgnore");
         }
+
         return properties.length === 0 ? undefined : properties;
     }
 
@@ -911,7 +918,7 @@ import com.fasterxml.jackson.module.kotlin.*`);
         this.emitLine("typealias ", className, " = JsonNode");
     }
 
-    protected emitClassDefinitionMethods(c: ClassType, className: Name) {
+    protected emitClassDefinitionMethods(c: ClassType, className: Name): void {
         const isTopLevel = iterableSome(this.topLevels, ([_, top]) => top === c);
         if (isTopLevel) {
             this.emitBlock(")", () => {
@@ -926,7 +933,7 @@ import com.fasterxml.jackson.module.kotlin.*`);
         }
     }
 
-    protected renameAttribute(name: Name, jsonName: string, required: boolean, meta: Array<() => void>) {
+    protected renameAttribute(name: Name, jsonName: string, required: boolean, meta: Array<() => void>): void {
         const rename = this.jacksonRenameAttribute(name, jsonName, required);
         if (rename !== undefined) {
             meta.push(() => this.emitLine(rename));
@@ -974,7 +981,7 @@ private fun <T> ObjectMapper.convert(k: kotlin.reflect.KClass<*>, fromJson: (Jso
         nonNulls: ReadonlySet<Type>,
         maybeNull: PrimitiveType | null,
         unionName: Name
-    ) {
+    ): void {
         this.ensureBlankLine();
         this.emitLine("fun toJson(): String = mapper.writeValueAsString(when (this) {");
         this.indent(() => {
@@ -986,6 +993,7 @@ private fun <T> ObjectMapper.convert(k: kotlin.reflect.KClass<*>, fromJson: (Jso
                 const name = this.nameForUnionMember(u, maybeNull);
                 toJsonTable.push([["is ", name], [' -> "null"']]);
             }
+
             this.emitTable(toJsonTable);
         });
         this.emitLine("})");
@@ -1001,6 +1009,7 @@ private fun <T> ObjectMapper.convert(k: kotlin.reflect.KClass<*>, fromJson: (Jso
                     const name = this.nameForUnionMember(u, maybeNull);
                     table.push([[this.unionMemberJsonValueGuard(maybeNull, "jn")], [" -> ", name, "()"]]);
                 }
+
                 table.push([["else"], [" -> throw IllegalArgumentException()"]]);
                 this.emitTable(table);
             });
@@ -1014,7 +1023,7 @@ private fun <T> ObjectMapper.convert(k: kotlin.reflect.KClass<*>, fromJson: (Jso
  * TODO: Union, Any, Top Level Array, Top Level Map
  */
 export class KotlinXRenderer extends KotlinRenderer {
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         _kotlinOptions: OptionValues<typeof kotlinOptions>
@@ -1032,6 +1041,7 @@ export class KotlinXRenderer extends KotlinRenderer {
         if (name === "JsonObject" || name === "JsonElement") {
             return "JsonArray";
         }
+
         return super.arrayType(arrayType, withIssues, noOptional);
     }
 
@@ -1041,6 +1051,7 @@ export class KotlinXRenderer extends KotlinRenderer {
         if (name === "JsonObject" || name === "JsonElement") {
             return "JsonObject";
         }
+
         return super.mapType(mapType, withIssues, noOptional);
     }
 
@@ -1082,11 +1093,11 @@ export class KotlinXRenderer extends KotlinRenderer {
         this.emitLine("import kotlinx.serialization.encoding.*");
     }
 
-    protected emitClassAnnotations(_c: Type, _className: Name) {
+    protected emitClassAnnotations(_c: Type, _className: Name): void {
         this.emitLine("@Serializable");
     }
 
-    protected renameAttribute(name: Name, jsonName: string, _required: boolean, meta: Array<() => void>) {
+    protected renameAttribute(name: Name, jsonName: string, _required: boolean, meta: Array<() => void>): void {
         const rename = this._rename(name, jsonName);
         if (rename !== undefined) {
             meta.push(() => this.emitLine(rename));
@@ -1099,6 +1110,7 @@ export class KotlinXRenderer extends KotlinRenderer {
         if (namesDiffer) {
             return ['@SerialName("', escapedName, '")'];
         }
+
         return undefined;
     }
 

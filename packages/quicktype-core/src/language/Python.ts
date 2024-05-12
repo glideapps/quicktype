@@ -1,54 +1,56 @@
-import { TargetLanguage } from "../TargetLanguage";
-import { StringTypeMapping } from "../TypeBuilder";
-import {
-    TransformedStringTypeKind,
-    PrimitiveStringTypeKind,
-    Type,
-    EnumType,
-    ClassType,
-    UnionType,
-    ClassProperty
-} from "../Type";
-import { RenderContext } from "../Renderer";
-import { Option, getOptionValues, OptionValues, EnumOption, BooleanOption } from "../RendererOptions";
-import { ConvenienceRenderer, ForbiddenWordsInfo, topLevelNameOrder } from "../ConvenienceRenderer";
-import { Namer, funPrefixNamer, Name, DependencyName } from "../Naming";
-import {
-    splitIntoWords,
-    combineWords,
-    firstUpperWordStyle,
-    utf16LegalizeCharacters,
-    allUpperWordStyle,
-    allLowerWordStyle,
-    stringEscape,
-    originalWord
-} from "../support/Strings";
-import { assertNever, panic, defined } from "../support/Support";
-import { Sourcelike, MultiWord, multiWord, singleWord, parenIfNeeded, modifySource } from "../Source";
-import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
-import {
-    followTargetType,
-    transformationForType,
-    Transformer,
-    DecodingChoiceTransformer,
-    ChoiceTransformer,
-    DecodingTransformer,
-    UnionInstantiationTransformer,
-    ParseStringTransformer,
-    UnionMemberMatchTransformer,
-    StringifyTransformer,
-    EncodingTransformer
-} from "../Transformers";
 import {
     arrayIntercalate,
-    setUnionInto,
-    mapUpdateInto,
+    iterableFirst,
     iterableSome,
     mapSortBy,
-    iterableFirst
+    mapUpdateInto,
+    setUnionInto
 } from "collection-utils";
+import unicode from "unicode-properties";
 
-import * as unicode from "unicode-properties";
+import { ConvenienceRenderer, type ForbiddenWordsInfo, topLevelNameOrder } from "../ConvenienceRenderer";
+import { DependencyName, type Name, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import { BooleanOption, EnumOption, type Option, type OptionValues, getOptionValues } from "../RendererOptions";
+import { type MultiWord, type Sourcelike, modifySource, multiWord, parenIfNeeded, singleWord } from "../Source";
+import {
+    type WordStyle,
+    allLowerWordStyle,
+    allUpperWordStyle,
+    combineWords,
+    firstUpperWordStyle,
+    originalWord,
+    splitIntoWords,
+    stringEscape,
+    utf16LegalizeCharacters
+} from "../support/Strings";
+import { assertNever, defined, panic } from "../support/Support";
+import { TargetLanguage } from "../TargetLanguage";
+import {
+    ChoiceTransformer,
+    DecodingChoiceTransformer,
+    DecodingTransformer,
+    EncodingTransformer,
+    ParseStringTransformer,
+    StringifyTransformer,
+    type Transformer,
+    UnionInstantiationTransformer,
+    UnionMemberMatchTransformer,
+    followTargetType,
+    transformationForType
+} from "../Transformers";
+import {
+    type ClassProperty,
+    ClassType,
+    EnumType,
+    type PrimitiveStringTypeKind,
+    type TransformedStringTypeKind,
+    type Type,
+    UnionType
+} from "../Type";
+import { type StringTypeMapping } from "../TypeBuilder";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
+import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
 const forbiddenTypeNames = [
     "Any",
@@ -109,10 +111,10 @@ const forbiddenPropertyNames = [
     "yield"
 ];
 
-export type PythonFeatures = {
-    typeHints: boolean;
+export interface PythonFeatures {
     dataClasses: boolean;
-};
+    typeHints: boolean;
+}
 
 export const pythonOptions = {
     features: new EnumOption<PythonFeatures>(
@@ -130,11 +132,11 @@ export const pythonOptions = {
 };
 
 export class PythonTargetLanguage extends TargetLanguage {
-    protected getOptions(): Option<any>[] {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [pythonOptions.features, pythonOptions.justTypes, pythonOptions.nicePropertyNames];
     }
 
-    get stringTypeMapping(): StringTypeMapping {
+    public get stringTypeMapping(): StringTypeMapping {
         const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
         const dateTimeType = "date-time";
         mapping.set("date", dateTimeType);
@@ -146,22 +148,23 @@ export class PythonTargetLanguage extends TargetLanguage {
         return mapping;
     }
 
-    get supportsUnionsWithBothNumberTypes(): boolean {
+    public get supportsUnionsWithBothNumberTypes(): boolean {
         return true;
     }
 
-    get supportsOptionalClassProperties(): boolean {
+    public get supportsOptionalClassProperties(): boolean {
         return false;
     }
 
-    needsTransformerForType(t: Type): boolean {
+    public needsTransformerForType(t: Type): boolean {
         if (t instanceof UnionType) {
             return iterableSome(t.members, m => this.needsTransformerForType(m));
         }
+
         return t.kind === "integer-string" || t.kind === "bool-string";
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): PythonRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): PythonRenderer {
         const options = getOptionValues(pythonOptions, untypedOptionValues);
         if (options.justTypes) {
             return new PythonRenderer(this, renderContext, options);
@@ -174,14 +177,14 @@ export class PythonTargetLanguage extends TargetLanguage {
 function isNormalizedStartCharacter3(utf16Unit: number): boolean {
     // FIXME: add Other_ID_Start - https://docs.python.org/3/reference/lexical_analysis.html#identifiers
     const category: string = unicode.getCategory(utf16Unit);
-    return ["Lu", "Ll", "Lt", "Lm", "Lo", "Nl"].indexOf(category) >= 0;
+    return ["Lu", "Ll", "Lt", "Lm", "Lo", "Nl"].includes(category);
 }
 
 function isNormalizedPartCharacter3(utf16Unit: number): boolean {
     // FIXME: add Other_ID_Continue - https://docs.python.org/3/reference/lexical_analysis.html#identifiers
     if (isNormalizedStartCharacter3(utf16Unit)) return true;
     const category: string = unicode.getCategory(utf16Unit);
-    return ["Mn", "Mc", "Nd", "Pc"].indexOf(category) >= 0;
+    return ["Mn", "Mc", "Nd", "Pc"].includes(category);
 }
 
 function isStartCharacter3(utf16Unit: number): boolean {
@@ -191,6 +194,7 @@ function isStartCharacter3(utf16Unit: number): boolean {
     for (let i = 1; i < l; i++) {
         if (!isNormalizedPartCharacter3(s.charCodeAt(i))) return false;
     }
+
     return true;
 }
 
@@ -200,6 +204,7 @@ function isPartCharacter3(utf16Unit: number): boolean {
     for (let i = 0; i < l; i++) {
         if (!isNormalizedPartCharacter3(s.charCodeAt(i))) return false;
     }
+
     return true;
 }
 
@@ -219,10 +224,11 @@ function classNameStyle(original: string): string {
     );
 }
 
-function getWordStyle(uppercase: boolean, forceSnakeNameStyle: boolean) {
+function getWordStyle(uppercase: boolean, forceSnakeNameStyle: boolean): WordStyle {
     if (!forceSnakeNameStyle) {
         return originalWord;
     }
+
     return uppercase ? allUpperWordStyle : allLowerWordStyle;
 }
 
@@ -235,9 +241,10 @@ function snakeNameStyle(original: string, uppercase: boolean, forceSnakeNameStyl
 
 export class PythonRenderer extends ConvenienceRenderer {
     private readonly imports: Map<string, Set<string>> = new Map();
+
     private readonly declaredTypes: Set<Type> = new Set();
 
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         protected readonly pyOptions: OptionValues<typeof pythonOptions>
@@ -319,6 +326,7 @@ export class PythonRenderer extends ConvenienceRenderer {
             // potential others down the road.
             mapUpdateInto(this.imports, module, s => (s ? setUnionInto(s, [name]) : new Set([name])));
         }
+
         return name;
     }
 
@@ -380,9 +388,11 @@ export class PythonRenderer extends ConvenienceRenderer {
                 if (transformedStringType.kind === "date-time") {
                     return this.withImport("datetime", "datetime");
                 }
+
                 if (transformedStringType.kind === "uuid") {
                     return this.withImport("uuid", "UUID");
                 }
+
                 return panic(`Transformed type ${transformedStringType.kind} not supported`);
             }
         );
@@ -392,9 +402,11 @@ export class PythonRenderer extends ConvenienceRenderer {
         if (t instanceof ClassType) {
             return ["class ", this.nameForNamedType(t), ":"];
         }
+
         if (t instanceof EnumType) {
             return ["class ", this.nameForNamedType(t), "(", this.withImport("enum", "Enum"), "):"];
         }
+
         return panic(`Can't declare type ${t.kind}`);
     }
 
@@ -431,6 +443,7 @@ export class PythonRenderer extends ConvenienceRenderer {
         if (this.pyOptions.features.typeHints) {
             return sl;
         }
+
         return [];
     }
 
@@ -459,6 +472,7 @@ export class PythonRenderer extends ConvenienceRenderer {
         if (this.pyOptions.features.dataClasses) {
             this.emitLine("@", this.withImport("dataclasses", "dataclass"));
         }
+
         this.declareType(t, () => {
             if (this.pyOptions.features.typeHints) {
                 if (t.getProperties().size === 0) {
@@ -469,8 +483,10 @@ export class PythonRenderer extends ConvenienceRenderer {
                         this.emitDescription(this.descriptionForClassProperty(t, jsonName));
                     });
                 }
+
                 this.ensureBlankLine();
             }
+
             this.emitClassMembers(t);
         });
     }
@@ -515,6 +531,7 @@ export class PythonRenderer extends ConvenienceRenderer {
         if (this.leadingComments !== undefined) {
             this.emitComments(this.leadingComments);
         }
+
         this.ensureBlankLine();
         this.emitImports();
         this.ensureBlankLine(2);
@@ -542,10 +559,10 @@ export type ConverterFunction =
     | "from-stringified-bool"
     | "is-type";
 
-type TopLevelConverterNames = {
+interface TopLevelConverterNames {
     fromDict: Name;
     toDict: Name;
-};
+}
 
 // A value or a lambda.  All four combinations are valid:
 //
@@ -553,10 +570,10 @@ type TopLevelConverterNames = {
 // * `lambda` only: a lambda given by `lambda`
 // * `value` only: a value given by `value`
 // * neither: the identity function, i.e. `lambda x: x`
-export type ValueOrLambda = {
-    value: Sourcelike | undefined;
+export interface ValueOrLambda {
     lambda?: MultiWord;
-};
+    value: Sourcelike | undefined;
+}
 
 // Return the result of composing `input` and `f`.  `input` can be a
 // value or a lambda, but `f` must be a lambda or a TypeScript function
@@ -565,6 +582,8 @@ export type ValueOrLambda = {
 // * If `input` is a value, the result is `f(input)`.
 // * If `input` is a lambda, the result is `lambda x: f(input(x))`
 function compose(input: ValueOrLambda, f: (arg: Sourcelike) => Sourcelike): ValueOrLambda;
+// FIXME: refactor this
+// eslint-disable-next-line @typescript-eslint/unified-signatures
 function compose(input: ValueOrLambda, f: ValueOrLambda): ValueOrLambda;
 function compose(input: ValueOrLambda, f: ValueOrLambda | ((arg: Sourcelike) => Sourcelike)): ValueOrLambda {
     if (typeof f === "function") {
@@ -572,10 +591,12 @@ function compose(input: ValueOrLambda, f: ValueOrLambda | ((arg: Sourcelike) => 
             // `input` is a value, so just apply `f` to its source form.
             return { value: f(makeValue(input)) };
         }
+
         if (input.lambda !== undefined) {
             // `input` is a lambda, so build `lambda x: f(input(x))`.
             return { lambda: multiWord(" ", "lambda x:", f([parenIfNeeded(input.lambda), "(x)"])), value: undefined };
         }
+
         // `input` is the identify function, so the composition is `lambda x: f(x)`.
         return { lambda: multiWord(" ", "lambda x:", f("x")), value: undefined };
     }
@@ -583,6 +604,7 @@ function compose(input: ValueOrLambda, f: ValueOrLambda | ((arg: Sourcelike) => 
     if (f.value !== undefined) {
         return panic("Cannot compose into a value");
     }
+
     if (f.lambda === undefined) {
         // `f` is the identity function, so the result is just `input`.
         return input;
@@ -594,6 +616,7 @@ function compose(input: ValueOrLambda, f: ValueOrLambda | ((arg: Sourcelike) => 
             // `input` is the identity function, so the result is just `f`.
             return f;
         }
+
         // `input` is a lambda, so the result is `lambda x: f(input(x))`.
         return {
             lambda: multiWord("", "lambda x: ", parenIfNeeded(f.lambda), "(", parenIfNeeded(input.lambda), "(x))"),
@@ -614,10 +637,12 @@ function makeLambda(vol: ValueOrLambda): MultiWord {
         if (vol.value === undefined) {
             return vol.lambda;
         }
+
         return multiWord("", "lambda x: ", parenIfNeeded(vol.lambda), "(", vol.value, ")");
     } else if (vol.value !== undefined) {
         return multiWord(" ", "lambda x:", vol.value);
     }
+
     return multiWord(" ", "lambda x:", "x");
 }
 
@@ -627,26 +652,34 @@ function makeValue(vol: ValueOrLambda): Sourcelike {
     if (vol.value === undefined) {
         return panic("Cannot make value from lambda without value");
     }
+
     if (vol.lambda !== undefined) {
         return [parenIfNeeded(vol.lambda), "(", vol.value, ")"];
     }
+
     return vol.value;
 }
 
 export class JSONPythonRenderer extends PythonRenderer {
     private readonly _deserializerFunctions = new Set<ConverterFunction>();
+
     private readonly _converterNamer = funPrefixNamer("converter", s =>
         snakeNameStyle(s, false, this.pyOptions.nicePropertyNames)
     );
+
     private readonly _topLevelConverterNames = new Map<Name, TopLevelConverterNames>();
+
     private _haveTypeVar = false;
+
     private _haveEnumTypeVar = false;
+
     private _haveDateutil = false;
 
     protected emitTypeVar(tvar: string, constraints: Sourcelike): void {
         if (!this.pyOptions.features.typeHints) {
             return;
         }
+
         this.emitLine(tvar, " = ", this.withTyping("TypeVar"), "(", this.string(tvar), constraints, ")");
     }
 
@@ -674,6 +707,7 @@ export class JSONPythonRenderer extends PythonRenderer {
         if (!this.pyOptions.features.typeHints) {
             return v;
         }
+
         return [this.withTyping("cast"), "(", type, ", ", v, ")"];
     }
 
@@ -861,34 +895,76 @@ export class JSONPythonRenderer extends PythonRenderer {
 
     protected emitConverter(cf: ConverterFunction): void {
         switch (cf) {
-            case "none":
-                return this.emitNoneConverter();
-            case "bool":
-                return this.emitBoolConverter();
-            case "int":
-                return this.emitIntConverter();
-            case "from-float":
-                return this.emitFromFloatConverter();
-            case "to-float":
-                return this.emitToFloatConverter();
-            case "str":
-                return this.emitStrConverter();
-            case "to-enum":
-                return this.emitToEnumConverter();
-            case "list":
-                return this.emitListConverter();
-            case "to-class":
-                return this.emitToClassConverter();
-            case "dict":
-                return this.emitDictConverter();
-            case "union":
-                return this.emitUnionConverter();
-            case "from-datetime":
-                return this.emitFromDatetimeConverter();
-            case "from-stringified-bool":
-                return this.emitFromStringifiedBoolConverter();
-            case "is-type":
-                return this.emitIsTypeConverter();
+            case "none": {
+                this.emitNoneConverter();
+                return;
+            }
+
+            case "bool": {
+                this.emitBoolConverter();
+                return;
+            }
+
+            case "int": {
+                this.emitIntConverter();
+                return;
+            }
+
+            case "from-float": {
+                this.emitFromFloatConverter();
+                return;
+            }
+
+            case "to-float": {
+                this.emitToFloatConverter();
+                return;
+            }
+
+            case "str": {
+                this.emitStrConverter();
+                return;
+            }
+
+            case "to-enum": {
+                this.emitToEnumConverter();
+                return;
+            }
+
+            case "list": {
+                this.emitListConverter();
+                return;
+            }
+
+            case "to-class": {
+                this.emitToClassConverter();
+                return;
+            }
+
+            case "dict": {
+                this.emitDictConverter();
+                return;
+            }
+
+            case "union": {
+                this.emitUnionConverter();
+                return;
+            }
+
+            case "from-datetime": {
+                this.emitFromDatetimeConverter();
+                return;
+            }
+
+            case "from-stringified-bool": {
+                this.emitFromStringifiedBoolConverter();
+                return;
+            }
+
+            case "is-type": {
+                this.emitIsTypeConverter();
+                return;
+            }
+
             default:
                 return assertNever(cf);
         }
@@ -925,23 +1001,27 @@ export class JSONPythonRenderer extends PythonRenderer {
                 if (transformedStringType.kind === "date-time") {
                     return this.withImport("datetime", "datetime");
                 }
+
                 if (transformedStringType.kind === "uuid") {
                     return this.withImport("uuid", "UUID");
                 }
+
                 return undefined;
             }
         );
         if (s === undefined) {
             return panic(`No type object for ${t.kind}`);
         }
+
         return s;
     }
 
     protected transformer(inputTransformer: ValueOrLambda, xfer: Transformer, targetType: Type): ValueOrLambda {
-        const consume = (consumer: Transformer | undefined, vol: ValueOrLambda) => {
+        const consume = (consumer: Transformer | undefined, vol: ValueOrLambda): ValueOrLambda => {
             if (consumer === undefined) {
                 return vol;
             }
+
             return this.transformer(vol, consumer, targetType);
         };
 
@@ -994,6 +1074,7 @@ export class JSONPythonRenderer extends PythonRenderer {
                 default:
                     return panic(`Parsing of ${immediateTargetType.kind} in a transformer is not supported`);
             }
+
             return consume(consumer, vol);
         } else if (xfer instanceof StringifyTransformer) {
             const consumer = xfer.consumer;
@@ -1017,6 +1098,7 @@ export class JSONPythonRenderer extends PythonRenderer {
                 default:
                     return panic(`Parsing of ${xfer.sourceType.kind} in a transformer is not supported`);
             }
+
             return consume(consumer, vol);
         } else {
             return panic(`Transformer ${xfer.kind} is not supported`);
@@ -1031,6 +1113,7 @@ export class JSONPythonRenderer extends PythonRenderer {
         if (xf !== undefined) {
             return this.transformer(value, xf.transformer, xf.targetType);
         }
+
         return matchType<ValueOrLambda>(
             t,
             _anyType => value,
@@ -1082,9 +1165,11 @@ export class JSONPythonRenderer extends PythonRenderer {
                 if (transformedStringType.kind === "date-time") {
                     return this.convFn("from-datetime", value);
                 }
+
                 if (transformedStringType.kind === "uuid") {
                     return compose(value, v => [this.withImport("uuid", "UUID"), "(", v, ")"]);
                 }
+
                 return panic(`Transformed type ${transformedStringType.kind} not supported`);
             }
         );
@@ -1096,6 +1181,7 @@ export class JSONPythonRenderer extends PythonRenderer {
             const reverse = xf.reverse;
             return this.transformer(value, reverse.transformer, reverse.targetType);
         }
+
         return matchType<ValueOrLambda>(
             t,
             _anyType => value,
@@ -1142,9 +1228,11 @@ export class JSONPythonRenderer extends PythonRenderer {
                 if (transformedStringType.kind === "date-time") {
                     return compose(value, v => [v, ".isoformat()"]);
                 }
+
                 if (transformedStringType.kind === "uuid") {
                     return compose(value, v => ["str(", v, ")"]);
                 }
+
                 return panic(`Transformed type ${transformedStringType.kind} not supported`);
             }
         );
@@ -1210,6 +1298,7 @@ export class JSONPythonRenderer extends PythonRenderer {
         if (this._haveTypeVar) {
             this.emitTypeVar(this.typeVar(), []);
         }
+
         if (this._haveEnumTypeVar) {
             this.emitTypeVar(this.enumTypeVar(), [", bound=", this.withImport("enum", "Enum")]);
         }
@@ -1243,6 +1332,7 @@ export class JSONPythonRenderer extends PythonRenderer {
                 ""
             ]);
         }
+
         this.emitCommentLines([
             "To use this code, make sure you",
             "",

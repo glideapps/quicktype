@@ -1,16 +1,18 @@
 import { mapMap } from "collection-utils";
 
-import { lookupKey, AccessorNames, makeAccessorNames } from "./AccessorNames";
-import { EnumType } from "../Type";
+import { type JSONSchemaAttributes, type JSONSchemaType, type Ref } from "../input/JSONSchemaInput";
+import { type JSONSchema } from "../input/JSONSchemaStore";
+import { type EnumType } from "../Type";
+
+import { type AccessorNames, lookupKey, makeAccessorNames } from "./AccessorNames";
 import { TypeAttributeKind } from "./TypeAttributes";
-import { JSONSchema } from "../input/JSONSchemaStore";
-import { Ref, JSONSchemaType, JSONSchemaAttributes } from "../input/JSONSchemaInput";
 
 class EnumValuesTypeAttributeKind extends TypeAttributeKind<AccessorNames> {
-    constructor() {
+    public constructor() {
         super("enumValues");
     }
-    makeInferred(_: AccessorNames) {
+
+    public makeInferred(_: AccessorNames): undefined {
         return undefined;
     }
 }

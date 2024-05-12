@@ -1,20 +1,21 @@
-import { Type, ArrayType, UnionType, ClassType, EnumType } from "../Type";
-import { matchType, nullableFromUnion, isNamedType } from "../TypeUtils";
-import { utf16StringEscape, camelCase } from "../support/Strings";
+import { type Name, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import { BooleanOption, type Option, type OptionValues, getOptionValues } from "../RendererOptions";
+import { type MultiWord, type Sourcelike, modifySource, multiWord, parenIfNeeded, singleWord } from "../Source";
+import { camelCase, utf16StringEscape } from "../support/Strings";
+import { defined, panic } from "../support/Support";
+import { type TargetLanguage } from "../TargetLanguage";
+import { ArrayType, type ClassType, EnumType, type Type, UnionType } from "../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
+import { isNamedType, matchType, nullableFromUnion } from "../TypeUtils";
 
-import { Sourcelike, modifySource, MultiWord, singleWord, parenIfNeeded, multiWord } from "../Source";
-import { Name, Namer, funPrefixNamer } from "../Naming";
-import { BooleanOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
 import {
-    javaScriptOptions,
-    JavaScriptTargetLanguage,
     JavaScriptRenderer,
-    JavaScriptTypeAnnotations,
+    JavaScriptTargetLanguage,
+    type JavaScriptTypeAnnotations,
+    javaScriptOptions,
     legalizeName
 } from "./JavaScript";
-import { defined, panic } from "../support/Support";
-import { TargetLanguage } from "../TargetLanguage";
-import { RenderContext } from "../Renderer";
 import { isES3IdentifierStart } from "./JavaScriptUnicodeMaps";
 
 export const tsFlowOptions = Object.assign({}, javaScriptOptions, {
@@ -41,7 +42,7 @@ const tsFlowTypeAnnotations = {
 };
 
 export abstract class TypeScriptFlowBaseTargetLanguage extends JavaScriptTargetLanguage {
-    protected getOptions(): Option<any>[] {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [
             tsFlowOptions.justTypes,
             tsFlowOptions.nicePropertyNames,
@@ -58,25 +59,22 @@ export abstract class TypeScriptFlowBaseTargetLanguage extends JavaScriptTargetL
         ];
     }
 
-    get supportsOptionalClassProperties(): boolean {
+    public get supportsOptionalClassProperties(): boolean {
         return true;
     }
 
     protected abstract makeRenderer(
         renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
+        untypedOptionValues: FixMeOptionsType
     ): JavaScriptRenderer;
 }
 
 export class TypeScriptTargetLanguage extends TypeScriptFlowBaseTargetLanguage {
-    constructor() {
+    public constructor() {
         super("TypeScript", ["typescript", "ts", "tsx"], "ts");
     }
 
-    protected makeRenderer(
-        renderContext: RenderContext,
-        untypedOptionValues: { [name: string]: any }
-    ): TypeScriptRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): TypeScriptRenderer {
         return new TypeScriptRenderer(this, renderContext, getOptionValues(tsFlowOptions, untypedOptionValues));
     }
 }
@@ -99,7 +97,7 @@ function quotePropertyName(original: string): string {
 }
 
 export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         protected readonly _tsFlowOptions: OptionValues<typeof tsFlowOptions>
@@ -120,9 +118,11 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
             const item = t.cases.values().next().value;
             return singleWord(`"${utf16StringEscape(item)}"`);
         }
-        if (["class", "object", "enum"].indexOf(t.kind) >= 0) {
+
+        if (["class", "object", "enum"].includes(t.kind)) {
             return singleWord(this.nameForNamedType(t));
         }
+
         return matchType<MultiWord>(
             t,
             _anyType => singleWord("any"),
@@ -157,6 +157,7 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
                 if (transformedStringType.kind === "date-time") {
                     return singleWord("Date");
                 }
+
                 return singleWord("string");
             }
         );
@@ -189,12 +190,12 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
         }
     }
 
-    private emitClass(c: ClassType, className: Name) {
+    private emitClass(c: ClassType, className: Name): void {
         this.emitDescription(this.descriptionForType(c));
         this.emitClassBlock(c, className);
     }
 
-    emitUnion(u: UnionType, unionName: Name) {
+    protected emitUnion(u: UnionType, unionName: Name): void {
         if (!this._tsFlowOptions.declareUnions) {
             return;
         }
@@ -211,6 +212,7 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
             if (!t.isPrimitive()) {
                 return;
             }
+
             this.ensureBlankLine();
             this.emitDescription(this.descriptionForType(t));
             this.emitLine("type ", name, " = ", this.sourceFor(t).source, ";");
@@ -324,6 +326,7 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
                     items += `"${utf16StringEscape(item)}"`;
                     return;
                 }
+
                 items += ` | "${utf16StringEscape(item)}"`;
             });
             this.emitLine("export type ", enumName, " = ", items, ";");
@@ -354,11 +357,11 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
 }
 
 export class FlowTargetLanguage extends TypeScriptFlowBaseTargetLanguage {
-    constructor() {
+    public constructor() {
         super("Flow", ["flow"], "js");
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): FlowRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): FlowRenderer {
         return new FlowRenderer(this, renderContext, getOptionValues(tsFlowOptions, untypedOptionValues));
     }
 }
@@ -395,7 +398,7 @@ export class FlowRenderer extends TypeScriptFlowBaseRenderer {
         });
     }
 
-    protected emitSourceStructure() {
+    protected emitSourceStructure(): void {
         this.emitLine("// @flow");
         this.ensureBlankLine();
         super.emitSourceStructure();

@@ -1,3 +1,6 @@
+// FIXME: NEEDS REFACTOR
+/* eslint-disable @typescript-eslint/no-shadow */
+/* eslint-disable @typescript-eslint/naming-convention */
 /**
  * CJSON.ts
  * This file is used to generate cJSON code with quicktype
@@ -13,7 +16,7 @@
  * To print json string from json data use the following: char * string = cJSON_Print<type>(<data>);
  * To delete json data use the following: cJSON_Delete<type>(<data>);
  *
- * TODO list for futur enhancements:
+ * TODO list for future enhancements:
  * - Management of Class, Union and TopLevel should be mutualized to reduce code size and to permit Union and TopLevel having recursive Array/Map
  * - Types check should be added to verify unwanted inputs (for example a Number passed while a String is expected, etc)
  * - Constraints should be implemented (verification of Enum values, min/max values for Numbers and min/max length for Strings, regex)
@@ -22,26 +25,26 @@
  */
 
 /* Imports */
-import { TargetLanguage } from "../TargetLanguage";
-import { Type, TypeKind, ClassType, ArrayType, MapType, EnumType, UnionType } from "../Type";
-import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
-import { NameStyle, Name, Namer, funPrefixNamer } from "../Naming";
-import { Sourcelike } from "../Source";
-import {
-    allUpperWordStyle,
-    legalizeCharacters,
-    isAscii,
-    isLetterOrUnderscoreOrDigit,
-    NamingStyle,
-    makeNameStyle
-} from "../support/Strings";
-import { defined, assertNever, panic, numberEnumValues } from "../support/Support";
-import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { EnumOption, StringOption, Option, getOptionValues, OptionValues } from "../RendererOptions";
-import { assert } from "../support/Support";
-import { RenderContext } from "../Renderer";
 import { getAccessorName } from "../attributes/AccessorNames";
 import { enumCaseValues } from "../attributes/EnumValues";
+import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { type Name, type NameStyle, type Namer, funPrefixNamer } from "../Naming";
+import { type RenderContext } from "../Renderer";
+import { EnumOption, type Option, type OptionValues, StringOption, getOptionValues } from "../RendererOptions";
+import { type Sourcelike } from "../Source";
+import {
+    type NamingStyle,
+    allUpperWordStyle,
+    isAscii,
+    isLetterOrUnderscoreOrDigit,
+    legalizeCharacters,
+    makeNameStyle
+} from "../support/Strings";
+import { assert, assertNever, defined, numberEnumValues, panic } from "../support/Support";
+import { TargetLanguage } from "../TargetLanguage";
+import { ArrayType, ClassType, EnumType, MapType, type Type, type TypeKind, UnionType } from "../Type";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../types";
+import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
 /* Naming styles */
 const pascalValue: [string, NamingStyle] = ["pascal-case", "pascal"];
@@ -135,7 +138,7 @@ export class CJSONTargetLanguage extends TargetLanguage {
      * @params names: names
      * @param extension: extension of files
      */
-    constructor(displayName = "C (cJSON)", names: string[] = ["cjson", "cJSON"], extension = "h") {
+    public constructor(displayName = "C (cJSON)", names: string[] = ["cjson", "cJSON"], extension = "h") {
         super(displayName, names, extension);
     }
 
@@ -143,7 +146,7 @@ export class CJSONTargetLanguage extends TargetLanguage {
      * Return cJSON generator options
      * @return cJSON generator options array
      */
-    protected getOptions(): Option<any>[] {
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [
             cJSONOptions.typeSourceStyle,
             cJSONOptions.typeIntegerSize,
@@ -160,7 +163,7 @@ export class CJSONTargetLanguage extends TargetLanguage {
      * Indicate if language support union with both number types
      * @return true
      */
-    get supportsUnionsWithBothNumberTypes(): boolean {
+    public get supportsUnionsWithBothNumberTypes(): boolean {
         return true;
     }
 
@@ -168,7 +171,7 @@ export class CJSONTargetLanguage extends TargetLanguage {
      * Indicate if language support optional class properties
      * @return true
      */
-    get supportsOptionalClassProperties(): boolean {
+    public get supportsOptionalClassProperties(): boolean {
         return true;
     }
 
@@ -178,7 +181,7 @@ export class CJSONTargetLanguage extends TargetLanguage {
      * @param untypedOptionValues
      * @return cJSON renderer
      */
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): CJSONRenderer {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): CJSONRenderer {
         return new CJSONRenderer(this, renderContext, getOptionValues(cJSONOptions, untypedOptionValues));
     }
 }
@@ -311,63 +314,70 @@ const keywords = [
 
 /* Used to build forbidden global names */
 export enum GlobalNames {
-    ClassMemberConstraints,
-    ClassMemberConstraintException,
-    ValueTooLowException,
-    ValueTooHighException,
-    ValueTooShortException,
-    ValueTooLongException,
-    InvalidPatternException,
-    CheckConstraint
+    ClassMemberConstraints = 1,
+    ClassMemberConstraintException = 2,
+    ValueTooLowException = 3,
+    ValueTooHighException = 4,
+    ValueTooShortException = 5,
+    ValueTooLongException = 6,
+    InvalidPatternException = 7,
+    CheckConstraint = 8
 }
 
 /* To be able to support circles in multiple files - e.g. class#A using class#B using class#A (obviously not directly) we can forward declare them */
 export enum IncludeKind {
-    ForwardDeclare,
-    Include
+    ForwardDeclare = "ForwardDeclare",
+    Include = "Include"
 }
 
 /* Used to map includes */
-export type IncludeRecord = {
+export interface IncludeRecord {
     kind: IncludeKind | undefined /* How to include that */;
     typeKind: TypeKind | undefined /* What exactly to include */;
-};
+}
 
 /* Used to map includes */
-export type TypeRecord = {
+export interface TypeRecord {
+    forceInclude: boolean;
+    level: number;
     name: Name;
     type: Type;
-    level: number;
     variant: boolean;
-    forceInclude: boolean;
-};
+}
 
 /* Map each and every unique type to a include kind, e.g. how to include the given type */
 export type IncludeMap = Map<string, IncludeRecord>;
 
 /* cJSON type */
-export type TypeCJSON = {
-    cType: Sourcelike /* C type */;
-    optionalQualifier: string /* C optional qualifier, empty string if not defined */;
-    cjsonType: string /* cJSON type */;
-    isType: Sourcelike /* cJSON check type function */;
-    getValue: Sourcelike /* cJSON get value function */;
+export interface TypeCJSON {
     addToObject: Sourcelike /* cJSON add to object function */;
+    cType: Sourcelike /* C type */;
+    cjsonType: string /* cJSON type */;
     createObject: Sourcelike /* cJSON create object function */;
     deleteType: Sourcelike /* cJSON delete function */;
-    items: TypeCJSON | undefined /* Sub-items, used for arrays and map */;
+    getValue: Sourcelike /* cJSON get value function */;
     isNullable: boolean /* True if the field is nullable */;
-};
+    isType: Sourcelike /* cJSON check type function */;
+    items: TypeCJSON | undefined /* Sub-items, used for arrays and map */;
+    optionalQualifier: string /* C optional qualifier, empty string if not defined */;
+}
 
 /* cJSON renderer */
 export class CJSONRenderer extends ConvenienceRenderer {
     private currentFilename: string | undefined; /* Current filename */
-    private memberNameStyle: NameStyle; /* Member name style */
-    private namedTypeNameStyle: NameStyle; /* Named type name style */
-    private forbiddenGlobalNames: string[]; /* Forbidden global names */
+
+    private readonly memberNameStyle: NameStyle; /* Member name style */
+
+    private readonly namedTypeNameStyle: NameStyle; /* Named type name style */
+
+    private readonly forbiddenGlobalNames: string[]; /* Forbidden global names */
+
     protected readonly typeIntegerSize: string; /* Integer code generation type */
+
     protected readonly hashtableSize: string; /* Hashtable default size */
+
     protected readonly typeNamingStyle: NamingStyle; /* Type naming style */
+
     protected readonly enumeratorNamingStyle: NamingStyle; /* Enum naming style */
 
     /**
@@ -376,7 +386,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
      * @param renderContext: render context
      * @param _options: renderer options
      */
-    constructor(
+    public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
         private readonly _options: OptionValues<typeof cJSONOptions>
@@ -479,6 +489,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
         } else if ("double" === fieldName) {
             fieldName = "number";
         }
+
         return fieldName;
     }
 
@@ -487,7 +498,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
      * @param fieldType: the variable type
      * @param fieldName: name of the variable
      */
-    protected emitTypdefAlias(fieldType: Type, fieldName: Name) {
+    protected emitTypedefAlias(fieldType: Type, fieldName: Name): void {
         if (this._options.addTypedefAlias) {
             this.emitLine("typedef ", this.quicktypeTypeToCJSON(fieldType, false).cType, " ", fieldName, ";");
             this.ensureBlankLine();
@@ -675,7 +686,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
             true
         );
         this.ensureBlankLine();
-        this.emitTypdefAlias(enumType, enumName);
+        this.emitTypedefAlias(enumType, enumName);
     }
 
     /**
@@ -776,6 +787,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
      * @param unionType: union type
      */
     protected emitUnionTypedef(unionType: UnionType): void {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const [_hasNull, nonNulls] = removeNullFromUnion(unionType);
         const unionName = this.nameForNamedType(unionType);
 
@@ -807,7 +819,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
             true
         );
         this.ensureBlankLine();
-        this.emitTypdefAlias(unionType, unionName);
+        this.emitTypedefAlias(unionType, unionName);
     }
 
     /**
@@ -843,6 +855,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                     });
                     onFirst = false;
                 }
+
                 for (const type of nonNulls) {
                     const cJSON = this.quicktypeTypeToCJSON(type, false);
                     this.emitBlock([onFirst === true ? "if (" : "else if (", cJSON.isType, "(j))"], () => {
@@ -863,57 +876,58 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                     ],
                                     () => {
                                         const add = (cJSON: TypeCJSON, level: number, child_level: number) => {
-                                            if (cJSON.items!.cjsonType === "cJSON_Array") {
+                                            if (cJSON.items?.cjsonType === "cJSON_Array") {
                                                 /* Not supported */
-                                            } else if (cJSON.items!.cjsonType === "cJSON_Map") {
+                                            } else if (cJSON.items?.cjsonType === "cJSON_Map") {
                                                 /* Not supported */
                                             } else if (
-                                                cJSON.items!.cjsonType === "cJSON_Invalid" ||
-                                                cJSON.items!.cjsonType === "cJSON_NULL"
+                                                cJSON.items?.cjsonType === "cJSON_Invalid" ||
+                                                cJSON.items?.cjsonType === "cJSON_NULL"
                                             ) {
                                                 this.emitLine(
                                                     "list_add_tail(x",
                                                     child_level.toString(),
                                                     ", (",
-                                                    cJSON.items!.cType,
+                                                    cJSON.items?.cType,
                                                     " *)0xDEADBEEF, sizeof(",
-                                                    cJSON.items!.cType,
+                                                    cJSON.items?.cType,
                                                     " *));"
                                                 );
-                                            } else if (cJSON.items!.cjsonType === "cJSON_String") {
+                                            } else if (cJSON.items?.cjsonType === "cJSON_String") {
                                                 this.emitLine(
                                                     "list_add_tail(x",
                                                     child_level.toString(),
                                                     ", strdup(",
-                                                    cJSON.items!.getValue,
+                                                    cJSON.items?.getValue,
                                                     "(e",
                                                     child_level.toString(),
                                                     ")), sizeof(",
-                                                    cJSON.items!.cType,
+                                                    cJSON.items?.cType,
                                                     " *));"
                                                 );
                                             } else if (
-                                                cJSON.items!.cjsonType === "cJSON_Object" ||
-                                                cJSON.items!.cjsonType === "cJSON_Union"
+                                                cJSON.items?.cjsonType === "cJSON_Object" ||
+                                                cJSON.items?.cjsonType === "cJSON_Union"
                                             ) {
                                                 this.emitLine(
                                                     "list_add_tail(x",
                                                     child_level.toString(),
                                                     ", ",
-                                                    cJSON.items!.getValue,
+                                                    cJSON.items?.getValue,
                                                     "(e",
                                                     child_level.toString(),
                                                     "), sizeof(",
-                                                    cJSON.items!.cType,
+                                                    cJSON.items?.cType,
                                                     " *));"
                                                 );
                                             } else {
                                                 this.emitLine(
-                                                    cJSON.items!.cType,
+                                                    // @ts-expect-error awaiting refactor
+                                                    cJSON.items?.cType,
                                                     " * tmp",
                                                     level > 0 ? level.toString() : "",
                                                     " = cJSON_malloc(sizeof(",
-                                                    cJSON.items!.cType,
+                                                    cJSON.items?.cType,
                                                     "));"
                                                 );
                                                 this.emitBlock(
@@ -923,7 +937,8 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                             "* tmp",
                                                             level > 0 ? level.toString() : "",
                                                             " = ",
-                                                            cJSON.items!.getValue,
+                                                            // @ts-expect-error awaiting refactor
+                                                            cJSON.items?.getValue,
                                                             "(e",
                                                             child_level.toString(),
                                                             ");"
@@ -934,14 +949,16 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                             ", tmp",
                                                             level > 0 ? level.toString() : "",
                                                             ", sizeof(",
-                                                            cJSON.items!.cType,
+                                                            // @ts-expect-error awaiting refactor
+                                                            cJSON.items?.cType,
                                                             " *));"
                                                         );
                                                     }
                                                 );
                                             }
                                         };
-                                        if (cJSON.items!.isNullable) {
+
+                                        if (cJSON.items?.isNullable) {
                                             this.emitBlock(
                                                 ["if (!cJSON_IsNull(e", child_level.toString(), "))"],
                                                 () => {
@@ -991,13 +1008,13 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                     ],
                                     () => {
                                         const add = (cJSON: TypeCJSON, level: number, child_level: number) => {
-                                            if (cJSON.items!.cjsonType === "cJSON_Array") {
+                                            if (cJSON.items?.cjsonType === "cJSON_Array") {
                                                 /* Not supported */
-                                            } else if (cJSON.items!.cjsonType === "cJSON_Map") {
+                                            } else if (cJSON.items?.cjsonType === "cJSON_Map") {
                                                 /* Not supported */
                                             } else if (
-                                                cJSON.items!.cjsonType === "cJSON_Invalid" ||
-                                                cJSON.items!.cjsonType === "cJSON_NULL"
+                                                cJSON.items?.cjsonType === "cJSON_Invalid" ||
+                                                cJSON.items?.cjsonType === "cJSON_NULL"
                                             ) {
                                                 this.emitLine(
                                                     "hashtable_add(x",
@@ -1005,28 +1022,28 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                     ", e",
                                                     child_level.toString(),
                                                     "->string, (",
-                                                    cJSON.items!.cType,
+                                                    cJSON.items?.cType,
                                                     " *)0xDEADBEEF, sizeof(",
-                                                    cJSON.items!.cType,
+                                                    cJSON.items?.cType,
                                                     " *));"
                                                 );
-                                            } else if (cJSON.items!.cjsonType === "cJSON_String") {
+                                            } else if (cJSON.items?.cjsonType === "cJSON_String") {
                                                 this.emitLine(
                                                     "hashtable_add(x",
                                                     child_level.toString(),
                                                     ", e",
                                                     child_level.toString(),
                                                     "->string, strdup(",
-                                                    cJSON.items!.getValue,
+                                                    cJSON.items?.getValue,
                                                     "(e",
                                                     child_level.toString(),
                                                     ")), sizeof(",
-                                                    cJSON.items!.cType,
+                                                    cJSON.items?.cType,
                                                     " *));"
                                                 );
                                             } else if (
-                                                cJSON.items!.cjsonType === "cJSON_Object" ||
-                                                cJSON.items!.cjsonType === "cJSON_Union"
+                                                cJSON.items?.cjsonType === "cJSON_Object" ||
+                                                cJSON.items?.cjsonType === "cJSON_Union"
                                             ) {
                                                 this.emitLine(
                                                     "hashtable_add(x",
@@ -1034,20 +1051,21 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                     ", e",
                                                     child_level.toString(),
                                                     "->string, ",
-                                                    cJSON.items!.getValue,
+                                                    cJSON.items?.getValue,
                                                     "(e",
                                                     child_level.toString(),
                                                     "), sizeof(",
-                                                    cJSON.items!.cType,
+                                                    cJSON.items?.cType,
                                                     " *));"
                                                 );
                                             } else {
                                                 this.emitLine(
-                                                    cJSON.items!.cType,
+                                                    // @ts-expect-error awaiting refactor
+                                                    cJSON.items?.cType,
                                                     " * tmp",
                                                     level > 0 ? level.toString() : "",
                                                     " = cJSON_malloc(sizeof(",
-                                                    cJSON.items!.cType,
+                                                    cJSON.items?.cType,
                                                     "));"
                                                 );
                                                 this.emitBlock(
@@ -1057,7 +1075,8 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                             "* tmp",
                                                             level > 0 ? level.toString() : "",
                                                             " = ",
-                                                            cJSON.items!.getValue,
+                                                            // @ts-expect-error awaiting refactor
+                                                            cJSON.items?.getValue,
                                                             "(e",
                                                             child_level.toString(),
                                                             ");"
@@ -1070,14 +1089,16 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                             "->string, tmp",
                                                             level > 0 ? level.toString() : "",
                                                             ", sizeof(",
-                                                            cJSON.items!.cType,
+                                                            // @ts-expect-error awaiting refactor
+                                                            cJSON.items?.cType,
                                                             " *));"
                                                         );
                                                     }
                                                 );
                                             }
                                         };
-                                        if (cJSON.items!.isNullable) {
+
+                                        if (cJSON.items?.isNullable) {
                                             this.emitBlock(
                                                 ["if (!cJSON_IsNull(e", child_level.toString(), "))"],
                                                 () => {
@@ -1152,6 +1173,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                         });
                         onFirst = false;
                     }
+
                     for (const type of nonNulls) {
                         const cJSON = this.quicktypeTypeToCJSON(type, false);
                         this.emitBlock(
@@ -1169,7 +1191,8 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                     );
                                     this.emitBlock(["if (NULL != j", child_level.toString(), ")"], () => {
                                         this.emitLine(
-                                            cJSON.items!.cType,
+                                            // @ts-expect-error awaiting refactor
+                                            cJSON.items?.cType,
                                             " * x",
                                             child_level.toString(),
                                             " = list_get_head(x",
@@ -1180,30 +1203,30 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                         );
                                         this.emitBlock(["while (NULL != x", child_level.toString(), ")"], () => {
                                             const add = (cJSON: TypeCJSON, child_level: number) => {
-                                                if (cJSON.items!.cjsonType === "cJSON_Array") {
+                                                if (cJSON.items?.cjsonType === "cJSON_Array") {
                                                     /* Not supported */
-                                                } else if (cJSON.items!.cjsonType === "cJSON_Map") {
+                                                } else if (cJSON.items?.cjsonType === "cJSON_Map") {
                                                     /* Not supported */
-                                                } else if (cJSON.items!.cjsonType === "cJSON_Invalid") {
+                                                } else if (cJSON.items?.cjsonType === "cJSON_Invalid") {
                                                     /* Nothing to do */
-                                                } else if (cJSON.items!.cjsonType === "cJSON_NULL") {
+                                                } else if (cJSON.items?.cjsonType === "cJSON_NULL") {
                                                     this.emitLine(
                                                         "cJSON_AddItemToArray(j",
                                                         child_level.toString(),
                                                         ", ",
-                                                        cJSON.items!.createObject,
+                                                        cJSON.items?.createObject,
                                                         "());"
                                                     );
                                                 } else if (
-                                                    cJSON.items!.cjsonType === "cJSON_String" ||
-                                                    cJSON.items!.cjsonType === "cJSON_Object" ||
-                                                    cJSON.items!.cjsonType === "cJSON_Union"
+                                                    cJSON.items?.cjsonType === "cJSON_String" ||
+                                                    cJSON.items?.cjsonType === "cJSON_Object" ||
+                                                    cJSON.items?.cjsonType === "cJSON_Union"
                                                 ) {
                                                     this.emitLine(
                                                         "cJSON_AddItemToArray(j",
                                                         child_level.toString(),
                                                         ", ",
-                                                        cJSON.items!.createObject,
+                                                        cJSON.items?.createObject,
                                                         "(x",
                                                         child_level.toString(),
                                                         "));"
@@ -1213,14 +1236,16 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                         "cJSON_AddItemToArray(j",
                                                         child_level.toString(),
                                                         ", ",
-                                                        cJSON.items!.createObject,
+                                                        // @ts-expect-error awaiting refactor
+                                                        cJSON.items?.createObject,
                                                         "(*x",
                                                         child_level.toString(),
                                                         "));"
                                                     );
                                                 }
                                             };
-                                            if (cJSON.items!.isNullable) {
+
+                                            if (cJSON.items?.isNullable) {
                                                 this.emitBlock(
                                                     ["if ((void *)0xDEADBEEF != x", child_level.toString(), ")"],
                                                     () => {
@@ -1237,6 +1262,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                             } else {
                                                 add(cJSON, child_level);
                                             }
+
                                             this.emitLine(
                                                 "x",
                                                 child_level.toString(),
@@ -1287,7 +1313,8 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                 ],
                                                 () => {
                                                     this.emitLine(
-                                                        cJSON.items!.cType,
+                                                        // @ts-expect-error awaiting refactor
+                                                        cJSON.items?.cType,
                                                         " *x",
                                                         child_level.toString(),
                                                         " = hashtable_lookup(x",
@@ -1301,13 +1328,13 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                         "]);"
                                                     );
                                                     const add = (cJSON: TypeCJSON, child_level: number) => {
-                                                        if (cJSON.items!.cjsonType === "cJSON_Array") {
+                                                        if (cJSON.items?.cjsonType === "cJSON_Array") {
                                                             /* Not supported */
-                                                        } else if (cJSON.items!.cjsonType === "cJSON_Map") {
+                                                        } else if (cJSON.items?.cjsonType === "cJSON_Map") {
                                                             /* Not supported */
-                                                        } else if (cJSON.items!.cjsonType === "cJSON_Invalid") {
+                                                        } else if (cJSON.items?.cjsonType === "cJSON_Invalid") {
                                                             /* Nothing to do */
-                                                        } else if (cJSON.items!.cjsonType === "cJSON_NULL") {
+                                                        } else if (cJSON.items?.cjsonType === "cJSON_NULL") {
                                                             this.emitLine(
                                                                 cJSON.addToObject,
                                                                 "(j",
@@ -1317,13 +1344,13 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                 "[index",
                                                                 child_level.toString(),
                                                                 "], ",
-                                                                cJSON.items!.createObject,
+                                                                cJSON.items?.createObject,
                                                                 "());"
                                                             );
                                                         } else if (
-                                                            cJSON.items!.cjsonType === "cJSON_String" ||
-                                                            cJSON.items!.cjsonType === "cJSON_Object" ||
-                                                            cJSON.items!.cjsonType === "cJSON_Union"
+                                                            cJSON.items?.cjsonType === "cJSON_String" ||
+                                                            cJSON.items?.cjsonType === "cJSON_Object" ||
+                                                            cJSON.items?.cjsonType === "cJSON_Union"
                                                         ) {
                                                             this.emitLine(
                                                                 cJSON.addToObject,
@@ -1334,7 +1361,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                 "[index",
                                                                 child_level.toString(),
                                                                 "], ",
-                                                                cJSON.items!.createObject,
+                                                                cJSON.items?.createObject,
                                                                 "(x",
                                                                 child_level.toString(),
                                                                 "));"
@@ -1349,14 +1376,16 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                 "[index",
                                                                 child_level.toString(),
                                                                 "], ",
-                                                                cJSON.items!.createObject,
+                                                                // @ts-expect-error awaiting refactor
+                                                                cJSON.items?.createObject,
                                                                 "(*x",
                                                                 child_level.toString(),
                                                                 "));"
                                                             );
                                                         }
                                                     };
-                                                    if (cJSON.items!.isNullable) {
+
+                                                    if (cJSON.items?.isNullable) {
                                                         this.emitBlock(
                                                             [
                                                                 "if ((void *)0xDEADBEEF != x",
@@ -1431,7 +1460,8 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                 ],
                                 () => {
                                     this.emitLine(
-                                        cJSON.items!.cType,
+                                        // @ts-expect-error awaiting refactor
+                                        cJSON.items?.cType,
                                         " * x",
                                         child_level.toString(),
                                         " = list_get_head(x",
@@ -1441,22 +1471,23 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                         ");"
                                     );
                                     this.emitBlock(["while (NULL != x", child_level.toString(), ")"], () => {
-                                        if (cJSON.items!.cjsonType === "cJSON_Array") {
+                                        if (cJSON.items?.cjsonType === "cJSON_Array") {
                                             /* Not supported */
-                                        } else if (cJSON.items!.cjsonType === "cJSON_Map") {
+                                        } else if (cJSON.items?.cjsonType === "cJSON_Map") {
                                             /* Not supported */
                                         } else if (
-                                            cJSON.items!.cjsonType === "cJSON_Invalid" ||
-                                            cJSON.items!.cjsonType === "cJSON_NULL"
+                                            cJSON.items?.cjsonType === "cJSON_Invalid" ||
+                                            cJSON.items?.cjsonType === "cJSON_NULL"
                                         ) {
                                             /* Nothing to do */
                                         } else {
-                                            if (cJSON.items!.isNullable) {
+                                            if (cJSON.items?.isNullable) {
                                                 this.emitBlock(
                                                     ["if ((void *)0xDEADBEEF != x", child_level.toString(), ")"],
                                                     () => {
                                                         this.emitLine(
-                                                            cJSON.items!.deleteType,
+                                                            // @ts-expect-error awaiting refactor
+                                                            cJSON.items?.deleteType,
                                                             "(x",
                                                             child_level.toString(),
                                                             ");"
@@ -1465,13 +1496,15 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                 );
                                             } else {
                                                 this.emitLine(
-                                                    cJSON.items!.deleteType,
+                                                    // @ts-expect-error awaiting refactor
+                                                    cJSON.items?.deleteType,
                                                     "(x",
                                                     child_level.toString(),
                                                     ");"
                                                 );
                                             }
                                         }
+
                                         this.emitLine(
                                             "x",
                                             child_level.toString(),
@@ -1531,7 +1564,8 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                             ],
                                             () => {
                                                 this.emitLine(
-                                                    cJSON.items!.cType,
+                                                    // @ts-expect-error awaiting refactor
+                                                    cJSON.items?.cType,
                                                     " *x",
                                                     child_level.toString(),
                                                     " = hashtable_lookup(x",
@@ -1545,17 +1579,17 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                     "]);"
                                                 );
                                                 this.emitBlock(["if (NULL != x", child_level.toString(), ")"], () => {
-                                                    if (cJSON.items!.cjsonType === "cJSON_Array") {
+                                                    if (cJSON.items?.cjsonType === "cJSON_Array") {
                                                         /* Not supported */
-                                                    } else if (cJSON.items!.cjsonType === "cJSON_Map") {
+                                                    } else if (cJSON.items?.cjsonType === "cJSON_Map") {
                                                         /* Not supported */
                                                     } else if (
-                                                        cJSON.items!.cjsonType === "cJSON_Invalid" ||
-                                                        cJSON.items!.cjsonType === "cJSON_NULL"
+                                                        cJSON.items?.cjsonType === "cJSON_Invalid" ||
+                                                        cJSON.items?.cjsonType === "cJSON_NULL"
                                                     ) {
                                                         /* Nothing to do */
                                                     } else {
-                                                        if (cJSON.items!.isNullable) {
+                                                        if (cJSON.items?.isNullable) {
                                                             this.emitBlock(
                                                                 [
                                                                     "if ((void *)0xDEADBEEF != x",
@@ -1564,7 +1598,8 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                 ],
                                                                 () => {
                                                                     this.emitLine(
-                                                                        cJSON.items!.deleteType,
+                                                                        // @ts-expect-error awaiting refactor
+                                                                        cJSON.items?.deleteType,
                                                                         "(x",
                                                                         child_level.toString(),
                                                                         ");"
@@ -1573,7 +1608,8 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                             );
                                                         } else {
                                                             this.emitLine(
-                                                                cJSON.items!.deleteType,
+                                                                // @ts-expect-error awaiting refactor
+                                                                cJSON.items?.deleteType,
                                                                 "(x",
                                                                 child_level.toString(),
                                                                 ");"
@@ -1614,6 +1650,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                     });
                     onFirst = false;
                 }
+
                 this.emitLine("cJSON_free(x);");
             });
         });
@@ -1676,7 +1713,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
             true
         );
         this.ensureBlankLine();
-        this.emitTypdefAlias(classType, className);
+        this.emitTypedefAlias(classType, className);
     }
 
     /**
@@ -1745,7 +1782,8 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                     ", x",
                                                     child_level2.toString(),
                                                     ", sizeof(",
-                                                    cJSON.items!.cType,
+                                                    // @ts-expect-error awaiting refactor
+                                                    cJSON.items?.cType,
                                                     " *));"
                                                 );
                                             } else if (cJSON.cjsonType === "cJSON_Map") {
@@ -1884,7 +1922,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                 level: number,
                                                                 child_level: number
                                                             ) => {
-                                                                if (cJSON.items!.cjsonType === "cJSON_Array") {
+                                                                if (cJSON.items?.cjsonType === "cJSON_Array") {
                                                                     if (type instanceof ArrayType) {
                                                                         const child_level2 = child_level + 1;
                                                                         recur(type.items, child_level);
@@ -1894,61 +1932,62 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                             ", x",
                                                                             child_level2.toString(),
                                                                             ", sizeof(",
-                                                                            cJSON.items!.cType,
+                                                                            cJSON.items?.cType,
                                                                             " *));"
                                                                         );
                                                                     } else {
                                                                         panic("Invalid type");
                                                                     }
-                                                                } else if (cJSON.items!.cjsonType === "cJSON_Map") {
+                                                                } else if (cJSON.items?.cjsonType === "cJSON_Map") {
                                                                     /* Not supported */
                                                                 } else if (
-                                                                    cJSON.items!.cjsonType === "cJSON_Invalid" ||
-                                                                    cJSON.items!.cjsonType === "cJSON_NULL"
+                                                                    cJSON.items?.cjsonType === "cJSON_Invalid" ||
+                                                                    cJSON.items?.cjsonType === "cJSON_NULL"
                                                                 ) {
                                                                     this.emitLine(
                                                                         "list_add_tail(x",
                                                                         child_level.toString(),
                                                                         ", (",
-                                                                        cJSON.items!.cType,
+                                                                        cJSON.items?.cType,
                                                                         " *)0xDEADBEEF, sizeof(",
-                                                                        cJSON.items!.cType,
+                                                                        cJSON.items?.cType,
                                                                         " *));"
                                                                     );
-                                                                } else if (cJSON.items!.cjsonType === "cJSON_String") {
+                                                                } else if (cJSON.items?.cjsonType === "cJSON_String") {
                                                                     this.emitLine(
                                                                         "list_add_tail(x",
                                                                         child_level.toString(),
                                                                         ", strdup(",
-                                                                        cJSON.items!.getValue,
+                                                                        cJSON.items?.getValue,
                                                                         "(e",
                                                                         child_level.toString(),
                                                                         ")), sizeof(",
-                                                                        cJSON.items!.cType,
+                                                                        cJSON.items?.cType,
                                                                         " *));"
                                                                     );
                                                                 } else if (
-                                                                    cJSON.items!.cjsonType === "cJSON_Object" ||
-                                                                    cJSON.items!.cjsonType === "cJSON_Union"
+                                                                    cJSON.items?.cjsonType === "cJSON_Object" ||
+                                                                    cJSON.items?.cjsonType === "cJSON_Union"
                                                                 ) {
                                                                     this.emitLine(
                                                                         "list_add_tail(x",
                                                                         child_level.toString(),
                                                                         ", ",
-                                                                        cJSON.items!.getValue,
+                                                                        cJSON.items?.getValue,
                                                                         "(e",
                                                                         child_level.toString(),
                                                                         "), sizeof(",
-                                                                        cJSON.items!.cType,
+                                                                        cJSON.items?.cType,
                                                                         " *));"
                                                                     );
                                                                 } else {
                                                                     this.emitLine(
-                                                                        cJSON.items!.cType,
+                                                                        // @ts-expect-error awaiting refactor
+                                                                        cJSON.items?.cType,
                                                                         " * tmp",
                                                                         level > 0 ? level.toString() : "",
                                                                         " = cJSON_malloc(sizeof(",
-                                                                        cJSON.items!.cType,
+                                                                        cJSON.items?.cType,
                                                                         "));"
                                                                     );
                                                                     this.emitBlock(
@@ -1962,7 +2001,8 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                                 "* tmp",
                                                                                 level > 0 ? level.toString() : "",
                                                                                 " = ",
-                                                                                cJSON.items!.getValue,
+                                                                                // @ts-expect-error awaiting refactor
+                                                                                cJSON.items?.getValue,
                                                                                 "(e",
                                                                                 child_level.toString(),
                                                                                 ");"
@@ -1973,14 +2013,16 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                                 ", tmp",
                                                                                 level > 0 ? level.toString() : "",
                                                                                 ", sizeof(",
-                                                                                cJSON.items!.cType,
+                                                                                // @ts-expect-error awaiting refactor
+                                                                                cJSON.items?.cType,
                                                                                 " *));"
                                                                             );
                                                                         }
                                                                     );
                                                                 }
                                                             };
-                                                            if (cJSON.items!.isNullable) {
+
+                                                            if (cJSON.items?.isNullable) {
                                                                 this.emitBlock(
                                                                     [
                                                                         "if (!cJSON_IsNull(e",
@@ -2049,7 +2091,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                 level: number,
                                                                 child_level: number
                                                             ) => {
-                                                                if (cJSON.items!.cjsonType === "cJSON_Array") {
+                                                                if (cJSON.items?.cjsonType === "cJSON_Array") {
                                                                     if (type instanceof MapType) {
                                                                         const child_level2 = child_level + 1;
                                                                         recur(type.values, child_level);
@@ -2061,17 +2103,17 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                             "->string, x",
                                                                             child_level2.toString(),
                                                                             ", sizeof(",
-                                                                            cJSON.items!.cType,
+                                                                            cJSON.items?.cType,
                                                                             " *));"
                                                                         );
                                                                     } else {
                                                                         panic("Invalid type");
                                                                     }
-                                                                } else if (cJSON.items!.cjsonType === "cJSON_Map") {
+                                                                } else if (cJSON.items?.cjsonType === "cJSON_Map") {
                                                                     /* Not supported */
                                                                 } else if (
-                                                                    cJSON.items!.cjsonType === "cJSON_Invalid" ||
-                                                                    cJSON.items!.cjsonType === "cJSON_NULL"
+                                                                    cJSON.items?.cjsonType === "cJSON_Invalid" ||
+                                                                    cJSON.items?.cjsonType === "cJSON_NULL"
                                                                 ) {
                                                                     this.emitLine(
                                                                         "hashtable_add(x",
@@ -2079,28 +2121,28 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                         ", e",
                                                                         child_level.toString(),
                                                                         "->string, (",
-                                                                        cJSON.items!.cType,
+                                                                        cJSON.items?.cType,
                                                                         " *)0xDEADBEEF, sizeof(",
-                                                                        cJSON.items!.cType,
+                                                                        cJSON.items?.cType,
                                                                         " *));"
                                                                     );
-                                                                } else if (cJSON.items!.cjsonType === "cJSON_String") {
+                                                                } else if (cJSON.items?.cjsonType === "cJSON_String") {
                                                                     this.emitLine(
                                                                         "hashtable_add(x",
                                                                         child_level.toString(),
                                                                         ", e",
                                                                         child_level.toString(),
                                                                         "->string, strdup(",
-                                                                        cJSON.items!.getValue,
+                                                                        cJSON.items?.getValue,
                                                                         "(e",
                                                                         child_level.toString(),
                                                                         ")), sizeof(",
-                                                                        cJSON.items!.cType,
+                                                                        cJSON.items?.cType,
                                                                         " *));"
                                                                     );
                                                                 } else if (
-                                                                    cJSON.items!.cjsonType === "cJSON_Object" ||
-                                                                    cJSON.items!.cjsonType === "cJSON_Union"
+                                                                    cJSON.items?.cjsonType === "cJSON_Object" ||
+                                                                    cJSON.items?.cjsonType === "cJSON_Union"
                                                                 ) {
                                                                     this.emitLine(
                                                                         "hashtable_add(x",
@@ -2108,20 +2150,21 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                         ", e",
                                                                         child_level.toString(),
                                                                         "->string, ",
-                                                                        cJSON.items!.getValue,
+                                                                        cJSON.items?.getValue,
                                                                         "(e",
                                                                         child_level.toString(),
                                                                         "), sizeof(",
-                                                                        cJSON.items!.cType,
+                                                                        cJSON.items?.cType,
                                                                         " *));"
                                                                     );
                                                                 } else {
                                                                     this.emitLine(
-                                                                        cJSON.items!.cType,
+                                                                        // @ts-expect-error awaiting refactor
+                                                                        cJSON.items?.cType,
                                                                         " * tmp",
                                                                         level > 0 ? level.toString() : "",
                                                                         " = cJSON_malloc(sizeof(",
-                                                                        cJSON.items!.cType,
+                                                                        cJSON.items?.cType,
                                                                         "));"
                                                                     );
                                                                     this.emitBlock(
@@ -2135,7 +2178,8 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                                 "* tmp",
                                                                                 level > 0 ? level.toString() : "",
                                                                                 " = ",
-                                                                                cJSON.items!.getValue,
+                                                                                // @ts-expect-error awaiting refactor
+                                                                                cJSON.items?.getValue,
                                                                                 "(e",
                                                                                 child_level.toString(),
                                                                                 ");"
@@ -2148,14 +2192,16 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                                 "->string, tmp",
                                                                                 level > 0 ? level.toString() : "",
                                                                                 ", sizeof(",
-                                                                                cJSON.items!.cType,
+                                                                                // @ts-expect-error awaiting refactor
+                                                                                cJSON.items?.cType,
                                                                                 " *));"
                                                                             );
                                                                         }
                                                                     );
                                                                 }
                                                             };
-                                                            if (cJSON.items!.isNullable) {
+
+                                                            if (cJSON.items?.isNullable) {
                                                                 this.emitBlock(
                                                                     [
                                                                         "if (!cJSON_IsNull(e",
@@ -2348,6 +2394,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                 });
                             }
                         };
+
                         recur(classType, 0);
                     });
                 });
@@ -2425,6 +2472,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                 "));"
                                             );
                                         }
+
                                         this.emitLine(
                                             "x",
                                             child_level.toString(),
@@ -2453,7 +2501,8 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                 );
                                                 this.emitBlock(["if (NULL != j", child_level.toString(), ")"], () => {
                                                     this.emitLine(
-                                                        cJSON.items!.cType,
+                                                        // @ts-expect-error awaiting refactor
+                                                        cJSON.items?.cType,
                                                         " * x",
                                                         child_level.toString(),
                                                         " = list_get_head(x",
@@ -2470,7 +2519,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                 cJSON: TypeCJSON,
                                                                 child_level: number
                                                             ) => {
-                                                                if (cJSON.items!.cjsonType === "cJSON_Array") {
+                                                                if (cJSON.items?.cjsonType === "cJSON_Array") {
                                                                     if (type instanceof ArrayType) {
                                                                         const child_level2 = child_level + 1;
                                                                         recur(type.items, child_level);
@@ -2484,28 +2533,28 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                     } else {
                                                                         panic("Invalid type");
                                                                     }
-                                                                } else if (cJSON.items!.cjsonType === "cJSON_Map") {
+                                                                } else if (cJSON.items?.cjsonType === "cJSON_Map") {
                                                                     /* Not supported */
-                                                                } else if (cJSON.items!.cjsonType === "cJSON_Invalid") {
+                                                                } else if (cJSON.items?.cjsonType === "cJSON_Invalid") {
                                                                     /* Nothing to do */
-                                                                } else if (cJSON.items!.cjsonType === "cJSON_NULL") {
+                                                                } else if (cJSON.items?.cjsonType === "cJSON_NULL") {
                                                                     this.emitLine(
                                                                         "cJSON_AddItemToArray(j",
                                                                         child_level.toString(),
                                                                         ", ",
-                                                                        cJSON.items!.createObject,
+                                                                        cJSON.items?.createObject,
                                                                         "());"
                                                                     );
                                                                 } else if (
-                                                                    cJSON.items!.cjsonType === "cJSON_String" ||
-                                                                    cJSON.items!.cjsonType === "cJSON_Object" ||
-                                                                    cJSON.items!.cjsonType === "cJSON_Union"
+                                                                    cJSON.items?.cjsonType === "cJSON_String" ||
+                                                                    cJSON.items?.cjsonType === "cJSON_Object" ||
+                                                                    cJSON.items?.cjsonType === "cJSON_Union"
                                                                 ) {
                                                                     this.emitLine(
                                                                         "cJSON_AddItemToArray(j",
                                                                         child_level.toString(),
                                                                         ", ",
-                                                                        cJSON.items!.createObject,
+                                                                        cJSON.items?.createObject,
                                                                         "(x",
                                                                         child_level.toString(),
                                                                         "));"
@@ -2515,14 +2564,16 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                         "cJSON_AddItemToArray(j",
                                                                         child_level.toString(),
                                                                         ", ",
-                                                                        cJSON.items!.createObject,
+                                                                        // @ts-expect-error awaiting refactor
+                                                                        cJSON.items?.createObject,
                                                                         "(*x",
                                                                         child_level.toString(),
                                                                         "));"
                                                                     );
                                                                 }
                                                             };
-                                                            if (cJSON.items!.isNullable) {
+
+                                                            if (cJSON.items?.isNullable) {
                                                                 this.emitBlock(
                                                                     [
                                                                         "if ((void *)0xDEADBEEF != x",
@@ -2543,6 +2594,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                             } else {
                                                                 add(property.type, cJSON, child_level);
                                                             }
+
                                                             this.emitLine(
                                                                 "x",
                                                                 child_level.toString(),
@@ -2599,7 +2651,8 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                 ],
                                                                 () => {
                                                                     this.emitLine(
-                                                                        cJSON.items!.cType,
+                                                                        // @ts-expect-error awaiting refactor
+                                                                        cJSON.items?.cType,
                                                                         " *x",
                                                                         child_level.toString(),
                                                                         " = hashtable_lookup(x",
@@ -2617,7 +2670,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                         cJSON: TypeCJSON,
                                                                         child_level: number
                                                                     ) => {
-                                                                        if (cJSON.items!.cjsonType === "cJSON_Array") {
+                                                                        if (cJSON.items?.cjsonType === "cJSON_Array") {
                                                                             if (type instanceof MapType) {
                                                                                 const child_level2 = child_level + 1;
                                                                                 recur(type.values, child_level);
@@ -2637,15 +2690,15 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                                 panic("Invalid type");
                                                                             }
                                                                         } else if (
-                                                                            cJSON.items!.cjsonType === "cJSON_Map"
+                                                                            cJSON.items?.cjsonType === "cJSON_Map"
                                                                         ) {
                                                                             /* Not supported */
                                                                         } else if (
-                                                                            cJSON.items!.cjsonType === "cJSON_Invalid"
+                                                                            cJSON.items?.cjsonType === "cJSON_Invalid"
                                                                         ) {
                                                                             /* Nothing to do */
                                                                         } else if (
-                                                                            cJSON.items!.cjsonType === "cJSON_NULL"
+                                                                            cJSON.items?.cjsonType === "cJSON_NULL"
                                                                         ) {
                                                                             this.emitLine(
                                                                                 cJSON.addToObject,
@@ -2656,13 +2709,13 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                                 "[index",
                                                                                 child_level.toString(),
                                                                                 "], ",
-                                                                                cJSON.items!.createObject,
+                                                                                cJSON.items?.createObject,
                                                                                 "());"
                                                                             );
                                                                         } else if (
-                                                                            cJSON.items!.cjsonType === "cJSON_String" ||
-                                                                            cJSON.items!.cjsonType === "cJSON_Object" ||
-                                                                            cJSON.items!.cjsonType === "cJSON_Union"
+                                                                            cJSON.items?.cjsonType === "cJSON_String" ||
+                                                                            cJSON.items?.cjsonType === "cJSON_Object" ||
+                                                                            cJSON.items?.cjsonType === "cJSON_Union"
                                                                         ) {
                                                                             this.emitLine(
                                                                                 cJSON.addToObject,
@@ -2673,7 +2726,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                                 "[index",
                                                                                 child_level.toString(),
                                                                                 "], ",
-                                                                                cJSON.items!.createObject,
+                                                                                cJSON.items?.createObject,
                                                                                 "(x",
                                                                                 child_level.toString(),
                                                                                 "));"
@@ -2688,14 +2741,16 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                                 "[index",
                                                                                 child_level.toString(),
                                                                                 "], ",
-                                                                                cJSON.items!.createObject,
+                                                                                // @ts-expect-error awaiting refactor
+                                                                                cJSON.items?.createObject,
                                                                                 "(*x",
                                                                                 child_level.toString(),
                                                                                 "));"
                                                                             );
                                                                         }
                                                                     };
-                                                                    if (cJSON.items!.isNullable) {
+
+                                                                    if (cJSON.items?.isNullable) {
                                                                         this.emitBlock(
                                                                             [
                                                                                 "if ((void *)0xDEADBEEF != x",
@@ -2911,6 +2966,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                             );
                                         }
                                     }
+
                                     if (cJSON.isNullable) {
                                         this.emitBlock(["else"], () => {
                                             this.emitLine(
@@ -2925,6 +2981,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                 });
                             }
                         };
+
                         recur(classType, 0);
                     });
                 });
@@ -2973,6 +3030,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                             } else {
                                 this.emitLine(cJSON.deleteType, "(x", child_level.toString(), ");");
                             }
+
                             this.emitLine("x", child_level.toString(), " = list_get_next(x", level.toString(), ");");
                         });
                     } else if (type instanceof ClassType) {
@@ -2984,7 +3042,8 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                     ["if (NULL != x", level > 0 ? level.toString() : "", "->", name, ")"],
                                     () => {
                                         this.emitLine(
-                                            cJSON.items!.cType,
+                                            // @ts-expect-error awaiting refactor
+                                            cJSON.items?.cType,
                                             " * x",
                                             child_level.toString(),
                                             " = list_get_head(x",
@@ -2994,11 +3053,11 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                             ");"
                                         );
                                         this.emitBlock(["while (NULL != x", child_level.toString(), ")"], () => {
-                                            if (cJSON.items!.cjsonType === "cJSON_Array") {
+                                            if (cJSON.items?.cjsonType === "cJSON_Array") {
                                                 if (property.type instanceof ArrayType) {
                                                     recur(property.type.items, child_level);
                                                     this.emitLine(
-                                                        cJSON.items!.deleteType,
+                                                        cJSON.items?.deleteType,
                                                         "(x",
                                                         child_level.toString(),
                                                         ");"
@@ -3006,20 +3065,21 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                 } else {
                                                     panic("Invalid type");
                                                 }
-                                            } else if (cJSON.items!.cjsonType === "cJSON_Map") {
+                                            } else if (cJSON.items?.cjsonType === "cJSON_Map") {
                                                 /* Not supported */
                                             } else if (
-                                                cJSON.items!.cjsonType === "cJSON_Invalid" ||
-                                                cJSON.items!.cjsonType === "cJSON_NULL"
+                                                cJSON.items?.cjsonType === "cJSON_Invalid" ||
+                                                cJSON.items?.cjsonType === "cJSON_NULL"
                                             ) {
                                                 /* Nothing to do */
                                             } else {
-                                                if (cJSON.items!.isNullable) {
+                                                if (cJSON.items?.isNullable) {
                                                     this.emitBlock(
                                                         ["if ((void *)0xDEADBEEF != x", child_level.toString(), ")"],
                                                         () => {
                                                             this.emitLine(
-                                                                cJSON.items!.deleteType,
+                                                                // @ts-expect-error awaiting refactor
+                                                                cJSON.items?.deleteType,
                                                                 "(x",
                                                                 child_level.toString(),
                                                                 ");"
@@ -3028,13 +3088,15 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                     );
                                                 } else {
                                                     this.emitLine(
-                                                        cJSON.items!.deleteType,
+                                                        // @ts-expect-error awaiting refactor
+                                                        cJSON.items?.deleteType,
                                                         "(x",
                                                         child_level.toString(),
                                                         ");"
                                                     );
                                                 }
                                             }
+
                                             this.emitLine(
                                                 "x",
                                                 child_level.toString(),
@@ -3087,7 +3149,8 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                 ],
                                                 () => {
                                                     this.emitLine(
-                                                        cJSON.items!.cType,
+                                                        // @ts-expect-error awaiting refactor
+                                                        cJSON.items?.cType,
                                                         " *x",
                                                         child_level.toString(),
                                                         " = hashtable_lookup(x",
@@ -3103,11 +3166,11 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                     this.emitBlock(
                                                         ["if (NULL != x", child_level.toString(), ")"],
                                                         () => {
-                                                            if (cJSON.items!.cjsonType === "cJSON_Array") {
+                                                            if (cJSON.items?.cjsonType === "cJSON_Array") {
                                                                 if (property.type instanceof MapType) {
                                                                     recur(property.type.values, child_level);
                                                                     this.emitLine(
-                                                                        cJSON.items!.deleteType,
+                                                                        cJSON.items?.deleteType,
                                                                         "(x",
                                                                         child_level.toString(),
                                                                         ");"
@@ -3115,15 +3178,15 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                 } else {
                                                                     panic("Invalid type");
                                                                 }
-                                                            } else if (cJSON.items!.cjsonType === "cJSON_Map") {
+                                                            } else if (cJSON.items?.cjsonType === "cJSON_Map") {
                                                                 /* Not supported */
                                                             } else if (
-                                                                cJSON.items!.cjsonType === "cJSON_Invalid" ||
-                                                                cJSON.items!.cjsonType === "cJSON_NULL"
+                                                                cJSON.items?.cjsonType === "cJSON_Invalid" ||
+                                                                cJSON.items?.cjsonType === "cJSON_NULL"
                                                             ) {
                                                                 /* Nothing to do */
                                                             } else {
-                                                                if (cJSON.items!.isNullable) {
+                                                                if (cJSON.items?.isNullable) {
                                                                     this.emitBlock(
                                                                         [
                                                                             "if ((void *)0xDEADBEEF != x",
@@ -3132,7 +3195,8 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                         ],
                                                                         () => {
                                                                             this.emitLine(
-                                                                                cJSON.items!.deleteType,
+                                                                                // @ts-expect-error awaiting refactor
+                                                                                cJSON.items?.deleteType,
                                                                                 "(x",
                                                                                 child_level.toString(),
                                                                                 ");"
@@ -3141,7 +3205,8 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                     );
                                                                 } else {
                                                                     this.emitLine(
-                                                                        cJSON.items!.deleteType,
+                                                                        // @ts-expect-error awaiting refactor
+                                                                        cJSON.items?.deleteType,
                                                                         "(x",
                                                                         child_level.toString(),
                                                                         ");"
@@ -3204,6 +3269,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                         });
                     }
                 };
+
                 recur(classType, 0);
                 this.emitLine("cJSON_free(x);");
             });
@@ -3262,7 +3328,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
             true
         );
         this.ensureBlankLine();
-        this.emitTypdefAlias(type, className);
+        this.emitTypedefAlias(type, className);
     }
 
     /**
@@ -3317,40 +3383,42 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                 this.emitLine("cJSON * e = NULL;");
                                 this.emitBlock(["cJSON_ArrayForEach(e, j)"], () => {
                                     const add = (cJSON: TypeCJSON) => {
-                                        if (cJSON.items!.cjsonType === "cJSON_Array") {
+                                        if (cJSON.items?.cjsonType === "cJSON_Array") {
                                             /* Not supported */
-                                        } else if (cJSON.items!.cjsonType === "cJSON_Map") {
+                                        } else if (cJSON.items?.cjsonType === "cJSON_Map") {
                                             /* Not supported */
                                         } else if (
-                                            cJSON.items!.cjsonType === "cJSON_Invalid" ||
-                                            cJSON.items!.cjsonType === "cJSON_NULL"
+                                            cJSON.items?.cjsonType === "cJSON_Invalid" ||
+                                            cJSON.items?.cjsonType === "cJSON_NULL"
                                         ) {
                                             this.emitLine(
                                                 "list_add_tail(x->value, (",
-                                                cJSON.items!.cType,
+                                                cJSON.items?.cType,
                                                 " *)0xDEADBEAF, sizeof(",
-                                                cJSON.items!.cType,
+                                                cJSON.items?.cType,
                                                 " *));"
                                             );
-                                        } else if (cJSON.items!.cjsonType === "cJSON_String") {
+                                        } else if (cJSON.items?.cjsonType === "cJSON_String") {
                                             this.emitLine(
                                                 "list_add_tail(x->value, strdup(",
-                                                cJSON.items!.getValue,
+                                                cJSON.items?.getValue,
                                                 "(e)), sizeof(",
-                                                cJSON.items!.cType,
+                                                cJSON.items?.cType,
                                                 " *));"
                                             );
                                         } else {
                                             this.emitLine(
                                                 "list_add_tail(x->value, ",
-                                                cJSON.items!.getValue,
+																								// @ts-expect-error awaiting refactor
+                                                cJSON.items?.getValue,
                                                 "(e), sizeof(",
-                                                cJSON.items!.cType,
+                                                cJSON.items?.cType,
                                                 " *));"
                                             );
                                         }
                                     };
-                                    if (cJSON.items!.isNullable) {
+
+                                    if (cJSON.items?.isNullable) {
                                         this.emitBlock(["if (!cJSON_IsNull(e))"], () => {
                                             add(cJSON);
                                         });
@@ -3370,40 +3438,42 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                 this.emitLine("cJSON * e = NULL;");
                                 this.emitBlock(["cJSON_ArrayForEach(e, j)"], () => {
                                     const add = (cJSON: TypeCJSON) => {
-                                        if (cJSON.items!.cjsonType === "cJSON_Array") {
+                                        if (cJSON.items?.cjsonType === "cJSON_Array") {
                                             /* Not supported */
-                                        } else if (cJSON.items!.cjsonType === "cJSON_Map") {
+                                        } else if (cJSON.items?.cjsonType === "cJSON_Map") {
                                             /* Not supported */
                                         } else if (
-                                            cJSON.items!.cjsonType === "cJSON_Invalid" ||
-                                            cJSON.items!.cjsonType === "cJSON_NULL"
+                                            cJSON.items?.cjsonType === "cJSON_Invalid" ||
+                                            cJSON.items?.cjsonType === "cJSON_NULL"
                                         ) {
                                             this.emitLine(
                                                 "hashtable_add(x->value, e->string, (",
-                                                cJSON.items!.cType,
+                                                cJSON.items?.cType,
                                                 " *)0xDEADBEEF, sizeof(",
-                                                cJSON.items!.cType,
+                                                cJSON.items?.cType,
                                                 " *));"
                                             );
-                                        } else if (cJSON.items!.cjsonType === "cJSON_String") {
+                                        } else if (cJSON.items?.cjsonType === "cJSON_String") {
                                             this.emitLine(
                                                 "hashtable_add(x->value, e->string, strdup(",
-                                                cJSON.items!.getValue,
+                                                cJSON.items?.getValue,
                                                 "(e)), sizeof(",
-                                                cJSON.items!.cType,
+                                                cJSON.items?.cType,
                                                 " *));"
                                             );
                                         } else {
                                             this.emitLine(
                                                 "hashtable_add(x->value, e->string, ",
-                                                cJSON.items!.getValue,
+                                                // @ts-expect-error awaiting refactor
+                                                cJSON.items?.getValue,
                                                 "(e), sizeof(",
-                                                cJSON.items!.cType,
+                                                cJSON.items?.cType,
                                                 " *));"
                                             );
                                         }
                                     };
-                                    if (cJSON.items!.isNullable) {
+
+                                    if (cJSON.items?.isNullable) {
                                         this.emitBlock(["if (!cJSON_IsNull(e))"], () => {
                                             add(cJSON);
                                         });
@@ -3444,40 +3514,43 @@ export class CJSONRenderer extends ConvenienceRenderer {
                         this.emitBlock(["if (NULL != x->value)"], () => {
                             this.emitLine("j = ", cJSON.createObject, "();");
                             this.emitBlock(["if (NULL != j)"], () => {
-                                this.emitLine(cJSON.items!.cType, " * x1 = list_get_head(x->value);");
+                                // @ts-expect-error awaiting refactor
+                                this.emitLine(cJSON.items?.cType, " * x1 = list_get_head(x->value);");
                                 this.emitBlock(["while (NULL != x1)"], () => {
                                     const add = (cJSON: TypeCJSON) => {
-                                        if (cJSON.items!.cjsonType === "cJSON_Array") {
+                                        if (cJSON.items?.cjsonType === "cJSON_Array") {
                                             /* Not supported */
-                                        } else if (cJSON.items!.cjsonType === "cJSON_Map") {
+                                        } else if (cJSON.items?.cjsonType === "cJSON_Map") {
                                             /* Not supported */
-                                        } else if (cJSON.items!.cjsonType === "cJSON_Invalid") {
+                                        } else if (cJSON.items?.cjsonType === "cJSON_Invalid") {
                                             /* Nothing to do */
-                                        } else if (cJSON.items!.cjsonType === "cJSON_NULL") {
+                                        } else if (cJSON.items?.cjsonType === "cJSON_NULL") {
                                             this.emitLine(
                                                 "cJSON_AddItemToArray(j, ",
-                                                cJSON.items!.createObject,
+                                                cJSON.items?.createObject,
                                                 "());"
                                             );
                                         } else if (
-                                            cJSON.items!.cjsonType === "cJSON_String" ||
-                                            cJSON.items!.cjsonType === "cJSON_Object" ||
-                                            cJSON.items!.cjsonType === "cJSON_Union"
+                                            cJSON.items?.cjsonType === "cJSON_String" ||
+                                            cJSON.items?.cjsonType === "cJSON_Object" ||
+                                            cJSON.items?.cjsonType === "cJSON_Union"
                                         ) {
                                             this.emitLine(
                                                 "cJSON_AddItemToArray(j, ",
-                                                cJSON.items!.createObject,
+                                                cJSON.items?.createObject,
                                                 "(x1));"
                                             );
                                         } else {
                                             this.emitLine(
                                                 "cJSON_AddItemToArray(j, ",
-                                                cJSON.items!.createObject,
+                                                // @ts-expect-error awaiting refactor
+                                                cJSON.items?.createObject,
                                                 "(*x1));"
                                             );
                                         }
                                     };
-                                    if (cJSON.items!.isNullable) {
+
+                                    if (cJSON.items?.isNullable) {
                                         this.emitBlock(["if ((void *)0xDEADBEEF != x1)"], () => {
                                             add(cJSON);
                                         });
@@ -3487,6 +3560,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                     } else {
                                         add(cJSON);
                                     }
+
                                     this.emitLine("x1 = list_get_next(x->value);");
                                 });
                             });
@@ -3500,44 +3574,47 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                 this.emitBlock(["if (NULL != keys)"], () => {
                                     this.emitBlock(["for (size_t index = 0; index < count; index++)"], () => {
                                         this.emitLine(
-                                            cJSON.items!.cType,
+                                            // @ts-expect-error awaiting refactor
+                                            cJSON.items?.cType,
                                             " *x2 = hashtable_lookup(x->value, keys[index]);"
                                         );
                                         const add = (cJSON: TypeCJSON) => {
-                                            if (cJSON.items!.cjsonType === "cJSON_Array") {
+                                            if (cJSON.items?.cjsonType === "cJSON_Array") {
                                                 /* Not supported */
-                                            } else if (cJSON.items!.cjsonType === "cJSON_Map") {
+                                            } else if (cJSON.items?.cjsonType === "cJSON_Map") {
                                                 /* Not supported */
-                                            } else if (cJSON.items!.cjsonType === "cJSON_Invalid") {
+                                            } else if (cJSON.items?.cjsonType === "cJSON_Invalid") {
                                                 /* Nothing to do */
-                                            } else if (cJSON.items!.cjsonType === "cJSON_NULL") {
+                                            } else if (cJSON.items?.cjsonType === "cJSON_NULL") {
                                                 this.emitLine(
                                                     cJSON.addToObject,
                                                     "(j, keys[index], ",
-                                                    cJSON.items!.createObject,
+                                                    cJSON.items?.createObject,
                                                     "());"
                                                 );
                                             } else if (
-                                                cJSON.items!.cjsonType === "cJSON_String" ||
-                                                cJSON.items!.cjsonType === "cJSON_Object" ||
-                                                cJSON.items!.cjsonType === "cJSON_Union"
+                                                cJSON.items?.cjsonType === "cJSON_String" ||
+                                                cJSON.items?.cjsonType === "cJSON_Object" ||
+                                                cJSON.items?.cjsonType === "cJSON_Union"
                                             ) {
                                                 this.emitLine(
                                                     cJSON.addToObject,
                                                     "(j, keys[index], ",
-                                                    cJSON.items!.createObject,
+                                                    cJSON.items?.createObject,
                                                     "(x2));"
                                                 );
                                             } else {
                                                 this.emitLine(
                                                     cJSON.addToObject,
                                                     "(j, keys[index], ",
-                                                    cJSON.items!.createObject,
+                                                    // @ts-expect-error awaiting refactor
+                                                    cJSON.items?.createObject,
                                                     "(*x2));"
                                                 );
                                             }
                                         };
-                                        if (cJSON.items!.isNullable) {
+
+                                        if (cJSON.items?.isNullable) {
                                             this.emitBlock(["if ((void *)0xDEADBEEF != x2)"], () => {
                                                 add(cJSON);
                                             });
@@ -3588,15 +3665,19 @@ export class CJSONRenderer extends ConvenienceRenderer {
                 const cJSON = this.quicktypeTypeToCJSON(type, false);
                 if (cJSON.cjsonType === "cJSON_Array" && cJSON.items !== undefined) {
                     this.emitBlock(["if (NULL != x->value)"], () => {
-                        this.emitLine(cJSON.items!.cType, " * x1 = list_get_head(x->value);");
+                        // @ts-expect-error awaiting refactor
+                        this.emitLine(cJSON.items?.cType, " * x1 = list_get_head(x->value);");
                         this.emitBlock(["while (NULL != x1)"], () => {
-                            if (cJSON.items!.isNullable) {
+                            if (cJSON.items?.isNullable) {
                                 this.emitBlock(["if ((void *)0xDEADBEEF != x1)"], () => {
-                                    this.emitLine(cJSON.items!.deleteType, "(x1);");
+                                    // @ts-expect-error awaiting refactor
+                                    this.emitLine(cJSON.items?.deleteType, "(x1);");
                                 });
                             } else {
-                                this.emitLine(cJSON.items!.deleteType, "(x1);");
+                                // @ts-expect-error awaiting refactor
+                                this.emitLine(cJSON.items?.deleteType, "(x1);");
                             }
+
                             this.emitLine("x1 = list_get_next(x->value);");
                         });
                         this.emitLine(cJSON.deleteType, "(x->value);");
@@ -3607,14 +3688,17 @@ export class CJSONRenderer extends ConvenienceRenderer {
                         this.emitLine("size_t count = hashtable_get_keys(x->value, &keys);");
                         this.emitBlock(["if (NULL != keys)"], () => {
                             this.emitBlock(["for (size_t index = 0; index < count; index++)"], () => {
-                                this.emitLine(cJSON.items!.cType, " *x2 = hashtable_lookup(x->value, keys[index]);");
+                                // @ts-expect-error awaiting refactor
+                                this.emitLine(cJSON.items?.cType, " *x2 = hashtable_lookup(x->value, keys[index]);");
                                 this.emitBlock(["if (NULL != x2)"], () => {
-                                    if (cJSON.items!.isNullable) {
-                                        this.emitBlock(["if ((", cJSON.items!.cType, " *)0xDEADBEEF != x2)"], () => {
-                                            this.emitLine(cJSON.items!.deleteType, "(x2);");
+                                    if (cJSON.items?.isNullable) {
+                                        this.emitBlock(["if ((", cJSON.items?.cType, " *)0xDEADBEEF != x2)"], () => {
+                                            // @ts-expect-error awaiting refactor
+                                            this.emitLine(cJSON.items?.deleteType, "(x2);");
                                         });
                                     } else {
-                                        this.emitLine(cJSON.items!.deleteType, "(x2);");
+                                        // @ts-expect-error awaiting refactor
+                                        this.emitLine(cJSON.items?.deleteType, "(x2);");
                                     }
                                 });
                             });
@@ -3633,6 +3717,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                 } else {
                     /* Nothing to do */
                 }
+
                 this.emitLine("cJSON_free(x);");
             });
         });
@@ -3973,6 +4058,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
         } else {
             f();
         }
+
         this.preventBlankLine();
         if (withSemicolon) {
             if (withName !== "") {
@@ -4014,6 +4100,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                 }
             });
         }
+
         this.ensureBlankLine();
     }
 
@@ -4054,6 +4141,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                     }
                 }
             }
+
             if (includes.has(typeName)) {
                 const incKind = includes.get(typeName);
                 /* If we already include the type as typed include, do not write it over with forward declare */
@@ -4130,6 +4218,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                 }
             }
         };
+
         recur(false, false, 0, type);
         return result;
     }
