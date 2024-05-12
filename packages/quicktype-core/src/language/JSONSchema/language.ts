@@ -2,7 +2,7 @@ import { type RenderContext } from "../../Renderer";
 import { type Option } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
 import { type StringTypeMapping, getNoStringTypeMapping } from "../../TypeBuilder";
-import { type FixMeOptionsAnyType } from "../../types";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
 
 import { JSONSchemaRenderer } from "./JSONSchemaRenderer";
 
