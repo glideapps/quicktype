@@ -154,7 +154,7 @@
         "@vscode/test-electron": "^2.3.9",
         "@vscode/vsce": "^2.25.0",
         "eslint": "^8.56.0",
-        "typescript": "^5.3.3",
+        "typescript": "^5.4.5",
         "node-persist": "^4.0.1",
         "quicktype-core": "file:../quicktype-core",
         "quicktype-typescript-input": "file:../quicktype-typescript-input",
