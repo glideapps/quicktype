@@ -43,7 +43,7 @@
         "typescript": "4.9.5"
     },
     "devDependencies": {
-        "@tsconfig/node18": "^1.0.1",
+        "@tsconfig/node18": "^18.2.4",
         "@types/command-line-args": "^5.2.0",
         "@types/command-line-usage": "^5.0.4",
         "@types/graphql": "^0.11.7",
