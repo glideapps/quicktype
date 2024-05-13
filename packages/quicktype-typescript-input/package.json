@@ -3,7 +3,7 @@
     "version": "18.0.15",
     "description": "Package for using TypeScript as an input language to quicktype",
     "license": "Apache-2.0",
-    "main": "dist/index.js",
+    "main": "dist/src/index.js",
     "types": "dist/index.d.ts",
     "repository": "https://github.com/quicktype/quicktype",
     "scripts": {
