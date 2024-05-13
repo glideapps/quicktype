@@ -2,7 +2,7 @@
     "name": "quicktype",
     "version": "23.0.0",
     "license": "Apache-2.0",
-    "main": "dist/src/index.js",
+    "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "repository": "https://github.com/quicktype/quicktype",
     "engines": {
@@ -14,7 +14,7 @@
         "test": "script/test",
         "start": "script/watch",
         "clean": "rm -rf dist node_modules *~ packages/*/{dist,node_modules,out}",
-        "debug": "node --inspect-brk --max-old-space-size=4096 ./dist/src/index.js",
+        "debug": "node --inspect-brk --max-old-space-size=4096 ./dist/index.js",
         "lint": "eslint src/** packages/*/src/**",
         "lint:fix": "eslint --fix src/** packages/*/src/**"
     },
@@ -77,5 +77,5 @@
     "files": [
         "dist"
     ],
-    "bin": "dist/src/index.js"
+    "bin": "dist/index.js"
 }
