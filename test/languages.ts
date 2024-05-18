@@ -70,7 +70,7 @@ export const CSharpLanguage: Language = {
         { "number-type": "decimal" },
         { "any-type": "dynamic" }
     ],
-    sourceFiles: ["src/language/CSharp.ts"]
+    sourceFiles: ["src/language/CSharp/index.ts"]
 };
 
 export const CSharpLanguageSystemTextJson: Language = {
@@ -102,7 +102,7 @@ export const CSharpLanguageSystemTextJson: Language = {
         { "number-type": "decimal" },
         { "any-type": "dynamic" }
     ],
-    sourceFiles: ["src/language/CSharp.ts"]
+    sourceFiles: ["src/language/CSharp/index.ts"]
 };
 
 export const JavaLanguage: Language = {
@@ -125,7 +125,7 @@ export const JavaLanguage: Language = {
     skipSchema: ["keyword-unions.schema"], // generates classes with names that are case-insensitively equal
     rendererOptions: {},
     quickTestRendererOptions: [{ "array-type": "list" }],
-    sourceFiles: ["src/language/Java.ts"]
+    sourceFiles: ["src/language/Java/index.ts"]
 };
 
 export const JavaLanguageWithLegacyDateTime: Language = {
@@ -182,7 +182,7 @@ export const PythonLanguage: Language = {
     ],
     rendererOptions: {},
     quickTestRendererOptions: [{ "python-version": "3.5" }],
-    sourceFiles: ["src/language/Python.ts"]
+    sourceFiles: ["src/language/Python/index.ts"]
 };
 
 export const RustLanguage: Language = {
@@ -224,7 +224,7 @@ export const RustLanguage: Language = {
         { visibility: "private" },
         { visibility: "public" }
     ],
-    sourceFiles: ["src/language/Rust.ts"]
+    sourceFiles: ["src/language/Rust/index.ts"]
 };
 
 export const CrystalLanguage: Language = {
@@ -263,7 +263,7 @@ export const CrystalLanguage: Language = {
     skipMiscJSON: false,
     rendererOptions: {},
     quickTestRendererOptions: [],
-    sourceFiles: ["src/language/Crystal.ts"]
+    sourceFiles: ["src/language/Crystal/index.ts"]
 };
 
 export const RubyLanguage: Language = {
@@ -405,7 +405,7 @@ export const GoLanguage: Language = {
     ],
     rendererOptions: {},
     quickTestRendererOptions: [],
-    sourceFiles: ["src/language/Golang.ts"]
+    sourceFiles: ["src/language/Golang/index.ts"]
 };
 
 export const CJSONLanguage: Language = {
@@ -483,7 +483,7 @@ export const CJSONLanguage: Language = {
     ],
     rendererOptions: {},
     quickTestRendererOptions: [{ "source-style": "single-source" }],
-    sourceFiles: ["src/language/CJSON.ts"]
+    sourceFiles: ["src/language/CJSON/index.ts"]
 };
 
 export const CPlusPlusLanguage: Language = {
@@ -542,7 +542,7 @@ export const CPlusPlusLanguage: Language = {
         { "const-style": "east-const" },
         { boost: "false" }
     ],
-    sourceFiles: ["src/language/CPlusPlus.ts"]
+    sourceFiles: ["src/language/CPlusPlus/index.ts"]
 };
 
 export const ElmLanguage: Language = {
@@ -614,7 +614,7 @@ export const ElmLanguage: Language = {
     ],
     rendererOptions: {},
     quickTestRendererOptions: [{ "array-type": "list" }],
-    sourceFiles: ["src/language/Elm.ts"]
+    sourceFiles: ["src/language/Elm/index.ts"]
 };
 
 export const SwiftLanguage: Language = {
@@ -702,7 +702,7 @@ export const SwiftLanguage: Language = {
         { protocol: "equatable" },
         ["simple-object.json", { protocol: "hashable" }]
     ],
-    sourceFiles: ["src/language/Swift.ts"]
+    sourceFiles: ["src/language/Swift/index.ts"]
 };
 
 export const ObjectiveCLanguage: Language = {
@@ -740,7 +740,7 @@ export const ObjectiveCLanguage: Language = {
     skipSchema: [],
     rendererOptions: { functions: "true" },
     quickTestRendererOptions: [],
-    sourceFiles: ["src/language/Objective-C.ts"]
+    sourceFiles: ["src/language/Objective-C/index.ts"]
 };
 
 export const TypeScriptLanguage: Language = {
@@ -788,7 +788,7 @@ export const TypeScriptLanguage: Language = {
         { converters: "all-objects" },
         { readonly: "true" }
     ],
-    sourceFiles: ["src/language/TypeScript.ts"]
+    sourceFiles: ["src/language/TypeScript/index.ts"]
 };
 
 export const JavaScriptLanguage: Language = {
@@ -815,7 +815,7 @@ export const JavaScriptLanguage: Language = {
         { "runtime-typecheck-ignore-unknown-properties": "true" },
         { converters: "top-level" }
     ],
-    sourceFiles: ["src/language/JavaScript.ts"]
+    sourceFiles: ["src/language/JavaScript/index.ts"]
 };
 
 export const JavaScriptPropTypesLanguage: Language = {
@@ -847,7 +847,7 @@ export const JavaScriptPropTypesLanguage: Language = {
         { "runtime-typecheck-ignore-unknown-properties": "true" },
         { converters: "top-level" }
     ],
-    sourceFiles: ["src/Language/JavaScriptPropTypes.ts"]
+    sourceFiles: ["src/language/JavaScriptPropTypes/index.ts"]
 };
 
 export const FlowLanguage: Language = {
@@ -876,7 +876,7 @@ export const FlowLanguage: Language = {
         { "nice-property-names": "true" },
         { "declare-unions": "true" }
     ],
-    sourceFiles: ["src/language/Flow.ts"]
+    sourceFiles: ["src/language/Flow/index.ts"]
 };
 
 export const Scala3Language: Language = {
@@ -956,7 +956,7 @@ I havea no idea how to encode these tests correctly.
     skipMiscJSON: false,
     rendererOptions: { framework: "circe" },
     quickTestRendererOptions: [],
-    sourceFiles: ["src/Language/Scala3.ts"]
+    sourceFiles: ["src/language/Scala3/index.ts"]
 };
 
 export const Smithy4sLanguage: Language = {
@@ -1022,7 +1022,7 @@ I havea no idea how to encode these tests correctly.
     skipMiscJSON: false,
     rendererOptions: { framework: "just-types" },
     quickTestRendererOptions: [],
-    sourceFiles: ["src/Language/Smithy4s.ts"]
+    sourceFiles: ["src/language/Smithy4s/index.ts"]
 };
 
 export const KotlinLanguage: Language = {
@@ -1107,7 +1107,7 @@ export const KotlinLanguage: Language = {
     skipMiscJSON: false,
     rendererOptions: {},
     quickTestRendererOptions: [],
-    sourceFiles: ["src/Language/Kotlin.ts"]
+    sourceFiles: ["src/language/Kotlin/index.ts"]
 };
 
 export const KotlinJacksonLanguage: Language = {
@@ -1191,7 +1191,7 @@ export const KotlinJacksonLanguage: Language = {
     skipMiscJSON: false,
     rendererOptions: { framework: "jackson" },
     quickTestRendererOptions: [],
-    sourceFiles: ["src/Language/Kotlin.ts"]
+    sourceFiles: ["src/language/Kotlin/index.ts"]
 };
 
 export const DartLanguage: Language = {
@@ -1241,7 +1241,7 @@ export const DartLanguage: Language = {
     skipMiscJSON: true,
     rendererOptions: {},
     quickTestRendererOptions: [],
-    sourceFiles: ["src/Language/Dart.ts"]
+    sourceFiles: ["src/language/Dart/index.ts"]
 };
 
 export const PikeLanguage: Language = {
@@ -1294,7 +1294,7 @@ export const PikeLanguage: Language = {
     ],
     rendererOptions: {},
     quickTestRendererOptions: [],
-    sourceFiles: ["src/Language/Pike.ts"]
+    sourceFiles: ["src/language/Pike/index.ts"]
 };
 
 export const HaskellLanguage: Language = {
@@ -1383,7 +1383,7 @@ export const HaskellLanguage: Language = {
     ],
     rendererOptions: {},
     quickTestRendererOptions: [{ "array-type": "list" }],
-    sourceFiles: ["src/language/Haskell.ts"]
+    sourceFiles: ["src/language/Haskell/index.ts"]
 };
 
 export const PHPLanguage: Language = {
@@ -1401,7 +1401,7 @@ export const PHPLanguage: Language = {
     skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [],
-    sourceFiles: ["src/Language/Php.ts"]
+    sourceFiles: ["src/language/Php/index.ts"]
 };
 
 export const TypeScriptZodLanguage: Language = {
@@ -1519,7 +1519,7 @@ export const TypeScriptZodLanguage: Language = {
     ],
     rendererOptions: {},
     quickTestRendererOptions: [{ "array-type": "list" }],
-    sourceFiles: ["src/language/TypeScriptZod.ts"]
+    sourceFiles: ["src/language/TypeScriptZod/index.ts"]
 };
 
 export const TypeScriptEffectSchemaLanguage: Language = {
@@ -1635,7 +1635,7 @@ export const TypeScriptEffectSchemaLanguage: Language = {
     ],
     rendererOptions: {},
     quickTestRendererOptions: [{ "array-type": "list" }],
-    sourceFiles: ["src/language/TypeScriptEffectSchema.ts"]
+    sourceFiles: ["src/language/TypeScriptEffectSchema/index.ts"]
 };
 
 export const ElixirLanguage: Language = {
@@ -1696,5 +1696,5 @@ export const ElixirLanguage: Language = {
     ],
     rendererOptions: {},
     quickTestRendererOptions: [],
-    sourceFiles: ["src/language/Elixir.ts"]
+    sourceFiles: ["src/language/Elixir/index.ts"]
 };
