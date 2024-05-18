@@ -134,7 +134,7 @@ export function addQualifier(qualifier: Sourcelike, qualified: Sourcelike[]): So
     return [qualifier, qualified];
 }
 
-class WrappingCode {
+export class WrappingCode {
     public constructor(
         private readonly start: Sourcelike[],
         private readonly end: Sourcelike[]

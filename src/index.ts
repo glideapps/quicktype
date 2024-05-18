@@ -49,12 +49,13 @@ import {
 import { GraphQLInput } from "quicktype-graphql-input";
 import { schemaForTypeScriptSources } from "quicktype-typescript-input";
 
-import packageJSON from "../package.json";
-
 import { CompressedJSONFromStream } from "./CompressedJSONFromStream";
 import { introspectServer } from "./GraphQLIntrospection";
 import { type GraphQLTypeSource, type JSONTypeSource, type SchemaTypeSource, type TypeSource } from "./TypeSource";
 import { urlsFromURLGrammar } from "./URLGrammar";
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+const packageJSON = require("../package.json");
 
 const wordWrap: (s: string) => string = _wordwrap(90);
 

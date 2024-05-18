@@ -16,12 +16,11 @@ import { keywords } from "./constants";
 import { type rustOptions } from "./language";
 import {
     Density,
-    type NamingStyleKey,
     Visibility,
     camelNamingFunction,
-    getPreferredNamingStyle,
+    getPreferedNamingStyle,
     listMatchingNamingStyles,
-    nameWithNamingStyle,
+    nameToNamingStyle,
     namingStyles,
     rustStringEscape,
     snakeNamingFunction
@@ -31,7 +30,7 @@ export class RustRenderer extends ConvenienceRenderer {
     public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        protected readonly _options: OptionValues<typeof rustOptions>
+        private readonly _options: OptionValues<typeof rustOptions>
     ) {
         super(targetLanguage, renderContext);
     }
@@ -72,7 +71,7 @@ export class RustRenderer extends ConvenienceRenderer {
         return "/// ";
     }
 
-    protected nullableRustType(t: Type, withIssues: boolean): Sourcelike {
+    private nullableRustType(t: Type, withIssues: boolean): Sourcelike {
         return ["Option<", this.breakCycle(t, withIssues), ">"];
     }
 
@@ -81,7 +80,7 @@ export class RustRenderer extends ConvenienceRenderer {
         return kind === "array" || kind === "map";
     }
 
-    protected rustType(t: Type, withIssues = false): Sourcelike {
+    private rustType(t: Type, withIssues = false): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "Option<serde_json::Value>"),
@@ -112,46 +111,36 @@ export class RustRenderer extends ConvenienceRenderer {
         );
     }
 
-    protected emitDeriveHeader(): void {
-        this.emitLine(
-            "#[derive(",
-            this._options.deriveDebug ? "Debug, " : "",
-            this._options.deriveClone ? "Clone, " : "",
-            this._options.derivePartialEq ? "PartialEq, " : "",
-            "Serialize, Deserialize)]"
-        );
-    }
-
-    protected breakCycle(t: Type, withIssues: boolean): Sourcelike {
+    private breakCycle(t: Type, withIssues: boolean): Sourcelike {
         const rustType = this.rustType(t, withIssues);
         const isCycleBreaker = this.isCycleBreakerType(t);
 
         return isCycleBreaker ? ["Box<", rustType, ">"] : rustType;
     }
 
-    protected emitRenameAttribute(
+    private emitRenameAttribute(
         propName: Name,
         jsonName: string,
-        defaultNamingStyle: NamingStyleKey,
-        preferredNamingStyle: NamingStyleKey
+        defaultNamingStyle: string,
+        preferedNamingStyle: string
     ): void {
         const escapedName = rustStringEscape(jsonName);
         const name = namingStyles[defaultNamingStyle].fromParts(this.sourcelikeToString(propName).split(" "));
-        const styledName = nameWithNamingStyle(name, preferredNamingStyle);
+        const styledName = nameToNamingStyle(name, preferedNamingStyle);
         const namesDiffer = escapedName !== styledName;
         if (namesDiffer) {
             this.emitLine('#[serde(rename = "', escapedName, '")]');
         }
     }
 
-    protected emitSkipSerializeNone(t: Type): void {
+    private emitSkipSerializeNone(t: Type): void {
         if (t instanceof UnionType) {
             const nullable = nullableFromUnion(t);
             if (nullable !== null) this.emitLine('#[serde(skip_serializing_if = "Option::is_none")]');
         }
     }
 
-    protected get visibility(): string {
+    private get visibility(): string {
         if (this._options.visibility === Visibility.Crate) {
             return "pub(crate) ";
         } else if (this._options.visibility === Visibility.Public) {
@@ -163,7 +152,13 @@ export class RustRenderer extends ConvenienceRenderer {
 
     protected emitStructDefinition(c: ClassType, className: Name): void {
         this.emitDescription(this.descriptionForType(c));
-        this.emitDeriveHeader();
+        this.emitLine(
+            "#[derive(",
+            this._options.deriveDebug ? "Debug, " : "",
+            this._options.deriveClone ? "Clone, " : "",
+            this._options.derivePartialEq ? "PartialEq, " : "",
+            "Serialize, Deserialize)]"
+        );
 
         // List the possible naming styles for every class property
         const propertiesNamingStyles: { [key: string]: string[] } = {};
@@ -173,19 +168,16 @@ export class RustRenderer extends ConvenienceRenderer {
 
         // Set the default naming style on the struct
         const defaultStyle = "snake_case";
-        const preferredNamingStyle = getPreferredNamingStyle(
-            Object.values(propertiesNamingStyles).flat(),
-            defaultStyle
-        );
-        if (preferredNamingStyle !== defaultStyle) {
-            this.emitLine(`#[serde(rename_all = "${preferredNamingStyle}")]`);
+        const preferedNamingStyle = getPreferedNamingStyle(Object.values(propertiesNamingStyles).flat(), defaultStyle);
+        if (preferedNamingStyle !== defaultStyle) {
+            this.emitLine(`#[serde(rename_all = "${preferedNamingStyle}")]`);
         }
 
         const blankLines = this._options.density === Density.Dense ? "none" : "interposing";
         const structBody = (): void =>
             this.forEachClassProperty(c, blankLines, (name, jsonName, prop) => {
                 this.emitDescription(this.descriptionForClassProperty(c, jsonName));
-                this.emitRenameAttribute(name, jsonName, defaultStyle, preferredNamingStyle);
+                this.emitRenameAttribute(name, jsonName, defaultStyle, preferedNamingStyle);
                 if (this._options.skipSerializingNone) {
                     this.emitSkipSerializeNone(prop.type);
                 }
@@ -210,7 +202,13 @@ export class RustRenderer extends ConvenienceRenderer {
         }
 
         this.emitDescription(this.descriptionForType(u));
-        this.emitDeriveHeader();
+        this.emitLine(
+            "#[derive(",
+            this._options.deriveDebug ? "Debug, " : "",
+            this._options.deriveClone ? "Clone, " : "",
+            this._options.derivePartialEq ? "PartialEq, " : "",
+            "Serialize, Deserialize)]"
+        );
         this.emitLine("#[serde(untagged)]");
 
         const [, nonNulls] = removeNullFromUnion(u);
@@ -226,7 +224,13 @@ export class RustRenderer extends ConvenienceRenderer {
 
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
-        this.emitDeriveHeader();
+        this.emitLine(
+            "#[derive(",
+            this._options.deriveDebug ? "Debug, " : "",
+            this._options.deriveClone ? "Clone, " : "",
+            this._options.derivePartialEq ? "PartialEq, " : "",
+            "Serialize, Deserialize)]"
+        );
 
         // List the possible naming styles for every enum case
         const enumCasesNamingStyles: { [key: string]: string[] } = {};
@@ -236,15 +240,15 @@ export class RustRenderer extends ConvenienceRenderer {
 
         // Set the default naming style on the enum
         const defaultStyle = "PascalCase";
-        const preferredNamingStyle = getPreferredNamingStyle(Object.values(enumCasesNamingStyles).flat(), defaultStyle);
-        if (preferredNamingStyle !== defaultStyle) {
-            this.emitLine(`#[serde(rename_all = "${preferredNamingStyle}")]`);
+        const preferedNamingStyle = getPreferedNamingStyle(Object.values(enumCasesNamingStyles).flat(), defaultStyle);
+        if (preferedNamingStyle !== defaultStyle) {
+            this.emitLine(`#[serde(rename_all = "${preferedNamingStyle}")]`);
         }
 
         const blankLines = this._options.density === Density.Dense ? "none" : "interposing";
         this.emitBlock(["pub enum ", enumName], () =>
             this.forEachEnumCase(e, blankLines, (name, jsonName) => {
-                this.emitRenameAttribute(name, jsonName, defaultStyle, preferredNamingStyle);
+                this.emitRenameAttribute(name, jsonName, defaultStyle, preferedNamingStyle);
                 this.emitLine([name, ","]);
             })
         );
