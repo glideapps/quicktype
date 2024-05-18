@@ -25,7 +25,7 @@ import { type RenderContext } from "../../Renderer";
 import { EnumOption, type Option, StringOption, getOptionValues } from "../../RendererOptions";
 import { type NamingStyle } from "../../support/Strings";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type FixMeOptionsType, type FixMeOptionsAnyType } from "../../types";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
 
 import { CJSONRenderer } from "./CJSONRenderer";
 
