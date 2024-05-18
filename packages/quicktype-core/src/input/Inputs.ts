@@ -14,7 +14,6 @@ import { type LanguageName } from "../types";
 import { type CompressedJSON, CompressedJSONFromString, type Value } from "./CompressedJSON";
 import { TypeInference } from "./Inference";
 
-
 export interface Input<T> {
     addSource: (source: T) => Promise<void>;
     addSourceSync: (source: T) => void;

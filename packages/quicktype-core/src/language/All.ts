@@ -29,7 +29,6 @@ import { TypeScriptEffectSchemaTargetLanguage } from "./TypeScriptEffectSchema";
 import { FlowTargetLanguage, TypeScriptTargetLanguage } from "./TypeScriptFlow";
 import { TypeScriptZodTargetLanguage } from "./TypeScriptZod";
 
-
 export const all = [
     new CJSONTargetLanguage(),
     new CPlusPlusTargetLanguage(),
