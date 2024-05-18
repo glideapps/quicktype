@@ -186,8 +186,11 @@ jobs:
 
             - run: QUICKTEST=true FIXTURE=${{ matrix.fixture }} npm test
 
-    test-complete:
+    rethrow:
+        if: ${{ cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
         needs: test
         runs-on: ubuntu-latest
         steps:
-            - run: echo 🎉
+          - run: |
+              echo "Some workflows have failed!"
+              exit 1
