@@ -21,7 +21,7 @@ import { ObjectiveCTargetLanguage } from "./Objective-C";
 import { PhpTargetLanguage } from "./Php";
 import { PikeTargetLanguage } from "./Pike";
 import { PythonTargetLanguage } from "./Python";
-import { RubyTargetLanguage } from "./ruby";
+import { RubyTargetLanguage } from "./Ruby";
 import { RustTargetLanguage } from "./Rust";
 import { Scala3TargetLanguage } from "./Scala3";
 import { SmithyTargetLanguage } from "./Smithy4s";
@@ -31,33 +31,33 @@ import { FlowTargetLanguage, TypeScriptTargetLanguage } from "./TypeScriptFlow";
 import { TypeScriptZodTargetLanguage } from "./TypeScriptZod";
 
 export const all: TargetLanguage[] = [
-    new CSharpTargetLanguage(),
-    new GoTargetLanguage(),
-    new RustTargetLanguage(),
-    new CrystalTargetLanguage(),
     new CJSONTargetLanguage(),
     new CPlusPlusTargetLanguage(),
-    new ObjectiveCTargetLanguage(),
+    new CrystalTargetLanguage(),
+    new CSharpTargetLanguage(),
+    new DartTargetLanguage(),
+    new ElixirTargetLanguage(),
+    new ElmTargetLanguage(),
+    new FlowTargetLanguage(),
+    new GoTargetLanguage(),
+    new HaskellTargetLanguage(),
     new JavaTargetLanguage(),
-    new TypeScriptTargetLanguage(),
     new JavaScriptTargetLanguage(),
     new JavaScriptPropTypesTargetLanguage(),
-    new FlowTargetLanguage(),
-    new SwiftTargetLanguage(),
+    new JSONSchemaTargetLanguage(),
+    new KotlinTargetLanguage(),
+    new ObjectiveCTargetLanguage(),
+    new PhpTargetLanguage(),
+    new PikeTargetLanguage(),
+    new PythonTargetLanguage("Python", ["python", "py"], "py"),
+    new RubyTargetLanguage(),
+    new RustTargetLanguage(),
     new Scala3TargetLanguage(),
     new SmithyTargetLanguage(),
-    new KotlinTargetLanguage(),
-    new ElmTargetLanguage(),
-    new JSONSchemaTargetLanguage(),
-    new RubyTargetLanguage(),
-    new DartTargetLanguage(),
-    new PythonTargetLanguage("Python", ["python", "py"], "py"),
-    new PikeTargetLanguage(),
-    new HaskellTargetLanguage(),
-    new TypeScriptZodTargetLanguage(),
+    new SwiftTargetLanguage(),
+    new TypeScriptTargetLanguage(),
     new TypeScriptEffectSchemaTargetLanguage(),
-    new ElixirTargetLanguage(),
-    new PhpTargetLanguage()
+    new TypeScriptZodTargetLanguage()
 ];
 
 export function languageNamed(name: string, targetLanguages?: TargetLanguage[]): TargetLanguage | undefined {

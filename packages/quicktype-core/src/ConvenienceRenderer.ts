@@ -129,7 +129,7 @@ export abstract class ConvenienceRenderer extends Renderer {
      * that can conflict with that, such as reserved keywords or common type
      * names.
      */
-    protected forbiddenNamesForGlobalNamespace(): string[] {
+    protected forbiddenNamesForGlobalNamespace(): readonly string[] {
         return [];
     }
 
