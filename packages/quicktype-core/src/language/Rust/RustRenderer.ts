@@ -16,11 +16,12 @@ import { keywords } from "./constants";
 import { type rustOptions } from "./language";
 import {
     Density,
+    type NamingStyleKey,
     Visibility,
     camelNamingFunction,
-    getPreferedNamingStyle,
+    getPreferredNamingStyle,
     listMatchingNamingStyles,
-    nameToNamingStyle,
+    nameWithNamingStyle,
     namingStyles,
     rustStringEscape,
     snakeNamingFunction
@@ -121,12 +122,12 @@ export class RustRenderer extends ConvenienceRenderer {
     private emitRenameAttribute(
         propName: Name,
         jsonName: string,
-        defaultNamingStyle: string,
-        preferedNamingStyle: string
+        defaultNamingStyle: NamingStyleKey,
+        preferedNamingStyle: NamingStyleKey
     ): void {
         const escapedName = rustStringEscape(jsonName);
         const name = namingStyles[defaultNamingStyle].fromParts(this.sourcelikeToString(propName).split(" "));
-        const styledName = nameToNamingStyle(name, preferedNamingStyle);
+        const styledName = nameWithNamingStyle(name, preferedNamingStyle);
         const namesDiffer = escapedName !== styledName;
         if (namesDiffer) {
             this.emitLine('#[serde(rename = "', escapedName, '")]');
@@ -168,7 +169,7 @@ export class RustRenderer extends ConvenienceRenderer {
 
         // Set the default naming style on the struct
         const defaultStyle = "snake_case";
-        const preferedNamingStyle = getPreferedNamingStyle(Object.values(propertiesNamingStyles).flat(), defaultStyle);
+        const preferedNamingStyle = getPreferredNamingStyle(Object.values(propertiesNamingStyles).flat(), defaultStyle);
         if (preferedNamingStyle !== defaultStyle) {
             this.emitLine(`#[serde(rename_all = "${preferedNamingStyle}")]`);
         }
@@ -240,7 +241,7 @@ export class RustRenderer extends ConvenienceRenderer {
 
         // Set the default naming style on the enum
         const defaultStyle = "PascalCase";
-        const preferedNamingStyle = getPreferedNamingStyle(Object.values(enumCasesNamingStyles).flat(), defaultStyle);
+        const preferedNamingStyle = getPreferredNamingStyle(Object.values(enumCasesNamingStyles).flat(), defaultStyle);
         if (preferedNamingStyle !== defaultStyle) {
             this.emitLine(`#[serde(rename_all = "${preferedNamingStyle}")]`);
         }
