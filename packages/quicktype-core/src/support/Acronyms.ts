@@ -1,5 +1,7 @@
 import { EnumOption } from "../RendererOptions";
-import { allUpperWordStyle, firstUpperWordStyle, originalWord, allLowerWordStyle } from "./Strings";
+
+// eslint-disable-next-line import/no-cycle
+import { allLowerWordStyle, allUpperWordStyle, firstUpperWordStyle, originalWord } from "./Strings";
 
 export const acronyms: string[] = [
     "aaa",
@@ -1100,13 +1102,13 @@ export const acronyms: string[] = [
 ];
 
 export enum AcronymStyleOptions {
-    Pascal = "pascal",
     Camel = "camel",
+    Lower = "lowerCase",
     Original = "original",
-    Lower = "lowerCase"
+    Pascal = "pascal"
 }
 
-export const acronymOption = function (defaultOption: AcronymStyleOptions) {
+export const acronymOption = function (defaultOption: AcronymStyleOptions): EnumOption<AcronymStyleOptions> {
     return new EnumOption(
         "acronym-style",
         "Acronym naming style",

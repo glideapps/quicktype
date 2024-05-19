@@ -1,38 +1,41 @@
+import { setMap, setSortBy, setUnion } from "collection-utils";
 import * as pluralize from "pluralize";
-import { setUnion, setMap, setSortBy } from "collection-utils";
 
-import { TypeGraph } from "./TypeGraph";
-import { Type, ObjectType } from "./Type";
-import { matchCompoundType, nullableFromUnion } from "./TypeUtils";
-import { TypeNames, namesTypeAttributeKind, TooManyTypeNames, tooManyNamesThreshold } from "./attributes/TypeNames";
-import { defined, panic, assert } from "./support/Support";
+import { TooManyTypeNames, TypeNames, namesTypeAttributeKind, tooManyNamesThreshold } from "./attributes/TypeNames";
+import { assert, defined, panic } from "./support/Support";
 import { transformationForType } from "./Transformers";
+import { ObjectType, type Type } from "./Type";
+import { type TypeGraph } from "./TypeGraph";
+import { matchCompoundType, nullableFromUnion } from "./TypeUtils";
 
 class UniqueQueue<T> {
     private readonly _present = new Set<T>();
-    private _queue: (T | undefined)[] = [];
+
+    private _queue: Array<T | undefined> = [];
+
     private _front = 0;
 
-    get size(): number {
+    public get size(): number {
         return this._queue.length - this._front;
     }
 
-    get isEmpty(): boolean {
+    public get isEmpty(): boolean {
         return this.size <= 0;
     }
 
-    push(v: T): void {
+    public push(v: T): void {
         if (this._present.has(v)) return;
         this._queue.push(v);
         this._present.add(v);
     }
 
-    unshift(): T {
+    public unshift(): T {
         assert(!this.isEmpty, "Trying to unshift from an empty queue");
         const v = this._queue[this._front];
         if (v === undefined) {
             return panic("Value should have been present in queue");
         }
+
         this._queue[this._front] = undefined;
         this._front += 1;
         this._present.delete(v);
@@ -99,7 +102,7 @@ export function gatherNames(graph: TypeGraph, destructive: boolean, debugPrint: 
     // null means there are too many
     const namesForType = new Map<Type, ReadonlySet<string> | null>();
 
-    function addNames(t: Type, names: ReadonlySet<string> | null) {
+    function addNames(t: Type, names: ReadonlySet<string> | null): void {
         // Always use the type's given names if it has some
         if (t.hasNames) {
             const originalNames = t.getNames();
@@ -123,6 +126,7 @@ export function gatherNames(graph: TypeGraph, destructive: boolean, debugPrint: 
         if (newNames !== null && newNames.size >= tooManyNamesThreshold) {
             newNames = null;
         }
+
         namesForType.set(t, newNames);
 
         const transformation = transformationForType(t);
@@ -204,14 +208,16 @@ export function gatherNames(graph: TypeGraph, destructive: boolean, debugPrint: 
         if (existing === undefined) {
             existing = new Set();
         }
+
         existing = setUnion(existing, alternatives);
         if (existing.size < tooManyNamesThreshold) {
             return existing;
         }
+
         return null;
     }
 
-    function processType(ancestor: Type | undefined, t: Type, alternativeSuffix: string | undefined) {
+    function processType(ancestor: Type | undefined, t: Type, alternativeSuffix: string | undefined): void {
         const names = defined(namesForType.get(t));
 
         let processedEntry = pairsProcessed.get(ancestor);
@@ -263,6 +269,7 @@ export function gatherNames(graph: TypeGraph, destructive: boolean, debugPrint: 
         if (ancestorAlternatives !== undefined) {
             ancestorAlternativesForType.set(t, ancestorAlternatives);
         }
+
         if (directAlternatives !== undefined) {
             directAlternativesForType.set(t, directAlternatives);
         }
@@ -310,6 +317,7 @@ export function gatherNames(graph: TypeGraph, destructive: boolean, debugPrint: 
             directAlternativesForType.set(t, null);
             continue;
         }
+
         let alternatives = directAlternativesForType.get(t);
         if (alternatives === null) continue;
         if (alternatives === undefined) {
@@ -343,6 +351,7 @@ export function gatherNames(graph: TypeGraph, destructive: boolean, debugPrint: 
                 } else {
                     alternatives = new Set();
                 }
+
                 if (ancestorAlternatives !== null && ancestorAlternatives !== undefined) {
                     alternatives = setUnion(alternatives, ancestorAlternatives);
                 }

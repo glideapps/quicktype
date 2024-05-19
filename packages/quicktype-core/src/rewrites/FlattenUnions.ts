@@ -1,14 +1,14 @@
-import { setFilter, iterableSome } from "collection-utils";
+import { iterableSome, setFilter } from "collection-utils";
 
-import { TypeGraph, TypeRef, derefTypeRef } from "../TypeGraph";
-import { Type, UnionType, IntersectionType } from "../Type";
-import { makeGroupsToFlatten } from "../TypeUtils";
-import { assert } from "../support/Support";
-import { StringTypeMapping } from "../TypeBuilder";
-import { GraphRewriteBuilder } from "../GraphRewriting";
-import { unifyTypes, UnifyUnionBuilder } from "../UnifyClasses";
-import { messageAssert } from "../Messages";
 import { emptyTypeAttributes } from "../attributes/TypeAttributes";
+import { type GraphRewriteBuilder } from "../GraphRewriting";
+import { messageAssert } from "../Messages";
+import { assert } from "../support/Support";
+import { IntersectionType, type Type, UnionType } from "../Type";
+import { type StringTypeMapping } from "../TypeBuilder";
+import { type TypeGraph, type TypeRef, derefTypeRef } from "../TypeGraph";
+import { makeGroupsToFlatten } from "../TypeUtils";
+import { UnifyUnionBuilder, unifyTypes } from "../UnifyClasses";
 
 export function flattenUnions(
     graph: TypeGraph,
@@ -26,6 +26,7 @@ export function flattenUnions(
             if (trefs.length === 1) {
                 return trefs[0];
             }
+
             needsRepeat = true;
             return builder.getUnionType(emptyTypeAttributes, new Set(trefs));
         });

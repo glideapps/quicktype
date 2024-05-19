@@ -1,90 +1,93 @@
 #!/usr/bin/env node
 import * as fs from "fs";
 import * as path from "path";
-import * as _ from "lodash";
-import { Readable } from "readable-stream";
-import { hasOwnProperty, definedMap, withDefault, mapFromObject, mapMap } from "collection-utils";
+
 import { exceptionToString } from "@glideapps/ts-necessities";
-
-import {
-    Options,
-    RendererOptions,
-    getTargetLanguage,
-    quicktypeMultiFile,
-    SerializedRenderResult,
-    TargetLanguage,
-    languageNamed,
-    InputData,
-    JSONSchemaInput,
-    OptionDefinition,
-    defaultTargetLanguages,
-    IssueAnnotationData,
-    panic,
-    assert,
-    defined,
-    assertNever,
-    parseJSON,
-    trainMarkovChain,
-    messageError,
-    messageAssert,
-    sourcesFromPostmanCollection,
-    inferenceFlags,
-    inferenceFlagNames,
-    splitIntoWords,
-    capitalize,
-    JSONSourceData,
-    JSONInput,
-    getStream,
-    readableFromFileOrURL,
-    readFromFileOrURL,
-    FetchingJSONSchemaStore,
-    isLanguageName
-} from "quicktype-core";
-import { schemaForTypeScriptSources } from "quicktype-typescript-input";
-import { GraphQLInput } from "quicktype-graphql-input";
-
-import { urlsFromURLGrammar } from "./URLGrammar";
-import { introspectServer } from "./GraphQLIntrospection";
-import { JSONTypeSource, TypeSource, GraphQLTypeSource, SchemaTypeSource } from "./TypeSource";
-import { CompressedJSONFromStream } from "./CompressedJSONFromStream";
-
-const stringToStream = require("string-to-stream");
-
+import chalk from "chalk";
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+import { definedMap, hasOwnProperty, mapFromObject, mapMap, withDefault } from "collection-utils";
 import commandLineArgs from "command-line-args";
 import getUsage from "command-line-usage";
-import chalk from "chalk";
-const wordWrap: (s: string) => string = require("wordwrap")(90);
+import * as _ from "lodash";
+import { type Readable } from "readable-stream";
+import stringToStream from "string-to-stream";
+import _wordwrap from "wordwrap";
 
-const packageJSON = require("../package.json");
+import {
+    FetchingJSONSchemaStore,
+    InputData,
+    IssueAnnotationData,
+    JSONInput,
+    JSONSchemaInput,
+    type JSONSourceData,
+    type OptionDefinition,
+    type Options,
+    type RendererOptions,
+    type SerializedRenderResult,
+    type TargetLanguage,
+    assert,
+    assertNever,
+    capitalize,
+    defaultTargetLanguages,
+    defined,
+    getStream,
+    getTargetLanguage,
+    inferenceFlagNames,
+    inferenceFlags,
+    isLanguageName,
+    languageNamed,
+    messageAssert,
+    messageError,
+    panic,
+    parseJSON,
+    quicktypeMultiFile,
+    readFromFileOrURL,
+    readableFromFileOrURL,
+    sourcesFromPostmanCollection,
+    splitIntoWords,
+    trainMarkovChain
+} from "quicktype-core";
+import { GraphQLInput } from "quicktype-graphql-input";
+import { schemaForTypeScriptSources } from "quicktype-typescript-input";
+
+import packageJSON from "../package.json";
+
+import { CompressedJSONFromStream } from "./CompressedJSONFromStream";
+import { introspectServer } from "./GraphQLIntrospection";
+import { type GraphQLTypeSource, type JSONTypeSource, type SchemaTypeSource, type TypeSource } from "./TypeSource";
+import { urlsFromURLGrammar } from "./URLGrammar";
+
+const wordWrap: (s: string) => string = _wordwrap(90);
 
 export interface CLIOptions {
-    lang: string;
-    topLevel: string;
-    src: string[];
-    srcUrls?: string;
-    srcLang: string;
+    // We use this to access the inference flags
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    [option: string]: any;
     additionalSchema: string[];
-    graphqlSchema?: string;
+    allPropertiesOptional: boolean;
+    alphabetizeProperties: boolean;
+    buildMarkovChain?: string;
+    debug?: string;
     graphqlIntrospect?: string;
+    graphqlSchema?: string;
+    help: boolean;
     httpHeader?: string[];
     httpMethod?: string;
-    out?: string;
-    buildMarkovChain?: string;
+    lang: string;
 
-    alphabetizeProperties: boolean;
-    allPropertiesOptional: boolean;
     noRender: boolean;
+    out?: string;
+    quiet: boolean;
 
     rendererOptions: RendererOptions;
 
-    help: boolean;
-    quiet: boolean;
-    version: boolean;
-    debug?: string;
+    src: string[];
+    srcLang: string;
+    srcUrls?: string;
     telemetry?: string;
+    topLevel: string;
 
-    // We use this to access the inference flags
-    [option: string]: any;
+    version: boolean;
 }
 
 const defaultDefaultTargetLanguageName = "go";
@@ -94,7 +97,7 @@ async function sourceFromFileOrUrlArray(
     filesOrUrls: string[],
     httpHeaders?: string[]
 ): Promise<JSONTypeSource> {
-    const samples = await Promise.all(filesOrUrls.map(file => readableFromFileOrURL(file, httpHeaders)));
+    const samples = await Promise.all(filesOrUrls.map(async file => await readableFromFileOrURL(file, httpHeaders)));
     return { kind: "json", name, samples };
 }
 
@@ -157,6 +160,7 @@ async function samplesFromDirectory(dataDir: string, httpHeaders?: string[]): Pr
             if (graphQLSchema === undefined) {
                 return messageError("DriverNoGraphQLSchemaInDir", { dir: dataDir });
             }
+
             const schema = parseJSON(await getStream(graphQLSchema), "GraphQL schema", graphQLSchemaFileName);
             for (const source of graphQLSources) {
                 source.schema = schema;
@@ -197,7 +201,8 @@ async function samplesFromDirectory(dataDir: string, httpHeaders?: string[]): Pr
             return messageError("DriverCannotMixJSONWithOtherSamples", { dir: dir });
         }
 
-        const oneUnlessEmpty = (xs: any[]) => Math.sign(xs.length);
+        // FIXME: rewrite this to be clearer
+        const oneUnlessEmpty = (xs: TypeSource[]): 0 | 1 => Math.sign(xs.length) as 0 | 1;
         if (oneUnlessEmpty(schemaSources) + oneUnlessEmpty(graphQLSources) > 1) {
             return messageError("DriverCannotMixNonJSONInputs", { dir: dir });
         }
@@ -209,6 +214,7 @@ async function samplesFromDirectory(dataDir: string, httpHeaders?: string[]): Pr
                 samples: jsonSamples
             });
         }
+
         sources = sources.concat(schemaSources);
         sources = sources.concat(graphQLSources);
     }
@@ -223,6 +229,7 @@ function inferLang(options: Partial<CLIOptions>, defaultLanguage: string): strin
         if (extension === "") {
             return messageError("DriverNoLanguageOrExtension", {});
         }
+
         return extension.slice(1);
     }
 
@@ -264,7 +271,7 @@ function inferCLIOptions(opts: Partial<CLIOptions>, targetLanguage: TargetLangua
     if (targetLanguage !== undefined) {
         language = targetLanguage;
     } else {
-        const languageName = opts.lang !== undefined ? opts.lang : inferLang(opts, defaultDefaultTargetLanguageName);
+        const languageName = opts.lang ?? inferLang(opts, defaultDefaultTargetLanguageName);
 
         if (isLanguageName(languageName)) {
             language = languageNamed(languageName);
@@ -273,23 +280,22 @@ function inferCLIOptions(opts: Partial<CLIOptions>, targetLanguage: TargetLangua
         }
     }
 
-    /* tslint:disable:strict-boolean-expressions */
     const options: CLIOptions = {
-        src: opts.src || [],
+        src: opts.src ?? [],
         srcUrls: opts.srcUrls,
         srcLang: srcLang,
         lang: language.displayName,
-        topLevel: opts.topLevel || inferTopLevel(opts),
+        topLevel: opts.topLevel ?? inferTopLevel(opts),
         noRender: !!opts.noRender,
         alphabetizeProperties: !!opts.alphabetizeProperties,
         allPropertiesOptional: !!opts.allPropertiesOptional,
-        rendererOptions: opts.rendererOptions || {},
-        help: opts.help || false,
-        quiet: opts.quiet || false,
-        version: opts.version || false,
+        rendererOptions: opts.rendererOptions ?? {},
+        help: opts.help ?? false,
+        quiet: opts.quiet ?? false,
+        version: opts.version ?? false,
         out: opts.out,
         buildMarkovChain: opts.buildMarkovChain,
-        additionalSchema: opts.additionalSchema || [],
+        additionalSchema: opts.additionalSchema ?? [],
         graphqlSchema: opts.graphqlSchema,
         graphqlIntrospect: opts.graphqlIntrospect,
         httpMethod: opts.httpMethod,
@@ -297,11 +303,11 @@ function inferCLIOptions(opts: Partial<CLIOptions>, targetLanguage: TargetLangua
         debug: opts.debug,
         telemetry: opts.telemetry
     };
-    /* tslint:enable */
     for (const flagName of inferenceFlagNames) {
         const cliName = negatedInferenceFlagName(flagName);
         options[cliName] = !!opts[cliName];
     }
+
     return options;
 }
 
@@ -315,6 +321,7 @@ function negatedInferenceFlagName(name: string): string {
     if (name.startsWith(prefix)) {
         name = name.slice(prefix.length);
     }
+
     return "no" + capitalize(name);
 }
 
@@ -330,7 +337,7 @@ function makeOptionDefinitions(targetLanguages: readonly TargetLanguage[]): Opti
             name: "out",
             alias: "o",
             type: String,
-            typeLabel: `FILE`,
+            typeLabel: "FILE",
             description: "The output file. Determines --lang and --top-level."
         },
         {
@@ -477,8 +484,8 @@ function makeOptionDefinitions(targetLanguages: readonly TargetLanguage[]): Opti
 
 interface ColumnDefinition {
     name: string;
-    width?: number;
     padding?: { left: string; right: string };
+    width?: number;
 }
 
 interface TableOptions {
@@ -486,11 +493,11 @@ interface TableOptions {
 }
 
 interface UsageSection {
-    header?: string;
     content?: string | string[];
+    header?: string;
+    hide?: string[];
     optionList?: OptionDefinition[];
     tableOptions?: TableOptions;
-    hide?: string[];
 }
 
 const tableOptionsForOptions: TableOptions = {
@@ -579,6 +586,7 @@ export function parseCLIOptions(argv: string[], targetLanguage?: TargetLanguage)
         const languageName = isLanguageName(incompleteOptions.lang) ? incompleteOptions.lang : "typescript";
         targetLanguage = getTargetLanguage(languageName);
     }
+
     const rendererOptionDefinitions = targetLanguage.cliOptionDefinitions.actual;
     // Use the global options as well as the renderer options from now on:
     const allOptionDefinitions = _.concat(optionDefinitions, rendererOptionDefinitions);
@@ -590,6 +598,8 @@ export function parseCLIOptions(argv: string[], targetLanguage?: TargetLanguage)
 // according to each option definition's `renderer` field.  If `partial` is false this
 // will throw if it encounters an unknown option.
 function parseOptions(definitions: OptionDefinition[], argv: string[], partial: boolean): Partial<CLIOptions> {
+    // FIXME: update this when options strongly typed
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let opts: { [key: string]: any };
     try {
         opts = commandLineArgs(definitions, { argv, partial });
@@ -597,6 +607,7 @@ function parseOptions(definitions: OptionDefinition[], argv: string[], partial: 
         assert(!partial, "Partial option parsing should not have failed");
         return messageError("DriverCLIOptionParsingFailed", { message: exceptionToString(e) });
     }
+
     for (const k of Object.keys(opts)) {
         if (opts[k] === null) {
             return messageError("DriverCLIOptionParsingFailed", {
@@ -605,7 +616,8 @@ function parseOptions(definitions: OptionDefinition[], argv: string[], partial: 
         }
     }
 
-    const options: { rendererOptions: RendererOptions; [key: string]: any } = { rendererOptions: {} };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const options: { [key: string]: any; rendererOptions: RendererOptions } = { rendererOptions: {} };
     for (const o of definitions) {
         if (!hasOwnProperty(opts, o.name)) continue;
         const v = opts[o.name] as string;
@@ -615,10 +627,11 @@ function parseOptions(definitions: OptionDefinition[], argv: string[], partial: 
             options[k] = v;
         }
     }
+
     return options;
 }
 
-function usage(targetLanguages: readonly TargetLanguage[]) {
+function usage(targetLanguages: readonly TargetLanguage[]): void {
     const rendererSections: UsageSection[] = [];
 
     for (const language of targetLanguages) {
@@ -638,7 +651,7 @@ function usage(targetLanguages: readonly TargetLanguage[]) {
 }
 
 // Returns an array of [name, sourceURIs] pairs.
-async function getSourceURIs(options: CLIOptions): Promise<[string, string[]][]> {
+async function getSourceURIs(options: CLIOptions): Promise<Array<[string, string[]]>> {
     if (options.srcUrls !== undefined) {
         const json = parseJSON(
             await readFromFileOrURL(options.srcUrls, options.httpHeader),
@@ -702,6 +715,7 @@ export function jsonInputForTargetLanguage(
         const languageName = isLanguageName(targetLanguage) ? targetLanguage : "typescript";
         targetLanguage = defined(languageNamed(languageName, languages));
     }
+
     const compressedJSON = new CompressedJSONFromStream(targetLanguage.dateTimeRecognizer, handleJSONRefs);
     return new JSONInput(compressedJSON);
 }
@@ -709,7 +723,7 @@ export function jsonInputForTargetLanguage(
 async function makeInputData(
     sources: TypeSource[],
     targetLanguage: TargetLanguage,
-    additionalSchemaAddresses: ReadonlyArray<string>,
+    additionalSchemaAddresses: readonly string[],
     handleJSONRefs: boolean,
     httpHeaders?: string[]
 ): Promise<InputData> {
@@ -741,7 +755,11 @@ async function makeInputData(
 }
 
 function stringSourceDataToStreamSourceData(src: JSONSourceData<string>): JSONSourceData<Readable> {
-    return { name: src.name, description: src.description, samples: src.samples.map(stringToStream) };
+    return {
+        name: src.name,
+        description: src.description,
+        samples: src.samples.map(sample => stringToStream(sample) as Readable)
+    };
 }
 
 export async function makeQuicktypeOptions(
@@ -749,14 +767,16 @@ export async function makeQuicktypeOptions(
     targetLanguages?: TargetLanguage[]
 ): Promise<Partial<Options> | undefined> {
     if (options.help) {
-        usage(targetLanguages === undefined ? defaultTargetLanguages : targetLanguages);
+        usage(targetLanguages ?? defaultTargetLanguages);
         return undefined;
     }
+
     if (options.version) {
         console.log(`quicktype version ${packageJSON.version}`);
         console.log("Visit quicktype.io for more info.");
         return undefined;
     }
+
     if (options.buildMarkovChain !== undefined) {
         const contents = fs.readFileSync(options.buildMarkovChain).toString();
         const lines = contents.split("\n");
@@ -783,20 +803,24 @@ export async function makeQuicktypeOptions(
                     wroteSchemaToFile = true;
                 }
             }
+
             const numSources = options.src.length;
             if (numSources !== 1) {
                 if (wroteSchemaToFile) {
                     // We're done.
                     return undefined;
                 }
+
                 if (numSources === 0) {
                     if (schemaString !== undefined) {
                         console.log(schemaString);
                         return undefined;
                     }
+
                     return messageError("DriverNoGraphQLQueryGiven", {});
                 }
             }
+
             const gqlSources: GraphQLTypeSource[] = [];
             for (const queryFile of options.src) {
                 let schemaFileName: string | undefined = undefined;
@@ -804,11 +828,13 @@ export async function makeQuicktypeOptions(
                     schemaFileName = defined(options.graphqlSchema);
                     schemaString = fs.readFileSync(schemaFileName, "utf8");
                 }
+
                 const schema = parseJSON(schemaString, "GraphQL schema", schemaFileName);
                 const query = await getStream(await readableFromFileOrURL(queryFile, options.httpHeader));
                 const name = numSources === 1 ? options.topLevel : typeNameFromFilename(queryFile);
                 gqlSources.push({ kind: "graphql", name, schema, query });
             }
+
             sources = gqlSources;
             break;
         case "json":
@@ -830,20 +856,23 @@ export async function makeQuicktypeOptions(
                         Object.assign({ kind: "json" }, stringSourceDataToStreamSourceData(src)) as JSONTypeSource
                     );
                 }
+
                 if (postmanSources.length > 1) {
                     fixedTopLevels = true;
                 }
+
                 if (description !== undefined) {
                     leadingComments = wordWrap(description).split("\n");
                 }
             }
+
             break;
         default:
             return messageError("DriverUnknownSourceLanguage", { lang: options.srcLang });
     }
 
     const components = definedMap(options.debug, d => d.split(","));
-    const debugAll = components !== undefined && components.indexOf("all") >= 0;
+    const debugAll = components !== undefined && components.includes("all");
     let debugPrintGraph = debugAll;
     let checkProvenance = debugAll;
     let debugPrintReconstitution = debugAll;
@@ -877,6 +906,7 @@ export async function makeQuicktypeOptions(
     if (!isLanguageName(options.lang)) {
         return messageError("DriverUnknownOutputLanguage", { lang: options.lang });
     }
+
     const lang = languageNamed(options.lang, targetLanguages);
 
     const quicktypeOptions: Partial<Options> = {
@@ -931,14 +961,18 @@ export function writeOutput(
             if (!onFirst) {
                 process.stdout.write("\n");
             }
+
             if (resultsByFilename.size > 1) {
                 process.stdout.write(`// ${filename}\n\n`);
             }
+
             process.stdout.write(output);
         }
+
         if (cliOptions.quiet) {
             continue;
         }
+
         for (const sa of annotations) {
             const annotation = sa.annotation;
             if (!(annotation instanceof IssueAnnotationData)) continue;
@@ -952,7 +986,7 @@ export function writeOutput(
     }
 }
 
-export async function main(args: string[] | Partial<CLIOptions>) {
+export async function main(args: string[] | Partial<CLIOptions>): Promise<void> {
     let cliOptions: CLIOptions;
     if (Array.isArray(args)) {
         cliOptions = parseCLIOptions(args);
@@ -970,6 +1004,7 @@ export async function main(args: string[] | Partial<CLIOptions>) {
                 console.error(chalk.red("telemetry must be 'enable' or 'disable'"));
                 return;
         }
+
         if (Array.isArray(args) && args.length === 2) {
             // This was merely a CLI run to set telemetry and we should not proceed
             return;
@@ -991,6 +1026,7 @@ if (require.main === module) {
         } else {
             console.error(e);
         }
+
         process.exit(1);
     });
 }

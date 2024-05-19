@@ -1,5 +1,5 @@
+import { type all } from "./language/All";
 import { type TargetLanguage } from "./TargetLanguage";
-import type { all } from "./language/All";
 
 type AllLanguages = (typeof all)[number];
 
@@ -12,3 +12,10 @@ export type LanguageDisplayNameMap = {
 export type LanguageNameMap = {
     [Language in AllLanguages as LanguageName<Language>]: Language;
 };
+
+// FIXME: remove these when options are strongly typed
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+export type FixMeOptionsType = Record<string, any>;
+
+export type FixMeOptionsAnyType = any;

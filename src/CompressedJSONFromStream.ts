@@ -1,6 +1,7 @@
-import { Readable } from "readable-stream";
-import { CompressedJSON, Value } from "quicktype-core";
+import { type Readable } from "readable-stream";
 import { Parser } from "stream-json";
+
+import { CompressedJSON, type Value } from "quicktype-core";
 
 const methodMap: { [name: string]: string } = {
     startObject: "pushObjectContext",
@@ -18,25 +19,26 @@ const methodMap: { [name: string]: string } = {
 };
 
 export class CompressedJSONFromStream extends CompressedJSON<Readable> {
-    async parse(readStream: Readable): Promise<Value> {
+    public async parse(readStream: Readable): Promise<Value> {
         const combo = new Parser({ packKeys: true, packStrings: true });
         combo.on("data", (item: { name: string; value: string | undefined }) => {
             if (typeof methodMap[item.name] === "string") {
-                (this as any)[methodMap[item.name]](item.value);
+                // @ts-expect-error FIXME: strongly type this
+                this[methodMap[item.name]](item.value);
             }
         });
         const promise = new Promise<Value>((resolve, reject) => {
             combo.on("end", () => {
                 resolve(this.finish());
             });
-            combo.on("error", (err: any) => {
+            combo.on("error", (err: unknown) => {
                 reject(err);
             });
         });
         readStream.setEncoding("utf8");
         readStream.pipe(combo);
         readStream.resume();
-        return promise;
+        return await promise;
     }
 
     protected handleStartNumber = (): void => {
@@ -46,7 +48,7 @@ export class CompressedJSONFromStream extends CompressedJSON<Readable> {
 
     protected handleNumberChunk = (s: string): void => {
         const ctx = this.context;
-        if (!ctx.currentNumberIsDouble && /[\.e]/i.test(s)) {
+        if (!ctx.currentNumberIsDouble && /[.e]/i.test(s)) {
             ctx.currentNumberIsDouble = true;
         }
     };

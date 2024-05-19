@@ -1,3 +1,4 @@
+/* eslint-disable */
 // https://github.com/epoberezkin/ajv/blob/4d76c6fb813b136b6ec4fe74990bc97233d75dea/lib/compile/formats.js
 
 /*
@@ -29,9 +30,9 @@ const DAYS = [0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 const TIME = /^(\d\d):(\d\d):(\d\d)(\.\d+)?(z|[+-]\d\d:\d\d)?$/i;
 
 export interface DateTimeRecognizer {
-    isDate(s: string): boolean;
-    isTime(s: string): boolean;
-    isDateTime(s: string): boolean;
+    isDate: (s: string) => boolean;
+    isDateTime: (s: string) => boolean;
+    isTime: (s: string) => boolean;
 }
 
 const DATE_TIME_SEPARATOR = /t|\s/i;
@@ -39,7 +40,7 @@ const DATE_TIME_SEPARATOR = /t|\s/i;
 export class DefaultDateTimeRecognizer implements DateTimeRecognizer {
     isDate(str: string) {
         // full-date from http://tools.ietf.org/html/rfc3339#section-5.6
-        const matches = str.match(DATE);
+        const matches = DATE.exec(str);
         if (matches === null) return false;
 
         const month = +matches[2];
@@ -48,7 +49,7 @@ export class DefaultDateTimeRecognizer implements DateTimeRecognizer {
     }
 
     isTime(str: string): boolean {
-        const matches = str.match(TIME);
+        const matches = TIME.exec(str);
         if (matches === null) return false;
 
         const hour = +matches[1];

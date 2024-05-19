@@ -1,6 +1,9 @@
-import { assert } from "./support/Support";
-import { messageError } from "./Messages";
+// eslint-disable-next-line @typescript-eslint/no-redeclare
 import { hasOwnProperty } from "collection-utils";
+
+import { messageError } from "./Messages";
+import { assert } from "./support/Support";
+import { type FixMeOptionsAnyType, type FixMeOptionsType } from "./types";
 
 /**
  * Primary options show up in the web UI in the "Language" settings tab,
@@ -15,9 +18,10 @@ export interface OptionDefinition<Name extends string, T> {
     kind?: OptionKind;
     renderer?: boolean;
     alias?: string;
-    multiple?: boolean;
     defaultOption?: boolean;
     defaultValue?: T;
+    legalValues?: string[];
+    multiple?: boolean;
     typeLabel?: string;
 }
 
@@ -26,23 +30,26 @@ export interface OptionDefinition<Name extends string, T> {
  * subclasses, `BooleanOption`, `EnumOption`, or `StringOption`.
  */
 export abstract class Option<Name extends string, T> {
-    readonly definition: OptionDefinition<Name, T>;
+    protected readonly definition: OptionDefinition<Name, T>;
 
-    constructor(definition: OptionDefinition<Name, T>) {
+    public constructor(definition: OptionDefinition<Name, T>) {
         definition.renderer = true;
         this.definition = definition;
         assert(definition.kind !== undefined, "Renderer option kind must be defined");
     }
 
-    getValue(values: Record<string, unknown>): T {
-        return (values[this.name] ?? this.definition.defaultValue) as T;
-    }
-
-    get name(): Name {
+    public get name(): Name {
         return this.definition.name;
     }
 
-    get cliDefinitions(): { display: OptionDefinition<Name, T>[]; actual: OptionDefinition<Name, T>[] } {
+    public getValue(values: Record<string, unknown>): T {
+        return (values[this.name] ?? this.definition.defaultValue) as T;
+    }
+
+    public get cliDefinitions(): {
+        actual: Array<OptionDefinition<Name, T>>;
+        display: Array<OptionDefinition<Name, T>>;
+    } {
         return { actual: [this.definition], display: [this.definition] };
     }
 }
@@ -52,9 +59,9 @@ export type OptionValues<T> = { [P in keyof T]: OptionValueType<T[P]> };
 
 export function getOptionValues<Name extends string, T, Options extends Record<string, Option<Name, T>>>(
     options: Options,
-    untypedOptionValues: { [name: string]: any }
+    untypedOptionValues: FixMeOptionsType
 ): OptionValues<Options> {
-    const optionValues: { [name: string]: any } = {};
+    const optionValues: FixMeOptionsType = {};
     for (const name of Object.getOwnPropertyNames(options)) {
         const option = options[name];
         const value = option.getValue(untypedOptionValues);
@@ -64,6 +71,7 @@ export function getOptionValues<Name extends string, T, Options extends Record<s
             optionValues[name] = value;
         }
     }
+
     return optionValues as OptionValues<Options>;
 }
 
@@ -77,7 +85,7 @@ export class BooleanOption<Name extends string> extends Option<Name, boolean> {
      * @param defaultValue The default value.
      * @param kind Whether it's a primary or secondary option.
      */
-    constructor(name: Name, description: string, defaultValue: boolean, kind: OptionKind = "primary") {
+    public constructor(name: Name, description: string, defaultValue: boolean, kind: OptionKind = "primary") {
         super({
             name,
             kind,
@@ -87,7 +95,10 @@ export class BooleanOption<Name extends string> extends Option<Name, boolean> {
         });
     }
 
-    get cliDefinitions(): { display: OptionDefinition<Name, boolean>[]; actual: OptionDefinition<Name, boolean>[] } {
+    public get cliDefinitions(): {
+        actual: Array<OptionDefinition<Name, boolean>>;
+        display: Array<OptionDefinition<Name, boolean>>;
+    } {
         const negated = Object.assign({}, this.definition, {
             name: `no-${this.name}`,
             defaultValue: !this.definition.defaultValue
@@ -102,7 +113,7 @@ export class BooleanOption<Name extends string> extends Option<Name, boolean> {
         };
     }
 
-    getValue(values: Record<string, unknown>): boolean {
+    public getValue(values: Record<string, unknown>): boolean {
         let value = values[this.name];
         if (value === undefined) {
             value = this.definition.defaultValue;
@@ -128,7 +139,7 @@ export class BooleanOption<Name extends string> extends Option<Name, boolean> {
 }
 
 export class StringOption<Name extends string> extends Option<Name, string> {
-    constructor(
+    public constructor(
         name: Name,
         description: string,
         typeLabel: string,
@@ -154,13 +165,13 @@ export class EnumOption<
     Name extends string,
     // EnumMap extends Record<string, unknown>,
     // EnumKey = keyof EnumMap
-    EnumTuples extends [string, unknown][],
+    EnumTuples extends Array<[string, unknown]>,
     EnumKey = EnumTuples[number][0],
     EnumMap = { [Key in EnumTuples[number][0]]: Extract<EnumTuples[number], [Key, any]>[1] }
 > extends Option<Name, EnumKey> {
     private readonly _values: EnumMap;
 
-    constructor(
+    public constructor(
         name: Name,
         description: string,
         // values: EnumMap,
@@ -184,10 +195,11 @@ export class EnumOption<
     }
 
     // getEnumValue<Key extends EnumKey & string>(name: Key): EnumMap[Key] {
-    getEnumValue<Key extends keyof EnumMap & string>(name: Key): EnumMap[Key] {
+    public getEnumValue<Key extends keyof EnumMap & string>(name: Key): EnumMap[Key] {
         if (!hasOwnProperty(this._values, name)) {
             return messageError("RendererUnknownOptionValue", { value: name, name: this.name });
         }
+
         return this._values[name];
     }
 }
