@@ -23,7 +23,7 @@ import {
     callAndExpectFailure
 } from "./utils";
 import * as languages from "./languages";
-import { RendererOptions } from "quicktype-core";
+import { type LanguageName, RendererOptions } from "quicktype-core";
 import { mustNotHappen, defined } from "../packages/quicktype-core/dist/support/Support";
 import { DefaultDateTimeRecognizer } from "../packages/quicktype-core/dist/DateTime";
 
@@ -377,7 +377,7 @@ class JSONToXToYFixture extends JSONFixture {
 
     constructor(
         private readonly _fixturePrefix: string,
-        languageXName: string,
+        languageXName: LanguageName,
         languageXOutputFilename: string,
         rendererOptions: RendererOptions,
         skipJSON: string[],

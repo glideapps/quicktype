@@ -18,7 +18,7 @@ export const smithyOptions = {
 
 export const smithyLanguageConfig = {
     displayName: "Smithy",
-    names: ["smithy"],
+    names: ["smithy4a"],
     extension: "smithy"
 } as const;
 
