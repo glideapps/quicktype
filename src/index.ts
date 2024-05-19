@@ -20,6 +20,7 @@ import {
     JSONInput,
     JSONSchemaInput,
     type JSONSourceData,
+    type LanguageName,
     type OptionDefinition,
     type Options,
     type RendererOptions,
@@ -50,12 +51,13 @@ import {
 import { GraphQLInput } from "quicktype-graphql-input";
 import { schemaForTypeScriptSources } from "quicktype-typescript-input";
 
-import packageJSON from "../package.json";
-
 import { CompressedJSONFromStream } from "./CompressedJSONFromStream";
 import { introspectServer } from "./GraphQLIntrospection";
 import { type GraphQLTypeSource, type JSONTypeSource, type SchemaTypeSource, type TypeSource } from "./TypeSource";
 import { urlsFromURLGrammar } from "./URLGrammar";
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+const packageJSON = require("../package.json");
 
 const wordWrap: (s: string) => string = _wordwrap(90);
 
@@ -73,7 +75,7 @@ export interface CLIOptions {
     help: boolean;
     httpHeader?: string[];
     httpMethod?: string;
-    lang: string;
+    lang: LanguageName;
 
     noRender: boolean;
     out?: string;
@@ -222,7 +224,7 @@ async function samplesFromDirectory(dataDir: string, httpHeaders?: string[]): Pr
     return sources;
 }
 
-function inferLang(options: Partial<CLIOptions>, defaultLanguage: string): string {
+function inferLang(options: Partial<CLIOptions>, defaultLanguage: LanguageName): string | LanguageName {
     // Output file extension determines the language if language is undefined
     if (options.out !== undefined) {
         let extension = path.extname(options.out);
@@ -284,7 +286,7 @@ function inferCLIOptions(opts: Partial<CLIOptions>, targetLanguage: TargetLangua
         src: opts.src ?? [],
         srcUrls: opts.srcUrls,
         srcLang: srcLang,
-        lang: language.displayName,
+        lang: language.name as LanguageName,
         topLevel: opts.topLevel ?? inferTopLevel(opts),
         noRender: !!opts.noRender,
         alphabetizeProperties: !!opts.alphabetizeProperties,
