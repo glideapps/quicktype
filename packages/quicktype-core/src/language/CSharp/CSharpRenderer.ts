@@ -10,7 +10,7 @@ import { assert } from "../../support/Support";
 import { type TargetLanguage } from "../../TargetLanguage";
 import { followTargetType } from "../../Transformers";
 import { type ClassProperty, type ClassType, type EnumType, type Type, type UnionType } from "../../Type";
-import { directlyReachableSingleNamedType, matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
+import { directlyReachableSingleNamedType, matchCompoundType, matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
 
 import { type cSharpOptions } from "./language";
 import {
@@ -387,4 +387,21 @@ export class CSharpRenderer extends ConvenienceRenderer {
 
         this.emitDefaultFollowingComments();
     }
+
+    protected emitDependencyUsings(): void {
+        let nameSpaceForTypes: string[] = [];
+        this.typeGraph.allTypesUnordered().forEach(_ => {
+            matchCompoundType(
+                _,
+                _arrayType => this._csOptions.useList ? nameSpaceForTypes.push("System.Collections.Generic") : undefined,
+                _classType => { },
+                _mapType => nameSpaceForTypes.push("System.Collections.Generic"),
+                _objectType => { },
+                _unionType => { }
+            )
+        });
+        nameSpaceForTypes = nameSpaceForTypes.filter((val, ind) => nameSpaceForTypes.indexOf(val) === ind );
+        nameSpaceForTypes.forEach(this.emitUsing.bind(this));
+    }
+
 }
