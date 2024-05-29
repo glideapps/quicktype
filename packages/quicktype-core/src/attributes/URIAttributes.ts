@@ -1,11 +1,12 @@
+import { setUnionManyInto } from "collection-utils";
 import URI from "urijs";
 
-import { TypeAttributeKind, TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
-import { setUnionManyInto } from "collection-utils";
-import { JSONSchemaType, JSONSchemaAttributes, Ref } from "../input/JSONSchemaInput";
-import { JSONSchema } from "../input/JSONSchemaStore";
+import { type JSONSchemaAttributes, type JSONSchemaType, type Ref } from "../input/JSONSchemaInput";
+import { type JSONSchema } from "../input/JSONSchemaStore";
 import { checkArray, checkString } from "../support/Support";
-import { Type } from "../Type";
+import { type Type } from "../Type";
+
+import { TypeAttributeKind, type TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 
 const protocolsSchemaProperty = "qt-uri-protocols";
 const extensionsSchemaProperty = "qt-uri-extensions";
@@ -14,31 +15,32 @@ const extensionsSchemaProperty = "qt-uri-extensions";
 type URIAttributes = [ReadonlySet<string>, ReadonlySet<string>];
 
 class URITypeAttributeKind extends TypeAttributeKind<URIAttributes> {
-    constructor() {
+    public constructor() {
         super("uriAttributes");
     }
 
-    get inIdentity(): boolean {
+    public get inIdentity(): boolean {
         return true;
     }
 
-    combine(attrs: URIAttributes[]): URIAttributes {
+    public combine(attrs: URIAttributes[]): URIAttributes {
         const protocolSets = attrs.map(a => a[0]);
         const extensionSets = attrs.map(a => a[1]);
         return [setUnionManyInto(new Set(), protocolSets), setUnionManyInto(new Set(), extensionSets)];
     }
 
-    makeInferred(_: URIAttributes): undefined {
+    public makeInferred(_: URIAttributes): undefined {
         return undefined;
     }
 
-    addToSchema(schema: { [name: string]: unknown }, t: Type, attrs: URIAttributes): void {
+    public addToSchema(schema: { [name: string]: unknown }, t: Type, attrs: URIAttributes): void {
         if (t.kind !== "string" && t.kind !== "uri") return;
 
         const [protocols, extensions] = attrs;
         if (protocols.size > 0) {
             schema[protocolsSchemaProperty] = Array.from(protocols).sort();
         }
+
         if (extensions.size > 0) {
             schema[extensionsSchemaProperty] = Array.from(extensions).sort();
         }
@@ -50,7 +52,7 @@ export const uriTypeAttributeKind: TypeAttributeKind<URIAttributes> = new URITyp
 const extensionRegex = /^.+(\.[^./\\]+)$/;
 
 function pathExtension(path: string): string | undefined {
-    const matches = path.match(extensionRegex);
+    const matches = extensionRegex.exec(path);
     if (matches === null) return undefined;
     return matches[1];
 }

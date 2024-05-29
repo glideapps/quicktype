@@ -1,13 +1,13 @@
 import { iterableFirst, setUnionInto } from "collection-utils";
 
-import { Type, ClassProperty, UnionType, ObjectType } from "./Type";
+import { type TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./attributes/TypeAttributes";
+import { type BaseGraphRewriteBuilder, type GraphRewriteBuilder, type TypeLookerUp } from "./GraphRewriting";
+import { assert, defined, panic } from "./support/Support";
+import { type ClassProperty, type ObjectType, type Type, UnionType } from "./Type";
+import { type TypeBuilder } from "./TypeBuilder";
+import { type TypeRef, derefTypeRef } from "./TypeGraph";
 import { assertIsObject } from "./TypeUtils";
-import { TypeBuilder } from "./TypeBuilder";
-import { TypeLookerUp, GraphRewriteBuilder, BaseGraphRewriteBuilder } from "./GraphRewriting";
-import { UnionBuilder, TypeRefUnionAccumulator } from "./UnionBuilder";
-import { panic, assert, defined } from "./support/Support";
-import { TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./attributes/TypeAttributes";
-import { TypeRef, derefTypeRef } from "./TypeGraph";
+import { TypeRefUnionAccumulator, UnionBuilder } from "./UnionBuilder";
 
 function getCliqueProperties(
     clique: ObjectType[],
@@ -28,11 +28,14 @@ function getCliqueProperties(
             if (additionalProperties === undefined) {
                 additionalProperties = new Set();
             }
+
             if (additional !== undefined) {
                 additionalProperties.add(additional);
             }
         }
 
+        // FIXME: refactor this
+        // eslint-disable-next-line @typescript-eslint/prefer-for-of
         for (let i = 0; i < properties.length; i++) {
             let [name, types, isOptional] = properties[i];
             const maybeProperty = o.getProperties().get(name);
@@ -45,6 +48,7 @@ function getCliqueProperties(
                 if (maybeProperty.isOptional) {
                     isOptional = true;
                 }
+
                 types.add(maybeProperty.type);
             }
 
@@ -64,9 +68,9 @@ function getCliqueProperties(
 }
 
 function countProperties(clique: ObjectType[]): {
-    hasProperties: boolean;
     hasAdditionalProperties: boolean;
     hasNonAnyAdditionalProperties: boolean;
+    hasProperties: boolean;
 } {
     let hasProperties = false;
     let hasAdditionalProperties = false;
@@ -75,6 +79,7 @@ function countProperties(clique: ObjectType[]): {
         if (o.getProperties().size > 0) {
             hasProperties = true;
         }
+
         const additional = o.getAdditionalProperties();
         if (additional !== undefined) {
             hasAdditionalProperties = true;
@@ -83,11 +88,12 @@ function countProperties(clique: ObjectType[]): {
             }
         }
     }
+
     return { hasProperties, hasAdditionalProperties, hasNonAnyAdditionalProperties };
 }
 
 export class UnifyUnionBuilder extends UnionBuilder<BaseGraphRewriteBuilder, TypeRef[], TypeRef[]> {
-    constructor(
+    public constructor(
         typeBuilder: BaseGraphRewriteBuilder,
         private readonly _makeObjectTypes: boolean,
         private readonly _makeClassesFixed: boolean,
@@ -126,6 +132,7 @@ export class UnifyUnionBuilder extends UnionBuilder<BaseGraphRewriteBuilder, Typ
                     Array.from(o.getProperties().values()).map(cp => cp.typeRef)
                 );
             }
+
             const additionalPropertyTypes = new Set(
                 objectTypes
                     .filter(o => o.getAdditionalProperties() !== undefined)
@@ -145,6 +152,7 @@ export class UnifyUnionBuilder extends UnionBuilder<BaseGraphRewriteBuilder, Typ
             if (lostTypeAttributes) {
                 this.typeBuilder.setLostTypeAttributes();
             }
+
             if (this._makeObjectTypes) {
                 return this.typeBuilder.getUniqueObjectType(
                     typeAttributes,

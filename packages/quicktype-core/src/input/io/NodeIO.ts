@@ -1,13 +1,11 @@
 import * as fs from "fs";
+
 import { defined, exceptionToString } from "@glideapps/ts-necessities";
-import { Readable } from "readable-stream";
 import { isNode } from "browser-or-node";
 import { getStream } from "./get-stream";
-import { messageError, panic } from "../../index";
+import isURL from "is-url";
+import { type Readable } from "readable-stream";
 
-const isURL = require("is-url");
-
-// Only use cross-fetch in CI
 const fetch = process.env.CI ? require("cross-fetch").default : (global as any).fetch ?? require("cross-fetch").default;
 
 interface HttpHeaders {
@@ -49,6 +47,7 @@ export async function readableFromFileOrURL(fileOrURL: string, httpHeaders?: str
                 // Cast node readable to isomorphic readable from readable-stream
                 return process.stdin as unknown as Readable;
             }
+
             const filePath = fs.lstatSync(fileOrURL).isSymbolicLink() ? fs.readlinkSync(fileOrURL) : fileOrURL;
             if (fs.existsSync(filePath)) {
                 // Cast node readable to isomorphic readable from readable-stream
@@ -58,6 +57,7 @@ export async function readableFromFileOrURL(fileOrURL: string, httpHeaders?: str
     } catch (e) {
         return messageError("MiscReadError", { fileOrURL, message: exceptionToString(e) });
     }
+
     return messageError("DriverInputFileDoesNotExist", { filename: fileOrURL });
 }
 

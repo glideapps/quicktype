@@ -1,5 +1,7 @@
-import { Options } from ".";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { PassThrough } from "readable-stream";
+
+import { type Options } from ".";
 
 export default function bufferStream(opts: Options) {
     opts = Object.assign({}, opts);
@@ -10,8 +12,10 @@ export default function bufferStream(opts: Options) {
     let objectMode = false;
 
     if (array) {
+        // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
         objectMode = !(encoding || buffer);
     } else {
+        // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
         encoding = encoding || "utf8";
     }
 

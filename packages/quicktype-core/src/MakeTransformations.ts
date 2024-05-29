@@ -1,40 +1,40 @@
-import { setFilter, iterableFirst, mapMapEntries, withDefault, iterableSome, arraySortByInto } from "collection-utils";
+import { arraySortByInto, iterableFirst, iterableSome, mapMapEntries, setFilter, withDefault } from "collection-utils";
 
-import { TypeGraph, TypeRef, typeRefIndex } from "./TypeGraph";
-import { TargetLanguage } from "./TargetLanguage";
+import { minMaxLengthForType, minMaxValueForType } from "./attributes/Constraints";
+import { StringTypes } from "./attributes/StringTypes";
+import { type TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./attributes/TypeAttributes";
+import { type GraphRewriteBuilder } from "./GraphRewriting";
+import { type RunContext } from "./Run";
+import { assert, defined, panic } from "./support/Support";
+import { type TargetLanguage } from "./TargetLanguage";
 import {
-    UnionType,
-    TypeKind,
-    EnumType,
-    Type,
-    ArrayType,
-    PrimitiveType,
-    isNumberTypeKind,
-    isPrimitiveStringTypeKind,
-    targetTypeKindForTransformedStringTypeKind,
-    PrimitiveStringTypeKind
-} from "./Type";
-import { GraphRewriteBuilder } from "./GraphRewriting";
-import { defined, assert, panic } from "./support/Support";
-import {
-    UnionInstantiationTransformer,
+    ArrayDecodingTransformer,
+    ChoiceTransformer,
     DecodingChoiceTransformer,
-    Transformation,
-    transformationTypeAttributeKind,
+    DecodingTransformer,
+    MinMaxLengthCheckTransformer,
+    MinMaxValueTransformer,
+    ParseStringTransformer,
     StringMatchTransformer,
     StringProducerTransformer,
-    ChoiceTransformer,
-    Transformer,
-    DecodingTransformer,
-    ParseStringTransformer,
-    ArrayDecodingTransformer,
-    MinMaxLengthCheckTransformer,
-    MinMaxValueTransformer
+    Transformation,
+    type Transformer,
+    UnionInstantiationTransformer,
+    transformationTypeAttributeKind
 } from "./Transformers";
-import { TypeAttributes, emptyTypeAttributes, combineTypeAttributes } from "./attributes/TypeAttributes";
-import { StringTypes } from "./attributes/StringTypes";
-import { RunContext } from "./Run";
-import { minMaxLengthForType, minMaxValueForType } from "./attributes/Constraints";
+import {
+    ArrayType,
+    EnumType,
+    type PrimitiveStringTypeKind,
+    type PrimitiveType,
+    type Type,
+    type TypeKind,
+    UnionType,
+    isNumberTypeKind,
+    isPrimitiveStringTypeKind,
+    targetTypeKindForTransformedStringTypeKind
+} from "./Type";
+import { type TypeGraph, type TypeRef, typeRefIndex } from "./TypeGraph";
 
 function transformationAttributes(
     graph: TypeGraph,
@@ -46,9 +46,10 @@ function transformationAttributes(
     if (debugPrintTransformations) {
         console.log(`transformation for ${typeRefIndex(reconstitutedTargetType)}:`);
         transformation.debugPrint();
-        console.log(`reverse:`);
+        console.log("reverse:");
         transformation.reverse.debugPrint();
     }
+
     return transformationTypeAttributeKind.makeAttributes(transformation);
 }
 
@@ -97,9 +98,11 @@ function replaceUnion(
                 if (targetTypeMember !== undefined) {
                     return builder.reconstituteType(targetTypeMember);
                 }
+
                 return builder.getPrimitiveType(targetTypeKind);
             }
         }
+
         return builder.reconstituteType(t);
     }
 
@@ -115,7 +118,7 @@ function replaceUnion(
         ? builder.getUnionType(union.getAttributes(), reconstitutedMemberSet)
         : defined(iterableFirst(reconstitutedMemberSet));
 
-    function memberForKind(kind: TypeKind) {
+    function memberForKind(kind: TypeKind): number {
         return defined(reconstitutedMembersByKind.get(kind));
     }
 
@@ -124,7 +127,7 @@ function replaceUnion(
         return new UnionInstantiationTransformer(graph, memberTypeRef);
     }
 
-    function transformerForKind(kind: TypeKind) {
+    function transformerForKind(kind: TypeKind): DecodingTransformer | undefined {
         const member = union.findMember(kind);
         if (member === undefined) return undefined;
         const memberTypeRef = memberForKind(kind);
@@ -136,6 +139,7 @@ function replaceUnion(
         if (maybeStringType === undefined) {
             maybeStringType = builder.getStringType(emptyTypeAttributes, StringTypes.unrestricted);
         }
+
         return maybeStringType;
     }
 
@@ -146,6 +150,7 @@ function replaceUnion(
             if (minMax === undefined) {
                 return consumer(memberRef);
             }
+
             const [min, max] = minMax;
             return new MinMaxLengthCheckTransformer(graph, getStringType(), consumer(memberRef), min, max);
         } else if (t instanceof EnumType && transformedTypes.has(t)) {
@@ -180,7 +185,7 @@ function replaceUnion(
         transformerForClass === undefined || transformerForMap === undefined,
         "Can't have both class and map in a transformed union"
     );
-    const transformerForObject = transformerForClass !== undefined ? transformerForClass : transformerForMap;
+    const transformerForObject = transformerForClass ?? transformerForMap;
 
     const transformer = new DecodingChoiceTransformer(
         graph,
@@ -343,18 +348,23 @@ export function makeTransformations(ctx: RunContext, graph: TypeGraph, targetLan
         if (t instanceof UnionType) {
             return replaceUnion(t, builder, forwardingRef, transformedTypes, ctx.debugPrintTransformations);
         }
+
         if (t instanceof ArrayType) {
             return replaceArray(t, builder, forwardingRef, ctx.debugPrintTransformations);
         }
+
         if (t instanceof EnumType) {
             return replaceEnum(t, builder, forwardingRef, ctx.debugPrintTransformations);
         }
+
         if (t.kind === "string") {
             return replaceString(t as PrimitiveType, builder, forwardingRef, ctx.debugPrintTransformations);
         }
+
         if (isNumberTypeKind(t.kind)) {
             return replaceNumber(t as PrimitiveType, builder, forwardingRef, ctx.debugPrintTransformations);
         }
+
         if (isPrimitiveStringTypeKind(t.kind)) {
             return replaceTransformedStringType(
                 t as PrimitiveType,
@@ -364,6 +374,7 @@ export function makeTransformations(ctx: RunContext, graph: TypeGraph, targetLan
                 ctx.debugPrintTransformations
             );
         }
+
         return panic(`Cannot make transformation for type ${t.kind}`);
     }
 

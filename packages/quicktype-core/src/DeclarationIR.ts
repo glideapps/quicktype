@@ -1,10 +1,10 @@
-import { setUnionInto, setFilter, iterableFirst, setSubtract, setIntersect } from "collection-utils";
+import { iterableFirst, setFilter, setIntersect, setSubtract, setUnionInto } from "collection-utils";
 
-import { TypeGraph } from "./TypeGraph";
-import { Type } from "./Type";
-import { panic, defined, assert } from "./support/Support";
 import { Graph } from "./Graph";
 import { messageError } from "./Messages";
+import { assert, defined, panic } from "./support/Support";
+import { type Type } from "./Type";
+import { type TypeGraph } from "./TypeGraph";
 
 export type DeclarationKind = "forward" | "define";
 
@@ -14,28 +14,29 @@ export interface Declaration {
 }
 
 export class DeclarationIR {
-    readonly declarations: ReadonlyArray<Declaration>;
+    public readonly declarations: readonly Declaration[];
 
-    constructor(declarations: Iterable<Declaration>, readonly forwardedTypes: Set<Type>) {
+    public constructor(
+        declarations: Iterable<Declaration>,
+        public readonly forwardedTypes: Set<Type>
+    ) {
         this.declarations = Array.from(declarations);
     }
 }
 
-function findBreaker(
-    t: Type,
-    path: ReadonlyArray<Type>,
-    canBreak: ((t: Type) => boolean) | undefined
-): Type | undefined {
+function findBreaker(t: Type, path: readonly Type[], canBreak: ((t: Type) => boolean) | undefined): Type | undefined {
     const index = path.indexOf(t);
     if (index < 0) return undefined;
     if (canBreak === undefined) {
         return path[index];
     }
+
     const potentialBreakers = path.slice(0, index + 1).reverse();
     const maybeBreaker = potentialBreakers.find(canBreak);
     if (maybeBreaker === undefined) {
         return panic("Found a cycle that cannot be broken");
     }
+
     return maybeBreaker;
 }
 
@@ -147,6 +148,7 @@ export function declarationsForGraph(
                 for (const t of declarationNeeded) {
                     declarations.push({ kind: "define", type: t });
                 }
+
                 return;
             }
 
@@ -160,9 +162,11 @@ export function declarationsForGraph(
             if (forwardDeclarable.size === 0) {
                 return messageError("IRNoForwardDeclarableTypeInCycle", {});
             }
+
             for (const t of forwardDeclarable) {
                 declarations.push({ kind: "forward", type: t });
             }
+
             setUnionInto(forwardedTypes, forwardDeclarable);
             const rest = setSubtract(component, forwardDeclarable);
             const restGraph = new Graph(rest, true, t => setIntersect(childrenOfType(t), rest));
@@ -170,6 +174,7 @@ export function declarationsForGraph(
             for (const t of forwardDeclarable) {
                 declarations.push({ kind: "define", type: t });
             }
+
             return;
         }
 

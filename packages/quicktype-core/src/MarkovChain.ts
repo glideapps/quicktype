@@ -1,23 +1,24 @@
-import { panic, assert, inflateBase64 } from "./support/Support";
 import { encodedMarkovChain } from "./EncodedMarkovChain";
+import { assert, inflateBase64, panic } from "./support/Support";
 
 // This must be null, not undefined, because we read it from JSON.
 export type SubTrie = number | null | Trie;
-export type Trie = {
-    count: number;
+export interface Trie {
     arr: SubTrie[];
-};
+    count: number;
+}
 
-export type MarkovChain = {
-    trie: Trie;
+export interface MarkovChain {
     depth: number;
-};
+    trie: Trie;
+}
 
 function makeTrie(): Trie {
     const arr: SubTrie[] = [];
     for (let i = 0; i < 128; i++) {
         arr.push(null);
     }
+
     return { count: 0, arr };
 }
 
@@ -35,6 +36,7 @@ function lookup(t: Trie, seq: string, i: number): Trie | number | undefined {
     if (n === null) {
         return undefined;
     }
+
     if (typeof n === "object") {
         return lookup(n, seq, i + 1);
     } else {
@@ -52,12 +54,14 @@ function increment(t: Trie, seq: string, i: number): void {
         if (typeof t !== "object") {
             return panic("Malformed trie");
         }
+
         let n = t.arr[first];
         if (n === null) {
             n = 0;
         } else if (typeof n === "object") {
             return panic("Malformed trie");
         }
+
         t.arr[first] = n + 1;
         t.count += 1;
         return;
@@ -67,10 +71,12 @@ function increment(t: Trie, seq: string, i: number): void {
     if (st === null) {
         t.arr[first] = st = makeTrie();
     }
+
     if (typeof st !== "object") {
         return panic("Malformed trie");
     }
-    return increment(st, seq, i + 1);
+
+    increment(st, seq, i + 1);
 }
 
 export function train(lines: string[], depth: number): MarkovChain {
@@ -93,6 +99,7 @@ export function evaluateFull(mc: MarkovChain, word: string): [number, number[]] 
     if (word.length < depth) {
         return [1, []];
     }
+
     let p = 1;
     const scores: number[] = [];
     for (let i = depth; i <= word.length; i++) {
@@ -100,12 +107,15 @@ export function evaluateFull(mc: MarkovChain, word: string): [number, number[]] 
         if (typeof cp === "object") {
             return panic("Did we mess up the depth?");
         }
+
         if (cp === undefined) {
             cp = 0.0001;
         }
+
         scores.push(cp);
         p = p * cp;
     }
+
     return [Math.pow(p, 1 / (word.length - depth + 1)), scores];
 }
 
@@ -113,7 +123,7 @@ export function evaluate(mc: MarkovChain, word: string): number {
     return evaluateFull(mc, word)[0];
 }
 
-function randomInt(lower: number, upper: number) {
+function randomInt(lower: number, upper: number): number {
     const range = upper - lower;
     return lower + Math.floor(Math.random() * range);
 }
@@ -124,14 +134,17 @@ export function generate(mc: MarkovChain, state: string, unseenWeight: number): 
     if (typeof t === "number") {
         return panic("Wrong depth?");
     }
+
     if (t === undefined) {
         return String.fromCharCode(randomInt(32, 127));
     }
+
     const counts = t.arr.map((x, i) => (x === null ? (i === 0 ? 0 : unseenWeight) : (x as number)));
     let n = 0;
     for (const c of counts) {
         n += c;
     }
+
     const r = randomInt(0, n);
     let sum = 0;
     for (let i = 0; i < counts.length; i++) {
@@ -140,6 +153,7 @@ export function generate(mc: MarkovChain, state: string, unseenWeight: number): 
             return String.fromCharCode(i);
         }
     }
+
     return panic("We screwed up bookkeeping, or randomInt");
 }
 

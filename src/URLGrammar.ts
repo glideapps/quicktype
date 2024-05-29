@@ -1,9 +1,10 @@
-import { panic, checkStringMap, checkArray } from "quicktype-core";
+import { checkArray, checkStringMap, panic } from "quicktype-core";
 
-function expand(json: any): string[] {
+function expand(json: unknown): string[] {
     if (typeof json === "string") {
         return [json];
     }
+
     if (Array.isArray(json)) {
         let result: string[] = [""];
         for (const j of json) {
@@ -14,11 +15,14 @@ function expand(json: any): string[] {
                     appended.push(a + b);
                 }
             }
+
             result = appended;
         }
+
         return result;
     }
-    if (Object.prototype.hasOwnProperty.call(json, "oneOf")) {
+
+    if (typeof json === "object" && json && "oneOf" in json) {
         const options = checkArray(json.oneOf);
         const result: string[] = [];
         for (const j of options) {
@@ -26,12 +30,14 @@ function expand(json: any): string[] {
                 result.push(x);
             }
         }
+
         return result;
     }
+
     return panic(`Value is not a valid URL grammar: ${json}`);
 }
 
-export function urlsFromURLGrammar(json: any): { [name: string]: string[] } {
+export function urlsFromURLGrammar(json: unknown): { [name: string]: string[] } {
     const topLevelMap = checkStringMap(json);
     const results: { [name: string]: string[] } = {};
 
