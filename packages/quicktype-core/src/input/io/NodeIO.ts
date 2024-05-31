@@ -6,8 +6,8 @@ import _fetch from "cross-fetch";
 import isURL from "is-url";
 import { type Readable } from "readable-stream";
 
-// eslint-disable-next-line import/no-cycle
-import { messageError, panic } from "../../index";
+import { messageError } from "../../Messages";
+import { panic } from "../../support/Support";
 
 import { getStream } from "./get-stream";
 

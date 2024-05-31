@@ -2,8 +2,7 @@ import unicode from "unicode-properties";
 
 import { messageAssert } from "../Messages";
 
-// eslint-disable-next-line import/no-cycle
-import { acronyms } from "./Acronyms";
+import { acronyms } from "./Acronyms.const";
 import { assert, assertNever, defined, panic } from "./Support";
 
 export type NamingStyle =
@@ -456,7 +455,9 @@ export function splitIntoWords(s: string): WordInName[] {
     const words: WordInName[] = [];
     for (const [start, end, allUpper] of intervals) {
         const word = s.slice(start, end);
-        const isAcronym = (lastLowerCaseIndex !== undefined && allUpper) || knownAcronyms.has(word.toLowerCase());
+        const isAcronym =
+            (lastLowerCaseIndex !== undefined && allUpper) ||
+            knownAcronyms.has(word.toLowerCase() as (typeof acronyms)[number]);
         words.push({ word, isAcronym });
     }
 
