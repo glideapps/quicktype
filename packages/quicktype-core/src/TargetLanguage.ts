@@ -33,7 +33,7 @@ export abstract class TargetLanguage<Config extends LanguageConfig = LanguageCon
         this.extension = extension;
     }
 
-    protected abstract getOptions(): Array<Option<FixMeOptionsAnyType>>;
+    protected abstract getOptions(): ReadonlyArray<Option<string, unknown>>;
 
     public get optionDefinitions(): OptionDefinition[] {
         return this.getOptions().map(o => o.definition);

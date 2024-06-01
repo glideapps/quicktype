@@ -1,9 +1,6 @@
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-import { hasOwnProperty } from "collection-utils";
-
 import { messageError } from "./Messages";
 import { assert } from "./support/Support";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "./types";
+import { type FixMeOptionsType } from "./types";
 
 /**
  * Primary options show up in the web UI in the "Language" settings tab,
@@ -12,16 +9,16 @@ import { type FixMeOptionsAnyType, type FixMeOptionsType } from "./types";
 export type OptionKind = "primary" | "secondary";
 
 export interface OptionDefinition<Name extends string, T> {
-    name: Name;
-    description: string;
-    type: StringConstructor | BooleanConstructor;
-    kind?: OptionKind;
-    renderer?: boolean;
     alias?: string;
     defaultOption?: boolean;
     defaultValue?: T;
+    description: string;
+    kind?: OptionKind;
     legalValues?: string[];
     multiple?: boolean;
+    name: Name;
+    renderer?: boolean;
+    type: StringConstructor | BooleanConstructor;
     typeLabel?: string;
 }
 
@@ -30,7 +27,7 @@ export interface OptionDefinition<Name extends string, T> {
  * subclasses, `BooleanOption`, `EnumOption`, or `StringOption`.
  */
 export abstract class Option<Name extends string, T> {
-    protected readonly definition: OptionDefinition<Name, T>;
+    public readonly definition: OptionDefinition<Name, T>;
 
     public constructor(definition: OptionDefinition<Name, T>) {
         definition.renderer = true;
@@ -54,7 +51,7 @@ export abstract class Option<Name extends string, T> {
     }
 }
 
-export type OptionValueType<O> = O extends Option<infer Name, infer T> ? T : never;
+export type OptionValueType<O> = O extends Option<string, infer T> ? T : never;
 export type OptionValues<T> = { [P in keyof T]: OptionValueType<T[P]> };
 
 export function getOptionValues<Name extends string, T, Options extends Record<string, Option<Name, T>>>(
@@ -62,11 +59,11 @@ export function getOptionValues<Name extends string, T, Options extends Record<s
     untypedOptionValues: FixMeOptionsType
 ): OptionValues<Options> {
     const optionValues: FixMeOptionsType = {};
-    for (const name of Object.getOwnPropertyNames(options)) {
+    for (const name of Object.keys(options)) {
         const option = options[name];
         const value = option.getValue(untypedOptionValues);
         if (option instanceof EnumOption) {
-            optionValues[name] = option.getEnumValue(value);
+            optionValues[name] = option.getEnumValue(value as string);
         } else {
             optionValues[name] = value;
         }
@@ -158,6 +155,7 @@ export class StringOption<Name extends string> extends Option<Name, string> {
     }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type NoInfer<T> = [T][T extends any ? 0 : never];
 
 // FIXME: remove tuples and use map
@@ -165,9 +163,9 @@ export class EnumOption<
     Name extends string,
     // EnumMap extends Record<string, unknown>,
     // EnumKey = keyof EnumMap
-    EnumTuples extends Array<[string, unknown]>,
-    EnumKey = EnumTuples[number][0],
-    EnumMap = { [Key in EnumTuples[number][0]]: Extract<EnumTuples[number], [Key, any]>[1] }
+    EnumTuples extends Readonly<Array<readonly [string, unknown]>> = readonly [],
+    EnumKey = Readonly<EnumTuples[number][0]>,
+    EnumMap extends object = Readonly<{ [Tuple in EnumTuples[number] as Tuple[0]]: Tuple[1] }>
 > extends Option<Name, EnumKey> {
     private readonly _values: EnumMap;
 
@@ -176,7 +174,7 @@ export class EnumOption<
         description: string,
         // values: EnumMap,
         values: EnumTuples,
-        defaultValue: NoInfer<EnumKey>,
+        defaultValue?: NoInfer<EnumKey>,
         kind: OptionKind = "primary"
     ) {
         const definition = {
@@ -196,7 +194,7 @@ export class EnumOption<
 
     // getEnumValue<Key extends EnumKey & string>(name: Key): EnumMap[Key] {
     public getEnumValue<Key extends keyof EnumMap & string>(name: Key): EnumMap[Key] {
-        if (!hasOwnProperty(this._values, name)) {
+        if (!(name in this._values)) {
             return messageError("RendererUnknownOptionValue", { value: name, name: this.name });
         }
 
