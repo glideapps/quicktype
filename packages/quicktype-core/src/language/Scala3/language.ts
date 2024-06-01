@@ -29,9 +29,15 @@ export const scala3Options = {
     packageName: new StringOption("package", "Package", "PACKAGE", "quicktype")
 };
 
-export class Scala3TargetLanguage extends TargetLanguage {
+export const scala3LanguageConfig = {
+    displayName: "Scala3",
+    names: ["scala3"],
+    extension: "scala"
+} as const;
+
+export class Scala3TargetLanguage extends TargetLanguage<typeof scala3LanguageConfig> {
     public constructor() {
-        super("Scala3", ["scala3"], "scala");
+        super(scala3LanguageConfig);
     }
 
     protected getOptions(): Array<Option<FixMeOptionsAnyType>> {

@@ -10,9 +10,15 @@ export const elixirOptions = {
     namespace: new StringOption("namespace", "Specify a module namespace", "NAME", "")
 };
 
-export class ElixirTargetLanguage extends TargetLanguage {
+export const elixirLanguageConfig = {
+    displayName: "Elixir",
+    names: ["elixir"],
+    extension: "ex"
+} as const;
+
+export class ElixirTargetLanguage extends TargetLanguage<typeof elixirLanguageConfig> {
     public constructor() {
-        super("Elixir", ["elixir"], "ex");
+        super(elixirLanguageConfig);
     }
 
     protected getOptions(): Array<Option<FixMeOptionsAnyType>> {

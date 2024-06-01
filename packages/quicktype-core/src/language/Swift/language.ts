@@ -76,9 +76,15 @@ export const swiftOptions = {
     )
 };
 
-export class SwiftTargetLanguage extends TargetLanguage {
+export const swiftLanguageConfig = {
+    displayName: "Swift",
+    names: ["swift", "swift4"],
+    extension: "swift"
+} as const;
+
+export class SwiftTargetLanguage extends TargetLanguage<typeof swiftLanguageConfig> {
     public constructor() {
-        super("Swift", ["swift", "swift4"], "swift");
+        super(swiftLanguageConfig);
     }
 
     protected getOptions(): Array<Option<FixMeOptionsAnyType>> {

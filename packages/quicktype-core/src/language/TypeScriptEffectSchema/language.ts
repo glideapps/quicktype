@@ -9,17 +9,19 @@ export const typeScriptEffectSchemaOptions = {
     justSchema: new BooleanOption("just-schema", "Schema only", false)
 };
 
-export class TypeScriptEffectSchemaTargetLanguage extends TargetLanguage {
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [];
+export const typeScriptEffectSchemaLanguageConfig = {
+    displayName: "TypeScript Effect Schema",
+    names: ["typescript-effect-schema"],
+    extension: "ts"
+} as const;
+
+export class TypeScriptEffectSchemaTargetLanguage extends TargetLanguage<typeof typeScriptEffectSchemaLanguageConfig> {
+    public constructor() {
+        super(typeScriptEffectSchemaLanguageConfig);
     }
 
-    public constructor(
-        displayName: string = "TypeScript Effect Schema",
-        names: string[] = ["typescript-effect-schema"],
-        extension: string = "ts"
-    ) {
-        super(displayName, names, extension);
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
+        return [];
     }
 
     protected makeRenderer(

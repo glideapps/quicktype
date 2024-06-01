@@ -24,9 +24,15 @@ export const objectiveCOptions = {
     extraComments: new BooleanOption("extra-comments", "Extra comments", false)
 };
 
-export class ObjectiveCTargetLanguage extends TargetLanguage {
+export const objectiveCLanguageConfig = {
+    displayName: "Objective-C",
+    names: ["objc", "objective-c", "objectivec"],
+    extension: "m"
+} as const;
+
+export class ObjectiveCTargetLanguage extends TargetLanguage<typeof objectiveCLanguageConfig> {
     public constructor() {
-        super("Objective-C", ["objc", "objective-c", "objectivec"], "m");
+        super(objectiveCLanguageConfig);
     }
 
     protected getOptions(): Array<Option<FixMeOptionsAnyType>> {

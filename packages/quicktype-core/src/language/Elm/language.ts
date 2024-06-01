@@ -15,9 +15,15 @@ export const elmOptions = {
     moduleName: new StringOption("module", "Generated module name", "NAME", "QuickType")
 };
 
-export class ElmTargetLanguage extends TargetLanguage {
+export const elmLanguageConfig = {
+    displayName: "Elm",
+    names: ["elm"],
+    extension: "elm"
+} as const;
+
+export class ElmTargetLanguage extends TargetLanguage<typeof elmLanguageConfig> {
     public constructor() {
-        super("Elm", ["elm"], "elm");
+        super(elmLanguageConfig);
     }
 
     protected getOptions(): Array<Option<FixMeOptionsAnyType>> {

@@ -105,9 +105,11 @@ export const newtonsoftCSharpOptions = Object.assign({}, cSharpOptions, {});
 
 export const systemTextJsonCSharpOptions = Object.assign({}, cSharpOptions, {});
 
-export class CSharpTargetLanguage extends TargetLanguage {
+export const cSharpLanguageConfig = { displayName: "C#", names: ["cs", "csharp"], extension: "cs" } as const;
+
+export class CSharpTargetLanguage extends TargetLanguage<typeof cSharpLanguageConfig> {
     public constructor() {
-        super("C#", ["cs", "csharp"], "cs");
+        super(cSharpLanguageConfig);
     }
 
     protected getOptions(): Array<Option<FixMeOptionsAnyType>> {

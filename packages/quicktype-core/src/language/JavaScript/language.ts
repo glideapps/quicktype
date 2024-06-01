@@ -31,9 +31,15 @@ export const javaScriptOptions = {
     )
 };
 
-export class JavaScriptTargetLanguage extends TargetLanguage {
-    public constructor(displayName = "JavaScript", names: string[] = ["javascript", "js", "jsx"], extension = "js") {
-        super(displayName, names, extension);
+export const javaScriptLanguageConfig = {
+    displayName: "JavaScript",
+    names: ["javascript", "js", "jsx"],
+    extension: "js"
+} as const;
+
+export class JavaScriptTargetLanguage extends TargetLanguage<typeof javaScriptLanguageConfig> {
+    public constructor() {
+        super(javaScriptLanguageConfig);
     }
 
     protected getOptions(): Array<Option<FixMeOptionsAnyType>> {

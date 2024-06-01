@@ -21,17 +21,19 @@ export const javaScriptPropTypesOptions = {
     )
 };
 
-export class JavaScriptPropTypesTargetLanguage extends TargetLanguage {
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [javaScriptPropTypesOptions.acronymStyle, javaScriptPropTypesOptions.converters];
+export const javaScriptPropTypesLanguageConfig = {
+    displayName: "JavaScript PropTypes",
+    names: ["javascript-prop-types"],
+    extension: "js"
+} as const;
+
+export class JavaScriptPropTypesTargetLanguage extends TargetLanguage<typeof javaScriptPropTypesLanguageConfig> {
+    public constructor() {
+        super(javaScriptPropTypesLanguageConfig);
     }
 
-    public constructor(
-        displayName = "JavaScript PropTypes",
-        names: string[] = ["javascript-prop-types"],
-        extension = "js"
-    ) {
-        super(displayName, names, extension);
+    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
+        return [javaScriptPropTypesOptions.acronymStyle, javaScriptPropTypesOptions.converters];
     }
 
     protected makeRenderer(
