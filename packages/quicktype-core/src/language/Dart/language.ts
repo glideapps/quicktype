@@ -31,9 +31,11 @@ export const dartOptions = {
     partName: new StringOption("part-name", "Use this name in `part` directive", "NAME", "", "secondary")
 };
 
-export class DartTargetLanguage extends TargetLanguage {
+export const dartLanguageConfig = { displayName: "Dart", names: ["dart"], extension: "dart" } as const;
+
+export class DartTargetLanguage extends TargetLanguage<typeof dartLanguageConfig> {
     public constructor() {
-        super("Dart", ["dart"], "dart");
+        super(dartLanguageConfig);
     }
 
     protected getOptions(): Array<Option<FixMeOptionsAnyType>> {

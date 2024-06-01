@@ -30,7 +30,13 @@ export const pythonOptions = {
     nicePropertyNames: new BooleanOption("nice-property-names", "Transform property names to be Pythonic", true)
 };
 
-export class PythonTargetLanguage extends TargetLanguage {
+export const pythonLanguageConfig = { displayName: "Python", names: ["python", "py"], extension: "py" } as const;
+
+export class PythonTargetLanguage extends TargetLanguage<typeof pythonLanguageConfig> {
+    public constructor() {
+        super(pythonLanguageConfig);
+    }
+
     protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
         return [pythonOptions.features, pythonOptions.justTypes, pythonOptions.nicePropertyNames];
     }

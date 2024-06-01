@@ -16,9 +16,15 @@ export const rubyOptions = {
     namespace: new StringOption("namespace", "Specify a wrapping Namespace", "NAME", "", "secondary")
 };
 
-export class RubyTargetLanguage extends TargetLanguage {
+export const rubyLanguageConfig = {
+    displayName: "Ruby",
+    names: ["ruby"],
+    extension: "rb"
+} as const;
+
+export class RubyTargetLanguage extends TargetLanguage<typeof rubyLanguageConfig> {
     public constructor() {
-        super("Ruby", ["ruby"], "rb");
+        super(rubyLanguageConfig);
     }
 
     protected getOptions(): Array<Option<FixMeOptionsAnyType>> {

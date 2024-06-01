@@ -24,13 +24,19 @@ export const rustOptions = {
     leadingComments: new BooleanOption("leading-comments", "Leading Comments", true)
 };
 
-export class RustTargetLanguage extends TargetLanguage {
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): RustRenderer {
-        return new RustRenderer(this, renderContext, getOptionValues(rustOptions, untypedOptionValues));
+export const rustLanguageConfig = {
+    displayName: "Rust",
+    names: ["rust", "rs", "rustlang"],
+    extension: "rs"
+} as const;
+
+export class RustTargetLanguage extends TargetLanguage<typeof rustLanguageConfig> {
+    public constructor() {
+        super(rustLanguageConfig);
     }
 
-    public constructor() {
-        super("Rust", ["rust", "rs", "rustlang"], "rs");
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): RustRenderer {
+        return new RustRenderer(this, renderContext, getOptionValues(rustOptions, untypedOptionValues));
     }
 
     protected getOptions(): Array<Option<FixMeOptionsAnyType>> {

@@ -20,9 +20,9 @@ import { type MultiFileRenderResult, type TargetLanguage } from "./TargetLanguag
 import { type TransformedStringTypeKind } from "./Type";
 import { type StringTypeMapping, TypeBuilder } from "./TypeBuilder";
 import { type TypeGraph, noneToAny, optionalToNullable, removeIndirectionIntersections } from "./TypeGraph";
-import { type FixMeOptionsType } from "./types";
+import { type FixMeOptionsType, type LanguageName } from "./types";
 
-export function getTargetLanguage(nameOrInstance: string | TargetLanguage): TargetLanguage {
+export function getTargetLanguage(nameOrInstance: LanguageName | TargetLanguage): TargetLanguage {
     if (typeof nameOrInstance === "object") {
         return nameOrInstance;
     }
@@ -161,7 +161,7 @@ export interface NonInferenceOptions {
      * or a string specifying one of the names for quicktype's built-in target languages.  For example,
      * both `cs` and `csharp` will generate C#.
      */
-    lang: string | TargetLanguage;
+    lang: LanguageName | TargetLanguage;
     /** If given, output these comments at the beginning of the main output file */
     leadingComments?: Comment[];
     /** Don't render output.  This is mainly useful for benchmarking. */

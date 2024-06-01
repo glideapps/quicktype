@@ -20,6 +20,7 @@ import {
     JSONInput,
     JSONSchemaInput,
     type JSONSourceData,
+    type LanguageName,
     type OptionDefinition,
     type Options,
     type RendererOptions,
@@ -34,6 +35,7 @@ import {
     getTargetLanguage,
     inferenceFlagNames,
     inferenceFlags,
+    isLanguageName,
     languageNamed,
     messageAssert,
     messageError,
@@ -73,7 +75,7 @@ export interface CLIOptions {
     help: boolean;
     httpHeader?: string[];
     httpMethod?: string;
-    lang: string;
+    lang: LanguageName;
 
     noRender: boolean;
     out?: string;
@@ -222,7 +224,7 @@ async function samplesFromDirectory(dataDir: string, httpHeaders?: string[]): Pr
     return sources;
 }
 
-function inferLang(options: Partial<CLIOptions>, defaultLanguage: string): string {
+function inferLang(options: Partial<CLIOptions>, defaultLanguage: LanguageName): string | LanguageName {
     // Output file extension determines the language if language is undefined
     if (options.out !== undefined) {
         let extension = path.extname(options.out);
@@ -272,19 +274,19 @@ function inferCLIOptions(opts: Partial<CLIOptions>, targetLanguage: TargetLangua
         language = targetLanguage;
     } else {
         const languageName = opts.lang ?? inferLang(opts, defaultDefaultTargetLanguageName);
-        const maybeLanguage = languageNamed(languageName);
-        if (maybeLanguage === undefined) {
+
+        if (isLanguageName(languageName)) {
+            language = languageNamed(languageName);
+        } else {
             return messageError("DriverUnknownOutputLanguage", { lang: languageName });
         }
-
-        language = maybeLanguage;
     }
 
     const options: CLIOptions = {
         src: opts.src ?? [],
         srcUrls: opts.srcUrls,
         srcLang: srcLang,
-        lang: language.displayName,
+        lang: language.name as LanguageName,
         topLevel: opts.topLevel ?? inferTopLevel(opts),
         noRender: !!opts.noRender,
         alphabetizeProperties: !!opts.alphabetizeProperties,
@@ -311,7 +313,7 @@ function inferCLIOptions(opts: Partial<CLIOptions>, targetLanguage: TargetLangua
     return options;
 }
 
-function makeLangTypeLabel(targetLanguages: TargetLanguage[]): string {
+function makeLangTypeLabel(targetLanguages: readonly TargetLanguage[]): string {
     assert(targetLanguages.length > 0, "Must have at least one target language");
     return targetLanguages.map(r => _.minBy(r.names, s => s.length)).join("|");
 }
@@ -331,7 +333,7 @@ function dashedFromCamelCase(name: string): string {
         .join("-");
 }
 
-function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinition[] {
+function makeOptionDefinitions(targetLanguages: readonly TargetLanguage[]): OptionDefinition[] {
     const beforeLang: OptionDefinition[] = [
         {
             name: "out",
@@ -513,7 +515,7 @@ const tableOptionsForOptions: TableOptions = {
     ]
 };
 
-function makeSectionsBeforeRenderers(targetLanguages: TargetLanguage[]): UsageSection[] {
+function makeSectionsBeforeRenderers(targetLanguages: readonly TargetLanguage[]): UsageSection[] {
     const langDisplayNames = targetLanguages.map(r => r.displayName).join(", ");
 
     return [
@@ -583,7 +585,8 @@ export function parseCLIOptions(argv: string[], targetLanguage?: TargetLanguage)
     // twice.  This is the first parse to get the renderer:
     const incompleteOptions = inferCLIOptions(parseOptions(optionDefinitions, argv, true), targetLanguage);
     if (targetLanguage === undefined) {
-        targetLanguage = getTargetLanguage(incompleteOptions.lang);
+        const languageName = isLanguageName(incompleteOptions.lang) ? incompleteOptions.lang : "typescript";
+        targetLanguage = getTargetLanguage(languageName);
     }
 
     const rendererOptionDefinitions = targetLanguage.cliOptionDefinitions.actual;
@@ -630,7 +633,7 @@ function parseOptions(definitions: OptionDefinition[], argv: string[], partial: 
     return options;
 }
 
-function usage(targetLanguages: TargetLanguage[]): void {
+function usage(targetLanguages: readonly TargetLanguage[]): void {
     const rendererSections: UsageSection[] = [];
 
     for (const language of targetLanguages) {
@@ -711,7 +714,8 @@ export function jsonInputForTargetLanguage(
     handleJSONRefs = false
 ): JSONInput<Readable> {
     if (typeof targetLanguage === "string") {
-        targetLanguage = defined(languageNamed(targetLanguage, languages));
+        const languageName = isLanguageName(targetLanguage) ? targetLanguage : "typescript";
+        targetLanguage = defined(languageNamed(languageName, languages));
     }
 
     const compressedJSON = new CompressedJSONFromStream(targetLanguage.dateTimeRecognizer, handleJSONRefs);
@@ -901,10 +905,11 @@ export async function makeQuicktypeOptions(
         }
     }
 
-    const lang = languageNamed(options.lang, targetLanguages);
-    if (lang === undefined) {
+    if (!isLanguageName(options.lang)) {
         return messageError("DriverUnknownOutputLanguage", { lang: options.lang });
     }
+
+    const lang = languageNamed(options.lang, targetLanguages);
 
     const quicktypeOptions: Partial<Options> = {
         lang,

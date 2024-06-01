@@ -1,3 +1,5 @@
+import { type LanguageName } from "quicktype-core";
+
 import * as process from "process";
 // @ts-ignore
 import { RendererOptions } from "../dist/quicktype-core/Run";
@@ -18,7 +20,7 @@ export type LanguageFeature =
     | "pattern";
 
 export interface Language {
-    name: string;
+    name: LanguageName;
     base: string;
     setupCommand?: string;
     compileCommand?: string;

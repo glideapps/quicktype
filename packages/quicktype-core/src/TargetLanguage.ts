@@ -14,12 +14,24 @@ import { type FixMeOptionsAnyType, type FixMeOptionsType } from "./types";
 
 export type MultiFileRenderResult = ReadonlyMap<string, SerializedRenderResult>;
 
-export abstract class TargetLanguage {
-    public constructor(
-        public readonly displayName: string,
-        public readonly names: string[],
-        public readonly extension: string
-    ) {}
+export interface LanguageConfig {
+    readonly displayName: string;
+    readonly extension: string;
+    readonly names: readonly string[];
+}
+
+export abstract class TargetLanguage<Config extends LanguageConfig = LanguageConfig> {
+    public readonly displayName: Config["displayName"];
+
+    public readonly names: Config["names"];
+
+    public readonly extension: Config["extension"];
+
+    public constructor({ displayName, names, extension }: Config) {
+        this.displayName = displayName;
+        this.names = names;
+        this.extension = extension;
+    }
 
     protected abstract getOptions(): Array<Option<FixMeOptionsAnyType>>;
 
@@ -38,7 +50,7 @@ export abstract class TargetLanguage {
         return { actual, display };
     }
 
-    public get name(): string {
+    public get name(): (typeof this.names)[0] {
         return defined(this.names[0]);
     }
 

@@ -20,9 +20,15 @@ export const goOptions = {
     )
 };
 
-export class GoTargetLanguage extends TargetLanguage {
+const golangLanguageConfig = {
+    displayName: "Go",
+    names: ["go", "golang"],
+    extension: "go"
+} as const;
+
+export class GoTargetLanguage extends TargetLanguage<typeof golangLanguageConfig> {
     public constructor() {
-        super("Go", ["go", "golang"], "go");
+        super(golangLanguageConfig);
     }
 
     protected getOptions(): Array<Option<FixMeOptionsAnyType>> {

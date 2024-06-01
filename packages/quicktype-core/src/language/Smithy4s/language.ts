@@ -16,9 +16,15 @@ export const smithyOptions = {
     packageName: new StringOption("package", "Package", "PACKAGE", "quicktype")
 };
 
-export class SmithyTargetLanguage extends TargetLanguage {
+export const smithyLanguageConfig = {
+    displayName: "Smithy",
+    names: ["smithy4a"],
+    extension: "smithy"
+} as const;
+
+export class SmithyTargetLanguage extends TargetLanguage<typeof smithyLanguageConfig> {
     public constructor() {
-        super("Smithy", ["Smithy"], "smithy");
+        super(smithyLanguageConfig);
     }
 
     protected getOptions(): Array<Option<FixMeOptionsAnyType>> {

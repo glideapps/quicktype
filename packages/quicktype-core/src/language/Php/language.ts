@@ -17,9 +17,16 @@ export const phpOptions = {
     withClosing: new BooleanOption("with-closing", "PHP Closing Tag", false),
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal)
 };
-export class PhpTargetLanguage extends TargetLanguage {
+
+export const phpLanguageConfig = {
+    displayName: "PHP",
+    names: ["php"],
+    extension: "php"
+} as const;
+
+export class PhpTargetLanguage extends TargetLanguage<typeof phpLanguageConfig> {
     public constructor() {
-        super("PHP", ["php"], "php");
+        super(phpLanguageConfig);
     }
 
     protected getOptions(): Array<Option<FixMeOptionsAnyType>> {

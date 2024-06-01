@@ -186,6 +186,11 @@ main();
 
 The argument to `quicktype` is a complex object with many optional properties. [Explore its definition](https://github.com/quicktype/quicktype/blob/master/packages/quicktype-core/src/Run.ts#L637) to understand what options are allowed.
 
+### Adding Custom logic or Rendering:
+
+Quicktype supports creating your own custom languages and rendering output, you can extend existing classes or create your own to be using by the `quicktype function`.<br/>
+Check out [this guide](./doc/CustomRenderer.md) for more info.
+
 ## Contributing
 
 `quicktype` is [Open Source](LICENSE) and we love contributors! In fact, we have a [list of issues](https://github.com/quicktype/quicktype/issues?utf8=✓&q=is%3Aissue+is%3Aopen+label%3Ahelp-wanted) that are low-priority for us, but for which we'd happily accept contributions. Support for new target languages is also strongly desired. If you'd like to contribute, need help with anything at all, or would just like to talk things over, come [join us on Slack](http://slack.quicktype.io/).

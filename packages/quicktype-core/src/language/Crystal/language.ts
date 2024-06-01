@@ -5,13 +5,19 @@ import { type FixMeOptionsAnyType } from "../../types";
 
 import { CrystalRenderer } from "./CrystalRenderer";
 
-export class CrystalTargetLanguage extends TargetLanguage {
-    protected makeRenderer(renderContext: RenderContext): CrystalRenderer {
-        return new CrystalRenderer(this, renderContext);
+export const crystalLanguageConfig = {
+    displayName: "Crystal",
+    names: ["crystal", "cr", "crystallang"],
+    extension: "cr"
+} as const;
+
+export class CrystalTargetLanguage extends TargetLanguage<typeof crystalLanguageConfig> {
+    public constructor() {
+        super(crystalLanguageConfig);
     }
 
-    public constructor() {
-        super("Crystal", ["crystal", "cr", "crystallang"], "cr");
+    protected makeRenderer(renderContext: RenderContext): CrystalRenderer {
+        return new CrystalRenderer(this, renderContext);
     }
 
     protected get defaultIndentation(): string {
