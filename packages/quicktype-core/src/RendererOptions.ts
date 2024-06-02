@@ -158,22 +158,17 @@ export class StringOption<Name extends string> extends Option<Name, string> {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type NoInfer<T> = [T][T extends any ? 0 : never];
 
-// FIXME: remove tuples and use map
 export class EnumOption<
     Name extends string,
-    // EnumMap extends Record<string, unknown>,
-    // EnumKey = keyof EnumMap
-    EnumTuples extends Readonly<Array<readonly [string, unknown]>> = readonly [],
-    EnumKey = Readonly<EnumTuples[number][0]>,
-    EnumMap extends object = Readonly<{ [Tuple in EnumTuples[number] as Tuple[0]]: Tuple[1] }>
+    EnumMap extends Record<string, unknown>,
+    EnumKey extends Extract<keyof EnumMap, string> = Extract<keyof EnumMap, string>
 > extends Option<Name, EnumKey> {
     private readonly _values: EnumMap;
 
     public constructor(
         name: Name,
         description: string,
-        // values: EnumMap,
-        values: EnumTuples,
+        values: EnumMap,
         defaultValue?: NoInfer<EnumKey>,
         kind: OptionKind = "primary"
     ) {
@@ -182,18 +177,15 @@ export class EnumOption<
             kind,
             type: String,
             description,
-            // typeLabel: Object.keys(values).join("|"),
-            typeLabel: values.map(([key, _]) => key).join("|"),
+            typeLabel: Object.keys(values).join("|"),
             defaultValue
         };
         super(definition);
 
-        // this._values = values;
-        this._values = values.reduce((acc, [key, val]) => ({ ...acc, [key]: val }), {} as Partial<EnumMap>) as EnumMap;
+        this._values = values;
     }
 
-    // getEnumValue<Key extends EnumKey & string>(name: Key): EnumMap[Key] {
-    public getEnumValue<Key extends keyof EnumMap & string>(name: Key): EnumMap[Key] {
+    public getEnumValue<Key extends EnumKey>(name: Key): EnumMap[Key] {
         if (!(name in this._values)) {
             return messageError("RendererUnknownOptionValue", { value: name, name: this.name });
         }
