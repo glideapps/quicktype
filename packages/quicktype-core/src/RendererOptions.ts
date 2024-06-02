@@ -155,9 +155,6 @@ export class StringOption<Name extends string> extends Option<Name, string> {
     }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type NoInfer<T> = [T][T extends any ? 0 : never];
-
 export class EnumOption<
     Name extends string,
     EnumMap extends Record<string, unknown>,
