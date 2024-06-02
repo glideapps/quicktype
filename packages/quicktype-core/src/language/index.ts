@@ -24,3 +24,5 @@ export * from "./Swift";
 export * from "./TypeScriptFlow";
 export * from "./TypeScriptEffectSchema";
 export * from "./TypeScriptZod";
+
+export { all as defaultTargetLanguages, languageNamed, isLanguageName } from "./All";
