@@ -83,6 +83,5 @@ export { StringTypes } from "./attributes/StringTypes";
 export { removeNullFromUnion, matchType, nullableFromUnion } from "./TypeUtils";
 export { ConvenienceRenderer } from "./ConvenienceRenderer";
 export { uriTypeAttributeKind } from "./attributes/URIAttributes";
-export { type LanguageName, type LanguageDisplayName } from "./types";
 
 export * from "./language";
