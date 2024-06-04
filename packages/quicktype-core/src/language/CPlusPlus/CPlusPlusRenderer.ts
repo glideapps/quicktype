@@ -932,21 +932,21 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 false
             );
 
-            // Explicitly comparing the minMax values to undefined here allows them to have the valid value of zero
+            // Check the minMax values for truthiness or if they're equal to zero, as zero is a valid value too
             res.set(jsonName, [
                 this.constraintMember(jsonName),
                 "(",
-                minMax?.[0] !== undefined && cppType === "int64_t" ? String(minMax[0]) : this._nulloptType,
+                (minMax?.[0] || minMax?.[0] === 0) && cppType === "int64_t" ? String(minMax[0]) : this._nulloptType,
                 ", ",
-                minMax?.[1] !== undefined && cppType === "int64_t" ? String(minMax[1]) : this._nulloptType,
+                (minMax?.[1] || minMax?.[1] === 0) && cppType === "int64_t" ? String(minMax[1]) : this._nulloptType,
                 ", ",
-                minMax?.[0] !== undefined && cppType === "double" ? String(minMax[0]) : this._nulloptType,
+                (minMax?.[0] || minMax?.[0] === 0) && cppType === "double" ? String(minMax[0]) : this._nulloptType,
                 ", ",
-                minMax?.[1] !== undefined && cppType === "double" ? String(minMax[1]) : this._nulloptType,
+                (minMax?.[1] || minMax?.[1] === 0) && cppType === "double" ? String(minMax[1]) : this._nulloptType,
                 ", ",
-                minMaxLength?.[0] !== undefined ? String(minMaxLength[0]) : this._nulloptType,
+                minMaxLength?.[0] || minMaxLength?.[0] === 0 ? String(minMaxLength[0]) : this._nulloptType,
                 ", ",
-                minMaxLength?.[1] !== undefined ? String(minMaxLength[1]) : this._nulloptType,
+                minMaxLength?.[1] || minMaxLength?.[1] === 0 ? String(minMaxLength[1]) : this._nulloptType,
                 ", ",
                 pattern === undefined
                     ? this._nulloptType
