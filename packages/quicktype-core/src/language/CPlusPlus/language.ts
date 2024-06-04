@@ -6,12 +6,14 @@ import { type FixMeOptionsType } from "../../types";
 import { CPlusPlusRenderer } from "./CPlusPlusRenderer";
 
 // FIXME: share with CJSON
-const pascalValue = ["pascal-case", "pascal"] as const;
-const underscoreValue = ["underscore-case", "underscore"] as const;
-const camelValue = ["camel-case", "camel"] as const;
-const upperUnderscoreValue = ["upper-underscore-case", "upper-underscore"] as const;
-const pascalUpperAcronymsValue = ["pascal-case-upper-acronyms", "pascal-upper-acronyms"] as const;
-const camelUpperAcronymsValue = ["camel-case-upper-acronyms", "camel-upper-acronyms"] as const;
+const namingStyles = {
+    "pascal-case": "pascal",
+    "underscore-case": "underscore",
+    "camel-case": "camel",
+    "upper-underscore-case": "upper-underscore",
+    "pascal-case-upper-acronyms": "pascal-upper-acronyms",
+    "camel-case-upper-acronyms": "camel-upper-acronyms"
+} as const;
 
 export const cPlusPlusOptions = {
     typeSourceStyle: new EnumOption(
@@ -64,30 +66,9 @@ export const cPlusPlusOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     namespace: new StringOption("namespace", "Name of the generated namespace(s)", "NAME", "quicktype"),
     enumType: new StringOption("enum-type", "Type of enum class", "NAME", "int", "secondary"),
-    typeNamingStyle: new EnumOption("type-style", "Naming style for types", {
-        pascalValue,
-        underscoreValue,
-        camelValue,
-        upperUnderscoreValue,
-        pascalUpperAcronymsValue,
-        camelUpperAcronymsValue
-    }),
-    memberNamingStyle: new EnumOption("member-style", "Naming style for members", {
-        underscoreValue,
-        pascalValue,
-        camelValue,
-        upperUnderscoreValue,
-        pascalUpperAcronymsValue,
-        camelUpperAcronymsValue
-    }),
-    enumeratorNamingStyle: new EnumOption("enumerator-style", "Naming style for enumerators", {
-        upperUnderscoreValue,
-        underscoreValue,
-        pascalValue,
-        camelValue,
-        pascalUpperAcronymsValue,
-        camelUpperAcronymsValue
-    }),
+    typeNamingStyle: new EnumOption("type-style", "Naming style for types", namingStyles),
+    memberNamingStyle: new EnumOption("member-style", "Naming style for members", namingStyles),
+    enumeratorNamingStyle: new EnumOption("enumerator-style", "Naming style for enumerators", namingStyles),
     boost: new BooleanOption("boost", "Require a dependency on boost. Without boost, C++17 is required", true),
     hideNullOptional: new BooleanOption("hide-null-optional", "Hide null value for optional field", false)
 };
