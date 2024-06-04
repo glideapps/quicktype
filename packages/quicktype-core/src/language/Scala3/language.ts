@@ -1,9 +1,9 @@
 import { type ConvenienceRenderer } from "../../ConvenienceRenderer";
 import { type RenderContext } from "../../Renderer";
-import { EnumOption, type Option, StringOption, getOptionValues } from "../../RendererOptions";
+import { EnumOption, StringOption, getOptionValues } from "../../RendererOptions";
 import { assertNever } from "../../support/Support";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import { type FixMeOptionsType } from "../../types";
 
 import { CirceRenderer } from "./CirceRenderer";
 import { Scala3Renderer } from "./Scala3Renderer";
@@ -34,8 +34,8 @@ export class Scala3TargetLanguage extends TargetLanguage<typeof scala3LanguageCo
         super(scala3LanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [scala3Options.framework, scala3Options.packageName];
+    public getOptions(): typeof scala3Options {
+        return scala3Options;
     }
 
     public get supportsOptionalClassProperties(): boolean {

@@ -1,7 +1,7 @@
 import { type RenderContext } from "../../Renderer";
-import { BooleanOption, type Option, StringOption, getOptionValues } from "../../RendererOptions";
+import { BooleanOption, StringOption, getOptionValues } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import { type FixMeOptionsType } from "../../types";
 
 import { ElixirRenderer } from "./ElixirRenderer";
 
@@ -21,8 +21,8 @@ export class ElixirTargetLanguage extends TargetLanguage<typeof elixirLanguageCo
         super(elixirLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [elixirOptions.justTypes, elixirOptions.namespace];
+    public getOptions(): typeof elixirOptions {
+        return elixirOptions;
     }
 
     public get supportsOptionalClassProperties(): boolean {

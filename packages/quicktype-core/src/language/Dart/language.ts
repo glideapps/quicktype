@@ -1,9 +1,9 @@
 import { type RenderContext } from "../../Renderer";
-import { BooleanOption, type Option, StringOption, getOptionValues } from "../../RendererOptions";
+import { BooleanOption, StringOption, getOptionValues } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
 import { type PrimitiveStringTypeKind, type TransformedStringTypeKind } from "../../Type";
 import { type StringTypeMapping } from "../../TypeBuilder";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import { type FixMeOptionsType } from "../../types";
 
 import { DartRenderer } from "./DartRenderer";
 
@@ -38,20 +38,8 @@ export class DartTargetLanguage extends TargetLanguage<typeof dartLanguageConfig
         super(dartLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [
-            dartOptions.nullSafety,
-            dartOptions.justTypes,
-            dartOptions.codersInClass,
-            dartOptions.methodNamesWithMap,
-            dartOptions.requiredProperties,
-            dartOptions.finalProperties,
-            dartOptions.generateCopyWith,
-            dartOptions.useFreezed,
-            dartOptions.useHive,
-            dartOptions.useJsonAnnotation,
-            dartOptions.partName
-        ];
+    public getOptions(): typeof dartOptions {
+        return dartOptions;
     }
 
     public get supportsUnionsWithBothNumberTypes(): boolean {

@@ -1,11 +1,11 @@
 import { type ConvenienceRenderer } from "../../ConvenienceRenderer";
 import { type RenderContext } from "../../Renderer";
-import { BooleanOption, EnumOption, type Option, StringOption, getOptionValues } from "../../RendererOptions";
+import { BooleanOption, EnumOption, StringOption, getOptionValues } from "../../RendererOptions";
 import { assertNever } from "../../support/Support";
 import { TargetLanguage } from "../../TargetLanguage";
 import { type PrimitiveStringTypeKind, type TransformedStringTypeKind, type Type } from "../../Type";
 import { type StringTypeMapping } from "../../TypeBuilder";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import { type FixMeOptionsType } from "../../types";
 
 import { NewtonsoftCSharpRenderer } from "./NewtonSoftCSharpRenderer";
 import { SystemTextJsonCSharpRenderer } from "./SystemTextJsonCSharpRenderer";
@@ -106,21 +106,8 @@ export class CSharpTargetLanguage extends TargetLanguage<typeof cSharpLanguageCo
         super(cSharpLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [
-            cSharpOptions.framework,
-            cSharpOptions.namespace,
-            cSharpOptions.version,
-            cSharpOptions.dense,
-            cSharpOptions.useList,
-            cSharpOptions.useDecimal,
-            cSharpOptions.typeForAny,
-            cSharpOptions.virtual,
-            cSharpOptions.features,
-            cSharpOptions.baseclass,
-            cSharpOptions.checkRequired,
-            cSharpOptions.keepPropertyName
-        ];
+    public getOptions(): typeof cSharpOptions {
+        return cSharpOptions;
     }
 
     public get stringTypeMapping(): StringTypeMapping {

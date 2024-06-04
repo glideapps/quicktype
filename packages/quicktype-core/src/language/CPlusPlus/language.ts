@@ -1,7 +1,7 @@
 import { type RenderContext } from "../../Renderer";
-import { BooleanOption, EnumOption, type Option, StringOption, getOptionValues } from "../../RendererOptions";
+import { BooleanOption, EnumOption, StringOption, getOptionValues } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import { type FixMeOptionsType } from "../../types";
 
 import { CPlusPlusRenderer } from "./CPlusPlusRenderer";
 
@@ -103,22 +103,8 @@ export class CPlusPlusTargetLanguage extends TargetLanguage<typeof cPlusPlusLang
         super(cPlusPlusLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [
-            cPlusPlusOptions.justTypes,
-            cPlusPlusOptions.namespace,
-            cPlusPlusOptions.codeFormat,
-            cPlusPlusOptions.wstring,
-            cPlusPlusOptions.westConst,
-            cPlusPlusOptions.typeSourceStyle,
-            cPlusPlusOptions.includeLocation,
-            cPlusPlusOptions.typeNamingStyle,
-            cPlusPlusOptions.memberNamingStyle,
-            cPlusPlusOptions.enumeratorNamingStyle,
-            cPlusPlusOptions.enumType,
-            cPlusPlusOptions.boost,
-            cPlusPlusOptions.hideNullOptional
-        ];
+    public getOptions(): typeof cPlusPlusOptions {
+        return cPlusPlusOptions;
     }
 
     public get supportsUnionsWithBothNumberTypes(): boolean {

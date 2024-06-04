@@ -129,17 +129,8 @@ export class CJSONTargetLanguage extends TargetLanguage<typeof cJSONLanguageConf
      * Return cJSON generator options
      * @return cJSON generator options array
      */
-    protected getOptions() {
-        return [
-            cJSONOptions.typeSourceStyle,
-            cJSONOptions.typeIntegerSize,
-            cJSONOptions.addTypedefAlias,
-            cJSONOptions.printStyle,
-            cJSONOptions.hashtableSize,
-            cJSONOptions.typeNamingStyle,
-            cJSONOptions.memberNamingStyle,
-            cJSONOptions.enumeratorNamingStyle
-        ] as const;
+    public getOptions(): typeof cJSONOptions {
+        return cJSONOptions;
     }
 
     /**

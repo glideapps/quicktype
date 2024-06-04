@@ -39,16 +39,7 @@ export class RustTargetLanguage extends TargetLanguage<typeof rustLanguageConfig
         return new RustRenderer(this, renderContext, getOptionValues(rustOptions, untypedOptionValues));
     }
 
-    protected getOptions() {
-        return [
-            rustOptions.density,
-            rustOptions.visibility,
-            rustOptions.deriveDebug,
-            rustOptions.deriveClone,
-            rustOptions.derivePartialEq,
-            rustOptions.edition2018,
-            rustOptions.leadingComments,
-            rustOptions.skipSerializingNone
-        ];
+    public getOptions(): typeof rustOptions {
+        return rustOptions;
     }
 }

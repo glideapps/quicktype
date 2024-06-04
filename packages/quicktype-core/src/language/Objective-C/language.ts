@@ -1,7 +1,7 @@
 import { type RenderContext } from "../../Renderer";
-import { BooleanOption, EnumOption, type Option, StringOption, getOptionValues } from "../../RendererOptions";
+import { BooleanOption, EnumOption, StringOption, getOptionValues } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import { type FixMeOptionsType } from "../../types";
 
 import { ObjectiveCRenderer } from "./ObjectiveCRenderer";
 import { DEFAULT_CLASS_PREFIX } from "./utils";
@@ -29,14 +29,8 @@ export class ObjectiveCTargetLanguage extends TargetLanguage<typeof objectiveCLa
         super(objectiveCLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [
-            objectiveCOptions.justTypes,
-            objectiveCOptions.classPrefix,
-            objectiveCOptions.features,
-            objectiveCOptions.extraComments,
-            objectiveCOptions.marshallingFunctions
-        ];
+    public getOptions(): typeof objectiveCOptions {
+        return objectiveCOptions;
     }
 
     protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): ObjectiveCRenderer {

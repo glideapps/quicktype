@@ -1,10 +1,10 @@
 import { type ConvenienceRenderer } from "../../ConvenienceRenderer";
 import { type RenderContext } from "../../Renderer";
-import { EnumOption, type Option, StringOption, getOptionValues } from "../../RendererOptions";
+import { EnumOption, StringOption, getOptionValues } from "../../RendererOptions";
 import { AcronymStyleOptions, acronymOption } from "../../support/Acronyms";
 import { assertNever } from "../../support/Support";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import { type FixMeOptionsType } from "../../types";
 
 import { KotlinJacksonRenderer } from "./KotlinJacksonRenderer";
 import { KotlinKlaxonRenderer } from "./KotlinKlaxonRenderer";
@@ -38,8 +38,8 @@ export class KotlinTargetLanguage extends TargetLanguage<typeof kotlinLanguageCo
         super(kotlinLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [kotlinOptions.framework, kotlinOptions.acronymStyle, kotlinOptions.packageName];
+    public getOptions(): typeof kotlinOptions {
+        return kotlinOptions;
     }
 
     public get supportsOptionalClassProperties(): boolean {

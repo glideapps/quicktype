@@ -1,11 +1,11 @@
 import { type DateTimeRecognizer } from "../../DateTime";
 import { type RenderContext } from "../../Renderer";
-import { BooleanOption, EnumOption, type Option, StringOption, getOptionValues } from "../../RendererOptions";
+import { BooleanOption, EnumOption, StringOption, getOptionValues } from "../../RendererOptions";
 import { AcronymStyleOptions, acronymOption } from "../../support/Acronyms";
 import { TargetLanguage } from "../../TargetLanguage";
 import { type PrimitiveStringTypeKind, type TransformedStringTypeKind } from "../../Type";
 import { type StringTypeMapping } from "../../TypeBuilder";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import { type FixMeOptionsType } from "../../types";
 
 import { SwiftRenderer } from "./SwiftRenderer";
 import { SwiftDateTimeRecognizer } from "./utils";
@@ -87,27 +87,8 @@ export class SwiftTargetLanguage extends TargetLanguage<typeof swiftLanguageConf
         super(swiftLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [
-            swiftOptions.justTypes,
-            swiftOptions.useClasses,
-            swiftOptions.dense,
-            swiftOptions.convenienceInitializers,
-            swiftOptions.explicitCodingKeys,
-            swiftOptions.codingKeysProtocol,
-            swiftOptions.accessLevel,
-            swiftOptions.alamofire,
-            swiftOptions.linux,
-            swiftOptions.namedTypePrefix,
-            swiftOptions.protocol,
-            swiftOptions.acronymStyle,
-            swiftOptions.objcSupport,
-            swiftOptions.optionalEnums,
-            swiftOptions.sendable,
-            swiftOptions.swift5Support,
-            swiftOptions.multiFileOutput,
-            swiftOptions.mutableProperties
-        ];
+    public getOptions(): typeof swiftOptions {
+        return swiftOptions;
     }
 
     public get stringTypeMapping(): StringTypeMapping {

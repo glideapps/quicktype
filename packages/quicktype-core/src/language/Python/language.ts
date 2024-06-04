@@ -1,11 +1,11 @@
 import { iterableSome } from "collection-utils";
 
 import { type RenderContext } from "../../Renderer";
-import { BooleanOption, EnumOption, type Option, getOptionValues } from "../../RendererOptions";
+import { BooleanOption, EnumOption, getOptionValues } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
 import { type PrimitiveStringTypeKind, type TransformedStringTypeKind, type Type, UnionType } from "../../Type";
 import { type StringTypeMapping } from "../../TypeBuilder";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import { type FixMeOptionsType } from "../../types";
 
 import { JSONPythonRenderer } from "./JSONPythonRenderer";
 import { PythonRenderer } from "./PythonRenderer";
@@ -37,8 +37,8 @@ export class PythonTargetLanguage extends TargetLanguage<typeof pythonLanguageCo
         super(pythonLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [pythonOptions.features, pythonOptions.justTypes, pythonOptions.nicePropertyNames];
+    public getOptions(): typeof pythonOptions {
+        return pythonOptions;
     }
 
     public get stringTypeMapping(): StringTypeMapping {

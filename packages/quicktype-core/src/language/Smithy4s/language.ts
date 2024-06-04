@@ -1,9 +1,9 @@
 import { type ConvenienceRenderer } from "../../ConvenienceRenderer";
 import { type RenderContext } from "../../Renderer";
-import { EnumOption, type Option, StringOption, getOptionValues } from "../../RendererOptions";
+import { EnumOption, StringOption, getOptionValues } from "../../RendererOptions";
 import { assertNever } from "../../support/Support";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import { type FixMeOptionsType } from "../../types";
 
 import { Smithy4sRenderer } from "./Smithy4sRenderer";
 
@@ -33,8 +33,8 @@ export class SmithyTargetLanguage extends TargetLanguage<typeof smithyLanguageCo
         super(smithyLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [smithyOptions.framework, smithyOptions.packageName];
+    public getOptions(): typeof smithyOptions {
+        return smithyOptions;
     }
 
     public get supportsOptionalClassProperties(): boolean {

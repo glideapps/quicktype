@@ -1,9 +1,9 @@
 import { type RenderContext } from "../../Renderer";
-import { EnumOption, type Option, getOptionValues } from "../../RendererOptions";
+import { EnumOption, getOptionValues } from "../../RendererOptions";
 import { AcronymStyleOptions, acronymOption } from "../../support/Acronyms";
 import { convertersOption } from "../../support/Converters";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import { type FixMeOptionsType } from "../../types";
 
 import { JavaScriptPropTypesRenderer } from "./JavaScriptPropTypesRenderer";
 
@@ -32,8 +32,8 @@ export class JavaScriptPropTypesTargetLanguage extends TargetLanguage<typeof jav
         super(javaScriptPropTypesLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [javaScriptPropTypesOptions.acronymStyle, javaScriptPropTypesOptions.converters];
+    public getOptions(): typeof javaScriptPropTypesOptions {
+        return javaScriptPropTypesOptions;
     }
 
     protected makeRenderer(
