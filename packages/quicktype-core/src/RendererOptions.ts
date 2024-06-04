@@ -51,8 +51,17 @@ export abstract class Option<Name extends string, T> {
     }
 }
 
-export type OptionValueType<O> = O extends Option<string, infer T> ? T : never;
-export type OptionValues<T> = { [P in keyof T]: OptionValueType<T[P]> };
+export type OptionKey<O> = O extends Option<infer Name, unknown> ? Name : never;
+export type OptionValue<O> =
+    O extends EnumOption<string, infer EnumMap, infer EnumKey>
+        ? EnumMap[EnumKey]
+        : O extends Option<string, infer Value>
+          ? Value
+          : never;
+
+// FIXME: Merge these and use camelCase user-facing keys (v24)
+export type OptionMap<T> = { [K in keyof T as OptionKey<T[K]>]: OptionValue<T[K]> }; // user-facing, keys are `name` property of Option
+export type OptionValues<T> = { [K in keyof T]: OptionValue<T[K]> }; // internal, keys are keys of `_Options` object in each language file
 
 export function getOptionValues<Name extends string, T, Options extends Record<string, Option<Name, T>>>(
     options: Options,
@@ -155,6 +164,7 @@ export class StringOption<Name extends string> extends Option<Name, string> {
     }
 }
 
+// FIXME: use const generics here
 export class EnumOption<
     Name extends string,
     EnumMap extends Record<string, unknown>,
