@@ -203,7 +203,6 @@ async function pasteAsTypes(editor: vscode.TextEditor, kind: InputKind, justType
         }
     }
 
-    // @ts-expect-error FIXME: resolve this after above ^
     const text = result.lines.join("\n");
     const selection = editor.selection;
     return await editor.edit(builder => {

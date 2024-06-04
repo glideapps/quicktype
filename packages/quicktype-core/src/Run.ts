@@ -4,6 +4,8 @@ import { initTypeNames } from "./attributes/TypeNames";
 import { gatherNames } from "./GatherNames";
 import { InputData } from "./input/Inputs";
 import * as targetLanguages from "./language/All";
+import { type LanguageOptionMap } from "./language/options.types";
+import { type LanguageName } from "./language/types";
 import { makeTransformations } from "./MakeTransformations";
 import { messageError } from "./Messages";
 import { combineClasses } from "./rewrites/CombineClasses";
@@ -20,7 +22,7 @@ import { type MultiFileRenderResult, type TargetLanguage } from "./TargetLanguag
 import { type TransformedStringTypeKind } from "./Type";
 import { type StringTypeMapping, TypeBuilder } from "./TypeBuilder";
 import { type TypeGraph, noneToAny, optionalToNullable, removeIndirectionIntersections } from "./TypeGraph";
-import { type FixMeOptionsType, type LanguageName } from "./types";
+import { type FixMeOptionsType } from "./types";
 
 export function getTargetLanguage(nameOrInstance: LanguageName | TargetLanguage): TargetLanguage {
     if (typeof nameOrInstance === "object") {
@@ -33,10 +35,6 @@ export function getTargetLanguage(nameOrInstance: LanguageName | TargetLanguage)
     }
 
     return messageError("DriverUnknownOutputLanguage", { lang: nameOrInstance });
-}
-
-export interface RendererOptions {
-    [name: string]: string | boolean;
 }
 
 export interface InferenceFlag {
@@ -122,7 +120,7 @@ export type InferenceFlags = { [F in InferenceFlagName]: boolean };
  * The options type for the main quicktype entry points,
  * `quicktypeMultiFile` and `quicktype`.
  */
-export interface NonInferenceOptions {
+export interface NonInferenceOptions<Lang extends LanguageName = LanguageName> {
     /** Make all class property optional */
     allPropertiesOptional: boolean;
     /** Put class properties in alphabetical order, instead of in the order found in the JSON */
@@ -161,7 +159,7 @@ export interface NonInferenceOptions {
      * or a string specifying one of the names for quicktype's built-in target languages.  For example,
      * both `cs` and `csharp` will generate C#.
      */
-    lang: LanguageName | TargetLanguage;
+    lang: Lang | TargetLanguage;
     /** If given, output these comments at the beginning of the main output file */
     leadingComments?: Comment[];
     /** Don't render output.  This is mainly useful for benchmarking. */
@@ -171,7 +169,7 @@ export interface NonInferenceOptions {
      */
     outputFilename: string;
     /** Options for the target language's renderer */
-    rendererOptions: RendererOptions;
+    rendererOptions: LanguageOptionMap[Lang];
 }
 
 export type Options = NonInferenceOptions & InferenceFlags;

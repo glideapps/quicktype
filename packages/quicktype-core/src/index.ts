@@ -1,6 +1,5 @@
 export {
     type Options,
-    type RendererOptions,
     getTargetLanguage,
     quicktypeMultiFile,
     quicktypeMultiFileSync,
