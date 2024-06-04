@@ -10,7 +10,7 @@ import { defined } from "./support/Support";
 import { type Type } from "./Type";
 import { type StringTypeMapping } from "./TypeBuilder";
 import { type TypeGraph } from "./TypeGraph";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "./types";
+import { type FixMeOptionsType } from "./types";
 
 export type MultiFileRenderResult = ReadonlyMap<string, SerializedRenderResult>;
 
@@ -33,16 +33,19 @@ export abstract class TargetLanguage<Config extends LanguageConfig = LanguageCon
         this.extension = extension;
     }
 
-    protected abstract getOptions(): Array<Option<FixMeOptionsAnyType>>;
+    protected abstract getOptions(): Record<string, Option<string, unknown>>;
 
-    public get optionDefinitions(): OptionDefinition[] {
-        return this.getOptions().map(o => o.definition);
+    public get optionDefinitions(): Array<OptionDefinition<string, unknown>> {
+        return Object.values(this.getOptions()).map(o => o.definition);
     }
 
-    public get cliOptionDefinitions(): { actual: OptionDefinition[]; display: OptionDefinition[] } {
-        let actual: OptionDefinition[] = [];
-        let display: OptionDefinition[] = [];
-        for (const { cliDefinitions } of this.getOptions()) {
+    public get cliOptionDefinitions(): {
+        actual: Array<OptionDefinition<string, unknown>>;
+        display: Array<OptionDefinition<string, unknown>>;
+    } {
+        let actual: Array<OptionDefinition<string, unknown>> = [];
+        let display: Array<OptionDefinition<string, unknown>> = [];
+        for (const { cliDefinitions } of Object.values(this.getOptions())) {
             actual = actual.concat(cliDefinitions.actual);
             display = display.concat(cliDefinitions.display);
         }

@@ -1,21 +1,9 @@
-import { type all } from "./language/All";
-import { type TargetLanguage } from "./TargetLanguage";
-
-type AllLanguages = (typeof all)[number];
-
-export type LanguageDisplayName<Language extends TargetLanguage = AllLanguages> = Language["displayName"];
-export type LanguageName<Language extends TargetLanguage = AllLanguages> = Language["names"][number];
-
-export type LanguageDisplayNameMap = {
-    [Language in AllLanguages as LanguageDisplayName<Language>]: Language;
-};
-export type LanguageNameMap = {
-    [Language in AllLanguages as LanguageName<Language>]: Language;
-};
+export * from "./language/types";
+export * from "./language/options.types";
 
 // FIXME: remove these when options are strongly typed
-
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export type FixMeOptionsType = Record<string, any>;
 
-export type FixMeOptionsAnyType = any;
+// FIXME: Remove this post TS5.4
+export type NoInfer<T> = [T][T extends any ? 0 : never];

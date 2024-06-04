@@ -9,10 +9,6 @@ import { definedMap, hasOwnProperty, mapFromObject, mapMap, withDefault } from "
 import commandLineArgs from "command-line-args";
 import getUsage from "command-line-usage";
 import * as _ from "lodash";
-import { type Readable } from "readable-stream";
-import stringToStream from "string-to-stream";
-import _wordwrap from "wordwrap";
-
 import {
     FetchingJSONSchemaStore,
     InputData,
@@ -50,6 +46,9 @@ import {
 } from "quicktype-core";
 import { GraphQLInput } from "quicktype-graphql-input";
 import { schemaForTypeScriptSources } from "quicktype-typescript-input";
+import { type Readable } from "readable-stream";
+import stringToStream from "string-to-stream";
+import _wordwrap from "wordwrap";
 
 import { CompressedJSONFromStream } from "./CompressedJSONFromStream";
 import { introspectServer } from "./GraphQLIntrospection";

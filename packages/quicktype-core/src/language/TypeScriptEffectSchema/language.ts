@@ -1,7 +1,7 @@
 import { type RenderContext } from "../../Renderer";
-import { BooleanOption, type Option, getOptionValues } from "../../RendererOptions";
+import { BooleanOption, getOptionValues } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import { type FixMeOptionsType } from "../../types";
 
 import { TypeScriptEffectSchemaRenderer } from "./TypeScriptEffectSchemaRenderer";
 
@@ -20,8 +20,8 @@ export class TypeScriptEffectSchemaTargetLanguage extends TargetLanguage<typeof 
         super(typeScriptEffectSchemaLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [];
+    public getOptions(): {} {
+        return {};
     }
 
     protected makeRenderer(

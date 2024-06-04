@@ -112,10 +112,8 @@ class BrandNewLanguage extends TargetLanguage<typeof brandNewLanguageConfig> {
         super(brandNewLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<any>> {
-        return [
-            brandNewLanguageOptions.allowFoo // list all options from the options config
-        ];
+    public getOptions(): typeof brandNewLanguageOptions {
+        return brandNewLanguageOptions;
     }
 
     protected makeRenderer(
