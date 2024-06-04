@@ -1,6 +1,6 @@
 import { messageError } from "./Messages";
 import { assert } from "./support/Support";
-import { type FixMeOptionsType } from "./types";
+import { type FixMeOptionsType, type NoInfer } from "./types";
 
 /**
  * Primary options show up in the web UI in the "Language" settings tab,
