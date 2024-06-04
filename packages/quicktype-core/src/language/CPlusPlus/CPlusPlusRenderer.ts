@@ -926,23 +926,27 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 },
                 true,
                 false,
-                property.isOptional
+                // Since we're only generating this to compare types, whether its optional doesn't matter - we just
+                // need cppType() to spit out the actual underlying type, without wrapping it in the optional<>
+                // container.
+                false
             );
 
+            // Explicitly comparing the minMax values to undefined here allows them to have the valid value of zero
             res.set(jsonName, [
                 this.constraintMember(jsonName),
                 "(",
-                minMax?.[0] && cppType === "int64_t" ? String(minMax[0]) : this._nulloptType,
+                minMax?.[0] !== undefined && cppType === "int64_t" ? String(minMax[0]) : this._nulloptType,
                 ", ",
-                minMax?.[1] && cppType === "int64_t" ? String(minMax[1]) : this._nulloptType,
+                minMax?.[1] !== undefined && cppType === "int64_t" ? String(minMax[1]) : this._nulloptType,
                 ", ",
-                minMax?.[0] && cppType === "double" ? String(minMax[0]) : this._nulloptType,
+                minMax?.[0] !== undefined && cppType === "double" ? String(minMax[0]) : this._nulloptType,
                 ", ",
-                minMax?.[1] && cppType === "double" ? String(minMax[1]) : this._nulloptType,
+                minMax?.[1] !== undefined && cppType === "double" ? String(minMax[1]) : this._nulloptType,
                 ", ",
-                minMaxLength?.[0] ? String(minMaxLength[0]) : this._nulloptType,
+                minMaxLength?.[0] !== undefined ? String(minMaxLength[0]) : this._nulloptType,
                 ", ",
-                minMaxLength?.[1] ? String(minMaxLength[1]) : this._nulloptType,
+                minMaxLength?.[1] !== undefined ? String(minMaxLength[1]) : this._nulloptType,
                 ", ",
                 pattern === undefined
                     ? this._nulloptType
