@@ -16,14 +16,14 @@ export interface PythonFeatures {
 }
 
 export const pythonOptions = {
-    features: new EnumOption<PythonFeatures>(
+    features: new EnumOption(
         "python-version",
         "Python version",
-        [
-            ["3.5", { typeHints: false, dataClasses: false }],
-            ["3.6", { typeHints: true, dataClasses: false }],
-            ["3.7", { typeHints: true, dataClasses: true }]
-        ],
+        {
+            "3.5": { typeHints: false, dataClasses: false },
+            "3.6": { typeHints: true, dataClasses: false },
+            "3.7": { typeHints: true, dataClasses: true }
+        },
         "3.6"
     ),
     justTypes: new BooleanOption("just-types", "Classes only", false),

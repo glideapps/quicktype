@@ -13,10 +13,10 @@ export const javaScriptPropTypesOptions = {
     moduleSystem: new EnumOption(
         "module-system",
         "Which module system to use",
-        [
-            ["common-js", false],
-            ["es6", true]
-        ],
+        {
+            "common-js": false,
+            "es6": true
+        } as const,
         "es6"
     )
 };

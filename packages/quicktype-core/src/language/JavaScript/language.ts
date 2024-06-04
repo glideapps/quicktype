@@ -19,13 +19,13 @@ export const javaScriptOptions = {
         "secondary"
     ),
     converters: convertersOption(),
-    rawType: new EnumOption<"json" | "any">(
+    rawType: new EnumOption(
         "raw-type",
         "Type of raw input (json by default)",
-        [
-            ["json", "json"],
-            ["any", "any"]
-        ],
+        {
+            json: "json",
+            any: "any"
+        } as const,
         "json",
         "secondary"
     )

@@ -7,10 +7,10 @@ import { HaskellRenderer } from "./HaskellRenderer";
 
 export const haskellOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
-    useList: new EnumOption("array-type", "Use Array or List", [
-        ["array", false],
-        ["list", true]
-    ]),
+    useList: new EnumOption("array-type", "Use Array or List", {
+        array: false,
+        list: true
+    } as const),
     moduleName: new StringOption("module", "Generated module name", "NAME", "QuickType")
 };
 

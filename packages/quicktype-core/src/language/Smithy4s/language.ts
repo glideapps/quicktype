@@ -12,7 +12,13 @@ export enum Framework {
 }
 
 export const smithyOptions = {
-    framework: new EnumOption("framework", "Serialization framework", [["just-types", Framework.None]], undefined),
+    // FIXME: why does this exist
+    framework: new EnumOption(
+        "framework",
+        "Serialization framework",
+        { "just-types": Framework.None } as const,
+        undefined
+    ),
     packageName: new StringOption("package", "Package", "PACKAGE", "quicktype")
 };
 

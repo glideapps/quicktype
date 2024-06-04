@@ -8,11 +8,11 @@ import { Strictness } from "./utils";
 
 export const rubyOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
-    strictness: new EnumOption("strictness", "Type strictness", [
-        ["strict", Strictness.Strict],
-        ["coercible", Strictness.Coercible],
-        ["none", Strictness.None]
-    ]),
+    strictness: new EnumOption("strictness", "Type strictness", {
+        strict: Strictness.Strict,
+        coercible: Strictness.Coercible,
+        none: Strictness.None
+    } as const),
     namespace: new StringOption("namespace", "Specify a wrapping Namespace", "NAME", "", "secondary")
 };
 

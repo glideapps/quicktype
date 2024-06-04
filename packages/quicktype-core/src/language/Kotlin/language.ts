@@ -11,23 +11,16 @@ import { KotlinKlaxonRenderer } from "./KotlinKlaxonRenderer";
 import { KotlinRenderer } from "./KotlinRenderer";
 import { KotlinXRenderer } from "./KotlinXRenderer";
 
-export enum Framework {
-    None = "None",
-    Jackson = "Jackson",
-    Klaxon = "Klaxon",
-    KotlinX = "KotlinX"
-}
-
 export const kotlinOptions = {
     framework: new EnumOption(
         "framework",
         "Serialization framework",
-        [
-            ["just-types", Framework.None],
-            ["jackson", Framework.Jackson],
-            ["klaxon", Framework.Klaxon],
-            ["kotlinx", Framework.KotlinX]
-        ],
+        {
+            "just-types": "None",
+            "jackson": "Jackson",
+            "klaxon": "Klaxon",
+            "kotlinx": "KotlinX"
+        } as const,
         "klaxon"
     ),
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
@@ -61,13 +54,13 @@ export class KotlinTargetLanguage extends TargetLanguage<typeof kotlinLanguageCo
         const options = getOptionValues(kotlinOptions, untypedOptionValues);
 
         switch (options.framework) {
-            case Framework.None:
+            case "None":
                 return new KotlinRenderer(this, renderContext, options);
-            case Framework.Jackson:
+            case "Jackson":
                 return new KotlinJacksonRenderer(this, renderContext, options);
-            case Framework.Klaxon:
+            case "Klaxon":
                 return new KotlinKlaxonRenderer(this, renderContext, options);
-            case Framework.KotlinX:
+            case "KotlinX":
                 return new KotlinXRenderer(this, renderContext, options);
             default:
                 return assertNever(options.framework);

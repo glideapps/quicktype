@@ -23,19 +23,19 @@ export const swiftOptions = {
     ),
     alamofire: new BooleanOption("alamofire", "Alamofire extensions", false),
     namedTypePrefix: new StringOption("type-prefix", "Prefix for type names", "PREFIX", "", "secondary"),
-    useClasses: new EnumOption("struct-or-class", "Structs or classes", [
-        ["struct", false],
-        ["class", true]
-    ]),
+    useClasses: new EnumOption("struct-or-class", "Structs or classes", {
+        struct: false,
+        class: true
+    } as const),
     mutableProperties: new BooleanOption("mutable-properties", "Use var instead of let for object properties", false),
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
     dense: new EnumOption(
         "density",
         "Code density",
-        [
-            ["dense", true],
-            ["normal", false]
-        ],
+        {
+            dense: true,
+            normal: false
+        } as const,
         "dense",
         "secondary"
     ),
@@ -56,21 +56,21 @@ export const swiftOptions = {
     accessLevel: new EnumOption(
         "access-level",
         "Access level",
-        [
-            ["internal", "internal"],
-            ["public", "public"]
-        ],
+        {
+            internal: "internal",
+            public: "public"
+        } as const,
         "internal",
         "secondary"
     ),
     protocol: new EnumOption(
         "protocol",
         "Make types implement protocol",
-        [
-            ["none", { equatable: false, hashable: false }],
-            ["equatable", { equatable: true, hashable: false }],
-            ["hashable", { equatable: false, hashable: true }]
-        ],
+        {
+            none: { equatable: false, hashable: false },
+            equatable: { equatable: true, hashable: false },
+            hashable: { equatable: false, hashable: true }
+        } as const,
         "none",
         "secondary"
     )

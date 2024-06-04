@@ -7,10 +7,10 @@ import { ElmRenderer } from "./ElmRenderer";
 
 export const elmOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
-    useList: new EnumOption("array-type", "Use Array or List", [
-        ["array", false],
-        ["list", true]
-    ]),
+    useList: new EnumOption("array-type", "Use Array or List", {
+        array: false,
+        list: true
+    } as const),
     // FIXME: Do this via a configurable named eventually.
     moduleName: new StringOption("module", "Generated module name", "NAME", "QuickType")
 };

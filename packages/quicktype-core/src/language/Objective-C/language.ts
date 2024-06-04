@@ -6,18 +6,12 @@ import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
 import { ObjectiveCRenderer } from "./ObjectiveCRenderer";
 import { DEFAULT_CLASS_PREFIX } from "./utils";
 
-export type MemoryAttribute = "assign" | "strong" | "copy";
-export interface OutputFeatures {
-    implementation: boolean;
-    interface: boolean;
-}
-
 export const objectiveCOptions = {
-    features: new EnumOption("features", "Interface and implementation", [
-        ["all", { interface: true, implementation: true }],
-        ["interface", { interface: true, implementation: false }],
-        ["implementation", { interface: false, implementation: true }]
-    ]),
+    features: new EnumOption("features", "Interface and implementation", {
+        all: { interface: true, implementation: true },
+        interface: { interface: true, implementation: false },
+        implementation: { interface: false, implementation: true }
+    } as const),
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     marshallingFunctions: new BooleanOption("functions", "C-style functions", false),
     classPrefix: new StringOption("class-prefix", "Class prefix", "PREFIX", DEFAULT_CLASS_PREFIX),
