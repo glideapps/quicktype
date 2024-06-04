@@ -138,7 +138,11 @@ export class PythonRenderer extends ConvenienceRenderer {
 
                 if (hasNull !== null) {
                     let rest: string[] = [];
-                    if (!this.getAlphabetizeProperties() && this.pyOptions.features.dataClasses && _isRootTypeDef) {
+                    if (
+                        !this.getAlphabetizeProperties() &&
+                        (this.pyOptions.features.dataClasses || this.pyOptions.pydanticBaseModel) &&
+                        _isRootTypeDef
+                    ) {
                         // Only push "= None" if this is a root level type def
                         //   otherwise we may get type defs like List[Optional[int] = None]
                         //   which are invalid
@@ -177,6 +181,9 @@ export class PythonRenderer extends ConvenienceRenderer {
 
     protected declarationLine(t: Type): Sourcelike {
         if (t instanceof ClassType) {
+            if (this.pyOptions.pydanticBaseModel) {
+                return ["class ", this.nameForNamedType(t), "(", this.withImport("pydantic", "BaseModel"), "):"];
+            }
             return ["class ", this.nameForNamedType(t), ":"];
         }
 
@@ -196,7 +203,7 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected emitClassMembers(t: ClassType): void {
-        if (this.pyOptions.features.dataClasses) return;
+        if (this.pyOptions.features.dataClasses || this.pyOptions.pydanticBaseModel) return;
 
         const args: Sourcelike[] = [];
         this.forEachClassProperty(t, "none", (name, _, cp) => {
@@ -236,7 +243,7 @@ export class PythonRenderer extends ConvenienceRenderer {
         properties: ReadonlyMap<string, ClassProperty>,
         propertyNames: ReadonlyMap<string, Name>
     ): ReadonlyMap<string, ClassProperty> {
-        if (this.pyOptions.features.dataClasses) {
+        if (this.pyOptions.features.dataClasses || this.pyOptions.pydanticBaseModel) {
             return mapSortBy(properties, (p: ClassProperty) => {
                 return (p.type instanceof UnionType && nullableFromUnion(p.type) != null) || p.isOptional ? 1 : 0;
             });
@@ -246,7 +253,7 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected emitClass(t: ClassType): void {
-        if (this.pyOptions.features.dataClasses) {
+        if (this.pyOptions.features.dataClasses && !this.pyOptions.pydanticBaseModel) {
             this.emitLine("@", this.withImport("dataclasses", "dataclass"));
         }
 

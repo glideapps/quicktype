@@ -27,12 +27,18 @@ export const pythonOptions = {
         "3.6"
     ),
     justTypes: new BooleanOption("just-types", "Classes only", false),
-    nicePropertyNames: new BooleanOption("nice-property-names", "Transform property names to be Pythonic", true)
+    nicePropertyNames: new BooleanOption("nice-property-names", "Transform property names to be Pythonic", true),
+    pydanticBaseModel: new BooleanOption("pydantic-base-model", "Uses pydantic BaseModel", false)
 };
 
 export class PythonTargetLanguage extends TargetLanguage {
     protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [pythonOptions.features, pythonOptions.justTypes, pythonOptions.nicePropertyNames];
+        return [
+            pythonOptions.features,
+            pythonOptions.justTypes,
+            pythonOptions.nicePropertyNames,
+            pythonOptions.pydanticBaseModel
+        ];
     }
 
     public get stringTypeMapping(): StringTypeMapping {
