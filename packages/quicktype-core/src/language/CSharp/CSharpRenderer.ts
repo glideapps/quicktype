@@ -10,7 +10,7 @@ import { assert } from "../../support/Support";
 import { type TargetLanguage } from "../../TargetLanguage";
 import { followTargetType } from "../../Transformers";
 import { type ClassProperty, type ClassType, type EnumType, type Type, type UnionType } from "../../Type";
-import { directlyReachableSingleNamedType, matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
+import { directlyReachableSingleNamedType, matchCompoundType, matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
 
 import { type cSharpOptions } from "./language";
 import {
@@ -387,4 +387,25 @@ export class CSharpRenderer extends ConvenienceRenderer {
 
         this.emitDefaultFollowingComments();
     }
+
+    protected emitDependencyUsings(): void {
+        let genericEmited: boolean = false;
+        let ensureGenericOnce = () => {
+            if (!genericEmited) {
+                this.emitUsing("System.Collections.Generic");
+                genericEmited = true;
+            }
+        }
+        this.typeGraph.allTypesUnordered().forEach(_ => {
+            matchCompoundType(
+                _,
+                _arrayType => this._csOptions.useList ? ensureGenericOnce() : undefined,
+                _classType => { },
+                _mapType => ensureGenericOnce(),
+                _objectType => { },
+                _unionType => { }
+            )
+        });
+    }
+
 }
