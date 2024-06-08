@@ -389,19 +389,23 @@ export class CSharpRenderer extends ConvenienceRenderer {
     }
 
     protected emitDependencyUsings(): void {
-        let nameSpaceForTypes: string[] = [];
+        let genericEmited: boolean = false;
+        let ensureGenericOnce = () => {
+            if (!genericEmited) {
+                this.emitUsing("System.Collections.Generic");
+                genericEmited = true;
+            }
+        }
         this.typeGraph.allTypesUnordered().forEach(_ => {
             matchCompoundType(
                 _,
-                _arrayType => this._csOptions.useList ? nameSpaceForTypes.push("System.Collections.Generic") : undefined,
+                _arrayType => this._csOptions.useList ? ensureGenericOnce() : undefined,
                 _classType => { },
-                _mapType => nameSpaceForTypes.push("System.Collections.Generic"),
+                _mapType => ensureGenericOnce(),
                 _objectType => { },
                 _unionType => { }
             )
         });
-        nameSpaceForTypes = nameSpaceForTypes.filter((val, ind) => nameSpaceForTypes.indexOf(val) === ind );
-        nameSpaceForTypes.forEach(this.emitUsing.bind(this));
     }
 
 }
