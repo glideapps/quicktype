@@ -28,7 +28,9 @@ import {
 } from "./utils";
 
 export class CJSONRenderer extends ConvenienceRenderer {
-    private currentFilename: string | undefined; /* Current filename */
+    private currentHeaderFilename: string | undefined; /* Current header filename */
+
+    private currentSourceFilename: string | undefined; /* Current source filename */
 
     private readonly memberNameStyle: NameStyle; /* Member name style */
 
@@ -170,8 +172,8 @@ export class CJSONRenderer extends ConvenienceRenderer {
     }
 
     /**
-     * Function called to create header file(s)
-     * @param proposedFilename: source filename provided from stdin
+     * Function called to create header and source file(s)
+     * @param proposedFilename: source filename provided from stdin (without extensions)
      */
     protected emitSourceStructure(proposedFilename: string): void {
         /* Depending of source style option, generate a unique header or multiple header files */
@@ -183,12 +185,12 @@ export class CJSONRenderer extends ConvenienceRenderer {
     }
 
     /**
-     * Function called to create a single header file with types and generators
+     * Function called to create a single pair of header/source files with types and generators
      * @param proposedFilename: source filename provided from stdin
      */
     protected emitSingleSourceStructure(proposedFilename: string): void {
-        /* Create file */
-        this.startFile(proposedFilename);
+        /* Create header file */
+        this.startHeaderFile(proposedFilename);
 
         /* Create types */
         this.forEachDeclaration("leading-and-interposing", decl => {
@@ -237,6 +239,14 @@ export class CJSONRenderer extends ConvenienceRenderer {
             type => this.namedTypeToNameForTopLevel(type) === undefined
         );
 
+        if (!this._options.headerOnly) {
+            /* Close header file */
+            this.finishHeaderFile();
+
+            /* Create source file */
+            this.startSourceFile(proposedFilename);
+        }
+
         /* Create enum functions */
         this.forEachEnum("leading-and-interposing", (enumType: EnumType, _enumName: Name) =>
             this.emitEnumFunctions(enumType)
@@ -257,8 +267,13 @@ export class CJSONRenderer extends ConvenienceRenderer {
             type => this.namedTypeToNameForTopLevel(type) === undefined
         );
 
-        /* Close file */
-        this.finishFile();
+        if (this._options.headerOnly) {
+            /* Close header file */
+            this.finishHeaderFile();
+        } else {
+            /* Close source file */
+            this.finishSourceFile();
+        }
     }
 
     /**
@@ -298,12 +313,13 @@ export class CJSONRenderer extends ConvenienceRenderer {
     protected emitEnum(enumType: EnumType, includes: string[]): void {
         /* Create file */
         const enumName = this.nameForNamedType(enumType);
-        const filename = this.sourcelikeToString(enumName).concat(".h");
-        includes.push(filename);
-        this.startFile(filename);
+        const headerFilename = this.sourcelikeToString(enumName).concat(".h");
+        const sourceFilename = this.getSourceNameFromHeaderName(headerFilename);
+        includes.push(headerFilename);
+        this.startHeaderFile(headerFilename);
 
         /* Create includes */
-        this.emitIncludes(enumType, this.sourcelikeToString(filename));
+        this.emitIncludes(enumType, this.sourcelikeToString(headerFilename));
 
         /* Create types */
         this.emitEnumTypedef(enumType);
@@ -311,11 +327,27 @@ export class CJSONRenderer extends ConvenienceRenderer {
         /* Create prototypes */
         this.emitEnumPrototypes(enumType);
 
+        if (!this._options.headerOnly) {
+            /* Close header file */
+            this.finishHeaderFile();
+
+            /* Create source file */
+            this.startSourceFile(sourceFilename);
+        }
+
+        /* Include corresponding header file */
+        this.emitIncludeLine(headerFilename, true);
+
         /* Create functions */
         this.emitEnumFunctions(enumType);
 
-        /* Close file */
-        this.finishFile();
+        if (this._options.headerOnly) {
+            /* Close header file */
+            this.finishHeaderFile();
+        } else {
+            /* Close source file */
+            this.finishSourceFile();
+        }
     }
 
     /**
@@ -426,12 +458,13 @@ export class CJSONRenderer extends ConvenienceRenderer {
     protected emitUnion(unionType: UnionType, includes: string[]): void {
         /* Create file */
         const unionName = this.nameForNamedType(unionType);
-        const filename = this.sourcelikeToString(unionName).concat(".h");
-        includes.push(filename);
-        this.startFile(filename);
+        const headerFilename = this.sourcelikeToString(unionName).concat(".h");
+        const sourceFilename = this.getSourceNameFromHeaderName(headerFilename);
+        includes.push(headerFilename);
+        this.startHeaderFile(headerFilename);
 
         /* Create includes */
-        this.emitIncludes(unionType, this.sourcelikeToString(filename));
+        this.emitIncludes(unionType, this.sourcelikeToString(headerFilename));
 
         /* Create types */
         this.emitUnionTypedef(unionType);
@@ -439,11 +472,27 @@ export class CJSONRenderer extends ConvenienceRenderer {
         /* Create prototypes */
         this.emitUnionPrototypes(unionType);
 
+        if (!this._options.headerOnly) {
+            /* Close header file */
+            this.finishHeaderFile();
+
+            /* Create source file */
+            this.startSourceFile(sourceFilename);
+        }
+
+        /* Include corresponding header file */
+        this.emitIncludeLine(headerFilename, true);
+
         /* Create functions */
         this.emitUnionFunctions(unionType);
 
-        /* Close file */
-        this.finishFile();
+        if (this._options.headerOnly) {
+            /* Close header file */
+            this.finishHeaderFile();
+        } else {
+            /* Close source file */
+            this.finishSourceFile();
+        }
     }
 
     /**
@@ -1329,12 +1378,13 @@ export class CJSONRenderer extends ConvenienceRenderer {
     protected emitClass(classType: ClassType, includes: string[]): void {
         /* Create file */
         const className = this.nameForNamedType(classType);
-        const filename = this.sourcelikeToString(className).concat(".h");
-        includes.push(filename);
-        this.startFile(filename);
+        const headerFilename = this.sourcelikeToString(className).concat(".h");
+        const sourceFilename = this.getSourceNameFromHeaderName(headerFilename);
+        includes.push(headerFilename);
+        this.startHeaderFile(headerFilename);
 
         /* Create includes */
-        this.emitIncludes(classType, this.sourcelikeToString(filename));
+        this.emitIncludes(classType, this.sourcelikeToString(headerFilename));
 
         /* Create types */
         this.emitClassTypedef(classType);
@@ -1342,11 +1392,27 @@ export class CJSONRenderer extends ConvenienceRenderer {
         /* Create prototypes */
         this.emitClassPrototypes(classType);
 
+        if (!this._options.headerOnly) {
+            /* Close header file */
+            this.finishHeaderFile();
+
+            /* Create source file */
+            this.startSourceFile(sourceFilename);
+        }
+
+        /* Include corresponding header file */
+        this.emitIncludeLine(headerFilename, true);
+
         /* Create functions */
         this.emitClassFunctions(classType);
 
-        /* Close file */
-        this.finishFile();
+        if (this._options.headerOnly) {
+            /* Close header file */
+            this.finishHeaderFile();
+        } else {
+            /* Close source file */
+            this.finishSourceFile();
+        }
     }
 
     /**
@@ -2949,8 +3015,9 @@ export class CJSONRenderer extends ConvenienceRenderer {
      */
     protected emitTopLevel(type: Type, className: Name, includes: string[]): void {
         /* Create file */
-        const filename = this.sourcelikeToString(className).concat(".h");
-        this.startFile(filename);
+        const headerFilename = this.sourcelikeToString(className).concat(".h");
+        const sourceFilename = this.getSourceNameFromHeaderName(headerFilename);
+        this.startHeaderFile(headerFilename);
 
         /* Create includes - This create too much includes but this is safer because of specific corner cases */
         includes.forEach(name => {
@@ -2964,11 +3031,27 @@ export class CJSONRenderer extends ConvenienceRenderer {
         /* Create prototypes */
         this.emitTopLevelPrototypes(type, className);
 
+        if (!this._options.headerOnly) {
+            /* Close header file */
+            this.finishHeaderFile();
+
+            /* Create source file */
+            this.startSourceFile(sourceFilename);
+        }
+
+        /* Include corresponding header file */
+        this.emitIncludeLine(headerFilename, true);
+
         /* Create functions */
         this.emitTopLevelFunctions(type, className);
 
-        /* Close file */
-        this.finishFile();
+        if (this._options.headerOnly) {
+            /* Close header file */
+            this.finishHeaderFile();
+        } else {
+            /* Close source file */
+            this.finishSourceFile();
+        }
     }
 
     /**
@@ -3564,21 +3647,21 @@ export class CJSONRenderer extends ConvenienceRenderer {
     }
 
     /**
-     * Function called to create a file
+     * Function called to create a header file
      * @param proposedFilename: source filename provided from stdin
      */
-    protected startFile(proposedFilename: Sourcelike): void {
-        /* Check if previous file is closed, create a new file */
-        assert(this.currentFilename === undefined, "Previous file wasn't finished");
+    protected startHeaderFile(proposedFilename: Sourcelike): void {
+        /* Check if previous header file is closed, create a new file */
+        assert(this.currentHeaderFilename === undefined, "Previous header file wasn't finished");
         if (proposedFilename !== undefined) {
-            this.currentFilename = this.sourcelikeToString(proposedFilename);
+            this.currentHeaderFilename = this.sourcelikeToString(proposedFilename);
         }
 
-        /* Check if file has been created */
-        if (this.currentFilename !== undefined) {
+        /* Check if header file has been created */
+        if (this.currentHeaderFilename !== undefined) {
             /* Write header */
             this.emitDescriptionBlock([
-                this.currentFilename,
+                this.currentHeaderFilename,
                 "This file has been autogenerated using quicktype https://github.com/quicktype/quicktype - DO NOT EDIT",
                 "This file depends of https://github.com/DaveGamble/cJSON, https://github.com/joelguittet/c-list and https://github.com/joelguittet/c-hashtable",
                 "To parse json data from json string use the following: struct <type> * data = cJSON_Parse<type>(<string>);",
@@ -3592,12 +3675,12 @@ export class CJSONRenderer extends ConvenienceRenderer {
             /* Write include guard */
             this.emitLine(
                 "#ifndef __",
-                allUpperWordStyle(this.currentFilename.replace(new RegExp(/[^a-zA-Z0-9]+/, "g"), "_")),
+                allUpperWordStyle(this.currentHeaderFilename.replace(new RegExp(/[^a-zA-Z0-9]+/, "g"), "_")),
                 "__"
             );
             this.emitLine(
                 "#define __",
-                allUpperWordStyle(this.currentFilename.replace(new RegExp(/[^a-zA-Z0-9]+/, "g"), "_")),
+                allUpperWordStyle(this.currentHeaderFilename.replace(new RegExp(/[^a-zA-Z0-9]+/, "g"), "_")),
                 "__"
             );
             this.ensureBlankLine();
@@ -3633,11 +3716,35 @@ export class CJSONRenderer extends ConvenienceRenderer {
     }
 
     /**
+     * Function called to create a source file
+     * @param proposedFilename: source filename provided from stdin
+     */
+    protected startSourceFile(proposedFilename: Sourcelike): void {
+        /* Check if previous source file is closed, create a new file */
+        assert(this.currentSourceFilename === undefined, "Previous source file wasn't finished");
+        if (proposedFilename !== undefined) {
+            this.currentSourceFilename = this.getSourceNameFromHeaderName(this.sourcelikeToString(proposedFilename));
+        }
+
+        /* Check if source file and corresponding header file has been created */
+        if (this.currentSourceFilename !== undefined) {
+            /* Write header */
+            this.emitDescriptionBlock([
+                this.currentSourceFilename,
+                "This file has been autogenerated using quicktype https://github.com/quicktype/quicktype - DO NOT EDIT"
+            ]);
+            this.ensureBlankLine();
+            this.emitIncludeLine(this.sourcelikeToString(proposedFilename), true);
+            this.ensureBlankLine();
+        }
+    }
+
+    /**
      * Function called to close current file
      */
-    protected finishFile(): void {
-        /* Check if file has been created */
-        if (this.currentFilename !== undefined) {
+    protected finishHeaderFile(): void {
+        /* Check if header file has been created */
+        if (this.currentHeaderFilename !== undefined) {
             /* Write C++ guard */
             this.emitLine("#ifdef __cplusplus");
             this.emitLine("}");
@@ -3647,14 +3754,28 @@ export class CJSONRenderer extends ConvenienceRenderer {
             /* Write include guard */
             this.emitLine(
                 "#endif /* __",
-                allUpperWordStyle(this.currentFilename.replace(new RegExp(/[^a-zA-Z0-9]+/, "g"), "_")),
+                allUpperWordStyle(this.currentHeaderFilename.replace(new RegExp(/[^a-zA-Z0-9]+/, "g"), "_")),
                 "__ */"
             );
             this.ensureBlankLine();
 
-            /* Close file */
-            super.finishFile(defined(this.currentFilename));
-            this.currentFilename = undefined;
+            /* Close headeerfile */
+            super.finishFile(defined(this.currentHeaderFilename));
+            this.currentHeaderFilename = undefined;
+        }
+    }
+
+    /**
+     * Function called to close current source file
+     */
+    protected finishSourceFile(): void {
+        /* Check if source file has been created */
+        if (this.currentSourceFilename !== undefined) {
+            this.ensureBlankLine();
+
+            /* Close source file */
+            super.finishFile(defined(this.currentSourceFilename));
+            this.currentSourceFilename = undefined;
         }
     }
 
@@ -3885,5 +4006,9 @@ export class CJSONRenderer extends ConvenienceRenderer {
 
         recur(false, false, 0, type);
         return result;
+    }
+
+    protected getSourceNameFromHeaderName(headerName: string): string {
+        return headerName.replace(".h", ".c");
     }
 }

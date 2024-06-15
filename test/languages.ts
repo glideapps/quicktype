@@ -413,7 +413,7 @@ export const CJSONLanguage: Language = {
     base: "test/fixtures/cjson",
     setupCommand:
         "curl -o cJSON.c https://raw.githubusercontent.com/DaveGamble/cJSON/v1.7.15/cJSON.c && curl -o cJSON.h https://raw.githubusercontent.com/DaveGamble/cJSON/v1.7.15/cJSON.h && curl -o list.h https://raw.githubusercontent.com/joelguittet/c-list/master/include/list.h && curl -o list.c https://raw.githubusercontent.com/joelguittet/c-list/master/src/list.c && curl -o hashtable.h https://raw.githubusercontent.com/joelguittet/c-hashtable/master/include/hashtable.h && curl -o hashtable.c https://raw.githubusercontent.com/joelguittet/c-hashtable/master/src/hashtable.c",
-    compileCommand: "gcc -O0 -o quicktype -I. cJSON.c hashtable.c list.c main.c -lpthread",
+    compileCommand: "gcc -O0 -o quicktype -I. cJSON.c hashtable.c list.c main.c TopLevel.c -lpthread",
     runCommand(sample: string) {
         return `valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --error-exitcode=1 ./quicktype "${sample}"`;
     },
@@ -481,8 +481,8 @@ export const CJSONLanguage: Language = {
         /* Other cases not supported */
         "implicit-class-array-union.schema"
     ],
-    rendererOptions: {},
-    quickTestRendererOptions: [{ "source-style": "single-source" }],
+    rendererOptions: { "header-only": "false" },
+    quickTestRendererOptions: [{ "source-style": "single-source", "header-only": "false" }],
     sourceFiles: ["src/language/CJSON/index.ts"]
 };
 
