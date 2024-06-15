@@ -110,7 +110,17 @@ export const cJSONOptions = {
         camelValue,
         pascalUpperAcronymsValue,
         camelUpperAcronymsValue
-    ])
+    ]),
+    headerOnly: new EnumOption(
+        "header-only",
+        "Generate headers only",
+        [
+            ["true", true],
+            ["false", false]
+        ],
+        "true",
+        "secondary"
+    )
 };
 
 /* cJSON generator target language */
@@ -138,7 +148,8 @@ export class CJSONTargetLanguage extends TargetLanguage {
             cJSONOptions.hashtableSize,
             cJSONOptions.typeNamingStyle,
             cJSONOptions.memberNamingStyle,
-            cJSONOptions.enumeratorNamingStyle
+            cJSONOptions.enumeratorNamingStyle,
+            cJSONOptions.headerOnly
         ];
     }
 

@@ -239,11 +239,13 @@ export class CJSONRenderer extends ConvenienceRenderer {
             type => this.namedTypeToNameForTopLevel(type) === undefined
         );
 
-        /* Close header file */
-        this.finishHeaderFile();
+        if (!this._options.headerOnly) {
+            /* Close header file */
+            this.finishHeaderFile();
 
-        /* Create source file */
-        this.startSourceFile(proposedFilename);
+            /* Create source file */
+            this.startSourceFile(proposedFilename);
+        }
 
         /* Create enum functions */
         this.forEachEnum("leading-and-interposing", (enumType: EnumType, _enumName: Name) =>
@@ -265,8 +267,13 @@ export class CJSONRenderer extends ConvenienceRenderer {
             type => this.namedTypeToNameForTopLevel(type) === undefined
         );
 
-        /* Close source file */
-        this.finishSourceFile();
+        if (this._options.headerOnly) {
+            /* Close header file */
+            this.finishHeaderFile();
+        } else {
+            /* Close source file */
+            this.finishSourceFile();
+        }
     }
 
     /**
@@ -320,9 +327,13 @@ export class CJSONRenderer extends ConvenienceRenderer {
         /* Create prototypes */
         this.emitEnumPrototypes(enumType);
 
-        /* Close header file and create source file */
-        this.finishHeaderFile();
-        this.startSourceFile(sourceFilename);
+        if (!this._options.headerOnly) {
+            /* Close header file */
+            this.finishHeaderFile();
+
+            /* Create source file */
+            this.startSourceFile(sourceFilename);
+        }
 
         /* Include corresponding header file */
         this.emitIncludeLine(headerFilename, true);
@@ -330,8 +341,13 @@ export class CJSONRenderer extends ConvenienceRenderer {
         /* Create functions */
         this.emitEnumFunctions(enumType);
 
-        /* Close source file */
-        this.finishSourceFile();
+        if (this._options.headerOnly) {
+            /* Close header file */
+            this.finishHeaderFile();
+        } else {
+            /* Close source file */
+            this.finishSourceFile();
+        }
     }
 
     /**
@@ -456,9 +472,13 @@ export class CJSONRenderer extends ConvenienceRenderer {
         /* Create prototypes */
         this.emitUnionPrototypes(unionType);
 
-        /* Close header file and create source file */
-        this.finishHeaderFile();
-        this.startSourceFile(sourceFilename);
+        if (!this._options.headerOnly) {
+            /* Close header file */
+            this.finishHeaderFile();
+
+            /* Create source file */
+            this.startSourceFile(sourceFilename);
+        }
 
         /* Include corresponding header file */
         this.emitIncludeLine(headerFilename, true);
@@ -466,8 +486,13 @@ export class CJSONRenderer extends ConvenienceRenderer {
         /* Create functions */
         this.emitUnionFunctions(unionType);
 
-        /* Close source file */
-        this.finishSourceFile();
+        if (this._options.headerOnly) {
+            /* Close header file */
+            this.finishHeaderFile();
+        } else {
+            /* Close source file */
+            this.finishSourceFile();
+        }
     }
 
     /**
@@ -1367,9 +1392,13 @@ export class CJSONRenderer extends ConvenienceRenderer {
         /* Create prototypes */
         this.emitClassPrototypes(classType);
 
-        /* Close header file and create source file */
-        this.finishHeaderFile();
-        this.startSourceFile(sourceFilename);
+        if (!this._options.headerOnly) {
+            /* Close header file */
+            this.finishHeaderFile();
+
+            /* Create source file */
+            this.startSourceFile(sourceFilename);
+        }
 
         /* Include corresponding header file */
         this.emitIncludeLine(headerFilename, true);
@@ -1377,8 +1406,13 @@ export class CJSONRenderer extends ConvenienceRenderer {
         /* Create functions */
         this.emitClassFunctions(classType);
 
-        /* Close source file */
-        this.finishSourceFile();
+        if (this._options.headerOnly) {
+            /* Close header file */
+            this.finishHeaderFile();
+        } else {
+            /* Close source file */
+            this.finishSourceFile();
+        }
     }
 
     /**
@@ -2997,9 +3031,13 @@ export class CJSONRenderer extends ConvenienceRenderer {
         /* Create prototypes */
         this.emitTopLevelPrototypes(type, className);
 
-        /* Close header file and create source file */
-        this.finishHeaderFile();
-        this.startSourceFile(sourceFilename);
+        if (!this._options.headerOnly) {
+            /* Close header file */
+            this.finishHeaderFile();
+
+            /* Create source file */
+            this.startSourceFile(sourceFilename);
+        }
 
         /* Include corresponding header file */
         this.emitIncludeLine(headerFilename, true);
@@ -3007,8 +3045,13 @@ export class CJSONRenderer extends ConvenienceRenderer {
         /* Create functions */
         this.emitTopLevelFunctions(type, className);
 
-        /* Close source file */
-        this.finishSourceFile();
+        if (this._options.headerOnly) {
+            /* Close header file */
+            this.finishHeaderFile();
+        } else {
+            /* Close source file */
+            this.finishSourceFile();
+        }
     }
 
     /**

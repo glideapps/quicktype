@@ -481,8 +481,8 @@ export const CJSONLanguage: Language = {
         /* Other cases not supported */
         "implicit-class-array-union.schema"
     ],
-    rendererOptions: {},
-    quickTestRendererOptions: [{ "source-style": "single-source" }],
+    rendererOptions: { "header-only": "false" },
+    quickTestRendererOptions: [{ "source-style": "single-source", "header-only": "false" }],
     sourceFiles: ["src/language/CJSON/index.ts"]
 };
 
