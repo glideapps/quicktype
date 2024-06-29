@@ -1627,7 +1627,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         );
                     });
                     this.emitLine(
-                        `default: throw std::runtime_error("Unexpected value in enumeration \\"${enumName}\\": " + std::to_string(static_cast<int>(x)));`
+                        `default: throw std::runtime_error("Unexpected value in enumeration \\"`,
+                        enumName,
+                        `\\": " + std::to_string(static_cast<int>(x)));`
                     );
                 });
             }
