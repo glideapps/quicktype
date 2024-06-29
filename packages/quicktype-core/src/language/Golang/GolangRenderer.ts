@@ -237,7 +237,7 @@ export class GoRenderer extends ConvenienceRenderer {
         let columns: Sourcelike[][] = [];
         this.forEachEnumCase(e, "none", (name, jsonName) => {
             columns.push([
-                [name, " "],
+                this._options.enumTypeNameSuffix ? [name, enumName, " "] : [name, " "],
                 [enumName, ' = "', stringEscape(jsonName), '"']
             ]);
         });
