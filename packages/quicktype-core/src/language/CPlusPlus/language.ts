@@ -7,6 +7,7 @@ import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
 import { CPlusPlusRenderer } from "./CPlusPlusRenderer";
 
 const pascalValue: [string, NamingStyle] = ["pascal-case", "pascal"];
+const originalValue: [string, NamingStyle] = ["original-case", "original"];
 const underscoreValue: [string, NamingStyle] = ["underscore-case", "underscore"];
 const camelValue: [string, NamingStyle] = ["camel-case", "camel"];
 const upperUnderscoreValue: [string, NamingStyle] = ["upper-underscore-case", "upper-underscore"];
@@ -66,6 +67,7 @@ export const cPlusPlusOptions = {
     enumType: new StringOption("enum-type", "Type of enum class", "NAME", "int", "secondary"),
     typeNamingStyle: new EnumOption<NamingStyle>("type-style", "Naming style for types", [
         pascalValue,
+        originalValue,
         underscoreValue,
         camelValue,
         upperUnderscoreValue,
@@ -75,6 +77,7 @@ export const cPlusPlusOptions = {
     memberNamingStyle: new EnumOption<NamingStyle>("member-style", "Naming style for members", [
         underscoreValue,
         pascalValue,
+        originalValue,
         camelValue,
         upperUnderscoreValue,
         pascalUpperAcronymsValue,
@@ -84,6 +87,7 @@ export const cPlusPlusOptions = {
         upperUnderscoreValue,
         underscoreValue,
         pascalValue,
+        originalValue,
         camelValue,
         pascalUpperAcronymsValue,
         camelUpperAcronymsValue
