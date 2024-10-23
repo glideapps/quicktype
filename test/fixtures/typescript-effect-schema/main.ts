@@ -1,7 +1,7 @@
 import * as TopLevel from "./TopLevel";
 import fs from "fs";
 import process from "process";
-import * as Schema from "@effect/schema/Schema";
+import {Schema} from "effect";
 
 const sample = process.argv[2];
 const json = fs.readFileSync(sample);

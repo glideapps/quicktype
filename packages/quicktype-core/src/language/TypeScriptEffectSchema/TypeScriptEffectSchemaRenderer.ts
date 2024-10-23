@@ -76,7 +76,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
 
     protected emitImports(): void {
         this.ensureBlankLine();
-        this.emitLine(this.importStatement("* as S", '"@effect/schema/Schema"'));
+        this.emitLine(this.importStatement("{Schema as S}", '"effect"'));
     }
 
     private typeMapTypeForProperty(p: ClassProperty): Sourcelike {
@@ -104,7 +104,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
             _stringType => "S.String",
             arrayType => ["S.Array(", this.typeMapTypeFor(arrayType.items, false), ")"],
             _classType => panic("Should already be handled."),
-            _mapType => ["S.Record(S.String, ", this.typeMapTypeFor(_mapType.values, false), ")"],
+            _mapType => ["S.Record({key: S.String, value: ", this.typeMapTypeFor(_mapType.values, false), "})"],
             _enumType => panic("Should already be handled."),
             unionType => {
                 const children = Array.from(unionType.getChildren()).map((type: Type) =>
