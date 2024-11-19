@@ -631,8 +631,6 @@ export class DartRenderer extends ConvenienceRenderer {
                 this.emitLine("}) = _", className, ";");
             }
 
-            if (this._options.justTypes) return;
-
             this.ensureBlankLine();
             this.emitLine(
                 // factory PublicAnswer.fromJson(Map<String, dynamic> json) => _$PublicAnswerFromJson(json);
