@@ -7,7 +7,16 @@ import { type Sourcelike, maybeAnnotated, modifySource } from "../../Source";
 import { decapitalize, snakeCase } from "../../support/Strings";
 import { defined } from "../../support/Support";
 import { type TargetLanguage } from "../../TargetLanguage";
-import { type ClassProperty, type ClassType, EnumType, ObjectType, type Type, type UnionType } from "../../Type";
+import {
+    ArrayType,
+    type ClassProperty,
+    type ClassType,
+    EnumType,
+    MapType,
+    ObjectType,
+    type Type,
+    type UnionType
+} from "../../Type";
 import { directlyReachableSingleNamedType, matchType, nullableFromUnion } from "../../TypeUtils";
 
 import { keywords } from "./constants";
@@ -705,10 +714,17 @@ export class DartRenderer extends ConvenienceRenderer {
                         const isRequired = requiredFields.has(jsonName);
 
                         // Resolve nested type names correctly
-                        const nestedTypeName =
-                            prop.type instanceof ObjectType
-                                ? this.getNestedTypeName(this.resolveTypeName(prop.type))
-                                : this.dartType(prop.type);
+                        let nestedTypeName;
+
+                        if (prop.type instanceof ObjectType) {
+                            nestedTypeName = this.getNestedTypeName(this.resolveTypeName(prop.type));
+                        } else if (prop.type instanceof ArrayType && prop.type.items instanceof ObjectType) {
+                            nestedTypeName = `List<${this.getNestedTypeName(this.resolveTypeName(prop.type.items))}>`;
+                        } else if (prop.type instanceof MapType && prop.type.values instanceof ObjectType) {
+                            nestedTypeName = `Map<String, ${this.getNestedTypeName(this.resolveTypeName(prop.type.values))}>`;
+                        } else {
+                            nestedTypeName = this.dartType(prop.type);
+                        }
 
                         // Emit the field with or without `required` based on its necessity
                         this.emitLine(isRequired ? "required " : "", nestedTypeName, " ", name, ",");
