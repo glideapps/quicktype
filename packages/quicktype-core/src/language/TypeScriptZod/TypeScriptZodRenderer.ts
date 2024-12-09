@@ -117,6 +117,9 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
                 if (_transformedStringType.kind === "date-time") {
                     return "z.coerce.date()";
                 }
+                if (_transformedStringType.kind === "uuid") {
+                    return "z.string().uuid()";
+                }
 
                 return "z.string()";
             }
