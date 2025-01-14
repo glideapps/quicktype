@@ -848,7 +848,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                  * a member called 'value' value = value will screw up the compiler
                  */
                 const checkConst = this.lookupGlobalName(GlobalNames.CheckConstraint);
-                if (property.type instanceof UnionType && property.type.findMember("null") !== undefined)  {
+                if (property.type instanceof UnionType && property.type.findMember("null") !== undefined) {
                     this.emitLine(rendered, " ", getterName, "() const { return ", name, "; }");
                     if (constraints?.has(jsonName)) {
                         this.emitLine(
