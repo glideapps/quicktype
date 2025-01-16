@@ -1953,10 +1953,10 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
         const checkConst = this.lookupGlobalName(GlobalNames.CheckConstraint);
         this.emitNumericCheckConstraints(
-            checkConst, 
-            classConstraint, 
-            getterMinIntValue, 
-            getterMaxIntValue, 
+            checkConst,
+            classConstraint,
+            getterMinIntValue,
+            getterMaxIntValue,
             "int64_t");
         this.emitNumericCheckConstraints(
             checkConst,
