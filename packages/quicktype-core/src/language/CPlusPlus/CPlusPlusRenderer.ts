@@ -1829,6 +1829,40 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.ensureBlankLine();
             }
         );
+
+        this.ensureBlankLine();
+
+        this.emitBlock(
+            [
+                "inline void ",
+                checkConst,
+                "(",
+                this._stringType.getConstType(),
+                " name, ",
+                this.withConst(classConstraint),
+                " & c, ",
+                "const ",
+                this._optionalType,
+                "<",
+                cppType,
+                "> & value)"
+            ],
+            false,
+            () => {
+                this.emitBlock(
+                    ["if (value)"],
+                    false,
+                    () => {
+                        this.emitLine(
+                            checkConst,
+                            "(name, c, *value);"
+                        );
+                    }
+                );
+                this.ensureBlankLine();
+            }
+        );
+
         this.ensureBlankLine();
     }
 
@@ -1918,7 +1952,12 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
 
         const checkConst = this.lookupGlobalName(GlobalNames.CheckConstraint);
-        this.emitNumericCheckConstraints(checkConst, classConstraint, getterMinIntValue, getterMaxIntValue, "int64_t");
+        this.emitNumericCheckConstraints(
+            checkConst, 
+            classConstraint, 
+            getterMinIntValue, 
+            getterMaxIntValue, 
+            "int64_t");
         this.emitNumericCheckConstraints(
             checkConst,
             classConstraint,
@@ -2034,6 +2073,39 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         );
                     });
                 });
+                this.ensureBlankLine();
+            }
+        );
+
+        this.ensureBlankLine();
+
+        this.emitBlock(
+            [
+                "inline void ",
+                checkConst,
+                "(",
+                this._stringType.getConstType(),
+                " name, ",
+                this.withConst(classConstraint),
+                " & c, ",
+                "const ",
+                this._optionalType,
+                "<",
+                this._stringType.getType(),
+                ">& value)"
+            ],
+            false,
+            () => {
+                this.emitBlock(
+                    ["if (value)"],
+                    false,
+                    () => {
+                        this.emitLine(
+                            checkConst,
+                            "(name, c, *value);"
+                        );
+                    }
+                );
                 this.ensureBlankLine();
             }
         );
