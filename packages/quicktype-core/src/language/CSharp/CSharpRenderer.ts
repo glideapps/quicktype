@@ -125,7 +125,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
     protected nullableCSType(t: Type, follow: (t: Type) => Type = followTargetType, withIssues = false): Sourcelike {
         t = followTargetType(t);
         const csType = this.csType(t, follow, withIssues);
-        if (isValueType(t)) {
+        if (isValueType(t) || this._csOptions.version >= 8) {
             return [csType, "?"];
         } else {
             return csType;
