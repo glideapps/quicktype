@@ -16,7 +16,7 @@ export enum Framework {
     SystemTextJson = "SystemTextJson"
 }
 
-export type Version = 5 | 6;
+export type Version = 5 | 6 | 8;
 export interface OutputFeatures {
     attributes: boolean;
     helpers: boolean;
@@ -55,7 +55,8 @@ export const cSharpOptions = {
         "C# version",
         [
             ["5", 5],
-            ["6", 6]
+            ["6", 6],
+            ["8", 8]
         ],
         "6",
         "secondary"
