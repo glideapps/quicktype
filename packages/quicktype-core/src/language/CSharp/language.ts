@@ -61,6 +61,7 @@ export const cSharpOptions = {
         "secondary"
     ),
     virtual: new BooleanOption("virtual", "Generate virtual properties", false),
+    nullable: new BooleanOption("nullable", "Generate nullable reference types for optional properties", false),
     typeForAny: new EnumOption<CSharpTypeForAny>(
         "any-type",
         'Type to use for "any"',
@@ -120,6 +121,7 @@ export class CSharpTargetLanguage extends TargetLanguage {
             cSharpOptions.useDecimal,
             cSharpOptions.typeForAny,
             cSharpOptions.virtual,
+            cSharpOptions.nullable,
             cSharpOptions.features,
             cSharpOptions.baseclass,
             cSharpOptions.checkRequired,
