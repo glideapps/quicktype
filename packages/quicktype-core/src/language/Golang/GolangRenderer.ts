@@ -90,6 +90,42 @@ export class GoRenderer extends ConvenienceRenderer {
     private emitStruct(name: Name, table: Sourcelike[][]): void {
         this.emitBlock(["type ", name, " struct"], () => this.emitTable(table));
     }
+    
+    private lowercaseFirstLetter(str: string): string {
+        if (!str) return str;
+        return str.charAt(0).toLowerCase() + str.slice(1);
+    }
+
+    private emitConstructor(name: Name, c: ClassType): void {
+        this.ensureBlankLine();
+        let structInitialisationRows: Sourcelike[][] = [];
+        let ctorFunctionParameters: Sourcelike[][] = [];
+        this.forEachClassProperty(c, "none", (name, _, p) => {
+            const parameterName = this.lowercaseFirstLetter(this.sourcelikeToString(name))
+            const goType = this.propertyGoType(p);
+            ctorFunctionParameters.push([
+                parameterName,
+                " ",
+                goType
+            ]);
+            structInitialisationRows.push([
+                this.sourcelikeToString(name) + ": ",
+                parameterName + ",",
+            ]);
+        });
+        this.emitLine(["func ", "New",name,"("]);
+        ctorFunctionParameters.forEach(ctorFunctionParameter => {
+            this.indent(() => this.emitLine(ctorFunctionParameter, ","));
+        });
+
+        this.emitBlock([") *",name], () => {
+            this.emitLine("return &",name,"{");
+            this.indent(() => this.emitTable(
+                structInitialisationRows
+            ));
+            this.emitLine("}");
+        });
+    }
 
     private nullableGoType(t: Type, withIssues: boolean): Sourcelike {
         const goType = this.goType(t, withIssues);
@@ -224,6 +260,9 @@ export class GoRenderer extends ConvenienceRenderer {
         );
         this.emitDescription(this.descriptionForType(c));
         this.emitStruct(className, columns);
+        if (this._options.includeConstructors) {
+            this.emitConstructor(className, c);
+        }
         this.endFile();
     }
 

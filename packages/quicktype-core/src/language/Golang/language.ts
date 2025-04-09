@@ -18,7 +18,8 @@ export const goOptions = {
         'If set, all non-required objects will be tagged with ",omitempty"',
         false
     ),
-    enumTypeNameSuffix: new BooleanOption("enum-type-name-suffix", "Appends the type name to enum contracts", false)
+    enumTypeNameSuffix: new BooleanOption("enum-type-name-suffix", "Appends the type name to enum contracts", false),
+    includeConstructors: new BooleanOption("include-constructors", "Adds a constructor for each struct type", false),
 };
 
 export class GoTargetLanguage extends TargetLanguage {
@@ -34,7 +35,8 @@ export class GoTargetLanguage extends TargetLanguage {
             goOptions.multiFileOutput,
             goOptions.fieldTags,
             goOptions.omitEmpty,
-            goOptions.enumTypeNameSuffix
+            goOptions.enumTypeNameSuffix,
+            goOptions.includeConstructors,
         ];
     }
 
