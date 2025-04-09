@@ -31,6 +31,34 @@ function goNameStyle(original: string): string {
 export const primitiveValueTypeKinds: TypeKind[] = ["integer", "double", "bool", "string"];
 export const compoundTypeKinds: TypeKind[] = ["array", "class", "map", "enum"];
 
+export const reservedKeywords: string[] = [
+    "break",
+    "default",
+    "func",
+    "interface",
+    "select",
+    "case",
+    "defer",
+    "go",
+    "map",
+    "struct",
+    "chan",
+    "else",
+    "goto",
+    "package",
+    "switch",
+    "const",
+    "fallthrough",
+    "if",
+    "range",
+    "type",
+    "continue",
+    "for",
+    "import",
+    "return",
+    "var"
+];
+
 export function isValueType(t: Type): boolean {
     const kind = t.kind;
     return primitiveValueTypeKinds.includes(kind) || kind === "class" || kind === "enum" || kind === "date-time";

@@ -11,7 +11,14 @@ import { type ClassProperty, type ClassType, type EnumType, type Type, type Type
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
 
 import { type goOptions } from "./language";
-import { canOmitEmpty, compoundTypeKinds, isValueType, namingFunction, primitiveValueTypeKinds } from "./utils";
+import {
+    canOmitEmpty,
+    compoundTypeKinds,
+    isValueType,
+    namingFunction,
+    primitiveValueTypeKinds,
+    reservedKeywords
+} from "./utils";
 
 export class GoRenderer extends ConvenienceRenderer {
     private readonly _topLevelUnmarshalNames = new Map<Name, Name>();
@@ -95,13 +102,20 @@ export class GoRenderer extends ConvenienceRenderer {
         if (!str) return str;
         return str.charAt(0).toLowerCase() + str.slice(1);
     }
+    
+    private validateParamName(name: string): string {
+        if (reservedKeywords.includes(name)) {
+            return name+"Value";
+        }
+        return name;
+    }
 
     private emitConstructor(name: Name, c: ClassType): void {
         this.ensureBlankLine();
         let structInitialisationRows: Sourcelike[][] = [];
         let ctorFunctionParameters: Sourcelike[][] = [];
         this.forEachClassProperty(c, "none", (name, _, p) => {
-            const parameterName = this.lowercaseFirstLetter(this.sourcelikeToString(name))
+            const parameterName = this.validateParamName(this.lowercaseFirstLetter(this.sourcelikeToString(name)));
             const goType = this.propertyGoType(p);
             ctorFunctionParameters.push([
                 parameterName,
