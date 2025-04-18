@@ -16,7 +16,6 @@ import {
     mapMap,
     mapMapSync,
     mapMergeInto,
-    mapSortBy,
     setFilter,
     setSubtract
 } from "collection-utils";
@@ -682,10 +681,9 @@ async function addTypesInSchema(
         properties: StringMap,
         requiredArray: string[],
         additionalProperties: unknown,
-        sortKey: (k: string) => number | string = (k: string): string => k.toLowerCase()
     ): Promise<TypeRef> {
         const required = new Set(requiredArray);
-        const propertiesMap = mapSortBy(mapFromObject(properties), (_, k) => sortKey(k));
+        const propertiesMap = mapFromObject(properties);
         const props = await mapMapSync(propertiesMap, async (propSchema, propName) => {
             const propLoc = loc.push("properties", propName);
             const t = await toType(
@@ -908,15 +906,15 @@ async function addTypesInSchema(
                 inferredAttributes,
                 combineProducedAttributes(({ forObject }) => forObject)
             );
-            const order = schema.quicktypePropertyOrder ? schema.quicktypePropertyOrder : [];
-            const orderKey = (propertyName: string): string => {
-                // use the index of the order array
-                const index = order.indexOf(propertyName);
-                // if no index then use the property name
-                return index !== -1 ? index : propertyName.toLowerCase();
-            };
+            // const order = schema.quicktypePropertyOrder ? schema.quicktypePropertyOrder : [];
+            // const orderKey = (propertyName: string): string => {
+            //     // use the index of the order array
+            //     const index = order.indexOf(propertyName);
+            //     // if no index then use the property name
+            //     return index !== -1 ? index : propertyName.toLowerCase();
+            // };
 
-            return await makeObject(loc, objectAttributes, properties, required, additionalProperties, orderKey);
+            return await makeObject(loc, objectAttributes, properties, required, additionalProperties);
         }
 
         async function makeTypesFromCases(cases: unknown[], kind: string): Promise<TypeRef[]> {

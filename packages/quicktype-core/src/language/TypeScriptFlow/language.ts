@@ -10,12 +10,12 @@ export const tsFlowOptions = Object.assign({}, javaScriptOptions, {
     justTypes: new BooleanOption("just-types", "Interfaces only", false),
     nicePropertyNames: new BooleanOption("nice-property-names", "Transform property names to be JavaScripty", false),
     declareUnions: new BooleanOption("explicit-unions", "Explicitly name unions", false),
-    preferUnions: new BooleanOption("prefer-unions", "Use union type instead of enum", false),
+    preferUnions: new BooleanOption("prefer-unions", "Use union type instead of enum", true),
     preferTypes: new BooleanOption("prefer-types", "Use types instead of interfaces", false),
     preferConstValues: new BooleanOption(
         "prefer-const-values",
         "Use string instead of enum for string enums with single value",
-        false
+        true
     ),
     readonly: new BooleanOption("readonly", "Use readonly type members", false)
 });

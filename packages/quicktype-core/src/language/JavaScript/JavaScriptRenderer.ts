@@ -233,7 +233,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
                     if (!this._jsOptions.runtimeTypecheck) {
                         this.emitLine("return JSON.stringify(value);");
                     } else {
-                        this.emitLine("return JSON.stringify(uncast(value, ", typeMap, "), null, 2);");
+                        this.emitLine("return JSON.stringify(uncast(value, ", typeMap, "), null, 4);");
                     }
                 } else {
                     if (!this._jsOptions.runtimeTypecheck) {
