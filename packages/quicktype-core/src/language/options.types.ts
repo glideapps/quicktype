@@ -1,6 +1,6 @@
 import { type OptionMap } from "../RendererOptions";
 
-import { type LanguageNameMap } from "./types";
+import type { LanguageName, LanguageNameMap } from "./types";
 
 export type LanguageRawOptionMap = Readonly<{
     [Lang in keyof LanguageNameMap]: ReturnType<LanguageNameMap[Lang]["getOptions"]>;
@@ -9,3 +9,5 @@ export type LanguageRawOptionMap = Readonly<{
 export type LanguageOptionMap = Readonly<{
     [Lang in keyof LanguageRawOptionMap]: OptionMap<LanguageRawOptionMap[Lang]>;
 }>;
+
+export type LanguageOptions<Lang extends LanguageName = LanguageName> = LanguageOptionMap[Lang];

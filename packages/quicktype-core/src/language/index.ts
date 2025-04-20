@@ -26,4 +26,5 @@ export * from "./TypeScriptEffectSchema";
 export * from "./TypeScriptZod";
 
 export { all as defaultTargetLanguages, languageNamed, isLanguageName } from "./All";
-export { type LanguageName, type LanguageDisplayName } from "./types";
+export type { LanguageName, LanguageDisplayName } from "./types";
+export type { LanguageOptions } from "./options.types";
