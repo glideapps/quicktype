@@ -4,7 +4,7 @@ import { type FixMeOptionsType, type NoInfer } from "../types";
 
 import type { OptionDefinition, OptionKind, OptionValues } from "./types";
 
-export type * from "./types";
+export * from "./types";
 
 /**
  * The superclass for target language options.  You probably want to use one of its

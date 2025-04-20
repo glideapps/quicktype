@@ -6,7 +6,7 @@ import {
     InputData,
     JSONSchemaInput,
     type Options,
-    type RendererOptions,
+    type LanguageOptions,
     type SerializedRenderResult,
     type TargetLanguage,
     defaultTargetLanguages,
@@ -99,14 +99,14 @@ async function runQuicktype(
     const configuration = vscode.workspace.getConfiguration(configurationSection);
     const justTypes = forceJustTypes || configuration.justTypes;
 
-    const rendererOptions: RendererOptions = {};
+    const rendererOptions: LanguageOptions = {};
     if (justTypes) {
         // FIXME: The target language should have a property to return these options.
         if (lang.name === "csharp") {
-            rendererOptions.features = "just-types";
+            (rendererOptions as LanguageOptions<"csharp">).features = "just-types";
         } else if (lang.name === "kotlin") {
-            rendererOptions.framework = "just-types";
-        } else {
+            (rendererOptions as LanguageOptions<"kotlin">).framework = "just-types";
+        } else if ("just-types" in rendererOptions) {
             rendererOptions["just-types"] = "true";
         }
     }
@@ -203,6 +203,7 @@ async function pasteAsTypes(editor: vscode.TextEditor, kind: InputKind, justType
         }
     }
 
+    // @ts-expect-error
     const text = result.lines.join("\n");
     const selection = editor.selection;
     return await editor.edit(builder => {

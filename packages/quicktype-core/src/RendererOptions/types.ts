@@ -28,6 +28,8 @@ export type OptionValue<O> =
           ? Value
           : never;
 
+export type OptionInput<O> = O extends EnumOption<string, any, infer EnumKey> ? EnumKey : O;
+
 // FIXME: Merge these and use camelCase user-facing keys (v24)
-export type OptionMap<T> = { [K in keyof T as OptionKey<T[K]>]: OptionValue<T[K]> }; // user-facing, keys are `name` property of Option
+export type OptionMap<T> = { [K in keyof T as OptionKey<T[K]>]: OptionInput<T[K]> }; // user-facing, keys are `name` property of Option, values are the available input type
 export type OptionValues<T> = { [K in keyof T]: OptionValue<T[K]> }; // internal, keys are keys of `_Options` object in each language file
