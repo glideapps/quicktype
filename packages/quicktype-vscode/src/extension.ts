@@ -6,7 +6,7 @@ import {
     InputData,
     JSONSchemaInput,
     type Options,
-    type LanguageOptions,
+    type RendererOptions,
     type SerializedRenderResult,
     type TargetLanguage,
     defaultTargetLanguages,
@@ -99,13 +99,13 @@ async function runQuicktype(
     const configuration = vscode.workspace.getConfiguration(configurationSection);
     const justTypes = forceJustTypes || configuration.justTypes;
 
-    const rendererOptions: LanguageOptions = {};
+    const rendererOptions: RendererOptions = {};
     if (justTypes) {
         // FIXME: The target language should have a property to return these options.
         if (lang.name === "csharp") {
-            (rendererOptions as LanguageOptions<"csharp">).features = "just-types";
+            (rendererOptions as RendererOptions<"csharp">).features = "just-types";
         } else if (lang.name === "kotlin") {
-            (rendererOptions as LanguageOptions<"kotlin">).framework = "just-types";
+            (rendererOptions as RendererOptions<"kotlin">).framework = "just-types";
         } else if ("just-types" in rendererOptions) {
             rendererOptions["just-types"] = "true";
         }

@@ -9,6 +9,10 @@ import { definedMap, hasOwnProperty, mapFromObject, mapMap, withDefault } from "
 import commandLineArgs from "command-line-args";
 import getUsage from "command-line-usage";
 import * as _ from "lodash";
+import { type Readable } from "readable-stream";
+import stringToStream from "string-to-stream";
+import _wordwrap from "wordwrap";
+
 import {
     FetchingJSONSchemaStore,
     InputData,
@@ -19,7 +23,7 @@ import {
     type LanguageName,
     type OptionDefinition,
     type Options,
-    type LanguageOptions,
+    type RendererOptions,
     type SerializedRenderResult,
     type TargetLanguage,
     assert,
@@ -46,9 +50,6 @@ import {
 } from "quicktype-core";
 import { GraphQLInput } from "quicktype-graphql-input";
 import { schemaForTypeScriptSources } from "quicktype-typescript-input";
-import { type Readable } from "readable-stream";
-import stringToStream from "string-to-stream";
-import _wordwrap from "wordwrap";
 
 import { CompressedJSONFromStream } from "./CompressedJSONFromStream";
 import { introspectServer } from "./GraphQLIntrospection";
@@ -80,7 +81,7 @@ export interface CLIOptions<Lang extends LanguageName = LanguageName> {
     out?: string;
     quiet: boolean;
 
-    rendererOptions: LanguageOptions<Lang>;
+    rendererOptions: RendererOptions<Lang>;
 
     src: string[];
     srcLang: string;
@@ -617,7 +618,7 @@ function parseOptions(definitions: OptionDefinition[], argv: string[], partial: 
         }
     }
 
-    const options: { [key: string]: unknown; rendererOptions: LanguageOptions } = { rendererOptions: {} };
+    const options: { [key: string]: unknown; rendererOptions: RendererOptions } = { rendererOptions: {} };
     for (const optionDefinition of definitions) {
         if (!hasOwnProperty(opts, optionDefinition.name)) {
             continue;

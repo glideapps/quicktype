@@ -4,7 +4,7 @@ import { initTypeNames } from "./attributes/TypeNames";
 import { gatherNames } from "./GatherNames";
 import { InputData } from "./input/Inputs";
 import * as targetLanguages from "./language/All";
-import type { LanguageOptions } from "./language/options.types";
+import type { RendererOptions } from "./language/options.types";
 import type { LanguageName } from "./language/types";
 import { makeTransformations } from "./MakeTransformations";
 import { messageError } from "./Messages";
@@ -169,7 +169,7 @@ export interface NonInferenceOptions<Lang extends LanguageName = LanguageName> {
      */
     outputFilename: string;
     /** Options for the target language's renderer */
-    rendererOptions: LanguageOptions<Lang>;
+    rendererOptions: RendererOptions<Lang>;
 }
 
 export type Options = NonInferenceOptions & InferenceFlags;

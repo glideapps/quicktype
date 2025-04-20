@@ -10,6 +10,6 @@ export type LanguageOptionMap = Readonly<{
     [Lang in keyof LanguageRawOptionMap]: OptionMap<LanguageRawOptionMap[Lang]>;
 }>;
 
-export type LanguageOptions<Lang extends LanguageName = LanguageName, Options = LanguageOptionMap[Lang]> = {
+export type RendererOptions<Lang extends LanguageName = LanguageName, Options = LanguageOptionMap[Lang]> = {
     -readonly [K in keyof Options]: Options[K];
 };
