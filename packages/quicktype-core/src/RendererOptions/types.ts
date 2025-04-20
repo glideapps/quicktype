@@ -6,7 +6,7 @@ import type { EnumOption, Option } from "./index";
  */
 export type OptionKind = "primary" | "secondary";
 
-export interface OptionDefinition<Name extends string, T> {
+export interface OptionDefinition<Name extends string = string, T = unknown> {
     alias?: string;
     defaultOption?: boolean;
     defaultValue?: T;
