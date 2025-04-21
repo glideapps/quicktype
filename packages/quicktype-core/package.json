@@ -11,7 +11,7 @@
         "build": "tsc"
     },
     "dependencies": {
-        "@glideapps/ts-necessities": "2.2.3",
+        "@glideapps/ts-necessities": "2.4.0",
         "browser-or-node": "^3.0.0",
         "collection-utils": "^1.0.1",
         "cross-fetch": "^4.0.0",

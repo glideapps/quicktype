@@ -25,7 +25,7 @@
         "./packages/quicktype-vscode"
     ],
     "dependencies": {
-        "@glideapps/ts-necessities": "^2.2.3",
+        "@glideapps/ts-necessities": "^2.4.0",
         "chalk": "^4.1.2",
         "collection-utils": "^1.0.1",
         "command-line-args": "^5.2.1",
