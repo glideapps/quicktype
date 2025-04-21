@@ -28,7 +28,7 @@
         "@glideapps/ts-necessities": "^2.2.3",
         "chalk": "^4.1.2",
         "collection-utils": "^1.0.1",
-        "command-line-args": "^5.2.1",
+        "command-line-args": "^6.0.1",
         "command-line-usage": "^7.0.1",
         "cross-fetch": "^4.0.0",
         "graphql": "^0.11.7",
