@@ -11,7 +11,6 @@ import { GoTargetLanguage } from "./Golang";
 import { HaskellTargetLanguage } from "./Haskell";
 import { JavaTargetLanguage } from "./Java";
 import { JavaScriptTargetLanguage } from "./JavaScript";
-// eslint-disable-next-line import/no-cycle
 import { JavaScriptPropTypesTargetLanguage } from "./JavaScriptPropTypes";
 import { JSONSchemaTargetLanguage } from "./JSONSchema";
 import { KotlinTargetLanguage } from "./Kotlin";

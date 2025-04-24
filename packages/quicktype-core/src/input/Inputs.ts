@@ -2,7 +2,6 @@ import { arrayMapSync, iterableFind, iterableFirst, iterableSome, setFilterMap, 
 
 import { descriptionTypeAttributeKind } from "../attributes/Description";
 import { makeNamesTypeAttributes } from "../attributes/TypeNames";
-// eslint-disable-next-line import/no-cycle
 import { languageNamed } from "../language/All";
 import { messageError } from "../Messages";
 import { type RunContext } from "../Run";

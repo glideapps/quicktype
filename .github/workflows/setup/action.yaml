@@ -19,7 +19,7 @@ runs:
               echo "source_key=$SOURCE_KEY" >> $GITHUB_ENV
 
         - name: Setup node
-          uses: actions/setup-node@v3
+          uses: actions/setup-node@v4
           with:
               node-version: ${{ env.node_version }}
               cache: npm

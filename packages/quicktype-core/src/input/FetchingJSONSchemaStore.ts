@@ -1,5 +1,4 @@
-// eslint-disable-next-line import/no-cycle
-import { parseJSON } from "..";
+import { parseJSON } from "../support/Support";
 
 import { readFromFileOrURL } from "./io/NodeIO";
 import { type JSONSchema, JSONSchemaStore } from "./JSONSchemaStore";
