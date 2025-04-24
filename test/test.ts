@@ -61,6 +61,7 @@ async function main(sources: string[]) {
             try {
                 await fixture.runWithSample(sample, index, tests.length);
             } catch (e) {
+                console.trace(e);
                 exit(1);
             }
         }
