@@ -6,7 +6,7 @@ on:
             - 'release/**'
 jobs:
     build:
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-22.04
         steps:
             - uses: actions/checkout@v3
             - uses: ./.github/workflows/setup
@@ -45,7 +45,7 @@ jobs:
                     # Implementation is too outdated to test in GitHub Actions
                     # - elm,schema-elm
 
-                    # Language is too niche / obscure to test easily on ubuntu-latest
+                    # Language is too niche / obscure to test easily on ubuntu-22.04
                     # - pike,schema-pike
 
                     # Not yet started
@@ -56,18 +56,18 @@ jobs:
                     # Never tested?
                     # - crystal
 
-                runs-on: [ubuntu-latest]
+                runs-on: [ubuntu-22.04]
 
                 include:
                     # Rust is very slow, so we use a larger runner
                     - fixture: rust,schema-rust
-                      runs-on: ubuntu-latest-8-cores
+                      runs-on: ubuntu-latest-16-cores
                     # Kotlin is also slow
                     - fixture: kotlin,schema-kotlin,kotlin-jackson,schema-kotlin-jackson
-                      runs-on: ubuntu-latest-8-cores
+                      runs-on: ubuntu-latest-16-cores
 
-                    - fixture: objective-c
-                      runs-on: macos-11
+                    # - fixture: objective-c  # FIXME: temp disable obj-c in ci
+                    #   runs-on: macos-latest
 
         name: ${{ matrix.fixture }}
         steps:
@@ -190,8 +190,8 @@ jobs:
     test-complete:
         if: ${{ cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
         needs: test
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-22.04
         steps:
-          - run: |
-              echo "Some workflows have failed!"
-              exit 1
+            - run: |
+                  echo "Some workflows have failed!"
+                  exit 1
