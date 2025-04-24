@@ -278,7 +278,9 @@ class JSONFixture extends LanguageFixture {
         if (this.language.compileCommand) {
             await execAsync(this.language.compileCommand);
         }
-        if (this.language.runCommand === undefined) return 0;
+        if (this.language.runCommand === undefined) {
+            return 0;
+        }
 
         compareJsonFileToJson(comparisonArgs(this.language, filename, filename, additionalRendererOptions));
 
