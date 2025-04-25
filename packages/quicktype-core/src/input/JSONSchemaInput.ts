@@ -906,14 +906,6 @@ async function addTypesInSchema(
                 inferredAttributes,
                 combineProducedAttributes(({ forObject }) => forObject)
             );
-            // const order = schema.quicktypePropertyOrder ? schema.quicktypePropertyOrder : [];
-            // const orderKey = (propertyName: string): string => {
-            //     // use the index of the order array
-            //     const index = order.indexOf(propertyName);
-            //     // if no index then use the property name
-            //     return index !== -1 ? index : propertyName.toLowerCase();
-            // };
-
             return await makeObject(loc, objectAttributes, properties, required, additionalProperties);
         }
 
