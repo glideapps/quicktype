@@ -40,13 +40,13 @@ export function getOptionValues<Name extends string, T, Options extends Record<s
     untypedOptionValues: FixMeOptionsType
 ): OptionValues<Options> {
     const optionValues: FixMeOptionsType = {};
-    for (const name of Object.keys(options)) {
-        const option = options[name];
+
+    for (const [key, option] of Object.entries(options)) {
         const value = option.getValue(untypedOptionValues);
         if (option instanceof EnumOption) {
-            optionValues[name] = option.getEnumValue(value as string);
+            optionValues[key] = option.getEnumValue(value as string);
         } else {
-            optionValues[name] = value;
+            optionValues[key] = value;
         }
     }
 
