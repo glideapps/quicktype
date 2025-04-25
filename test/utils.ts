@@ -215,7 +215,7 @@ export type ComparisonRelaxations = {
 export type FileOrCommand = { file: string } | { command: string; env: NodeJS.ProcessEnv };
 
 function fileOrCommandIsFile(foc: FileOrCommand): foc is { file: string } {
-    return (foc as any).file !== undefined;
+    return "file" in foc && foc.file !== undefined;
 }
 
 export type ComparisonArgs = ComparisonRelaxations & {
