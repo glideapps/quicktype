@@ -20,7 +20,7 @@ export interface OptionDefinition<Name extends string = string, T = unknown> {
     typeLabel?: string;
 }
 
-export type OptionKey<O> = O extends Option<infer Name, unknown> ? Name : never;
+export type OptionName<O> = O extends Option<infer Name, unknown> ? Name : never;
 export type OptionValue<O> =
     O extends EnumOption<string, infer EnumMap, infer EnumKey>
         ? EnumMap[EnumKey]
@@ -28,8 +28,8 @@ export type OptionValue<O> =
           ? Value
           : never;
 
-export type OptionInput<O> = O extends EnumOption<string, any, infer EnumKey> ? EnumKey : O;
+export type OptionKey<O> = O extends EnumOption<string, Record<string, unknown>, infer EnumKey> ? EnumKey : O;
 
 // FIXME: Merge these and use camelCase user-facing keys (v24)
-export type OptionMap<T> = { [K in keyof T as OptionKey<T[K]>]: OptionInput<T[K]> }; // user-facing, keys are `name` property of Option, values are the available input type
+export type OptionMap<T> = { [K in keyof T as OptionName<T[K]>]: OptionKey<T[K]> }; // user-facing, keys are `name` property of Option, values are the available input type
 export type OptionValues<T> = { [K in keyof T]: OptionValue<T[K]> }; // internal, keys are keys of `_Options` object in each language file
