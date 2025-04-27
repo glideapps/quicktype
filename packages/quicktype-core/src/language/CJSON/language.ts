@@ -89,12 +89,12 @@ export const cJSONOptions = {
         "secondary"
     ),
     typeNamingStyle: new EnumOption("type-style", "Naming style for types", namingStyles, "pascal-case"),
-    memberNamingStyle: new EnumOption("member-style", "Naming style for members", namingStyles, "pascal-case"),
+    memberNamingStyle: new EnumOption("member-style", "Naming style for members", namingStyles, "underscore-case"),
     enumeratorNamingStyle: new EnumOption(
         "enumerator-style",
         "Naming style for enumerators",
         namingStyles,
-        "pascal-case"
+        "upper-underscore-case"
     )
 };
 
