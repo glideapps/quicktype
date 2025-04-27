@@ -624,7 +624,7 @@ function parseOptions(definitions: OptionDefinition[], argv: string[], partial: 
             continue;
         }
         const v = opts[optionDefinition.name] as string;
-        if (optionDefinition.renderer !== undefined && optionDefinition.name in options.rendererOptions) {
+        if (optionDefinition.name in options.rendererOptions) {
             (options.rendererOptions as Record<typeof optionDefinition.name, unknown>)[optionDefinition.name] = v;
         } else {
             const k = _.lowerFirst(optionDefinition.name.split("-").map(_.upperFirst).join(""));

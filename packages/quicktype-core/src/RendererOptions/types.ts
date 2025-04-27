@@ -12,10 +12,8 @@ export interface OptionDefinition<Name extends string = string, T = unknown> {
     defaultValue?: T;
     description: string;
     kind?: OptionKind;
-    legalValues?: string[];
     multiple?: boolean;
     name: Name;
-    renderer?: boolean;
     type: StringConstructor | BooleanConstructor;
     typeLabel?: string;
 }

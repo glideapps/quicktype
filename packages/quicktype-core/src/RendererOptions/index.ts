@@ -14,7 +14,6 @@ export abstract class Option<Name extends string, T> {
     public readonly definition: OptionDefinition<Name, T>;
 
     public constructor(definition: OptionDefinition<Name, T>) {
-        definition.renderer = true;
         this.definition = definition;
         assert(definition.kind !== undefined, "Renderer option kind must be defined");
     }
