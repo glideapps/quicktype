@@ -161,7 +161,7 @@ export class GoRenderer extends ConvenienceRenderer {
             this.leadingComments === undefined
         ) {
             this.emitLineOnce(
-                "// This file was generated from JSON Schema using quicktype, do not modify it directly."
+                "// Code generated from JSON Schema using quicktype. DO NOT EDIT."
             );
             this.emitLineOnce("// To parse and unparse this JSON data, add this code to your project and do:");
             this.emitLineOnce("//");
@@ -343,7 +343,7 @@ export class GoRenderer extends ConvenienceRenderer {
     }
 
     private emitSingleFileHeaderComments(): void {
-        this.emitLineOnce("// This file was generated from JSON Schema using quicktype, do not modify it directly.");
+        this.emitLineOnce("// Code generated from JSON Schema using quicktype. DO NOT EDIT.");
         this.emitLineOnce("// To parse and unparse this JSON data, add this code to your project and do:");
         this.forEachTopLevel("none", (_: Type, name: Name) => {
             this.emitLine("//");

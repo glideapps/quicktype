@@ -69,9 +69,9 @@ export {
     type PrimitiveStringTypeKind
 } from "./Type";
 export { getStream } from "./input/io/get-stream";
-// eslint-disable-next-line import/no-cycle
+
 export { readableFromFileOrURL, readFromFileOrURL } from "./input/io/NodeIO";
-// eslint-disable-next-line import/no-cycle
+
 export { FetchingJSONSchemaStore } from "./input/FetchingJSONSchemaStore";
 export { JSONSchemaStore, type JSONSchema } from "./input/JSONSchemaStore";
 export { sourcesFromPostmanCollection } from "./input/PostmanCollection";

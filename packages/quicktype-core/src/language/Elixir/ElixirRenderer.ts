@@ -231,7 +231,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
             });
     }
 
-    private emitPatternMatches(
+    protected emitPatternMatches(
         types: Type[],
         name: Sourcelike,
         parentName: Sourcelike,
@@ -548,7 +548,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
         );
     }
 
-    private emitBlock(source: Sourcelike, emit: () => void): void {
+    protected emitBlock(source: Sourcelike, emit: () => void): void {
         this.emitLine(source);
         this.indent(emit);
         this.emitLine("end");
@@ -562,7 +562,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
         });
     }
 
-    private emitModule(c: ClassType, moduleName: Name): void {
+    protected emitModule(c: ClassType, moduleName: Name): void {
         this.emitBlock(["defmodule ", this.nameWithNamespace(moduleName), " do"], () => {
             const structDescription = this.descriptionForType(c) ?? [];
             const attributeDescriptions: Sourcelike[][] = [];
@@ -750,7 +750,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
         return true;
     }
 
-    private emitEnum(e: EnumType, enumName: Name): void {
+    protected emitEnum(e: EnumType, enumName: Name): void {
         this.emitBlock(["defmodule ", this.nameWithNamespace(enumName), " do"], () => {
             this.emitDescription(this.descriptionForType(e));
             this.emitLine("@valid_enum_members [");
@@ -809,7 +809,7 @@ end`);
         });
     }
 
-    private emitUnion(_u: UnionType, _unionName: Name): void {
+    protected emitUnion(_u: UnionType, _unionName: Name): void {
         return;
     }
 

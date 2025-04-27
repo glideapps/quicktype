@@ -2,19 +2,17 @@ import * as fs from "fs";
 
 import { defined, exceptionToString } from "@glideapps/ts-necessities";
 import { isNode } from "browser-or-node";
-import _fetch from "cross-fetch";
 import isURL from "is-url";
 import { type Readable } from "readable-stream";
 
-// eslint-disable-next-line import/no-cycle
-import { messageError, panic } from "../../index";
+import { messageError } from "../../Messages";
+import { panic } from "../../support/Support";
 
 import { getStream } from "./get-stream";
 
-// Only use cross-fetch in CI
-// FIXME: type global
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const fetch = process.env.CI ? _fetch : (global as any).fetch ?? _fetch;
+// We need to use cross-fetch in CI or if fetch is not available in the global scope
+// We use a dynamic import to avoid punycode deprecated dependency warning on node > 20
+const fetch = process.env.CI ? require("cross-fetch").default : (global as any).fetch ?? require("cross-fetch").default;
 
 interface HttpHeaders {
     [key: string]: string;
