@@ -88,9 +88,14 @@ export const cJSONOptions = {
         "print-formatted",
         "secondary"
     ),
-    typeNamingStyle: new EnumOption("type-style", "Naming style for types", namingStyles),
-    memberNamingStyle: new EnumOption("member-style", "Naming style for members", namingStyles),
-    enumeratorNamingStyle: new EnumOption("enumerator-style", "Naming style for enumerators", namingStyles)
+    typeNamingStyle: new EnumOption("type-style", "Naming style for types", namingStyles, "pascal-case"),
+    memberNamingStyle: new EnumOption("member-style", "Naming style for members", namingStyles, "pascal-case"),
+    enumeratorNamingStyle: new EnumOption(
+        "enumerator-style",
+        "Naming style for enumerators",
+        namingStyles,
+        "pascal-case"
+    )
 };
 
 /* cJSON generator target language */

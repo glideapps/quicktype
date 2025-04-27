@@ -28,10 +28,15 @@ export const cSharpOptions = {
         } as const,
         "NewtonSoft"
     ),
-    useList: new EnumOption("array-type", "Use T[] or List<T>", {
-        array: false,
-        list: true
-    }),
+    useList: new EnumOption(
+        "array-type",
+        "Use T[] or List<T>",
+        {
+            array: false,
+            list: true
+        },
+        "array"
+    ),
     dense: new EnumOption(
         "density",
         "Property density",
@@ -75,12 +80,17 @@ export const cSharpOptions = {
         "double",
         "secondary"
     ),
-    features: new EnumOption("features", "Output features", {
-        "complete": { namespaces: true, helpers: true, attributes: true },
-        "attributes-only": { namespaces: true, helpers: false, attributes: true },
-        "just-types-and-namespace": { namespaces: true, helpers: false, attributes: false },
-        "just-types": { namespaces: true, helpers: false, attributes: false }
-    } as const),
+    features: new EnumOption(
+        "features",
+        "Output features",
+        {
+            "complete": { namespaces: true, helpers: true, attributes: true },
+            "attributes-only": { namespaces: true, helpers: false, attributes: true },
+            "just-types-and-namespace": { namespaces: true, helpers: false, attributes: false },
+            "just-types": { namespaces: true, helpers: false, attributes: false }
+        } as const,
+        "complete"
+    ),
     baseclass: new EnumOption(
         "base-class",
         "Base class",

@@ -23,10 +23,15 @@ export const swiftOptions = {
     ),
     alamofire: new BooleanOption("alamofire", "Alamofire extensions", false),
     namedTypePrefix: new StringOption("type-prefix", "Prefix for type names", "PREFIX", "", "secondary"),
-    useClasses: new EnumOption("struct-or-class", "Structs or classes", {
-        struct: false,
-        class: true
-    } as const),
+    useClasses: new EnumOption(
+        "struct-or-class",
+        "Structs or classes",
+        {
+            struct: false,
+            class: true
+        } as const,
+        "struct"
+    ),
     mutableProperties: new BooleanOption("mutable-properties", "Use var instead of let for object properties", false),
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
     dense: new EnumOption(

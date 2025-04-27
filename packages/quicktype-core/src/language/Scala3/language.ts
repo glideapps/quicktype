@@ -18,7 +18,7 @@ export const scala3Options = {
             "circe": "Circe",
             "upickle": "Upickle"
         } as const,
-        undefined
+        "just-types"
     ),
     packageName: new StringOption("package", "Package", "PACKAGE", "quicktype")
 };

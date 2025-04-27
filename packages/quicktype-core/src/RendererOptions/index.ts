@@ -148,7 +148,7 @@ export class EnumOption<
         name: Name,
         description: string,
         values: EnumMap,
-        defaultValue?: NoInfer<EnumKey>,
+        defaultValue: NoInfer<EnumKey>,
         kind: OptionKind = "primary"
     ) {
         const definition = {
@@ -165,6 +165,11 @@ export class EnumOption<
     }
 
     public getEnumValue<Key extends EnumKey>(name: Key): EnumMap[Key] {
+        if (!name) {
+            const defaultKey = this.definition.defaultValue as NonNullable<Key>;
+            return this._values[defaultKey];
+        }
+
         if (!(name in this._values)) {
             return messageError("RendererUnknownOptionValue", { value: name, name: this.name });
         }

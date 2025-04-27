@@ -17,7 +17,7 @@ export const smithyOptions = {
         "framework",
         "Serialization framework",
         { "just-types": Framework.None } as const,
-        undefined
+        "just-types"
     ),
     packageName: new StringOption("package", "Package", "PACKAGE", "quicktype")
 };

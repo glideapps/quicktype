@@ -66,9 +66,14 @@ export const cPlusPlusOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     namespace: new StringOption("namespace", "Name of the generated namespace(s)", "NAME", "quicktype"),
     enumType: new StringOption("enum-type", "Type of enum class", "NAME", "int", "secondary"),
-    typeNamingStyle: new EnumOption("type-style", "Naming style for types", namingStyles),
-    memberNamingStyle: new EnumOption("member-style", "Naming style for members", namingStyles),
-    enumeratorNamingStyle: new EnumOption("enumerator-style", "Naming style for enumerators", namingStyles),
+    typeNamingStyle: new EnumOption("type-style", "Naming style for types", namingStyles, "pascal-case"),
+    memberNamingStyle: new EnumOption("member-style", "Naming style for members", namingStyles, "pascal-case"),
+    enumeratorNamingStyle: new EnumOption(
+        "enumerator-style",
+        "Naming style for enumerators",
+        namingStyles,
+        "pascal-case"
+    ),
     boost: new BooleanOption("boost", "Require a dependency on boost. Without boost, C++17 is required", true),
     hideNullOptional: new BooleanOption("hide-null-optional", "Hide null value for optional field", false)
 };

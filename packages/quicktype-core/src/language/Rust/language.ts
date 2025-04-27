@@ -7,15 +7,25 @@ import { RustRenderer } from "./RustRenderer";
 import { Density, Visibility } from "./utils";
 
 export const rustOptions = {
-    density: new EnumOption("density", "Density", {
-        normal: Density.Normal,
-        dense: Density.Dense
-    } as const),
-    visibility: new EnumOption("visibility", "Field visibility", {
-        private: Visibility.Private,
-        crate: Visibility.Crate,
-        public: Visibility.Public
-    } as const),
+    density: new EnumOption(
+        "density",
+        "Density",
+        {
+            normal: Density.Normal,
+            dense: Density.Dense
+        } as const,
+        "normal"
+    ),
+    visibility: new EnumOption(
+        "visibility",
+        "Field visibility",
+        {
+            private: Visibility.Private,
+            crate: Visibility.Crate,
+            public: Visibility.Public
+        } as const,
+        "private"
+    ),
     deriveDebug: new BooleanOption("derive-debug", "Derive Debug impl", false),
     deriveClone: new BooleanOption("derive-clone", "Derive Clone impl", false),
     derivePartialEq: new BooleanOption("derive-partial-eq", "Derive PartialEq impl", false),
@@ -35,11 +45,11 @@ export class RustTargetLanguage extends TargetLanguage<typeof rustLanguageConfig
         super(rustLanguageConfig);
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): RustRenderer {
-        return new RustRenderer(this, renderContext, getOptionValues(rustOptions, untypedOptionValues));
-    }
-
     public getOptions(): typeof rustOptions {
         return rustOptions;
+    }
+
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): RustRenderer {
+        return new RustRenderer(this, renderContext, getOptionValues(rustOptions, untypedOptionValues));
     }
 }
