@@ -55,7 +55,7 @@
         "@types/wordwrap": "^1.0.3",
         "@typescript-eslint/eslint-plugin": "^6.3.0",
         "@typescript-eslint/parser": "^6.3.0",
-        "ajv": "^5.5.2",
+        "ajv": "^8.17.1",
         "deep-equal": "^2.2.3",
         "esbuild": "^0.20.2",
         "eslint": "^8.57.0",
