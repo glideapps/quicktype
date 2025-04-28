@@ -3,7 +3,7 @@ on:
     pull_request:
         branches:
             - master
-            - 'release/**'
+            - "release/**"
 jobs:
     build:
         runs-on: ubuntu-22.04
@@ -32,7 +32,7 @@ jobs:
                     - csharp,schema-csharp,schema-json-csharp,graphql-csharp,csharp-SystemTextJson
                     - json-ts-csharp
                     - dart,schema-dart
-                    - swift,schema-swift
+                    # - swift,schema-swift # pgp issue
                     - javascript-prop-types
                     - ruby
                     - php
@@ -66,7 +66,7 @@ jobs:
                     - fixture: kotlin,schema-kotlin,kotlin-jackson,schema-kotlin-jackson
                       runs-on: ubuntu-latest-16-cores
 
-                    # - fixture: objective-c  # FIXME: temp disable obj-c in ci
+                    # - fixture: objective-c # segfault on compiled test cmd
                     #   runs-on: macos-latest
 
         name: ${{ matrix.fixture }}
