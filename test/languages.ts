@@ -1,3 +1,5 @@
+import { type LanguageName } from "quicktype-core";
+
 import * as process from "process";
 // @ts-ignore
 import { RendererOptions } from "../dist/quicktype-core/Run";
@@ -18,7 +20,7 @@ export type LanguageFeature =
     | "pattern";
 
 export interface Language {
-    name: string;
+    name: LanguageName;
     base: string;
     setupCommand?: string;
     compileCommand?: string;
@@ -94,7 +96,7 @@ export const CSharpLanguageSystemTextJson: Language = {
     skipSchema: [
         "top-level-enum.schema" // The code we generate for top-level enums is incompatible with the driver
     ],
-    rendererOptions: { "check-required": "true", framework: "SystemTextJson" },
+    rendererOptions: { "check-required": "true", "framework": "SystemTextJson" },
     quickTestRendererOptions: [
         { "array-type": "list" },
         { "csharp-version": "6" },
@@ -147,7 +149,7 @@ export const JavaLanguageWithLegacyDateTime: Language = {
 export const JavaLanguageWithLombok: Language = {
     ...JavaLanguage,
     base: "test/fixtures/java-lombok",
-    quickTestRendererOptions: [{ "array-type": "list", lombok: "true" }]
+    quickTestRendererOptions: [{ "array-type": "list", "lombok": "true" }]
 };
 
 export const PythonLanguage: Language = {

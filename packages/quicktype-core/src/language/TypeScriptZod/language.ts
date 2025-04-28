@@ -1,9 +1,9 @@
 import { type RenderContext } from "../../Renderer";
-import { BooleanOption, type Option, getOptionValues } from "../../RendererOptions";
+import { BooleanOption, getOptionValues } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
 import { type PrimitiveStringTypeKind, type TransformedStringTypeKind } from "../../Type";
 import { type StringTypeMapping } from "../../TypeBuilder";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import { type FixMeOptionsType } from "../../types";
 
 import { TypeScriptZodRenderer } from "./TypeScriptZodRenderer";
 
@@ -11,17 +11,19 @@ export const typeScriptZodOptions = {
     justSchema: new BooleanOption("just-schema", "Schema only", false)
 };
 
-export class TypeScriptZodTargetLanguage extends TargetLanguage {
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [];
+export const typeScriptZodLanguageConfig = {
+    displayName: "TypeScript Zod",
+    names: ["typescript-zod"],
+    extension: "ts"
+} as const;
+
+export class TypeScriptZodTargetLanguage extends TargetLanguage<typeof typeScriptZodLanguageConfig> {
+    public constructor() {
+        super(typeScriptZodLanguageConfig);
     }
 
-    public constructor(
-        displayName: string = "TypeScript Zod",
-        names: string[] = ["typescript-zod"],
-        extension: string = "ts"
-    ) {
-        super(displayName, names, extension);
+    public getOptions(): {} {
+        return {};
     }
 
     public get stringTypeMapping(): StringTypeMapping {

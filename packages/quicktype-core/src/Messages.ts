@@ -80,7 +80,7 @@ export type ErrorProperties =
     // TypeScript input
     | { kind: "TypeScriptCompilerError"; properties: { message: string } };
 
-export type ErrorKinds = ErrorProperties extends { kind: infer K } ? K : never;
+export type ErrorKinds = ErrorProperties["kind"];
 
 type ErrorMessages = { readonly [K in ErrorKinds]: string };
 
@@ -165,7 +165,7 @@ const errorMessages: ErrorMessages = {
     TypeScriptCompilerError: "TypeScript error: ${message}"
 };
 
-export type ErrorPropertiesForName<K> =
+export type ErrorPropertiesForKind<K extends ErrorKinds = ErrorKinds> =
     Extract<ErrorProperties, { kind: K }> extends { properties: infer P } ? P : never;
 
 export class QuickTypeError extends Error {
@@ -179,31 +179,30 @@ export class QuickTypeError extends Error {
     }
 }
 
-export function messageError<N extends ErrorKinds>(kind: N, properties: ErrorPropertiesForName<N>): never {
+export function messageError<Kind extends ErrorKinds>(kind: Kind, properties: ErrorPropertiesForKind<Kind>): never {
     const message = errorMessages[kind];
     let userMessage: string = message;
-    const propertiesMap = properties as StringMap;
 
-    for (const name of Object.getOwnPropertyNames(propertiesMap)) {
-        let value = propertiesMap[name];
-        if (typeof value === "object" && typeof value.toString === "function") {
-            value = value.toString();
-        } else if (typeof value.message === "string") {
-            value = value.message;
+    for (const [name, value] of Object.entries(properties as StringMap)) {
+        let valueString = "";
+        if (typeof value === "object" && typeof value?.toString === "function") {
+            valueString = value.toString();
+        } else if (typeof value?.message === "string") {
+            valueString = value.message;
         } else if (typeof value !== "string") {
-            value = JSON.stringify(value);
+            valueString = JSON.stringify(value);
         }
 
-        userMessage = userMessage.replace("${" + name + "}", value);
+        userMessage = userMessage.replace("${" + name + "}", valueString);
     }
 
-    throw new QuickTypeError(message, kind, userMessage, propertiesMap);
+    throw new QuickTypeError(message, kind, userMessage, properties as StringMap);
 }
 
-export function messageAssert<N extends ErrorKinds>(
+export function messageAssert<Kind extends ErrorKinds>(
     assertion: boolean,
-    kind: N,
-    properties: ErrorPropertiesForName<N>
+    kind: Kind,
+    properties: ErrorPropertiesForKind<Kind>
 ): void {
     if (assertion) return;
     return messageError(kind, properties);

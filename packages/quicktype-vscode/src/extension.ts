@@ -11,6 +11,7 @@ import {
     type TargetLanguage,
     defaultTargetLanguages,
     inferenceFlagNames,
+    isLanguageName,
     jsonInputForTargetLanguage,
     languageNamed,
     quicktype
@@ -64,17 +65,17 @@ async function pickTargetLanguage(): Promise<TargetLanguagePick> {
     const languageChoices = defaultTargetLanguages.map(l => l.displayName).sort();
     let chosenName = await vscode.window.showQuickPick(languageChoices);
     const cancelled = chosenName === undefined;
-    if (chosenName === undefined) {
-        chosenName = "typescript";
+    if (chosenName === undefined || !isLanguageName(chosenName)) {
+        return { cancelled, lang: languageNamed("typescript") };
     }
 
-    // @ts-expect-error languageNamed is not strongly typed yet
     return { cancelled, lang: languageNamed(chosenName) };
 }
 
 async function getTargetLanguage(editor: vscode.TextEditor): Promise<TargetLanguagePick> {
     const documentLanguage = editor.document.languageId;
-    const currentLanguage = languageNamed(documentLanguage);
+    const languageName = isLanguageName(documentLanguage) ? documentLanguage : "typescript";
+    const currentLanguage = languageNamed(languageName);
     if (currentLanguage !== undefined) {
         return {
             cancelled: false,
@@ -102,10 +103,10 @@ async function runQuicktype(
     if (justTypes) {
         // FIXME: The target language should have a property to return these options.
         if (lang.name === "csharp") {
-            rendererOptions.features = "just-types";
+            (rendererOptions as RendererOptions<"csharp">).features = "just-types";
         } else if (lang.name === "kotlin") {
-            rendererOptions.framework = "just-types";
-        } else {
+            (rendererOptions as RendererOptions<"kotlin">).framework = "just-types";
+        } else if ("just-types" in rendererOptions) {
             rendererOptions["just-types"] = "true";
         }
     }
@@ -202,7 +203,7 @@ async function pasteAsTypes(editor: vscode.TextEditor, kind: InputKind, justType
         }
     }
 
-    // @ts-expect-error FIXME: resolve this after above ^
+    // @ts-expect-error
     const text = result.lines.join("\n");
     const selection = editor.selection;
     return await editor.edit(builder => {
@@ -364,11 +365,11 @@ function deduceTargetLanguage(): TargetLanguage {
 
     const sorted = Array.from(counts).sort(([_na, ca], [_nb, cb]) => cb - ca);
     for (const [name] of sorted) {
-        const lang = languageNamed(name);
-        if (lang !== undefined) return lang;
+        if (isLanguageName(name)) {
+            return languageNamed(name);
+        }
     }
 
-    // @ts-expect-error languageNamed is not yet strongly typed
     return languageNamed("typescript");
 }
 
@@ -481,7 +482,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     );
 
     const maybeName = extensionContext.workspaceState.get<string>(lastTargetLanguageUsedKey);
-    if (typeof maybeName === "string") {
+    if (typeof maybeName === "string" && isLanguageName(maybeName)) {
         explicitlySetTargetLanguage = languageNamed(maybeName);
     }
 }

@@ -1,7 +1,7 @@
 import { type RenderContext } from "../../Renderer";
-import { BooleanOption, type Option, StringOption, getOptionValues } from "../../RendererOptions";
+import { BooleanOption, StringOption, getOptionValues } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import { type FixMeOptionsType } from "../../types";
 
 import { ElixirRenderer } from "./ElixirRenderer";
 
@@ -10,13 +10,19 @@ export const elixirOptions = {
     namespace: new StringOption("namespace", "Specify a module namespace", "NAME", "")
 };
 
-export class ElixirTargetLanguage extends TargetLanguage {
+export const elixirLanguageConfig = {
+    displayName: "Elixir",
+    names: ["elixir"],
+    extension: "ex"
+} as const;
+
+export class ElixirTargetLanguage extends TargetLanguage<typeof elixirLanguageConfig> {
     public constructor() {
-        super("Elixir", ["elixir"], "ex");
+        super(elixirLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [elixirOptions.justTypes, elixirOptions.namespace];
+    public getOptions(): typeof elixirOptions {
+        return elixirOptions;
     }
 
     public get supportsOptionalClassProperties(): boolean {
