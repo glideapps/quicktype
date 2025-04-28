@@ -61,7 +61,7 @@
         "eslint": "^8.57.0",
         "eslint-config-canonical": "^41.1.7",
         "eslint-config-prettier": "^6.10.0",
-        "eslint-import-resolver-typescript": "^3.6.1",
+        "eslint-import-resolver-typescript": "^4.3.4",
         "eslint-plugin-canonical": "^3.4.0",
         "eslint-plugin-import": "^2.26.0",
         "eslint-plugin-json": "^3.1.0",
