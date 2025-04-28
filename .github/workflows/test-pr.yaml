@@ -66,8 +66,8 @@ jobs:
                     - fixture: kotlin,schema-kotlin,kotlin-jackson,schema-kotlin-jackson
                       runs-on: ubuntu-latest-16-cores
 
-                    - fixture: objective-c
-                      runs-on: macos-latest
+                    # - fixture: objective-c # segfault on compiled test cmd
+                    #   runs-on: macos-latest
 
         name: ${{ matrix.fixture }}
         steps:
