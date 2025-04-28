@@ -1,16 +1,21 @@
 import { type RenderContext } from "../../Renderer";
-import { BooleanOption, EnumOption, type Option, StringOption, getOptionValues } from "../../RendererOptions";
+import { BooleanOption, EnumOption, StringOption, getOptionValues } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import { type FixMeOptionsType } from "../../types";
 
 import { ElmRenderer } from "./ElmRenderer";
 
 export const elmOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
-    useList: new EnumOption("array-type", "Use Array or List", [
-        ["array", false],
-        ["list", true]
-    ]),
+    useList: new EnumOption(
+        "array-type",
+        "Use Array or List",
+        {
+            array: false,
+            list: true
+        } as const,
+        "array"
+    ),
     // FIXME: Do this via a configurable named eventually.
     moduleName: new StringOption("module", "Generated module name", "NAME", "QuickType")
 };
@@ -26,8 +31,8 @@ export class ElmTargetLanguage extends TargetLanguage<typeof elmLanguageConfig> 
         super(elmLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [elmOptions.justTypes, elmOptions.moduleName, elmOptions.useList];
+    public getOptions(): typeof elmOptions {
+        return elmOptions;
     }
 
     public get supportsOptionalClassProperties(): boolean {

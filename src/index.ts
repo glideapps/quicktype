@@ -61,7 +61,7 @@ const packageJSON = require("../package.json");
 
 const wordWrap: (s: string) => string = _wordwrap(90);
 
-export interface CLIOptions {
+export interface CLIOptions<Lang extends LanguageName = LanguageName> {
     // We use this to access the inference flags
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [option: string]: any;
@@ -75,13 +75,13 @@ export interface CLIOptions {
     help: boolean;
     httpHeader?: string[];
     httpMethod?: string;
-    lang: LanguageName;
+    lang: Lang;
 
     noRender: boolean;
     out?: string;
     quiet: boolean;
 
-    rendererOptions: RendererOptions;
+    rendererOptions: RendererOptions<Lang>;
 
     src: string[];
     srcLang: string;
@@ -618,14 +618,16 @@ function parseOptions(definitions: OptionDefinition[], argv: string[], partial: 
         }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const options: { [key: string]: any; rendererOptions: RendererOptions } = { rendererOptions: {} };
-    for (const o of definitions) {
-        if (!hasOwnProperty(opts, o.name)) continue;
-        const v = opts[o.name] as string;
-        if (o.renderer !== undefined) options.rendererOptions[o.name] = v;
-        else {
-            const k = _.lowerFirst(o.name.split("-").map(_.upperFirst).join(""));
+    const options: { [key: string]: unknown; rendererOptions: RendererOptions } = { rendererOptions: {} };
+    for (const optionDefinition of definitions) {
+        if (!hasOwnProperty(opts, optionDefinition.name)) {
+            continue;
+        }
+        const v = opts[optionDefinition.name] as string;
+        if (optionDefinition.name in options.rendererOptions) {
+            (options.rendererOptions as Record<typeof optionDefinition.name, unknown>)[optionDefinition.name] = v;
+        } else {
+            const k = _.lowerFirst(optionDefinition.name.split("-").map(_.upperFirst).join(""));
             options[k] = v;
         }
     }

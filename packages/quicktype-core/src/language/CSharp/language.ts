@@ -1,22 +1,16 @@
 import { type ConvenienceRenderer } from "../../ConvenienceRenderer";
 import { type RenderContext } from "../../Renderer";
-import { BooleanOption, EnumOption, type Option, StringOption, getOptionValues } from "../../RendererOptions";
+import { BooleanOption, EnumOption, StringOption, getOptionValues } from "../../RendererOptions";
 import { assertNever } from "../../support/Support";
 import { TargetLanguage } from "../../TargetLanguage";
 import { type PrimitiveStringTypeKind, type TransformedStringTypeKind, type Type } from "../../Type";
 import { type StringTypeMapping } from "../../TypeBuilder";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import { type FixMeOptionsType } from "../../types";
 
 import { NewtonsoftCSharpRenderer } from "./NewtonSoftCSharpRenderer";
 import { SystemTextJsonCSharpRenderer } from "./SystemTextJsonCSharpRenderer";
 import { needTransformerForType } from "./utils";
 
-export enum Framework {
-    Newtonsoft = "Newtonsoft",
-    SystemTextJson = "SystemTextJson"
-}
-
-export type Version = 5 | 6;
 export interface OutputFeatures {
     attributes: boolean;
     helpers: boolean;
@@ -28,78 +22,88 @@ export const cSharpOptions = {
     framework: new EnumOption(
         "framework",
         "Serialization framework",
-        [
-            ["NewtonSoft", Framework.Newtonsoft],
-            ["SystemTextJson", Framework.SystemTextJson]
-        ],
+        {
+            NewtonSoft: "NewtonSoft",
+            SystemTextJson: "SystemTextJson"
+        } as const,
         "NewtonSoft"
     ),
-    useList: new EnumOption("array-type", "Use T[] or List<T>", [
-        ["array", false],
-        ["list", true]
-    ]),
+    useList: new EnumOption(
+        "array-type",
+        "Use T[] or List<T>",
+        {
+            array: false,
+            list: true
+        },
+        "array"
+    ),
     dense: new EnumOption(
         "density",
         "Property density",
-        [
-            ["normal", false],
-            ["dense", true]
-        ],
+        {
+            normal: false,
+            dense: true
+        } as const,
         "normal",
         "secondary"
     ),
     // FIXME: Do this via a configurable named eventually.
     namespace: new StringOption("namespace", "Generated namespace", "NAME", "QuickType"),
-    version: new EnumOption<Version>(
+    version: new EnumOption(
         "csharp-version",
         "C# version",
-        [
-            ["5", 5],
-            ["6", 6]
-        ],
+        {
+            "5": 5,
+            "6": 6
+        } as const,
         "6",
         "secondary"
     ),
     virtual: new BooleanOption("virtual", "Generate virtual properties", false),
-    typeForAny: new EnumOption<CSharpTypeForAny>(
+    typeForAny: new EnumOption(
         "any-type",
         'Type to use for "any"',
-        [
-            ["object", "object"],
-            ["dynamic", "dynamic"]
-        ],
+        {
+            object: "object",
+            dynamic: "dynamic"
+        } as const,
         "object",
         "secondary"
     ),
     useDecimal: new EnumOption(
         "number-type",
         "Type to use for numbers",
-        [
-            ["double", false],
-            ["decimal", true]
-        ],
+        {
+            double: false,
+            decimal: true
+        } as const,
         "double",
         "secondary"
     ),
-    features: new EnumOption("features", "Output features", [
-        ["complete", { namespaces: true, helpers: true, attributes: true }],
-        ["attributes-only", { namespaces: true, helpers: false, attributes: true }],
-        ["just-types-and-namespace", { namespaces: true, helpers: false, attributes: false }],
-        ["just-types", { namespaces: true, helpers: false, attributes: false }]
-    ]),
+    features: new EnumOption(
+        "features",
+        "Output features",
+        {
+            "complete": { namespaces: true, helpers: true, attributes: true },
+            "attributes-only": { namespaces: true, helpers: false, attributes: true },
+            "just-types-and-namespace": { namespaces: true, helpers: false, attributes: false },
+            "just-types": { namespaces: true, helpers: false, attributes: false }
+        } as const,
+        "complete"
+    ),
     baseclass: new EnumOption(
         "base-class",
         "Base class",
-        [
-            ["EntityData", "EntityData"],
-            ["Object", undefined]
-        ],
+        {
+            EntityData: "EntityData",
+            Object: undefined
+        } as const,
         "Object",
         "secondary"
     ),
     checkRequired: new BooleanOption("check-required", "Fail if required properties are missing", false),
     keepPropertyName: new BooleanOption("keep-property-name", "Keep original field name generate", false)
-};
+} as const;
 
 export const newtonsoftCSharpOptions = Object.assign({}, cSharpOptions, {});
 
@@ -112,21 +116,8 @@ export class CSharpTargetLanguage extends TargetLanguage<typeof cSharpLanguageCo
         super(cSharpLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [
-            cSharpOptions.framework,
-            cSharpOptions.namespace,
-            cSharpOptions.version,
-            cSharpOptions.dense,
-            cSharpOptions.useList,
-            cSharpOptions.useDecimal,
-            cSharpOptions.typeForAny,
-            cSharpOptions.virtual,
-            cSharpOptions.features,
-            cSharpOptions.baseclass,
-            cSharpOptions.checkRequired,
-            cSharpOptions.keepPropertyName
-        ];
+    public getOptions(): typeof cSharpOptions {
+        return cSharpOptions;
     }
 
     public get stringTypeMapping(): StringTypeMapping {
@@ -158,13 +149,13 @@ export class CSharpTargetLanguage extends TargetLanguage<typeof cSharpLanguageCo
         const options = getOptionValues(cSharpOptions, untypedOptionValues);
 
         switch (options.framework) {
-            case Framework.Newtonsoft:
+            case "NewtonSoft":
                 return new NewtonsoftCSharpRenderer(
                     this,
                     renderContext,
                     getOptionValues(newtonsoftCSharpOptions, untypedOptionValues)
                 );
-            case Framework.SystemTextJson:
+            case "SystemTextJson":
                 return new SystemTextJsonCSharpRenderer(
                     this,
                     renderContext,

@@ -12,7 +12,7 @@ import { ArrayType, type ClassProperty, ClassType, EnumType, MapType, Type, Unio
 import { isAnyOrNull, matchType, nullableFromUnion } from "../../TypeUtils";
 
 import { forbiddenPropertyNames, keywords } from "./constants";
-import { type MemoryAttribute, type objectiveCOptions } from "./language";
+import { type objectiveCOptions } from "./language";
 import {
     DEFAULT_CLASS_PREFIX,
     forbiddenForEnumCases,
@@ -21,6 +21,8 @@ import {
     staticEnumValuesIdentifier,
     typeNameStyle
 } from "./utils";
+
+type MemoryAttribute = "assign" | "strong" | "copy";
 
 const DEBUG = false;
 

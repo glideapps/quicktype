@@ -1,16 +1,21 @@
 import { type RenderContext } from "../../Renderer";
-import { BooleanOption, EnumOption, type Option, StringOption, getOptionValues } from "../../RendererOptions";
+import { BooleanOption, EnumOption, StringOption, getOptionValues } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import { type FixMeOptionsType } from "../../types";
 
 import { HaskellRenderer } from "./HaskellRenderer";
 
 export const haskellOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
-    useList: new EnumOption("array-type", "Use Array or List", [
-        ["array", false],
-        ["list", true]
-    ]),
+    useList: new EnumOption(
+        "array-type",
+        "Use Array or List",
+        {
+            array: false,
+            list: true
+        } as const,
+        "array"
+    ),
     moduleName: new StringOption("module", "Generated module name", "NAME", "QuickType")
 };
 
@@ -25,8 +30,8 @@ export class HaskellTargetLanguage extends TargetLanguage<typeof haskellLanguage
         super(haskellLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [haskellOptions.justTypes, haskellOptions.moduleName, haskellOptions.useList];
+    public getOptions(): typeof haskellOptions {
+        return haskellOptions;
     }
 
     public get supportsOptionalClassProperties(): boolean {

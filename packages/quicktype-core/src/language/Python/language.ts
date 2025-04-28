@@ -1,11 +1,11 @@
 import { iterableSome } from "collection-utils";
 
 import { type RenderContext } from "../../Renderer";
-import { BooleanOption, EnumOption, type Option, getOptionValues } from "../../RendererOptions";
+import { BooleanOption, EnumOption, getOptionValues } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
 import { type PrimitiveStringTypeKind, type TransformedStringTypeKind, type Type, UnionType } from "../../Type";
 import { type StringTypeMapping } from "../../TypeBuilder";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import { type FixMeOptionsType } from "../../types";
 
 import { JSONPythonRenderer } from "./JSONPythonRenderer";
 import { PythonRenderer } from "./PythonRenderer";
@@ -16,14 +16,14 @@ export interface PythonFeatures {
 }
 
 export const pythonOptions = {
-    features: new EnumOption<PythonFeatures>(
+    features: new EnumOption(
         "python-version",
         "Python version",
-        [
-            ["3.5", { typeHints: false, dataClasses: false }],
-            ["3.6", { typeHints: true, dataClasses: false }],
-            ["3.7", { typeHints: true, dataClasses: true }]
-        ],
+        {
+            "3.5": { typeHints: false, dataClasses: false },
+            "3.6": { typeHints: true, dataClasses: false },
+            "3.7": { typeHints: true, dataClasses: true }
+        },
         "3.6"
     ),
     justTypes: new BooleanOption("just-types", "Classes only", false),
@@ -38,13 +38,8 @@ export class PythonTargetLanguage extends TargetLanguage<typeof pythonLanguageCo
         super(pythonLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [
-            pythonOptions.features,
-            pythonOptions.justTypes,
-            pythonOptions.nicePropertyNames,
-            pythonOptions.pydanticBaseModel
-        ];
+    public getOptions(): typeof pythonOptions {
+        return pythonOptions;
     }
 
     public get stringTypeMapping(): StringTypeMapping {

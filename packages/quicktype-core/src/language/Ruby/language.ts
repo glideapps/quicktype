@@ -1,18 +1,23 @@
 import { type RenderContext } from "../../Renderer";
-import { BooleanOption, EnumOption, type Option, StringOption, getOptionValues } from "../../RendererOptions";
+import { BooleanOption, EnumOption, StringOption, getOptionValues } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import { type FixMeOptionsType } from "../../types";
 
 import { RubyRenderer } from "./RubyRenderer";
 import { Strictness } from "./utils";
 
 export const rubyOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
-    strictness: new EnumOption("strictness", "Type strictness", [
-        ["strict", Strictness.Strict],
-        ["coercible", Strictness.Coercible],
-        ["none", Strictness.None]
-    ]),
+    strictness: new EnumOption(
+        "strictness",
+        "Type strictness",
+        {
+            strict: Strictness.Strict,
+            coercible: Strictness.Coercible,
+            none: Strictness.None
+        } as const,
+        "strict"
+    ),
     namespace: new StringOption("namespace", "Specify a wrapping Namespace", "NAME", "", "secondary")
 };
 
@@ -27,8 +32,8 @@ export class RubyTargetLanguage extends TargetLanguage<typeof rubyLanguageConfig
         super(rubyLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [rubyOptions.justTypes, rubyOptions.strictness, rubyOptions.namespace];
+    public getOptions(): typeof rubyOptions {
+        return rubyOptions;
     }
 
     public get supportsOptionalClassProperties(): boolean {

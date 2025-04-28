@@ -22,42 +22,43 @@
  */
 
 import { type RenderContext } from "../../Renderer";
-import { EnumOption, type Option, StringOption, getOptionValues } from "../../RendererOptions";
-import { type NamingStyle } from "../../support/Strings";
+import { EnumOption, StringOption, getOptionValues } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import { type FixMeOptionsType } from "../../types";
 
 import { CJSONRenderer } from "./CJSONRenderer";
 
 /* Naming styles */
-const pascalValue: [string, NamingStyle] = ["pascal-case", "pascal"];
-const underscoreValue: [string, NamingStyle] = ["underscore-case", "underscore"];
-const camelValue: [string, NamingStyle] = ["camel-case", "camel"];
-const upperUnderscoreValue: [string, NamingStyle] = ["upper-underscore-case", "upper-underscore"];
-const pascalUpperAcronymsValue: [string, NamingStyle] = ["pascal-case-upper-acronyms", "pascal-upper-acronyms"];
-const camelUpperAcronymsValue: [string, NamingStyle] = ["camel-case-upper-acronyms", "camel-upper-acronyms"];
+const namingStyles = {
+    "pascal-case": "pascal",
+    "underscore-case": "underscore",
+    "camel-case": "camel",
+    "upper-underscore-case": "upper-underscore",
+    "pascal-case-upper-acronyms": "pascal-upper-acronyms",
+    "camel-case-upper-acronyms": "camel-upper-acronyms"
+} as const;
 
 /* cJSON generator options */
 export const cJSONOptions = {
     typeSourceStyle: new EnumOption(
         "source-style",
         "Source code generation type, whether to generate single or multiple source files",
-        [
-            ["single-source", true],
-            ["multi-source", false]
-        ],
+        {
+            "single-source": true,
+            "multi-source": false
+        } as const,
         "single-source",
         "secondary"
     ),
     typeIntegerSize: new EnumOption(
         "integer-size",
         "Integer code generation type (int64_t by default)",
-        [
-            ["int8_t", "int8_t"],
-            ["int16_t", "int16_t"],
-            ["int32_t", "int32_t"],
-            ["int64_t", "int64_t"]
-        ],
+        {
+            int8_t: "int8_t",
+            int16_t: "int16_t",
+            int32_t: "int32_t",
+            int64_t: "int64_t"
+        } as const,
         "int64_t",
         "secondary"
     ),
@@ -70,47 +71,31 @@ export const cJSONOptions = {
     addTypedefAlias: new EnumOption(
         "typedef-alias",
         "Add typedef alias to unions, structs, and enums (no typedef by default)",
-        [
-            ["no-typedef", false],
-            ["add-typedef", true]
-        ],
+        {
+            "no-typedef": false,
+            "add-typedef": true
+        } as const,
         "no-typedef",
         "secondary"
     ),
     printStyle: new EnumOption(
         "print-style",
         "Which cJSON print should be used (formatted by default)",
-        [
-            ["print-formatted", false],
-            ["print-unformatted", true]
-        ],
+        {
+            "print-formatted": false,
+            "print-unformatted": true
+        } as const,
         "print-formatted",
         "secondary"
     ),
-    typeNamingStyle: new EnumOption<NamingStyle>("type-style", "Naming style for types", [
-        pascalValue,
-        underscoreValue,
-        camelValue,
-        upperUnderscoreValue,
-        pascalUpperAcronymsValue,
-        camelUpperAcronymsValue
-    ]),
-    memberNamingStyle: new EnumOption<NamingStyle>("member-style", "Naming style for members", [
-        underscoreValue,
-        pascalValue,
-        camelValue,
-        upperUnderscoreValue,
-        pascalUpperAcronymsValue,
-        camelUpperAcronymsValue
-    ]),
-    enumeratorNamingStyle: new EnumOption<NamingStyle>("enumerator-style", "Naming style for enumerators", [
-        upperUnderscoreValue,
-        underscoreValue,
-        pascalValue,
-        camelValue,
-        pascalUpperAcronymsValue,
-        camelUpperAcronymsValue
-    ])
+    typeNamingStyle: new EnumOption("type-style", "Naming style for types", namingStyles, "pascal-case"),
+    memberNamingStyle: new EnumOption("member-style", "Naming style for members", namingStyles, "underscore-case"),
+    enumeratorNamingStyle: new EnumOption(
+        "enumerator-style",
+        "Naming style for enumerators",
+        namingStyles,
+        "upper-underscore-case"
+    )
 };
 
 /* cJSON generator target language */
@@ -129,17 +114,8 @@ export class CJSONTargetLanguage extends TargetLanguage<typeof cJSONLanguageConf
      * Return cJSON generator options
      * @return cJSON generator options array
      */
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [
-            cJSONOptions.typeSourceStyle,
-            cJSONOptions.typeIntegerSize,
-            cJSONOptions.addTypedefAlias,
-            cJSONOptions.printStyle,
-            cJSONOptions.hashtableSize,
-            cJSONOptions.typeNamingStyle,
-            cJSONOptions.memberNamingStyle,
-            cJSONOptions.enumeratorNamingStyle
-        ];
+    public getOptions(): typeof cJSONOptions {
+        return cJSONOptions;
     }
 
     /**

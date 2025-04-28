@@ -1,9 +1,9 @@
 import { type RenderContext } from "../../Renderer";
-import { BooleanOption, type Option, getOptionValues } from "../../RendererOptions";
+import { BooleanOption, getOptionValues } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
 import { type PrimitiveStringTypeKind, type TransformedStringTypeKind } from "../../Type";
 import { type StringTypeMapping } from "../../TypeBuilder";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import { type FixMeOptionsType } from "../../types";
 import { javaScriptOptions } from "../JavaScript";
 
 import { FlowRenderer } from "./FlowRenderer";
@@ -34,21 +34,8 @@ export class TypeScriptTargetLanguage extends TargetLanguage<typeof typeScriptLa
         super(typeScriptLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [
-            tsFlowOptions.justTypes,
-            tsFlowOptions.nicePropertyNames,
-            tsFlowOptions.declareUnions,
-            tsFlowOptions.runtimeTypecheck,
-            tsFlowOptions.runtimeTypecheckIgnoreUnknownProperties,
-            tsFlowOptions.acronymStyle,
-            tsFlowOptions.converters,
-            tsFlowOptions.rawType,
-            tsFlowOptions.preferUnions,
-            tsFlowOptions.preferTypes,
-            tsFlowOptions.preferConstValues,
-            tsFlowOptions.readonly
-        ];
+    public getOptions(): typeof tsFlowOptions {
+        return tsFlowOptions;
     }
 
     public get stringTypeMapping(): StringTypeMapping {
@@ -83,21 +70,8 @@ export class FlowTargetLanguage extends TargetLanguage<typeof flowLanguageConfig
         super(flowLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [
-            tsFlowOptions.justTypes,
-            tsFlowOptions.nicePropertyNames,
-            tsFlowOptions.declareUnions,
-            tsFlowOptions.runtimeTypecheck,
-            tsFlowOptions.runtimeTypecheckIgnoreUnknownProperties,
-            tsFlowOptions.acronymStyle,
-            tsFlowOptions.converters,
-            tsFlowOptions.rawType,
-            tsFlowOptions.preferUnions,
-            tsFlowOptions.preferTypes,
-            tsFlowOptions.preferConstValues,
-            tsFlowOptions.readonly
-        ];
+    public getOptions(): typeof tsFlowOptions {
+        return tsFlowOptions;
     }
 
     public get stringTypeMapping(): StringTypeMapping {

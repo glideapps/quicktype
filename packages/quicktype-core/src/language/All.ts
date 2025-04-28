@@ -1,5 +1,4 @@
 import { type TargetLanguage } from "../TargetLanguage";
-import { type LanguageDisplayName, type LanguageName, type LanguageNameMap } from "../types";
 
 import { CJSONTargetLanguage } from "./CJSON";
 import { CPlusPlusTargetLanguage } from "./CPlusPlus";
@@ -24,6 +23,7 @@ import { RustTargetLanguage } from "./Rust";
 import { Scala3TargetLanguage } from "./Scala3";
 import { SmithyTargetLanguage } from "./Smithy4s";
 import { SwiftTargetLanguage } from "./Swift";
+import { type LanguageDisplayName, type LanguageName, type LanguageNameMap } from "./types";
 import { TypeScriptEffectSchemaTargetLanguage } from "./TypeScriptEffectSchema";
 import { FlowTargetLanguage, TypeScriptTargetLanguage } from "./TypeScriptFlow";
 import { TypeScriptZodTargetLanguage } from "./TypeScriptZod";

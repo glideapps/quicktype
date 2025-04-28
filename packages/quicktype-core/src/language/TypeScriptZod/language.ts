@@ -1,9 +1,9 @@
 import { type RenderContext } from "../../Renderer";
-import { BooleanOption, type Option, getOptionValues } from "../../RendererOptions";
+import { BooleanOption, getOptionValues } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
 import { type PrimitiveStringTypeKind, type TransformedStringTypeKind } from "../../Type";
 import { type StringTypeMapping } from "../../TypeBuilder";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import { type FixMeOptionsType } from "../../types";
 
 import { TypeScriptZodRenderer } from "./TypeScriptZodRenderer";
 
@@ -22,8 +22,8 @@ export class TypeScriptZodTargetLanguage extends TargetLanguage<typeof typeScrip
         super(typeScriptZodLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [];
+    public getOptions(): {} {
+        return {};
     }
 
     public get stringTypeMapping(): StringTypeMapping {

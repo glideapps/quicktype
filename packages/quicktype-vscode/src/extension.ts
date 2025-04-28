@@ -103,10 +103,10 @@ async function runQuicktype(
     if (justTypes) {
         // FIXME: The target language should have a property to return these options.
         if (lang.name === "csharp") {
-            rendererOptions.features = "just-types";
+            (rendererOptions as RendererOptions<"csharp">).features = "just-types";
         } else if (lang.name === "kotlin") {
-            rendererOptions.framework = "just-types";
-        } else {
+            (rendererOptions as RendererOptions<"kotlin">).framework = "just-types";
+        } else if ("just-types" in rendererOptions) {
             rendererOptions["just-types"] = "true";
         }
     }
@@ -203,7 +203,7 @@ async function pasteAsTypes(editor: vscode.TextEditor, kind: InputKind, justType
         }
     }
 
-    // @ts-expect-error FIXME: resolve this after above ^
+    // @ts-expect-error
     const text = result.lines.join("\n");
     const selection = editor.selection;
     return await editor.edit(builder => {
