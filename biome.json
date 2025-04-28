@@ -1,0 +1,9 @@
+{
+    "files": {
+        "ignore": ["test/runs", "test/inputs"]
+    },
+    "formatter": {
+        "indentStyle": "space",
+        "indentWidth": 4
+    }
+}
