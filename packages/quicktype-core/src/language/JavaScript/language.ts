@@ -1,5 +1,5 @@
 import { type RenderContext } from "../../Renderer";
-import { BooleanOption, EnumOption, type Option, getOptionValues } from "../../RendererOptions";
+import { BooleanOption, EnumOption, type Option, StringOption, getOptionValues } from "../../RendererOptions";
 import { AcronymStyleOptions, acronymOption } from "../../support/Acronyms";
 import { convertersOption } from "../../support/Converters";
 import { TargetLanguage } from "../../TargetLanguage";
@@ -28,7 +28,8 @@ export const javaScriptOptions = {
         ],
         "json",
         "secondary"
-    )
+    ),
+    jsonStringifySpaceNum: new StringOption("json-stringify-space-size", "JSON.stringify space size", "4", "secondary"),
 };
 
 export class JavaScriptTargetLanguage extends TargetLanguage {
