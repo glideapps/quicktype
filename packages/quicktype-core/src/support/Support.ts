@@ -6,8 +6,7 @@ import { type JSONSchema } from "../input/JSONSchemaStore";
 import { messageError } from "../Messages";
 
 export interface StringMap {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    [name: string]: any;
+    [name: string]: unknown;
 }
 
 export function isStringMap(x: unknown): x is StringMap;
