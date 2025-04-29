@@ -1,6 +1,5 @@
 export {
     type Options,
-    type RendererOptions,
     getTargetLanguage,
     quicktypeMultiFile,
     quicktypeMultiFileSync,
@@ -21,7 +20,7 @@ export { Ref, type JSONSchemaType, type JSONSchemaAttributes } from "./input/JSO
 export type { RenderContext } from "./Renderer";
 export { Option, type OptionDefinition, getOptionValues, type OptionValues } from "./RendererOptions";
 export { TargetLanguage, type MultiFileRenderResult } from "./TargetLanguage";
-export { all as defaultTargetLanguages, languageNamed } from "./language/All";
+
 export {
     type MultiWord,
     type Sourcelike,

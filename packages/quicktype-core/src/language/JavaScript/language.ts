@@ -1,11 +1,11 @@
 import { type RenderContext } from "../../Renderer";
-import { BooleanOption, EnumOption, type Option, getOptionValues } from "../../RendererOptions";
+import { BooleanOption, EnumOption, getOptionValues } from "../../RendererOptions";
 import { AcronymStyleOptions, acronymOption } from "../../support/Acronyms";
 import { convertersOption } from "../../support/Converters";
 import { TargetLanguage } from "../../TargetLanguage";
 import { type PrimitiveStringTypeKind, type TransformedStringTypeKind } from "../../Type";
 import { type StringTypeMapping } from "../../TypeBuilder";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import { type FixMeOptionsType } from "../../types";
 
 import { JavaScriptRenderer } from "./JavaScriptRenderer";
 
@@ -19,31 +19,31 @@ export const javaScriptOptions = {
         "secondary"
     ),
     converters: convertersOption(),
-    rawType: new EnumOption<"json" | "any">(
+    rawType: new EnumOption(
         "raw-type",
         "Type of raw input (json by default)",
-        [
-            ["json", "json"],
-            ["any", "any"]
-        ],
+        {
+            json: "json",
+            any: "any"
+        } as const,
         "json",
         "secondary"
     )
 };
 
-export class JavaScriptTargetLanguage extends TargetLanguage {
-    public constructor(displayName = "JavaScript", names: string[] = ["javascript", "js", "jsx"], extension = "js") {
-        super(displayName, names, extension);
+export const javaScriptLanguageConfig = {
+    displayName: "JavaScript",
+    names: ["javascript", "js", "jsx"],
+    extension: "js"
+} as const;
+
+export class JavaScriptTargetLanguage extends TargetLanguage<typeof javaScriptLanguageConfig> {
+    public constructor() {
+        super(javaScriptLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [
-            javaScriptOptions.runtimeTypecheck,
-            javaScriptOptions.runtimeTypecheckIgnoreUnknownProperties,
-            javaScriptOptions.acronymStyle,
-            javaScriptOptions.converters,
-            javaScriptOptions.rawType
-        ];
+    public getOptions(): typeof javaScriptOptions {
+        return javaScriptOptions;
     }
 
     public get stringTypeMapping(): StringTypeMapping {

@@ -1,18 +1,23 @@
 import { type RenderContext } from "../../Renderer";
-import { type Option } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
 import { type StringTypeMapping, getNoStringTypeMapping } from "../../TypeBuilder";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import { type FixMeOptionsType } from "../../types";
 
 import { JSONSchemaRenderer } from "./JSONSchemaRenderer";
 
-export class JSONSchemaTargetLanguage extends TargetLanguage {
+export const JSONSchemaLanguageConfig = {
+    displayName: "JSON Schema",
+    names: ["schema", "json-schema"],
+    extension: "schema"
+} as const;
+
+export class JSONSchemaTargetLanguage extends TargetLanguage<typeof JSONSchemaLanguageConfig> {
     public constructor() {
-        super("JSON Schema", ["schema", "json-schema"], "schema");
+        super(JSONSchemaLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [];
+    public getOptions(): {} {
+        return {};
     }
 
     public get stringTypeMapping(): StringTypeMapping {

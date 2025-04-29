@@ -1,9 +1,9 @@
 import { type RenderContext } from "../../Renderer";
-import { BooleanOption, type Option, StringOption, getOptionValues } from "../../RendererOptions";
+import { BooleanOption, StringOption, getOptionValues } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
 import { type PrimitiveStringTypeKind, type TransformedStringTypeKind } from "../../Type";
 import { type StringTypeMapping } from "../../TypeBuilder";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import { type FixMeOptionsType } from "../../types";
 
 import { DartRenderer } from "./DartRenderer";
 
@@ -31,25 +31,15 @@ export const dartOptions = {
     partName: new StringOption("part-name", "Use this name in `part` directive", "NAME", "", "secondary")
 };
 
-export class DartTargetLanguage extends TargetLanguage {
+export const dartLanguageConfig = { displayName: "Dart", names: ["dart"], extension: "dart" } as const;
+
+export class DartTargetLanguage extends TargetLanguage<typeof dartLanguageConfig> {
     public constructor() {
-        super("Dart", ["dart"], "dart");
+        super(dartLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [
-            dartOptions.nullSafety,
-            dartOptions.justTypes,
-            dartOptions.codersInClass,
-            dartOptions.methodNamesWithMap,
-            dartOptions.requiredProperties,
-            dartOptions.finalProperties,
-            dartOptions.generateCopyWith,
-            dartOptions.useFreezed,
-            dartOptions.useHive,
-            dartOptions.useJsonAnnotation,
-            dartOptions.partName
-        ];
+    public getOptions(): typeof dartOptions {
+        return dartOptions;
     }
 
     public get supportsUnionsWithBothNumberTypes(): boolean {
