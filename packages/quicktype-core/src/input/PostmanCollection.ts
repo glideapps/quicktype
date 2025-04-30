@@ -1,6 +1,7 @@
 import { parseJSON } from "../support/Support";
 
 import { type JSONSourceData } from "./Inputs";
+import type { JSONSchema } from "./JSONSchemaStore";
 
 function isValidJSON(s: string): boolean {
     try {
@@ -18,15 +19,22 @@ export function sourcesFromPostmanCollection(
     const sources: Array<JSONSourceData<string>> = [];
     const descriptions: string[] = [];
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    function processCollection(c: any): void {
-        if (typeof c !== "object") return;
+    function processCollection(c: JSONSchema | undefined): void {
+        if (typeof c !== "object") {
+            return;
+        }
+
         if (Array.isArray(c.item)) {
             for (const item of c.item) {
                 processCollection(item);
             }
 
-            if (typeof c.info === "object" && typeof c.info.description === "string") {
+            if (
+                c.info &&
+                typeof c.info === "object" &&
+                "description" in c.info &&
+                typeof c.info?.description === "string"
+            ) {
                 descriptions.push(c.info.description);
             }
         }
@@ -43,14 +51,19 @@ export function sourcesFromPostmanCollection(
                 const source: JSONSourceData<string> = { name: c.name, samples };
                 const sourceDescription = [c.name];
 
-                if (typeof c.request === "object") {
-                    const { method, url } = c.request;
-                    if (method !== undefined && typeof url === "object" && url.raw !== undefined) {
+                if (c.request && typeof c.request === "object") {
+                    const { method, url } = c.request as { method: unknown; url: object };
+                    if (method !== undefined && typeof url === "object" && "raw" in url && url.raw !== undefined) {
                         sourceDescription.push(`${method} ${url.raw}`);
                     }
                 }
 
-                if (typeof c.request === "object" && typeof c.request.description === "string") {
+                if (
+                    c.request &&
+                    typeof c.request === "object" &&
+                    "description" in c.request &&
+                    typeof c.request.description === "string"
+                ) {
                     sourceDescription.push(c.request.description);
                 }
 

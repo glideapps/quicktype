@@ -5,14 +5,16 @@ export {
     quicktypeMultiFileSync,
     quicktype,
     combineRenderResults,
-    inferenceFlags,
-    inferenceFlagNames,
-    defaultInferenceFlags,
-    inferenceFlagsObject,
-    type InferenceFlags,
-    type InferenceFlagName,
     type RunContext
 } from "./Run";
+export{
+	inferenceFlags,
+	inferenceFlagNames,
+	defaultInferenceFlags,
+	inferenceFlagsObject,
+	type InferenceFlags,
+	type InferenceFlagName,
+} from "./Inference";
 export { CompressedJSON, type Value } from "./input/CompressedJSON";
 export { type Input, InputData, JSONInput, type JSONSourceData, jsonInputForTargetLanguage } from "./input/Inputs";
 export { JSONSchemaInput, type JSONSchemaSourceData } from "./input/JSONSchemaInput";
