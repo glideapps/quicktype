@@ -4,7 +4,7 @@ import { PassThrough } from "readable-stream";
 import { type Options } from "./index";
 
 export interface BufferedPassThrough extends PassThrough {
-	getBufferedValue: () => Buffer | string | any[];
+	getBufferedValue: () => any;
 	getBufferedLength: () => number;
 
 	// for compat with _Readable.Writable

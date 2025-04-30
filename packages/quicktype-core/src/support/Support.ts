@@ -6,7 +6,7 @@ import { type JSONSchema } from "../input/JSONSchemaStore";
 import { messageError } from "../Messages";
 
 export interface StringMap {
-    [name: string]: unknown;
+    [name: string]: any;
 }
 
 export function isStringMap(x: unknown): x is StringMap;
