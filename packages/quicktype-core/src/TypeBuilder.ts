@@ -50,6 +50,7 @@ import {
     isPrimitiveStringTypeKind,
     transformedStringTypeKinds
 } from "./Type/utils";
+// eslint-disable-next-line import/no-cycle
 import { TypeGraph, type TypeRef, assertTypeRefGraph, derefTypeRef, makeTypeRef, typeRefIndex } from "./TypeGraph";
 
 // FIXME: Don't infer provenance.  All original types should be present in

@@ -7,7 +7,6 @@ import { Graph } from "./Graph";
 import { type BaseGraphRewriteBuilder, GraphRemapBuilder, GraphRewriteBuilder } from "./GraphRewriting";
 import { messageError } from "./Messages";
 import { assert, defined, mustNotHappen, panic } from "./support/Support";
-// eslint-disable-next-line import/no-cycle
 import { ClassType, IntersectionType, type Type, UnionType } from "./Type";
 // eslint-disable-next-line import/no-cycle
 import {

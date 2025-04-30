@@ -7,7 +7,7 @@ import {
 import { type TypeAttributes } from "../attributes/TypeAttributes";
 import { uriInferenceAttributesProducer } from "../attributes/URIAttributes";
 
-import { type Type } from "./index";
+import { type Type } from "./Type";
 
 /**
  * `jsonSchema` is the `format` to be used to represent this string type in
