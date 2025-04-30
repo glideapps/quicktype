@@ -62,8 +62,8 @@ export {
     EnumType,
     MapType,
     UnionType,
-    type TypeKind,
     ObjectType,
+    type TypeKind,
     type TransformedStringTypeKind,
     type PrimitiveStringTypeKind
 } from "./Type";

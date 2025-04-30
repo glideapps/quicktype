@@ -12,7 +12,7 @@ import {
 
 import { type DateTimeRecognizer } from "../DateTime";
 import { assert, defined } from "../support/Support";
-import { type TransformedStringTypeKind } from "../Type";
+import { type TransformedStringTypeKind } from "../Type/utils";
 // eslint-disable-next-line import/no-cycle
 import { type StringTypeMapping, stringTypeMappingGet } from "../TypeBuilder";
 

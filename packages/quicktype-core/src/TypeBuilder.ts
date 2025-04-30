@@ -30,24 +30,26 @@ import {
     MapType,
     type MaybeTypeIdentity,
     ObjectType,
-    type PrimitiveStringTypeKind,
     PrimitiveType,
-    type PrimitiveTypeKind,
-    type TransformedStringTypeKind,
     type Type,
     type TypeIdentity,
-    type TypeKind,
     UnionType,
     arrayTypeIdentity,
     classTypeIdentity,
     enumTypeIdentity,
     intersectionTypeIdentity,
-    isPrimitiveStringTypeKind,
     mapTypeIdentify,
     primitiveTypeIdentity,
-    transformedStringTypeKinds,
     unionTypeIdentity
 } from "./Type";
+import {
+    type PrimitiveStringTypeKind,
+    type PrimitiveTypeKind,
+    type TransformedStringTypeKind,
+    type TypeKind,
+    isPrimitiveStringTypeKind,
+    transformedStringTypeKinds
+} from "./Type/utils";
 import { TypeGraph, type TypeRef, assertTypeRefGraph, derefTypeRef, makeTypeRef, typeRefIndex } from "./TypeGraph";
 
 // FIXME: Don't infer provenance.  All original types should be present in

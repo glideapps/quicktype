@@ -19,9 +19,9 @@ import {
     type PrimitiveType,
     type SetOperationType,
     type Type,
-    UnionType,
-    isPrimitiveStringTypeKind
+    UnionType
 } from "./Type";
+import { isPrimitiveStringTypeKind } from "./Type/utils";
 
 export function assertIsObject(t: Type): ObjectType {
     if (t instanceof ObjectType) {
