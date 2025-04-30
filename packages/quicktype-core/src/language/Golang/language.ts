@@ -1,9 +1,9 @@
 import { type RenderContext } from "../../Renderer";
-import { BooleanOption, type Option, StringOption, getOptionValues } from "../../RendererOptions";
+import { BooleanOption, StringOption, getOptionValues } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
 import { type PrimitiveStringTypeKind, type TransformedStringTypeKind } from "../../Type";
 import { type StringTypeMapping } from "../../TypeBuilder";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import { type FixMeOptionsType } from "../../types";
 
 import { GoRenderer } from "./GolangRenderer";
 
@@ -20,20 +20,19 @@ export const goOptions = {
     )
 };
 
-export class GoTargetLanguage extends TargetLanguage {
+const golangLanguageConfig = {
+    displayName: "Go",
+    names: ["go", "golang"],
+    extension: "go"
+} as const;
+
+export class GoTargetLanguage extends TargetLanguage<typeof golangLanguageConfig> {
     public constructor() {
-        super("Go", ["go", "golang"], "go");
+        super(golangLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [
-            goOptions.justTypes,
-            goOptions.justTypesAndPackage,
-            goOptions.packageName,
-            goOptions.multiFileOutput,
-            goOptions.fieldTags,
-            goOptions.omitEmpty
-        ];
+    public getOptions(): typeof goOptions {
+        return goOptions;
     }
 
     public get supportsUnionsWithBothNumberTypes(): boolean {

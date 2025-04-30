@@ -1,9 +1,9 @@
 import { type RenderContext } from "../../Renderer";
-import { EnumOption, type Option, getOptionValues } from "../../RendererOptions";
+import { EnumOption, getOptionValues } from "../../RendererOptions";
 import { AcronymStyleOptions, acronymOption } from "../../support/Acronyms";
 import { convertersOption } from "../../support/Converters";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import { type FixMeOptionsType } from "../../types";
 
 import { JavaScriptPropTypesRenderer } from "./JavaScriptPropTypesRenderer";
 
@@ -13,25 +13,27 @@ export const javaScriptPropTypesOptions = {
     moduleSystem: new EnumOption(
         "module-system",
         "Which module system to use",
-        [
-            ["common-js", false],
-            ["es6", true]
-        ],
+        {
+            "common-js": false,
+            "es6": true
+        } as const,
         "es6"
     )
 };
 
-export class JavaScriptPropTypesTargetLanguage extends TargetLanguage {
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [javaScriptPropTypesOptions.acronymStyle, javaScriptPropTypesOptions.converters];
+export const javaScriptPropTypesLanguageConfig = {
+    displayName: "JavaScript PropTypes",
+    names: ["javascript-prop-types"],
+    extension: "js"
+} as const;
+
+export class JavaScriptPropTypesTargetLanguage extends TargetLanguage<typeof javaScriptPropTypesLanguageConfig> {
+    public constructor() {
+        super(javaScriptPropTypesLanguageConfig);
     }
 
-    public constructor(
-        displayName = "JavaScript PropTypes",
-        names: string[] = ["javascript-prop-types"],
-        extension = "js"
-    ) {
-        super(displayName, names, extension);
+    public getOptions(): typeof javaScriptPropTypesOptions {
+        return javaScriptPropTypesOptions;
     }
 
     protected makeRenderer(

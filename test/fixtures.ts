@@ -23,7 +23,7 @@ import {
     callAndExpectFailure
 } from "./utils";
 import * as languages from "./languages";
-import { RendererOptions } from "quicktype-core";
+import type { LanguageName, Option, RendererOptions } from "quicktype-core";
 import { mustNotHappen, defined } from "../packages/quicktype-core/dist/support/Support";
 import { DefaultDateTimeRecognizer } from "../packages/quicktype-core/dist/DateTime";
 
@@ -80,8 +80,11 @@ function additionalTestFiles(base: string, extension: string, features: string[]
 
 function runEnvForLanguage(additionalRendererOptions: RendererOptions): NodeJS.ProcessEnv {
     const newEnv = Object.assign({}, process.env);
-    for (const o of Object.getOwnPropertyNames(additionalRendererOptions)) {
-        newEnv["QUICKTYPE_" + o.toUpperCase().replace("-", "_")] = additionalRendererOptions[o].toString();
+
+    for (const option of Object.keys(additionalRendererOptions)) {
+        newEnv["QUICKTYPE_" + option.toUpperCase().replace("-", "_")] = (
+            additionalRendererOptions[option as keyof typeof additionalRendererOptions] as Option<string, unknown>
+        ).name;
     }
     return newEnv;
 }
@@ -278,7 +281,9 @@ class JSONFixture extends LanguageFixture {
         if (this.language.compileCommand) {
             await execAsync(this.language.compileCommand);
         }
-        if (this.language.runCommand === undefined) return 0;
+        if (this.language.runCommand === undefined) {
+            return 0;
+        }
 
         compareJsonFileToJson(comparisonArgs(this.language, filename, filename, additionalRendererOptions));
 
@@ -377,7 +382,7 @@ class JSONToXToYFixture extends JSONFixture {
 
     constructor(
         private readonly _fixturePrefix: string,
-        languageXName: string,
+        languageXName: LanguageName,
         languageXOutputFilename: string,
         rendererOptions: RendererOptions,
         skipJSON: string[],

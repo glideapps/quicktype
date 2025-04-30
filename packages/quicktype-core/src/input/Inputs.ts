@@ -8,6 +8,7 @@ import { type RunContext } from "../Run";
 import { defined, errorMessage, panic } from "../support/Support";
 import { type TargetLanguage } from "../TargetLanguage";
 import { type TypeBuilder } from "../TypeBuilder";
+import { type LanguageName } from "../types";
 
 import { type CompressedJSON, CompressedJSONFromString, type Value } from "./CompressedJSON";
 import { TypeInference } from "./Inference";
@@ -151,7 +152,7 @@ export class JSONInput<T> implements Input<JSONSourceData<T>> {
 }
 
 export function jsonInputForTargetLanguage(
-    targetLanguage: string | TargetLanguage,
+    targetLanguage: LanguageName | TargetLanguage,
     languages?: TargetLanguage[],
     handleJSONRefs = false
 ): JSONInput<string> {
