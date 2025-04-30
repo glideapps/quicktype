@@ -28,7 +28,6 @@ import {
     minMaxLengthAttributeProducer,
     patternAttributeProducer
 } from "../attributes/Constraints";
-// eslint-disable-next-line import/no-cycle
 import { descriptionAttributeProducer } from "../attributes/Description";
 import { enumValuesAttributeProducer } from "../attributes/EnumValues";
 import { StringTypes } from "../attributes/StringTypes";
@@ -54,22 +53,7 @@ import { type TypeRef } from "../TypeGraph";
 
 import { type Input } from "./Inputs";
 import { type JSONSchema, JSONSchemaStore } from "./JSONSchemaStore";
-
-// There's a cyclic import here. Ignoring now because it requires a large refactor.
-// skipcq: JS-E1008
-
-export enum PathElementKind {
-    Root = 1,
-    KeyOrIndex = 2,
-    Type = 3,
-    Object = 4
-}
-
-export type PathElement =
-    | { kind: PathElementKind.Root }
-    | { key: string; kind: PathElementKind.KeyOrIndex }
-    | { index: number; kind: PathElementKind.Type }
-    | { kind: PathElementKind.Object };
+import { type PathElement, PathElementKind } from "./PathElement";
 
 function keyOrIndex(pe: PathElement): string | undefined {
     if (pe.kind !== PathElementKind.KeyOrIndex) return undefined;
@@ -972,8 +956,7 @@ async function addTypesInSchema(
         const includeArray = enumArray === undefined && !isConst && (typeSet === undefined || typeSet.has("array"));
         const needStringEnum =
             includedTypes.has("string") &&
-            enumArray !== undefined &&
-            enumArray.find(x => typeof x === "string") !== undefined;
+            enumArray?.find(x => typeof x === "string") !== undefined;
         const needUnion =
             typeSet !== undefined ||
             schema.properties !== undefined ||
