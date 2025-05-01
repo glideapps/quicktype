@@ -340,14 +340,16 @@ function makeOptionDefinitions(targetLanguages: readonly TargetLanguage[]): Opti
             alias: "o",
             type: String,
             typeLabel: "FILE",
-            description: "The output file. Determines --lang and --top-level."
+            description: "The output file. Determines --lang and --top-level.",
+            kind: "cli"
         },
         {
             name: "top-level",
             alias: "t",
             type: String,
             typeLabel: "NAME",
-            description: "The name for the top level type."
+            description: "The name for the top level type.",
+            kind: "cli"
         }
     ];
     const lang: OptionDefinition[] =
@@ -359,7 +361,8 @@ function makeOptionDefinitions(targetLanguages: readonly TargetLanguage[]): Opti
                       alias: "l",
                       type: String,
                       typeLabel: "LANG",
-                      description: "The target language."
+                      description: "The target language.",
+                      kind: "cli"
                   }
               ];
     const afterLang: OptionDefinition[] = [
@@ -369,7 +372,8 @@ function makeOptionDefinitions(targetLanguages: readonly TargetLanguage[]): Opti
             type: String,
             defaultValue: undefined,
             typeLabel: "SRC_LANG",
-            description: "The source language (default is json)."
+            description: "The source language (default is json).",
+            kind: "cli"
         },
         {
             name: "src",
@@ -377,13 +381,15 @@ function makeOptionDefinitions(targetLanguages: readonly TargetLanguage[]): Opti
             multiple: true,
             defaultOption: true,
             typeLabel: "FILE|URL|DIRECTORY",
-            description: "The file, url, or data directory to type."
+            description: "The file, url, or data directory to type.",
+            kind: "cli"
         },
         {
             name: "src-urls",
             type: String,
             typeLabel: "FILE",
-            description: "Tracery grammar describing URLs to crawl."
+            description: "Tracery grammar describing URLs to crawl.",
+            kind: "cli"
         }
     ];
     const inference: OptionDefinition[] = Array.from(
@@ -391,7 +397,8 @@ function makeOptionDefinitions(targetLanguages: readonly TargetLanguage[]): Opti
             return {
                 name: dashedFromCamelCase(negatedInferenceFlagName(name)),
                 type: Boolean,
-                description: flag.negationDescription + "."
+                description: flag.negationDescription + ".",
+                kind: "cli" as const
             };
         }).values()
     );
@@ -400,26 +407,30 @@ function makeOptionDefinitions(targetLanguages: readonly TargetLanguage[]): Opti
             name: "graphql-schema",
             type: String,
             typeLabel: "FILE",
-            description: "GraphQL introspection file."
+            description: "GraphQL introspection file.",
+            kind: "cli"
         },
         {
             name: "graphql-introspect",
             type: String,
             typeLabel: "URL",
-            description: "Introspect GraphQL schema from a server."
+            description: "Introspect GraphQL schema from a server.",
+            kind: "cli"
         },
         {
             name: "http-method",
             type: String,
             typeLabel: "METHOD",
-            description: "HTTP method to use for the GraphQL introspection query."
+            description: "HTTP method to use for the GraphQL introspection query.",
+            kind: "cli"
         },
         {
             name: "http-header",
             type: String,
             multiple: true,
             typeLabel: "HEADER",
-            description: "Header(s) to attach to all HTTP requests, including the GraphQL introspection query."
+            description: "Header(s) to attach to all HTTP requests, including the GraphQL introspection query.",
+            kind: "cli"
         },
         {
             name: "additional-schema",
@@ -427,58 +438,68 @@ function makeOptionDefinitions(targetLanguages: readonly TargetLanguage[]): Opti
             type: String,
             multiple: true,
             typeLabel: "FILE",
-            description: "Register the $id's of additional JSON Schema files."
+            description: "Register the $id's of additional JSON Schema files.",
+            kind: "cli"
         },
         {
             name: "no-render",
             type: Boolean,
-            description: "Don't render output."
+            description: "Don't render output.",
+            kind: "cli"
         },
         {
             name: "alphabetize-properties",
             type: Boolean,
-            description: "Alphabetize order of class properties."
+            description: "Alphabetize order of class properties.",
+            kind: "cli"
         },
         {
             name: "all-properties-optional",
             type: Boolean,
-            description: "Make all class properties optional."
+            description: "Make all class properties optional.",
+            kind: "cli"
         },
         {
             name: "build-markov-chain",
             type: String,
             typeLabel: "FILE",
-            description: "Markov chain corpus filename."
+            description: "Markov chain corpus filename.",
+            kind: "cli"
         },
         {
             name: "quiet",
             type: Boolean,
-            description: "Don't show issues in the generated code."
+            description: "Don't show issues in the generated code.",
+            kind: "cli"
         },
         {
             name: "debug",
             type: String,
             typeLabel: "OPTIONS or all",
             description:
-                "Comma separated debug options: print-graph, print-reconstitution, print-gather-names, print-transformations, print-schema-resolving, print-times, provenance"
+                "Comma separated debug options: print-graph, print-reconstitution, print-gather-names, print-transformations, print-schema-resolving, print-times, provenance",
+            kind: "cli"
         },
         {
             name: "telemetry",
             type: String,
             typeLabel: "enable|disable",
-            description: "Enable anonymous telemetry to help improve quicktype"
+            description: "Enable anonymous telemetry to help improve quicktype",
+            kind: "cli"
         },
         {
             name: "help",
             alias: "h",
             type: Boolean,
-            description: "Get some help."
+            description: "Get some help.",
+            kind: "cli"
         },
         {
             name: "version",
             alias: "v",
             type: Boolean,
-            description: "Display the version of quicktype"
+            description: "Display the version of quicktype",
+            kind: "cli"
         }
     ];
     return beforeLang.concat(lang, afterLang, inference, afterInference);
@@ -600,8 +621,6 @@ export function parseCLIOptions(argv: string[], targetLanguage?: TargetLanguage)
 // according to each option definition's `renderer` field.  If `partial` is false this
 // will throw if it encounters an unknown option.
 function parseOptions(definitions: OptionDefinition[], argv: string[], partial: boolean): Partial<CLIOptions> {
-    // FIXME: update this when options strongly typed
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let opts: { [key: string]: any };
     try {
         opts = commandLineArgs(definitions, { argv, partial });
@@ -623,12 +642,14 @@ function parseOptions(definitions: OptionDefinition[], argv: string[], partial: 
         if (!hasOwnProperty(opts, optionDefinition.name)) {
             continue;
         }
-        const v = opts[optionDefinition.name] as string;
-        if (optionDefinition.name in options.rendererOptions) {
-            (options.rendererOptions as Record<typeof optionDefinition.name, unknown>)[optionDefinition.name] = v;
+
+        const optionValue = opts[optionDefinition.name] as string;
+        if (optionDefinition.kind !== "cli") {
+            (options.rendererOptions as Record<typeof optionDefinition.name, unknown>)[optionDefinition.name] =
+                optionValue;
         } else {
             const k = _.lowerFirst(optionDefinition.name.split("-").map(_.upperFirst).join(""));
-            options[k] = v;
+            options[k] = optionValue;
         }
     }
 
