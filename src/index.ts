@@ -621,7 +621,7 @@ export function parseCLIOptions(argv: string[], targetLanguage?: TargetLanguage)
 // according to each option definition's `renderer` field.  If `partial` is false this
 // will throw if it encounters an unknown option.
 function parseOptions(definitions: OptionDefinition[], argv: string[], partial: boolean): Partial<CLIOptions> {
-    let opts: { [key: string]: any };
+    let opts: commandLineArgs.CommandLineOptions;
     try {
         opts = commandLineArgs(definitions, { argv, partial });
     } catch (e) {
