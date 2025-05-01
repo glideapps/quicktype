@@ -21,7 +21,7 @@ import {
     type Type,
     UnionType
 } from "./Type";
-import { isPrimitiveStringTypeKind } from "./Type/utils";
+import { isPrimitiveStringTypeKind } from "./Type/TransformedStringType";
 
 export function assertIsObject(t: Type): ObjectType {
     if (t instanceof ObjectType) {

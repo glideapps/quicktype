@@ -49,7 +49,7 @@ import {
     type TypeKind,
     isPrimitiveStringTypeKind,
     transformedStringTypeKinds
-} from "./Type/utils";
+} from "./Type/TransformedStringType";
 // eslint-disable-next-line import/no-cycle
 import { TypeGraph, type TypeRef, assertTypeRefGraph, derefTypeRef, makeTypeRef, typeRefIndex } from "./TypeGraph";
 

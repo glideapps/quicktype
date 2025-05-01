@@ -32,7 +32,7 @@ import {
     type TypeKind,
     isPrimitiveStringTypeKind,
     triviallyStructurallyCompatible
-} from "./utils";
+} from "./TransformedStringType";
 
 export class TypeIdentity {
     private readonly _hashCode: number;

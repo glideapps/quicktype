@@ -2,4 +2,4 @@
 export * from "./Type";
 
 // TODO: update this to type * post TS upgrade
-export * from "./utils";
+export * from "./TransformedStringType";
