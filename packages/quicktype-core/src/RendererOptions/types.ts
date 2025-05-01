@@ -2,9 +2,10 @@ import type { EnumOption, Option } from "./index";
 
 /**
  * Primary options show up in the web UI in the "Language" settings tab,
- * secondary options in "Other".
+ * Secondary options in "Other".
+ * CLI is only for cli
  */
-export type OptionKind = "primary" | "secondary";
+export type OptionKind = "primary" | "secondary" | "cli";
 
 export interface OptionDefinition<Name extends string = string, T = unknown> {
     alias?: string;
