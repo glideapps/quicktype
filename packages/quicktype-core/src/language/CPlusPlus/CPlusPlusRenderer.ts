@@ -848,10 +848,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                  * a member called 'value' value = value will screw up the compiler
                  */
                 const checkConst = this.lookupGlobalName(GlobalNames.CheckConstraint);
-                if (
-                    (property.type instanceof UnionType && property.type.findMember("null") !== undefined) ||
-                    (property.isOptional && property.type.kind !== "null" && property.type.kind !== "any")
-                ) {
+                if (property.type instanceof UnionType && property.type.findMember("null") !== undefined) {
                     this.emitLine(rendered, " ", getterName, "() const { return ", name, "; }");
                     if (constraints?.has(jsonName)) {
                         this.emitLine(
@@ -1834,6 +1831,40 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.ensureBlankLine();
             }
         );
+
+        this.ensureBlankLine();
+
+        this.emitBlock(
+            [
+                "inline void ",
+                checkConst,
+                "(",
+                this._stringType.getConstType(),
+                " name, ",
+                this.withConst(classConstraint),
+                " & c, ",
+                "const ",
+                this._optionalType,
+                "<",
+                cppType,
+                "> & value)"
+            ],
+            false,
+            () => {
+                this.emitBlock(
+                    ["if (value)"],
+                    false,
+                    () => {
+                        this.emitLine(
+                            checkConst,
+                            "(name, c, *value);"
+                        );
+                    }
+                );
+                this.ensureBlankLine();
+            }
+        );
+
         this.ensureBlankLine();
     }
 
@@ -1923,7 +1954,12 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
 
         const checkConst = this.lookupGlobalName(GlobalNames.CheckConstraint);
-        this.emitNumericCheckConstraints(checkConst, classConstraint, getterMinIntValue, getterMaxIntValue, "int64_t");
+        this.emitNumericCheckConstraints(
+            checkConst,
+            classConstraint,
+            getterMinIntValue,
+            getterMaxIntValue,
+            "int64_t");
         this.emitNumericCheckConstraints(
             checkConst,
             classConstraint,
@@ -2039,6 +2075,39 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         );
                     });
                 });
+                this.ensureBlankLine();
+            }
+        );
+
+        this.ensureBlankLine();
+
+        this.emitBlock(
+            [
+                "inline void ",
+                checkConst,
+                "(",
+                this._stringType.getConstType(),
+                " name, ",
+                this.withConst(classConstraint),
+                " & c, ",
+                "const ",
+                this._optionalType,
+                "<",
+                this._stringType.getType(),
+                ">& value)"
+            ],
+            false,
+            () => {
+                this.emitBlock(
+                    ["if (value)"],
+                    false,
+                    () => {
+                        this.emitLine(
+                            checkConst,
+                            "(name, c, *value);"
+                        );
+                    }
+                );
                 this.ensureBlankLine();
             }
         );
