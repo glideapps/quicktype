@@ -74,6 +74,13 @@
         "ts-node": "^10.9.2",
         "watch": "^1.0.2"
     },
+    "overrides": {
+        "cross-fetch": {
+            "node-fetch": {
+                "whatwg-url": "^13.0.0"
+            }
+        }
+    },
     "files": [
         "dist"
     ],
