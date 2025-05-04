@@ -7,7 +7,16 @@ import { type Sourcelike, maybeAnnotated, modifySource } from "../../Source";
 import { decapitalize, snakeCase } from "../../support/Strings";
 import { defined } from "../../support/Support";
 import { type TargetLanguage } from "../../TargetLanguage";
-import { type ClassProperty, type ClassType, EnumType, type Type, type UnionType } from "../../Type";
+import {
+    ArrayType,
+    type ClassProperty,
+    type ClassType,
+    EnumType,
+    MapType,
+    ObjectType,
+    type Type,
+    type UnionType
+} from "../../Type";
 import { directlyReachableSingleNamedType, matchType, nullableFromUnion } from "../../TypeUtils";
 
 import { keywords } from "./constants";
@@ -597,58 +606,151 @@ export class DartRenderer extends ConvenienceRenderer {
                 }
 
                 this._emitMapEncoderDecoder(c, className);
+                // this.popFromParentStack();
             }
         });
     }
 
-    protected emitFreezedClassDefinition(c: ClassType, className: Name): void {
-        this.emitDescription(this.descriptionForType(c));
+    private parentStack: string[] = []; // Stack to track parent names
 
-        this.emitLine("@freezed");
-        this.emitBlock(["class ", className, " with _$", className], () => {
-            if (c.getProperties().size === 0) {
-                this.emitLine("const factory ", className, "() = _", className, ";");
-            } else {
-                this.emitLine("const factory ", className, "({");
-                this.indent(() => {
-                    this.forEachClassProperty(c, "none", (name, jsonName, prop) => {
-                        const description = this.descriptionForClassProperty(c, jsonName);
-                        if (description !== undefined) {
-                            this.emitDescription(description);
-                        }
+    private pushToParentStack(typeName: string): void {
+        this.parentStack.push(typeName);
+        // console.log("Popping from stack:", this.parentStack);
+    }
 
-                        const required =
-                            this._options.requiredProperties ||
-                            (this._options.nullSafety && (!prop.type.isNullable || !prop.isOptional));
-                        if (this._options.useJsonAnnotation) {
-                            this.classPropertyCounter++;
-                            this.emitLine(`@JsonKey(name: "${jsonName}")`);
-                        }
+    private popFromParentStack(): void {
+        // console.log("Poping from parent stack:", this.parentStack);
+        const popped = this.parentStack.pop();
 
-                        this.emitLine(required ? "required " : "", this.dartType(prop.type, true), " ", name, ",");
-                    });
-                });
-                this.emitLine("}) = _", className, ";");
+        // console.log("BC", popped)
+        if (popped && popped.includes("_")) {
+            // Split the string on underscores and take the last part
+            // console.log("Removing", popped)
+            const lastPart = popped.split("_").pop();
+            // console.log("Removing", lastPart)
+            if (lastPart) {
+                this.parentStack.push(lastPart);
+                // Push the last part back into the parent stack
+            }
+        } else {
+            this.parentStack.push(popped ? popped : "parent");
+        }
+    }
+
+    private isSimpleName(value: unknown): value is Name {
+        return typeof value === "object" && value !== null && "_unstyledNames" in value;
+    }
+
+    private extractSimpleName(name: Name): string | null {
+        if ("_unstyledNames" in name) {
+            const unstyledNames = Array.from((name as any)._unstyledNames) as string[];
+            if (unstyledNames.length > 0) {
+                // console.log("Extracted Names:", unstyledNames);
+                return unstyledNames[0]; // Pick the most relevant name
+            }
+        }
+
+        return null;
+    }
+
+    private resolveTypeName(typeOrName: string | Name | Type): string {
+        if (typeOrName instanceof ObjectType) {
+            const namedType = this.nameForNamedType(typeOrName);
+            if (namedType) {
+                return this.extractSimpleName(namedType) ?? "UnnamedType";
             }
 
-            if (this._options.justTypes) return;
+            return "UnnamedType";
+        } else if (typeof typeOrName === "string") {
+            return typeOrName;
+        } else if (this.isSimpleName(typeOrName)) {
+            return this.extractSimpleName(typeOrName) ?? "UnnamedType";
+        }
+
+        return "UnknownType";
+    }
+
+    private getNestedTypeName(typeName: string | Name): string {
+        const parentPrefix = this.parentStack.join("_");
+        const resolvedTypeName = this.resolveTypeName(typeName);
+        return parentPrefix ? `${parentPrefix}_${resolvedTypeName}` : resolvedTypeName;
+    }
+
+    private getRequiredFieldsForClass(c: ClassType): Set<string> {
+        const requiredFields = new Set<string>();
+
+        // Iterate over the properties of the class
+        c.getProperties().forEach((property, name) => {
+            // A property is required if `isOptional` is false
+            if (!property.isOptional) {
+                requiredFields.add(name);
+            }
+        });
+
+        return requiredFields;
+    }
+
+    protected emitFreezedClassDefinition(c: ClassType, className: Name): void {
+        // Resolve the current class name with full parent prefix
+        const resolvedClassName = this.getNestedTypeName(className);
+        // console.log(className)
+        // Push the resolved name to the parent stack
+        this.pushToParentStack(resolvedClassName);
+
+        // Emit the class definition
+        this.emitLine("@freezed");
+        this.emitBlock(["class ", resolvedClassName, " with _$", resolvedClassName], () => {
+            if (c.getProperties().size === 0) {
+                this.emitLine("const factory ", resolvedClassName, "() = _", resolvedClassName, ";");
+            } else {
+                this.emitLine("const factory ", resolvedClassName, "({");
+                this.indent(() => {
+                    // Check the required fields for this class
+                    const requiredFields = this.getRequiredFieldsForClass(c);
+
+                    this.popFromParentStack();
+                    this.forEachClassProperty(c, "none", (name, jsonName, prop) => {
+                        // Determine if this field is required
+                        const isRequired = requiredFields.has(jsonName);
+
+                        // Resolve nested type names correctly
+                        let nestedTypeName;
+
+                        if (prop.type instanceof ObjectType) {
+                            nestedTypeName = this.getNestedTypeName(this.resolveTypeName(prop.type));
+                        } else if (prop.type instanceof ArrayType && prop.type.items instanceof ObjectType) {
+                            nestedTypeName = `List<${this.getNestedTypeName(this.resolveTypeName(prop.type.items))}>`;
+                        } else if (prop.type instanceof MapType && prop.type.values instanceof ObjectType) {
+                            nestedTypeName = `Map<String, ${this.getNestedTypeName(this.resolveTypeName(prop.type.values))}>`;
+                        } else if (prop.type instanceof EnumType) {
+                            nestedTypeName = this.getNestedTypeName(this.nameForNamedType(prop.type));
+                        } else {
+                            nestedTypeName = this.dartType(prop.type);
+                        }
+
+                        // Emit the field with or without `required` based on its necessity
+                        this.emitLine(isRequired ? "required " : "", nestedTypeName, " ", name, ",");
+                    });
+                });
+                this.emitLine("}) = _", resolvedClassName, ";");
+            }
 
             this.ensureBlankLine();
             this.emitLine(
-                // factory PublicAnswer.fromJson(Map<String, dynamic> json) => _$PublicAnswerFromJson(json);
                 "factory ",
-                className,
-                ".fromJson(Map<String, dynamic> json) => ",
-                "_$",
-                className,
+                resolvedClassName,
+                ".fromJson(Map<String, dynamic> json) => _$",
+                resolvedClassName,
                 "FromJson(json);"
             );
         });
+
+        // Pop the parent name after finishing this class
     }
 
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
-        this.emitLine("enum ", enumName, " {");
+        this.emitLine("enum ", this.getNestedTypeName(enumName), " {");
         this.indent(() => {
             this.forEachEnumCase(e, "none", (name, jsonName, pos) => {
                 const comma = pos === "first" || pos === "middle" ? "," : [];
@@ -742,5 +844,6 @@ export class DartRenderer extends ConvenienceRenderer {
         if (this._needEnumValues) {
             this.emitEnumValues();
         }
+        // this.popFromParentStack();
     }
 }
