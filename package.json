@@ -60,7 +60,7 @@
         "esbuild": "^0.20.2",
         "eslint": "^8.57.0",
         "eslint-config-canonical": "^41.1.7",
-        "eslint-config-prettier": "^6.10.0",
+        "eslint-config-prettier": "^10.1.2",
         "eslint-import-resolver-typescript": "^3.6.1",
         "eslint-plugin-canonical": "^3.4.0",
         "eslint-plugin-import": "^2.26.0",
