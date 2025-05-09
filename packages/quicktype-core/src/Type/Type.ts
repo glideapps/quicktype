@@ -24,7 +24,6 @@ import { type TypeNames, namesTypeAttributeKind } from "../attributes/TypeNames"
 import { type BaseGraphRewriteBuilder, type TypeReconstituter } from "../GraphRewriting";
 import { messageAssert } from "../Messages";
 import { assert, defined, panic } from "../support/Support";
-import { type TypeGraph, type TypeRef, attributesForTypeRef, derefTypeRef, typeRefIndex } from "../TypeGraph";
 
 import {
     type ObjectTypeKind,
@@ -33,6 +32,8 @@ import {
     isPrimitiveStringTypeKind,
     triviallyStructurallyCompatible
 } from "./TransformedStringType";
+// eslint-disable-next-line import/no-cycle
+import { type TypeGraph, type TypeRef, attributesForTypeRef, derefTypeRef, typeRefIndex } from "./TypeGraph";
 
 export class TypeIdentity {
     private readonly _hashCode: number;

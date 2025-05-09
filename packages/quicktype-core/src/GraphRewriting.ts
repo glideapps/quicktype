@@ -4,7 +4,7 @@ import { type TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from 
 import { assert, indentationString, panic } from "./support/Support";
 import { type ClassProperty, type MaybeTypeIdentity, type PrimitiveTypeKind, type Type } from "./Type";
 // eslint-disable-next-line import/no-cycle
-import { type StringTypeMapping, TypeBuilder } from "./TypeBuilder";
+import { type StringTypeMapping, TypeBuilder } from "./Type/TypeBuilder";
 import {
     type TypeGraph,
     type TypeRef,
@@ -13,8 +13,8 @@ import {
     isTypeRef,
     typeAndAttributesForTypeRef,
     typeRefIndex
-} from "./TypeGraph";
-import { combineTypeAttributesOfTypes } from "./TypeUtils";
+} from "./Type/TypeGraph";
+import { combineTypeAttributesOfTypes } from "./Type/TypeUtils";
 
 export interface TypeLookerUp {
     lookupTypeRefs: (typeRefs: TypeRef[], forwardingRef?: TypeRef) => TypeRef | undefined;

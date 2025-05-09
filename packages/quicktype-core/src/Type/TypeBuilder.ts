@@ -12,14 +12,23 @@ import {
 } from "collection-utils";
 
 // eslint-disable-next-line import/no-cycle
-import { StringTypes, stringTypesTypeAttributeKind } from "./attributes/StringTypes";
+import { StringTypes, stringTypesTypeAttributeKind } from "../attributes/StringTypes";
 import {
     TypeAttributeKind,
     type TypeAttributes,
     combineTypeAttributes,
     emptyTypeAttributes
-} from "./attributes/TypeAttributes";
-import { assert, defined, panic } from "./support/Support";
+} from "../attributes/TypeAttributes";
+import { assert, defined, panic } from "../support/Support";
+
+import {
+	type PrimitiveStringTypeKind,
+	type PrimitiveTypeKind,
+	type TransformedStringTypeKind,
+	type TypeKind,
+	isPrimitiveStringTypeKind,
+	transformedStringTypeKinds
+} from "./TransformedStringType";
 // eslint-disable-next-line import/no-cycle
 import {
     ArrayType,
@@ -42,14 +51,6 @@ import {
     primitiveTypeIdentity,
     unionTypeIdentity
 } from "./Type";
-import {
-    type PrimitiveStringTypeKind,
-    type PrimitiveTypeKind,
-    type TransformedStringTypeKind,
-    type TypeKind,
-    isPrimitiveStringTypeKind,
-    transformedStringTypeKinds
-} from "./Type/TransformedStringType";
 // eslint-disable-next-line import/no-cycle
 import { TypeGraph, type TypeRef, assertTypeRefGraph, derefTypeRef, makeTypeRef, typeRefIndex } from "./TypeGraph";
 

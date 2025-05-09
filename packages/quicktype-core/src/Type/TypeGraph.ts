@@ -1,12 +1,14 @@
 import { iterableFirst, mapMap, mapSome, setFilter, setMap, setSubtract, setUnionManyInto } from "collection-utils";
 
-import { type TypeAttributeKind, type TypeAttributes, emptyTypeAttributes } from "./attributes/TypeAttributes";
-import { TypeNames, namesTypeAttributeKind } from "./attributes/TypeNames";
-import { Graph } from "./Graph";
+import { type TypeAttributeKind, type TypeAttributes, emptyTypeAttributes } from "../attributes/TypeAttributes";
+import { TypeNames, namesTypeAttributeKind } from "../attributes/TypeNames";
+import { Graph } from "../Graph";
 // eslint-disable-next-line import/no-cycle
-import { type BaseGraphRewriteBuilder, GraphRemapBuilder, GraphRewriteBuilder } from "./GraphRewriting";
-import { messageError } from "./Messages";
-import { assert, defined, mustNotHappen, panic } from "./support/Support";
+import { type BaseGraphRewriteBuilder, GraphRemapBuilder, GraphRewriteBuilder } from "../GraphRewriting";
+import { messageError } from "../Messages";
+import { assert, defined, mustNotHappen, panic } from "../support/Support";
+
+// eslint-disable-next-line import/no-cycle
 import { ClassType, IntersectionType, type Type, UnionType } from "./Type";
 // eslint-disable-next-line import/no-cycle
 import {
