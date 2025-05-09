@@ -173,7 +173,7 @@ export function expandStrings(ctx: RunContext, graph: TypeGraph, inference: Enum
         const transformations = mappedStringTypes.transformations;
         // FIXME: This is probably wrong, or at least overly conservative.  This is for the case
         // where some attributes are identity ones, i.e. where we can't merge the primitive types,
-        // like it happens in the line after the `if`.  The case where this occured was with URI
+        // like it happens in the line after the `if`.  The case where this occurred was with URI
         // attributes: we had two separate string types with different URI attributes, but because
         // both are rewritten via `getPrimitiveType` below without any attributes, they end up
         // being the same string type.
