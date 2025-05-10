@@ -11,7 +11,6 @@ import {
     withDefault
 } from "collection-utils";
 
-// eslint-disable-next-line import/no-cycle
 import { StringTypes, stringTypesTypeAttributeKind } from "../attributes/StringTypes";
 import {
     TypeAttributeKind,
@@ -21,14 +20,7 @@ import {
 } from "../attributes/TypeAttributes";
 import { assert, defined, panic } from "../support/Support";
 
-import {
-	type PrimitiveStringTypeKind,
-	type PrimitiveTypeKind,
-	type TransformedStringTypeKind,
-	type TypeKind,
-	isPrimitiveStringTypeKind,
-	transformedStringTypeKinds
-} from "./TransformedStringType";
+import { type PrimitiveTypeKind, type TypeKind, isPrimitiveStringTypeKind } from "./TransformedStringType";
 // eslint-disable-next-line import/no-cycle
 import {
     ArrayType,
@@ -51,6 +43,7 @@ import {
     primitiveTypeIdentity,
     unionTypeIdentity
 } from "./Type";
+import { type StringTypeMapping, stringTypeMappingGet } from "./TypeBuilderUtils";
 // eslint-disable-next-line import/no-cycle
 import { TypeGraph, type TypeRef, assertTypeRefGraph, derefTypeRef, makeTypeRef, typeRefIndex } from "./TypeGraph";
 
@@ -82,28 +75,6 @@ class ProvenanceTypeAttributeKind extends TypeAttributeKind<Set<number>> {
 }
 
 export const provenanceTypeAttributeKind: TypeAttributeKind<Set<number>> = new ProvenanceTypeAttributeKind();
-
-export type StringTypeMapping = ReadonlyMap<TransformedStringTypeKind, PrimitiveStringTypeKind>;
-
-export function stringTypeMappingGet(stm: StringTypeMapping, kind: TransformedStringTypeKind): PrimitiveStringTypeKind {
-    const mapped = stm.get(kind);
-    if (mapped === undefined) return "string";
-    return mapped;
-}
-
-let noStringTypeMapping: StringTypeMapping | undefined;
-
-export function getNoStringTypeMapping(): StringTypeMapping {
-    if (noStringTypeMapping === undefined) {
-        noStringTypeMapping = new Map(
-            Array.from(transformedStringTypeKinds).map(
-                k => [k, k] as [TransformedStringTypeKind, PrimitiveStringTypeKind]
-            )
-        );
-    }
-
-    return noStringTypeMapping;
-}
 
 export class TypeBuilder {
     public readonly typeGraph: TypeGraph;

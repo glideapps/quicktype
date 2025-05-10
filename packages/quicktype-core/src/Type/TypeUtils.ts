@@ -1,6 +1,5 @@
 import { EqualityMap, iterableFirst, setFilter, setSortBy, setUnion } from "collection-utils";
 
-// eslint-disable-next-line import/no-cycle
 import { type StringTypes, stringTypesTypeAttributeKind } from "../attributes/StringTypes";
 import {
     type CombinationKind,
@@ -9,6 +8,9 @@ import {
     emptyTypeAttributes
 } from "../attributes/TypeAttributes";
 import { assert, assertNever, defined, panic } from "../support/Support";
+
+import { isPrimitiveStringTypeKind } from "./TransformedStringType";
+// eslint-disable-next-line import/no-cycle
 import {
     ArrayType,
     type ClassProperty,
@@ -21,7 +23,6 @@ import {
     type Type,
     UnionType
 } from "./Type";
-import { isPrimitiveStringTypeKind } from "./TransformedStringType";
 
 export function assertIsObject(t: Type): ObjectType {
     if (t instanceof ObjectType) {

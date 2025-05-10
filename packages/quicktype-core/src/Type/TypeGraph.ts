@@ -11,12 +11,8 @@ import { assert, defined, mustNotHappen, panic } from "../support/Support";
 // eslint-disable-next-line import/no-cycle
 import { ClassType, IntersectionType, type Type, UnionType } from "./Type";
 // eslint-disable-next-line import/no-cycle
-import {
-    type StringTypeMapping,
-    type TypeBuilder,
-    getNoStringTypeMapping,
-    provenanceTypeAttributeKind
-} from "./TypeBuilder";
+import { type TypeBuilder, provenanceTypeAttributeKind } from "./TypeBuilder";
+import { type StringTypeMapping, getNoStringTypeMapping } from "./TypeBuilderUtils";
 import { type SeparatedNamedTypes, combineTypeAttributesOfTypes, isNamedType, separateNamedTypes } from "./TypeUtils";
 
 export type TypeRef = number;

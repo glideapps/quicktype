@@ -4,7 +4,8 @@ import { type TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from 
 import { assert, indentationString, panic } from "./support/Support";
 import { type ClassProperty, type MaybeTypeIdentity, type PrimitiveTypeKind, type Type } from "./Type";
 // eslint-disable-next-line import/no-cycle
-import { type StringTypeMapping, TypeBuilder } from "./Type/TypeBuilder";
+import { TypeBuilder } from "./Type/TypeBuilder";
+import { type StringTypeMapping } from "./Type/TypeBuilderUtils";
 import {
     type TypeGraph,
     type TypeRef,
