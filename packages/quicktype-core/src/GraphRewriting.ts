@@ -2,9 +2,7 @@ import { EqualityMap, mapMap } from "collection-utils";
 
 import { type TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./attributes/TypeAttributes";
 import { assert, indentationString, panic } from "./support/Support";
-import { type ClassProperty, type MaybeTypeIdentity, type PrimitiveTypeKind, type Type } from "./Type";
-// eslint-disable-next-line import/no-cycle
-import { TypeBuilder } from "./Type/TypeBuilder";
+import { type ClassProperty, type MaybeTypeIdentity, type PrimitiveTypeKind, type Type, TypeBuilder } from "./Type";
 import { type StringTypeMapping } from "./Type/TypeBuilderUtils";
 import { type TypeGraph } from "./Type/TypeGraph";
 import {

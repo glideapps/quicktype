@@ -42,7 +42,6 @@ import {
     unionTypeIdentity
 } from "./Type";
 import { type StringTypeMapping, stringTypeMappingGet } from "./TypeBuilderUtils";
-// eslint-disable-next-line import/no-cycle
 import { TypeGraph } from "./TypeGraph";
 import { type TypeRef, assertTypeRefGraph, derefTypeRef, makeTypeRef, typeRefIndex } from "./TypeRef";
 

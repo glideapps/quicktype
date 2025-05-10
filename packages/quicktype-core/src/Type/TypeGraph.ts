@@ -2,7 +2,6 @@ import { mapMap, setSubtract, setUnionManyInto } from "collection-utils";
 
 import { type TypeAttributeKind, type TypeAttributes, emptyTypeAttributes } from "../attributes/TypeAttributes";
 import { Graph } from "../Graph";
-// eslint-disable-next-line import/no-cycle
 import { type BaseGraphRewriteBuilder, GraphRemapBuilder, GraphRewriteBuilder } from "../GraphRewriting";
 import { messageError } from "../Messages";
 import { assert, defined, mustNotHappen } from "../support/Support";
@@ -194,7 +193,7 @@ export class TypeGraph {
             if (seen.has(t)) {
                 return;
             }
-						
+
             seen.add(t);
 
             const required = predicate === undefined || predicate(t);
