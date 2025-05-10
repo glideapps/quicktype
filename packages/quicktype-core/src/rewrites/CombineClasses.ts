@@ -2,7 +2,8 @@ import { type GraphRewriteBuilder } from "../GraphRewriting";
 import { type RunContext } from "../Run";
 import { assert, panic } from "../support/Support";
 import { type ClassProperty, ClassType, type Type, setOperationCasesEqual } from "../Type/Type";
-import { type TypeGraph, type TypeRef } from "../Type/TypeGraph";
+import { type TypeGraph } from "../Type/TypeGraph";
+import { type TypeRef } from "../Type/TypeRef";
 import { combineTypeAttributesOfTypes, nonNullTypeCases } from "../Type/TypeUtils";
 import { unifyTypes, unionBuilderForUnification } from "../UnifyClasses";
 

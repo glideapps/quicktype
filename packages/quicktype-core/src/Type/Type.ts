@@ -33,8 +33,7 @@ import {
     triviallyStructurallyCompatible
 } from "./TransformedStringType";
 import { type TypeGraph } from "./TypeGraph";
-// eslint-disable-next-line import/no-cycle
-import { type TypeRef, attributesForTypeRef, derefTypeRef, typeRefIndex } from "./TypeGraphUtils";
+import { type TypeRef, attributesForTypeRef, derefTypeRef, typeRefIndex } from "./TypeRef";
 
 export class TypeIdentity {
     private readonly _hashCode: number;

@@ -18,7 +18,7 @@ import {
     isPrimitiveTypeKind
 } from "./Type";
 import { type TypeBuilder } from "./Type/TypeBuilder";
-import { type TypeRef } from "./Type/TypeGraphUtils";
+import { type TypeRef } from "./Type/TypeRef";
 import { matchTypeExhaustive } from "./Type/TypeUtils";
 
 // FIXME: This interface is badly designed.  All the properties

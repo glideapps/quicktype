@@ -6,7 +6,8 @@ import { messageAssert } from "../Messages";
 import { assert } from "../support/Support";
 import { IntersectionType, type Type, UnionType } from "../Type/Type";
 import { type StringTypeMapping } from "../Type/TypeBuilderUtils";
-import { type TypeGraph, type TypeRef, derefTypeRef } from "../Type/TypeGraph";
+import { type TypeGraph } from "../Type/TypeGraph";
+import { type TypeRef, derefTypeRef } from "../Type/TypeRef";
 import { makeGroupsToFlatten } from "../Type/TypeUtils";
 import { UnifyUnionBuilder, unifyTypes } from "../UnifyClasses";
 

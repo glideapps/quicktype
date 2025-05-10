@@ -5,7 +5,8 @@ import { type GraphRewriteBuilder } from "../GraphRewriting";
 import { assert, defined } from "../support/Support";
 import { type PrimitiveType, type Type, type UnionType } from "../Type/Type";
 import { type StringTypeMapping } from "../Type/TypeBuilderUtils";
-import { type TypeGraph, type TypeRef } from "../Type/TypeGraph";
+import { type TypeGraph } from "../Type/TypeGraph";
+import { type TypeRef } from "../Type/TypeRef";
 import { combineTypeAttributesOfTypes, stringTypesForType } from "../Type/TypeUtils";
 
 // A union needs replacing if it contains more than one string type, one of them being

@@ -3,7 +3,6 @@ import { EqualityMap, mapMap } from "collection-utils";
 import { type TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./attributes/TypeAttributes";
 import { assert, indentationString, panic } from "./support/Support";
 import { type ClassProperty, type MaybeTypeIdentity, type PrimitiveTypeKind, type Type } from "./Type";
-// eslint-disable-next-line import/no-cycle
 import { TypeBuilder } from "./Type/TypeBuilder";
 import { type StringTypeMapping } from "./Type/TypeBuilderUtils";
 import { type TypeGraph } from "./Type/TypeGraph";
@@ -14,7 +13,7 @@ import {
     isTypeRef,
     typeAndAttributesForTypeRef,
     typeRefIndex
-} from "./Type/TypeGraphUtils";
+} from "./Type/TypeRef";
 import { combineTypeAttributesOfTypes } from "./Type/TypeUtils";
 
 export interface TypeLookerUp {

@@ -11,7 +11,7 @@ import {
     transformedStringTypeTargetTypeKindsMap
 } from "../Type";
 import { type TypeBuilder } from "../Type/TypeBuilder";
-import { type TypeRef, derefTypeRef } from "../Type/TypeGraph";
+import { type TypeRef, derefTypeRef } from "../Type/TypeRef";
 import { nullableFromUnion } from "../Type/TypeUtils";
 import { UnionAccumulator, UnionBuilder } from "../UnionBuilder";
 

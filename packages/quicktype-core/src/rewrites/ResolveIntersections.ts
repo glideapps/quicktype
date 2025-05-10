@@ -35,7 +35,8 @@ import {
 } from "../Type";
 import { type TypeBuilder } from "../Type/TypeBuilder";
 import { type StringTypeMapping } from "../Type/TypeBuilderUtils";
-import { type TypeGraph, type TypeRef } from "../Type/TypeGraph";
+import { type TypeGraph } from "../Type/TypeGraph";
+import { type TypeRef } from "../Type/TypeRef";
 import { makeGroupsToFlatten, matchTypeExhaustive, setOperationMembersRecursively } from "../Type/TypeUtils";
 import { type TypeAttributeMap, UnionBuilder, type UnionTypeProvider } from "../UnionBuilder";
 

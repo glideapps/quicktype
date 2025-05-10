@@ -76,7 +76,7 @@ export { JSONSchemaStore, type JSONSchema } from "./input/JSONSchemaStore";
 export { sourcesFromPostmanCollection } from "./input/PostmanCollection";
 export { TypeBuilder } from "./Type/TypeBuilder";
 export { type StringTypeMapping } from "./Type/TypeBuilderUtils";
-export { type TypeRef, derefTypeRef } from "./Type/TypeGraphUtils";
+export { type TypeRef, derefTypeRef } from "./Type/TypeRef";
 export { TypeAttributeKind, type TypeAttributes, emptyTypeAttributes } from "./attributes/TypeAttributes";
 export { TypeNames, makeNamesTypeAttributes, namesTypeAttributeKind } from "./attributes/TypeNames";
 export { StringTypes } from "./attributes/StringTypes";

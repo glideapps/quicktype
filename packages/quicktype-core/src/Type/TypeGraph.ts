@@ -2,21 +2,17 @@ import { mapMap, setSubtract, setUnionManyInto } from "collection-utils";
 
 import { type TypeAttributeKind, type TypeAttributes, emptyTypeAttributes } from "../attributes/TypeAttributes";
 import { Graph } from "../Graph";
-// eslint-disable-next-line import/no-cycle
 import { type BaseGraphRewriteBuilder, GraphRemapBuilder, GraphRewriteBuilder } from "../GraphRewriting";
 import { messageError } from "../Messages";
 import { assert, defined, mustNotHappen } from "../support/Support";
 
+import { provenanceTypeAttributeKind } from "./ProvenanceTypeAttributeKind";
 import { type Type } from "./Type";
-// eslint-disable-next-line import/no-cycle
-import { type TypeBuilder, provenanceTypeAttributeKind } from "./TypeBuilder";
+import { type TypeBuilder } from "./TypeBuilder";
 import { type StringTypeMapping, getNoStringTypeMapping } from "./TypeBuilderUtils";
-// eslint-disable-next-line import/no-cycle
-import { type TypeRef, assertTypeRefGraph, derefTypeRef, removeIndirectionIntersections, typeRefIndex } from "./TypeGraphUtils";
-// eslint-disable-next-line import/no-cycle
+import { removeIndirectionIntersections } from "./TypeGraphUtils";
+import { type TypeRef, assertTypeRefGraph, derefTypeRef, typeRefIndex } from "./TypeRef";
 import { type SeparatedNamedTypes, isNamedType, separateNamedTypes } from "./TypeUtils";
-
-
 
 export class TypeAttributeStore {
     private readonly _topLevelValues: Map<string, TypeAttributes> = new Map();

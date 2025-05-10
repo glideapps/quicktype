@@ -35,7 +35,7 @@ import {
     targetTypeKindForTransformedStringTypeKind
 } from "./Type";
 import { type TypeGraph } from "./Type/TypeGraph";
-import { type TypeRef, typeRefIndex } from "./Type/TypeGraphUtils";
+import { type TypeRef, typeRefIndex } from "./Type/TypeRef";
 
 function transformationAttributes(
     graph: TypeGraph,

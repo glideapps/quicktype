@@ -7,21 +7,19 @@ import {
     mapFind,
     mapMap,
     mapSortByKey,
-    setUnionManyInto,
     withDefault
 } from "collection-utils";
 
 import { StringTypes, stringTypesTypeAttributeKind } from "../attributes/StringTypes";
 import {
-    TypeAttributeKind,
     type TypeAttributes,
     combineTypeAttributes,
     emptyTypeAttributes
 } from "../attributes/TypeAttributes";
 import { assert, defined, panic } from "../support/Support";
 
-import { type PrimitiveTypeKind, type TypeKind, isPrimitiveStringTypeKind } from "./TransformedStringType";
-// eslint-disable-next-line import/no-cycle
+import { provenanceTypeAttributeKind } from "./ProvenanceTypeAttributeKind";
+import { type PrimitiveTypeKind, isPrimitiveStringTypeKind } from "./TransformedStringType";
 import {
     ArrayType,
     ClassProperty,
@@ -45,36 +43,7 @@ import {
 } from "./Type";
 import { type StringTypeMapping, stringTypeMappingGet } from "./TypeBuilderUtils";
 import { TypeGraph } from "./TypeGraph";
-import { type TypeRef, assertTypeRefGraph, derefTypeRef, makeTypeRef, typeRefIndex } from "./TypeGraphUtils";
-
-// FIXME: Don't infer provenance.  All original types should be present in
-// non-inferred form in the final graph.
-class ProvenanceTypeAttributeKind extends TypeAttributeKind<Set<number>> {
-    public constructor() {
-        super("provenance");
-    }
-
-    public appliesToTypeKind(_kind: TypeKind): boolean {
-        return true;
-    }
-
-    public combine(arr: Array<Set<number>>): Set<number> {
-        return setUnionManyInto(new Set(), arr);
-    }
-
-    public makeInferred(p: Set<number>): Set<number> {
-        return p;
-    }
-
-    public stringify(p: Set<number>): string {
-        return Array.from(p)
-            .sort()
-            .map(i => i.toString())
-            .join(",");
-    }
-}
-
-export const provenanceTypeAttributeKind: TypeAttributeKind<Set<number>> = new ProvenanceTypeAttributeKind();
+import { type TypeRef, assertTypeRefGraph, derefTypeRef, makeTypeRef, typeRefIndex } from "./TypeRef";
 
 export class TypeBuilder {
     public readonly typeGraph: TypeGraph;

@@ -5,7 +5,8 @@ import { type MarkovChain, evaluate, load } from "../MarkovChain";
 import { defined, panic } from "../support/Support";
 import { type ClassProperty, ClassType, type Type, isPrimitiveStringTypeKind, setOperationCasesEqual } from "../Type";
 import { type StringTypeMapping } from "../Type/TypeBuilderUtils";
-import { type TypeGraph, type TypeRef } from "../Type/TypeGraph";
+import { type TypeGraph } from "../Type/TypeGraph";
+import { type TypeRef } from "../Type/TypeRef";
 import { removeNullFromType } from "../Type/TypeUtils";
 import { unifyTypes, unionBuilderForUnification } from "../UnifyClasses";
 
