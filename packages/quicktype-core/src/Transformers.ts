@@ -13,7 +13,8 @@ import { TypeAttributeKind } from "./attributes/TypeAttributes";
 import { type BaseGraphRewriteBuilder } from "./GraphRewriting";
 import { assert, indentationString, panic } from "./support/Support";
 import { EnumType, PrimitiveType, type Type, type TypeKind, UnionType } from "./Type";
-import { type TypeGraph, type TypeRef, derefTypeRef } from "./Type/TypeGraph";
+import { type TypeGraph } from "./Type/TypeGraph";
+import { type TypeRef, derefTypeRef } from "./Type/TypeGraphUtils";
 
 function debugStringForType(t: Type): string {
     const target = followTargetType(t);

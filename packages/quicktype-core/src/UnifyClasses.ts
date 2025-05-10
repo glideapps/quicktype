@@ -5,7 +5,7 @@ import { type BaseGraphRewriteBuilder, type GraphRewriteBuilder, type TypeLooker
 import { assert, defined, panic } from "./support/Support";
 import { type ClassProperty, type ObjectType, type Type, UnionType } from "./Type/Type";
 import { type TypeBuilder } from "./Type/TypeBuilder";
-import { type TypeRef, derefTypeRef } from "./Type/TypeGraph";
+import { type TypeRef, derefTypeRef } from "./Type/TypeGraphUtils";
 import { assertIsObject } from "./Type/TypeUtils";
 import { TypeRefUnionAccumulator, UnionBuilder } from "./UnionBuilder";
 

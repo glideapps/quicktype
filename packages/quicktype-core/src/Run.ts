@@ -22,7 +22,8 @@ import { type MultiFileRenderResult, type TargetLanguage } from "./TargetLanguag
 import { type TransformedStringTypeKind } from "./Type";
 import { TypeBuilder } from "./Type/TypeBuilder";
 import { type StringTypeMapping } from "./Type/TypeBuilderUtils";
-import { type TypeGraph, noneToAny, optionalToNullable, removeIndirectionIntersections } from "./Type/TypeGraph";
+import { type TypeGraph } from "./Type/TypeGraph";
+import { noneToAny, optionalToNullable, removeIndirectionIntersections } from "./Type/TypeGraphUtils";
 import { type FixMeOptionsType } from "./types";
 
 export function getTargetLanguage(nameOrInstance: LanguageName | TargetLanguage): TargetLanguage {

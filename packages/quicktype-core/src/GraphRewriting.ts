@@ -6,15 +6,15 @@ import { type ClassProperty, type MaybeTypeIdentity, type PrimitiveTypeKind, typ
 // eslint-disable-next-line import/no-cycle
 import { TypeBuilder } from "./Type/TypeBuilder";
 import { type StringTypeMapping } from "./Type/TypeBuilderUtils";
+import { type TypeGraph } from "./Type/TypeGraph";
 import {
-    type TypeGraph,
     type TypeRef,
     assertTypeRefGraph,
     derefTypeRef,
     isTypeRef,
     typeAndAttributesForTypeRef,
     typeRefIndex
-} from "./Type/TypeGraph";
+} from "./Type/TypeGraphUtils";
 import { combineTypeAttributesOfTypes } from "./Type/TypeUtils";
 
 export interface TypeLookerUp {

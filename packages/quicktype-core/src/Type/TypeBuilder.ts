@@ -44,8 +44,8 @@ import {
     unionTypeIdentity
 } from "./Type";
 import { type StringTypeMapping, stringTypeMappingGet } from "./TypeBuilderUtils";
-// eslint-disable-next-line import/no-cycle
-import { TypeGraph, type TypeRef, assertTypeRefGraph, derefTypeRef, makeTypeRef, typeRefIndex } from "./TypeGraph";
+import { TypeGraph } from "./TypeGraph";
+import { type TypeRef, assertTypeRefGraph, derefTypeRef, makeTypeRef, typeRefIndex } from "./TypeGraphUtils";
 
 // FIXME: Don't infer provenance.  All original types should be present in
 // non-inferred form in the final graph.
