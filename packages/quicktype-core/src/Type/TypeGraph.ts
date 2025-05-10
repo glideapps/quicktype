@@ -2,6 +2,7 @@ import { mapMap, setSubtract, setUnionManyInto } from "collection-utils";
 
 import { type TypeAttributeKind, type TypeAttributes, emptyTypeAttributes } from "../attributes/TypeAttributes";
 import { Graph } from "../Graph";
+// eslint-disable-next-line import/no-cycle
 import { type BaseGraphRewriteBuilder, GraphRemapBuilder, GraphRewriteBuilder } from "../GraphRewriting";
 import { messageError } from "../Messages";
 import { assert, defined, mustNotHappen } from "../support/Support";
@@ -163,6 +164,7 @@ export class TypeGraph {
 
     public get topLevels(): ReadonlyMap<string, Type> {
         assert(this.isFrozen, "Cannot get top-levels from a non-frozen graph");
+
         return this._topLevels;
     }
 
@@ -180,6 +182,7 @@ export class TypeGraph {
         }
 
         const t = this.typeAtIndex(index);
+
         return [t, defined(this._attributeStore).attributesForType(t)];
     }
 
@@ -188,7 +191,10 @@ export class TypeGraph {
         let types: Type[] = [];
 
         function addFromType(t: Type): void {
-            if (seen.has(t)) return;
+            if (seen.has(t)) {
+                return;
+            }
+						
             seen.add(t);
 
             const required = predicate === undefined || predicate(t);
@@ -215,6 +221,7 @@ export class TypeGraph {
 
     public allNamedTypesSeparated(): SeparatedNamedTypes {
         const types = this.allNamedTypes();
+
         return separateNamedTypes(types);
     }
 
@@ -229,6 +236,7 @@ export class TypeGraph {
         });
         const result = new Set<number>();
         setUnionManyInto(result, sets);
+
         return result;
     }
 
@@ -237,7 +245,9 @@ export class TypeGraph {
     }
 
     private checkLostTypeAttributes(builder: BaseGraphRewriteBuilder, newGraph: TypeGraph): void {
-        if (!this._haveProvenanceAttributes || builder.lostTypeAttributes) return;
+        if (!this._haveProvenanceAttributes || builder.lostTypeAttributes) {
+            return;
+        }
 
         const oldProvenance = this.allProvenance();
         const newProvenance = newGraph.allProvenance();
@@ -249,7 +259,9 @@ export class TypeGraph {
     }
 
     private printRewrite(title: string): void {
-        if (!this._printOnRewrite) return;
+        if (!this._printOnRewrite) {
+            return;
+        }
 
         console.log(`\n# ${title}`);
     }
@@ -271,7 +283,9 @@ export class TypeGraph {
     ): TypeGraph {
         this.printRewrite(title);
 
-        if (!force && replacementGroups.length === 0) return this;
+        if (!force && replacementGroups.length === 0) {
+            return this;
+        }
 
         const builder = new GraphRewriteBuilder(
             this,
@@ -291,7 +305,9 @@ export class TypeGraph {
             newGraph.printGraph();
         }
 
-        if (!builder.didAddForwardingIntersection) return newGraph;
+        if (!builder.didAddForwardingIntersection) {
+            return newGraph;
+        }
 
         return removeIndirectionIntersections(newGraph, stringTypeMapping, debugPrintReconstitution);
     }
@@ -306,7 +322,9 @@ export class TypeGraph {
     ): TypeGraph {
         this.printRewrite(title);
 
-        if (!force && map.size === 0) return this;
+        if (!force && map.size === 0) {
+            return this;
+        }
 
         const builder = new GraphRemapBuilder(
             this,
@@ -339,6 +357,7 @@ export class TypeGraph {
             debugPrintReconstitution,
             true
         );
+
         return newGraph;
     }
 
