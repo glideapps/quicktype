@@ -17,9 +17,9 @@ import {
     UnionType,
     isPrimitiveTypeKind
 } from "./Type";
-import { type TypeBuilder } from "./TypeBuilder";
-import { type TypeRef } from "./TypeGraph";
-import { matchTypeExhaustive } from "./TypeUtils";
+import { type TypeBuilder } from "./Type/TypeBuilder";
+import { type TypeRef } from "./Type/TypeGraph";
+import { matchTypeExhaustive } from "./Type/TypeUtils";
 
 // FIXME: This interface is badly designed.  All the properties
 // should use immutable types, and getMemberKinds should be

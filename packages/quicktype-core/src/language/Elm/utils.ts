@@ -11,7 +11,7 @@ import {
     splitIntoWords
 } from "../../support/Strings";
 import { type ClassProperty, UnionType } from "../../Type";
-import { nullableFromUnion } from "../../TypeUtils";
+import { nullableFromUnion } from "../../Type/TypeUtils";
 
 const legalizeName = legalizeCharacters(cp => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp));
 

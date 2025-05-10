@@ -9,7 +9,7 @@ import { camelCase, fastIsUpperCase, repeatString, stringEscape } from "../../su
 import { assert, defined } from "../../support/Support";
 import { type TargetLanguage } from "../../TargetLanguage";
 import { ArrayType, type ClassProperty, ClassType, EnumType, MapType, Type, UnionType } from "../../Type";
-import { isAnyOrNull, matchType, nullableFromUnion } from "../../TypeUtils";
+import { isAnyOrNull, matchType, nullableFromUnion } from "../../Type/TypeUtils";
 
 import { forbiddenPropertyNames, keywords } from "./constants";
 import { type objectiveCOptions } from "./language";

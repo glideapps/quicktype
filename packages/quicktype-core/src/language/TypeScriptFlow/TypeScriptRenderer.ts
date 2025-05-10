@@ -2,7 +2,7 @@ import { type Name } from "../../Naming";
 import { type Sourcelike, modifySource } from "../../Source";
 import { camelCase, utf16StringEscape } from "../../support/Strings";
 import { type ClassType, type EnumType, type Type } from "../../Type";
-import { isNamedType } from "../../TypeUtils";
+import { isNamedType } from "../../Type/TypeUtils";
 import { type JavaScriptTypeAnnotations } from "../JavaScript";
 
 import { TypeScriptFlowBaseRenderer } from "./TypeScriptFlowBaseRenderer";

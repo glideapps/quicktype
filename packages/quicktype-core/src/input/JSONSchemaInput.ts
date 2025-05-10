@@ -48,8 +48,8 @@ import {
     isNumberTypeKind,
     transformedStringTypeTargetTypeKindsMap
 } from "../Type";
-import { type TypeBuilder } from "../TypeBuilder";
-import { type TypeRef } from "../TypeGraph";
+import { type TypeBuilder } from "../Type/TypeBuilder";
+import { type TypeRef } from "../Type/TypeGraph";
 
 import { type Input } from "./Inputs";
 import { type JSONSchema, JSONSchemaStore } from "./JSONSchemaStore";

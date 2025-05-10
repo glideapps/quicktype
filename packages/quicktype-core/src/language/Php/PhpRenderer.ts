@@ -10,7 +10,7 @@ import { acronymStyle } from "../../support/Acronyms";
 import { defined } from "../../support/Support";
 import { type TargetLanguage } from "../../TargetLanguage";
 import { type ClassProperty, type ClassType, type EnumType, type Type, type UnionType } from "../../Type";
-import { directlyReachableSingleNamedType, matchType, nullableFromUnion } from "../../TypeUtils";
+import { directlyReachableSingleNamedType, matchType, nullableFromUnion } from "../../Type/TypeUtils";
 
 import { type phpOptions } from "./language";
 import { phpNameStyle, stringEscape } from "./utils";

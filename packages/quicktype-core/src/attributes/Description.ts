@@ -15,7 +15,7 @@ import {
 } from "../input/JSONSchemaInput";
 import { type JSONSchema } from "../input/JSONSchemaStore";
 import { type PathElement, PathElementKind } from "../input/PathElement";
-import { type Type } from "../Type";
+import { type Type } from "../Type/Type";
 
 import { TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
 

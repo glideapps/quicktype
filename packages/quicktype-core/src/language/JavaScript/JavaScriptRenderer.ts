@@ -19,7 +19,7 @@ import {
 import { panic } from "../../support/Support";
 import { type TargetLanguage } from "../../TargetLanguage";
 import { type ClassProperty, type ClassType, type ObjectType, type Type } from "../../Type";
-import { directlyReachableSingleNamedType, matchType } from "../../TypeUtils";
+import { directlyReachableSingleNamedType, matchType } from "../../Type/TypeUtils";
 
 import { type javaScriptOptions } from "./language";
 import { isES3IdentifierStart } from "./unicodeMaps";

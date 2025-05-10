@@ -20,8 +20,9 @@ import { type Comment } from "./support/Comments";
 import { assert } from "./support/Support";
 import { type MultiFileRenderResult, type TargetLanguage } from "./TargetLanguage";
 import { type TransformedStringTypeKind } from "./Type";
-import { type StringTypeMapping, TypeBuilder } from "./TypeBuilder";
-import { type TypeGraph, noneToAny, optionalToNullable, removeIndirectionIntersections } from "./TypeGraph";
+import { TypeBuilder } from "./Type/TypeBuilder";
+import { type StringTypeMapping } from "./Type/TypeBuilderUtils";
+import { type TypeGraph, noneToAny, optionalToNullable, removeIndirectionIntersections } from "./Type/TypeGraph";
 import { type FixMeOptionsType } from "./types";
 
 export function getTargetLanguage(nameOrInstance: LanguageName | TargetLanguage): TargetLanguage {

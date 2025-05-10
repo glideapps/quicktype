@@ -10,7 +10,7 @@ import { defined, panic } from "../../support/Support";
 import { type TargetLanguage } from "../../TargetLanguage";
 import { followTargetType } from "../../Transformers";
 import { type ClassProperty, ClassType, EnumType, type Type, UnionType } from "../../Type";
-import { matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
+import { matchType, nullableFromUnion, removeNullFromUnion } from "../../Type/TypeUtils";
 
 import { forbiddenPropertyNames, forbiddenTypeNames } from "./constants";
 import { type pythonOptions } from "./language";

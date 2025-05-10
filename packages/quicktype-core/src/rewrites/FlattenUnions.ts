@@ -4,10 +4,10 @@ import { emptyTypeAttributes } from "../attributes/TypeAttributes";
 import { type GraphRewriteBuilder } from "../GraphRewriting";
 import { messageAssert } from "../Messages";
 import { assert } from "../support/Support";
-import { IntersectionType, type Type, UnionType } from "../Type";
-import { type StringTypeMapping } from "../TypeBuilder";
-import { type TypeGraph, type TypeRef, derefTypeRef } from "../TypeGraph";
-import { makeGroupsToFlatten } from "../TypeUtils";
+import { IntersectionType, type Type, UnionType } from "../Type/Type";
+import { type StringTypeMapping } from "../Type/TypeBuilderUtils";
+import { type TypeGraph, type TypeRef, derefTypeRef } from "../Type/TypeGraph";
+import { makeGroupsToFlatten } from "../Type/TypeUtils";
 import { UnifyUnionBuilder, unifyTypes } from "../UnifyClasses";
 
 export function flattenUnions(

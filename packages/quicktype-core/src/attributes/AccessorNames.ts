@@ -11,7 +11,7 @@ import { type JSONSchemaAttributes, type JSONSchemaType, type Ref } from "../inp
 import { type JSONSchema } from "../input/JSONSchemaStore";
 import { messageAssert } from "../Messages";
 import { checkArray, checkStringMap, defined, isStringMap } from "../support/Support";
-import { type EnumType, type ObjectType, type Type, type UnionType } from "../Type";
+import { type EnumType, type ObjectType, type Type, type UnionType } from "../Type/Type";
 
 import { TypeAttributeKind, type TypeAttributes } from "./TypeAttributes";
 

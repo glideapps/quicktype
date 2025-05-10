@@ -5,7 +5,7 @@ import { type OptionValues } from "../../RendererOptions";
 import { type Sourcelike } from "../../Source";
 import { type TargetLanguage } from "../../TargetLanguage";
 import { ArrayType, ClassType, EnumType, MapType, PrimitiveType, type Type, UnionType } from "../../Type";
-import { matchType, nullableFromUnion } from "../../TypeUtils";
+import { matchType, nullableFromUnion } from "../../Type/TypeUtils";
 
 import { forbiddenModuleNames, reservedWords } from "./constants";
 import { type elixirOptions } from "./language";
