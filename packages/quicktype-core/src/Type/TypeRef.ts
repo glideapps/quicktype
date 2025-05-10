@@ -3,7 +3,7 @@ import { type BaseGraphRewriteBuilder } from "../GraphRewriting";
 import { assert } from "../support/Support";
 
 import { type Type } from "./Type";
-import { TypeGraph } from "./TypeGraph";
+import { type TypeGraph } from "./TypeGraph";
 
 const indexBits = 26;
 const indexMask = (1 << indexBits) - 1;
@@ -33,11 +33,12 @@ export function assertTypeRefGraph(tref: TypeRef, graph: TypeGraph): void {
 }
 
 function getGraph(graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder): TypeGraph {
-    if (graphOrBuilder instanceof TypeGraph) {
-        return graphOrBuilder;
+    if ("originalGraph" in graphOrBuilder) {
+        return graphOrBuilder.originalGraph;
     }
-		
-    return graphOrBuilder.originalGraph;
+
+		// do not use `graphOrBuilder instanceof TypeGraph` to check if is TypeGraph to prevent import cycle
+    return graphOrBuilder;
 }
 
 export function derefTypeRef(tref: TypeRef, graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder): Type {

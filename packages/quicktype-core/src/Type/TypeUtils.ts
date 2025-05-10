@@ -10,7 +10,6 @@ import {
 import { assert, assertNever, defined, panic } from "../support/Support";
 
 import { isPrimitiveStringTypeKind } from "./TransformedStringType";
-// eslint-disable-next-line import/no-cycle
 import {
     ArrayType,
     type ClassProperty,
