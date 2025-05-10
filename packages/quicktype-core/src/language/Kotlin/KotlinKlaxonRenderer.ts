@@ -16,7 +16,7 @@ import {
     type Type,
     UnionType
 } from "../../Type";
-import { matchType, nullableFromUnion } from "../../TypeUtils";
+import { matchType, nullableFromUnion } from "../../Type/TypeUtils";
 
 import { KotlinRenderer } from "./KotlinRenderer";
 import { type kotlinOptions } from "./language";

@@ -9,7 +9,7 @@ import { capitalize } from "../../support/Strings";
 import { assert, assertNever, defined } from "../../support/Support";
 import { type TargetLanguage } from "../../TargetLanguage";
 import { ArrayType, type ClassProperty, ClassType, EnumType, MapType, type Type, UnionType } from "../../Type";
-import { directlyReachableSingleNamedType, matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
+import { directlyReachableSingleNamedType, matchType, nullableFromUnion, removeNullFromUnion } from "../../Type/TypeUtils";
 
 import { javaKeywords } from "./constants";
 import { Java8DateTimeProvider, type JavaDateTimeProvider, JavaLegacyDateTimeProvider } from "./DateTimeProvider";

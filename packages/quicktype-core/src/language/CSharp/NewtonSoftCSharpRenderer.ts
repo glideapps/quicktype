@@ -29,7 +29,7 @@ import {
     transformationForType
 } from "../../Transformers";
 import { ArrayType, type ClassProperty, ClassType, EnumType, type Type, UnionType } from "../../Type";
-import { nullableFromUnion } from "../../TypeUtils";
+import { nullableFromUnion } from "../../Type/TypeUtils";
 
 import { CSharpRenderer } from "./CSharpRenderer";
 import { type newtonsoftCSharpOptions } from "./language";

@@ -10,9 +10,9 @@ import {
     UnionType,
     transformedStringTypeTargetTypeKindsMap
 } from "../Type";
-import { type TypeBuilder } from "../TypeBuilder";
-import { type TypeRef, derefTypeRef } from "../TypeGraph";
-import { nullableFromUnion } from "../TypeUtils";
+import { type TypeBuilder } from "../Type/TypeBuilder";
+import { type TypeRef, derefTypeRef } from "../Type/TypeRef";
+import { nullableFromUnion } from "../Type/TypeUtils";
 import { UnionAccumulator, UnionBuilder } from "../UnionBuilder";
 
 import { type CompressedJSON, Tag, type Value, valueTag } from "./CompressedJSON";

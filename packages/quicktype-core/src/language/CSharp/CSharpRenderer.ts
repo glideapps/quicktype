@@ -10,7 +10,7 @@ import { assert } from "../../support/Support";
 import { type TargetLanguage } from "../../TargetLanguage";
 import { followTargetType } from "../../Transformers";
 import { type ClassProperty, type ClassType, type EnumType, type Type, type UnionType } from "../../Type";
-import { directlyReachableSingleNamedType, matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
+import { directlyReachableSingleNamedType, matchType, nullableFromUnion, removeNullFromUnion } from "../../Type/TypeUtils";
 
 import { type cSharpOptions } from "./language";
 import {

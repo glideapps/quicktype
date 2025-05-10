@@ -10,7 +10,7 @@ import { decapitalize, stringEscape } from "../../support/Strings";
 import { defined } from "../../support/Support";
 import { type TargetLanguage } from "../../TargetLanguage";
 import { type ClassProperty, type ClassType, type EnumType, type Type, type UnionType } from "../../Type";
-import { matchType, nullableFromUnion } from "../../TypeUtils";
+import { matchType, nullableFromUnion } from "../../Type/TypeUtils";
 
 import { forbiddenNames } from "./constants";
 import { type elmOptions } from "./language";

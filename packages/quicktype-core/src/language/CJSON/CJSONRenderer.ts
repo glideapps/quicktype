@@ -13,7 +13,7 @@ import { type NamingStyle, allUpperWordStyle, makeNameStyle } from "../../suppor
 import { assert, assertNever, defined, numberEnumValues, panic } from "../../support/Support";
 import { type TargetLanguage } from "../../TargetLanguage";
 import { ArrayType, ClassType, EnumType, MapType, type Type, UnionType } from "../../Type";
-import { matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
+import { matchType, nullableFromUnion, removeNullFromUnion } from "../../Type/TypeUtils";
 
 import { keywords } from "./constants";
 import { type cJSONOptions } from "./language";

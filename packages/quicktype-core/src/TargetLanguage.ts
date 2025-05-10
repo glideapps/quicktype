@@ -7,9 +7,9 @@ import { type Option, type OptionDefinition } from "./RendererOptions";
 import { type SerializedRenderResult, serializeRenderResult } from "./Source";
 import { type Comment } from "./support/Comments";
 import { defined } from "./support/Support";
-import { type Type } from "./Type";
-import { type StringTypeMapping } from "./TypeBuilder";
-import { type TypeGraph } from "./TypeGraph";
+import { type Type } from "./Type/Type";
+import { type StringTypeMapping } from "./Type/TypeBuilderUtils";
+import { type TypeGraph } from "./Type/TypeGraph";
 import { type FixMeOptionsType } from "./types";
 
 export type MultiFileRenderResult = ReadonlyMap<string, SerializedRenderResult>;

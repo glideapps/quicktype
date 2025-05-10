@@ -8,7 +8,7 @@ import { camelCase, stringEscape } from "../../support/Strings";
 import { assert, defined } from "../../support/Support";
 import { type TargetLanguage } from "../../TargetLanguage";
 import { type ClassProperty, type ClassType, type EnumType, type Type, type TypeKind, UnionType } from "../../Type";
-import { matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
+import { matchType, nullableFromUnion, removeNullFromUnion } from "../../Type/TypeUtils";
 
 import { type goOptions } from "./language";
 import { canOmitEmpty, compoundTypeKinds, isValueType, namingFunction, primitiveValueTypeKinds } from "./utils";

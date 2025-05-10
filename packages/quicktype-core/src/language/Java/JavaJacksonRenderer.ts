@@ -5,7 +5,7 @@ import { type Sourcelike } from "../../Source";
 import { assertNever, panic } from "../../support/Support";
 import { type TargetLanguage } from "../../TargetLanguage";
 import { ArrayType, type ClassProperty, ClassType, EnumType, type Type, type TypeKind, UnionType } from "../../Type";
-import { removeNullFromUnion } from "../../TypeUtils";
+import { removeNullFromUnion } from "../../Type/TypeUtils";
 
 import { JavaRenderer } from "./JavaRenderer";
 import { type javaOptions } from "./language";

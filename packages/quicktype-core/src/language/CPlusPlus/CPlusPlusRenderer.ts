@@ -27,7 +27,7 @@ import {
     matchType,
     nullableFromUnion,
     removeNullFromUnion
-} from "../../TypeUtils";
+} from "../../Type/TypeUtils";
 
 import { keywords } from "./constants";
 import { type cPlusPlusOptions } from "./language";

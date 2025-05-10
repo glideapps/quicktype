@@ -27,7 +27,7 @@ import {
     SetOperationType,
     type Type
 } from "../../Type";
-import { matchType } from "../../TypeUtils";
+import { matchType } from "../../Type/TypeUtils";
 import { legalizeName } from "../JavaScript/utils";
 
 import { type typeScriptZodOptions } from "./language";

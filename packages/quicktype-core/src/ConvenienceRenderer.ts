@@ -32,8 +32,8 @@ import {
     type TypeKind,
     UnionType
 } from "./Type";
-import { TypeAttributeStoreView } from "./TypeGraph";
-import { isNamedType, matchTypeExhaustive, nullableFromUnion, separateNamedTypes } from "./TypeUtils";
+import { TypeAttributeStoreView } from "./Type/TypeGraph";
+import { isNamedType, matchTypeExhaustive, nullableFromUnion, separateNamedTypes } from "./Type/TypeUtils";
 
 const wordWrap: (s: string) => string = _wordwrap(90);
 

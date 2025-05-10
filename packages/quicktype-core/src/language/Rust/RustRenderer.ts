@@ -10,7 +10,7 @@ import { type Sourcelike, maybeAnnotated } from "../../Source";
 import { defined } from "../../support/Support";
 import { type TargetLanguage } from "../../TargetLanguage";
 import { type ClassType, type EnumType, type Type, UnionType } from "../../Type";
-import { matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
+import { matchType, nullableFromUnion, removeNullFromUnion } from "../../Type/TypeUtils";
 
 import { keywords } from "./constants";
 import { type rustOptions } from "./language";

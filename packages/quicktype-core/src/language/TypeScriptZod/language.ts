@@ -2,7 +2,7 @@ import { type RenderContext } from "../../Renderer";
 import { BooleanOption, getOptionValues } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
 import { type PrimitiveStringTypeKind, type TransformedStringTypeKind } from "../../Type";
-import { type StringTypeMapping } from "../../TypeBuilder";
+import { type StringTypeMapping } from "../../Type/TypeBuilderUtils";
 import { type FixMeOptionsType } from "../../types";
 
 import { TypeScriptZodRenderer } from "./TypeScriptZodRenderer";

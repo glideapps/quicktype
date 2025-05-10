@@ -24,7 +24,7 @@ import {
     PrimitiveType,
     type Type
 } from "../../Type";
-import { directlyReachableSingleNamedType, matchType } from "../../TypeUtils";
+import { directlyReachableSingleNamedType, matchType } from "../../Type/TypeUtils";
 import { isES3IdentifierStart } from "../JavaScript/unicodeMaps";
 import { legalizeName } from "../JavaScript/utils";
 

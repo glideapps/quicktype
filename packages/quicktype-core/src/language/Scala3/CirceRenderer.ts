@@ -1,7 +1,7 @@
 import { type Name } from "../../Naming";
 import { type Sourcelike } from "../../Source";
 import { type ArrayType, type ClassType, type EnumType, type MapType, type Type, type UnionType } from "../../Type";
-import { matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
+import { matchType, nullableFromUnion, removeNullFromUnion } from "../../Type/TypeUtils";
 
 import { Scala3Renderer } from "./Scala3Renderer";
 import { wrapOption } from "./utils";

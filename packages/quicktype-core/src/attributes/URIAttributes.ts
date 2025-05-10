@@ -4,7 +4,7 @@ import URI from "urijs";
 import { type JSONSchemaAttributes, type JSONSchemaType, type Ref } from "../input/JSONSchemaInput";
 import { type JSONSchema } from "../input/JSONSchemaStore";
 import { checkArray, checkString } from "../support/Support";
-import { type Type } from "../Type";
+import { type Type } from "../Type/Type";
 
 import { TypeAttributeKind, type TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 

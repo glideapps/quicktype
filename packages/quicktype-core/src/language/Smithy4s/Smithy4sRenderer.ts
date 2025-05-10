@@ -15,7 +15,7 @@ import {
     type Type,
     type UnionType
 } from "../../Type";
-import { matchCompoundType, matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
+import { matchCompoundType, matchType, nullableFromUnion, removeNullFromUnion } from "../../Type/TypeUtils";
 
 import { keywords } from "./constants";
 import { type smithyOptions } from "./language";

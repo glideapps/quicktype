@@ -33,9 +33,11 @@ import {
     isNumberTypeKind,
     isPrimitiveTypeKind
 } from "../Type";
-import { type StringTypeMapping, type TypeBuilder } from "../TypeBuilder";
-import { type TypeGraph, type TypeRef } from "../TypeGraph";
-import { makeGroupsToFlatten, matchTypeExhaustive, setOperationMembersRecursively } from "../TypeUtils";
+import { type TypeBuilder } from "../Type/TypeBuilder";
+import { type StringTypeMapping } from "../Type/TypeBuilderUtils";
+import { type TypeGraph } from "../Type/TypeGraph";
+import { type TypeRef } from "../Type/TypeRef";
+import { makeGroupsToFlatten, matchTypeExhaustive, setOperationMembersRecursively } from "../Type/TypeUtils";
 import { type TypeAttributeMap, UnionBuilder, type UnionTypeProvider } from "../UnionBuilder";
 
 function canResolve(t: IntersectionType): boolean {

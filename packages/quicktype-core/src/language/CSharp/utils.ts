@@ -13,7 +13,7 @@ import {
 import { panic } from "../../support/Support";
 import { type Transformation } from "../../Transformers";
 import { ArrayType, EnumType, type PrimitiveType, type Type, UnionType } from "../../Type";
-import { nullableFromUnion } from "../../TypeUtils";
+import { nullableFromUnion } from "../../Type/TypeUtils";
 
 import { keywords } from "./constants";
 

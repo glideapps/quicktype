@@ -20,7 +20,7 @@ import {
     type TypeKind,
     type UnionType
 } from "../../Type";
-import { matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
+import { matchType, nullableFromUnion, removeNullFromUnion } from "../../Type/TypeUtils";
 
 import { keywords } from "./constants";
 import { type swiftOptions } from "./language";

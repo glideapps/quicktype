@@ -4,9 +4,10 @@ import { type GraphRewriteBuilder } from "../GraphRewriting";
 import { type MarkovChain, evaluate, load } from "../MarkovChain";
 import { defined, panic } from "../support/Support";
 import { type ClassProperty, ClassType, type Type, isPrimitiveStringTypeKind, setOperationCasesEqual } from "../Type";
-import { type StringTypeMapping } from "../TypeBuilder";
-import { type TypeGraph, type TypeRef } from "../TypeGraph";
-import { removeNullFromType } from "../TypeUtils";
+import { type StringTypeMapping } from "../Type/TypeBuilderUtils";
+import { type TypeGraph } from "../Type/TypeGraph";
+import { type TypeRef } from "../Type/TypeRef";
+import { removeNullFromType } from "../Type/TypeUtils";
 import { unifyTypes, unionBuilderForUnification } from "../UnifyClasses";
 
 const mapSizeThreshold = 20;

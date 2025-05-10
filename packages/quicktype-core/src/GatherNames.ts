@@ -4,9 +4,9 @@ import * as pluralize from "pluralize";
 import { TooManyTypeNames, TypeNames, namesTypeAttributeKind, tooManyNamesThreshold } from "./attributes/TypeNames";
 import { assert, defined, panic } from "./support/Support";
 import { transformationForType } from "./Transformers";
-import { ObjectType, type Type } from "./Type";
-import { type TypeGraph } from "./TypeGraph";
-import { matchCompoundType, nullableFromUnion } from "./TypeUtils";
+import { ObjectType, type Type } from "./Type/Type";
+import { type TypeGraph } from "./Type/TypeGraph";
+import { matchCompoundType, nullableFromUnion } from "./Type/TypeUtils";
 
 class UniqueQueue<T> {
     private readonly _present = new Set<T>();

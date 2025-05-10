@@ -1,14 +1,15 @@
 import { EqualityMap, iterableFirst, setFilter, setSortBy, setUnion } from "collection-utils";
 
-// eslint-disable-next-line import/no-cycle
-import { type StringTypes, stringTypesTypeAttributeKind } from "./attributes/StringTypes";
+import { type StringTypes, stringTypesTypeAttributeKind } from "../attributes/StringTypes";
 import {
     type CombinationKind,
     type TypeAttributes,
     combineTypeAttributes,
     emptyTypeAttributes
-} from "./attributes/TypeAttributes";
-import { assert, assertNever, defined, panic } from "./support/Support";
+} from "../attributes/TypeAttributes";
+import { assert, assertNever, defined, panic } from "../support/Support";
+
+import { isPrimitiveStringTypeKind } from "./TransformedStringType";
 import {
     ArrayType,
     type ClassProperty,
@@ -19,8 +20,7 @@ import {
     type PrimitiveType,
     type SetOperationType,
     type Type,
-    UnionType,
-    isPrimitiveStringTypeKind
+    UnionType
 } from "./Type";
 
 export function assertIsObject(t: Type): ObjectType {
