@@ -337,7 +337,7 @@ class JSONFixture extends LanguageFixture {
             _.find(prioritySamples, p => p.endsWith(`/priority/combinations${n}.json`))
         );
         if (combinationInputs.some(p => p === undefined)) {
-            return failWith("priority/combinations[1234].json samples not found", prioritySamples);
+            return failWith("priority/combinations[1234].json samples not found", { prioritySamples });
         }
         if (sources.length === 0 && !ONLY_OUTPUT) {
             const quickTestSamples = _.chain(this.language.quickTestRendererOptions)
@@ -348,7 +348,7 @@ class JSONFixture extends LanguageFixture {
                             p.endsWith(`/${filename}`)
                         );
                         if (input === undefined) {
-                            return failWith(`quick-test sample ${filename} not found`, qt);
+                            return failWith(`quick-test sample ${filename} not found`, { qt });
                         }
                         return [
                             {
@@ -771,7 +771,7 @@ class CommandSuccessfulLanguageFixture extends LanguageFixture {
             _.find(prioritySamples, p => p.endsWith(`/priority/combinations${n}.json`))
         );
         if (combinationInputs.some(p => p === undefined)) {
-            return failWith("priority/combinations[1234].json samples not found", prioritySamples);
+            return failWith("priority/combinations[1234].json samples not found", { prioritySamples });
         }
         if (sources.length === 0 && !ONLY_OUTPUT) {
             const quickTestSamples = _.chain(this.language.quickTestRendererOptions)
@@ -782,7 +782,7 @@ class CommandSuccessfulLanguageFixture extends LanguageFixture {
                             p.endsWith(`/${filename}`)
                         );
                         if (input === undefined) {
-                            return failWith(`quick-test sample ${filename} not found`, qt);
+                            return failWith(`quick-test sample ${filename} not found`, { qt });
                         }
                         return [
                             {
