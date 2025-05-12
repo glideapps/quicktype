@@ -11,11 +11,7 @@ import {
 } from "collection-utils";
 
 import { StringTypes, stringTypesTypeAttributeKind } from "../attributes/StringTypes";
-import {
-    type TypeAttributes,
-    combineTypeAttributes,
-    emptyTypeAttributes
-} from "../attributes/TypeAttributes";
+import { type TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "../attributes/TypeAttributes";
 import { assert, defined, panic } from "../support/Support";
 
 import { provenanceTypeAttributeKind } from "./ProvenanceTypeAttributeKind";
@@ -42,11 +38,12 @@ import {
     unionTypeIdentity
 } from "./Type";
 import { type StringTypeMapping, stringTypeMappingGet } from "./TypeBuilderUtils";
-import { TypeGraph } from "./TypeGraph";
+import { type TypeGraph } from "./TypeGraph";
 import { type TypeRef, assertTypeRefGraph, derefTypeRef, makeTypeRef, typeRefIndex } from "./TypeRef";
 
 export class TypeBuilder {
-    public readonly typeGraph: TypeGraph;
+    // @ts-expect-error must manually set TypeGraph
+    private _typeGraph: TypeGraph;
 
     protected readonly topLevels: Map<string, TypeRef> = new Map();
 
@@ -57,7 +54,6 @@ export class TypeBuilder {
     private _addedForwardingIntersection = false;
 
     public constructor(
-        typeGraphSerial: number,
         private readonly _stringTypeMapping: StringTypeMapping,
         public readonly canonicalOrder: boolean,
         private readonly _allPropertiesOptional: boolean,
@@ -68,7 +64,16 @@ export class TypeBuilder {
             !_addProvenanceAttributes || !inheritsProvenanceAttributes,
             "We can't both inherit as well as add provenance"
         );
-        this.typeGraph = new TypeGraph(this, typeGraphSerial, _addProvenanceAttributes || inheritsProvenanceAttributes);
+    }
+
+    public get typeGraph(): TypeGraph {
+        assert(!!this._typeGraph, "TypeBuilder must have a TypeGraph");
+        return this._typeGraph;
+    }
+
+		/** typeGraph must be set externally to prevent import cycle of TypeGraph constructor */
+    public set typeGraph(typeGraph: TypeGraph) {
+        this._typeGraph = typeGraph;
     }
 
     public addTopLevel(name: string, tref: TypeRef): void {

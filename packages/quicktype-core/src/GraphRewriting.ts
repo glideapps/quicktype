@@ -2,7 +2,8 @@ import { EqualityMap, mapMap } from "collection-utils";
 
 import { type TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./attributes/TypeAttributes";
 import { assert, indentationString, panic } from "./support/Support";
-import { type ClassProperty, type MaybeTypeIdentity, type PrimitiveTypeKind, type Type, TypeBuilder } from "./Type";
+import { type ClassProperty, type MaybeTypeIdentity, type PrimitiveTypeKind, type Type } from "./Type";
+import { TypeBuilder } from "./Type/TypeBuilder";
 import { type StringTypeMapping } from "./Type/TypeBuilderUtils";
 import { type TypeGraph } from "./Type/TypeGraph";
 import {
@@ -228,7 +229,6 @@ export abstract class BaseGraphRewriteBuilder extends TypeBuilder implements Typ
         protected readonly debugPrint: boolean
     ) {
         super(
-            originalGraph.serial + 1,
             stringTypeMapping,
             alphabetizeProperties,
             false,

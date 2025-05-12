@@ -22,7 +22,7 @@ import { type MultiFileRenderResult, type TargetLanguage } from "./TargetLanguag
 import { type TransformedStringTypeKind } from "./Type";
 import { TypeBuilder } from "./Type/TypeBuilder";
 import { type StringTypeMapping } from "./Type/TypeBuilderUtils";
-import { type TypeGraph } from "./Type/TypeGraph";
+import { TypeGraph } from "./Type/TypeGraph";
 import { noneToAny, optionalToNullable, removeIndirectionIntersections } from "./Type/TypeGraphUtils";
 import { type FixMeOptionsType } from "./types";
 
@@ -291,13 +291,13 @@ class Run implements RunContext {
         const stringTypeMapping = this.stringTypeMapping;
         const conflateNumbers = !targetLanguage.supportsUnionsWithBothNumberTypes;
         const typeBuilder = new TypeBuilder(
-            0,
             stringTypeMapping,
             this._options.alphabetizeProperties,
             this._options.allPropertiesOptional,
             this._options.checkProvenance,
             false
         );
+				typeBuilder.typeGraph = new TypeGraph(typeBuilder, 0, this._options.checkProvenance);
 
         return { targetLanguage, stringTypeMapping, conflateNumbers, typeBuilder };
     }

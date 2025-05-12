@@ -295,6 +295,7 @@ export class TypeGraph {
             debugPrintReconstitution,
             replacer
         );
+				builder.typeGraph = new TypeGraph(builder, this.serial + 1, this._haveProvenanceAttributes);
         const newGraph = builder.finish();
 
         this.checkLostTypeAttributes(builder, newGraph);
@@ -333,6 +334,7 @@ export class TypeGraph {
             map,
             debugPrintRemapping
         );
+				builder.typeGraph = new TypeGraph(builder, this.serial + 1, this._haveProvenanceAttributes);
         const newGraph = builder.finish();
 
         this.checkLostTypeAttributes(builder, newGraph);
