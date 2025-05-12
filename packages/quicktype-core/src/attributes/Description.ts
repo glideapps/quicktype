@@ -8,19 +8,14 @@ import {
     setUnionManyInto
 } from "collection-utils";
 
-// There's a cyclic import here. Ignoring now because it requires a large refactor.
-// skipcq: JS-E1008
-// FIXME: This is a circular import
-// eslint-disable-next-line import/no-cycle
 import {
     type JSONSchemaAttributes,
     type JSONSchemaType,
-    type PathElement,
-    PathElementKind,
     type Ref
 } from "../input/JSONSchemaInput";
 import { type JSONSchema } from "../input/JSONSchemaStore";
-import { type Type } from "../Type";
+import { type PathElement, PathElementKind } from "../input/PathElement";
+import { type Type } from "../Type/Type";
 
 import { TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
 

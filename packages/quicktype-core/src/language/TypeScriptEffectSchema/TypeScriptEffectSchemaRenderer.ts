@@ -19,7 +19,7 @@ import {
 import { panic } from "../../support/Support";
 import { type TargetLanguage } from "../../TargetLanguage";
 import { ArrayType, type ClassProperty, EnumType, MapType, type ObjectType, type Type } from "../../Type";
-import { matchType } from "../../TypeUtils";
+import { matchType } from "../../Type/TypeUtils";
 import { legalizeName } from "../JavaScript/utils";
 
 import { type typeScriptEffectSchemaOptions } from "./language";
@@ -76,12 +76,15 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
 
     protected emitImports(): void {
         this.ensureBlankLine();
-        this.emitLine(this.importStatement("* as S", '"@effect/schema/Schema"'));
+        this.emitLine(this.importStatement("* as S", '"effect/Schema"'));
     }
 
     private typeMapTypeForProperty(p: ClassProperty): Sourcelike {
-        const typeMap = this.typeMapTypeFor(p.type);
-        return p.isOptional ? ["S.optional(", typeMap, ")"] : typeMap;
+        if (!p.isOptional) {
+            return this.typeMapTypeFor(p.type);
+        }
+
+        return ["S.optional(", this.typeMapTypeFor(p.type), ")"];
     }
 
     private typeMapTypeFor(t: Type, required: boolean = true): Sourcelike {
@@ -104,13 +107,25 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
             _stringType => "S.String",
             arrayType => ["S.Array(", this.typeMapTypeFor(arrayType.items, false), ")"],
             _classType => panic("Should already be handled."),
-            _mapType => ["S.Record(S.String, ", this.typeMapTypeFor(_mapType.values, false), ")"],
+            _mapType => ["S.Record({ key: S.String, value: ", this.typeMapTypeFor(_mapType.values, false), "})"],
             _enumType => panic("Should already be handled."),
             unionType => {
-                const children = Array.from(unionType.getChildren()).map((type: Type) =>
-                    this.typeMapTypeFor(type, false)
-                );
-                return ["S.Union(", ...arrayIntercalate(", ", children), ")"];
+                const types = Array.from(unionType.getChildren());
+                let children: Sourcelike[] = [];
+                let nullable = false;
+                for (const type of types) {
+                    if (type.kind === "null") {
+                        nullable = true;
+                    } else {
+                        children.push(this.typeMapTypeFor(type, false));
+                    }
+                }
+
+                if (nullable && children.length === 1) {
+                    return ["S.NullOr(", children[0], ")"];
+                }
+
+                return ["S.Union(", ...arrayIntercalate(", ", children), nullable ? ", S.Null)" : ")"];
             },
             _transformedStringType => {
                 return "S.String";

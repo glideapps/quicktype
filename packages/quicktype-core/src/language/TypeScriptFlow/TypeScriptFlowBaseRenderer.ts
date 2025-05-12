@@ -6,7 +6,7 @@ import { camelCase, utf16StringEscape } from "../../support/Strings";
 import { panic } from "../../support/Support";
 import { type TargetLanguage } from "../../TargetLanguage";
 import { ArrayType, type ClassType, EnumType, type Type, UnionType } from "../../Type";
-import { matchType, nullableFromUnion } from "../../TypeUtils";
+import { matchType, nullableFromUnion } from "../../Type/TypeUtils";
 import { JavaScriptRenderer, type JavaScriptTypeAnnotations } from "../JavaScript";
 
 import { type tsFlowOptions } from "./language";

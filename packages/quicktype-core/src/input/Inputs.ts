@@ -7,7 +7,7 @@ import { messageError } from "../Messages";
 import { type RunContext } from "../Run";
 import { defined, errorMessage, panic } from "../support/Support";
 import { type TargetLanguage } from "../TargetLanguage";
-import { type TypeBuilder } from "../TypeBuilder";
+import { type TypeBuilder } from "../Type/TypeBuilder";
 import { type LanguageName } from "../types";
 
 import { type CompressedJSON, CompressedJSONFromString, type Value } from "./CompressedJSON";

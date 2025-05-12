@@ -17,7 +17,7 @@ import {
     transformationForType
 } from "../../Transformers";
 import { type ClassType, type Type } from "../../Type";
-import { matchType } from "../../TypeUtils";
+import { matchType } from "../../Type/TypeUtils";
 
 import { PythonRenderer } from "./PythonRenderer";
 import { snakeNameStyle } from "./utils";

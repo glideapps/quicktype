@@ -3,10 +3,10 @@ import { iterableFirst, setUnionInto } from "collection-utils";
 import { type TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./attributes/TypeAttributes";
 import { type BaseGraphRewriteBuilder, type GraphRewriteBuilder, type TypeLookerUp } from "./GraphRewriting";
 import { assert, defined, panic } from "./support/Support";
-import { type ClassProperty, type ObjectType, type Type, UnionType } from "./Type";
-import { type TypeBuilder } from "./TypeBuilder";
-import { type TypeRef, derefTypeRef } from "./TypeGraph";
-import { assertIsObject } from "./TypeUtils";
+import { type ClassProperty, type ObjectType, type Type, UnionType } from "./Type/Type";
+import { type TypeBuilder } from "./Type/TypeBuilder";
+import { type TypeRef, derefTypeRef } from "./Type/TypeRef";
+import { assertIsObject } from "./Type/TypeUtils";
 import { TypeRefUnionAccumulator, UnionBuilder } from "./UnionBuilder";
 
 function getCliqueProperties(

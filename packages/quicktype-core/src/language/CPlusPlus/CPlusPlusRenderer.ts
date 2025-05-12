@@ -27,7 +27,7 @@ import {
     matchType,
     nullableFromUnion,
     removeNullFromUnion
-} from "../../TypeUtils";
+} from "../../Type/TypeUtils";
 
 import { keywords } from "./constants";
 import { type cPlusPlusOptions } from "./language";
@@ -198,7 +198,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             //     };
             //
             // checking to see if the collapse of the variant has
-            // occured and then doing the isCycleBreakerType check
+            // occurred and then doing the isCycleBreakerType check
             // on the single type the variant would contain seems
             // to solve the problem. But does this point to a problem
             // with the core library or with the CPlusPlus package
@@ -916,7 +916,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             if (constraints === undefined) return;
             const { minMax, minMaxLength, pattern } = constraints;
 
-            // TODO is there a better way to check if property.type is an interger or a number?
+            // TODO is there a better way to check if property.type is an integer or a number?
             const cppType = this.cppType(
                 property.type,
                 {
@@ -1627,7 +1627,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         );
                     });
                     this.emitLine(
-                        `default: throw std::runtime_error("Unexpected value in enumeration \\"${enumName}\\": " + std::to_string(static_cast<int>(x)));`
+                        `default: throw std::runtime_error("Unexpected value in enumeration \\"`,
+                        enumName,
+                        `\\": " + std::to_string(static_cast<int>(x)));`
                     );
                 });
             }

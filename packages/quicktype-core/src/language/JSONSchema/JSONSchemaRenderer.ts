@@ -11,7 +11,7 @@ import {
     type UnionType,
     transformedStringTypeTargetTypeKindsMap
 } from "../../Type";
-import { matchTypeExhaustive } from "../../TypeUtils";
+import { matchTypeExhaustive } from "../../Type/TypeUtils";
 
 import { namingFunction } from "./utils";
 

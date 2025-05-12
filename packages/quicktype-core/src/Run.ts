@@ -16,14 +16,16 @@ import { type Comment } from "./support/Comments";
 import { assert } from "./support/Support";
 
 import { gatherNames } from "./GatherNames";
-import { defaultInferenceFlags, inferenceFlagNames, inferenceFlags, InferenceFlags } from "./Inference";
+import { type InferenceFlags, defaultInferenceFlags, inferenceFlagNames, inferenceFlags } from "./Inference";
 import { makeTransformations } from "./MakeTransformations";
 import { messageError } from "./Messages";
 import { type Annotation, type Location, type SerializedRenderResult, type Span } from "./Source";
 import { type MultiFileRenderResult, type TargetLanguage } from "./TargetLanguage";
-import { type StringTypeMapping, TypeBuilder } from "./TypeBuilder";
-import { type TypeGraph, noneToAny, optionalToNullable, removeIndirectionIntersections } from "./TypeGraph";
-import type { FixMeOptionsType } from "./types";
+import { TypeBuilder } from "./Type/TypeBuilder";
+import { type StringTypeMapping } from "./Type/TypeBuilderUtils";
+import { TypeGraph } from "./Type/TypeGraph";
+import { noneToAny, optionalToNullable, removeIndirectionIntersections } from "./Type/TypeGraphUtils";
+import { type FixMeOptionsType } from "./types";
 
 export function getTargetLanguage(nameOrInstance: LanguageName | TargetLanguage): TargetLanguage {
     if (typeof nameOrInstance === "object") {
@@ -200,13 +202,13 @@ class Run implements RunContext {
         const stringTypeMapping = this.stringTypeMapping;
         const conflateNumbers = !targetLanguage.supportsUnionsWithBothNumberTypes;
         const typeBuilder = new TypeBuilder(
-            0,
             stringTypeMapping,
             this._options.alphabetizeProperties,
             this._options.allPropertiesOptional,
             this._options.checkProvenance,
             false
         );
+				typeBuilder.typeGraph = new TypeGraph(typeBuilder, 0, this._options.checkProvenance);
 
         return { targetLanguage, stringTypeMapping, conflateNumbers, typeBuilder };
     }

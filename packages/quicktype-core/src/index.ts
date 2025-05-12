@@ -64,8 +64,8 @@ export {
     EnumType,
     MapType,
     UnionType,
-    type TypeKind,
     ObjectType,
+    type TypeKind,
     type TransformedStringTypeKind,
     type PrimitiveStringTypeKind
 } from "./Type";
@@ -76,12 +76,13 @@ export { readableFromFileOrURL, readFromFileOrURL } from "./input/io/NodeIO";
 export { FetchingJSONSchemaStore } from "./input/FetchingJSONSchemaStore";
 export { JSONSchemaStore, type JSONSchema } from "./input/JSONSchemaStore";
 export { sourcesFromPostmanCollection } from "./input/PostmanCollection";
-export { TypeBuilder, type StringTypeMapping } from "./TypeBuilder";
-export { type TypeRef, derefTypeRef } from "./TypeGraph";
+export { TypeBuilder } from "./Type/TypeBuilder";
+export { type StringTypeMapping } from "./Type/TypeBuilderUtils";
+export { type TypeRef, derefTypeRef } from "./Type/TypeRef";
 export { TypeAttributeKind, type TypeAttributes, emptyTypeAttributes } from "./attributes/TypeAttributes";
 export { TypeNames, makeNamesTypeAttributes, namesTypeAttributeKind } from "./attributes/TypeNames";
 export { StringTypes } from "./attributes/StringTypes";
-export { removeNullFromUnion, matchType, nullableFromUnion } from "./TypeUtils";
+export { removeNullFromUnion, matchType, nullableFromUnion } from "./Type/TypeUtils";
 export { ConvenienceRenderer } from "./ConvenienceRenderer";
 export { uriTypeAttributeKind } from "./attributes/URIAttributes";
 

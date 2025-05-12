@@ -4,7 +4,7 @@ import { BooleanOption, EnumOption, StringOption, getOptionValues } from "../../
 import { assertNever } from "../../support/Support";
 import { TargetLanguage } from "../../TargetLanguage";
 import { type PrimitiveStringTypeKind, type TransformedStringTypeKind, type Type } from "../../Type";
-import { type StringTypeMapping } from "../../TypeBuilder";
+import { type StringTypeMapping } from "../../Type/TypeBuilderUtils";
 import { type FixMeOptionsType } from "../../types";
 
 import { NewtonsoftCSharpRenderer } from "./NewtonSoftCSharpRenderer";
