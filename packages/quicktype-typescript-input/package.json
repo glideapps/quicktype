@@ -12,7 +12,7 @@
     },
     "dependencies": {
         "quicktype-core": "file:../quicktype-core",
-        "typescript": "4.9.5",
+        "typescript": "5.8.3",
         "@mark.probst/typescript-json-schema": "0.55.0"
     },
     "devDependencies": {
