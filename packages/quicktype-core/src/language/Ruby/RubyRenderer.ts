@@ -14,7 +14,7 @@ import {
     type Type,
     type UnionType
 } from "../../Type";
-import { matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
+import { matchType, nullableFromUnion, removeNullFromUnion } from "../../Type/TypeUtils";
 
 import { globals } from "./constants";
 import { type rubyOptions } from "./language";

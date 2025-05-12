@@ -4,7 +4,7 @@ import { type RenderContext } from "../../Renderer";
 import { BooleanOption, EnumOption, getOptionValues } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
 import { type PrimitiveStringTypeKind, type TransformedStringTypeKind, type Type, UnionType } from "../../Type";
-import { type StringTypeMapping } from "../../TypeBuilder";
+import { type StringTypeMapping } from "../../Type/TypeBuilderUtils";
 import { type FixMeOptionsType } from "../../types";
 
 import { JSONPythonRenderer } from "./JSONPythonRenderer";

@@ -7,20 +7,15 @@ import {
     mapFind,
     mapMap,
     mapSortByKey,
-    setUnionManyInto,
     withDefault
 } from "collection-utils";
 
-// eslint-disable-next-line import/no-cycle
-import { StringTypes, stringTypesTypeAttributeKind } from "./attributes/StringTypes";
-import {
-    TypeAttributeKind,
-    type TypeAttributes,
-    combineTypeAttributes,
-    emptyTypeAttributes
-} from "./attributes/TypeAttributes";
-import { assert, defined, panic } from "./support/Support";
-// eslint-disable-next-line import/no-cycle
+import { StringTypes, stringTypesTypeAttributeKind } from "../attributes/StringTypes";
+import { type TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "../attributes/TypeAttributes";
+import { assert, defined, panic } from "../support/Support";
+
+import { provenanceTypeAttributeKind } from "./ProvenanceTypeAttributeKind";
+import { type PrimitiveTypeKind, isPrimitiveStringTypeKind } from "./TransformedStringType";
 import {
     ArrayType,
     ClassProperty,
@@ -30,79 +25,25 @@ import {
     MapType,
     type MaybeTypeIdentity,
     ObjectType,
-    type PrimitiveStringTypeKind,
     PrimitiveType,
-    type PrimitiveTypeKind,
-    type TransformedStringTypeKind,
     type Type,
     type TypeIdentity,
-    type TypeKind,
     UnionType,
     arrayTypeIdentity,
     classTypeIdentity,
     enumTypeIdentity,
     intersectionTypeIdentity,
-    isPrimitiveStringTypeKind,
     mapTypeIdentify,
     primitiveTypeIdentity,
-    transformedStringTypeKinds,
     unionTypeIdentity
 } from "./Type";
-import { TypeGraph, type TypeRef, assertTypeRefGraph, derefTypeRef, makeTypeRef, typeRefIndex } from "./TypeGraph";
-
-// FIXME: Don't infer provenance.  All original types should be present in
-// non-inferred form in the final graph.
-class ProvenanceTypeAttributeKind extends TypeAttributeKind<Set<number>> {
-    public constructor() {
-        super("provenance");
-    }
-
-    public appliesToTypeKind(_kind: TypeKind): boolean {
-        return true;
-    }
-
-    public combine(arr: Array<Set<number>>): Set<number> {
-        return setUnionManyInto(new Set(), arr);
-    }
-
-    public makeInferred(p: Set<number>): Set<number> {
-        return p;
-    }
-
-    public stringify(p: Set<number>): string {
-        return Array.from(p)
-            .sort()
-            .map(i => i.toString())
-            .join(",");
-    }
-}
-
-export const provenanceTypeAttributeKind: TypeAttributeKind<Set<number>> = new ProvenanceTypeAttributeKind();
-
-export type StringTypeMapping = ReadonlyMap<TransformedStringTypeKind, PrimitiveStringTypeKind>;
-
-export function stringTypeMappingGet(stm: StringTypeMapping, kind: TransformedStringTypeKind): PrimitiveStringTypeKind {
-    const mapped = stm.get(kind);
-    if (mapped === undefined) return "string";
-    return mapped;
-}
-
-let noStringTypeMapping: StringTypeMapping | undefined;
-
-export function getNoStringTypeMapping(): StringTypeMapping {
-    if (noStringTypeMapping === undefined) {
-        noStringTypeMapping = new Map(
-            Array.from(transformedStringTypeKinds).map(
-                k => [k, k] as [TransformedStringTypeKind, PrimitiveStringTypeKind]
-            )
-        );
-    }
-
-    return noStringTypeMapping;
-}
+import { type StringTypeMapping, stringTypeMappingGet } from "./TypeBuilderUtils";
+import { type TypeGraph } from "./TypeGraph";
+import { type TypeRef, assertTypeRefGraph, derefTypeRef, makeTypeRef, typeRefIndex } from "./TypeRef";
 
 export class TypeBuilder {
-    public readonly typeGraph: TypeGraph;
+    // @ts-expect-error must manually set TypeGraph
+    private _typeGraph: TypeGraph;
 
     protected readonly topLevels: Map<string, TypeRef> = new Map();
 
@@ -113,7 +54,6 @@ export class TypeBuilder {
     private _addedForwardingIntersection = false;
 
     public constructor(
-        typeGraphSerial: number,
         private readonly _stringTypeMapping: StringTypeMapping,
         public readonly canonicalOrder: boolean,
         private readonly _allPropertiesOptional: boolean,
@@ -124,7 +64,16 @@ export class TypeBuilder {
             !_addProvenanceAttributes || !inheritsProvenanceAttributes,
             "We can't both inherit as well as add provenance"
         );
-        this.typeGraph = new TypeGraph(this, typeGraphSerial, _addProvenanceAttributes || inheritsProvenanceAttributes);
+    }
+
+    public get typeGraph(): TypeGraph {
+        assert(!!this._typeGraph, "TypeBuilder must have a TypeGraph");
+        return this._typeGraph;
+    }
+
+		/** typeGraph must be set externally to prevent import cycle of TypeGraph constructor */
+    public set typeGraph(typeGraph: TypeGraph) {
+        this._typeGraph = typeGraph;
     }
 
     public addTopLevel(name: string, tref: TypeRef): void {

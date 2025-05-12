@@ -34,7 +34,8 @@ import {
     isPrimitiveStringTypeKind,
     targetTypeKindForTransformedStringTypeKind
 } from "./Type";
-import { type TypeGraph, type TypeRef, typeRefIndex } from "./TypeGraph";
+import { type TypeGraph } from "./Type/TypeGraph";
+import { type TypeRef, typeRefIndex } from "./Type/TypeRef";
 
 function transformationAttributes(
     graph: TypeGraph,

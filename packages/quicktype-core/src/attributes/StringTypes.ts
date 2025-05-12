@@ -12,9 +12,8 @@ import {
 
 import { type DateTimeRecognizer } from "../DateTime";
 import { assert, defined } from "../support/Support";
-import { type TransformedStringTypeKind } from "../Type";
-// eslint-disable-next-line import/no-cycle
-import { type StringTypeMapping, stringTypeMappingGet } from "../TypeBuilder";
+import { type TransformedStringTypeKind } from "../Type/TransformedStringType";
+import { type StringTypeMapping, stringTypeMappingGet } from "../Type/TypeBuilderUtils";
 
 import { TypeAttributeKind } from "./TypeAttributes";
 
