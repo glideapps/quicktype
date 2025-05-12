@@ -53,7 +53,7 @@
         "@types/stream-json": "^1.7.3",
         "@types/urijs": "^1.19.25",
         "@types/wordwrap": "^1.0.3",
-        "@typescript-eslint/eslint-plugin": "^6.3.0",
+        "@typescript-eslint/eslint-plugin": "^8.32.0",
         "@typescript-eslint/parser": "^6.3.0",
         "ajv": "^5.5.2",
         "deep-equal": "^2.2.3",
