@@ -40,7 +40,7 @@
         "readable-stream": "^4.5.2",
         "stream-json": "1.8.0",
         "string-to-stream": "^3.0.1",
-        "typescript": "4.9.5"
+        "typescript": "~5.8.3"
     },
     "devDependencies": {
         "@tsconfig/node18": "^1.0.1",

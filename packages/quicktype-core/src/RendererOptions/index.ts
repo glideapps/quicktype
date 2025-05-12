@@ -1,6 +1,6 @@
 import { messageError } from "../Messages";
 import { assert } from "../support/Support";
-import { type FixMeOptionsType, type NoInfer } from "../types";
+import { type FixMeOptionsType } from "../types";
 
 import type { OptionDefinition, OptionKind, OptionValues } from "./types";
 
