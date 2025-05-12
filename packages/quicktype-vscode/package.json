@@ -147,7 +147,7 @@
         "@types/node": "18.x",
         "@types/node-persist": "^3.1.8",
         "@types/readable-stream": "^4.0.10",
-        "@types/vscode": "^1.87.0",
+        "@types/vscode": "^1.100.0",
         "@typescript-eslint/eslint-plugin": "^7.0.2",
         "@typescript-eslint/parser": "^7.7.0",
         "@vscode/test-cli": "^0.0.6",
