@@ -31,7 +31,7 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
 
     protected sourceFor(t: Type): MultiWord {
         if (this._tsFlowOptions.preferConstValues && t.kind === "enum" && t instanceof EnumType && t.cases.size === 1) {
-            const item = t.cases.values().next().value ?? '';
+            const item = t.cases.values().next().value;
             return singleWord(`"${utf16StringEscape(item)}"`);
         }
 

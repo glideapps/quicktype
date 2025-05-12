@@ -75,12 +75,12 @@ export async function inParallel<Item, Result, Acc>(args: ParallelArgs<Item, Res
 
         // master sends a { fixtureName, sample } to run
         process.on("message", async ({ item, i }) => {
-            process.send?.({
+            (process.send as any)({
                 result: await map(item, i)
             });
         });
 
         // Ask master for work
-        process.send?.("ready");
+        (process.send as any)("ready");
     }
 }

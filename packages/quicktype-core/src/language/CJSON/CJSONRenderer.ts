@@ -44,8 +44,6 @@ export class CJSONRenderer extends ConvenienceRenderer {
 
     protected readonly enumeratorNamingStyle: NamingStyle; /* Enum naming style */
 
-		private includes:string[];
-
     /**
      * Constructor
      * @param targetLanguage: target language
@@ -65,7 +63,6 @@ export class CJSONRenderer extends ConvenienceRenderer {
         this.enumeratorNamingStyle = _options.enumeratorNamingStyle;
         this.memberNameStyle = makeNameStyle(_options.memberNamingStyle, legalizeName);
         this.forbiddenGlobalNames = [];
-				this.includes = [];
         for (const type of numberEnumValues(GlobalNames)) {
             const genName = this.namedTypeNameStyle(GlobalNames[type]);
             this.forbiddenGlobalNames.push(genName);
@@ -268,25 +265,27 @@ export class CJSONRenderer extends ConvenienceRenderer {
      * Function called to create a multiple header files with types and generators
      */
     protected emitMultiSourceStructure(): void {
+        /* Array of includes */
+        let includes: string[];
 
         /* Create each file */
         this.forEachNamedType(
             "leading-and-interposing",
             (classType: ClassType, _name: Name) => {
-                this.emitClass(classType);
+                this.emitClass(classType, includes);
             },
             (enumType, _name) => {
-                this.emitEnum(enumType);
+                this.emitEnum(enumType, includes);
             },
             (unionType, _name) => {
-                this.emitUnion(unionType);
+                this.emitUnion(unionType, includes);
             }
         );
 
         /* Create top level file */
         this.forEachTopLevel(
             "leading",
-            (type: Type, className: Name) => this.emitTopLevel(type, className, this.includes),
+            (type: Type, className: Name) => this.emitTopLevel(type, className, includes),
             type => this.namedTypeToNameForTopLevel(type) === undefined
         );
     }
@@ -294,12 +293,13 @@ export class CJSONRenderer extends ConvenienceRenderer {
     /**
      * Function called to create an enum header files with types and generators
      * @param enumType: enum type
+     * @param includes: Array of includes
      */
-    protected emitEnum(enumType: EnumType): void {
+    protected emitEnum(enumType: EnumType, includes: string[]): void {
         /* Create file */
         const enumName = this.nameForNamedType(enumType);
         const filename = this.sourcelikeToString(enumName).concat(".h");
-        this.includes.push(filename);
+        includes.push(filename);
         this.startFile(filename);
 
         /* Create includes */
@@ -421,12 +421,13 @@ export class CJSONRenderer extends ConvenienceRenderer {
     /**
      * Function called to create a union header files with types and generators
      * @param unionType: union type
+     * @param includes: Array of includes
      */
-    protected emitUnion(unionType: UnionType): void {
+    protected emitUnion(unionType: UnionType, includes: string[]): void {
         /* Create file */
         const unionName = this.nameForNamedType(unionType);
         const filename = this.sourcelikeToString(unionName).concat(".h");
-        this.includes.push(filename);
+        includes.push(filename);
         this.startFile(filename);
 
         /* Create includes */
@@ -1323,12 +1324,13 @@ export class CJSONRenderer extends ConvenienceRenderer {
     /**
      * Function called to create a class header files with types and generators
      * @param classType: class type
+     * @param includes: Array of includes
      */
-    protected emitClass(classType: ClassType): void {
+    protected emitClass(classType: ClassType, includes: string[]): void {
         /* Create file */
         const className = this.nameForNamedType(classType);
         const filename = this.sourcelikeToString(className).concat(".h");
-        this.includes.push(filename);
+        includes.push(filename);
         this.startFile(filename);
 
         /* Create includes */
