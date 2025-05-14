@@ -1,9 +1,9 @@
-import { type RenderContext } from "../../Renderer";
+import type { RenderContext } from "../../Renderer";
 import { EnumOption, getOptionValues } from "../../RendererOptions";
 import { AcronymStyleOptions, acronymOption } from "../../support/Acronyms";
 import { convertersOption } from "../../support/Converters";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type FixMeOptionsType } from "../../types";
+import type { FixMeOptionsType } from "../../types";
 
 import { JavaScriptPropTypesRenderer } from "./JavaScriptPropTypesRenderer";
 

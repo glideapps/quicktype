@@ -8,7 +8,7 @@ import {
     legalizeCharacters,
     splitIntoWords,
 } from "../../support/Strings";
-import { type ClassProperty, type Type, type TypeKind } from "../../Type";
+import type { ClassProperty, Type, TypeKind } from "../../Type";
 
 export const namingFunction = funPrefixNamer("namer", goNameStyle);
 

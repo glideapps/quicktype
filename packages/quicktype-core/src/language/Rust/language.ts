@@ -1,11 +1,11 @@
-import { type RenderContext } from "../../Renderer";
+import type { RenderContext } from "../../Renderer";
 import {
     BooleanOption,
     EnumOption,
     getOptionValues,
 } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type FixMeOptionsType } from "../../types";
+import type { FixMeOptionsType } from "../../types";
 
 import { RustRenderer } from "./RustRenderer";
 import { Density, Visibility } from "./utils";

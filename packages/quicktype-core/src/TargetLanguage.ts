@@ -2,15 +2,15 @@ import { mapMap } from "collection-utils";
 
 import { ConvenienceRenderer } from "./ConvenienceRenderer";
 import { type DateTimeRecognizer, DefaultDateTimeRecognizer } from "./DateTime";
-import { type RenderContext, type Renderer } from "./Renderer";
-import { type Option, type OptionDefinition } from "./RendererOptions";
+import type { RenderContext, Renderer } from "./Renderer";
+import type { Option, OptionDefinition } from "./RendererOptions";
 import { type SerializedRenderResult, serializeRenderResult } from "./Source";
-import { type Comment } from "./support/Comments";
+import type { Comment } from "./support/Comments";
 import { defined } from "./support/Support";
-import { type Type } from "./Type/Type";
-import { type StringTypeMapping } from "./Type/TypeBuilderUtils";
-import { type TypeGraph } from "./Type/TypeGraph";
-import { type FixMeOptionsType } from "./types";
+import type { Type } from "./Type/Type";
+import type { StringTypeMapping } from "./Type/TypeBuilderUtils";
+import type { TypeGraph } from "./Type/TypeGraph";
+import type { FixMeOptionsType } from "./types";
 
 export type MultiFileRenderResult = ReadonlyMap<string, SerializedRenderResult>;
 

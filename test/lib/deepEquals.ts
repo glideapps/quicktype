@@ -1,6 +1,6 @@
 import moment from "moment";
-import { Moment } from "moment";
-import { ComparisonRelaxations } from "../utils";
+import type { Moment } from "moment";
+import type { ComparisonRelaxations } from "../utils";
 
 function pathToString(path: string[]): string {
     return "." + path.join(".");

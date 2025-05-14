@@ -15,10 +15,10 @@ import {
     inDir,
     quicktype,
     quicktypeForLanguage,
-    Sample,
+    type Sample,
     samplesFromSources,
     testsInDir,
-    ComparisonArgs,
+    type ComparisonArgs,
     mkdirs,
     callAndExpectFailure,
 } from "./utils";
@@ -600,10 +600,10 @@ class JSONSchemaJSONFixture extends JSONToXToYFixture {
         additionalRendererOptions: RendererOptions,
         additionalFiles: string[],
     ): Promise<number> {
-        let input = JSON.parse(fs.readFileSync(filename, "utf8"));
-        let schema = JSON.parse(fs.readFileSync(this.language.output, "utf8"));
+        const input = JSON.parse(fs.readFileSync(filename, "utf8"));
+        const schema = JSON.parse(fs.readFileSync(this.language.output, "utf8"));
 
-        let ajv = new Ajv({
+        const ajv = new Ajv({
             format: "full",
             unknownFormats: ["integer", "boolean"],
         });
@@ -614,7 +614,7 @@ class JSONSchemaJSONFixture extends JSONToXToYFixture {
         ajv.addFormat("date-time", (s: string) =>
             dateTimeRecognizer.isDateTime(s),
         );
-        let valid = ajv.validate(schema, input);
+        const valid = ajv.validate(schema, input);
         if (!valid) {
             failWith("Generated schema does not validate input JSON.", {
                 filename,
@@ -625,7 +625,7 @@ class JSONSchemaJSONFixture extends JSONToXToYFixture {
 
         // Generate a schema from the schema, making sure the schemas are the same
         // FIXME: We could move this to the superclass and test it for all JSON->X->Y
-        let schemaSchema = "schema-from-schema.json";
+        const schemaSchema = "schema-from-schema.json";
         await quicktype({
             src: [this.language.output],
             srcLang: this.language.name,

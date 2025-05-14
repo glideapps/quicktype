@@ -5,9 +5,9 @@ import {
     mapTranspose,
 } from "collection-utils";
 
-import { type BaseGraphRewriteBuilder } from "../GraphRewriting";
+import type { BaseGraphRewriteBuilder } from "../GraphRewriting";
 import { assert, panic } from "../support/Support";
-import { type Type, type TypeKind } from "../Type";
+import type { Type, TypeKind } from "../Type";
 
 export class TypeAttributeKind<T> {
     public constructor(public readonly name: string) {}

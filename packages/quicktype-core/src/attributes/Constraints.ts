@@ -1,12 +1,12 @@
-import {
-    type JSONSchemaAttributes,
-    type JSONSchemaType,
-    type Ref,
+import type {
+    JSONSchemaAttributes,
+    JSONSchemaType,
+    Ref,
 } from "../input/JSONSchemaInput";
-import { type JSONSchema } from "../input/JSONSchemaStore";
+import type { JSONSchema } from "../input/JSONSchemaStore";
 import { messageError } from "../Messages";
 import { assert } from "../support/Support";
-import { type Type, type TypeKind } from "../Type";
+import type { Type, TypeKind } from "../Type";
 
 import { TypeAttributeKind } from "./TypeAttributes";
 

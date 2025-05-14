@@ -19,14 +19,14 @@ import {
     toReadonlySet,
 } from "collection-utils";
 
-import { type TypeAttributes } from "../attributes/TypeAttributes";
+import type { TypeAttributes } from "../attributes/TypeAttributes";
 import {
     type TypeNames,
     namesTypeAttributeKind,
 } from "../attributes/TypeNames";
-import {
-    type BaseGraphRewriteBuilder,
-    type TypeReconstituter,
+import type {
+    BaseGraphRewriteBuilder,
+    TypeReconstituter,
 } from "../GraphRewriting";
 import { messageAssert } from "../Messages";
 import { assert, defined, panic } from "../support/Support";
@@ -38,7 +38,7 @@ import {
     isPrimitiveStringTypeKind,
     triviallyStructurallyCompatible,
 } from "./TransformedStringType";
-import { type TypeGraph } from "./TypeGraph";
+import type { TypeGraph } from "./TypeGraph";
 import {
     type TypeRef,
     attributesForTypeRef,
@@ -103,7 +103,7 @@ export abstract class Type {
     public abstract getNonAttributeChildren(): Set<Type>;
 
     public getChildren(): ReadonlySet<Type> {
-        let result = this.getNonAttributeChildren();
+        const result = this.getNonAttributeChildren();
         for (const [k, v] of this.getAttributes()) {
             if (k.children === undefined) continue;
             setUnionInto(result, k.children(v));
@@ -203,8 +203,8 @@ export abstract class Type {
             }
 
             if (!a.isPrimitive()) {
-                let ai = a.index;
-                let bi = b.index;
+                const ai = a.index;
+                const bi = b.index;
 
                 let found = false;
                 for (const [dai, dbi] of done) {

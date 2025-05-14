@@ -2,7 +2,7 @@ import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer";
-import { type Name, type Namer } from "../../Naming";
+import type { Name, Namer } from "../../Naming";
 import {
     type MultiWord,
     type Sourcelike,
@@ -156,7 +156,7 @@ export class PikeRenderer extends ConvenienceRenderer {
 
     protected emitEnum(e: EnumType, enumName: Name): void {
         this.emitBlock([e.kind, " ", enumName], () => {
-            let table: Sourcelike[][] = [];
+            const table: Sourcelike[][] = [];
             this.forEachEnumCase(e, "none", (name, jsonName) => {
                 table.push([
                     [name, ' = "', stringEscape(jsonName), '", '],
@@ -178,7 +178,7 @@ export class PikeRenderer extends ConvenienceRenderer {
 
         const [, nonNulls] = removeNullFromUnion(u);
 
-        let types: Sourcelike[][] = [];
+        const types: Sourcelike[][] = [];
         this.forEachUnionMember(u, nonNulls, "none", null, (_name, t) => {
             const pikeType = this.sourceFor(t).source;
             types.push([pikeType]);
@@ -218,7 +218,7 @@ export class PikeRenderer extends ConvenienceRenderer {
     }
 
     private emitClassMembers(c: ClassType): void {
-        let table: Sourcelike[][] = [];
+        const table: Sourcelike[][] = [];
         this.forEachClassProperty(c, "none", (name, jsonName, p) => {
             const pikeType = this.sourceFor(p.type).source;
 

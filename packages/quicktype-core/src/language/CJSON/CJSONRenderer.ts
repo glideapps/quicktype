@@ -14,9 +14,9 @@ import {
     type Namer,
     funPrefixNamer,
 } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
-import { type Sourcelike } from "../../Source";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
+import type { Sourcelike } from "../../Source";
 import {
     type NamingStyle,
     allUpperWordStyle,
@@ -29,7 +29,7 @@ import {
     numberEnumValues,
     panic,
 } from "../../support/Support";
-import { type TargetLanguage } from "../../TargetLanguage";
+import type { TargetLanguage } from "../../TargetLanguage";
 import {
     ArrayType,
     ClassType,
@@ -45,7 +45,7 @@ import {
 } from "../../Type/TypeUtils";
 
 import { keywords } from "./constants";
-import { type cJSONOptions } from "./language";
+import type { cJSONOptions } from "./language";
 import {
     GlobalNames,
     IncludeKind,

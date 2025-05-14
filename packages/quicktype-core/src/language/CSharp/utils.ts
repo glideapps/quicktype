@@ -5,7 +5,7 @@ import {
     minMaxValueForType,
 } from "../../attributes/Constraints";
 import { funPrefixNamer } from "../../Naming";
-import { type Sourcelike } from "../../Source";
+import type { Sourcelike } from "../../Source";
 import {
     type WordInName,
     combineWords,
@@ -14,7 +14,7 @@ import {
     utf16LegalizeCharacters,
 } from "../../support/Strings";
 import { panic } from "../../support/Support";
-import { type Transformation } from "../../Transformers";
+import type { Transformation } from "../../Transformers";
 import {
     ArrayType,
     EnumType,

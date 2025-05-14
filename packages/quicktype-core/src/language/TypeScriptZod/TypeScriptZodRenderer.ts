@@ -2,9 +2,9 @@ import { arrayIntercalate } from "collection-utils";
 
 import { ConvenienceRenderer } from "../../ConvenienceRenderer";
 import { type Name, type Namer, funPrefixNamer } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
-import { type Sourcelike } from "../../Source";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
+import type { Sourcelike } from "../../Source";
 import { AcronymStyleOptions, acronymStyle } from "../../support/Acronyms";
 import {
     allLowerWordStyle,
@@ -17,7 +17,7 @@ import {
     utf16StringEscape,
 } from "../../support/Strings";
 import { panic } from "../../support/Support";
-import { type TargetLanguage } from "../../TargetLanguage";
+import type { TargetLanguage } from "../../TargetLanguage";
 import {
     ArrayType,
     type ClassProperty,
@@ -30,7 +30,7 @@ import {
 import { matchType } from "../../Type/TypeUtils";
 import { legalizeName } from "../JavaScript/utils";
 
-import { type typeScriptZodOptions } from "./language";
+import type { typeScriptZodOptions } from "./language";
 
 export class TypeScriptZodRenderer extends ConvenienceRenderer {
     public constructor(
@@ -93,7 +93,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         return p.isOptional ? [typeMap, ".optional()"] : typeMap;
     }
 
-    protected typeMapTypeFor(t: Type, required: boolean = true): Sourcelike {
+    protected typeMapTypeFor(t: Type, required = true): Sourcelike {
         if (["class", "object", "enum"].includes(t.kind)) {
             return [this.nameForNamedType(t), "Schema"];
         }
@@ -194,7 +194,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
      * these are ignored.
      */
     private static extractUnderlyingTyperefs(type: Type): number[] {
-        let typeRefs: number[] = [];
+        const typeRefs: number[] = [];
         // Ignore enums and primitives
         if (!type.isPrimitive() && type.kind != "enum") {
             // need to extract constituent types for unions and intersections (which both extend SetOperationType)

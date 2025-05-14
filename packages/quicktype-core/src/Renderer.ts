@@ -10,10 +10,10 @@ import {
     newline,
     sourcelikeToSource,
 } from "./Source";
-import { type Comment } from "./support/Comments";
+import type { Comment } from "./support/Comments";
 import { assert, panic } from "./support/Support";
-import { type TargetLanguage } from "./TargetLanguage";
-import { type TypeGraph } from "./Type/TypeGraph";
+import type { TargetLanguage } from "./TargetLanguage";
+import type { TypeGraph } from "./Type/TypeGraph";
 
 export interface RenderResult {
     names: ReadonlyMap<Name, string>;

@@ -1,12 +1,12 @@
 import { iterableFirst } from "collection-utils";
 
 import { combineTypeAttributes } from "../attributes/TypeAttributes";
-import { type GraphRewriteBuilder } from "../GraphRewriting";
+import type { GraphRewriteBuilder } from "../GraphRewriting";
 import { assert, defined } from "../support/Support";
-import { type PrimitiveType, type Type, type UnionType } from "../Type/Type";
-import { type StringTypeMapping } from "../Type/TypeBuilderUtils";
-import { type TypeGraph } from "../Type/TypeGraph";
-import { type TypeRef } from "../Type/TypeRef";
+import type { PrimitiveType, Type, UnionType } from "../Type/Type";
+import type { StringTypeMapping } from "../Type/TypeBuilderUtils";
+import type { TypeGraph } from "../Type/TypeGraph";
+import type { TypeRef } from "../Type/TypeRef";
 import {
     combineTypeAttributesOfTypes,
     stringTypesForType,

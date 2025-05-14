@@ -1,4 +1,4 @@
-import { type RenderContext } from "../../Renderer";
+import type { RenderContext } from "../../Renderer";
 import {
     BooleanOption,
     EnumOption,
@@ -7,12 +7,12 @@ import {
 } from "../../RendererOptions";
 import { AcronymStyleOptions, acronymOption } from "../../support/Acronyms";
 import { TargetLanguage } from "../../TargetLanguage";
-import {
-    type PrimitiveStringTypeKind,
-    type TransformedStringTypeKind,
+import type {
+    PrimitiveStringTypeKind,
+    TransformedStringTypeKind,
 } from "../../Type";
-import { type StringTypeMapping } from "../../Type/TypeBuilderUtils";
-import { type FixMeOptionsType } from "../../types";
+import type { StringTypeMapping } from "../../Type/TypeBuilderUtils";
+import type { FixMeOptionsType } from "../../types";
 
 import { JacksonRenderer } from "./JavaJacksonRenderer";
 import { JavaRenderer } from "./JavaRenderer";

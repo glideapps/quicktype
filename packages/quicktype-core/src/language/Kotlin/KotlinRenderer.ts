@@ -7,11 +7,11 @@ import {
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer";
 import { type Name, type Namer, funPrefixNamer } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
 import { type Sourcelike, maybeAnnotated } from "../../Source";
 import { acronymStyle } from "../../support/Acronyms";
-import { type TargetLanguage } from "../../TargetLanguage";
+import type { TargetLanguage } from "../../TargetLanguage";
 import {
     ArrayType,
     type ClassProperty,
@@ -30,7 +30,7 @@ import {
 } from "../../Type/TypeUtils";
 
 import { keywords } from "./constants";
-import { type kotlinOptions } from "./language";
+import type { kotlinOptions } from "./language";
 import { kotlinNameStyle } from "./utils";
 
 export class KotlinRenderer extends ConvenienceRenderer {
@@ -267,7 +267,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
                 const nullableOrOptional =
                     p.isOptional || p.type.kind === "null" || nullable;
                 const last = --count === 0;
-                let meta: Array<() => void> = [];
+                const meta: Array<() => void> = [];
 
                 const description = this.descriptionForClassProperty(
                     c,
@@ -351,7 +351,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
         this.emitClassAnnotations(u, unionName);
         this.emitBlock(["sealed class ", unionName], () => {
             {
-                let table: Sourcelike[][] = [];
+                const table: Sourcelike[][] = [];
                 this.forEachUnionMember(
                     u,
                     nonNulls,

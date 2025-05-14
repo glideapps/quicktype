@@ -2,7 +2,7 @@ import { iterableFirst, mapFirst } from "collection-utils";
 
 import { addDescriptionToSchema } from "../../attributes/Description";
 import { ConvenienceRenderer } from "../../ConvenienceRenderer";
-import { type Name, type Namer } from "../../Naming";
+import type { Name, Namer } from "../../Naming";
 import { defined, panic } from "../../support/Support";
 import {
     type EnumType,

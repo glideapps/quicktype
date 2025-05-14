@@ -2,9 +2,9 @@ import { arrayIntercalate } from "collection-utils";
 
 import { ConvenienceRenderer } from "../../ConvenienceRenderer";
 import { type Name, type Namer, funPrefixNamer } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
-import { type Sourcelike } from "../../Source";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
+import type { Sourcelike } from "../../Source";
 import { acronymStyle } from "../../support/Acronyms";
 import {
     allLowerWordStyle,
@@ -15,7 +15,7 @@ import {
     utf16StringEscape,
 } from "../../support/Strings";
 import { panic } from "../../support/Support";
-import { type TargetLanguage } from "../../TargetLanguage";
+import type { TargetLanguage } from "../../TargetLanguage";
 import {
     type ArrayType,
     type ClassProperty,
@@ -31,7 +31,7 @@ import {
 import { isES3IdentifierStart } from "../JavaScript/unicodeMaps";
 import { legalizeName } from "../JavaScript/utils";
 
-import { type javaScriptPropTypesOptions } from "./language";
+import type { javaScriptPropTypesOptions } from "./language";
 
 const identityNamingFunction = funPrefixNamer("properties", (s) => s);
 

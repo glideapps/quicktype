@@ -1,12 +1,12 @@
 import { mapMap } from "collection-utils";
 
-import {
-    type JSONSchemaAttributes,
-    type JSONSchemaType,
-    type Ref,
+import type {
+    JSONSchemaAttributes,
+    JSONSchemaType,
+    Ref,
 } from "../input/JSONSchemaInput";
-import { type JSONSchema } from "../input/JSONSchemaStore";
-import { type EnumType } from "../Type/Type";
+import type { JSONSchema } from "../input/JSONSchemaStore";
+import type { EnumType } from "../Type/Type";
 
 import {
     type AccessorNames,

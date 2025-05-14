@@ -1,5 +1,5 @@
-import { type GraphRewriteBuilder } from "../GraphRewriting";
-import { type RunContext } from "../Run";
+import type { GraphRewriteBuilder } from "../GraphRewriting";
+import type { RunContext } from "../Run";
 import { assert, panic } from "../support/Support";
 import {
     type ClassProperty,
@@ -7,8 +7,8 @@ import {
     type Type,
     setOperationCasesEqual,
 } from "../Type/Type";
-import { type TypeGraph } from "../Type/TypeGraph";
-import { type TypeRef } from "../Type/TypeRef";
+import type { TypeGraph } from "../Type/TypeGraph";
+import type { TypeRef } from "../Type/TypeRef";
 import {
     combineTypeAttributesOfTypes,
     nonNullTypeCases,
@@ -86,8 +86,8 @@ function canBeCombined(
 
     if (faults > maxFaults) return false;
     for (const name of commonProperties) {
-        let ts = smaller.get(name);
-        let tl = larger.get(name);
+        const ts = smaller.get(name);
+        const tl = larger.get(name);
         if (ts === undefined || tl === undefined) {
             return panic(`Both classes should have property ${name}`);
         }

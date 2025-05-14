@@ -1,6 +1,6 @@
 import { type Name, type Namer, funPrefixNamer } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
 import {
     type MultiWord,
     type Sourcelike,
@@ -11,7 +11,7 @@ import {
 } from "../../Source";
 import { camelCase, utf16StringEscape } from "../../support/Strings";
 import { panic } from "../../support/Support";
-import { type TargetLanguage } from "../../TargetLanguage";
+import type { TargetLanguage } from "../../TargetLanguage";
 import {
     ArrayType,
     type ClassType,
@@ -25,7 +25,7 @@ import {
     type JavaScriptTypeAnnotations,
 } from "../JavaScript";
 
-import { type tsFlowOptions } from "./language";
+import type { tsFlowOptions } from "./language";
 import { quotePropertyName } from "./utils";
 
 export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {

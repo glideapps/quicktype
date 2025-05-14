@@ -5,12 +5,12 @@ import {
     inferredNameOrder,
 } from "../../ConvenienceRenderer";
 import { DependencyName, type Name, SimpleName } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
 import { type Sourcelike, modifySource } from "../../Source";
 import { camelCase, utf16StringEscape } from "../../support/Strings";
 import { defined, panic } from "../../support/Support";
-import { type TargetLanguage } from "../../TargetLanguage";
+import type { TargetLanguage } from "../../TargetLanguage";
 import {
     ArrayDecodingTransformer,
     ArrayEncodingTransformer,
@@ -42,7 +42,7 @@ import {
 import { nullableFromUnion } from "../../Type/TypeUtils";
 
 import { CSharpRenderer } from "./CSharpRenderer";
-import { type systemTextJsonCSharpOptions } from "./language";
+import type { systemTextJsonCSharpOptions } from "./language";
 import {
     AccessModifier,
     alwaysApplyTransformation,
@@ -577,7 +577,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
                     "), null, serializer);",
                 );
             } else if (source.kind !== "null") {
-                let output = targetType.kind === "double" ? targetType : source;
+                const output = targetType.kind === "double" ? targetType : source;
                 this.emitLine(
                     "var ",
                     variableName,
@@ -1102,7 +1102,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
             converterName,
             ["JsonConverter<", csType, ">"],
             () => {
-                let canConvertExpr: Sourcelike = ["t == typeof(", csType, ")"];
+                const canConvertExpr: Sourcelike = ["t == typeof(", csType, ")"];
                 this.emitCanConvert(canConvertExpr);
                 this.ensureBlankLine();
                 this.emitReadJson(() => {

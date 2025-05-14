@@ -1,12 +1,12 @@
-import { type Name } from "../../Naming";
-import { type Sourcelike } from "../../Source";
-import {
-    type ArrayType,
-    type ClassType,
-    type EnumType,
-    type MapType,
-    type Type,
-    type UnionType,
+import type { Name } from "../../Naming";
+import type { Sourcelike } from "../../Source";
+import type {
+    ArrayType,
+    ClassType,
+    EnumType,
+    MapType,
+    Type,
+    UnionType,
 } from "../../Type";
 import {
     matchType,
@@ -24,7 +24,7 @@ export class CirceRenderer extends Scala3Renderer {
         t: Type,
         __ = false,
         noOptional = false,
-        paramName: string = "",
+        paramName = "",
     ): Sourcelike {
         return matchType<Sourcelike>(
             t,

@@ -2,7 +2,7 @@ import { Base64 } from "js-base64";
 import * as pako from "pako";
 import * as YAML from "yaml";
 
-import { type JSONSchema } from "../input/JSONSchemaStore";
+import type { JSONSchema } from "../input/JSONSchemaStore";
 import { messageError } from "../Messages";
 
 export interface StringMap {

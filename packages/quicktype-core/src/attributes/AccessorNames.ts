@@ -7,12 +7,12 @@ import {
     setUnionManyInto,
 } from "collection-utils";
 
-import {
-    type JSONSchemaAttributes,
-    type JSONSchemaType,
-    type Ref,
+import type {
+    JSONSchemaAttributes,
+    JSONSchemaType,
+    Ref,
 } from "../input/JSONSchemaInput";
-import { type JSONSchema } from "../input/JSONSchemaStore";
+import type { JSONSchema } from "../input/JSONSchemaStore";
 import { messageAssert } from "../Messages";
 import {
     checkArray,
@@ -20,11 +20,11 @@ import {
     defined,
     isStringMap,
 } from "../support/Support";
-import {
-    type EnumType,
-    type ObjectType,
-    type Type,
-    type UnionType,
+import type {
+    EnumType,
+    ObjectType,
+    Type,
+    UnionType,
 } from "../Type/Type";
 
 import { TypeAttributeKind, type TypeAttributes } from "./TypeAttributes";

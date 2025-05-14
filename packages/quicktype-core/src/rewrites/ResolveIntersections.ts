@@ -19,7 +19,7 @@ import {
     emptyTypeAttributes,
     makeTypeAttributesInferred,
 } from "../attributes/TypeAttributes";
-import { type GraphRewriteBuilder, type TypeLookerUp } from "../GraphRewriting";
+import type { GraphRewriteBuilder, TypeLookerUp } from "../GraphRewriting";
 import { assert, defined, mustNotHappen, panic } from "../support/Support";
 import {
     ArrayType,
@@ -33,10 +33,10 @@ import {
     isNumberTypeKind,
     isPrimitiveTypeKind,
 } from "../Type";
-import { type TypeBuilder } from "../Type/TypeBuilder";
-import { type StringTypeMapping } from "../Type/TypeBuilderUtils";
-import { type TypeGraph } from "../Type/TypeGraph";
-import { type TypeRef } from "../Type/TypeRef";
+import type { TypeBuilder } from "../Type/TypeBuilder";
+import type { StringTypeMapping } from "../Type/TypeBuilderUtils";
+import type { TypeGraph } from "../Type/TypeGraph";
+import type { TypeRef } from "../Type/TypeRef";
 import {
     makeGroupsToFlatten,
     matchTypeExhaustive,

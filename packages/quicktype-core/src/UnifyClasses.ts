@@ -5,10 +5,10 @@ import {
     combineTypeAttributes,
     emptyTypeAttributes,
 } from "./attributes/TypeAttributes";
-import {
-    type BaseGraphRewriteBuilder,
-    type GraphRewriteBuilder,
-    type TypeLookerUp,
+import type {
+    BaseGraphRewriteBuilder,
+    GraphRewriteBuilder,
+    TypeLookerUp,
 } from "./GraphRewriting";
 import { assert, defined, panic } from "./support/Support";
 import {
@@ -17,7 +17,7 @@ import {
     type Type,
     UnionType,
 } from "./Type/Type";
-import { type TypeBuilder } from "./Type/TypeBuilder";
+import type { TypeBuilder } from "./Type/TypeBuilder";
 import { type TypeRef, derefTypeRef } from "./Type/TypeRef";
 import { assertIsObject } from "./Type/TypeUtils";
 import { TypeRefUnionAccumulator, UnionBuilder } from "./UnionBuilder";
@@ -27,18 +27,18 @@ function getCliqueProperties(
     builder: TypeBuilder,
     makePropertyType: (types: ReadonlySet<Type>) => TypeRef,
 ): [ReadonlyMap<string, ClassProperty>, TypeRef | undefined, boolean] {
-    let lostTypeAttributes = false;
-    let propertyNames = new Set<string>();
+    const lostTypeAttributes = false;
+    const propertyNames = new Set<string>();
     for (const o of clique) {
         setUnionInto(propertyNames, o.getProperties().keys());
     }
 
-    let properties = Array.from(propertyNames).map(
+    const properties = Array.from(propertyNames).map(
         (name) => [name, new Set(), false] as [string, Set<Type>, boolean],
     );
     let additionalProperties: Set<Type> | undefined = undefined;
     for (const o of clique) {
-        let additional = o.getAdditionalProperties();
+        const additional = o.getAdditionalProperties();
         if (additional !== undefined) {
             if (additionalProperties === undefined) {
                 additionalProperties = new Set();

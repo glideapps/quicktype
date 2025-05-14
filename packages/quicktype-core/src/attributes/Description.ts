@@ -8,14 +8,14 @@ import {
     setUnionManyInto,
 } from "collection-utils";
 
-import {
-    type JSONSchemaAttributes,
-    type JSONSchemaType,
-    type Ref,
+import type {
+    JSONSchemaAttributes,
+    JSONSchemaType,
+    Ref,
 } from "../input/JSONSchemaInput";
-import { type JSONSchema } from "../input/JSONSchemaStore";
+import type { JSONSchema } from "../input/JSONSchemaStore";
 import { type PathElement, PathElementKind } from "../input/PathElement";
-import { type Type } from "../Type/Type";
+import type { Type } from "../Type/Type";
 
 import { TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
 

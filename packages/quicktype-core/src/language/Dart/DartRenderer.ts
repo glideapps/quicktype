@@ -7,12 +7,12 @@ import {
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer";
 import { DependencyName, type Name, type Namer } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
 import { type Sourcelike, maybeAnnotated, modifySource } from "../../Source";
 import { decapitalize, snakeCase } from "../../support/Strings";
 import { defined } from "../../support/Support";
-import { type TargetLanguage } from "../../TargetLanguage";
+import type { TargetLanguage } from "../../TargetLanguage";
 import {
     type ClassProperty,
     type ClassType,
@@ -27,7 +27,7 @@ import {
 } from "../../Type/TypeUtils";
 
 import { keywords } from "./constants";
-import { type dartOptions } from "./language";
+import type { dartOptions } from "./language";
 import {
     enumCaseNamingFunction,
     propertyNamingFunction,
@@ -421,7 +421,7 @@ export class DartRenderer extends ConvenienceRenderer {
     // so add isNullable property
     // eslint-disable-next-line @typescript-eslint/default-param-last
     protected fromDynamicExpression(
-        isNullable: boolean = false,
+        isNullable = false,
         t: Type,
         ...dynamic: Sourcelike[]
     ): Sourcelike {
@@ -516,7 +516,7 @@ export class DartRenderer extends ConvenienceRenderer {
     // so add isNullable property
     // eslint-disable-next-line @typescript-eslint/default-param-last
     protected toDynamicExpression(
-        isNullable: boolean = false,
+        isNullable = false,
         t: Type,
         ...dynamic: Sourcelike[]
     ): Sourcelike {

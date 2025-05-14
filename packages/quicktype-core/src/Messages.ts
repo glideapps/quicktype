@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { type Ref } from "./input/JSONSchemaInput";
-import { type StringMap } from "./support/Support";
+import type { Ref } from "./input/JSONSchemaInput";
+import type { StringMap } from "./support/Support";
 
 export type ErrorProperties =
     | { kind: "InternalError"; properties: { message: string } }

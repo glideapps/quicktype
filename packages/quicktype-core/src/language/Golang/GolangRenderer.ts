@@ -4,12 +4,12 @@ import {
 } from "../../Annotation";
 import { ConvenienceRenderer } from "../../ConvenienceRenderer";
 import { DependencyName, type Name, type Namer } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
 import { type Sourcelike, maybeAnnotated, modifySource } from "../../Source";
 import { camelCase, stringEscape } from "../../support/Strings";
 import { assert, defined } from "../../support/Support";
-import { type TargetLanguage } from "../../TargetLanguage";
+import type { TargetLanguage } from "../../TargetLanguage";
 import {
     type ClassProperty,
     type ClassType,
@@ -24,7 +24,7 @@ import {
     removeNullFromUnion,
 } from "../../Type/TypeUtils";
 
-import { type goOptions } from "./language";
+import type { goOptions } from "./language";
 import {
     canOmitEmpty,
     compoundTypeKinds,
@@ -243,7 +243,7 @@ export class GoRenderer extends ConvenienceRenderer {
 
     private emitClass(c: ClassType, className: Name): void {
         this.startFile(className);
-        let columns: Sourcelike[][] = [];
+        const columns: Sourcelike[][] = [];
         const usedTypes = new Set<string>();
         this.forEachClassProperty(c, "none", (name, jsonName, p) => {
             const description = this.descriptionForClassProperty(c, jsonName);
@@ -292,7 +292,7 @@ export class GoRenderer extends ConvenienceRenderer {
         this.emitLine("type ", enumName, " string");
         this.ensureBlankLine();
         this.emitLine("const (");
-        let columns: Sourcelike[][] = [];
+        const columns: Sourcelike[][] = [];
         this.forEachEnumCase(e, "none", (name, jsonName) => {
             columns.push([
                 [name, " "],
@@ -360,7 +360,7 @@ export class GoRenderer extends ConvenienceRenderer {
             return args;
         };
 
-        let columns: Sourcelike[][] = [];
+        const columns: Sourcelike[][] = [];
         this.forEachUnionMember(u, nonNulls, "none", null, (fieldName, t) => {
             const goType = this.nullableGoType(t, true);
             columns.push([[fieldName, " "], goType]);

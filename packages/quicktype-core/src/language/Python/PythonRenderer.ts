@@ -11,12 +11,12 @@ import {
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer";
 import { type Name, type Namer, funPrefixNamer } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
 import { type Sourcelike, modifySource } from "../../Source";
 import { stringEscape } from "../../support/Strings";
 import { defined, panic } from "../../support/Support";
-import { type TargetLanguage } from "../../TargetLanguage";
+import type { TargetLanguage } from "../../TargetLanguage";
 import { followTargetType } from "../../Transformers";
 import {
     type ClassProperty,
@@ -32,7 +32,7 @@ import {
 } from "../../Type/TypeUtils";
 
 import { forbiddenPropertyNames, forbiddenTypeNames } from "./constants";
-import { type pythonOptions } from "./language";
+import type { pythonOptions } from "./language";
 import { classNameStyle, snakeNameStyle } from "./utils";
 
 export class PythonRenderer extends ConvenienceRenderer {
@@ -182,7 +182,7 @@ export class PythonRenderer extends ConvenienceRenderer {
                 );
 
                 if (hasNull !== null) {
-                    let rest: string[] = [];
+                    const rest: string[] = [];
                     if (
                         !this.getAlphabetizeProperties() &&
                         (this.pyOptions.features.dataClasses ||

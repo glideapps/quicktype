@@ -1,6 +1,6 @@
 import { iterableSome } from "collection-utils";
 
-import { type RenderContext } from "../../Renderer";
+import type { RenderContext } from "../../Renderer";
 import {
     BooleanOption,
     EnumOption,
@@ -13,8 +13,8 @@ import {
     type Type,
     UnionType,
 } from "../../Type";
-import { type StringTypeMapping } from "../../Type/TypeBuilderUtils";
-import { type FixMeOptionsType } from "../../types";
+import type { StringTypeMapping } from "../../Type/TypeBuilderUtils";
+import type { FixMeOptionsType } from "../../types";
 
 import { JSONPythonRenderer } from "./JSONPythonRenderer";
 import { PythonRenderer } from "./PythonRenderer";

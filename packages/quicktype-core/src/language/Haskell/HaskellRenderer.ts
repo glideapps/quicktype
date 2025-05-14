@@ -4,9 +4,9 @@ import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer";
-import { type Name, type Namer } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
+import type { Name, Namer } from "../../Naming";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
 import {
     type MultiWord,
     type Sourcelike,
@@ -15,18 +15,18 @@ import {
     singleWord,
 } from "../../Source";
 import { stringEscape } from "../../support/Strings";
-import { type TargetLanguage } from "../../TargetLanguage";
-import {
-    type ClassProperty,
-    type ClassType,
-    type EnumType,
-    type Type,
-    type UnionType,
+import type { TargetLanguage } from "../../TargetLanguage";
+import type {
+    ClassProperty,
+    ClassType,
+    EnumType,
+    Type,
+    UnionType,
 } from "../../Type";
 import { matchType, nullableFromUnion } from "../../Type/TypeUtils";
 
 import { forbiddenNames } from "./constants";
-import { type haskellOptions } from "./language";
+import type { haskellOptions } from "./language";
 import { lowerNamingFunction, upperNamingFunction } from "./utils";
 
 export class HaskellRenderer extends ConvenienceRenderer {
@@ -279,7 +279,7 @@ export class HaskellRenderer extends ConvenienceRenderer {
     }
 
     private emitClassEncoderInstance(c: ClassType, className: Name): void {
-        let classProperties: Array<Name | string> = [];
+        const classProperties: Array<Name | string> = [];
         this.forEachClassProperty(c, "none", (name) => {
             classProperties.push(" ");
             classProperties.push(name);

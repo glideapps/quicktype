@@ -2,12 +2,12 @@ import * as os from "os";
 import * as _ from "lodash";
 
 import { inParallel } from "./lib/multicore";
-import { execAsync, Sample } from "./utils";
-import { Fixture, allFixtures } from "./fixtures";
+import { execAsync, type Sample } from "./utils";
+import { type Fixture, allFixtures } from "./fixtures";
 import { affectedFixtures, divideParallelJobs } from "./buildkite";
 
 const exit = require("exit");
-const CPUs = parseInt(process.env.CPUs || "0", 10) || os.cpus().length;
+const CPUs = Number.parseInt(process.env.CPUs || "0", 10) || os.cpus().length;
 
 //////////////////////////////////////
 // Test driver
@@ -71,7 +71,7 @@ async function main(sources: string[]) {
         },
 
         map: async ({ sample, fixtureName }: WorkItem, index) => {
-            let fixture = _.find(fixtures, { name: fixtureName }) as Fixture;
+            const fixture = _.find(fixtures, { name: fixtureName }) as Fixture;
             try {
                 await fixture.runWithSample(sample, index, tests.length);
             } catch (e) {

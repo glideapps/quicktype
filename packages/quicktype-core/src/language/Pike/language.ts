@@ -1,4 +1,4 @@
-import { type RenderContext } from "../../Renderer";
+import type { RenderContext } from "../../Renderer";
 import { TargetLanguage } from "../../TargetLanguage";
 
 import { PikeRenderer } from "./PikeRenderer";

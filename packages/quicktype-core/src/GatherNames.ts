@@ -10,7 +10,7 @@ import {
 import { assert, defined, panic } from "./support/Support";
 import { transformationForType } from "./Transformers";
 import { ObjectType, type Type } from "./Type/Type";
-import { type TypeGraph } from "./Type/TypeGraph";
+import type { TypeGraph } from "./Type/TypeGraph";
 import { matchCompoundType, nullableFromUnion } from "./Type/TypeUtils";
 
 class UniqueQueue<T> {

@@ -39,7 +39,7 @@ export type NameOrNames = string | TypeNames;
 // the names "aaa" and "aaaa" we have the common prefix "aaa" and the
 // common suffix "aaa", so we will produce the combined name "aaaaaa".
 function combineNames(names: ReadonlySet<string>): string {
-    let originalFirst = iterableFirst(names);
+    const originalFirst = iterableFirst(names);
     if (originalFirst === undefined) {
         return panic("Named type has no names");
     }

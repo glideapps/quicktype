@@ -12,13 +12,13 @@ import {
     type Namer,
     funPrefixNamer,
 } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
 import { type Sourcelike, maybeAnnotated } from "../../Source";
 import { acronymStyle } from "../../support/Acronyms";
 import { capitalize } from "../../support/Strings";
 import { assert, assertNever, defined } from "../../support/Support";
-import { type TargetLanguage } from "../../TargetLanguage";
+import type { TargetLanguage } from "../../TargetLanguage";
 import {
     ArrayType,
     type ClassProperty,
@@ -41,7 +41,7 @@ import {
     type JavaDateTimeProvider,
     JavaLegacyDateTimeProvider,
 } from "./DateTimeProvider";
-import { type javaOptions } from "./language";
+import type { javaOptions } from "./language";
 import { javaNameStyle, stringEscape } from "./utils";
 
 export class JavaRenderer extends ConvenienceRenderer {
@@ -490,7 +490,7 @@ export class JavaRenderer extends ConvenienceRenderer {
     }
 
     protected emitClassDefinition(c: ClassType, className: Name): void {
-        let imports = [...this.importsForType(c), ...this.importsForClass(c)];
+        const imports = [...this.importsForType(c), ...this.importsForClass(c)];
 
         this.emitFileHeader(className, imports);
         this.emitDescription(this.descriptionForType(c));

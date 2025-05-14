@@ -4,10 +4,10 @@ import {
     mapFromObject,
 } from "collection-utils";
 
-import { type TypeAttributes } from "../attributes/TypeAttributes";
+import type { TypeAttributes } from "../attributes/TypeAttributes";
 import { uriInferenceAttributesProducer } from "../attributes/URIAttributes";
 
-import { type Type } from "./Type";
+import type { Type } from "./Type";
 
 /**
  * `jsonSchema` is the `format` to be used to represent this string type in

@@ -2,7 +2,7 @@ import { setUnionManyInto } from "collection-utils";
 
 import { TypeAttributeKind } from "../attributes/TypeAttributes";
 
-import { type TypeKind } from "./TransformedStringType";
+import type { TypeKind } from "./TransformedStringType";
 
 // FIXME: Don't infer provenance.  All original types should be present in
 // non-inferred form in the final graph.

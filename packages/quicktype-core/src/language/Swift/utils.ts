@@ -1,6 +1,6 @@
 import { DefaultDateTimeRecognizer } from "../../DateTime";
-import { type Name } from "../../Naming";
-import { type ForEachPosition } from "../../Renderer";
+import type { Name } from "../../Naming";
+import type { ForEachPosition } from "../../Renderer";
 import {
     addPrefixIfNecessary,
     allLowerWordStyle,
@@ -17,7 +17,7 @@ import {
     splitIntoWords,
     utf32ConcatMap,
 } from "../../support/Strings";
-import { type ClassProperty } from "../../Type";
+import type { ClassProperty } from "../../Type";
 
 export const MAX_SAMELINE_PROPERTIES = 4;
 

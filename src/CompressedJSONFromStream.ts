@@ -1,4 +1,4 @@
-import { type Readable } from "readable-stream";
+import type { Readable } from "readable-stream";
 import { Parser } from "stream-json";
 
 import { CompressedJSON, type Value } from "quicktype-core";

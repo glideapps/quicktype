@@ -1,18 +1,18 @@
-import { type Name } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
+import type { Name } from "../../Naming";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
 import { type Sourcelike, modifySource } from "../../Source";
 import { camelCase } from "../../support/Strings";
-import { type TargetLanguage } from "../../TargetLanguage";
-import {
-    type ArrayType,
-    type EnumType,
-    type MapType,
-    type Type,
+import type { TargetLanguage } from "../../TargetLanguage";
+import type {
+    ArrayType,
+    EnumType,
+    MapType,
+    Type,
 } from "../../Type";
 
 import { KotlinRenderer } from "./KotlinRenderer";
-import { type kotlinOptions } from "./language";
+import type { kotlinOptions } from "./language";
 import { stringEscape } from "./utils";
 
 /**

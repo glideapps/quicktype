@@ -8,19 +8,19 @@ import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer";
-import { type Name, type Namer } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
+import type { Name, Namer } from "../../Naming";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
 import { type Sourcelike, maybeAnnotated } from "../../Source";
 import { assert } from "../../support/Support";
-import { type TargetLanguage } from "../../TargetLanguage";
+import type { TargetLanguage } from "../../TargetLanguage";
 import { followTargetType } from "../../Transformers";
-import {
-    type ClassProperty,
-    type ClassType,
-    type EnumType,
-    type Type,
-    type UnionType,
+import type {
+    ClassProperty,
+    ClassType,
+    EnumType,
+    Type,
+    UnionType,
 } from "../../Type";
 import {
     directlyReachableSingleNamedType,
@@ -29,7 +29,7 @@ import {
     removeNullFromUnion,
 } from "../../Type/TypeUtils";
 
-import { type cSharpOptions } from "./language";
+import type { cSharpOptions } from "./language";
 import {
     AccessModifier,
     csTypeForTransformedStringType,
@@ -283,7 +283,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
                 const blankLines = this.blankLinesBetweenAttributes()
                     ? "interposing"
                     : "none";
-                let columns: Sourcelike[][] = [];
+                const columns: Sourcelike[][] = [];
                 let isFirstProperty = true;
                 let previousDescription: string[] | undefined = undefined;
                 this.forEachClassProperty(

@@ -44,9 +44,7 @@ function precomputedCodePointPredicate(
         asciiResults.push(p(cp));
     }
 
-    return function (cp: number) {
-        return cp < 128 ? asciiResults[cp] : p(cp);
-    };
+    return (cp: number) => cp < 128 ? asciiResults[cp] : p(cp);
 }
 
 // FIXME: This is a copy of code in src/Data/String/Util.js
@@ -183,7 +181,7 @@ export function repeatString(s: string, n: number): string {
 }
 
 export function intToHex(i: number, width: number): string {
-    let str = i.toString(16);
+    const str = i.toString(16);
     if (str.length >= width) return str;
     return repeatString("0", width - str.length) + str;
 }

@@ -45,7 +45,7 @@ import {
 } from "../attributes/TypeNames";
 import { uriSchemaAttributesProducer } from "../attributes/URIAttributes";
 import { messageAssert, messageError } from "../Messages";
-import { type RunContext } from "../Run";
+import type { RunContext } from "../Run";
 import {
     type StringMap,
     assert,
@@ -60,10 +60,10 @@ import {
     isNumberTypeKind,
     transformedStringTypeTargetTypeKindsMap,
 } from "../Type";
-import { type TypeBuilder } from "../Type/TypeBuilder";
-import { type TypeRef } from "../Type/TypeRef";
+import type { TypeBuilder } from "../Type/TypeBuilder";
+import type { TypeRef } from "../Type/TypeRef";
 
-import { type Input } from "./Inputs";
+import type { Input } from "./Inputs";
 import { type JSONSchema, JSONSchemaStore } from "./JSONSchemaStore";
 import { type PathElement, PathElementKind } from "./PathElement";
 
@@ -134,7 +134,7 @@ function checkJSONSchema(x: unknown, refOrLoc: Ref | (() => Ref)): JSONSchema {
     return checkJSONSchemaObject(x, refOrLoc);
 }
 
-const numberRegexp = new RegExp("^[0-9]+$");
+const numberRegexp = /^[0-9]+$/;
 
 function normalizeURI(uri: string | URI): URI {
     // FIXME: This is overly complicated and a bit shady.  The problem is
@@ -356,7 +356,7 @@ export class Ref {
                         );
                     }
 
-                    const index = parseInt(first.key, 10);
+                    const index = Number.parseInt(first.key, 10);
                     if (index >= local.length) {
                         return messageError(
                             "SchemaIndexNotInArray",
@@ -711,7 +711,7 @@ class Resolver {
             );
             const address = canonical.address;
 
-            let schema =
+            const schema =
                 canonical.addressURI === undefined
                     ? undefined
                     : await this._store.get(
@@ -800,7 +800,7 @@ async function addTypesInSchema(
     references: ReadonlyMap<string, Ref>,
     attributeProducers: JSONSchemaAttributeProducer[],
 ): Promise<void> {
-    let typeForCanonicalRef = new EqualityMap<Ref, TypeRef>();
+    const typeForCanonicalRef = new EqualityMap<Ref, TypeRef>();
 
     function setTypeForLocation(loc: Location, t: TypeRef): void {
         const maybeRef = typeForCanonicalRef.get(loc.canonicalRef);

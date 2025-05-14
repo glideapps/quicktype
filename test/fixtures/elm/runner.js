@@ -1,15 +1,15 @@
 const Elm = require("./elm.js");
 const fs = require("fs");
 
-let ports = Elm.Main.worker().ports;
+const ports = Elm.Main.worker().ports;
 
-ports.toJS.subscribe(function (result) {
+ports.toJS.subscribe((result) => {
     if (result.startsWith("Error: ")) {
-        process.stderr.write(result + "\n", function () {
+        process.stderr.write(result + "\n", () => {
             process.exit(1);
         });
     } else {
-        process.stdout.write(result + "\n", function () {
+        process.stdout.write(result + "\n", () => {
             process.exit(0);
         });
     }

@@ -7,10 +7,10 @@ import {
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer";
 import { type Name, type Namer, funPrefixNamer } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
 import { type Sourcelike, maybeAnnotated } from "../../Source";
-import { type TargetLanguage } from "../../TargetLanguage";
+import type { TargetLanguage } from "../../TargetLanguage";
 import {
     ArrayType,
     type ClassProperty,
@@ -29,7 +29,7 @@ import {
 } from "../../Type/TypeUtils";
 
 import { keywords } from "./constants";
-import { type smithyOptions } from "./language";
+import type { smithyOptions } from "./language";
 import {
     lowerNamingFunction,
     scalaNameStyle,

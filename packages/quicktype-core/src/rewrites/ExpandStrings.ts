@@ -11,12 +11,12 @@ import {
 
 import { StringTypes } from "../attributes/StringTypes";
 import { emptyTypeAttributes } from "../attributes/TypeAttributes";
-import { type GraphRewriteBuilder } from "../GraphRewriting";
-import { type RunContext } from "../Run";
+import type { GraphRewriteBuilder } from "../GraphRewriting";
+import type { RunContext } from "../Run";
 import { assert, defined } from "../support/Support";
-import { type PrimitiveType } from "../Type/Type";
-import { type TypeGraph } from "../Type/TypeGraph";
-import { type TypeRef } from "../Type/TypeRef";
+import type { PrimitiveType } from "../Type/Type";
+import type { TypeGraph } from "../Type/TypeGraph";
+import type { TypeRef } from "../Type/TypeRef";
 import { stringTypesForType } from "../Type/TypeUtils";
 
 const MIN_LENGTH_FOR_ENUM = 10;

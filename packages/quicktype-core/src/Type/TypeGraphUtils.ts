@@ -7,13 +7,13 @@ import {
 } from "collection-utils";
 
 import { TypeNames, namesTypeAttributeKind } from "../attributes/TypeNames";
-import { type GraphRewriteBuilder } from "../GraphRewriting";
+import type { GraphRewriteBuilder } from "../GraphRewriting";
 import { assert, defined, panic } from "../support/Support";
 
 import { ClassType, IntersectionType, type Type, UnionType } from "./Type";
-import { type StringTypeMapping } from "./TypeBuilderUtils";
-import { type TypeGraph } from "./TypeGraph";
-import { type TypeRef } from "./TypeRef";
+import type { StringTypeMapping } from "./TypeBuilderUtils";
+import type { TypeGraph } from "./TypeGraph";
+import type { TypeRef } from "./TypeRef";
 import { combineTypeAttributesOfTypes } from "./TypeUtils";
 
 export function noneToAny(

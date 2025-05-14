@@ -30,7 +30,7 @@ function lookupInUnicodeMap(code: number, map: readonly number[]): boolean {
     return false;
 }
 
-const enum CharacterCodes {
+enum CharacterCodes {
     maxAsciiCharacter = 0x7f,
 
     _ = 0x5f,

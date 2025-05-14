@@ -51,7 +51,7 @@ import {
     type StringTypeMapping,
     stringTypeMappingGet,
 } from "./TypeBuilderUtils";
-import { type TypeGraph } from "./TypeGraph";
+import type { TypeGraph } from "./TypeGraph";
 import {
     type TypeRef,
     assertTypeRefGraph,
@@ -340,7 +340,7 @@ export class TypeBuilder {
         const attributes = withDefault(maybeAttributes, emptyTypeAttributes);
         // FIXME: Why do date/time types need a StringTypes attribute?
         // FIXME: Remove this from here and put it into flattenStrings
-        let stringTypes =
+        const stringTypes =
             kind === "string" ? undefined : StringTypes.unrestricted;
         if (isPrimitiveStringTypeKind(kind) && kind !== "string") {
             kind = stringTypeMappingGet(this._stringTypeMapping, kind);

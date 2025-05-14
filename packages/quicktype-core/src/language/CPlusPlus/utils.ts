@@ -4,14 +4,14 @@ import {
     minMaxValueForType,
     patternForType,
 } from "../../attributes/Constraints";
-import { type Name } from "../../Naming";
-import { type Sourcelike } from "../../Source";
+import type { Name } from "../../Naming";
+import type { Sourcelike } from "../../Source";
 import {
     isAscii,
     isLetterOrUnderscoreOrDigit,
     legalizeCharacters,
 } from "../../support/Strings";
-import { type Type, type TypeKind } from "../../Type";
+import type { Type, TypeKind } from "../../Type";
 
 export function constraintsForType(t: Type):
     | {

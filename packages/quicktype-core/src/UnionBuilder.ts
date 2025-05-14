@@ -25,8 +25,8 @@ import {
     UnionType,
     isPrimitiveTypeKind,
 } from "./Type";
-import { type TypeBuilder } from "./Type/TypeBuilder";
-import { type TypeRef } from "./Type/TypeRef";
+import type { TypeBuilder } from "./Type/TypeBuilder";
+import type { TypeRef } from "./Type/TypeRef";
 import { matchTypeExhaustive } from "./Type/TypeUtils";
 
 // FIXME: This interface is badly designed.  All the properties
@@ -272,7 +272,7 @@ export class UnionAccumulator<TArray, TObject>
             "We can't have both strings and enums in the same union",
         );
 
-        let merged = mapMerge(
+        const merged = mapMerge(
             buildTypeAttributeMap(this._nonStringTypeAttributes),
             buildTypeAttributeMap(this._stringTypeAttributes),
         );

@@ -26,13 +26,13 @@ function guys(n: number): string {
 export async function inParallel<Item, Result, Acc>(
     args: ParallelArgs<Item, Result, Acc>,
 ) {
-    let { queue } = args;
-    let items = queue.map((item, i) => {
+    const { queue } = args;
+    const items = queue.map((item, i) => {
         return { item, i };
     });
 
     if (cluster.isPrimary) {
-        let { setup, workers, map } = args;
+        const { setup, workers, map } = args;
         await setup();
 
         cluster.on("message", (worker) => {
@@ -59,7 +59,7 @@ export async function inParallel<Item, Result, Acc>(
         console.error(`* Forking ${workers} workers ${guys(workers)}`);
         if (workers < 2) {
             // We run everything on the master process if only one worker
-            for (let { item, i } of items) {
+            for (const { item, i } of items) {
                 await map(item, i);
             }
         } else {
@@ -73,7 +73,7 @@ export async function inParallel<Item, Result, Acc>(
         }
     } else {
         // Setup a worker
-        let { map } = args;
+        const { map } = args;
 
         // master sends a { fixtureName, sample } to run
         process.on("message", async ({ item, i }) => {

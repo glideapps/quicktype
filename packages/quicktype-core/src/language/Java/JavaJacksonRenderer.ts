@@ -1,9 +1,9 @@
-import { type Name } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
-import { type Sourcelike } from "../../Source";
+import type { Name } from "../../Naming";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
+import type { Sourcelike } from "../../Source";
 import { assertNever, panic } from "../../support/Support";
-import { type TargetLanguage } from "../../TargetLanguage";
+import type { TargetLanguage } from "../../TargetLanguage";
 import {
     ArrayType,
     type ClassProperty,
@@ -16,7 +16,7 @@ import {
 import { removeNullFromUnion } from "../../Type/TypeUtils";
 
 import { JavaRenderer } from "./JavaRenderer";
-import { type javaOptions } from "./language";
+import type { javaOptions } from "./language";
 import { stringEscape } from "./utils";
 
 export class JacksonRenderer extends JavaRenderer {
@@ -382,7 +382,7 @@ export class JacksonRenderer extends JavaRenderer {
         };
 
         const emitSerializeType = (t: Type): void => {
-            let { fieldName } = this.unionField(u, t, true);
+            const { fieldName } = this.unionField(u, t, true);
 
             this.emitBlock(["if (obj.", fieldName, " != null)"], () => {
                 if (

@@ -10,7 +10,7 @@ import {
 } from "collection-utils";
 
 import { TypeAttributeKind } from "./attributes/TypeAttributes";
-import { type BaseGraphRewriteBuilder } from "./GraphRewriting";
+import type { BaseGraphRewriteBuilder } from "./GraphRewriting";
 import { assert, indentationString, panic } from "./support/Support";
 import {
     EnumType,
@@ -19,7 +19,7 @@ import {
     type TypeKind,
     UnionType,
 } from "./Type";
-import { type TypeGraph } from "./Type/TypeGraph";
+import type { TypeGraph } from "./Type/TypeGraph";
 import { type TypeRef, derefTypeRef } from "./Type/TypeRef";
 
 function debugStringForType(t: Type): string {
@@ -427,7 +427,7 @@ export class ChoiceTransformer extends Transformer {
     }
 
     public getChildren(): Set<Type> {
-        let children = super.getChildren();
+        const children = super.getChildren();
         for (const xfer of this.transformers) {
             setUnionInto(children, xfer.getChildren());
         }
@@ -549,7 +549,7 @@ export class DecodingChoiceTransformer extends Transformer {
     }
 
     public getChildren(): Set<Type> {
-        let children = super.getChildren();
+        const children = super.getChildren();
         for (const xfer of this.transformers) {
             setUnionInto(children, xfer.getChildren());
         }
@@ -579,8 +579,8 @@ export class DecodingChoiceTransformer extends Transformer {
             "Reversing a decoding transformer can't have a target transformer",
         );
 
-        let transformers = new Map<TypeKind, Transformer[]>();
-        let memberMatchTransformers = new Map<Type, Transformer[]>();
+        const transformers = new Map<TypeKind, Transformer[]>();
+        const memberMatchTransformers = new Map<Type, Transformer[]>();
 
         function addCase(reversed: Transformer): void {
             if (reversed instanceof UnionMemberMatchTransformer) {

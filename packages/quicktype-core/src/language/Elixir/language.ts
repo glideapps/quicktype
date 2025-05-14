@@ -1,11 +1,11 @@
-import { type RenderContext } from "../../Renderer";
+import type { RenderContext } from "../../Renderer";
 import {
     BooleanOption,
     StringOption,
     getOptionValues,
 } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type FixMeOptionsType } from "../../types";
+import type { FixMeOptionsType } from "../../types";
 
 import { ElixirRenderer } from "./ElixirRenderer";
 

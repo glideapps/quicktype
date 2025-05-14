@@ -12,7 +12,7 @@ import { flattenUnions } from "./rewrites/FlattenUnions";
 import { inferMaps } from "./rewrites/InferMaps";
 import { replaceObjectType } from "./rewrites/ReplaceObjectType";
 import { resolveIntersections } from "./rewrites/ResolveIntersections";
-import { type Comment } from "./support/Comments";
+import type { Comment } from "./support/Comments";
 import { assert } from "./support/Support";
 
 import { gatherNames } from "./GatherNames";
@@ -24,25 +24,25 @@ import {
 } from "./Inference";
 import { makeTransformations } from "./MakeTransformations";
 import { messageError } from "./Messages";
-import {
-    type Annotation,
-    type Location,
-    type SerializedRenderResult,
-    type Span,
+import type {
+    Annotation,
+    Location,
+    SerializedRenderResult,
+    Span,
 } from "./Source";
-import {
-    type MultiFileRenderResult,
-    type TargetLanguage,
+import type {
+    MultiFileRenderResult,
+    TargetLanguage,
 } from "./TargetLanguage";
 import { TypeBuilder } from "./Type/TypeBuilder";
-import { type StringTypeMapping } from "./Type/TypeBuilderUtils";
+import type { StringTypeMapping } from "./Type/TypeBuilderUtils";
 import { TypeGraph } from "./Type/TypeGraph";
 import {
     noneToAny,
     optionalToNullable,
     removeIndirectionIntersections,
 } from "./Type/TypeGraphUtils";
-import { type FixMeOptionsType } from "./types";
+import type { FixMeOptionsType } from "./types";
 
 export function getTargetLanguage(
     nameOrInstance: LanguageName | TargetLanguage,

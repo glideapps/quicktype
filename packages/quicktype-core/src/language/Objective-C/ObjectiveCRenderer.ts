@@ -11,8 +11,8 @@ import {
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer";
 import { type Name, Namer, funPrefixNamer } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
 import { type Sourcelike, modifySource } from "../../Source";
 import {
     camelCase,
@@ -21,7 +21,7 @@ import {
     stringEscape,
 } from "../../support/Strings";
 import { assert, defined } from "../../support/Support";
-import { type TargetLanguage } from "../../TargetLanguage";
+import type { TargetLanguage } from "../../TargetLanguage";
 import {
     ArrayType,
     type ClassProperty,
@@ -38,7 +38,7 @@ import {
 } from "../../Type/TypeUtils";
 
 import { forbiddenPropertyNames, keywords } from "./constants";
-import { type objectiveCOptions } from "./language";
+import type { objectiveCOptions } from "./language";
 import {
     DEFAULT_CLASS_PREFIX,
     forbiddenForEnumCases,
@@ -525,7 +525,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
     }
 
     private emitNonClassTopLevelTypedef(t: Type, name: Name): void {
-        let nonPointerTypeName = this.objcType(t)[0];
+        const nonPointerTypeName = this.objcType(t)[0];
         this.emitLine("typedef ", nonPointerTypeName, " ", name, ";");
     }
 
@@ -680,7 +680,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         if (DEBUG)
             this.emitLine("@property NSDictionary<NSString *, id> *_json;");
         this.emitPropertyTable(t, (name, _json, property) => {
-            let attributes = ["nonatomic"];
+            const attributes = ["nonatomic"];
             // TODO offer a 'readonly' option
             // TODO We must add "copy" if it's NSCopy, otherwise "strong"
             if (property.type.isNullable) {

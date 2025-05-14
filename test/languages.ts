@@ -1,8 +1,8 @@
-import { type LanguageName } from "quicktype-core";
+import type { LanguageName } from "quicktype-core";
 
 import * as process from "process";
 // @ts-ignore
-import { RendererOptions } from "../dist/quicktype-core/Run";
+import type { RendererOptions } from "../dist/quicktype-core/Run";
 
 const easySampleJSONs = [
     "bitcoin-block.json",

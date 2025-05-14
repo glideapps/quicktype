@@ -11,11 +11,11 @@ import { descriptionTypeAttributeKind } from "../attributes/Description";
 import { makeNamesTypeAttributes } from "../attributes/TypeNames";
 import { languageNamed } from "../language/All";
 import { messageError } from "../Messages";
-import { type RunContext } from "../Run";
+import type { RunContext } from "../Run";
 import { defined, errorMessage, panic } from "../support/Support";
-import { type TargetLanguage } from "../TargetLanguage";
-import { type TypeBuilder } from "../Type/TypeBuilder";
-import { type LanguageName } from "../types";
+import type { TargetLanguage } from "../TargetLanguage";
+import type { TypeBuilder } from "../Type/TypeBuilder";
+import type { LanguageName } from "../types";
 
 import {
     type CompressedJSON,
@@ -95,7 +95,7 @@ export class JSONInput<T> implements Input<JSONSourceData<T>> {
     }
 
     private setDescription(topLevelName: string, description: string): void {
-        let topLevel = this._topLevels.get(topLevelName);
+        const topLevel = this._topLevels.get(topLevelName);
         if (topLevel === undefined) {
             return panic(
                 "Trying to set description for a top-level that doesn't exist",

@@ -9,13 +9,13 @@ import {
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer";
 import { type Name, type Namer, funPrefixNamer } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
 import { type Sourcelike, maybeAnnotated, modifySource } from "../../Source";
 import { acronymStyle } from "../../support/Acronyms";
 import { camelCase } from "../../support/Strings";
 import { assert, defined, panic } from "../../support/Support";
-import { type TargetLanguage } from "../../TargetLanguage";
+import type { TargetLanguage } from "../../TargetLanguage";
 import {
     ArrayType,
     type ClassProperty,
@@ -33,7 +33,7 @@ import {
 } from "../../Type/TypeUtils";
 
 import { keywords } from "./constants";
-import { type swiftOptions } from "./language";
+import type { swiftOptions } from "./language";
 import {
     MAX_SAMELINE_PROPERTIES,
     type SwiftProperty,
@@ -396,7 +396,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
         kind: "struct" | "class" | "enum",
         baseClass: string | undefined = undefined,
     ): Sourcelike {
-        let protocols = this.getProtocolsArray(kind);
+        const protocols = this.getProtocolsArray(kind);
         if (baseClass) {
             protocols.unshift(baseClass);
         }
@@ -407,7 +407,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
     private getEnumPropertyGroups(c: ClassType): typeof groups {
         type PropertyGroup = Array<{ label?: string; name: Name }>;
 
-        let groups: PropertyGroup[] = [];
+        const groups: PropertyGroup[] = [];
         let group: PropertyGroup = [];
 
         this.forEachClassProperty(c, "none", (name, jsonName) => {
@@ -521,7 +521,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                         const useMutableProperties =
                             this._options.mutableProperties;
 
-                        let sources: Sourcelike[] = [
+                        const sources: Sourcelike[] = [
                             [
                                 this._options.optionalEnums &&
                                 lastProperty.type.kind === "enum"
@@ -643,9 +643,9 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 ) {
                     // Make an initializer that initalizes all fields
                     this.ensureBlankLine();
-                    let initProperties = this.initializableProperties(c);
-                    let propertiesLines: Sourcelike[] = [];
-                    for (let property of initProperties) {
+                    const initProperties = this.initializableProperties(c);
+                    const propertiesLines: Sourcelike[] = [];
+                    for (const property of initProperties) {
                         if (propertiesLines.length > 0)
                             propertiesLines.push(", ");
                         propertiesLines.push(
@@ -666,7 +666,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                         this.emitBlockWithAccess(
                             ["init(", ...propertiesLines, ")"],
                             () => {
-                                for (let property of initProperties) {
+                                for (const property of initProperties) {
                                     this.emitLine(
                                         "self.",
                                         property.name,
@@ -795,7 +795,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
                         );
                     }
 
-                    let args: Sourcelike[] = [];
+                    const args: Sourcelike[] = [];
                     this.forEachClassProperty(c, "none", (name) => {
                         if (args.length > 0) args.push(", ");
                         args.push(name, ": ", "me.", name);

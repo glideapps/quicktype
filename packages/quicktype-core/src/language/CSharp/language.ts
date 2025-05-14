@@ -1,5 +1,5 @@
-import { type ConvenienceRenderer } from "../../ConvenienceRenderer";
-import { type RenderContext } from "../../Renderer";
+import type { ConvenienceRenderer } from "../../ConvenienceRenderer";
+import type { RenderContext } from "../../Renderer";
 import {
     BooleanOption,
     EnumOption,
@@ -8,13 +8,13 @@ import {
 } from "../../RendererOptions";
 import { assertNever } from "../../support/Support";
 import { TargetLanguage } from "../../TargetLanguage";
-import {
-    type PrimitiveStringTypeKind,
-    type TransformedStringTypeKind,
-    type Type,
+import type {
+    PrimitiveStringTypeKind,
+    TransformedStringTypeKind,
+    Type,
 } from "../../Type";
-import { type StringTypeMapping } from "../../Type/TypeBuilderUtils";
-import { type FixMeOptionsType } from "../../types";
+import type { StringTypeMapping } from "../../Type/TypeBuilderUtils";
+import type { FixMeOptionsType } from "../../types";
 
 import { NewtonsoftCSharpRenderer } from "./NewtonSoftCSharpRenderer";
 import { SystemTextJsonCSharpRenderer } from "./SystemTextJsonCSharpRenderer";

@@ -108,7 +108,7 @@ export class Namer {
 
         const allAssignedNames = new Map<Name, string>();
 
-        let namesToPrefix: Name[] = [];
+        const namesToPrefix: Name[] = [];
         for (const name of namesToAssign) {
             const proposedNames = name.proposeUnstyledNames(names);
             const namingFunction = name.namingFunction;
@@ -142,7 +142,7 @@ export class Namer {
             namesToPrefix.push(name);
         }
 
-        let prefixes = this._prefixes.values();
+        const prefixes = this._prefixes.values();
         let suffixNumber = 1;
         for (const name of namesToPrefix) {
             const originalName: string = defined(
@@ -473,7 +473,7 @@ export function assignNames(
             readyNamespace.members,
             readyNamespace.forbiddenNameds,
         );
-        let forbiddenNames = setFilterMap(allForbiddenNames, (n) =>
+        const forbiddenNames = setFilterMap(allForbiddenNames, (n) =>
             ctx.names.get(n),
         );
 

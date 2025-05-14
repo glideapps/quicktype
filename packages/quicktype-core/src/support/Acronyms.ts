@@ -14,8 +14,7 @@ export enum AcronymStyleOptions {
     Pascal = "pascal",
 }
 
-export const acronymOption = function (defaultOption: AcronymStyleOptions) {
-    return new EnumOption(
+export const acronymOption = (defaultOption: AcronymStyleOptions) => new EnumOption(
         "acronym-style",
         "Acronym naming style",
         {
@@ -27,7 +26,6 @@ export const acronymOption = function (defaultOption: AcronymStyleOptions) {
         defaultOption,
         "secondary",
     );
-};
 
 const options = {
     [AcronymStyleOptions.Pascal]: allUpperWordStyle,

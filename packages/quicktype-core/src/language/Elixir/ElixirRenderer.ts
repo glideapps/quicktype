@@ -3,10 +3,10 @@ import {
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer";
 import { type Name, Namer } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
-import { type Sourcelike } from "../../Source";
-import { type TargetLanguage } from "../../TargetLanguage";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
+import type { Sourcelike } from "../../Source";
+import type { TargetLanguage } from "../../TargetLanguage";
 import {
     ArrayType,
     ClassType,
@@ -19,7 +19,7 @@ import {
 import { matchType, nullableFromUnion } from "../../Type/TypeUtils";
 
 import { forbiddenModuleNames, reservedWords } from "./constants";
-import { type elixirOptions } from "./language";
+import type { elixirOptions } from "./language";
 import {
     capitalizeFirstLetter,
     escapeDoubleQuotes,

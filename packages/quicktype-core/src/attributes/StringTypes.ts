@@ -10,9 +10,9 @@ import {
     setUnionInto,
 } from "collection-utils";
 
-import { type DateTimeRecognizer } from "../DateTime";
+import type { DateTimeRecognizer } from "../DateTime";
 import { assert, defined } from "../support/Support";
-import { type TransformedStringTypeKind } from "../Type/TransformedStringType";
+import type { TransformedStringTypeKind } from "../Type/TransformedStringType";
 import {
     type StringTypeMapping,
     stringTypeMappingGet,
@@ -216,7 +216,7 @@ function isIntegerString(s: string): boolean {
         return false;
     }
 
-    const i = parseInt(s, 10);
+    const i = Number.parseInt(s, 10);
     return i >= MIN_INTEGER_STRING && i <= MAX_INTEGER_STRING;
 }
 

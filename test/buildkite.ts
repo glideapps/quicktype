@@ -1,11 +1,11 @@
 import * as _ from "lodash";
 import { exec } from "shelljs";
 
-import { WorkItem } from "./test";
-import { allFixtures, Fixture } from "./fixtures";
+import type { WorkItem } from "./test";
+import { allFixtures, type Fixture } from "./fixtures";
 
 function getChangedFiles(base: string, commit: string): string[] {
-    let diff = exec(
+    const diff = exec(
         `git fetch -v origin ${base} && git diff --name-only origin/${base}..${commit}`,
     ).stdout;
     return diff.trim().split("\n");
@@ -58,8 +58,8 @@ export function divideParallelJobs(workItems: WorkItem[]): WorkItem[] {
     if (pjob === undefined || pcount === undefined) return workItems;
 
     try {
-        const segment = Math.ceil(workItems.length / parseFloat(pcount));
-        const start = parseInt(pjob, 10) * segment;
+        const segment = Math.ceil(workItems.length / Number.parseFloat(pcount));
+        const start = Number.parseInt(pjob, 10) * segment;
         return workItems.slice(start, start + segment);
     } catch {
         return workItems;

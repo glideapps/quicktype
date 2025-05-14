@@ -1,7 +1,7 @@
 import { addHashCode, hashCodeInit, hashString } from "collection-utils";
 
 import { inferTransformedStringTypeKindForString } from "../attributes/StringTypes";
-import { type DateTimeRecognizer } from "../DateTime";
+import type { DateTimeRecognizer } from "../DateTime";
 import { assert, defined, panic } from "../support/Support";
 import {
     type TransformedStringTypeKind,

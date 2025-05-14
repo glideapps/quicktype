@@ -95,7 +95,7 @@ export { FetchingJSONSchemaStore } from "./input/FetchingJSONSchemaStore";
 export { JSONSchemaStore, type JSONSchema } from "./input/JSONSchemaStore";
 export { sourcesFromPostmanCollection } from "./input/PostmanCollection";
 export { TypeBuilder } from "./Type/TypeBuilder";
-export { type StringTypeMapping } from "./Type/TypeBuilderUtils";
+export type { StringTypeMapping } from "./Type/TypeBuilderUtils";
 export { type TypeRef, derefTypeRef } from "./Type/TypeRef";
 export {
     TypeAttributeKind,

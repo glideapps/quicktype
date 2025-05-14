@@ -3,11 +3,11 @@ import {
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer";
 import { type Name, Namer } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
 import { type Sourcelike, modifySource } from "../../Source";
 import { snakeCase } from "../../support/Strings";
-import { type TargetLanguage } from "../../TargetLanguage";
+import type { TargetLanguage } from "../../TargetLanguage";
 import {
     ArrayType,
     type ClassProperty,
@@ -24,7 +24,7 @@ import {
 } from "../../Type/TypeUtils";
 
 import { globals } from "./constants";
-import { type rubyOptions } from "./language";
+import type { rubyOptions } from "./language";
 import {
     Strictness,
     forbiddenForObjectProperties,

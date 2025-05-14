@@ -1,16 +1,16 @@
-import { type RenderContext } from "../../Renderer";
+import type { RenderContext } from "../../Renderer";
 import {
     BooleanOption,
     StringOption,
     getOptionValues,
 } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
-import {
-    type PrimitiveStringTypeKind,
-    type TransformedStringTypeKind,
+import type {
+    PrimitiveStringTypeKind,
+    TransformedStringTypeKind,
 } from "../../Type";
-import { type StringTypeMapping } from "../../Type/TypeBuilderUtils";
-import { type FixMeOptionsType } from "../../types";
+import type { StringTypeMapping } from "../../Type/TypeBuilderUtils";
+import type { FixMeOptionsType } from "../../types";
 
 import { DartRenderer } from "./DartRenderer";
 

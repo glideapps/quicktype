@@ -4,9 +4,9 @@ import * as path from "path";
 import * as _ from "lodash";
 import * as shell from "shelljs";
 
-import { main as quicktype_, CLIOptions } from "../src";
-import { RendererOptions } from "quicktype-core";
-import * as languages from "./languages";
+import { main as quicktype_, type CLIOptions } from "../src";
+import type { RendererOptions } from "quicktype-core";
+import type * as languages from "./languages";
 import deepEquals from "./lib/deepEquals";
 
 import chalk from "chalk";
@@ -95,9 +95,9 @@ export function execAsync(
 }
 
 async function time<T>(work: () => Promise<T>): Promise<[T, number]> {
-    let start = +new Date();
-    let result = await work();
-    let end = +new Date();
+    const start = +new Date();
+    const result = await work();
+    const end = +new Date();
     return [result, end - start];
 }
 
@@ -175,7 +175,7 @@ export async function quicktypeForLanguage(
 }
 
 export async function inDir(dir: string, work: () => Promise<void>) {
-    let origin = process.cwd();
+    const origin = process.cwd();
 
     debug(`cd ${dir}`);
     process.chdir(dir);
@@ -265,7 +265,7 @@ export function compareJsonFileToJson(args: ComparisonArgs) {
         () => JSON.parse(fs.readFileSync(expectedFile, "utf8")),
     );
 
-    let jsonAreEqual = strict
+    const jsonAreEqual = strict
         ? callAndReportFailure("Failed to strictly compare objects", () =>
               strictDeepEquals(givenJSON, expectedJSON),
           )

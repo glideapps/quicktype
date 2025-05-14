@@ -21,14 +21,14 @@
  * See test/languages.ts for the test cases which are not implmented/checked.
  */
 
-import { type RenderContext } from "../../Renderer";
+import type { RenderContext } from "../../Renderer";
 import {
     EnumOption,
     StringOption,
     getOptionValues,
 } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type FixMeOptionsType } from "../../types";
+import type { FixMeOptionsType } from "../../types";
 
 import { CJSONRenderer } from "./CJSONRenderer";
 

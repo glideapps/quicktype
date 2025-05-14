@@ -1,13 +1,13 @@
 import { iterableFirst, mapFromObject, setMap } from "collection-utils";
 import * as graphql from "graphql/language";
-import {
-    type DirectiveNode,
-    type DocumentNode,
-    type FieldNode,
-    type FragmentDefinitionNode,
-    type OperationDefinitionNode,
-    type SelectionNode,
-    type SelectionSetNode,
+import type {
+    DirectiveNode,
+    DocumentNode,
+    FieldNode,
+    FragmentDefinitionNode,
+    OperationDefinitionNode,
+    SelectionNode,
+    SelectionSetNode,
 } from "graphql/language/ast";
 import {
     type ClassProperty,
@@ -372,7 +372,7 @@ class GQLQuery {
                         ? selection.alias.value
                         : fieldName;
                     const field = getField(inType, fieldName);
-                    let fieldType = this.makeIRTypeFromFieldNode(
+                    const fieldType = this.makeIRTypeFromFieldNode(
                         builder,
                         selection,
                         field.type,

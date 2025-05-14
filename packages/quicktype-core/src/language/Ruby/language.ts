@@ -1,4 +1,4 @@
-import { type RenderContext } from "../../Renderer";
+import type { RenderContext } from "../../Renderer";
 import {
     BooleanOption,
     EnumOption,
@@ -6,7 +6,7 @@ import {
     getOptionValues,
 } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type FixMeOptionsType } from "../../types";
+import type { FixMeOptionsType } from "../../types";
 
 import { RubyRenderer } from "./RubyRenderer";
 import { Strictness } from "./utils";

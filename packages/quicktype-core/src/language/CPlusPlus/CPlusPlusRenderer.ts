@@ -18,7 +18,7 @@ import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer";
-import { type Declaration } from "../../DeclarationIR";
+import type { Declaration } from "../../DeclarationIR";
 import {
     DependencyName,
     type Name,
@@ -26,8 +26,8 @@ import {
     type Namer,
     funPrefixNamer,
 } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
 import { type Sourcelike, maybeAnnotated } from "../../Source";
 import {
     type NamingStyle,
@@ -41,7 +41,7 @@ import {
     numberEnumValues,
     panic,
 } from "../../support/Support";
-import { type TargetLanguage } from "../../TargetLanguage";
+import type { TargetLanguage } from "../../TargetLanguage";
 import {
     ArrayType,
     type ClassProperty,
@@ -60,7 +60,7 @@ import {
 } from "../../Type/TypeUtils";
 
 import { keywords } from "./constants";
-import { type cPlusPlusOptions } from "./language";
+import type { cPlusPlusOptions } from "./language";
 import {
     BaseString,
     type ConstraintMember,
@@ -1398,10 +1398,10 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     }
 
                     if (p.isOptional || propType instanceof UnionType) {
-                        const [nullOrOptional, typeSet] = (function (): [
+                        const [nullOrOptional, typeSet] = ((): [
                             boolean,
                             ReadonlySet<Type>,
-                        ] {
+                        ] => {
                             if (propType instanceof UnionType) {
                                 const [maybeNull, nonNulls] =
                                     removeNullFromUnion(propType, true);

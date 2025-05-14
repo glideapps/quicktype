@@ -17,10 +17,10 @@ import {
     combineTypeAttributes,
     emptyTypeAttributes,
 } from "./attributes/TypeAttributes";
-import { type GraphRewriteBuilder } from "./GraphRewriting";
-import { type RunContext } from "./Run";
+import type { GraphRewriteBuilder } from "./GraphRewriting";
+import type { RunContext } from "./Run";
 import { assert, defined, panic } from "./support/Support";
-import { type TargetLanguage } from "./TargetLanguage";
+import type { TargetLanguage } from "./TargetLanguage";
 import {
     ArrayDecodingTransformer,
     ChoiceTransformer,
@@ -48,7 +48,7 @@ import {
     isPrimitiveStringTypeKind,
     targetTypeKindForTransformedStringTypeKind,
 } from "./Type";
-import { type TypeGraph } from "./Type/TypeGraph";
+import type { TypeGraph } from "./Type/TypeGraph";
 import { type TypeRef, typeRefIndex } from "./Type/TypeRef";
 
 function transformationAttributes(

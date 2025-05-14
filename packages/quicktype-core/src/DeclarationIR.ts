@@ -9,8 +9,8 @@ import {
 import { Graph } from "./Graph";
 import { messageError } from "./Messages";
 import { assert, defined, panic } from "./support/Support";
-import { type Type } from "./Type/Type";
-import { type TypeGraph } from "./Type/TypeGraph";
+import type { Type } from "./Type/Type";
+import type { TypeGraph } from "./Type/TypeGraph";
 
 export type DeclarationKind = "forward" | "define";
 

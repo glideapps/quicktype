@@ -54,7 +54,7 @@ import {
 } from "./support/Comments";
 import { trimEnd } from "./support/Strings";
 import { assert, defined, nonNull, panic } from "./support/Support";
-import { type TargetLanguage } from "./TargetLanguage";
+import type { TargetLanguage } from "./TargetLanguage";
 import {
     type Transformation,
     followTargetType,
@@ -293,7 +293,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected descriptionForType(t: Type): string[] | undefined {
-        let description = this.typeGraph.attributeStore.tryGet(
+        const description = this.typeGraph.attributeStore.tryGet(
             descriptionTypeAttributeKind,
             t,
         );
@@ -665,7 +665,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             );
         }
 
-        let names = new Map<Type, Name>();
+        const names = new Map<Type, Name>();
         for (const t of u.members) {
             const name = this.makeNameForUnionMember(
                 u,
@@ -720,7 +720,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             );
         }
 
-        let names = new Map<string, Name>();
+        const names = new Map<string, Name>();
         const accessorNames = enumCaseNames(e, this.targetLanguage.name);
         for (const caseName of e.cases) {
             const [assignedName, isFixed] = getAccessorName(

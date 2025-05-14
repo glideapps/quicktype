@@ -2,9 +2,9 @@ import { arrayIntercalate } from "collection-utils";
 
 import { ConvenienceRenderer } from "../../ConvenienceRenderer";
 import { type Name, type Namer, funPrefixNamer } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
-import { type Sourcelike } from "../../Source";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
+import type { Sourcelike } from "../../Source";
 import { AcronymStyleOptions, acronymStyle } from "../../support/Acronyms";
 import {
     allLowerWordStyle,
@@ -17,7 +17,7 @@ import {
     utf16StringEscape,
 } from "../../support/Strings";
 import { panic } from "../../support/Support";
-import { type TargetLanguage } from "../../TargetLanguage";
+import type { TargetLanguage } from "../../TargetLanguage";
 import {
     ArrayType,
     type ClassProperty,
@@ -29,7 +29,7 @@ import {
 import { matchType } from "../../Type/TypeUtils";
 import { legalizeName } from "../JavaScript/utils";
 
-import { type typeScriptEffectSchemaOptions } from "./language";
+import type { typeScriptEffectSchemaOptions } from "./language";
 
 export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
     private emittedObjects = new Set<Name>();
@@ -99,7 +99,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
         return ["S.optional(", this.typeMapTypeFor(p.type), ")"];
     }
 
-    private typeMapTypeFor(t: Type, required: boolean = true): Sourcelike {
+    private typeMapTypeFor(t: Type, required = true): Sourcelike {
         if (t.kind === "class" || t.kind === "object" || t.kind === "enum") {
             const name = this.nameForNamedType(t);
             if (this.emittedObjects.has(name)) {
@@ -131,7 +131,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
             (_enumType) => panic("Should already be handled."),
             (unionType) => {
                 const types = Array.from(unionType.getChildren());
-                let children: Sourcelike[] = [];
+                const children: Sourcelike[] = [];
                 let nullable = false;
                 for (const type of types) {
                     if (type.kind === "null") {

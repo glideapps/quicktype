@@ -9,8 +9,8 @@ import {
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer";
 import { DependencyName, type Name, type Namer } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
 import {
     type MultiWord,
     type Sourcelike,
@@ -21,18 +21,18 @@ import {
 } from "../../Source";
 import { decapitalize, stringEscape } from "../../support/Strings";
 import { defined } from "../../support/Support";
-import { type TargetLanguage } from "../../TargetLanguage";
-import {
-    type ClassProperty,
-    type ClassType,
-    type EnumType,
-    type Type,
-    type UnionType,
+import type { TargetLanguage } from "../../TargetLanguage";
+import type {
+    ClassProperty,
+    ClassType,
+    EnumType,
+    Type,
+    UnionType,
 } from "../../Type";
 import { matchType, nullableFromUnion } from "../../Type/TypeUtils";
 
 import { forbiddenNames } from "./constants";
-import { type elmOptions } from "./language";
+import type { elmOptions } from "./language";
 import {
     lowerNamingFunction,
     requiredOrOptional,

@@ -2,8 +2,8 @@ import { arrayIntercalate } from "collection-utils";
 
 import { ConvenienceRenderer } from "../../ConvenienceRenderer";
 import { type Name, type Namer, funPrefixNamer } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
 import { type Sourcelike, modifySource } from "../../Source";
 import { acronymStyle } from "../../support/Acronyms";
 import { ConvertersOptions } from "../../support/Converters";
@@ -17,19 +17,19 @@ import {
     utf16StringEscape,
 } from "../../support/Strings";
 import { panic } from "../../support/Support";
-import { type TargetLanguage } from "../../TargetLanguage";
-import {
-    type ClassProperty,
-    type ClassType,
-    type ObjectType,
-    type Type,
+import type { TargetLanguage } from "../../TargetLanguage";
+import type {
+    ClassProperty,
+    ClassType,
+    ObjectType,
+    Type,
 } from "../../Type";
 import {
     directlyReachableSingleNamedType,
     matchType,
 } from "../../Type/TypeUtils";
 
-import { type javaScriptOptions } from "./language";
+import type { javaScriptOptions } from "./language";
 import { isES3IdentifierStart } from "./unicodeMaps";
 import { legalizeName } from "./utils";
 

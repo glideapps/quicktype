@@ -1,4 +1,4 @@
-"use strict";
+
 
 import * as path from "path";
 
@@ -48,7 +48,7 @@ async function promptTopLevelName(): Promise<{
     cancelled: boolean;
     name: string;
 }> {
-    let topLevelName = await vscode.window.showInputBox({
+    const topLevelName = await vscode.window.showInputBox({
         prompt: "Top-level type name?",
     });
 
@@ -68,7 +68,7 @@ async function pickTargetLanguage(): Promise<TargetLanguagePick> {
     const languageChoices = defaultTargetLanguages
         .map((l) => l.displayName)
         .sort();
-    let chosenName = await vscode.window.showQuickPick(languageChoices);
+    const chosenName = await vscode.window.showQuickPick(languageChoices);
     const cancelled = chosenName === undefined;
     if (chosenName === undefined || !isLanguageName(chosenName)) {
         return { cancelled, lang: languageNamed("typescript") };
@@ -252,7 +252,7 @@ class CodeProvider implements vscode.TextDocumentContentProvider {
 
     public readonly uri: vscode.Uri;
 
-    private _documentText: string = "{}";
+    private _documentText = "{}";
 
     private _targetCode = "";
 

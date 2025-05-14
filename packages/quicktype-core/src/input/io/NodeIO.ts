@@ -3,7 +3,7 @@ import * as fs from "fs";
 import { defined, exceptionToString } from "@glideapps/ts-necessities";
 import { isNode } from "browser-or-node";
 import isURL from "is-url";
-import { type Readable } from "readable-stream";
+import type { Readable } from "readable-stream";
 
 import { messageError } from "../../Messages";
 import { panic } from "../../support/Support";
@@ -25,10 +25,10 @@ function parseHeaders(httpHeaders?: string[]): HttpHeaders {
         return {};
     }
 
-    return httpHeaders.reduce(function (
+    return httpHeaders.reduce((
         result: HttpHeaders,
         httpHeader: string,
-    ) {
+    ) => {
         if (httpHeader !== undefined && httpHeader.length > 0) {
             const split = httpHeader.indexOf(":");
 

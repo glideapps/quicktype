@@ -6,15 +6,15 @@ import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer";
-import { type Name, type Namer } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
+import type { Name, Namer } from "../../Naming";
+import type { RenderContext } from "../../Renderer";
 import { type Sourcelike, maybeAnnotated } from "../../Source";
-import { type TargetLanguage } from "../../TargetLanguage";
-import {
-    type ClassType,
-    type EnumType,
-    type Type,
-    type UnionType,
+import type { TargetLanguage } from "../../TargetLanguage";
+import type {
+    ClassType,
+    EnumType,
+    Type,
+    UnionType,
 } from "../../Type";
 import {
     matchType,
@@ -193,7 +193,7 @@ export class CrystalRenderer extends ConvenienceRenderer {
 
         const [, nonNulls] = removeNullFromUnion(u);
 
-        let types: Sourcelike[][] = [];
+        const types: Sourcelike[][] = [];
         this.forEachUnionMember(u, nonNulls, "none", null, (_name, t) => {
             const crystalType = this.breakCycle(t, true);
             types.push([crystalType]);

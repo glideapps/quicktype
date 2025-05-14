@@ -6,15 +6,15 @@ import {
     emptyTypeAttributes,
 } from "./attributes/TypeAttributes";
 import { assert, indentationString, panic } from "./support/Support";
-import {
-    type ClassProperty,
-    type MaybeTypeIdentity,
-    type PrimitiveTypeKind,
-    type Type,
+import type {
+    ClassProperty,
+    MaybeTypeIdentity,
+    PrimitiveTypeKind,
+    Type,
 } from "./Type";
 import { TypeBuilder } from "./Type/TypeBuilder";
-import { type StringTypeMapping } from "./Type/TypeBuilderUtils";
-import { type TypeGraph } from "./Type/TypeGraph";
+import type { StringTypeMapping } from "./Type/TypeBuilderUtils";
+import type { TypeGraph } from "./Type/TypeGraph";
 import {
     type TypeRef,
     assertTypeRefGraph,

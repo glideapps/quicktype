@@ -22,7 +22,7 @@ import {
     UnionMemberMatchTransformer,
     transformationForType,
 } from "../../Transformers";
-import { type ClassType, type Type } from "../../Type";
+import type { ClassType, Type } from "../../Type";
 import { matchType } from "../../Type/TypeUtils";
 
 import { PythonRenderer } from "./PythonRenderer";

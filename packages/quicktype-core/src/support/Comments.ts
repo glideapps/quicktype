@@ -1,4 +1,4 @@
-import { type Sourcelike } from "../Source";
+import type { Sourcelike } from "../Source";
 
 export interface CommentOptions {
     afterComment?: string;

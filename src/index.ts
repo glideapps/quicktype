@@ -15,7 +15,7 @@ import {
 import commandLineArgs from "command-line-args";
 import getUsage from "command-line-usage";
 import * as _ from "lodash";
-import { type Readable } from "readable-stream";
+import type { Readable } from "readable-stream";
 import stringToStream from "string-to-stream";
 import _wordwrap from "wordwrap";
 
@@ -59,11 +59,11 @@ import { schemaForTypeScriptSources } from "quicktype-typescript-input";
 
 import { CompressedJSONFromStream } from "./CompressedJSONFromStream";
 import { introspectServer } from "./GraphQLIntrospection";
-import {
-    type GraphQLTypeSource,
-    type JSONTypeSource,
-    type SchemaTypeSource,
-    type TypeSource,
+import type {
+    GraphQLTypeSource,
+    JSONTypeSource,
+    SchemaTypeSource,
+    TypeSource,
 } from "./TypeSource";
 import { urlsFromURLGrammar } from "./URLGrammar";
 
@@ -276,7 +276,7 @@ function inferLang(
 ): string | LanguageName {
     // Output file extension determines the language if language is undefined
     if (options.out !== undefined) {
-        let extension = path.extname(options.out);
+        const extension = path.extname(options.out);
         if (extension === "") {
             return messageError("DriverNoLanguageOrExtension", {});
         }
@@ -290,16 +290,16 @@ function inferLang(
 function inferTopLevel(options: Partial<CLIOptions>): string {
     // Output file name determines the top-level if undefined
     if (options.out !== undefined) {
-        let extension = path.extname(options.out);
-        let without = path.basename(options.out).replace(extension, "");
+        const extension = path.extname(options.out);
+        const without = path.basename(options.out).replace(extension, "");
         return without;
     }
 
     // Source determines the top-level if undefined
     if (options.src !== undefined && options.src.length === 1) {
-        let src = options.src[0];
-        let extension = path.extname(src);
-        let without = path.basename(src).replace(extension, "");
+        const src = options.src[0];
+        const extension = path.extname(src);
+        const without = path.basename(src).replace(extension, "");
         return without;
     }
 

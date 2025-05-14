@@ -1,5 +1,5 @@
-import { type ConvenienceRenderer } from "../../ConvenienceRenderer";
-import { type RenderContext } from "../../Renderer";
+import type { ConvenienceRenderer } from "../../ConvenienceRenderer";
+import type { RenderContext } from "../../Renderer";
 import {
     EnumOption,
     StringOption,
@@ -7,7 +7,7 @@ import {
 } from "../../RendererOptions";
 import { assertNever } from "../../support/Support";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type FixMeOptionsType } from "../../types";
+import type { FixMeOptionsType } from "../../types";
 
 import { Smithy4sRenderer } from "./Smithy4sRenderer";
 

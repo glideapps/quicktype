@@ -15,8 +15,8 @@ import { messageError } from "../Messages";
 import { assert, defined, mustNotHappen } from "../support/Support";
 
 import { provenanceTypeAttributeKind } from "./ProvenanceTypeAttributeKind";
-import { type Type } from "./Type";
-import { type TypeBuilder } from "./TypeBuilder";
+import type { Type } from "./Type";
+import type { TypeBuilder } from "./TypeBuilder";
 import {
     type StringTypeMapping,
     getNoStringTypeMapping,
@@ -234,7 +234,7 @@ export class TypeGraph {
         predicate: ((t: Type) => boolean) | undefined,
     ): ReadonlySet<Type> {
         const seen = new Set<Type>();
-        let types: Type[] = [];
+        const types: Type[] = [];
 
         function addFromType(t: Type): void {
             if (seen.has(t)) {

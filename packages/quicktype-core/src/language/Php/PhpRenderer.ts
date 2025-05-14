@@ -14,18 +14,18 @@ import {
     type Namer,
     funPrefixNamer,
 } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
 import { type Sourcelike, maybeAnnotated } from "../../Source";
 import { acronymStyle } from "../../support/Acronyms";
 import { defined } from "../../support/Support";
-import { type TargetLanguage } from "../../TargetLanguage";
-import {
-    type ClassProperty,
-    type ClassType,
-    type EnumType,
-    type Type,
-    type UnionType,
+import type { TargetLanguage } from "../../TargetLanguage";
+import type {
+    ClassProperty,
+    ClassType,
+    EnumType,
+    Type,
+    UnionType,
 } from "../../Type";
 import {
     directlyReachableSingleNamedType,
@@ -33,7 +33,7 @@ import {
     nullableFromUnion,
 } from "../../Type/TypeUtils";
 
-import { type phpOptions } from "./language";
+import type { phpOptions } from "./language";
 import { phpNameStyle, stringEscape } from "./utils";
 
 export interface FunctionNames {
@@ -1169,7 +1169,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                     "public function validate(): bool",
                 ],
                 () => {
-                    let lines: Sourcelike[][] = [];
+                    const lines: Sourcelike[][] = [];
                     let p = "return ";
                     this.forEachClassProperty(
                         c,

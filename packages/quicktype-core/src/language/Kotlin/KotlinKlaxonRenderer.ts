@@ -1,12 +1,12 @@
 import { arrayIntercalate, iterableSome } from "collection-utils";
 
-import { type Name } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
+import type { Name } from "../../Naming";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
 import { type Sourcelike, modifySource } from "../../Source";
 import { camelCase } from "../../support/Strings";
 import { mustNotHappen } from "../../support/Support";
-import { type TargetLanguage } from "../../TargetLanguage";
+import type { TargetLanguage } from "../../TargetLanguage";
 import {
     type ArrayType,
     ClassType,
@@ -19,7 +19,7 @@ import {
 import { matchType, nullableFromUnion } from "../../Type/TypeUtils";
 
 import { KotlinRenderer } from "./KotlinRenderer";
-import { type kotlinOptions } from "./language";
+import type { kotlinOptions } from "./language";
 import { stringEscape } from "./utils";
 
 export class KotlinKlaxonRenderer extends KotlinRenderer {
@@ -120,7 +120,7 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
             this.emitGenericConverter();
         }
 
-        let converters: Sourcelike[][] = [];
+        const converters: Sourcelike[][] = [];
         if (hasEmptyObjects) {
             converters.push([
                 [".convert(JsonObject::class,"],
@@ -299,7 +299,7 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
                         " = when (value)",
                     ],
                     () => {
-                        let table: Sourcelike[][] = [];
+                        const table: Sourcelike[][] = [];
                         this.forEachEnumCase(e, "none", (name, json) => {
                             table.push([
                                 [`"${stringEscape(json)}"`],
@@ -356,7 +356,7 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
             "public fun toJson(): String = klaxon.toJsonString(when (this) {",
         );
         this.indent(() => {
-            let toJsonTable: Sourcelike[][] = [];
+            const toJsonTable: Sourcelike[][] = [];
             this.forEachUnionMember(u, nonNulls, "none", null, (name) => {
                 toJsonTable.push([["is ", name], [" -> this.value"]]);
             });
@@ -376,7 +376,7 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
                 " = when (jv.inside) {",
             );
             this.indent(() => {
-                let table: Sourcelike[][] = [];
+                const table: Sourcelike[][] = [];
                 this.forEachUnionMember(
                     u,
                     nonNulls,

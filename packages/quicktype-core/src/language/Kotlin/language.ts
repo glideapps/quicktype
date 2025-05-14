@@ -1,5 +1,5 @@
-import { type ConvenienceRenderer } from "../../ConvenienceRenderer";
-import { type RenderContext } from "../../Renderer";
+import type { ConvenienceRenderer } from "../../ConvenienceRenderer";
+import type { RenderContext } from "../../Renderer";
 import {
     EnumOption,
     StringOption,
@@ -8,7 +8,7 @@ import {
 import { AcronymStyleOptions, acronymOption } from "../../support/Acronyms";
 import { assertNever } from "../../support/Support";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type FixMeOptionsType } from "../../types";
+import type { FixMeOptionsType } from "../../types";
 
 import { KotlinJacksonRenderer } from "./KotlinJacksonRenderer";
 import { KotlinKlaxonRenderer } from "./KotlinKlaxonRenderer";
