@@ -19,11 +19,13 @@ function randomPick<T>(arr: T[]): T {
 
 function guys(n: number): string {
     return _.range(n)
-        .map(_i => randomPick(WORKERS))
+        .map((_i) => randomPick(WORKERS))
         .join(" ");
 }
 
-export async function inParallel<Item, Result, Acc>(args: ParallelArgs<Item, Result, Acc>) {
+export async function inParallel<Item, Result, Acc>(
+    args: ParallelArgs<Item, Result, Acc>,
+) {
     let { queue } = args;
     let items = queue.map((item, i) => {
         return { item, i };
@@ -33,7 +35,7 @@ export async function inParallel<Item, Result, Acc>(args: ParallelArgs<Item, Res
         let { setup, workers, map } = args;
         await setup();
 
-        cluster.on("message", worker => {
+        cluster.on("message", (worker) => {
             const msg = items.pop();
             if (msg !== undefined) {
                 worker.send(msg);
@@ -61,12 +63,12 @@ export async function inParallel<Item, Result, Acc>(args: ParallelArgs<Item, Res
                 await map(item, i);
             }
         } else {
-            _.range(workers).forEach(i =>
+            _.range(workers).forEach((i) =>
                 cluster.fork({
                     worker: i,
                     // https://github.com/TypeStrong/ts-node/issues/367
-                    TS_NODE_PROJECT: "test/tsconfig.json"
-                })
+                    TS_NODE_PROJECT: "test/tsconfig.json",
+                }),
             );
         }
     } else {
@@ -76,7 +78,7 @@ export async function inParallel<Item, Result, Acc>(args: ParallelArgs<Item, Res
         // master sends a { fixtureName, sample } to run
         process.on("message", async ({ item, i }) => {
             process.send?.({
-                result: await map(item, i)
+                result: await map(item, i),
             });
         });
 

@@ -11,7 +11,7 @@ import {
     isPrintable,
     legalizeCharacters,
     splitIntoWords,
-    utf32ConcatMap
+    utf32ConcatMap,
 } from "../../support/Strings";
 
 function isPartCharacter(codePoint: number): boolean {
@@ -27,7 +27,7 @@ const legalizeName = legalizeCharacters(isPartCharacter);
 export function kotlinNameStyle(
     isUpper: boolean,
     original: string,
-    acronymsStyle: (s: string) => string = allUpperWordStyle
+    acronymsStyle: (s: string) => string = allUpperWordStyle,
 ): string {
     const words = splitIntoWords(original);
     return combineWords(
@@ -38,7 +38,7 @@ export function kotlinNameStyle(
         isUpper ? allUpperWordStyle : allLowerWordStyle,
         acronymsStyle,
         "",
-        isStartCharacter
+        isStartCharacter,
     );
 }
 
@@ -47,7 +47,9 @@ function unicodeEscape(codePoint: number): string {
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-const _stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
+const _stringEscape = utf32ConcatMap(
+    escapeNonPrintableMapper(isPrintable, unicodeEscape),
+);
 
 export function stringEscape(s: string): string {
     // "$this" is a template string in Kotlin so we have to escape $

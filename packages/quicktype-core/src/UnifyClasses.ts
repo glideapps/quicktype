@@ -1,9 +1,22 @@
 import { iterableFirst, setUnionInto } from "collection-utils";
 
-import { type TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./attributes/TypeAttributes";
-import { type BaseGraphRewriteBuilder, type GraphRewriteBuilder, type TypeLookerUp } from "./GraphRewriting";
+import {
+    type TypeAttributes,
+    combineTypeAttributes,
+    emptyTypeAttributes,
+} from "./attributes/TypeAttributes";
+import {
+    type BaseGraphRewriteBuilder,
+    type GraphRewriteBuilder,
+    type TypeLookerUp,
+} from "./GraphRewriting";
 import { assert, defined, panic } from "./support/Support";
-import { type ClassProperty, type ObjectType, type Type, UnionType } from "./Type/Type";
+import {
+    type ClassProperty,
+    type ObjectType,
+    type Type,
+    UnionType,
+} from "./Type/Type";
 import { type TypeBuilder } from "./Type/TypeBuilder";
 import { type TypeRef, derefTypeRef } from "./Type/TypeRef";
 import { assertIsObject } from "./Type/TypeUtils";
@@ -12,7 +25,7 @@ import { TypeRefUnionAccumulator, UnionBuilder } from "./UnionBuilder";
 function getCliqueProperties(
     clique: ObjectType[],
     builder: TypeBuilder,
-    makePropertyType: (types: ReadonlySet<Type>) => TypeRef
+    makePropertyType: (types: ReadonlySet<Type>) => TypeRef,
 ): [ReadonlyMap<string, ClassProperty>, TypeRef | undefined, boolean] {
     let lostTypeAttributes = false;
     let propertyNames = new Set<string>();
@@ -20,7 +33,9 @@ function getCliqueProperties(
         setUnionInto(propertyNames, o.getProperties().keys());
     }
 
-    let properties = Array.from(propertyNames).map(name => [name, new Set(), false] as [string, Set<Type>, boolean]);
+    let properties = Array.from(propertyNames).map(
+        (name) => [name, new Set(), false] as [string, Set<Type>, boolean],
+    );
     let additionalProperties: Set<Type> | undefined = undefined;
     for (const o of clique) {
         let additional = o.getAdditionalProperties();
@@ -57,11 +72,18 @@ function getCliqueProperties(
     }
 
     const unifiedAdditionalProperties =
-        additionalProperties === undefined ? undefined : makePropertyType(additionalProperties);
+        additionalProperties === undefined
+            ? undefined
+            : makePropertyType(additionalProperties);
 
-    const unifiedPropertiesArray = properties.map(([name, types, isOptional]) => {
-        return [name, builder.makeClassProperty(makePropertyType(types), isOptional)] as [string, ClassProperty];
-    });
+    const unifiedPropertiesArray = properties.map(
+        ([name, types, isOptional]) => {
+            return [
+                name,
+                builder.makeClassProperty(makePropertyType(types), isOptional),
+            ] as [string, ClassProperty];
+        },
+    );
     const unifiedProperties = new Map(unifiedPropertiesArray);
 
     return [unifiedProperties, unifiedAdditionalProperties, lostTypeAttributes];
@@ -89,15 +111,23 @@ function countProperties(clique: ObjectType[]): {
         }
     }
 
-    return { hasProperties, hasAdditionalProperties, hasNonAnyAdditionalProperties };
+    return {
+        hasProperties,
+        hasAdditionalProperties,
+        hasNonAnyAdditionalProperties,
+    };
 }
 
-export class UnifyUnionBuilder extends UnionBuilder<BaseGraphRewriteBuilder, TypeRef[], TypeRef[]> {
+export class UnifyUnionBuilder extends UnionBuilder<
+    BaseGraphRewriteBuilder,
+    TypeRef[],
+    TypeRef[]
+> {
     public constructor(
         typeBuilder: BaseGraphRewriteBuilder,
         private readonly _makeObjectTypes: boolean,
         private readonly _makeClassesFixed: boolean,
-        private readonly _unifyTypes: (typesToUnify: TypeRef[]) => TypeRef
+        private readonly _unifyTypes: (typesToUnify: TypeRef[]) => TypeRef,
     ) {
         super(typeBuilder);
     }
@@ -105,50 +135,71 @@ export class UnifyUnionBuilder extends UnionBuilder<BaseGraphRewriteBuilder, Typ
     protected makeObject(
         objectRefs: TypeRef[],
         typeAttributes: TypeAttributes,
-        forwardingRef: TypeRef | undefined
+        forwardingRef: TypeRef | undefined,
     ): TypeRef {
-        const maybeTypeRef = this.typeBuilder.lookupTypeRefs(objectRefs, forwardingRef);
+        const maybeTypeRef = this.typeBuilder.lookupTypeRefs(
+            objectRefs,
+            forwardingRef,
+        );
         if (maybeTypeRef !== undefined) {
             assert(
                 forwardingRef === undefined || maybeTypeRef === forwardingRef,
-                "The forwarding ref must be consumed"
+                "The forwarding ref must be consumed",
             );
             this.typeBuilder.addAttributes(maybeTypeRef, typeAttributes);
             return maybeTypeRef;
         }
 
         if (objectRefs.length === 1) {
-            return this.typeBuilder.reconstituteTypeRef(objectRefs[0], typeAttributes, forwardingRef);
+            return this.typeBuilder.reconstituteTypeRef(
+                objectRefs[0],
+                typeAttributes,
+                forwardingRef,
+            );
         }
 
-        const objectTypes = objectRefs.map(r => assertIsObject(derefTypeRef(r, this.typeBuilder)));
-        const { hasProperties, hasAdditionalProperties, hasNonAnyAdditionalProperties } = countProperties(objectTypes);
+        const objectTypes = objectRefs.map((r) =>
+            assertIsObject(derefTypeRef(r, this.typeBuilder)),
+        );
+        const {
+            hasProperties,
+            hasAdditionalProperties,
+            hasNonAnyAdditionalProperties,
+        } = countProperties(objectTypes);
 
-        if (!this._makeObjectTypes && (hasNonAnyAdditionalProperties || (!hasProperties && hasAdditionalProperties))) {
+        if (
+            !this._makeObjectTypes &&
+            (hasNonAnyAdditionalProperties ||
+                (!hasProperties && hasAdditionalProperties))
+        ) {
             const propertyTypes = new Set<TypeRef>();
             for (const o of objectTypes) {
                 setUnionInto(
                     propertyTypes,
-                    Array.from(o.getProperties().values()).map(cp => cp.typeRef)
+                    Array.from(o.getProperties().values()).map(
+                        (cp) => cp.typeRef,
+                    ),
                 );
             }
 
             const additionalPropertyTypes = new Set(
                 objectTypes
-                    .filter(o => o.getAdditionalProperties() !== undefined)
-                    .map(o => defined(o.getAdditionalProperties()).typeRef)
+                    .filter((o) => o.getAdditionalProperties() !== undefined)
+                    .map((o) => defined(o.getAdditionalProperties()).typeRef),
             );
             setUnionInto(propertyTypes, additionalPropertyTypes);
-            return this.typeBuilder.getMapType(typeAttributes, this._unifyTypes(Array.from(propertyTypes)));
-        } else {
-            const [properties, additionalProperties, lostTypeAttributes] = getCliqueProperties(
-                objectTypes,
-                this.typeBuilder,
-                types => {
-                    assert(types.size > 0, "Property has no type");
-                    return this._unifyTypes(Array.from(types).map(t => t.typeRef));
-                }
+            return this.typeBuilder.getMapType(
+                typeAttributes,
+                this._unifyTypes(Array.from(propertyTypes)),
             );
+        } else {
+            const [properties, additionalProperties, lostTypeAttributes] =
+                getCliqueProperties(objectTypes, this.typeBuilder, (types) => {
+                    assert(types.size > 0, "Property has no type");
+                    return this._unifyTypes(
+                        Array.from(types).map((t) => t.typeRef),
+                    );
+                });
             if (lostTypeAttributes) {
                 this.typeBuilder.setLostTypeAttributes();
             }
@@ -158,15 +209,18 @@ export class UnifyUnionBuilder extends UnionBuilder<BaseGraphRewriteBuilder, Typ
                     typeAttributes,
                     properties,
                     additionalProperties,
-                    forwardingRef
+                    forwardingRef,
                 );
             } else {
-                assert(additionalProperties === undefined, "We have additional properties but want to make a class");
+                assert(
+                    additionalProperties === undefined,
+                    "We have additional properties but want to make a class",
+                );
                 return this.typeBuilder.getUniqueClassType(
                     typeAttributes,
                     this._makeClassesFixed,
                     properties,
-                    forwardingRef
+                    forwardingRef,
                 );
             }
         }
@@ -175,9 +229,13 @@ export class UnifyUnionBuilder extends UnionBuilder<BaseGraphRewriteBuilder, Typ
     protected makeArray(
         arrays: TypeRef[],
         typeAttributes: TypeAttributes,
-        forwardingRef: TypeRef | undefined
+        forwardingRef: TypeRef | undefined,
     ): TypeRef {
-        const ref = this.typeBuilder.getArrayType(typeAttributes, this._unifyTypes(arrays), forwardingRef);
+        const ref = this.typeBuilder.getArrayType(
+            typeAttributes,
+            this._unifyTypes(arrays),
+            forwardingRef,
+        );
         return ref;
     }
 }
@@ -186,16 +244,25 @@ export function unionBuilderForUnification<T extends Type>(
     typeBuilder: GraphRewriteBuilder<T>,
     makeObjectTypes: boolean,
     makeClassesFixed: boolean,
-    conflateNumbers: boolean
+    conflateNumbers: boolean,
 ): UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef[], TypeRef[]> {
-    return new UnifyUnionBuilder(typeBuilder, makeObjectTypes, makeClassesFixed, trefs =>
-        unifyTypes(
-            new Set(trefs.map(tref => derefTypeRef(tref, typeBuilder))),
-            emptyTypeAttributes,
-            typeBuilder,
-            unionBuilderForUnification(typeBuilder, makeObjectTypes, makeClassesFixed, conflateNumbers),
-            conflateNumbers
-        )
+    return new UnifyUnionBuilder(
+        typeBuilder,
+        makeObjectTypes,
+        makeClassesFixed,
+        (trefs) =>
+            unifyTypes(
+                new Set(trefs.map((tref) => derefTypeRef(tref, typeBuilder))),
+                emptyTypeAttributes,
+                typeBuilder,
+                unionBuilderForUnification(
+                    typeBuilder,
+                    makeObjectTypes,
+                    makeClassesFixed,
+                    conflateNumbers,
+                ),
+                conflateNumbers,
+            ),
     );
 }
 
@@ -205,9 +272,13 @@ export function unifyTypes<T extends Type>(
     types: ReadonlySet<Type>,
     typeAttributes: TypeAttributes,
     typeBuilder: GraphRewriteBuilder<T>,
-    unionBuilder: UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef[], TypeRef[]>,
+    unionBuilder: UnionBuilder<
+        TypeBuilder & TypeLookerUp,
+        TypeRef[],
+        TypeRef[]
+    >,
     conflateNumbers: boolean,
-    maybeForwardingRef?: TypeRef
+    maybeForwardingRef?: TypeRef,
 ): TypeRef {
     typeAttributes = typeBuilder.reconstituteTypeAttributes(typeAttributes);
     if (types.size === 0) {
@@ -215,23 +286,44 @@ export function unifyTypes<T extends Type>(
     } else if (types.size === 1) {
         const first = defined(iterableFirst(types));
         if (!(first instanceof UnionType)) {
-            return typeBuilder.reconstituteTypeRef(first.typeRef, typeAttributes, maybeForwardingRef);
+            return typeBuilder.reconstituteTypeRef(
+                first.typeRef,
+                typeAttributes,
+                maybeForwardingRef,
+            );
         }
     }
 
-    const typeRefs = Array.from(types).map(t => t.typeRef);
-    const maybeTypeRef = typeBuilder.lookupTypeRefs(typeRefs, maybeForwardingRef);
+    const typeRefs = Array.from(types).map((t) => t.typeRef);
+    const maybeTypeRef = typeBuilder.lookupTypeRefs(
+        typeRefs,
+        maybeForwardingRef,
+    );
     if (maybeTypeRef !== undefined) {
         typeBuilder.addAttributes(maybeTypeRef, typeAttributes);
         return maybeTypeRef;
     }
 
     const accumulator = new TypeRefUnionAccumulator(conflateNumbers);
-    const nestedAttributes = typeBuilder.reconstituteTypeAttributes(accumulator.addTypes(types));
-    typeAttributes = combineTypeAttributes("union", typeAttributes, nestedAttributes);
+    const nestedAttributes = typeBuilder.reconstituteTypeAttributes(
+        accumulator.addTypes(types),
+    );
+    typeAttributes = combineTypeAttributes(
+        "union",
+        typeAttributes,
+        nestedAttributes,
+    );
 
-    return typeBuilder.withForwardingRef(maybeForwardingRef, forwardingRef => {
-        typeBuilder.registerUnion(typeRefs, forwardingRef);
-        return unionBuilder.buildUnion(accumulator, false, typeAttributes, forwardingRef);
-    });
+    return typeBuilder.withForwardingRef(
+        maybeForwardingRef,
+        (forwardingRef) => {
+            typeBuilder.registerUnion(typeRefs, forwardingRef);
+            return unionBuilder.buildUnion(
+                accumulator,
+                false,
+                typeAttributes,
+                forwardingRef,
+            );
+        },
+    );
 }

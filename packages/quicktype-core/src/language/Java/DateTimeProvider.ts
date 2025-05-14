@@ -5,7 +5,7 @@ import { type JavaRenderer } from "./JavaRenderer";
 export abstract class JavaDateTimeProvider {
     public constructor(
         protected readonly _renderer: JavaRenderer,
-        protected readonly _className: string
+        protected readonly _className: string,
     ) {}
 
     public abstract keywords: string[];
@@ -56,7 +56,7 @@ export class Java8DateTimeProvider extends JavaDateTimeProvider {
         "ZonedDateTime",
         "DateTimeFormatter",
         "DateTimeFormatterBuilder",
-        "ChronoField"
+        "ChronoField",
     ];
 
     public dateTimeImports: string[] = ["java.time.OffsetDateTime"];
@@ -73,7 +73,7 @@ export class Java8DateTimeProvider extends JavaDateTimeProvider {
         "java.time.ZonedDateTime",
         "java.time.format.DateTimeFormatter",
         "java.time.format.DateTimeFormatterBuilder",
-        "java.time.temporal.ChronoField"
+        "java.time.temporal.ChronoField",
     ];
 
     public dateTimeType = "OffsetDateTime";
@@ -91,48 +91,76 @@ export class Java8DateTimeProvider extends JavaDateTimeProvider {
     public emitDateTimeConverters(): void {
         this._renderer.ensureBlankLine();
         this._renderer.emitLine(
-            "private static final DateTimeFormatter DATE_TIME_FORMATTER = new DateTimeFormatterBuilder()"
+            "private static final DateTimeFormatter DATE_TIME_FORMATTER = new DateTimeFormatterBuilder()",
         );
         this._renderer.indent(() =>
             this._renderer.indent(() => {
-                this._renderer.emitLine(".appendOptional(DateTimeFormatter.ISO_DATE_TIME)");
-                this._renderer.emitLine(".appendOptional(DateTimeFormatter.ISO_OFFSET_DATE_TIME)");
-                this._renderer.emitLine(".appendOptional(DateTimeFormatter.ISO_INSTANT)");
-                this._renderer.emitLine('.appendOptional(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SX"))');
-                this._renderer.emitLine('.appendOptional(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ssX"))');
-                this._renderer.emitLine('.appendOptional(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))');
+                this._renderer.emitLine(
+                    ".appendOptional(DateTimeFormatter.ISO_DATE_TIME)",
+                );
+                this._renderer.emitLine(
+                    ".appendOptional(DateTimeFormatter.ISO_OFFSET_DATE_TIME)",
+                );
+                this._renderer.emitLine(
+                    ".appendOptional(DateTimeFormatter.ISO_INSTANT)",
+                );
+                this._renderer.emitLine(
+                    '.appendOptional(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SX"))',
+                );
+                this._renderer.emitLine(
+                    '.appendOptional(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ssX"))',
+                );
+                this._renderer.emitLine(
+                    '.appendOptional(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))',
+                );
                 this._renderer.emitLine(".toFormatter()");
                 this._renderer.emitLine(".withZone(ZoneOffset.UTC);");
-            })
+            }),
         );
         this._renderer.ensureBlankLine();
-        this._renderer.emitBlock("public static OffsetDateTime parseDateTimeString(String str)", () => {
-            this._renderer.emitLine(
-                "return ZonedDateTime.from(Converter.DATE_TIME_FORMATTER.parse(str)).toOffsetDateTime();"
-            );
-        });
+        this._renderer.emitBlock(
+            "public static OffsetDateTime parseDateTimeString(String str)",
+            () => {
+                this._renderer.emitLine(
+                    "return ZonedDateTime.from(Converter.DATE_TIME_FORMATTER.parse(str)).toOffsetDateTime();",
+                );
+            },
+        );
 
         this._renderer.ensureBlankLine();
         this._renderer.emitLine(
-            "private static final DateTimeFormatter TIME_FORMATTER = new DateTimeFormatterBuilder()"
+            "private static final DateTimeFormatter TIME_FORMATTER = new DateTimeFormatterBuilder()",
         );
         this._renderer.indent(() =>
             this._renderer.indent(() => {
-                this._renderer.emitLine(".appendOptional(DateTimeFormatter.ISO_TIME)");
-                this._renderer.emitLine(".appendOptional(DateTimeFormatter.ISO_OFFSET_TIME)");
-                this._renderer.emitLine(".parseDefaulting(ChronoField.YEAR, 2020)");
-                this._renderer.emitLine(".parseDefaulting(ChronoField.MONTH_OF_YEAR, 1)");
-                this._renderer.emitLine(".parseDefaulting(ChronoField.DAY_OF_MONTH, 1)");
+                this._renderer.emitLine(
+                    ".appendOptional(DateTimeFormatter.ISO_TIME)",
+                );
+                this._renderer.emitLine(
+                    ".appendOptional(DateTimeFormatter.ISO_OFFSET_TIME)",
+                );
+                this._renderer.emitLine(
+                    ".parseDefaulting(ChronoField.YEAR, 2020)",
+                );
+                this._renderer.emitLine(
+                    ".parseDefaulting(ChronoField.MONTH_OF_YEAR, 1)",
+                );
+                this._renderer.emitLine(
+                    ".parseDefaulting(ChronoField.DAY_OF_MONTH, 1)",
+                );
                 this._renderer.emitLine(".toFormatter()");
                 this._renderer.emitLine(".withZone(ZoneOffset.UTC);");
-            })
+            }),
         );
         this._renderer.ensureBlankLine();
-        this._renderer.emitBlock("public static OffsetTime parseTimeString(String str)", () => {
-            this._renderer.emitLine(
-                "return ZonedDateTime.from(Converter.TIME_FORMATTER.parse(str)).toOffsetDateTime().toOffsetTime();"
-            );
-        });
+        this._renderer.emitBlock(
+            "public static OffsetTime parseTimeString(String str)",
+            () => {
+                this._renderer.emitLine(
+                    "return ZonedDateTime.from(Converter.TIME_FORMATTER.parse(str)).toOffsetDateTime().toOffsetTime();",
+                );
+            },
+        );
     }
 
     public convertStringToDateTime(variable: Sourcelike): Sourcelike {
@@ -148,15 +176,24 @@ export class Java8DateTimeProvider extends JavaDateTimeProvider {
     }
 
     public convertDateTimeToString(variable: Sourcelike): Sourcelike {
-        return [variable, ".format(java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME)"];
+        return [
+            variable,
+            ".format(java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME)",
+        ];
     }
 
     public convertTimeToString(variable: Sourcelike): Sourcelike {
-        return [variable, ".format(java.time.format.DateTimeFormatter.ISO_OFFSET_TIME)"];
+        return [
+            variable,
+            ".format(java.time.format.DateTimeFormatter.ISO_OFFSET_TIME)",
+        ];
     }
 
     public convertDateToString(variable: Sourcelike): Sourcelike {
-        return [variable, ".format(java.time.format.DateTimeFormatter.ISO_DATE)"];
+        return [
+            variable,
+            ".format(java.time.format.DateTimeFormatter.ISO_DATE)",
+        ];
     }
 }
 export class JavaLegacyDateTimeProvider extends JavaDateTimeProvider {
@@ -168,7 +205,10 @@ export class JavaLegacyDateTimeProvider extends JavaDateTimeProvider {
 
     public timeImports: string[] = ["java.util.Date"];
 
-    public converterImports: string[] = ["java.util.Date", "java.text.SimpleDateFormat"];
+    public converterImports: string[] = [
+        "java.util.Date",
+        "java.text.SimpleDateFormat",
+    ];
 
     public dateTimeType = "Date";
 
@@ -177,12 +217,16 @@ export class JavaLegacyDateTimeProvider extends JavaDateTimeProvider {
     public timeType = "Date";
 
     public dateTimeJacksonAnnotations: string[] = [
-        '@JsonFormat(pattern = "yyyy-MM-dd\'T\'HH:mm:ssX", timezone = "UTC")'
+        '@JsonFormat(pattern = "yyyy-MM-dd\'T\'HH:mm:ssX", timezone = "UTC")',
     ];
 
-    public dateJacksonAnnotations: string[] = ['@JsonFormat(pattern = "yyyy-MM-dd")'];
+    public dateJacksonAnnotations: string[] = [
+        '@JsonFormat(pattern = "yyyy-MM-dd")',
+    ];
 
-    public timeJacksonAnnotations: string[] = ['@JsonFormat(pattern = "HH:mm:ssX", timezone = "UTC")'];
+    public timeJacksonAnnotations: string[] = [
+        '@JsonFormat(pattern = "HH:mm:ssX", timezone = "UTC")',
+    ];
 
     public shouldEmitTimeConverter = false;
 
@@ -190,7 +234,9 @@ export class JavaLegacyDateTimeProvider extends JavaDateTimeProvider {
 
     public emitDateTimeConverters(): void {
         this._renderer.ensureBlankLine();
-        this._renderer.emitLine("private static final String[] DATE_TIME_FORMATS = {");
+        this._renderer.emitLine(
+            "private static final String[] DATE_TIME_FORMATS = {",
+        );
         this._renderer.indent(() =>
             this._renderer.indent(() => {
                 this._renderer.emitLine("\"yyyy-MM-dd'T'HH:mm:ss.SX\",");
@@ -206,33 +252,56 @@ export class JavaLegacyDateTimeProvider extends JavaDateTimeProvider {
                 this._renderer.emitLine('"HH:mm:ssZ",');
                 this._renderer.emitLine('"HH:mm:ss",');
                 this._renderer.emitLine('"yyyy-MM-dd",');
-            })
+            }),
         );
         this._renderer.emitLine("};");
         this._renderer.ensureBlankLine();
-        this._renderer.emitBlock("public static Date parseAllDateTimeString(String str)", () => {
-            this._renderer.emitBlock("for (String format : DATE_TIME_FORMATS)", () => {
-                this._renderer.emitIgnoredTryCatchBlock(() => {
-                    this._renderer.emitLine("return new SimpleDateFormat(format).parse(str);");
-                });
-            });
-            this._renderer.emitLine("return null;");
-        });
+        this._renderer.emitBlock(
+            "public static Date parseAllDateTimeString(String str)",
+            () => {
+                this._renderer.emitBlock(
+                    "for (String format : DATE_TIME_FORMATS)",
+                    () => {
+                        this._renderer.emitIgnoredTryCatchBlock(() => {
+                            this._renderer.emitLine(
+                                "return new SimpleDateFormat(format).parse(str);",
+                            );
+                        });
+                    },
+                );
+                this._renderer.emitLine("return null;");
+            },
+        );
 
         this._renderer.ensureBlankLine();
-        this._renderer.emitBlock("public static String serializeDateTime(Date datetime)", () => {
-            this._renderer.emitLine("return new SimpleDateFormat(\"yyyy-MM-dd'T'hh:mm:ssZ\").format(datetime);");
-        });
+        this._renderer.emitBlock(
+            "public static String serializeDateTime(Date datetime)",
+            () => {
+                this._renderer.emitLine(
+                    "return new SimpleDateFormat(\"yyyy-MM-dd'T'hh:mm:ssZ\").format(datetime);",
+                );
+            },
+        );
 
         this._renderer.ensureBlankLine();
-        this._renderer.emitBlock("public static String serializeDate(Date datetime)", () => {
-            this._renderer.emitLine('return new SimpleDateFormat("yyyy-MM-dd").format(datetime);');
-        });
+        this._renderer.emitBlock(
+            "public static String serializeDate(Date datetime)",
+            () => {
+                this._renderer.emitLine(
+                    'return new SimpleDateFormat("yyyy-MM-dd").format(datetime);',
+                );
+            },
+        );
 
         this._renderer.ensureBlankLine();
-        this._renderer.emitBlock("public static String serializeTime(Date datetime)", () => {
-            this._renderer.emitLine('return new SimpleDateFormat("hh:mm:ssZ").format(datetime);');
-        });
+        this._renderer.emitBlock(
+            "public static String serializeTime(Date datetime)",
+            () => {
+                this._renderer.emitLine(
+                    'return new SimpleDateFormat("hh:mm:ssZ").format(datetime);',
+                );
+            },
+        );
     }
 
     public convertStringToDateTime(variable: Sourcelike): Sourcelike {

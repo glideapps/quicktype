@@ -69,7 +69,7 @@ export function sourcelikeToSource(sl: Sourcelike): Source {
     if (sl instanceof Array) {
         return {
             kind: "sequence",
-            sequence: sl.map(sourcelikeToSource)
+            sequence: sl.map(sourcelikeToSource),
         };
     }
 
@@ -83,8 +83,8 @@ export function sourcelikeToSource(sl: Sourcelike): Source {
             kind: "sequence",
             sequence: arrayIntercalate(
                 newline(),
-                lines.map((l: string) => ({ kind: "text", text: l }) as Source)
-            )
+                lines.map((l: string) => ({ kind: "text", text: l }) as Source),
+            ),
         };
     }
 
@@ -99,11 +99,15 @@ export function annotated(annotation: AnnotationData, sl: Sourcelike): Source {
     return {
         kind: "annotated",
         annotation,
-        source: sourcelikeToSource(sl)
+        source: sourcelikeToSource(sl),
     };
 }
 
-export function maybeAnnotated(doAnnotate: boolean, annotation: AnnotationData, sl: Sourcelike): Sourcelike {
+export function maybeAnnotated(
+    doAnnotate: boolean,
+    annotation: AnnotationData,
+    sl: Sourcelike,
+): Sourcelike {
     if (!doAnnotate) {
         return sl;
     }
@@ -111,11 +115,14 @@ export function maybeAnnotated(doAnnotate: boolean, annotation: AnnotationData, 
     return annotated(annotation, sl);
 }
 
-export function modifySource(modifier: (serialized: string) => string, sl: Sourcelike): Sourcelike {
+export function modifySource(
+    modifier: (serialized: string) => string,
+    sl: Sourcelike,
+): Sourcelike {
     return {
         kind: "modified",
         modifier,
-        source: sourcelikeToSource(sl)
+        source: sourcelikeToSource(sl),
     };
 }
 
@@ -140,7 +147,10 @@ export interface SerializedRenderResult {
     lines: string[];
 }
 
-function sourceLineLength(source: Source, names: ReadonlyMap<Name, string>): number {
+function sourceLineLength(
+    source: Source,
+    names: ReadonlyMap<Name, string>,
+): number {
     switch (source.kind) {
         case "text":
             return source.text.length;
@@ -157,7 +167,8 @@ function sourceLineLength(source: Source, names: ReadonlyMap<Name, string>): num
         case "name":
             return defined(names.get(source.named)).length;
         case "modified":
-            return serializeRenderResult(source, names, "").lines.join("\n").length;
+            return serializeRenderResult(source, names, "").lines.join("\n")
+                .length;
         default:
             return assertNever(source);
     }
@@ -166,7 +177,7 @@ function sourceLineLength(source: Source, names: ReadonlyMap<Name, string>): num
 export function serializeRenderResult(
     rootSource: Source,
     names: ReadonlyMap<Name, string>,
-    indentation: string
+    indentation: string,
 ): SerializedRenderResult {
     let indent = 0;
     let indentNeeded = 0;
@@ -217,12 +228,20 @@ export function serializeRenderResult(
                 const t = source.table;
                 const numRows = t.length;
                 if (numRows === 0) break;
-                const widths = t.map(l => l.map(s => sourceLineLength(s, names)));
-                const numColumns = defined(iterableMax(t.map(l => l.length)));
+                const widths = t.map((l) =>
+                    l.map((s) => sourceLineLength(s, names)),
+                );
+                const numColumns = defined(iterableMax(t.map((l) => l.length)));
                 if (numColumns === 0) break;
                 const columnWidths: number[] = [];
                 for (let i = 0; i < numColumns; i++) {
-                    columnWidths.push(defined(iterableMax(widths.map(l => withDefault<number>(l[i], 0)))));
+                    columnWidths.push(
+                        defined(
+                            iterableMax(
+                                widths.map((l) => withDefault<number>(l[i], 0)),
+                            ),
+                        ),
+                    );
                 }
 
                 for (let y = 0; y < numRows; y++) {
@@ -231,11 +250,16 @@ export function serializeRenderResult(
                     const rowWidths = defined(widths[y]);
                     for (let x = 0; x < numColumns; x++) {
                         const colWidth = columnWidths[x];
-                        const src = withDefault<Source>(row[x], { kind: "text", text: "" });
+                        const src = withDefault<Source>(row[x], {
+                            kind: "text",
+                            text: "",
+                        });
                         const srcWidth = withDefault<number>(rowWidths[x], 0);
                         serializeToStringArray(src);
                         if (x < numColumns - 1 && srcWidth < colWidth) {
-                            currentLine.push(repeatString(" ", colWidth - srcWidth));
+                            currentLine.push(
+                                repeatString(" ", colWidth - srcWidth),
+                            );
                         }
                     }
 
@@ -250,7 +274,10 @@ export function serializeRenderResult(
                 const start = currentLocation();
                 serializeToStringArray(source.source);
                 const end = currentLocation();
-                annotations.push({ annotation: source.annotation, span: { start, end } });
+                annotations.push({
+                    annotation: source.annotation,
+                    span: { start, end },
+                });
                 break;
             case "name":
                 assert(names.has(source.named), "No name for Named");
@@ -259,8 +286,15 @@ export function serializeRenderResult(
                 break;
             case "modified":
                 indentIfNeeded();
-                const serialized = serializeRenderResult(source.source, names, indentation).lines;
-                assert(serialized.length === 1, "Cannot modify more than one line.");
+                const serialized = serializeRenderResult(
+                    source.source,
+                    names,
+                    indentation,
+                ).lines;
+                assert(
+                    serialized.length === 1,
+                    "Cannot modify more than one line.",
+                );
                 currentLine.push(source.modifier(serialized[0]));
                 break;
             default:
@@ -282,7 +316,10 @@ export function singleWord(...source: Sourcelike[]): MultiWord {
     return { source, needsParens: false };
 }
 
-export function multiWord(separator: Sourcelike, ...words: Sourcelike[]): MultiWord {
+export function multiWord(
+    separator: Sourcelike,
+    ...words: Sourcelike[]
+): MultiWord {
     assert(words.length > 0, "Zero words is not multiple");
     if (words.length === 1) {
         return singleWord(words[0]);

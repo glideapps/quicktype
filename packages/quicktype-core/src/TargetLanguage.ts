@@ -20,7 +20,9 @@ export interface LanguageConfig {
     readonly names: readonly string[];
 }
 
-export abstract class TargetLanguage<Config extends LanguageConfig = LanguageConfig> {
+export abstract class TargetLanguage<
+    Config extends LanguageConfig = LanguageConfig,
+> {
     public readonly displayName: Config["displayName"];
 
     public readonly names: Config["names"];
@@ -36,7 +38,7 @@ export abstract class TargetLanguage<Config extends LanguageConfig = LanguageCon
     protected abstract getOptions(): Record<string, Option<string, unknown>>;
 
     public get optionDefinitions(): Array<OptionDefinition<string, unknown>> {
-        return Object.values(this.getOptions()).map(o => o.definition);
+        return Object.values(this.getOptions()).map((o) => o.definition);
     }
 
     public get cliOptionDefinitions(): {
@@ -57,7 +59,10 @@ export abstract class TargetLanguage<Config extends LanguageConfig = LanguageCon
         return defined(this.names[0]);
     }
 
-    protected abstract makeRenderer(renderContext: RenderContext, optionValues: FixMeOptionsType): Renderer;
+    protected abstract makeRenderer(
+        renderContext: RenderContext,
+        optionValues: FixMeOptionsType,
+    ): Renderer;
 
     public renderGraphAndSerialize(
         typeGraph: TypeGraph,
@@ -65,7 +70,7 @@ export abstract class TargetLanguage<Config extends LanguageConfig = LanguageCon
         alphabetizeProperties: boolean,
         leadingComments: Comment[] | undefined,
         rendererOptions: FixMeOptionsType,
-        indentation?: string
+        indentation?: string,
     ): MultiFileRenderResult {
         if (indentation === undefined) {
             indentation = this.defaultIndentation;
@@ -78,7 +83,9 @@ export abstract class TargetLanguage<Config extends LanguageConfig = LanguageCon
         }
 
         const renderResult = renderer.render(givenOutputFilename);
-        return mapMap(renderResult.sources, s => serializeRenderResult(s, renderResult.names, defined(indentation)));
+        return mapMap(renderResult.sources, (s) =>
+            serializeRenderResult(s, renderResult.names, defined(indentation)),
+        );
     }
 
     protected get defaultIndentation(): string {

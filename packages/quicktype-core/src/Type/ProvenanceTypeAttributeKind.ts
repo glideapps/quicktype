@@ -26,9 +26,10 @@ class ProvenanceTypeAttributeKind extends TypeAttributeKind<Set<number>> {
     public stringify(p: Set<number>): string {
         return Array.from(p)
             .sort()
-            .map(i => i.toString())
+            .map((i) => i.toString())
             .join(",");
     }
 }
 
-export const provenanceTypeAttributeKind: TypeAttributeKind<Set<number>> = new ProvenanceTypeAttributeKind();
+export const provenanceTypeAttributeKind: TypeAttributeKind<Set<number>> =
+    new ProvenanceTypeAttributeKind();

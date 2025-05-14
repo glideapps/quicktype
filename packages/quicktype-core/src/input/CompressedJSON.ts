@@ -6,7 +6,7 @@ import { assert, defined, panic } from "../support/Support";
 import {
     type TransformedStringTypeKind,
     isPrimitiveStringTypeKind,
-    transformedStringTypeTargetTypeKindsMap
+    transformedStringTypeTargetTypeKindsMap,
 } from "../Type";
 
 export enum Tag {
@@ -20,7 +20,7 @@ export enum Tag {
     Object = 8,
     Array = 9,
     StringFormat = 10,
-    TransformedString = 11
+    TransformedString = 11,
 }
 
 export type Value = number;
@@ -33,7 +33,10 @@ export function makeValue(t: Tag, index: number): Value {
 }
 
 function getIndex(v: Value, tag: Tag): number {
-    assert(valueTag(v) === tag, "Trying to get index for value with invalid tag");
+    assert(
+        valueTag(v) === tag,
+        "Trying to get index for value with invalid tag",
+    );
     return v >> TAG_BITS;
 }
 
@@ -65,7 +68,7 @@ export abstract class CompressedJSON<T> {
 
     public constructor(
         public readonly dateTimeRecognizer: DateTimeRecognizer,
-        public readonly handleRefs: boolean
+        public readonly handleRefs: boolean,
     ) {}
 
     public abstract parse(input: T): Promise<Value>;
@@ -114,7 +117,10 @@ export abstract class CompressedJSON<T> {
 
     protected makeString(s: string): Value {
         const value = makeValue(Tag.InternedString, this.internString(s));
-        assert(typeof value === "number", `Interned string value is not a number: ${value}`);
+        assert(
+            typeof value === "number",
+            `Interned string value is not a number: ${value}`,
+        );
         return value;
     }
 
@@ -135,19 +141,27 @@ export abstract class CompressedJSON<T> {
     }
 
     protected commitValue(value: Value): void {
-        assert(typeof value === "number", `CompressedJSON value is not a number: ${value}`);
+        assert(
+            typeof value === "number",
+            `CompressedJSON value is not a number: ${value}`,
+        );
         if (this._ctx === undefined) {
             assert(
                 this._rootValue === undefined,
-                "Committing value but nowhere to commit to - root value still there."
+                "Committing value but nowhere to commit to - root value still there.",
             );
             this._rootValue = value;
         } else if (this._ctx.currentObject !== undefined) {
             if (this._ctx.currentKey === undefined) {
-                return panic("Must have key and can't have string when committing");
+                return panic(
+                    "Must have key and can't have string when committing",
+                );
             }
 
-            this._ctx.currentObject.push(this.makeString(this._ctx.currentKey), value);
+            this._ctx.currentObject.push(
+                this.makeString(this._ctx.currentKey),
+                value,
+            );
             this._ctx.currentKey = undefined;
         } else if (this._ctx.currentArray !== undefined) {
             this._ctx.currentArray.push(value);
@@ -174,12 +188,24 @@ export abstract class CompressedJSON<T> {
         if (this.handleRefs && this.isExpectingRef) {
             value = this.makeString(s);
         } else {
-            const format = inferTransformedStringTypeKindForString(s, this.dateTimeRecognizer);
+            const format = inferTransformedStringTypeKindForString(
+                s,
+                this.dateTimeRecognizer,
+            );
             if (format !== undefined) {
-                if (defined(transformedStringTypeTargetTypeKindsMap.get(format)).attributesProducer !== undefined) {
-                    value = makeValue(Tag.TransformedString, this.internString(s));
+                if (
+                    defined(transformedStringTypeTargetTypeKindsMap.get(format))
+                        .attributesProducer !== undefined
+                ) {
+                    value = makeValue(
+                        Tag.TransformedString,
+                        this.internString(s),
+                    );
                 } else {
-                    value = makeValue(Tag.StringFormat, this.internString(format));
+                    value = makeValue(
+                        Tag.StringFormat,
+                        this.internString(format),
+                    );
                 }
             } else if (s.length <= 64) {
                 value = this.makeString(s);
@@ -197,7 +223,10 @@ export abstract class CompressedJSON<T> {
             return panic("Finished without root document");
         }
 
-        assert(this._ctx === undefined && this._contextStack.length === 0, "Finished with contexts present");
+        assert(
+            this._ctx === undefined && this._contextStack.length === 0,
+            "Finished with contexts present",
+        );
         this._rootValue = undefined;
         return value;
     }
@@ -211,7 +240,7 @@ export abstract class CompressedJSON<T> {
             currentObject: undefined,
             currentArray: undefined,
             currentKey: undefined,
-            currentNumberIsDouble: false
+            currentNumberIsDouble: false,
         };
     }
 
@@ -265,9 +294,14 @@ export abstract class CompressedJSON<T> {
             hashAccumulator = addHashCode(hashAccumulator, hashString(s));
         }
 
-        for (const s of Object.getOwnPropertyNames(this._stringIndexes).sort()) {
+        for (const s of Object.getOwnPropertyNames(
+            this._stringIndexes,
+        ).sort()) {
             hashAccumulator = addHashCode(hashAccumulator, hashString(s));
-            hashAccumulator = addHashCode(hashAccumulator, this._stringIndexes[s]);
+            hashAccumulator = addHashCode(
+                hashAccumulator,
+                this._stringIndexes[s],
+            );
         }
 
         for (const o of this._objects) {
@@ -306,7 +340,9 @@ export class CompressedJSONFromString extends CompressedJSON<string> {
             this.commitString(json);
         } else if (typeof json === "number") {
             const isDouble =
-                json !== Math.floor(json) || json < Number.MIN_SAFE_INTEGER || json > Number.MAX_SAFE_INTEGER;
+                json !== Math.floor(json) ||
+                json < Number.MIN_SAFE_INTEGER ||
+                json > Number.MAX_SAFE_INTEGER;
             this.commitNumber(isDouble);
         } else if (Array.isArray(json)) {
             this.pushArrayContext();

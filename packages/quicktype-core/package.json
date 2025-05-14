@@ -38,9 +38,7 @@
         "@types/wordwrap": "^1.0.3",
         "typescript": "~5.8.3"
     },
-    "files": [
-        "dist"
-    ],
+    "files": ["dist"],
     "browser": {
         "fs": false
     }

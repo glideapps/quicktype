@@ -22,7 +22,11 @@
  */
 
 import { type RenderContext } from "../../Renderer";
-import { EnumOption, StringOption, getOptionValues } from "../../RendererOptions";
+import {
+    EnumOption,
+    StringOption,
+    getOptionValues,
+} from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
 import { type FixMeOptionsType } from "../../types";
 
@@ -35,7 +39,7 @@ const namingStyles = {
     "camel-case": "camel",
     "upper-underscore-case": "upper-underscore",
     "pascal-case-upper-acronyms": "pascal-upper-acronyms",
-    "camel-case-upper-acronyms": "camel-upper-acronyms"
+    "camel-case-upper-acronyms": "camel-upper-acronyms",
 } as const;
 
 /* cJSON generator options */
@@ -45,10 +49,10 @@ export const cJSONOptions = {
         "Source code generation type, whether to generate single or multiple source files",
         {
             "single-source": true,
-            "multi-source": false
+            "multi-source": false,
         } as const,
         "single-source",
-        "secondary"
+        "secondary",
     ),
     typeIntegerSize: new EnumOption(
         "integer-size",
@@ -57,55 +61,67 @@ export const cJSONOptions = {
             int8_t: "int8_t",
             int16_t: "int16_t",
             int32_t: "int32_t",
-            int64_t: "int64_t"
+            int64_t: "int64_t",
         } as const,
         "int64_t",
-        "secondary"
+        "secondary",
     ),
     hashtableSize: new StringOption(
         "hashtable-size",
         "Hashtable size, used when maps are created (64 by default)",
         "SIZE",
-        "64"
+        "64",
     ),
     addTypedefAlias: new EnumOption(
         "typedef-alias",
         "Add typedef alias to unions, structs, and enums (no typedef by default)",
         {
             "no-typedef": false,
-            "add-typedef": true
+            "add-typedef": true,
         } as const,
         "no-typedef",
-        "secondary"
+        "secondary",
     ),
     printStyle: new EnumOption(
         "print-style",
         "Which cJSON print should be used (formatted by default)",
         {
             "print-formatted": false,
-            "print-unformatted": true
+            "print-unformatted": true,
         } as const,
         "print-formatted",
-        "secondary"
+        "secondary",
     ),
-    typeNamingStyle: new EnumOption("type-style", "Naming style for types", namingStyles, "pascal-case"),
-    memberNamingStyle: new EnumOption("member-style", "Naming style for members", namingStyles, "underscore-case"),
+    typeNamingStyle: new EnumOption(
+        "type-style",
+        "Naming style for types",
+        namingStyles,
+        "pascal-case",
+    ),
+    memberNamingStyle: new EnumOption(
+        "member-style",
+        "Naming style for members",
+        namingStyles,
+        "underscore-case",
+    ),
     enumeratorNamingStyle: new EnumOption(
         "enumerator-style",
         "Naming style for enumerators",
         namingStyles,
-        "upper-underscore-case"
-    )
+        "upper-underscore-case",
+    ),
 };
 
 /* cJSON generator target language */
 export const cJSONLanguageConfig = {
     displayName: "C (cJSON)",
     names: ["cjson", "cJSON"],
-    extension: "h"
+    extension: "h",
 } as const;
 
-export class CJSONTargetLanguage extends TargetLanguage<typeof cJSONLanguageConfig> {
+export class CJSONTargetLanguage extends TargetLanguage<
+    typeof cJSONLanguageConfig
+> {
     public constructor() {
         super(cJSONLanguageConfig);
     }
@@ -140,7 +156,14 @@ export class CJSONTargetLanguage extends TargetLanguage<typeof cJSONLanguageConf
      * @param untypedOptionValues
      * @return cJSON renderer
      */
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): CJSONRenderer {
-        return new CJSONRenderer(this, renderContext, getOptionValues(cJSONOptions, untypedOptionValues));
+    protected makeRenderer(
+        renderContext: RenderContext,
+        untypedOptionValues: FixMeOptionsType,
+    ): CJSONRenderer {
+        return new CJSONRenderer(
+            this,
+            renderContext,
+            getOptionValues(cJSONOptions, untypedOptionValues),
+        );
     }
 }

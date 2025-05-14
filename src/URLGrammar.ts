@@ -37,7 +37,9 @@ function expand(json: unknown): string[] {
     return panic(`Value is not a valid URL grammar: ${json}`);
 }
 
-export function urlsFromURLGrammar(json: unknown): { [name: string]: string[] } {
+export function urlsFromURLGrammar(json: unknown): {
+    [name: string]: string[];
+} {
     const topLevelMap = checkStringMap(json);
     const results: { [name: string]: string[] } = {};
 

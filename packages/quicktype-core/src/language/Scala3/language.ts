@@ -1,6 +1,10 @@
 import { type ConvenienceRenderer } from "../../ConvenienceRenderer";
 import { type RenderContext } from "../../Renderer";
-import { EnumOption, StringOption, getOptionValues } from "../../RendererOptions";
+import {
+    EnumOption,
+    StringOption,
+    getOptionValues,
+} from "../../RendererOptions";
 import { assertNever } from "../../support/Support";
 import { TargetLanguage } from "../../TargetLanguage";
 import { type FixMeOptionsType } from "../../types";
@@ -15,21 +19,23 @@ export const scala3Options = {
         "Serialization framework",
         {
             "just-types": "None",
-            "circe": "Circe",
-            "upickle": "Upickle"
+            circe: "Circe",
+            upickle: "Upickle",
         } as const,
-        "just-types"
+        "just-types",
     ),
-    packageName: new StringOption("package", "Package", "PACKAGE", "quicktype")
+    packageName: new StringOption("package", "Package", "PACKAGE", "quicktype"),
 };
 
 export const scala3LanguageConfig = {
     displayName: "Scala3",
     names: ["scala3"],
-    extension: "scala"
+    extension: "scala",
 } as const;
 
-export class Scala3TargetLanguage extends TargetLanguage<typeof scala3LanguageConfig> {
+export class Scala3TargetLanguage extends TargetLanguage<
+    typeof scala3LanguageConfig
+> {
     public constructor() {
         super(scala3LanguageConfig);
     }
@@ -46,7 +52,10 @@ export class Scala3TargetLanguage extends TargetLanguage<typeof scala3LanguageCo
         return true;
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): ConvenienceRenderer {
+    protected makeRenderer(
+        renderContext: RenderContext,
+        untypedOptionValues: FixMeOptionsType,
+    ): ConvenienceRenderer {
         const options = getOptionValues(scala3Options, untypedOptionValues);
 
         switch (options.framework) {

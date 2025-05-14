@@ -1,5 +1,11 @@
-import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../../Annotation";
-import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../../ConvenienceRenderer";
+import {
+    anyTypeIssueAnnotation,
+    nullTypeIssueAnnotation,
+} from "../../Annotation";
+import {
+    ConvenienceRenderer,
+    type ForbiddenWordsInfo,
+} from "../../ConvenienceRenderer";
 import { type Name, type Namer, funPrefixNamer } from "../../Naming";
 import { type RenderContext } from "../../Renderer";
 import { type OptionValues } from "../../RendererOptions";
@@ -15,9 +21,13 @@ import {
     type ObjectType,
     type PrimitiveType,
     type Type,
-    type UnionType
+    type UnionType,
 } from "../../Type";
-import { matchType, nullableFromUnion, removeNullFromUnion } from "../../Type/TypeUtils";
+import {
+    matchType,
+    nullableFromUnion,
+    removeNullFromUnion,
+} from "../../Type/TypeUtils";
 
 import { keywords } from "./constants";
 import { type kotlinOptions } from "./language";
@@ -27,7 +37,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
     public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        protected readonly _kotlinOptions: OptionValues<typeof kotlinOptions>
+        protected readonly _kotlinOptions: OptionValues<typeof kotlinOptions>,
     ) {
         super(targetLanguage, renderContext);
     }
@@ -36,15 +46,24 @@ export class KotlinRenderer extends ConvenienceRenderer {
         return keywords;
     }
 
-    protected forbiddenForObjectProperties(_o: ObjectType, _classNamed: Name): ForbiddenWordsInfo {
+    protected forbiddenForObjectProperties(
+        _o: ObjectType,
+        _classNamed: Name,
+    ): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: true };
     }
 
-    protected forbiddenForEnumCases(_e: EnumType, _enumName: Name): ForbiddenWordsInfo {
+    protected forbiddenForEnumCases(
+        _e: EnumType,
+        _enumName: Name,
+    ): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: true };
     }
 
-    protected forbiddenForUnionMembers(_u: UnionType, _unionName: Name): ForbiddenWordsInfo {
+    protected forbiddenForUnionMembers(
+        _u: UnionType,
+        _unionName: Name,
+    ): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: false };
     }
 
@@ -53,27 +72,61 @@ export class KotlinRenderer extends ConvenienceRenderer {
     }
 
     protected makeNamedTypeNamer(): Namer {
-        return funPrefixNamer("upper", s => kotlinNameStyle(true, s, acronymStyle(this._kotlinOptions.acronymStyle)));
+        return funPrefixNamer("upper", (s) =>
+            kotlinNameStyle(
+                true,
+                s,
+                acronymStyle(this._kotlinOptions.acronymStyle),
+            ),
+        );
     }
 
     protected namerForObjectProperty(): Namer {
-        return funPrefixNamer("lower", s => kotlinNameStyle(false, s, acronymStyle(this._kotlinOptions.acronymStyle)));
+        return funPrefixNamer("lower", (s) =>
+            kotlinNameStyle(
+                false,
+                s,
+                acronymStyle(this._kotlinOptions.acronymStyle),
+            ),
+        );
     }
 
     protected makeUnionMemberNamer(): Namer {
-        return funPrefixNamer("upper", s => kotlinNameStyle(true, s) + "Value");
+        return funPrefixNamer(
+            "upper",
+            (s) => kotlinNameStyle(true, s) + "Value",
+        );
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return funPrefixNamer("upper", s => kotlinNameStyle(true, s, acronymStyle(this._kotlinOptions.acronymStyle)));
+        return funPrefixNamer("upper", (s) =>
+            kotlinNameStyle(
+                true,
+                s,
+                acronymStyle(this._kotlinOptions.acronymStyle),
+            ),
+        );
     }
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
-        this.emitCommentLines(lines, { lineStart: " * ", beforeComment: "/**", afterComment: " */" });
+        this.emitCommentLines(lines, {
+            lineStart: " * ",
+            beforeComment: "/**",
+            afterComment: " */",
+        });
     }
 
-    protected emitBlock(line: Sourcelike, f: () => void, delimiter: "curly" | "paren" | "lambda" = "curly"): void {
-        const [open, close] = delimiter === "curly" ? ["{", "}"] : delimiter === "paren" ? ["(", ")"] : ["{", "})"];
+    protected emitBlock(
+        line: Sourcelike,
+        f: () => void,
+        delimiter: "curly" | "paren" | "lambda" = "curly",
+    ): void {
+        const [open, close] =
+            delimiter === "curly"
+                ? ["{", "}"]
+                : delimiter === "paren"
+                  ? ["(", ")"]
+                  : ["{", "})"];
         this.emitLine(line, " ", open);
         this.indent(f);
         this.emitLine(close);
@@ -85,37 +138,62 @@ export class KotlinRenderer extends ConvenienceRenderer {
 
     // (asarazan): I've broken out the following two functions
     // because some renderers, such as kotlinx, can cope with `any`, while some get mad.
-    protected arrayType(arrayType: ArrayType, withIssues = false, _noOptional = false): Sourcelike {
+    protected arrayType(
+        arrayType: ArrayType,
+        withIssues = false,
+        _noOptional = false,
+    ): Sourcelike {
         return ["List<", this.kotlinType(arrayType.items, withIssues), ">"];
     }
 
-    protected mapType(mapType: MapType, withIssues = false, _noOptional = false): Sourcelike {
-        return ["Map<String, ", this.kotlinType(mapType.values, withIssues), ">"];
+    protected mapType(
+        mapType: MapType,
+        withIssues = false,
+        _noOptional = false,
+    ): Sourcelike {
+        return [
+            "Map<String, ",
+            this.kotlinType(mapType.values, withIssues),
+            ">",
+        ];
     }
 
-    protected kotlinType(t: Type, withIssues = false, noOptional = false): Sourcelike {
+    protected kotlinType(
+        t: Type,
+        withIssues = false,
+        noOptional = false,
+    ): Sourcelike {
         const optional = noOptional ? "" : "?";
         return matchType<Sourcelike>(
             t,
-            _anyType => {
-                return maybeAnnotated(withIssues, anyTypeIssueAnnotation, this.anySourceType(optional));
+            (_anyType) => {
+                return maybeAnnotated(
+                    withIssues,
+                    anyTypeIssueAnnotation,
+                    this.anySourceType(optional),
+                );
             },
-            _nullType => {
-                return maybeAnnotated(withIssues, nullTypeIssueAnnotation, this.anySourceType(optional));
+            (_nullType) => {
+                return maybeAnnotated(
+                    withIssues,
+                    nullTypeIssueAnnotation,
+                    this.anySourceType(optional),
+                );
             },
-            _boolType => "Boolean",
-            _integerType => "Long",
-            _doubleType => "Double",
-            _stringType => "String",
-            arrayType => this.arrayType(arrayType, withIssues),
-            classType => this.nameForNamedType(classType),
-            mapType => this.mapType(mapType, withIssues),
-            enumType => this.nameForNamedType(enumType),
-            unionType => {
+            (_boolType) => "Boolean",
+            (_integerType) => "Long",
+            (_doubleType) => "Double",
+            (_stringType) => "String",
+            (arrayType) => this.arrayType(arrayType, withIssues),
+            (classType) => this.nameForNamedType(classType),
+            (mapType) => this.mapType(mapType, withIssues),
+            (enumType) => this.nameForNamedType(enumType),
+            (unionType) => {
                 const nullable = nullableFromUnion(unionType);
-                if (nullable !== null) return [this.kotlinType(nullable, withIssues), optional];
+                if (nullable !== null)
+                    return [this.kotlinType(nullable, withIssues), optional];
                 return this.nameForNamedType(unionType);
-            }
+            },
         );
     }
 
@@ -147,7 +225,13 @@ export class KotlinRenderer extends ConvenienceRenderer {
 
     protected emitTopLevelMap(t: MapType, name: Name): void {
         const elementType = this.kotlinType(t.values);
-        this.emitLine(["typealias ", name, " = HashMap<String, ", elementType, ">"]);
+        this.emitLine([
+            "typealias ",
+            name,
+            " = HashMap<String, ",
+            elementType,
+            ">",
+        ]);
     }
 
     protected emitEmptyClassDefinition(c: ClassType, className: Name): void {
@@ -177,12 +261,18 @@ export class KotlinRenderer extends ConvenienceRenderer {
             let count = c.getProperties().size;
             let first = true;
             this.forEachClassProperty(c, "none", (name, jsonName, p) => {
-                const nullable = p.type.kind === "union" && nullableFromUnion(p.type as UnionType) !== null;
-                const nullableOrOptional = p.isOptional || p.type.kind === "null" || nullable;
+                const nullable =
+                    p.type.kind === "union" &&
+                    nullableFromUnion(p.type as UnionType) !== null;
+                const nullableOrOptional =
+                    p.isOptional || p.type.kind === "null" || nullable;
                 const last = --count === 0;
                 let meta: Array<() => void> = [];
 
-                const description = this.descriptionForClassProperty(c, jsonName);
+                const description = this.descriptionForClassProperty(
+                    c,
+                    jsonName,
+                );
                 if (description !== undefined) {
                     meta.push(() => this.emitDescription(description));
                 }
@@ -197,7 +287,14 @@ export class KotlinRenderer extends ConvenienceRenderer {
                     emit();
                 }
 
-                this.emitLine("val ", name, ": ", kotlinType(p), nullableOrOptional ? " = null" : "", last ? "" : ",");
+                this.emitLine(
+                    "val ",
+                    name,
+                    ": ",
+                    kotlinType(p),
+                    nullableOrOptional ? " = null" : "",
+                    last ? "" : ",",
+                );
 
                 if (meta.length > 0 && !last) {
                     this.ensureBlankLine();
@@ -210,7 +307,10 @@ export class KotlinRenderer extends ConvenienceRenderer {
         this.emitClassDefinitionMethods(c, className);
     }
 
-    protected emitClassDefinitionMethods(_c: ClassType, _className: Name): void {
+    protected emitClassDefinitionMethods(
+        _c: ClassType,
+        _className: Name,
+    ): void {
         this.emitLine(")");
     }
 
@@ -218,7 +318,12 @@ export class KotlinRenderer extends ConvenienceRenderer {
         // to be overridden
     }
 
-    protected renameAttribute(_name: Name, _jsonName: string, _required: boolean, _meta: Array<() => void>): void {
+    protected renameAttribute(
+        _name: Name,
+        _jsonName: string,
+        _required: boolean,
+        _meta: Array<() => void>,
+    ): void {
         // to be overridden
     }
 
@@ -227,7 +332,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
 
         this.emitBlock(["enum class ", enumName], () => {
             let count = e.cases.size;
-            this.forEachEnumCase(e, "none", name => {
+            this.forEachEnumCase(e, "none", (name) => {
                 this.emitLine(name, --count === 0 ? "" : ",");
             });
         });
@@ -247,16 +352,28 @@ export class KotlinRenderer extends ConvenienceRenderer {
         this.emitBlock(["sealed class ", unionName], () => {
             {
                 let table: Sourcelike[][] = [];
-                this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
-                    table.push([
-                        ["class ", name, "(val value: ", this.kotlinType(t), ")"],
-                        [" : ", unionName, "()"]
-                    ]);
-                });
+                this.forEachUnionMember(
+                    u,
+                    nonNulls,
+                    "none",
+                    null,
+                    (name, t) => {
+                        table.push([
+                            [
+                                "class ",
+                                name,
+                                "(val value: ",
+                                this.kotlinType(t),
+                                ")",
+                            ],
+                            [" : ", unionName, "()"],
+                        ]);
+                    },
+                );
                 if (maybeNull !== null) {
                     table.push([
                         ["class ", this.nameForUnionMember(u, maybeNull), "()"],
-                        [" : ", unionName, "()"]
+                        [" : ", unionName, "()"],
                     ]);
                 }
 
@@ -271,7 +388,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
         _u: UnionType,
         _nonNulls: ReadonlySet<Type>,
         _maybeNull: PrimitiveType | null,
-        _unionName: Name
+        _unionName: Name,
     ): void {
         // to be overridden
     }
@@ -294,7 +411,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
             "leading-and-interposing",
             (c: ClassType, n: Name) => this.emitClassDefinition(c, n),
             (e, n) => this.emitEnumDefinition(e, n),
-            (u, n) => this.emitUnionDefinition(u, n)
+            (u, n) => this.emitUnionDefinition(u, n),
         );
     }
 }

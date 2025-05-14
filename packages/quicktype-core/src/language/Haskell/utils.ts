@@ -8,10 +8,12 @@ import {
     isLetterOrUnderscore,
     isLetterOrUnderscoreOrDigit,
     legalizeCharacters,
-    splitIntoWords
+    splitIntoWords,
 } from "../../support/Strings";
 
-const legalizeName = legalizeCharacters(cp => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp));
+const legalizeName = legalizeCharacters(
+    (cp) => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp),
+);
 
 function haskellNameStyle(original: string, upper: boolean): string {
     const words = splitIntoWords(original);
@@ -23,9 +25,13 @@ function haskellNameStyle(original: string, upper: boolean): string {
         upper ? allUpperWordStyle : allLowerWordStyle,
         allUpperWordStyle,
         "",
-        isLetterOrUnderscore
+        isLetterOrUnderscore,
     );
 }
 
-export const upperNamingFunction = funPrefixNamer("upper", n => haskellNameStyle(n, true));
-export const lowerNamingFunction = funPrefixNamer("lower", n => haskellNameStyle(n, false));
+export const upperNamingFunction = funPrefixNamer("upper", (n) =>
+    haskellNameStyle(n, true),
+);
+export const lowerNamingFunction = funPrefixNamer("lower", (n) =>
+    haskellNameStyle(n, false),
+);

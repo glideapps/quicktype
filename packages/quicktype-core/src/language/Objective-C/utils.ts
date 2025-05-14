@@ -7,7 +7,7 @@ import {
     combineWords,
     firstUpperWordStyle,
     splitIntoWords,
-    utf16LegalizeCharacters
+    utf16LegalizeCharacters,
 } from "../../support/Strings";
 
 import { booleanPrefixes, forbiddenPropertyNames } from "./constants";
@@ -24,7 +24,7 @@ export function typeNameStyle(prefix: string, original: string): string {
         allUpperWordStyle,
         allUpperWordStyle,
         "",
-        isStartCharacter
+        isStartCharacter,
     );
     return addPrefixIfNecessary(prefix, result);
 }
@@ -42,7 +42,10 @@ export function propertyNameStyle(original: string, isBool = false): string {
         if (words.length === 0) {
             words = [{ word: "flag", isAcronym: false }];
             // @ts-expect-error needs strict type
-        } else if (!words[0].isAcronym && !booleanPrefixes.includes(words[0].word)) {
+        } else if (
+            !words[0].isAcronym &&
+            !booleanPrefixes.includes(words[0].word)
+        ) {
             words = [{ word: "is", isAcronym: false }, ...words];
         }
     }
@@ -62,7 +65,7 @@ export function propertyNameStyle(original: string, isBool = false): string {
         allLowerWordStyle,
         allUpperWordStyle,
         "",
-        isStartCharacter
+        isStartCharacter,
     );
 }
 
@@ -72,7 +75,10 @@ function isStartCharacter(utf16Unit: number): boolean {
 
 function isPartCharacter(utf16Unit: number): boolean {
     const category: string = unicode.getCategory(utf16Unit);
-    return ["Nd", "Pc", "Mn", "Mc"].includes(category) || isStartCharacter(utf16Unit);
+    return (
+        ["Nd", "Pc", "Mn", "Mc"].includes(category) ||
+        isStartCharacter(utf16Unit)
+    );
 }
 
 const legalizeName = utf16LegalizeCharacters(isPartCharacter);

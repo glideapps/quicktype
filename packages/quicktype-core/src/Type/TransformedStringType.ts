@@ -1,7 +1,7 @@
 import {
     // eslint-disable-next-line @typescript-eslint/no-redeclare
     hasOwnProperty,
-    mapFromObject
+    mapFromObject,
 } from "collection-utils";
 
 import { type TypeAttributes } from "../attributes/TypeAttributes";
@@ -30,39 +30,69 @@ export interface TransformedStringTypeTargets {
  * stringified integers map to integers.
  */
 const transformedStringTypeTargetTypeKinds = {
-    "date": { jsonSchema: "date", primitive: undefined },
-    "time": { jsonSchema: "time", primitive: undefined },
+    date: { jsonSchema: "date", primitive: undefined },
+    time: { jsonSchema: "time", primitive: undefined },
     "date-time": { jsonSchema: "date-time", primitive: undefined },
-    "uuid": { jsonSchema: "uuid", primitive: undefined },
-    "uri": { jsonSchema: "uri", primitive: undefined, attributesProducer: uriInferenceAttributesProducer },
-    "integer-string": { jsonSchema: "integer", primitive: "integer" } as TransformedStringTypeTargets,
-    "bool-string": { jsonSchema: "boolean", primitive: "bool" } as TransformedStringTypeTargets
+    uuid: { jsonSchema: "uuid", primitive: undefined },
+    uri: {
+        jsonSchema: "uri",
+        primitive: undefined,
+        attributesProducer: uriInferenceAttributesProducer,
+    },
+    "integer-string": {
+        jsonSchema: "integer",
+        primitive: "integer",
+    } as TransformedStringTypeTargets,
+    "bool-string": {
+        jsonSchema: "boolean",
+        primitive: "bool",
+    } as TransformedStringTypeTargets,
 };
 
 export const transformedStringTypeTargetTypeKindsMap = mapFromObject(
     transformedStringTypeTargetTypeKinds as {
         [kind: string]: TransformedStringTypeTargets;
-    }
+    },
 );
 
-export type TransformedStringTypeKind = keyof typeof transformedStringTypeTargetTypeKinds;
+export type TransformedStringTypeKind =
+    keyof typeof transformedStringTypeTargetTypeKinds;
 export type PrimitiveStringTypeKind = "string" | TransformedStringTypeKind;
-export type PrimitiveNonStringTypeKind = "none" | "any" | "null" | "bool" | "integer" | "double";
-export type PrimitiveTypeKind = PrimitiveNonStringTypeKind | PrimitiveStringTypeKind;
+export type PrimitiveNonStringTypeKind =
+    | "none"
+    | "any"
+    | "null"
+    | "bool"
+    | "integer"
+    | "double";
+export type PrimitiveTypeKind =
+    | PrimitiveNonStringTypeKind
+    | PrimitiveStringTypeKind;
 export type NamedTypeKind = "class" | "enum" | "union";
-export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "object" | "map" | "intersection";
+export type TypeKind =
+    | PrimitiveTypeKind
+    | NamedTypeKind
+    | "array"
+    | "object"
+    | "map"
+    | "intersection";
 export type ObjectTypeKind = "object" | "map" | "class";
 
 export const transformedStringTypeKinds = new Set(
-    Object.getOwnPropertyNames(transformedStringTypeTargetTypeKinds)
+    Object.getOwnPropertyNames(transformedStringTypeTargetTypeKinds),
 ) as ReadonlySet<TransformedStringTypeKind>;
 
-export function isPrimitiveStringTypeKind(kind: string): kind is PrimitiveStringTypeKind {
-    return kind === "string" || hasOwnProperty(transformedStringTypeTargetTypeKinds, kind);
+export function isPrimitiveStringTypeKind(
+    kind: string,
+): kind is PrimitiveStringTypeKind {
+    return (
+        kind === "string" ||
+        hasOwnProperty(transformedStringTypeTargetTypeKinds, kind)
+    );
 }
 
 export function targetTypeKindForTransformedStringTypeKind(
-    kind: PrimitiveStringTypeKind
+    kind: PrimitiveStringTypeKind,
 ): PrimitiveNonStringTypeKind | undefined {
     const target = transformedStringTypeTargetTypeKindsMap.get(kind);
     if (target === undefined) return undefined;
@@ -76,7 +106,9 @@ export function isNumberTypeKind(kind: TypeKind): kind is "integer" | "double" {
 export function isPrimitiveTypeKind(kind: TypeKind): kind is PrimitiveTypeKind {
     if (isPrimitiveStringTypeKind(kind)) return true;
     if (isNumberTypeKind(kind)) return true;
-    return kind === "none" || kind === "any" || kind === "null" || kind === "bool";
+    return (
+        kind === "none" || kind === "any" || kind === "null" || kind === "bool"
+    );
 }
 
 export function triviallyStructurallyCompatible(x: Type, y: Type): boolean {

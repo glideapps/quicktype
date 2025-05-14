@@ -10,8 +10,14 @@ export interface StringMap {
 }
 
 export function isStringMap(x: unknown): x is StringMap;
-export function isStringMap<T>(x: unknown, checkValue: (v: unknown) => v is T): x is { [name: string]: T };
-export function isStringMap<T>(x: unknown, checkValue?: (v: unknown) => v is T): boolean {
+export function isStringMap<T>(
+    x: unknown,
+    checkValue: (v: unknown) => v is T,
+): x is { [name: string]: T };
+export function isStringMap<T>(
+    x: unknown,
+    checkValue?: (v: unknown) => v is T,
+): boolean {
     if (typeof x !== "object" || Array.isArray(x) || x === null) {
         return false;
     }
@@ -33,8 +39,14 @@ export function checkString(x: unknown): x is string {
 }
 
 export function checkStringMap(x: unknown): StringMap;
-export function checkStringMap<T>(x: unknown, checkValue: (v: unknown) => v is T): { [name: string]: T };
-export function checkStringMap<T>(x: unknown, checkValue?: (v: unknown) => v is T): StringMap {
+export function checkStringMap<T>(
+    x: unknown,
+    checkValue: (v: unknown) => v is T,
+): { [name: string]: T };
+export function checkStringMap<T>(
+    x: unknown,
+    checkValue?: (v: unknown) => v is T,
+): StringMap {
     if (checkValue && isStringMap(x, checkValue)) {
         return x;
     }
@@ -47,8 +59,14 @@ export function checkStringMap<T>(x: unknown, checkValue?: (v: unknown) => v is 
 }
 
 export function checkArray(x: unknown): unknown[];
-export function checkArray<T>(x: unknown, checkItem: (v: unknown) => v is T): T[];
-export function checkArray<T>(x: unknown, checkItem?: (v: unknown) => v is T): T[] {
+export function checkArray<T>(
+    x: unknown,
+    checkItem: (v: unknown) => v is T,
+): T[];
+export function checkArray<T>(
+    x: unknown,
+    checkItem?: (v: unknown) => v is T,
+): T[] {
     if (!Array.isArray(x)) {
         return panic(`Value must be an array, but is ${x}`);
     }
@@ -123,7 +141,11 @@ export function inflateBase64(encoded: string): string {
     return pako.inflate(bytes, { to: "string" });
 }
 
-export function parseJSON(text: string, description: string, address = "<unknown>"): JSONSchema | undefined {
+export function parseJSON(
+    text: string,
+    description: string,
+    address = "<unknown>",
+): JSONSchema | undefined {
     try {
         // https://gist.github.com/pbakondy/f5045eff725193dad9c7
         if (text.charCodeAt(0) === 0xfeff) {
@@ -140,7 +162,11 @@ export function parseJSON(text: string, description: string, address = "<unknown
             message = `Unknown exception ${e}`;
         }
 
-        return messageError("MiscJSONParseError", { description, address, message });
+        return messageError("MiscJSONParseError", {
+            description,
+            address,
+            message,
+        });
     }
 }
 
@@ -149,7 +175,9 @@ export function indentationString(level: number): string {
 }
 
 // FIXME: fix this enum iteration
-export function numberEnumValues(e: Record<string | number, string | number>): number[] {
+export function numberEnumValues(
+    e: Record<string | number, string | number>,
+): number[] {
     const result: number[] = [];
     for (const k of Object.keys(e)) {
         const v = e[k];

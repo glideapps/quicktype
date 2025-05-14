@@ -134,5 +134,5 @@ export const keywords = [
     "when",
     "while",
     "with",
-    "yield"
+    "yield",
 ] as const;

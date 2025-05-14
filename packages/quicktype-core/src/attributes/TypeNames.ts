@@ -1,4 +1,10 @@
-import { definedMap, iterableFirst, iterableSkip, setMap, setUnionInto } from "collection-utils";
+import {
+    definedMap,
+    iterableFirst,
+    iterableSkip,
+    setMap,
+    setUnionInto,
+} from "collection-utils";
 import * as pluralize from "pluralize";
 
 import { Chance } from "../support/Chance";
@@ -42,10 +48,10 @@ function combineNames(names: ReadonlySet<string>): string {
         return originalFirst;
     }
 
-    const namesSet = setMap(names, s =>
+    const namesSet = setMap(names, (s) =>
         splitIntoWords(s)
-            .map(w => w.word.toLowerCase())
-            .join("_")
+            .map((w) => w.word.toLowerCase())
+            .join("_"),
     );
     const first = defined(iterableFirst(namesSet));
     if (namesSet.size === 1) {
@@ -73,7 +79,8 @@ function combineNames(names: ReadonlySet<string>): string {
     }
 
     const prefix = prefixLength > 2 ? first.slice(0, prefixLength) : "";
-    const suffix = suffixLength > 2 ? first.slice(first.length - suffixLength) : "";
+    const suffix =
+        suffixLength > 2 ? first.slice(first.length - suffixLength) : "";
     const combined = prefix + suffix;
     if (combined.length > 2) {
         return combined;
@@ -88,13 +95,16 @@ export abstract class TypeNames {
     public static makeWithDistance(
         names: ReadonlySet<string>,
         alternativeNames: ReadonlySet<string> | undefined,
-        distance: number
+        distance: number,
     ): TypeNames {
         if (names.size >= tooManyNamesThreshold) {
             return new TooManyTypeNames(distance);
         }
 
-        if (alternativeNames === undefined || alternativeNames.size > tooManyNamesThreshold) {
+        if (
+            alternativeNames === undefined ||
+            alternativeNames.size > tooManyNamesThreshold
+        ) {
             alternativeNames = undefined;
         }
 
@@ -104,9 +114,13 @@ export abstract class TypeNames {
     public static make(
         names: ReadonlySet<string>,
         alternativeNames: ReadonlySet<string> | undefined,
-        areInferred: boolean
+        areInferred: boolean,
     ): TypeNames {
-        return TypeNames.makeWithDistance(names, alternativeNames, areInferred ? 1 : 0);
+        return TypeNames.makeWithDistance(
+            names,
+            alternativeNames,
+            areInferred ? 1 : 0,
+        );
     }
 
     public constructor(public readonly distance: number) {}
@@ -119,7 +133,10 @@ export abstract class TypeNames {
     public abstract get combinedName(): string;
     public abstract get proposedNames(): ReadonlySet<string>;
 
-    public abstract add(namesArray: TypeNames[], startIndex?: number): TypeNames;
+    public abstract add(
+        namesArray: TypeNames[],
+        startIndex?: number,
+    ): TypeNames;
     public abstract clearInferred(): TypeNames;
     public abstract makeInferred(): TypeNames;
     public abstract singularize(): TypeNames;
@@ -130,7 +147,7 @@ export class RegularTypeNames extends TypeNames {
     public constructor(
         public readonly names: ReadonlySet<string>,
         private readonly _alternativeNames: ReadonlySet<string> | undefined,
-        distance: number
+        distance: number,
     ) {
         super(distance);
     }
@@ -138,12 +155,18 @@ export class RegularTypeNames extends TypeNames {
     public add(namesArray: TypeNames[], startIndex = 0): TypeNames {
         let newNames = new Set(this.names);
         let newDistance = this.distance;
-        let newAlternativeNames = definedMap(this._alternativeNames, s => new Set(s));
+        let newAlternativeNames = definedMap(
+            this._alternativeNames,
+            (s) => new Set(s),
+        );
 
         for (let i = startIndex; i < namesArray.length; i++) {
             const other = namesArray[i];
 
-            if (other instanceof RegularTypeNames && other._alternativeNames !== undefined) {
+            if (
+                other instanceof RegularTypeNames &&
+                other._alternativeNames !== undefined
+            ) {
                 if (newAlternativeNames === undefined) {
                     newAlternativeNames = new Set();
                 }
@@ -154,7 +177,10 @@ export class RegularTypeNames extends TypeNames {
             if (other.distance > newDistance) continue;
 
             if (!(other instanceof RegularTypeNames)) {
-                assert(other instanceof TooManyTypeNames, "Unknown TypeNames instance");
+                assert(
+                    other instanceof TooManyTypeNames,
+                    "Unknown TypeNames instance",
+                );
                 // The other one is at most our distance, so let it sort it out
                 return other.add(namesArray, i + 1);
             }
@@ -163,15 +189,25 @@ export class RegularTypeNames extends TypeNames {
                 // The other one is closer, so take its names
                 newNames = new Set(other.names);
                 newDistance = other.distance;
-                newAlternativeNames = definedMap(other._alternativeNames, s => new Set(s));
+                newAlternativeNames = definedMap(
+                    other._alternativeNames,
+                    (s) => new Set(s),
+                );
             } else {
                 // Same distance, merge them
-                assert(other.distance === newDistance, "This should be the only case left");
+                assert(
+                    other.distance === newDistance,
+                    "This should be the only case left",
+                );
                 setUnionInto(newNames, other.names);
             }
         }
 
-        return TypeNames.makeWithDistance(newNames, newAlternativeNames, newDistance);
+        return TypeNames.makeWithDistance(
+            newNames,
+            newAlternativeNames,
+            newDistance,
+        );
     }
 
     public clearInferred(): TypeNames {
@@ -194,19 +230,27 @@ export class RegularTypeNames extends TypeNames {
     }
 
     public makeInferred(): TypeNames {
-        return TypeNames.makeWithDistance(this.names, this._alternativeNames, this.distance + 1);
+        return TypeNames.makeWithDistance(
+            this.names,
+            this._alternativeNames,
+            this.distance + 1,
+        );
     }
 
     public singularize(): TypeNames {
         return TypeNames.makeWithDistance(
             setMap(this.names, pluralize.singular),
-            definedMap(this._alternativeNames, an => setMap(an, pluralize.singular)),
-            this.distance + 1
+            definedMap(this._alternativeNames, (an) =>
+                setMap(an, pluralize.singular),
+            ),
+            this.distance + 1,
         );
     }
 
     public toString(): string {
-        const inferred = this.areInferred ? `distance ${this.distance}` : "given";
+        const inferred = this.areInferred
+            ? `distance ${this.distance}`
+            : "given";
         const names = `${inferred} ${Array.from(this.names).join(",")}`;
         if (this._alternativeNames === undefined) {
             return names;
@@ -259,7 +303,10 @@ export class TooManyTypeNames extends TypeNames {
     }
 
     public makeInferred(): TypeNames {
-        return new TooManyTypeNames(this.distance + 1, iterableFirst(this.names));
+        return new TooManyTypeNames(
+            this.distance + 1,
+            iterableFirst(this.names),
+        );
     }
 
     public singularize(): TypeNames {
@@ -295,26 +342,36 @@ class TypeNamesTypeAttributeKind extends TypeAttributeKind<TypeNames> {
     }
 }
 
-export const namesTypeAttributeKind: TypeAttributeKind<TypeNames> = new TypeNamesTypeAttributeKind();
+export const namesTypeAttributeKind: TypeAttributeKind<TypeNames> =
+    new TypeNamesTypeAttributeKind();
 
 export function modifyTypeNames(
     attributes: TypeAttributes,
-    modifier: (tn: TypeNames | undefined) => TypeNames | undefined
+    modifier: (tn: TypeNames | undefined) => TypeNames | undefined,
 ): TypeAttributes {
     return namesTypeAttributeKind.modifyInAttributes(attributes, modifier);
 }
 
-export function singularizeTypeNames(attributes: TypeAttributes): TypeAttributes {
-    return modifyTypeNames(attributes, maybeNames => {
+export function singularizeTypeNames(
+    attributes: TypeAttributes,
+): TypeAttributes {
+    return modifyTypeNames(attributes, (maybeNames) => {
         if (maybeNames === undefined) return undefined;
         return maybeNames.singularize();
     });
 }
 
-export function makeNamesTypeAttributes(nameOrNames: NameOrNames, areNamesInferred?: boolean): TypeAttributes {
+export function makeNamesTypeAttributes(
+    nameOrNames: NameOrNames,
+    areNamesInferred?: boolean,
+): TypeAttributes {
     let typeNames: TypeNames;
     if (typeof nameOrNames === "string") {
-        typeNames = TypeNames.make(new Set([nameOrNames]), new Set(), defined(areNamesInferred));
+        typeNames = TypeNames.make(
+            new Set([nameOrNames]),
+            new Set(),
+            defined(areNamesInferred),
+        );
     } else {
         typeNames = nameOrNames as TypeNames;
     }

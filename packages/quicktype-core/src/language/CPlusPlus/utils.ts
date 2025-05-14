@@ -2,11 +2,15 @@ import {
     type MinMaxConstraint,
     minMaxLengthForType,
     minMaxValueForType,
-    patternForType
+    patternForType,
 } from "../../attributes/Constraints";
 import { type Name } from "../../Naming";
 import { type Sourcelike } from "../../Source";
-import { isAscii, isLetterOrUnderscoreOrDigit, legalizeCharacters } from "../../support/Strings";
+import {
+    isAscii,
+    isLetterOrUnderscoreOrDigit,
+    legalizeCharacters,
+} from "../../support/Strings";
 import { type Type, type TypeKind } from "../../Type";
 
 export function constraintsForType(t: Type):
@@ -19,11 +23,18 @@ export function constraintsForType(t: Type):
     const minMax = minMaxValueForType(t);
     const minMaxLength = minMaxLengthForType(t);
     const pattern = patternForType(t);
-    if (minMax === undefined && minMaxLength === undefined && pattern === undefined) return undefined;
+    if (
+        minMax === undefined &&
+        minMaxLength === undefined &&
+        pattern === undefined
+    )
+        return undefined;
     return { minMax, minMaxLength, pattern };
 }
 
-export const legalizeName = legalizeCharacters(cp => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp));
+export const legalizeName = legalizeCharacters(
+    (cp) => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp),
+);
 
 /// Type to use as an optional if cycle breaking is required
 export const optionalAsSharedType = "std::shared_ptr";
@@ -37,7 +48,7 @@ export const optionalFactoryAsSharedType = "std::make_shared";
  */
 export enum IncludeKind {
     ForwardDeclare = "ForwardDeclare",
-    Include = "Include"
+    Include = "Include",
 }
 
 // FIXME: make these string enums eventually
@@ -49,7 +60,7 @@ export enum GlobalNames {
     ValueTooShortException = 5,
     ValueTooLongException = 6,
     InvalidPatternException = 7,
-    CheckConstraint = 8
+    CheckConstraint = 8,
 }
 
 // FIXME: make these string enums eventually
@@ -74,7 +85,7 @@ export enum MemberNames {
     SetMaxLength = 18,
     Pattern = 19,
     GetPattern = 20,
-    SetPattern = 21
+    SetPattern = 21,
 }
 
 export interface ConstraintMember {
@@ -121,12 +132,15 @@ export interface StringType {
         qualifier: Sourcelike[],
         fromType: Sourcelike,
         toType: Sourcelike,
-        inner: Sourcelike
+        inner: Sourcelike,
     ) => Sourcelike;
     wrapToString: (inner: Sourcelike) => Sourcelike;
 }
 
-export function addQualifier(qualifier: Sourcelike, qualified: Sourcelike[]): Sourcelike[] {
+export function addQualifier(
+    qualifier: Sourcelike,
+    qualified: Sourcelike[],
+): Sourcelike[] {
     if (qualified.length === 0) {
         return [];
     }
@@ -137,7 +151,7 @@ export function addQualifier(qualifier: Sourcelike, qualified: Sourcelike[]): So
 export class WrappingCode {
     public constructor(
         private readonly start: Sourcelike[],
-        private readonly end: Sourcelike[]
+        private readonly end: Sourcelike[],
     ) {}
 
     public wrap(qualifier: Sourcelike, inner: Sourcelike): Sourcelike {
@@ -170,7 +184,7 @@ export class BaseString {
         stringLiteralPrefix: string,
         toString: WrappingCode,
         encodingClass: string,
-        encodingFunction: string
+        encodingFunction: string,
     ) {
         this._stringType = stringType;
         this._constStringType = constStringType;

@@ -1,10 +1,16 @@
 import { type Name } from "../../Naming";
 import { type Sourcelike } from "../../Source";
-import { isAscii, isLetterOrUnderscoreOrDigit, legalizeCharacters } from "../../support/Strings";
+import {
+    isAscii,
+    isLetterOrUnderscoreOrDigit,
+    legalizeCharacters,
+} from "../../support/Strings";
 import { type Type, type TypeKind } from "../../Type";
 
 /* Function used to format names */
-export const legalizeName = legalizeCharacters(cp => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp));
+export const legalizeName = legalizeCharacters(
+    (cp) => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp),
+);
 
 /* Used to build forbidden global names */
 export enum GlobalNames {
@@ -15,13 +21,13 @@ export enum GlobalNames {
     ValueTooShortException = 5,
     ValueTooLongException = 6,
     InvalidPatternException = 7,
-    CheckConstraint = 8
+    CheckConstraint = 8,
 }
 
 /* To be able to support circles in multiple files - e.g. class#A using class#B using class#A (obviously not directly) we can forward declare them */
 export enum IncludeKind {
     ForwardDeclare = "ForwardDeclare",
-    Include = "Include"
+    Include = "Include",
 }
 
 /* Used to map includes */

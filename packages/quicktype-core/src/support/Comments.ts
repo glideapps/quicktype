@@ -18,7 +18,10 @@ type CustomCommentConfig = CommentOptions & {
     customLines: Sourcelike[];
 };
 
-export type CommentConfig = DescriptionBlockCommentConfig | InlineCommentConfig | CustomCommentConfig;
+export type CommentConfig =
+    | DescriptionBlockCommentConfig
+    | InlineCommentConfig
+    | CustomCommentConfig;
 
 export type Comment = string | CommentConfig;
 

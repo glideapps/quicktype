@@ -1,5 +1,9 @@
 import { type RenderContext } from "../../Renderer";
-import { BooleanOption, EnumOption, getOptionValues } from "../../RendererOptions";
+import {
+    BooleanOption,
+    EnumOption,
+    getOptionValues,
+} from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
 import { type FixMeOptionsType } from "../../types";
 
@@ -12,9 +16,9 @@ export const rustOptions = {
         "Density",
         {
             normal: Density.Normal,
-            dense: Density.Dense
+            dense: Density.Dense,
         } as const,
-        "normal"
+        "normal",
     ),
     visibility: new EnumOption(
         "visibility",
@@ -22,25 +26,39 @@ export const rustOptions = {
         {
             private: Visibility.Private,
             crate: Visibility.Crate,
-            public: Visibility.Public
+            public: Visibility.Public,
         } as const,
-        "private"
+        "private",
     ),
     deriveDebug: new BooleanOption("derive-debug", "Derive Debug impl", false),
     deriveClone: new BooleanOption("derive-clone", "Derive Clone impl", false),
-    derivePartialEq: new BooleanOption("derive-partial-eq", "Derive PartialEq impl", false),
-    skipSerializingNone: new BooleanOption("skip-serializing-none", "Skip serializing empty Option fields", false),
+    derivePartialEq: new BooleanOption(
+        "derive-partial-eq",
+        "Derive PartialEq impl",
+        false,
+    ),
+    skipSerializingNone: new BooleanOption(
+        "skip-serializing-none",
+        "Skip serializing empty Option fields",
+        false,
+    ),
     edition2018: new BooleanOption("edition-2018", "Edition 2018", true),
-    leadingComments: new BooleanOption("leading-comments", "Leading Comments", true)
+    leadingComments: new BooleanOption(
+        "leading-comments",
+        "Leading Comments",
+        true,
+    ),
 } as const;
 
 export const rustLanguageConfig = {
     displayName: "Rust",
     names: ["rust", "rs", "rustlang"],
-    extension: "rs"
+    extension: "rs",
 } as const;
 
-export class RustTargetLanguage extends TargetLanguage<typeof rustLanguageConfig> {
+export class RustTargetLanguage extends TargetLanguage<
+    typeof rustLanguageConfig
+> {
     public constructor() {
         super(rustLanguageConfig);
     }
@@ -49,7 +67,14 @@ export class RustTargetLanguage extends TargetLanguage<typeof rustLanguageConfig
         return rustOptions;
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): RustRenderer {
-        return new RustRenderer(this, renderContext, getOptionValues(rustOptions, untypedOptionValues));
+    protected makeRenderer(
+        renderContext: RenderContext,
+        untypedOptionValues: FixMeOptionsType,
+    ): RustRenderer {
+        return new RustRenderer(
+            this,
+            renderContext,
+            getOptionValues(rustOptions, untypedOptionValues),
+        );
     }
 }

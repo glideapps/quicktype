@@ -6,7 +6,7 @@ import {
     isLetterOrUnderscore,
     isLetterOrUnderscoreOrDigit,
     legalizeCharacters,
-    splitIntoWords
+    splitIntoWords,
 } from "../../support/Strings";
 import { type ClassProperty, type Type, type TypeKind } from "../../Type";
 
@@ -24,19 +24,32 @@ function goNameStyle(original: string): string {
         allUpperWordStyle,
         allUpperWordStyle,
         "",
-        isLetterOrUnderscore
+        isLetterOrUnderscore,
     );
 }
 
-export const primitiveValueTypeKinds: TypeKind[] = ["integer", "double", "bool", "string"];
+export const primitiveValueTypeKinds: TypeKind[] = [
+    "integer",
+    "double",
+    "bool",
+    "string",
+];
 export const compoundTypeKinds: TypeKind[] = ["array", "class", "map", "enum"];
 
 export function isValueType(t: Type): boolean {
     const kind = t.kind;
-    return primitiveValueTypeKinds.includes(kind) || kind === "class" || kind === "enum" || kind === "date-time";
+    return (
+        primitiveValueTypeKinds.includes(kind) ||
+        kind === "class" ||
+        kind === "enum" ||
+        kind === "date-time"
+    );
 }
 
-export function canOmitEmpty(cp: ClassProperty, omitEmptyOption: boolean): boolean {
+export function canOmitEmpty(
+    cp: ClassProperty,
+    omitEmptyOption: boolean,
+): boolean {
     if (!cp.isOptional) return false;
     if (omitEmptyOption) return true;
     const t = cp.type;

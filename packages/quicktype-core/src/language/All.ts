@@ -23,7 +23,11 @@ import { RustTargetLanguage } from "./Rust";
 import { Scala3TargetLanguage } from "./Scala3";
 import { SmithyTargetLanguage } from "./Smithy4s";
 import { SwiftTargetLanguage } from "./Swift";
-import { type LanguageDisplayName, type LanguageName, type LanguageNameMap } from "./types";
+import {
+    type LanguageDisplayName,
+    type LanguageName,
+    type LanguageNameMap,
+} from "./types";
 import { TypeScriptEffectSchemaTargetLanguage } from "./TypeScriptEffectSchema";
 import { FlowTargetLanguage, TypeScriptTargetLanguage } from "./TypeScriptFlow";
 import { TypeScriptZodTargetLanguage } from "./TypeScriptZod";
@@ -55,16 +59,18 @@ export const all = [
     new SwiftTargetLanguage(),
     new TypeScriptTargetLanguage(),
     new TypeScriptEffectSchemaTargetLanguage(),
-    new TypeScriptZodTargetLanguage()
+    new TypeScriptZodTargetLanguage(),
 ] as const;
 
 all satisfies readonly TargetLanguage[];
 
 export function languageNamed<Name extends LanguageName>(
     name: Name,
-    targetLanguages: readonly TargetLanguage[] = all
+    targetLanguages: readonly TargetLanguage[] = all,
 ): LanguageNameMap[Name] {
-    const foundLanguage = targetLanguages.find(language => language.names.includes(name));
+    const foundLanguage = targetLanguages.find((language) =>
+        language.names.includes(name),
+    );
     if (!foundLanguage) {
         throw new Error(`Unknown language name: ${name}`);
     }
@@ -73,15 +79,21 @@ export function languageNamed<Name extends LanguageName>(
 }
 
 export function isLanguageName(maybeName: string): maybeName is LanguageName {
-    if (all.some(lang => (lang.names as readonly string[]).includes(maybeName))) {
+    if (
+        all.some((lang) =>
+            (lang.names as readonly string[]).includes(maybeName),
+        )
+    ) {
         return true;
     }
 
     return false;
 }
 
-export function isLanguageDisplayName(maybeName: string): maybeName is LanguageDisplayName {
-    if (all.some(lang => lang.displayName === maybeName)) {
+export function isLanguageDisplayName(
+    maybeName: string,
+): maybeName is LanguageDisplayName {
+    if (all.some((lang) => lang.displayName === maybeName)) {
         return true;
     }
 

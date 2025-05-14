@@ -4,11 +4,11 @@ import { PassThrough } from "readable-stream";
 import { type Options } from "./index";
 
 export interface BufferedPassThrough extends PassThrough {
-	getBufferedValue: () => any;
-	getBufferedLength: () => number;
+    getBufferedValue: () => any;
+    getBufferedLength: () => number;
 
-	// for compat with _Readable.Writable
-	readonly writableObjectMode: never;
+    // for compat with _Readable.Writable
+    readonly writableObjectMode: never;
 }
 
 export default function bufferStream(opts: Options) {
@@ -32,7 +32,7 @@ export default function bufferStream(opts: Options) {
     let len = 0;
     const ret: any[] = [];
     const stream = new PassThrough({
-        objectMode
+        objectMode,
     }) as BufferedPassThrough;
 
     if (encoding) {

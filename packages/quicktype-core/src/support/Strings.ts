@@ -36,7 +36,9 @@ function computeAsciiMap(mapper: (codePoint: number) => string): {
 
 type CodePointPredicate = (codePoint: number) => boolean;
 
-function precomputedCodePointPredicate(p: CodePointPredicate): CodePointPredicate {
+function precomputedCodePointPredicate(
+    p: CodePointPredicate,
+): CodePointPredicate {
     const asciiResults: boolean[] = [];
     for (let cp = 0; cp < 128; cp++) {
         asciiResults.push(p(cp));
@@ -48,7 +50,9 @@ function precomputedCodePointPredicate(p: CodePointPredicate): CodePointPredicat
 }
 
 // FIXME: This is a copy of code in src/Data/String/Util.js
-export function utf16ConcatMap(mapper: (utf16Unit: number) => string): (s: string) => string {
+export function utf16ConcatMap(
+    mapper: (utf16Unit: number) => string,
+): (s: string) => string {
     const { charStringMap, charNoEscapeMap } = computeAsciiMap(mapper);
 
     // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -91,7 +95,9 @@ function isLowSurrogate(cc: number): boolean {
     return cc >= 0xdc00 && cc <= 0xdfff;
 }
 
-export function utf32ConcatMap(mapper: (codePoint: number) => string): (s: string) => string {
+export function utf32ConcatMap(
+    mapper: (codePoint: number) => string,
+): (s: string) => string {
     const { charStringMap, charNoEscapeMap } = computeAsciiMap(mapper);
 
     // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -109,7 +115,11 @@ export function utf32ConcatMap(mapper: (codePoint: number) => string): (s: strin
                     const highSurrogate = cc;
                     i++;
                     const lowSurrogate = s.charCodeAt(i);
-                    messageAssert(isLowSurrogate(lowSurrogate), "MiscUnicodeHighSurrogateWithoutLowSurrogate", {});
+                    messageAssert(
+                        isLowSurrogate(lowSurrogate),
+                        "MiscUnicodeHighSurrogateWithoutLowSurrogate",
+                        {},
+                    );
                     const highBits = highSurrogate - 0xd800;
                     const lowBits = lowSurrogate - 0xdc00;
                     cc = 0x10000 + lowBits + (highBits << 10);
@@ -136,12 +146,18 @@ export function utf32ConcatMap(mapper: (codePoint: number) => string): (s: strin
     };
 }
 
-export function utf16LegalizeCharacters(isLegal: (utf16Unit: number) => boolean): (s: string) => string {
-    return utf16ConcatMap(u => (isLegal(u) ? String.fromCharCode(u) : ""));
+export function utf16LegalizeCharacters(
+    isLegal: (utf16Unit: number) => boolean,
+): (s: string) => string {
+    return utf16ConcatMap((u) => (isLegal(u) ? String.fromCharCode(u) : ""));
 }
 
-export function legalizeCharacters(isLegal: (codePoint: number) => boolean): (s: string) => string {
-    return utf32ConcatMap(u => (u <= 0xffff && isLegal(u) ? String.fromCharCode(u) : ""));
+export function legalizeCharacters(
+    isLegal: (codePoint: number) => boolean,
+): (s: string) => string {
+    return utf32ConcatMap((u) =>
+        u <= 0xffff && isLegal(u) ? String.fromCharCode(u) : "",
+    );
 }
 
 export function repeatString(s: string, n: number): string {
@@ -182,7 +198,7 @@ export function standardUnicodeHexEscape(codePoint: number): string {
 
 export function escapeNonPrintableMapper(
     printablePredicate: (codePoint: number) => boolean,
-    escaper: (codePoint: number) => string
+    escaper: (codePoint: number) => string,
 ): (u: number) => string {
     function mapper(u: number): string {
         switch (u) {
@@ -206,8 +222,12 @@ export function escapeNonPrintableMapper(
     return mapper;
 }
 
-export const utf16StringEscape = utf16ConcatMap(escapeNonPrintableMapper(isPrintable, standardUnicodeHexEscape));
-export const stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, standardUnicodeHexEscape));
+export const utf16StringEscape = utf16ConcatMap(
+    escapeNonPrintableMapper(isPrintable, standardUnicodeHexEscape),
+);
+export const stringEscape = utf32ConcatMap(
+    escapeNonPrintableMapper(isPrintable, standardUnicodeHexEscape),
+);
 
 export function isPrintable(codePoint: number): boolean {
     if (codePoint > 0xffff) return false;
@@ -235,7 +255,7 @@ export function isPrintable(codePoint: number): boolean {
         "Pi",
         "Nl",
         "Mn",
-        "Lo"
+        "Lo",
     ].includes(category);
 }
 
@@ -293,11 +313,11 @@ function modifyFirstChar(f: (c: string) => string, s: string): string {
 }
 
 export function capitalize(str: string): string {
-    return modifyFirstChar(c => c.toUpperCase(), str);
+    return modifyFirstChar((c) => c.toUpperCase(), str);
 }
 
 export function decapitalize(str: string): string {
-    return modifyFirstChar(c => c.toLowerCase(), str);
+    return modifyFirstChar((c) => c.toLowerCase(), str);
 }
 
 const wordSeparatorRegex = /[-_. ]+/;
@@ -319,7 +339,7 @@ export function snakeCase(str: string): string {
 export function startWithLetter(
     isAllowedStart: (codePoint: number) => boolean, // FIXME: technically, this operates on UTF16 units
     upper: boolean,
-    str: string
+    str: string,
 ): string {
     const modify = upper ? capitalize : decapitalize;
     if (str === "") return modify("empty");
@@ -335,10 +355,18 @@ export interface WordInName {
 }
 
 const fastIsWordCharacter = precomputedCodePointPredicate(isWordCharacter);
-const fastIsNonWordCharacter = precomputedCodePointPredicate(cp => !isWordCharacter(cp));
-const fastIsLowerCase = precomputedCodePointPredicate(cp => unicode.isLowerCase(cp));
-export const fastIsUpperCase = precomputedCodePointPredicate(cp => unicode.isUpperCase(cp));
-const fastNonLetter = precomputedCodePointPredicate(cp => !unicode.isLowerCase(cp) && !unicode.isUpperCase(cp));
+const fastIsNonWordCharacter = precomputedCodePointPredicate(
+    (cp) => !isWordCharacter(cp),
+);
+const fastIsLowerCase = precomputedCodePointPredicate((cp) =>
+    unicode.isLowerCase(cp),
+);
+export const fastIsUpperCase = precomputedCodePointPredicate((cp) =>
+    unicode.isUpperCase(cp),
+);
+const fastNonLetter = precomputedCodePointPredicate(
+    (cp) => !unicode.isLowerCase(cp) && !unicode.isUpperCase(cp),
+);
 const fastIsDigit = precomputedCodePointPredicate(isDigit);
 
 export function splitIntoWords(s: string): WordInName[] {
@@ -387,7 +415,10 @@ export function splitIntoWords(s: string): WordInName[] {
     }
 
     function startInterval(): void {
-        assert(intervalStart === undefined, "Interval started before last one was committed");
+        assert(
+            intervalStart === undefined,
+            "Interval started before last one was committed",
+        );
         intervalStart = i;
     }
 
@@ -406,7 +437,9 @@ export function splitIntoWords(s: string): WordInName[] {
             i += 1;
         }
 
-        const allUpper = lastLowerCaseIndex === undefined || lastLowerCaseIndex < intervalStart;
+        const allUpper =
+            lastLowerCaseIndex === undefined ||
+            lastLowerCaseIndex < intervalStart;
         intervals.push([intervalStart, i, allUpper]);
         intervalStart = undefined;
     }
@@ -498,7 +531,7 @@ export function combineWords(
     firstWordAcronymStyle: WordStyle,
     restAcronymStyle: WordStyle,
     separator: string,
-    isStartCharacter: (codePoint: number) => boolean
+    isStartCharacter: (codePoint: number) => boolean,
 ): string {
     const legalizedWords: WordInName[] = [];
     for (const w of words) {
@@ -509,7 +542,10 @@ export function combineWords(
 
     if (legalizedWords.length === 0) {
         const validEmpty = removeInvalidCharacters("empty");
-        assert(validEmpty.length > 0, 'Word "empty" is invalid in target language');
+        assert(
+            validEmpty.length > 0,
+            'Word "empty" is invalid in target language',
+        );
         legalizedWords.push({ word: validEmpty, isAcronym: false });
     }
 
@@ -520,11 +556,14 @@ export function combineWords(
     let restWords: WordInName[];
     if (!isStartCharacter(defined(styledFirstWord.codePointAt(0)))) {
         const validThe = removeInvalidCharacters("the");
-        assert(validThe.length > 0, 'Word "the" is invalid in the target language');
+        assert(
+            validThe.length > 0,
+            'Word "the" is invalid in the target language',
+        );
         const styledThe = styleWord(firstWordStyle, validThe);
         assert(
             isStartCharacter(defined(styledThe.codePointAt(0))),
-            'The first character of styling "the" is not a start character'
+            'The first character of styling "the" is not a start character',
         );
         styledWords.push(styledThe);
         restWords = legalizedWords;
@@ -549,7 +588,7 @@ export function addPrefixIfNecessary(prefix: string, name: string): string {
 export function makeNameStyle(
     namingStyle: NamingStyle,
     legalizeName: (name: string) => string,
-    prefix?: string
+    prefix?: string,
 ): (rawName: string) => string {
     let separator: string;
     let firstWordStyle: WordStyle;
@@ -564,7 +603,10 @@ export function makeNameStyle(
         namingStyle === "camel-upper-acronyms"
     ) {
         separator = "";
-        if (namingStyle === "pascal-upper-acronyms" || namingStyle === "camel-upper-acronyms") {
+        if (
+            namingStyle === "pascal-upper-acronyms" ||
+            namingStyle === "camel-upper-acronyms"
+        ) {
             restWordStyle = firstUpperWordStyle;
             restAcronymStyle = allUpperWordStyle;
         } else {
@@ -584,10 +626,18 @@ export function makeNameStyle(
             firstWordStyle = firstWordAcronymStyle = allLowerWordStyle;
             break;
         case "underscore":
-            firstWordStyle = restWordStyle = firstWordAcronymStyle = restAcronymStyle = allLowerWordStyle;
+            firstWordStyle =
+                restWordStyle =
+                firstWordAcronymStyle =
+                restAcronymStyle =
+                    allLowerWordStyle;
             break;
         case "upper-underscore":
-            firstWordStyle = restWordStyle = firstWordAcronymStyle = restAcronymStyle = allUpperWordStyle;
+            firstWordStyle =
+                restWordStyle =
+                firstWordAcronymStyle =
+                restAcronymStyle =
+                    allUpperWordStyle;
             break;
         default:
             return assertNever(namingStyle);
@@ -604,7 +654,7 @@ export function makeNameStyle(
             firstWordAcronymStyle,
             restAcronymStyle,
             separator,
-            isLetterOrUnderscore
+            isLetterOrUnderscore,
         );
 
         if (prefix !== undefined) {

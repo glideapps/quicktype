@@ -50,5 +50,5 @@ export const forbiddenNames = [
     "Object",
     "Result",
     "Series",
-    "Error"
+    "Error",
 ] as const;

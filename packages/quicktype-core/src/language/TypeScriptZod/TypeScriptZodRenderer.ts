@@ -14,7 +14,7 @@ import {
     isLetterOrUnderscore,
     splitIntoWords,
     stringEscape,
-    utf16StringEscape
+    utf16StringEscape,
 } from "../../support/Strings";
 import { panic } from "../../support/Support";
 import { type TargetLanguage } from "../../TargetLanguage";
@@ -25,7 +25,7 @@ import {
     type EnumType,
     ObjectType,
     SetOperationType,
-    type Type
+    type Type,
 } from "../../Type";
 import { matchType } from "../../Type/TypeUtils";
 import { legalizeName } from "../JavaScript/utils";
@@ -36,7 +36,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
     public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        protected readonly _options: OptionValues<typeof typeScriptZodOptions>
+        protected readonly _options: OptionValues<typeof typeScriptZodOptions>,
     ) {
         super(targetLanguage, renderContext);
     }
@@ -56,27 +56,30 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
             upper ? (s): string => capitalize(acronyms(s)) : allLowerWordStyle,
             acronyms,
             "",
-            isLetterOrUnderscore
+            isLetterOrUnderscore,
         );
     }
 
     protected makeNamedTypeNamer(): Namer {
-        return funPrefixNamer("types", s => this.nameStyle(s, true));
+        return funPrefixNamer("types", (s) => this.nameStyle(s, true));
     }
 
     protected makeUnionMemberNamer(): Namer {
-        return funPrefixNamer("properties", s => this.nameStyle(s, true));
+        return funPrefixNamer("properties", (s) => this.nameStyle(s, true));
     }
 
     protected namerForObjectProperty(): Namer {
-        return funPrefixNamer("properties", s => this.nameStyle(s, true));
+        return funPrefixNamer("properties", (s) => this.nameStyle(s, true));
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return funPrefixNamer("enum-cases", s => this.nameStyle(s, false));
+        return funPrefixNamer("enum-cases", (s) => this.nameStyle(s, false));
     }
 
-    protected importStatement(lhs: Sourcelike, moduleName: Sourcelike): Sourcelike {
+    protected importStatement(
+        lhs: Sourcelike,
+        moduleName: Sourcelike,
+    ): Sourcelike {
         return ["import ", lhs, " from ", moduleName, ";"];
     }
 
@@ -97,29 +100,37 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
 
         const match = matchType<Sourcelike>(
             t,
-            _anyType => "z.any()",
-            _nullType => "z.null()",
-            _boolType => "z.boolean()",
-            _integerType => "z.number()",
-            _doubleType => "z.number()",
-            _stringType => "z.string()",
-            arrayType => ["z.array(", this.typeMapTypeFor(arrayType.items, false), ")"],
-            _classType => panic("Should already be handled."),
-            _mapType => ["z.record(z.string(), ", this.typeMapTypeFor(_mapType.values, false), ")"],
-            _enumType => panic("Should already be handled."),
-            unionType => {
-                const children = Array.from(unionType.getChildren()).map((type: Type) =>
-                    this.typeMapTypeFor(type, false)
+            (_anyType) => "z.any()",
+            (_nullType) => "z.null()",
+            (_boolType) => "z.boolean()",
+            (_integerType) => "z.number()",
+            (_doubleType) => "z.number()",
+            (_stringType) => "z.string()",
+            (arrayType) => [
+                "z.array(",
+                this.typeMapTypeFor(arrayType.items, false),
+                ")",
+            ],
+            (_classType) => panic("Should already be handled."),
+            (_mapType) => [
+                "z.record(z.string(), ",
+                this.typeMapTypeFor(_mapType.values, false),
+                ")",
+            ],
+            (_enumType) => panic("Should already be handled."),
+            (unionType) => {
+                const children = Array.from(unionType.getChildren()).map(
+                    (type: Type) => this.typeMapTypeFor(type, false),
                 );
                 return ["z.union([", ...arrayIntercalate(", ", children), "])"];
             },
-            _transformedStringType => {
+            (_transformedStringType) => {
                 if (_transformedStringType.kind === "date-time") {
                     return "z.coerce.date()";
                 }
 
                 return "z.string()";
-            }
+            },
         );
 
         if (required) {
@@ -134,12 +145,23 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         this.emitLine("\nexport const ", name, "Schema = ", "z.object({");
         this.indent(() => {
             this.forEachClassProperty(t, "none", (_, jsonName, property) => {
-                this.emitLine(`"${utf16StringEscape(jsonName)}"`, ": ", this.typeMapTypeForProperty(property), ",");
+                this.emitLine(
+                    `"${utf16StringEscape(jsonName)}"`,
+                    ": ",
+                    this.typeMapTypeForProperty(property),
+                    ",",
+                );
             });
         });
         this.emitLine("});");
         if (!this._options.justSchema) {
-            this.emitLine("export type ", name, " = z.infer<typeof ", name, "Schema>;");
+            this.emitLine(
+                "export type ",
+                name,
+                " = z.infer<typeof ",
+                name,
+                "Schema>;",
+            );
         }
     }
 
@@ -150,11 +172,17 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         this.indent(() =>
             this.forEachEnumCase(e, "none", (_, jsonName) => {
                 this.emitLine('"', stringEscape(jsonName), '",');
-            })
+            }),
         );
         this.emitLine("]);");
         if (!this._options.justSchema) {
-            this.emitLine("export type ", enumName, " = z.infer<typeof ", enumName, "Schema>;");
+            this.emitLine(
+                "export type ",
+                enumName,
+                " = z.infer<typeof ",
+                enumName,
+                "Schema>;",
+            );
         }
     }
 
@@ -172,9 +200,13 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
             // need to extract constituent types for unions and intersections (which both extend SetOperationType)
             // and can ignore the union/intersection itself
             if (type instanceof SetOperationType) {
-                (type as SetOperationType).members.forEach(member => {
+                (type as SetOperationType).members.forEach((member) => {
                     // recurse as the underlying type could itself be a union, instersection or array etc.
-                    typeRefs.push(...TypeScriptZodRenderer.extractUnderlyingTyperefs(member));
+                    typeRefs.push(
+                        ...TypeScriptZodRenderer.extractUnderlyingTyperefs(
+                            member,
+                        ),
+                    );
                 });
             }
 
@@ -183,7 +215,11 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
                 const addType = (type as ObjectType).getAdditionalProperties();
                 if (addType) {
                     // recurse as the underlying type could itself be a union, instersection or array etc.
-                    typeRefs.push(...TypeScriptZodRenderer.extractUnderlyingTyperefs(addType));
+                    typeRefs.push(
+                        ...TypeScriptZodRenderer.extractUnderlyingTyperefs(
+                            addType,
+                        ),
+                    );
                 }
             }
 
@@ -192,7 +228,11 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
                 const itemsType = (type as ArrayType).items;
                 if (itemsType) {
                     // recurse as the underlying type could itself be a union, instersection or array etc.
-                    typeRefs.push(...TypeScriptZodRenderer.extractUnderlyingTyperefs(itemsType));
+                    typeRefs.push(
+                        ...TypeScriptZodRenderer.extractUnderlyingTyperefs(
+                            itemsType,
+                        ),
+                    );
                 }
             }
 
@@ -208,9 +248,12 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
     protected emitSchemas(): void {
         this.ensureBlankLine();
 
-        this.forEachEnum("leading-and-interposing", (u: EnumType, enumName: Name) => {
-            this.emitEnum(u, enumName);
-        });
+        this.forEachEnum(
+            "leading-and-interposing",
+            (u: EnumType, enumName: Name) => {
+                this.emitEnum(u, enumName);
+            },
+        );
 
         // All children must be defined before this type to avoid forward references in generated code
         // Build a model that will tell us if a referenced type has been defined then make multiple
@@ -231,8 +274,10 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
             const children = type.getChildren();
             let childTypeRefs: number[] = [];
 
-            children.forEach(child => {
-                childTypeRefs = childTypeRefs.concat(TypeScriptZodRenderer.extractUnderlyingTyperefs(child));
+            children.forEach((child) => {
+                childTypeRefs = childTypeRefs.concat(
+                    TypeScriptZodRenderer.extractUnderlyingTyperefs(child),
+                );
             });
             mapChildTypeRefs.push(childTypeRefs);
         });
@@ -249,12 +294,12 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         const MAX_PASSES = 999;
         let passNum = 0;
         do {
-            indices.forEach(index => {
+            indices.forEach((index) => {
                 // must be behind all these children
                 const childTypeRefs = mapChildTypeRefs[index];
                 let foundAllChildren = true;
 
-                childTypeRefs.forEach(childRef => {
+                childTypeRefs.forEach((childRef) => {
                     // defensive: first check if there is a definition for the referenced type (there should be)
                     if (mapTypeRef.includes(childRef)) {
                         let found = false;
@@ -274,7 +319,8 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
                         foundAllChildren = foundAllChildren && found;
                     } else {
                         console.error(
-                            "A child type reference was not found amongst all Object definitions! TypeRef: " + childRef
+                            "A child type reference was not found amongst all Object definitions! TypeRef: " +
+                                childRef,
                         );
                     }
                 });
@@ -295,13 +341,19 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
                 // giving up
                 order.push(...deferredIndices);
                 console.warn(
-                    "Exceeded maximum number of passes when determining output order, output may contain forward references"
+                    "Exceeded maximum number of passes when determining output order, output may contain forward references",
                 );
             }
         } while (indices.length > 0 && passNum <= MAX_PASSES);
 
         // now emit ordered source
-        order.forEach(i => this.emitGatheredSource(this.gatherSource(() => this.emitObject(mapName[i], mapType[i]))));
+        order.forEach((i) =>
+            this.emitGatheredSource(
+                this.gatherSource(() =>
+                    this.emitObject(mapName[i], mapType[i]),
+                ),
+            ),
+        );
     }
 
     protected emitSourceStructure(): void {

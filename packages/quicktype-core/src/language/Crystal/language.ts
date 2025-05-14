@@ -6,10 +6,12 @@ import { CrystalRenderer } from "./CrystalRenderer";
 export const crystalLanguageConfig = {
     displayName: "Crystal",
     names: ["crystal", "cr", "crystallang"],
-    extension: "cr"
+    extension: "cr",
 } as const;
 
-export class CrystalTargetLanguage extends TargetLanguage<typeof crystalLanguageConfig> {
+export class CrystalTargetLanguage extends TargetLanguage<
+    typeof crystalLanguageConfig
+> {
     public constructor() {
         super(crystalLanguageConfig);
     }

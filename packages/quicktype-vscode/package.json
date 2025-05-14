@@ -24,13 +24,8 @@
     "engines": {
         "vscode": "^1.87.0"
     },
-    "categories": [
-        "Other"
-    ],
-    "keywords": [
-        "json",
-        "converter"
-    ],
+    "categories": ["Other"],
+    "keywords": ["json", "converter"],
     "markdown": "github",
     "main": "dist/extension.js",
     "vsce": {

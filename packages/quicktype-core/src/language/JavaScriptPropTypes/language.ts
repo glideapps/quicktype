@@ -15,19 +15,21 @@ export const javaScriptPropTypesOptions = {
         "Which module system to use",
         {
             "common-js": false,
-            "es6": true
+            es6: true,
         } as const,
-        "es6"
-    )
+        "es6",
+    ),
 };
 
 export const javaScriptPropTypesLanguageConfig = {
     displayName: "JavaScript PropTypes",
     names: ["javascript-prop-types"],
-    extension: "js"
+    extension: "js",
 } as const;
 
-export class JavaScriptPropTypesTargetLanguage extends TargetLanguage<typeof javaScriptPropTypesLanguageConfig> {
+export class JavaScriptPropTypesTargetLanguage extends TargetLanguage<
+    typeof javaScriptPropTypesLanguageConfig
+> {
     public constructor() {
         super(javaScriptPropTypesLanguageConfig);
     }
@@ -38,12 +40,12 @@ export class JavaScriptPropTypesTargetLanguage extends TargetLanguage<typeof jav
 
     protected makeRenderer(
         renderContext: RenderContext,
-        untypedOptionValues: FixMeOptionsType
+        untypedOptionValues: FixMeOptionsType,
     ): JavaScriptPropTypesRenderer {
         return new JavaScriptPropTypesRenderer(
             this,
             renderContext,
-            getOptionValues(javaScriptPropTypesOptions, untypedOptionValues)
+            getOptionValues(javaScriptPropTypesOptions, untypedOptionValues),
         );
     }
 }

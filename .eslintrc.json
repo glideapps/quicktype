@@ -43,7 +43,16 @@
                     "error",
                     {
                         "newlines-between": "always",
-                        "groups": ["builtin", "external", "internal", "parent", "sibling", "index", "object", "type"],
+                        "groups": [
+                            "builtin",
+                            "external",
+                            "internal",
+                            "parent",
+                            "sibling",
+                            "index",
+                            "object",
+                            "type"
+                        ],
                         "pathGroups": [
                             {
                                 "pattern": "@/**",
@@ -67,18 +76,34 @@
 
                 "@typescript-eslint/class-literal-property-style": "off",
                 "@typescript-eslint/comma-dangle": "off",
-                "@typescript-eslint/consistent-type-definitions": ["error", "interface"],
-                "@typescript-eslint/consistent-type-imports": ["error", { "prefer": "type-imports" }],
+                "@typescript-eslint/consistent-type-definitions": [
+                    "error",
+                    "interface"
+                ],
+                "@typescript-eslint/consistent-type-imports": [
+                    "error",
+                    { "prefer": "type-imports" }
+                ],
                 "@typescript-eslint/explicit-function-return-type": "warn",
                 "@typescript-eslint/indent": "off",
-                "@typescript-eslint/quotes": ["error", "double", { "avoidEscape": true }],
+                "@typescript-eslint/quotes": [
+                    "error",
+                    "double",
+                    { "avoidEscape": true }
+                ],
                 "@typescript-eslint/member-delimiter-style": "off",
                 "@typescript-eslint/no-base-to-string": "warn",
                 "@typescript-eslint/no-empty-interface": "warn",
                 "@typescript-eslint/no-extra-parens": "off",
                 "@typescript-eslint/no-loop-func": "warn",
-                "@typescript-eslint/no-misused-promises": ["error", { "checksVoidReturn": false }],
-                "@typescript-eslint/no-unused-vars": ["error", { "vars": "local", "args": "none" }],
+                "@typescript-eslint/no-misused-promises": [
+                    "error",
+                    { "checksVoidReturn": false }
+                ],
+                "@typescript-eslint/no-unused-vars": [
+                    "error",
+                    { "vars": "local", "args": "none" }
+                ],
                 "@typescript-eslint/no-use-before-define": "warn",
                 "@typescript-eslint/no-useless-empty-export": "error",
                 "@typescript-eslint/prefer-readonly": "warn",

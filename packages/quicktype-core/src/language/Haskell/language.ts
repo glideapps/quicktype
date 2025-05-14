@@ -1,5 +1,10 @@
 import { type RenderContext } from "../../Renderer";
-import { BooleanOption, EnumOption, StringOption, getOptionValues } from "../../RendererOptions";
+import {
+    BooleanOption,
+    EnumOption,
+    StringOption,
+    getOptionValues,
+} from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
 import { type FixMeOptionsType } from "../../types";
 
@@ -12,20 +17,27 @@ export const haskellOptions = {
         "Use Array or List",
         {
             array: false,
-            list: true
+            list: true,
         } as const,
-        "array"
+        "array",
     ),
-    moduleName: new StringOption("module", "Generated module name", "NAME", "QuickType")
+    moduleName: new StringOption(
+        "module",
+        "Generated module name",
+        "NAME",
+        "QuickType",
+    ),
 };
 
 export const haskellLanguageConfig = {
     displayName: "Haskell",
     names: ["haskell"],
-    extension: "haskell"
+    extension: "haskell",
 } as const;
 
-export class HaskellTargetLanguage extends TargetLanguage<typeof haskellLanguageConfig> {
+export class HaskellTargetLanguage extends TargetLanguage<
+    typeof haskellLanguageConfig
+> {
     public constructor() {
         super(haskellLanguageConfig);
     }
@@ -42,7 +54,14 @@ export class HaskellTargetLanguage extends TargetLanguage<typeof haskellLanguage
         return true;
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): HaskellRenderer {
-        return new HaskellRenderer(this, renderContext, getOptionValues(haskellOptions, untypedOptionValues));
+    protected makeRenderer(
+        renderContext: RenderContext,
+        untypedOptionValues: FixMeOptionsType,
+    ): HaskellRenderer {
+        return new HaskellRenderer(
+            this,
+            renderContext,
+            getOptionValues(haskellOptions, untypedOptionValues),
+        );
     }
 }

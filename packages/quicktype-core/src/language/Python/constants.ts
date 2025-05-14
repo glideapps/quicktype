@@ -12,7 +12,7 @@ export const forbiddenTypeNames = [
     "Type",
     "TypeVar",
     "T",
-    "EnumT"
+    "EnumT",
 ] as const;
 
 export const forbiddenPropertyNames = [
@@ -55,5 +55,5 @@ export const forbiddenPropertyNames = [
     "try",
     "while",
     "with",
-    "yield"
+    "yield",
 ] as const;

@@ -1,4 +1,9 @@
-import { hashString, mapFilter, mapFilterMap, mapTranspose } from "collection-utils";
+import {
+    hashString,
+    mapFilter,
+    mapFilterMap,
+    mapTranspose,
+} from "collection-utils";
 
 import { type BaseGraphRewriteBuilder } from "../GraphRewriting";
 import { assert, panic } from "../support/Support";
@@ -27,7 +32,11 @@ export class TypeAttributeKind<T> {
         return attrs;
     }
 
-    public addToSchema(_schema: { [name: string]: unknown }, _t: Type, _attrs: T): void {
+    public addToSchema(
+        _schema: { [name: string]: unknown },
+        _t: Type,
+        _attrs: T,
+    ): void {
         return;
     }
 
@@ -47,7 +56,10 @@ export class TypeAttributeKind<T> {
         return false;
     }
 
-    public reconstitute<TBuilder extends BaseGraphRewriteBuilder>(_builder: TBuilder, a: T): T {
+    public reconstitute<TBuilder extends BaseGraphRewriteBuilder>(
+        _builder: TBuilder,
+        a: T,
+    ): T {
         return a;
     }
 
@@ -65,7 +77,10 @@ export class TypeAttributeKind<T> {
         return new Map(a).set(this, value);
     }
 
-    public modifyInAttributes(a: TypeAttributes, modify: (value: T | undefined) => T | undefined): TypeAttributes {
+    public modifyInAttributes(
+        a: TypeAttributes,
+        modify: (value: T | undefined) => T | undefined,
+    ): TypeAttributes {
         const modified = modify(this.tryGetInAttributes(a));
         if (modified === undefined) {
             // FIXME: This is potentially super slow
@@ -77,7 +92,10 @@ export class TypeAttributeKind<T> {
         return this.setInAttributes(a, modified);
     }
 
-    public setDefaultInAttributes(a: TypeAttributes, makeDefault: () => T): TypeAttributes {
+    public setDefaultInAttributes(
+        a: TypeAttributes,
+        makeDefault: () => T,
+    ): TypeAttributes {
         if (this.tryGetInAttributes(a) !== undefined) return a;
         return this.modifyInAttributes(a, makeDefault);
     }
@@ -107,12 +125,19 @@ export const emptyTypeAttributes: TypeAttributes = new Map();
 
 export type CombinationKind = "union" | "intersect";
 
-export function combineTypeAttributes(kind: CombinationKind, attributeArray: TypeAttributes[]): TypeAttributes;
-export function combineTypeAttributes(kind: CombinationKind, a: TypeAttributes, b: TypeAttributes): TypeAttributes;
+export function combineTypeAttributes(
+    kind: CombinationKind,
+    attributeArray: TypeAttributes[],
+): TypeAttributes;
+export function combineTypeAttributes(
+    kind: CombinationKind,
+    a: TypeAttributes,
+    b: TypeAttributes,
+): TypeAttributes;
 export function combineTypeAttributes(
     combinationKind: CombinationKind,
     firstOrArray: TypeAttributes[] | TypeAttributes,
-    second?: TypeAttributes
+    second?: TypeAttributes,
 ): TypeAttributes {
     const union = combinationKind === "union";
     let attributeArray: TypeAttributes[];
@@ -143,10 +168,14 @@ export function combineTypeAttributes(
     return mapFilterMap(attributesByKind, combine);
 }
 
-export function makeTypeAttributesInferred(attr: TypeAttributes): TypeAttributes {
+export function makeTypeAttributesInferred(
+    attr: TypeAttributes,
+): TypeAttributes {
     return mapFilterMap(attr, (value, kind) => kind.makeInferred(value));
 }
 
-export function increaseTypeAttributesDistance(attr: TypeAttributes): TypeAttributes {
+export function increaseTypeAttributesDistance(
+    attr: TypeAttributes,
+): TypeAttributes {
     return mapFilterMap(attr, (value, kind) => kind.increaseDistance(value));
 }

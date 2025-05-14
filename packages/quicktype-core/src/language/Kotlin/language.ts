@@ -1,6 +1,10 @@
 import { type ConvenienceRenderer } from "../../ConvenienceRenderer";
 import { type RenderContext } from "../../Renderer";
-import { EnumOption, StringOption, getOptionValues } from "../../RendererOptions";
+import {
+    EnumOption,
+    StringOption,
+    getOptionValues,
+} from "../../RendererOptions";
 import { AcronymStyleOptions, acronymOption } from "../../support/Acronyms";
 import { assertNever } from "../../support/Support";
 import { TargetLanguage } from "../../TargetLanguage";
@@ -17,23 +21,25 @@ export const kotlinOptions = {
         "Serialization framework",
         {
             "just-types": "None",
-            "jackson": "Jackson",
-            "klaxon": "Klaxon",
-            "kotlinx": "KotlinX"
+            jackson: "Jackson",
+            klaxon: "Klaxon",
+            kotlinx: "KotlinX",
         } as const,
-        "klaxon"
+        "klaxon",
     ),
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
-    packageName: new StringOption("package", "Package", "PACKAGE", "quicktype")
+    packageName: new StringOption("package", "Package", "PACKAGE", "quicktype"),
 };
 
 export const kotlinLanguageConfig = {
     displayName: "Kotlin",
     names: ["kotlin"],
-    extension: "kt"
+    extension: "kt",
 } as const;
 
-export class KotlinTargetLanguage extends TargetLanguage<typeof kotlinLanguageConfig> {
+export class KotlinTargetLanguage extends TargetLanguage<
+    typeof kotlinLanguageConfig
+> {
     public constructor() {
         super(kotlinLanguageConfig);
     }
@@ -50,7 +56,10 @@ export class KotlinTargetLanguage extends TargetLanguage<typeof kotlinLanguageCo
         return true;
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): ConvenienceRenderer {
+    protected makeRenderer(
+        renderContext: RenderContext,
+        untypedOptionValues: FixMeOptionsType,
+    ): ConvenienceRenderer {
         const options = getOptionValues(kotlinOptions, untypedOptionValues);
 
         switch (options.framework) {

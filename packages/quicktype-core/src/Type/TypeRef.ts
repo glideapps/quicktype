@@ -28,20 +28,25 @@ export function typeRefIndex(tref: TypeRef): number {
 export function assertTypeRefGraph(tref: TypeRef, graph: TypeGraph): void {
     assert(
         ((tref >> indexBits) & serialMask) === (graph.serial & serialMask),
-        "Mixing the wrong type reference and graph"
+        "Mixing the wrong type reference and graph",
     );
 }
 
-function getGraph(graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder): TypeGraph {
+function getGraph(
+    graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder,
+): TypeGraph {
     if ("originalGraph" in graphOrBuilder) {
         return graphOrBuilder.originalGraph;
     }
 
-		// do not use `graphOrBuilder instanceof TypeGraph` to check if is TypeGraph to prevent import cycle
+    // do not use `graphOrBuilder instanceof TypeGraph` to check if is TypeGraph to prevent import cycle
     return graphOrBuilder;
 }
 
-export function derefTypeRef(tref: TypeRef, graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder): Type {
+export function derefTypeRef(
+    tref: TypeRef,
+    graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder,
+): Type {
     const graph = getGraph(graphOrBuilder);
     assertTypeRefGraph(tref, graph);
     return graph.typeAtIndex(typeRefIndex(tref));
@@ -49,7 +54,7 @@ export function derefTypeRef(tref: TypeRef, graphOrBuilder: TypeGraph | BaseGrap
 
 export function attributesForTypeRef(
     tref: TypeRef,
-    graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder
+    graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder,
 ): TypeAttributes {
     const graph = getGraph(graphOrBuilder);
     assertTypeRefGraph(tref, graph);
@@ -58,7 +63,7 @@ export function attributesForTypeRef(
 
 export function typeAndAttributesForTypeRef(
     tref: TypeRef,
-    graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder
+    graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder,
 ): [Type, TypeAttributes] {
     const graph = getGraph(graphOrBuilder);
     assertTypeRefGraph(tref, graph);

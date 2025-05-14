@@ -4,8 +4,11 @@ import { type all } from "./All";
 
 type AllLanguages = (typeof all)[number];
 
-export type LanguageDisplayName<Language extends TargetLanguage = AllLanguages> = Language["displayName"];
-export type LanguageName<Language extends TargetLanguage = AllLanguages> = Language["names"][number];
+export type LanguageDisplayName<
+    Language extends TargetLanguage = AllLanguages,
+> = Language["displayName"];
+export type LanguageName<Language extends TargetLanguage = AllLanguages> =
+    Language["names"][number];
 
 export type LanguageDisplayNameMap = {
     [Language in AllLanguages as LanguageDisplayName<Language>]: Language;

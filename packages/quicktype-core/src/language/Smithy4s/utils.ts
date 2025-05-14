@@ -9,7 +9,7 @@ import {
     isLetterOrUnderscore,
     isNumeric,
     legalizeCharacters,
-    splitIntoWords
+    splitIntoWords,
 } from "../../support/Strings";
 
 import { invalidSymbols, keywords } from "./constants";
@@ -20,8 +20,8 @@ import { invalidSymbols, keywords } from "./constants";
  */
 export const shouldAddBacktick = (paramName: string): boolean => {
     return (
-        keywords.some(s => paramName === s) ||
-        invalidSymbols.some(s => paramName.includes(s)) ||
+        keywords.some((s) => paramName === s) ||
+        invalidSymbols.some((s) => paramName.includes(s)) ||
         !isNaN(parseFloat(paramName)) ||
         !isNaN(parseInt(paramName.charAt(0)))
     );
@@ -47,9 +47,13 @@ export function scalaNameStyle(isUpper: boolean, original: string): string {
         isUpper ? allUpperWordStyle : allLowerWordStyle,
         allUpperWordStyle,
         "",
-        isStartCharacter
+        isStartCharacter,
     );
 }
 
-export const upperNamingFunction = funPrefixNamer("upper", s => scalaNameStyle(true, s));
-export const lowerNamingFunction = funPrefixNamer("lower", s => scalaNameStyle(false, s));
+export const upperNamingFunction = funPrefixNamer("upper", (s) =>
+    scalaNameStyle(true, s),
+);
+export const lowerNamingFunction = funPrefixNamer("lower", (s) =>
+    scalaNameStyle(false, s),
+);
