@@ -1,6 +1,13 @@
 {
     "files": {
-        "ignore": ["test/runs", "test/inputs"]
+        "ignore": [
+            "test/runs",
+            "test/inputs",
+            "dist",
+            "node_modules",
+            "packages/*/dist",
+            "packages/*/node_modules"
+        ]
     },
     "formatter": {
         "indentStyle": "space",
