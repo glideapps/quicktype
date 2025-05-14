@@ -20,7 +20,7 @@ const compilerOptions: ts.CompilerOptions = {
     rootDir: "."
 };
 
-// FIXME: We're stringifying and then parsing this schema again.  Just pass around
+// FIXME: We're stringifying and then parsing this schema again. Just pass around
 // the schema directly.
 export function schemaForTypeScriptSources(sourceFileNames: string[]): JSONSchemaSourceData {
     const program = ts.createProgram(sourceFileNames, compilerOptions);
@@ -32,6 +32,7 @@ export function schemaForTypeScriptSources(sourceFileNames: string[]): JSONSchem
         });
     }
 
+    // this breaks after upgrading to TS 5+
     const schema = generateSchema(program, "*", settings);
     const uris: string[] = [];
     let topLevelName = "";

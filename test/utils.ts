@@ -10,7 +10,7 @@ import * as languages from "./languages";
 import deepEquals from "./lib/deepEquals";
 
 import chalk from "chalk";
-const strictDeepEquals: (x: any, y: any) => boolean = require("deep-equal");
+const strictDeepEquals: (x: unknown, y: unknown) => boolean = require("deep-equal");
 
 const DEBUG = process.env.DEBUG !== undefined;
 const ASSUME_STRINGS_EQUAL = process.env.ASSUME_STRINGS_EQUAL !== undefined;
@@ -22,7 +22,7 @@ export function debug<T>(x: T): T {
     return x;
 }
 
-export function failWith(message: string, obj: { [key: string]: any }): never {
+export function failWith(message: string, obj: Record<string, unknown>): never {
     obj.cwd = process.cwd();
     console.error(chalk.red(message));
     console.error(chalk.red(JSON.stringify(obj, null, "  ")));
@@ -56,7 +56,7 @@ export function exec(
     if (env === undefined) {
         env = process.env;
     }
-    const result = shell.exec(s, { silent: !DEBUG, env }) as any;
+    const result = shell.exec(s, { silent: !DEBUG, env });
 
     if (result.code !== 0) {
         const failureObj = {
