@@ -5010,8 +5010,8 @@ export class CJSONRenderer extends ConvenienceRenderer {
                         this.emitBlock(["if (NULL != x->value)"], () => {
                             this.emitLine("j = ", cJSON.createObject, "();");
                             this.emitBlock(["if (NULL != j)"], () => {
-                                // @ts-expect-error awaiting refactor
                                 this.emitLine(
+                                    // @ts-expect-error awaiting refactor
                                     cJSON.items?.cType,
                                     " * x1 = list_get_head(x->value);",
                                 );
@@ -5241,8 +5241,8 @@ export class CJSONRenderer extends ConvenienceRenderer {
                         cJSON.items !== undefined
                     ) {
                         this.emitBlock(["if (NULL != x->value)"], () => {
-                            // @ts-expect-error awaiting refactor
                             this.emitLine(
+                                // @ts-expect-error awaiting refactor
                                 cJSON.items?.cType,
                                 " * x1 = list_get_head(x->value);",
                             );
@@ -5251,16 +5251,16 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                     this.emitBlock(
                                         ["if ((void *)0xDEADBEEF != x1)"],
                                         () => {
-                                            // @ts-expect-error awaiting refactor
                                             this.emitLine(
+                                                // @ts-expect-error awaiting refactor
                                                 cJSON.items?.deleteType,
                                                 "(x1);",
                                             );
                                         },
                                     );
                                 } else {
-                                    // @ts-expect-error awaiting refactor
                                     this.emitLine(
+                                        // @ts-expect-error awaiting refactor
                                         cJSON.items?.deleteType,
                                         "(x1);",
                                     );
@@ -5285,8 +5285,8 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                         "for (size_t index = 0; index < count; index++)",
                                     ],
                                     () => {
-                                        // @ts-expect-error awaiting refactor
                                         this.emitLine(
+                                            // @ts-expect-error awaiting refactor
                                             cJSON.items?.cType,
                                             " *x2 = hashtable_lookup(x->value, keys[index]);",
                                         );
@@ -5301,8 +5301,8 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                             " *)0xDEADBEEF != x2)",
                                                         ],
                                                         () => {
-                                                            // @ts-expect-error awaiting refactor
                                                             this.emitLine(
+                                                                // @ts-expect-error awaiting refactor
                                                                 cJSON.items
                                                                     ?.deleteType,
                                                                 "(x2);",
@@ -5310,8 +5310,8 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                         },
                                                     );
                                                 } else {
-                                                    // @ts-expect-error awaiting refactor
                                                     this.emitLine(
+                                                        // @ts-expect-error awaiting refactor
                                                         cJSON.items?.deleteType,
                                                         "(x2);",
                                                     );

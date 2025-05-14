@@ -41,9 +41,9 @@ export function propertyNameStyle(original: string, isBool = false): string {
     if (isBool) {
         if (words.length === 0) {
             words = [{ word: "flag", isAcronym: false }];
-            // @ts-expect-error needs strict type
         } else if (
             !words[0].isAcronym &&
+            // @ts-expect-error needs strict type
             !booleanPrefixes.includes(words[0].word)
         ) {
             words = [{ word: "is", isAcronym: false }, ...words];
