@@ -7,7 +7,7 @@ export {
     combineRenderResults,
     type RunContext
 } from "./Run";
-export{
+export {
 	inferenceFlags,
 	inferenceFlagNames,
 	defaultInferenceFlags,

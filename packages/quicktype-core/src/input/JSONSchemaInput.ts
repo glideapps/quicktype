@@ -954,9 +954,7 @@ async function addTypesInSchema(
 
         const includeObject = enumArray === undefined && !isConst && (typeSet === undefined || typeSet.has("object"));
         const includeArray = enumArray === undefined && !isConst && (typeSet === undefined || typeSet.has("array"));
-        const needStringEnum =
-            includedTypes.has("string") &&
-            enumArray?.find(x => typeof x === "string") !== undefined;
+        const needStringEnum = includedTypes.has("string") && enumArray?.find(x => typeof x === "string") !== undefined;
         const needUnion =
             typeSet !== undefined ||
             schema.properties !== undefined ||

@@ -32,7 +32,7 @@ export function schemaForTypeScriptSources(sourceFileNames: string[]): JSONSchem
         });
     }
 
-		// @ts-expect-error type mismatch between typescript version of this package and @mark.probst/typescript-json-schema
+    // this breaks after upgrading to TS 5+
     const schema = generateSchema(program, "*", settings);
     const uris: string[] = [];
     let topLevelName = "";
