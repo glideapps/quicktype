@@ -11,7 +11,7 @@ import {
     isPrintable,
     legalizeCharacters,
     splitIntoWords,
-    utf32ConcatMap
+    utf32ConcatMap,
 } from "../../support/Strings";
 
 function isAsciiLetterOrUnderscoreOrDigit(codePoint: number): boolean {
@@ -45,14 +45,19 @@ function crystalStyle(original: string, isSnakeCase: boolean): string {
         wordStyle,
         wordStyle,
         isSnakeCase ? "_" : "",
-        isAsciiLetterOrUnderscore
+        isAsciiLetterOrUnderscore,
     );
 
     return combined === "_" ? "_underscore" : combined;
 }
 
-export const snakeNamingFunction = funPrefixNamer("default", (original: string) => crystalStyle(original, true));
-export const camelNamingFunction = funPrefixNamer("camel", (original: string) => crystalStyle(original, false));
+export const snakeNamingFunction = funPrefixNamer(
+    "default",
+    (original: string) => crystalStyle(original, true),
+);
+export const camelNamingFunction = funPrefixNamer("camel", (original: string) =>
+    crystalStyle(original, false),
+);
 
 function standardUnicodeCrystalEscape(codePoint: number): string {
     if (codePoint <= 0xffff) {
@@ -62,4 +67,6 @@ function standardUnicodeCrystalEscape(codePoint: number): string {
     }
 }
 
-export const crystalStringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, standardUnicodeCrystalEscape));
+export const crystalStringEscape = utf32ConcatMap(
+    escapeNonPrintableMapper(isPrintable, standardUnicodeCrystalEscape),
+);

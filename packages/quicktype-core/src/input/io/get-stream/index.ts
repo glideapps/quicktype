@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { type Readable } from "readable-stream";
+import type { Readable } from "readable-stream";
 
-import bufferStream from "./buffer-stream";
+import bufferStream, { type BufferedPassThrough } from "./buffer-stream";
 
 export interface Options {
     array?: boolean;
@@ -14,10 +14,10 @@ export async function getStream(inputStream: Readable, opts: Options = {}) {
         return await Promise.reject(new Error("Expected a stream"));
     }
 
-    opts = Object.assign({ maxBuffer: Infinity }, opts);
+    opts = Object.assign({ maxBuffer: Number.POSITIVE_INFINITY }, opts);
 
-    const maxBuffer = opts.maxBuffer ?? Infinity;
-    let stream: any;
+    const maxBuffer = opts.maxBuffer ?? Number.POSITIVE_INFINITY;
+    let stream: BufferedPassThrough;
     let clean;
 
     const p = new Promise((resolve, reject) => {

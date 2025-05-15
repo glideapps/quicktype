@@ -46,7 +46,7 @@ export const keywords = [
     "unsigned",
     "void",
     "volatile",
-    "while"
+    "while",
 ] as const;
 
 export const forbiddenPropertyNames = [
@@ -58,7 +58,7 @@ export const forbiddenPropertyNames = [
     "mutableCopy",
     "superclass",
     "debugDescription",
-    "new"
+    "new",
 ] as const;
 
 export const booleanPrefixes = [
@@ -78,5 +78,5 @@ export const booleanPrefixes = [
     "requires",
     "require",
     "needs",
-    "need"
+    "need",
 ] as const;

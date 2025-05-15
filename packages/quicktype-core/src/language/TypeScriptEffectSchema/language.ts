@@ -1,21 +1,23 @@
-import { type RenderContext } from "../../Renderer";
+import type { RenderContext } from "../../Renderer";
 import { BooleanOption, getOptionValues } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type FixMeOptionsType } from "../../types";
+import type { LanguageName, RendererOptions } from "../../types";
 
 import { TypeScriptEffectSchemaRenderer } from "./TypeScriptEffectSchemaRenderer";
 
 export const typeScriptEffectSchemaOptions = {
-    justSchema: new BooleanOption("just-schema", "Schema only", false)
+    justSchema: new BooleanOption("just-schema", "Schema only", false),
 };
 
 export const typeScriptEffectSchemaLanguageConfig = {
     displayName: "TypeScript Effect Schema",
     names: ["typescript-effect-schema"],
-    extension: "ts"
+    extension: "ts",
 } as const;
 
-export class TypeScriptEffectSchemaTargetLanguage extends TargetLanguage<typeof typeScriptEffectSchemaLanguageConfig> {
+export class TypeScriptEffectSchemaTargetLanguage extends TargetLanguage<
+    typeof typeScriptEffectSchemaLanguageConfig
+> {
     public constructor() {
         super(typeScriptEffectSchemaLanguageConfig);
     }
@@ -24,14 +26,16 @@ export class TypeScriptEffectSchemaTargetLanguage extends TargetLanguage<typeof 
         return {};
     }
 
-    protected makeRenderer(
+    protected makeRenderer<
+        Lang extends LanguageName = "typescript-effect-schema",
+    >(
         renderContext: RenderContext,
-        untypedOptionValues: FixMeOptionsType
+        untypedOptionValues: RendererOptions<Lang>,
     ): TypeScriptEffectSchemaRenderer {
         return new TypeScriptEffectSchemaRenderer(
             this,
             renderContext,
-            getOptionValues(typeScriptEffectSchemaOptions, untypedOptionValues)
+            getOptionValues(typeScriptEffectSchemaOptions, untypedOptionValues),
         );
     }
 }

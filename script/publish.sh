@@ -30,7 +30,7 @@ mv package.1.json package.json
 npm publish
 popd
 
-# pubish quicktype
+# Publish quicktype
 jq --arg version $VERSION \
     '.dependencies."quicktype-core" = $version | .dependencies."quicktype-graphql-input" = $version | .dependencies."quicktype-typescript-input" = $version' \
     package.json > package.1.json

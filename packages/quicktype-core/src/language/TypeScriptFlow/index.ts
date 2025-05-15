@@ -1,3 +1,7 @@
 export { FlowRenderer } from "./FlowRenderer";
 export { TypeScriptRenderer } from "./TypeScriptRenderer";
-export { FlowTargetLanguage, TypeScriptTargetLanguage, tsFlowOptions } from "./language";
+export {
+    FlowTargetLanguage,
+    TypeScriptTargetLanguage,
+    tsFlowOptions,
+} from "./language";

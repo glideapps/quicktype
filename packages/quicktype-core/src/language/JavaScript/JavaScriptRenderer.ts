@@ -2,8 +2,8 @@ import { arrayIntercalate } from "collection-utils";
 
 import { ConvenienceRenderer } from "../../ConvenienceRenderer";
 import { type Name, type Namer, funPrefixNamer } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
 import { type Sourcelike, modifySource } from "../../Source";
 import { acronymStyle } from "../../support/Acronyms";
 import { ConvertersOptions } from "../../support/Converters";
@@ -14,14 +14,22 @@ import {
     combineWords,
     firstUpperWordStyle,
     splitIntoWords,
-    utf16StringEscape
+    utf16StringEscape,
 } from "../../support/Strings";
 import { panic } from "../../support/Support";
-import { type TargetLanguage } from "../../TargetLanguage";
-import { type ClassProperty, type ClassType, type ObjectType, type Type } from "../../Type";
-import { directlyReachableSingleNamedType, matchType } from "../../Type/TypeUtils";
+import type { TargetLanguage } from "../../TargetLanguage";
+import type {
+    ClassProperty,
+    ClassType,
+    ObjectType,
+    Type,
+} from "../../Type";
+import {
+    directlyReachableSingleNamedType,
+    matchType,
+} from "../../Type/TypeUtils";
 
-import { type javaScriptOptions } from "./language";
+import type { javaScriptOptions } from "./language";
 import { isES3IdentifierStart } from "./unicodeMaps";
 import { legalizeName } from "./utils";
 
@@ -35,13 +43,13 @@ export interface JavaScriptTypeAnnotations {
     stringArray: string;
 }
 
-const identityNamingFunction = funPrefixNamer("properties", s => s);
+const identityNamingFunction = funPrefixNamer("properties", (s) => s);
 
 export class JavaScriptRenderer extends ConvenienceRenderer {
     public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        private readonly _jsOptions: OptionValues<typeof javaScriptOptions>
+        private readonly _jsOptions: OptionValues<typeof javaScriptOptions>,
     ) {
         super(targetLanguage, renderContext);
     }
@@ -57,12 +65,12 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
             upper ? (s): string => capitalize(acronyms(s)) : allLowerWordStyle,
             acronyms,
             "",
-            isES3IdentifierStart
+            isES3IdentifierStart,
         );
     }
 
     protected makeNamedTypeNamer(): Namer {
-        return funPrefixNamer("types", s => this.nameStyle(s, true));
+        return funPrefixNamer("types", (s) => this.nameStyle(s, true));
     }
 
     protected namerForObjectProperty(): Namer {
@@ -74,7 +82,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return funPrefixNamer("enum-cases", s => this.nameStyle(s, true));
+        return funPrefixNamer("enum-cases", (s) => this.nameStyle(s, true));
     }
 
     protected namedTypeToNameForTopLevel(type: Type): Type | undefined {
@@ -86,14 +94,18 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
         className: Name,
         p: ClassProperty,
         jsonName: string,
-        _assignedName: string | undefined
+        _assignedName: string | undefined,
     ): Name | undefined {
         // Ignore the assigned name
         return super.makeNameForProperty(c, className, p, jsonName, undefined);
     }
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
-        this.emitCommentLines(lines, { lineStart: " * ", beforeComment: "/**", afterComment: " */" });
+        this.emitCommentLines(lines, {
+            lineStart: " * ",
+            beforeComment: "/**",
+            afterComment: " */",
+        });
     }
 
     private typeMapTypeFor(t: Type): Sourcelike {
@@ -103,27 +115,29 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
 
         return matchType<Sourcelike>(
             t,
-            _anyType => '"any"',
-            _nullType => "null",
-            _boolType => "true",
-            _integerType => "0",
-            _doubleType => "3.14",
-            _stringType => '""',
-            arrayType => ["a(", this.typeMapTypeFor(arrayType.items), ")"],
-            _classType => panic("We handled this above"),
-            mapType => ["m(", this.typeMapTypeFor(mapType.values), ")"],
-            _enumType => panic("We handled this above"),
-            unionType => {
-                const children = Array.from(unionType.getChildren()).map((type: Type) => this.typeMapTypeFor(type));
+            (_anyType) => '"any"',
+            (_nullType) => "null",
+            (_boolType) => "true",
+            (_integerType) => "0",
+            (_doubleType) => "3.14",
+            (_stringType) => '""',
+            (arrayType) => ["a(", this.typeMapTypeFor(arrayType.items), ")"],
+            (_classType) => panic("We handled this above"),
+            (mapType) => ["m(", this.typeMapTypeFor(mapType.values), ")"],
+            (_enumType) => panic("We handled this above"),
+            (unionType) => {
+                const children = Array.from(unionType.getChildren()).map(
+                    (type: Type) => this.typeMapTypeFor(type),
+                );
                 return ["u(", ...arrayIntercalate(", ", children), ")"];
             },
-            transformedStringType => {
+            (transformedStringType) => {
                 if (transformedStringType.kind === "date-time") {
                     return "Date";
                 }
 
                 return '""';
-            }
+            },
         );
     }
 
@@ -136,7 +150,11 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
         return ["u(undefined, ", typeMap, ")"];
     }
 
-    protected emitBlock(source: Sourcelike, end: Sourcelike, emit: () => void): void {
+    protected emitBlock(
+        source: Sourcelike,
+        end: Sourcelike,
+        emit: () => void,
+    ): void {
         this.emitLine(source, "{");
         this.indent(emit);
         this.emitLine("}", end);
@@ -149,20 +167,26 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
             this.forEachObject("none", (t: ObjectType, name: Name) => {
                 const additionalProperties = t.getAdditionalProperties();
                 const additional =
-                    additionalProperties !== undefined ? this.typeMapTypeFor(additionalProperties) : "false";
+                    additionalProperties !== undefined
+                        ? this.typeMapTypeFor(additionalProperties)
+                        : "false";
                 this.emitLine('"', name, '": o([');
                 this.indent(() => {
-                    this.forEachClassProperty(t, "none", (propName, jsonName, property) => {
-                        this.emitLine(
-                            '{ json: "',
-                            utf16StringEscape(jsonName),
-                            '", js: "',
-                            modifySource(utf16StringEscape, propName),
-                            '", typ: ',
-                            this.typeMapTypeForProperty(property),
-                            " },"
-                        );
-                    });
+                    this.forEachClassProperty(
+                        t,
+                        "none",
+                        (propName, jsonName, property) => {
+                            this.emitLine(
+                                '{ json: "',
+                                utf16StringEscape(jsonName),
+                                '", js: "',
+                                modifySource(utf16StringEscape, propName),
+                                '", typ: ',
+                                this.typeMapTypeForProperty(property),
+                                " },",
+                            );
+                        },
+                    );
                 });
                 this.emitLine("], ", additional, "),");
             });
@@ -211,38 +235,63 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
             string: "",
             stringArray: "",
             boolean: "",
-            never: ""
+            never: "",
         };
     }
 
     protected emitConvertModuleBody(): void {
         const converter = (t: Type, name: Name): void => {
             const typeMap = this.typeMapTypeFor(t);
-            this.emitBlock([this.deserializerFunctionLine(t, name), " "], "", () => {
-                const parsedJson = this._jsOptions.rawType === "json" ? "JSON.parse(json)" : "json";
-                if (!this._jsOptions.runtimeTypecheck) {
-                    this.emitLine("return ", parsedJson, ";");
-                } else {
-                    this.emitLine("return cast(", parsedJson, ", ", typeMap, ");");
-                }
-            });
+            this.emitBlock(
+                [this.deserializerFunctionLine(t, name), " "],
+                "",
+                () => {
+                    const parsedJson =
+                        this._jsOptions.rawType === "json"
+                            ? "JSON.parse(json)"
+                            : "json";
+                    if (!this._jsOptions.runtimeTypecheck) {
+                        this.emitLine("return ", parsedJson, ";");
+                    } else {
+                        this.emitLine(
+                            "return cast(",
+                            parsedJson,
+                            ", ",
+                            typeMap,
+                            ");",
+                        );
+                    }
+                },
+            );
             this.ensureBlankLine();
 
-            this.emitBlock([this.serializerFunctionLine(t, name), " "], "", () => {
-                if (this._jsOptions.rawType === "json") {
-                    if (!this._jsOptions.runtimeTypecheck) {
-                        this.emitLine("return JSON.stringify(value);");
+            this.emitBlock(
+                [this.serializerFunctionLine(t, name), " "],
+                "",
+                () => {
+                    if (this._jsOptions.rawType === "json") {
+                        if (!this._jsOptions.runtimeTypecheck) {
+                            this.emitLine("return JSON.stringify(value);");
+                        } else {
+                            this.emitLine(
+                                "return JSON.stringify(uncast(value, ",
+                                typeMap,
+                                "), null, 2);",
+                            );
+                        }
                     } else {
-                        this.emitLine("return JSON.stringify(uncast(value, ", typeMap, "), null, 2);");
+                        if (!this._jsOptions.runtimeTypecheck) {
+                            this.emitLine("return value;");
+                        } else {
+                            this.emitLine(
+                                "return uncast(value, ",
+                                typeMap,
+                                ");",
+                            );
+                        }
                     }
-                } else {
-                    if (!this._jsOptions.runtimeTypecheck) {
-                        this.emitLine("return value;");
-                    } else {
-                        this.emitLine("return uncast(value, ", typeMap, ");");
-                    }
-                }
-            });
+                },
+            );
         };
 
         switch (this._jsOptions.converters) {
@@ -264,11 +313,10 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
                 anyMap: anyMapAnnotation,
                 string: stringAnnotation,
                 stringArray: stringArrayAnnotation,
-                never: neverAnnotation
+                never: neverAnnotation,
             } = this.typeAnnotations;
             this.ensureBlankLine();
-            this
-                .emitMultiline(`function invalidValue(typ${anyAnnotation}, val${anyAnnotation}, key${anyAnnotation}, parent${anyAnnotation} = '')${neverAnnotation} {
+            this.emitMultiline(`function invalidValue(typ${anyAnnotation}, val${anyAnnotation}, key${anyAnnotation}, parent${anyAnnotation} = '')${neverAnnotation} {
     const prettyTyp = prettyTypeName(typ);
     const parentText = parent ? \` on \${parent}\` : '';
     const keyText = key ? \` for key "\${key}"\` : '';
@@ -431,11 +479,11 @@ function r(name${stringAnnotation}) {
     protected emitConvertModule(): void {
         this.ensureBlankLine();
         this.emitMultiline(
-            `// Converts JSON ${this._jsOptions.rawType === "json" ? "strings" : "types"} to/from your types`
+            `// Converts JSON ${this._jsOptions.rawType === "json" ? "strings" : "types"} to/from your types`,
         );
         if (this._jsOptions.runtimeTypecheck) {
             this.emitMultiline(
-                `// and asserts the results${this._jsOptions.rawType === "json" ? " of JSON.parse" : ""} at runtime`
+                `// and asserts the results${this._jsOptions.rawType === "json" ? " of JSON.parse" : ""} at runtime`,
             );
         }
 
@@ -443,7 +491,9 @@ function r(name${stringAnnotation}) {
         if (moduleLine === undefined) {
             this.emitConvertModuleBody();
         } else {
-            this.emitBlock([moduleLine, " "], "", () => this.emitConvertModuleBody());
+            this.emitBlock([moduleLine, " "], "", () =>
+                this.emitConvertModuleBody(),
+            );
         }
     }
 
@@ -463,12 +513,22 @@ function r(name${stringAnnotation}) {
         this.emitLine("//");
         this.forEachTopLevel("none", (_t, name) => {
             const camelCaseName = modifySource(camelCase, name);
-            this.emitLine("//   const ", camelCaseName, " = Convert.to", name, "(json);");
+            this.emitLine(
+                "//   const ",
+                camelCaseName,
+                " = Convert.to",
+                name,
+                "(json);",
+            );
         });
         if (this._jsOptions.runtimeTypecheck) {
             this.emitLine("//");
-            this.emitLine("// These functions will throw an error if the JSON doesn't");
-            this.emitLine("// match the expected interface, even if the JSON is valid.");
+            this.emitLine(
+                "// These functions will throw an error if the JSON doesn't",
+            );
+            this.emitLine(
+                "// match the expected interface, even if the JSON is valid.",
+            );
         }
     }
 

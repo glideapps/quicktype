@@ -5,29 +5,31 @@ import {
     mapMergeWithInto,
     setSubtract,
     setUnion,
-    setUnionManyInto
+    setUnionManyInto,
 } from "collection-utils";
 
-import {
-    type JSONSchemaAttributes,
-    type JSONSchemaType,
-    type Ref
+import type {
+    JSONSchemaAttributes,
+    JSONSchemaType,
+    Ref,
 } from "../input/JSONSchemaInput";
-import { type JSONSchema } from "../input/JSONSchemaStore";
+import type { JSONSchema } from "../input/JSONSchemaStore";
 import { type PathElement, PathElementKind } from "../input/PathElement";
-import { type Type } from "../Type/Type";
+import type { Type } from "../Type/Type";
 
 import { TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
 
 export function addDescriptionToSchema(
     schema: { [name: string]: unknown },
-    description: Iterable<string> | undefined
+    description: Iterable<string> | undefined,
 ): void {
     if (description === undefined) return;
     schema.description = Array.from(description).join("\n");
 }
 
-class DescriptionTypeAttributeKind extends TypeAttributeKind<ReadonlySet<string>> {
+class DescriptionTypeAttributeKind extends TypeAttributeKind<
+    ReadonlySet<string>
+> {
     public constructor() {
         super("description");
     }
@@ -40,7 +42,11 @@ class DescriptionTypeAttributeKind extends TypeAttributeKind<ReadonlySet<string>
         return undefined;
     }
 
-    public addToSchema(schema: { [name: string]: unknown }, _t: Type, attrs: ReadonlySet<string>): void {
+    public addToSchema(
+        schema: { [name: string]: unknown },
+        _t: Type,
+        attrs: ReadonlySet<string>,
+    ): void {
         addDescriptionToSchema(schema, attrs);
     }
 
@@ -59,14 +65,20 @@ class DescriptionTypeAttributeKind extends TypeAttributeKind<ReadonlySet<string>
     }
 }
 
-export const descriptionTypeAttributeKind: TypeAttributeKind<ReadonlySet<string>> = new DescriptionTypeAttributeKind();
+export const descriptionTypeAttributeKind: TypeAttributeKind<
+    ReadonlySet<string>
+> = new DescriptionTypeAttributeKind();
 
-class PropertyDescriptionsTypeAttributeKind extends TypeAttributeKind<Map<string, ReadonlySet<string>>> {
+class PropertyDescriptionsTypeAttributeKind extends TypeAttributeKind<
+    Map<string, ReadonlySet<string>>
+> {
     public constructor() {
         super("propertyDescriptions");
     }
 
-    public combine(attrs: Array<Map<string, ReadonlySet<string>>>): Map<string, ReadonlySet<string>> {
+    public combine(
+        attrs: Array<Map<string, ReadonlySet<string>>>,
+    ): Map<string, ReadonlySet<string>> {
         // FIXME: Implement this with mutable sets
         const result = new Map<string, ReadonlySet<string>>();
         for (const attr of attrs) {
@@ -80,14 +92,17 @@ class PropertyDescriptionsTypeAttributeKind extends TypeAttributeKind<Map<string
         return undefined;
     }
 
-    public stringify(propertyDescriptions: Map<string, ReadonlySet<string>>): string | undefined {
+    public stringify(
+        propertyDescriptions: Map<string, ReadonlySet<string>>,
+    ): string | undefined {
         if (propertyDescriptions.size === 0) return undefined;
         return `prop descs: ${propertyDescriptions.size}`;
     }
 }
 
-export const propertyDescriptionsTypeAttributeKind: TypeAttributeKind<Map<string, ReadonlySet<string>>> =
-    new PropertyDescriptionsTypeAttributeKind();
+export const propertyDescriptionsTypeAttributeKind: TypeAttributeKind<
+    Map<string, ReadonlySet<string>>
+> = new PropertyDescriptionsTypeAttributeKind();
 
 function isPropertiesKey(el: PathElement): boolean {
     return el.kind === PathElementKind.KeyOrIndex && el.key === "properties";
@@ -96,7 +111,7 @@ function isPropertiesKey(el: PathElement): boolean {
 export function descriptionAttributeProducer(
     schema: JSONSchema,
     ref: Ref,
-    types: Set<JSONSchemaType>
+    types: Set<JSONSchemaType>,
 ): JSONSchemaAttributes | undefined {
     if (!(typeof schema === "object")) return undefined;
 
@@ -113,23 +128,35 @@ export function descriptionAttributeProducer(
     ) {
         const maybeDescription = schema.description;
         if (typeof maybeDescription === "string") {
-            description = descriptionTypeAttributeKind.makeAttributes(new Set([maybeDescription]));
+            description = descriptionTypeAttributeKind.makeAttributes(
+                new Set([maybeDescription]),
+            );
         }
     }
 
     if (types.has("object") && typeof schema.properties === "object") {
-        const propertyDescriptions = mapFilterMap(mapFromObject(schema.properties), propSchema => {
-            if (propSchema && typeof propSchema === "object" && "description" in propSchema) {
-                const desc = propSchema.description;
-                if (typeof desc === "string") {
-                    return new Set([desc]);
+        const propertyDescriptions = mapFilterMap(
+            mapFromObject(schema.properties),
+            (propSchema) => {
+                if (
+                    propSchema &&
+                    typeof propSchema === "object" &&
+                    "description" in propSchema
+                ) {
+                    const desc = propSchema.description;
+                    if (typeof desc === "string") {
+                        return new Set([desc]);
+                    }
                 }
-            }
 
-            return undefined;
-        });
+                return undefined;
+            },
+        );
         if (propertyDescriptions.size > 0) {
-            propertyDescription = propertyDescriptionsTypeAttributeKind.makeAttributes(propertyDescriptions);
+            propertyDescription =
+                propertyDescriptionsTypeAttributeKind.makeAttributes(
+                    propertyDescriptions,
+                );
         }
     }
 

@@ -2,15 +2,15 @@ import { mapMap } from "collection-utils";
 
 import { ConvenienceRenderer } from "./ConvenienceRenderer";
 import { type DateTimeRecognizer, DefaultDateTimeRecognizer } from "./DateTime";
-import { type RenderContext, type Renderer } from "./Renderer";
-import { type Option, type OptionDefinition } from "./RendererOptions";
+import type { RenderContext, Renderer } from "./Renderer";
+import type { Option, OptionDefinition } from "./RendererOptions";
 import { type SerializedRenderResult, serializeRenderResult } from "./Source";
-import { type Comment } from "./support/Comments";
+import type { Comment } from "./support/Comments";
 import { defined } from "./support/Support";
-import { type Type } from "./Type/Type";
-import { type StringTypeMapping } from "./Type/TypeBuilderUtils";
-import { type TypeGraph } from "./Type/TypeGraph";
-import { type FixMeOptionsType } from "./types";
+import type { Type } from "./Type/Type";
+import type { StringTypeMapping } from "./Type/TypeBuilderUtils";
+import type { TypeGraph } from "./Type/TypeGraph";
+import type { LanguageName, RendererOptions } from "./types";
 
 export type MultiFileRenderResult = ReadonlyMap<string, SerializedRenderResult>;
 
@@ -20,7 +20,9 @@ export interface LanguageConfig {
     readonly names: readonly string[];
 }
 
-export abstract class TargetLanguage<Config extends LanguageConfig = LanguageConfig> {
+export abstract class TargetLanguage<
+    Config extends LanguageConfig = LanguageConfig,
+> {
     public readonly displayName: Config["displayName"];
 
     public readonly names: Config["names"];
@@ -36,7 +38,7 @@ export abstract class TargetLanguage<Config extends LanguageConfig = LanguageCon
     protected abstract getOptions(): Record<string, Option<string, unknown>>;
 
     public get optionDefinitions(): Array<OptionDefinition<string, unknown>> {
-        return Object.values(this.getOptions()).map(o => o.definition);
+        return Object.values(this.getOptions()).map((o) => o.definition);
     }
 
     public get cliOptionDefinitions(): {
@@ -57,15 +59,18 @@ export abstract class TargetLanguage<Config extends LanguageConfig = LanguageCon
         return defined(this.names[0]);
     }
 
-    protected abstract makeRenderer(renderContext: RenderContext, optionValues: FixMeOptionsType): Renderer;
+    protected abstract makeRenderer<Lang extends LanguageName>(
+        renderContext: RenderContext,
+        optionValues: RendererOptions<Lang>,
+    ): Renderer;
 
-    public renderGraphAndSerialize(
+    public renderGraphAndSerialize<Lang extends LanguageName>(
         typeGraph: TypeGraph,
         givenOutputFilename: string,
         alphabetizeProperties: boolean,
         leadingComments: Comment[] | undefined,
-        rendererOptions: FixMeOptionsType,
-        indentation?: string
+        rendererOptions: RendererOptions<Lang>,
+        indentation?: string,
     ): MultiFileRenderResult {
         if (indentation === undefined) {
             indentation = this.defaultIndentation;
@@ -78,7 +83,9 @@ export abstract class TargetLanguage<Config extends LanguageConfig = LanguageCon
         }
 
         const renderResult = renderer.render(givenOutputFilename);
-        return mapMap(renderResult.sources, s => serializeRenderResult(s, renderResult.names, defined(indentation)));
+        return mapMap(renderResult.sources, (s) =>
+            serializeRenderResult(s, renderResult.names, defined(indentation)),
+        );
     }
 
     protected get defaultIndentation(): string {

@@ -36,5 +36,5 @@ export const forbiddenNames = [
     "True",
     "False",
     "String",
-    "Float"
+    "Float",
 ] as const;

@@ -1,38 +1,41 @@
 import { EnumOption } from "../RendererOptions";
 
-import { allLowerWordStyle, allUpperWordStyle, firstUpperWordStyle, originalWord } from "./Strings";
+import {
+    allLowerWordStyle,
+    allUpperWordStyle,
+    firstUpperWordStyle,
+    originalWord,
+} from "./Strings";
 
 export enum AcronymStyleOptions {
     Camel = "camel",
     Lower = "lowerCase",
     Original = "original",
-    Pascal = "pascal"
+    Pascal = "pascal",
 }
 
-export const acronymOption = function (defaultOption: AcronymStyleOptions) {
-    return new EnumOption(
+export const acronymOption = (defaultOption: AcronymStyleOptions) => new EnumOption(
         "acronym-style",
         "Acronym naming style",
         {
             [AcronymStyleOptions.Original]: AcronymStyleOptions.Original,
             [AcronymStyleOptions.Pascal]: AcronymStyleOptions.Pascal,
             [AcronymStyleOptions.Camel]: AcronymStyleOptions.Camel,
-            [AcronymStyleOptions.Lower]: AcronymStyleOptions.Lower
+            [AcronymStyleOptions.Lower]: AcronymStyleOptions.Lower,
         } as const,
         defaultOption,
-        "secondary"
+        "secondary",
     );
-};
 
 const options = {
     [AcronymStyleOptions.Pascal]: allUpperWordStyle,
     [AcronymStyleOptions.Camel]: firstUpperWordStyle,
     [AcronymStyleOptions.Original]: originalWord,
-    [AcronymStyleOptions.Lower]: allLowerWordStyle
+    [AcronymStyleOptions.Lower]: allLowerWordStyle,
 } as const;
 
 export function acronymStyle<AcronymStyle extends AcronymStyleOptions>(
-    style: AcronymStyle
+    style: AcronymStyle,
 ): (typeof options)[AcronymStyle] {
     return options[style];
 }

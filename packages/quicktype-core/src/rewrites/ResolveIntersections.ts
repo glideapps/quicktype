@@ -10,16 +10,16 @@ import {
     setFilter,
     setIntersect,
     setMap,
-    setUnionInto
+    setUnionInto,
 } from "collection-utils";
 
 import {
     type TypeAttributes,
     combineTypeAttributes,
     emptyTypeAttributes,
-    makeTypeAttributesInferred
+    makeTypeAttributesInferred,
 } from "../attributes/TypeAttributes";
-import { type GraphRewriteBuilder, type TypeLookerUp } from "../GraphRewriting";
+import type { GraphRewriteBuilder, TypeLookerUp } from "../GraphRewriting";
 import { assert, defined, mustNotHappen, panic } from "../support/Support";
 import {
     ArrayType,
@@ -31,33 +31,54 @@ import {
     type TypeKind,
     UnionType,
     isNumberTypeKind,
-    isPrimitiveTypeKind
+    isPrimitiveTypeKind,
 } from "../Type";
-import { type TypeBuilder } from "../Type/TypeBuilder";
-import { type StringTypeMapping } from "../Type/TypeBuilderUtils";
-import { type TypeGraph } from "../Type/TypeGraph";
-import { type TypeRef } from "../Type/TypeRef";
-import { makeGroupsToFlatten, matchTypeExhaustive, setOperationMembersRecursively } from "../Type/TypeUtils";
-import { type TypeAttributeMap, UnionBuilder, type UnionTypeProvider } from "../UnionBuilder";
+import type { TypeBuilder } from "../Type/TypeBuilder";
+import type { StringTypeMapping } from "../Type/TypeBuilderUtils";
+import type { TypeGraph } from "../Type/TypeGraph";
+import type { TypeRef } from "../Type/TypeRef";
+import {
+    makeGroupsToFlatten,
+    matchTypeExhaustive,
+    setOperationMembersRecursively,
+} from "../Type/TypeUtils";
+import {
+    type TypeAttributeMap,
+    UnionBuilder,
+    type UnionTypeProvider,
+} from "../UnionBuilder";
 
 function canResolve(t: IntersectionType): boolean {
     const members = setOperationMembersRecursively(t, undefined)[0];
     if (members.size <= 1) return true;
-    return iterableEvery(members, m => !(m instanceof UnionType) || m.isCanonical);
+    return iterableEvery(
+        members,
+        (m) => !(m instanceof UnionType) || m.isCanonical,
+    );
 }
 
-function attributesForTypes<T extends TypeKind>(types: ReadonlySet<Type>): TypeAttributeMap<T> {
-    return mapMapEntries(types.entries(), t => [t.kind, t.getAttributes()] as [T, TypeAttributes]);
+function attributesForTypes<T extends TypeKind>(
+    types: ReadonlySet<Type>,
+): TypeAttributeMap<T> {
+    return mapMapEntries(
+        types.entries(),
+        (t) => [t.kind, t.getAttributes()] as [T, TypeAttributes],
+    );
 }
 
 type PropertyMap = Map<string, GenericClassProperty<Set<Type>>>;
 
 class IntersectionAccumulator
-    implements UnionTypeProvider<ReadonlySet<Type>, [PropertyMap, ReadonlySet<Type> | undefined] | undefined>
+    implements
+        UnionTypeProvider<
+            ReadonlySet<Type>,
+            [PropertyMap, ReadonlySet<Type> | undefined] | undefined
+        >
 {
     private _primitiveTypes: Set<PrimitiveTypeKind> | undefined;
 
-    private readonly _primitiveAttributes: TypeAttributeMap<PrimitiveTypeKind> = new Map();
+    private readonly _primitiveAttributes: TypeAttributeMap<PrimitiveTypeKind> =
+        new Map();
 
     // * undefined: We haven't seen any types yet.
     // * Set: All types we've seen can be arrays.
@@ -83,21 +104,32 @@ class IntersectionAccumulator
     private _lostTypeAttributes = false;
 
     private updatePrimitiveTypes(members: Iterable<Type>): void {
-        const types = setFilter(members, t => isPrimitiveTypeKind(t.kind));
+        const types = setFilter(members, (t) => isPrimitiveTypeKind(t.kind));
         const attributes = attributesForTypes<PrimitiveTypeKind>(types);
-        mapMergeWithInto(this._primitiveAttributes, (a, b) => combineTypeAttributes("intersect", a, b), attributes);
+        mapMergeWithInto(
+            this._primitiveAttributes,
+            (a, b) => combineTypeAttributes("intersect", a, b),
+            attributes,
+        );
 
-        const kinds = setMap(types, t => t.kind) as ReadonlySet<PrimitiveTypeKind>;
+        const kinds = setMap(
+            types,
+            (t) => t.kind,
+        ) as ReadonlySet<PrimitiveTypeKind>;
         if (this._primitiveTypes === undefined) {
             this._primitiveTypes = new Set(kinds);
             return;
         }
 
         const haveNumber =
-            iterableFind(this._primitiveTypes, isNumberTypeKind) !== undefined &&
+            iterableFind(this._primitiveTypes, isNumberTypeKind) !==
+                undefined &&
             iterableFind(kinds, isNumberTypeKind) !== undefined;
         this._primitiveTypes = setIntersect(this._primitiveTypes, kinds);
-        if (haveNumber && iterableFind(this._primitiveTypes, isNumberTypeKind) === undefined) {
+        if (
+            haveNumber &&
+            iterableFind(this._primitiveTypes, isNumberTypeKind) === undefined
+        ) {
             // One set has integer, the other has double.  The intersection
             // of that is integer.
             this._primitiveTypes = this._primitiveTypes.add("integer");
@@ -105,13 +137,20 @@ class IntersectionAccumulator
     }
 
     private updateArrayItemTypes(members: Iterable<Type>): void {
-        const maybeArray = iterableFind(members, t => t instanceof ArrayType) as ArrayType | undefined;
+        const maybeArray = iterableFind(
+            members,
+            (t) => t instanceof ArrayType,
+        ) as ArrayType | undefined;
         if (maybeArray === undefined) {
             this._arrayItemTypes = false;
             return;
         }
 
-        this._arrayAttributes = combineTypeAttributes("intersect", this._arrayAttributes, maybeArray.getAttributes());
+        this._arrayAttributes = combineTypeAttributes(
+            "intersect",
+            this._arrayAttributes,
+            maybeArray.getAttributes(),
+        );
 
         if (this._arrayItemTypes === undefined) {
             this._arrayItemTypes = new Set();
@@ -121,7 +160,10 @@ class IntersectionAccumulator
     }
 
     private updateObjectProperties(members: Iterable<Type>): void {
-        const maybeObject = iterableFind(members, t => t instanceof ObjectType) as ObjectType | undefined;
+        const maybeObject = iterableFind(
+            members,
+            (t) => t instanceof ObjectType,
+        ) as ObjectType | undefined;
         if (maybeObject === undefined) {
             this._objectProperties = undefined;
             this._additionalPropertyTypes = undefined;
@@ -131,9 +173,10 @@ class IntersectionAccumulator
         this._objectAttributes = combineTypeAttributes(
             "intersect",
             this._objectAttributes,
-            maybeObject.getAttributes()
+            maybeObject.getAttributes(),
         );
-        const objectAdditionalProperties = maybeObject.getAdditionalProperties();
+        const objectAdditionalProperties =
+            maybeObject.getAdditionalProperties();
 
         if (this._objectProperties === undefined) {
             assert(this._additionalPropertyTypes === undefined);
@@ -142,7 +185,7 @@ class IntersectionAccumulator
 
         const allPropertyNames = setUnionInto(
             new Set(this._objectProperties.keys()),
-            maybeObject.getProperties().keys()
+            maybeObject.getProperties().keys(),
         );
         for (const name of allPropertyNames) {
             const existing = defined(this._objectProperties).get(name);
@@ -151,31 +194,48 @@ class IntersectionAccumulator
             if (existing !== undefined && newProperty !== undefined) {
                 const cp = new GenericClassProperty(
                     existing.typeData.add(newProperty.type),
-                    existing.isOptional && newProperty.isOptional
+                    existing.isOptional && newProperty.isOptional,
                 );
                 defined(this._objectProperties).set(name, cp);
-            } else if (existing !== undefined && objectAdditionalProperties !== undefined) {
+            } else if (
+                existing !== undefined &&
+                objectAdditionalProperties !== undefined
+            ) {
                 const cp = new GenericClassProperty(
                     existing.typeData.add(objectAdditionalProperties),
-                    existing.isOptional
+                    existing.isOptional,
                 );
                 defined(this._objectProperties).set(name, cp);
             } else if (existing !== undefined) {
                 defined(this._objectProperties).delete(name);
-            } else if (newProperty !== undefined && this._additionalPropertyTypes !== undefined) {
+            } else if (
+                newProperty !== undefined &&
+                this._additionalPropertyTypes !== undefined
+            ) {
                 // FIXME: This is potentially slow
-                const types = new Set(this._additionalPropertyTypes).add(newProperty.type);
-                defined(this._objectProperties).set(name, new GenericClassProperty(types, newProperty.isOptional));
+                const types = new Set(this._additionalPropertyTypes).add(
+                    newProperty.type,
+                );
+                defined(this._objectProperties).set(
+                    name,
+                    new GenericClassProperty(types, newProperty.isOptional),
+                );
             } else if (newProperty !== undefined) {
                 defined(this._objectProperties).delete(name);
             } else {
-                return mustNotHappen();
+                mustNotHappen();
             }
         }
 
-        if (this._additionalPropertyTypes !== undefined && objectAdditionalProperties !== undefined) {
+        if (
+            this._additionalPropertyTypes !== undefined &&
+            objectAdditionalProperties !== undefined
+        ) {
             this._additionalPropertyTypes.add(objectAdditionalProperties);
-        } else if (this._additionalPropertyTypes !== undefined || objectAdditionalProperties !== undefined) {
+        } else if (
+            this._additionalPropertyTypes !== undefined ||
+            objectAdditionalProperties !== undefined
+        ) {
             this._additionalPropertyTypes = undefined;
             this._lostTypeAttributes = true;
         }
@@ -191,43 +251,60 @@ class IntersectionAccumulator
         let attributes = t.getAttributes();
         matchTypeExhaustive(
             t,
-            _noneType => {
+            (_noneType) => {
                 return panic("There shouldn't be a none type");
             },
-            _anyType => {
-                return panic("The any type should have been filtered out in setOperationMembersRecursively");
+            (_anyType) => {
+                return panic(
+                    "The any type should have been filtered out in setOperationMembersRecursively",
+                );
             },
-            nullType => this.addUnionSet([nullType]),
-            boolType => this.addUnionSet([boolType]),
-            integerType => this.addUnionSet([integerType]),
-            doubleType => this.addUnionSet([doubleType]),
-            stringType => this.addUnionSet([stringType]),
-            arrayType => this.addUnionSet([arrayType]),
-            _classType => panic("We should never see class types in intersections"),
-            _mapType => panic("We should never see map types in intersections"),
-            objectType => this.addUnionSet([objectType]),
-            _enumType => panic("We should never see enum types in intersections"),
-            unionType => {
+            (nullType) => this.addUnionSet([nullType]),
+            (boolType) => this.addUnionSet([boolType]),
+            (integerType) => this.addUnionSet([integerType]),
+            (doubleType) => this.addUnionSet([doubleType]),
+            (stringType) => this.addUnionSet([stringType]),
+            (arrayType) => this.addUnionSet([arrayType]),
+            (_classType) =>
+                panic("We should never see class types in intersections"),
+            (_mapType) =>
+                panic("We should never see map types in intersections"),
+            (objectType) => this.addUnionSet([objectType]),
+            (_enumType) =>
+                panic("We should never see enum types in intersections"),
+            (unionType) => {
                 attributes = combineTypeAttributes(
                     "intersect",
-                    [attributes].concat(Array.from(unionType.members).map(m => m.getAttributes()))
+                    [attributes].concat(
+                        Array.from(unionType.members).map((m) =>
+                            m.getAttributes(),
+                        ),
+                    ),
                 );
                 this.addUnionSet(unionType.members);
             },
-            transformedStringType => this.addUnionSet([transformedStringType])
+            (transformedStringType) =>
+                this.addUnionSet([transformedStringType]),
         );
         return makeTypeAttributesInferred(attributes);
     }
 
     public get arrayData(): ReadonlySet<Type> {
-        if (this._arrayItemTypes === undefined || this._arrayItemTypes === false) {
-            return panic("This should not be called if the type can't be an array");
+        if (
+            this._arrayItemTypes === undefined ||
+            this._arrayItemTypes === false
+        ) {
+            return panic(
+                "This should not be called if the type can't be an array",
+            );
         }
 
         return this._arrayItemTypes;
     }
 
-    public get objectData(): [PropertyMap, ReadonlySet<Type> | undefined] | undefined {
+    public get objectData():
+        | [PropertyMap, ReadonlySet<Type> | undefined]
+        | undefined {
         if (this._objectProperties === undefined) {
             assert(this._additionalPropertyTypes === undefined);
             return undefined;
@@ -241,19 +318,31 @@ class IntersectionAccumulator
     }
 
     public getMemberKinds(): TypeAttributeMap<TypeKind> {
-        const kinds: TypeAttributeMap<TypeKind> = mapMap(defined(this._primitiveTypes).entries(), k =>
-            defined(this._primitiveAttributes.get(k))
+        const kinds: TypeAttributeMap<TypeKind> = mapMap(
+            defined(this._primitiveTypes).entries(),
+            (k) => defined(this._primitiveAttributes.get(k)),
         );
         const maybeDoubleAttributes = this._primitiveAttributes.get("double");
         // If double was eliminated, add its attributes to integer
-        if (maybeDoubleAttributes !== undefined && !kinds.has("double") && kinds.has("integer")) {
+        if (
+            maybeDoubleAttributes !== undefined &&
+            !kinds.has("double") &&
+            kinds.has("integer")
+        ) {
             // FIXME: How can this ever happen???  Where do we "eliminate" double?
-            mapUpdateInto(kinds, "integer", a => {
-                return combineTypeAttributes("intersect", defined(a), maybeDoubleAttributes);
+            mapUpdateInto(kinds, "integer", (a) => {
+                return combineTypeAttributes(
+                    "intersect",
+                    defined(a),
+                    maybeDoubleAttributes,
+                );
             });
         }
 
-        if (this._arrayItemTypes !== undefined && this._arrayItemTypes !== false) {
+        if (
+            this._arrayItemTypes !== undefined &&
+            this._arrayItemTypes !== false
+        ) {
             kinds.set("array", this._arrayAttributes);
         } else if (this._arrayAttributes.size > 0) {
             this._lostTypeAttributes = true;
@@ -280,8 +369,13 @@ class IntersectionUnionBuilder extends UnionBuilder<
 > {
     private _createdNewIntersections = false;
 
-    private makeIntersection(members: ReadonlySet<Type>, attributes: TypeAttributes): TypeRef {
-        const reconstitutedMembers = setMap(members, t => this.typeBuilder.reconstituteTypeRef(t.typeRef));
+    private makeIntersection(
+        members: ReadonlySet<Type>,
+        attributes: TypeAttributes,
+    ): TypeRef {
+        const reconstitutedMembers = setMap(members, (t) =>
+            this.typeBuilder.reconstituteTypeRef(t.typeRef),
+        );
 
         const first = defined(iterableFirst(reconstitutedMembers));
         if (reconstitutedMembers.size === 1) {
@@ -290,7 +384,10 @@ class IntersectionUnionBuilder extends UnionBuilder<
         }
 
         this._createdNewIntersections = true;
-        return this.typeBuilder.getUniqueIntersectionType(attributes, reconstitutedMembers);
+        return this.typeBuilder.getUniqueIntersectionType(
+            attributes,
+            reconstitutedMembers,
+        );
     }
 
     public get createdNewIntersections(): boolean {
@@ -300,31 +397,48 @@ class IntersectionUnionBuilder extends UnionBuilder<
     protected makeObject(
         maybeData: [PropertyMap, ReadonlySet<Type> | undefined] | undefined,
         typeAttributes: TypeAttributes,
-        forwardingRef: TypeRef | undefined
+        forwardingRef: TypeRef | undefined,
     ): TypeRef {
         if (maybeData === undefined) {
-            return panic("Either properties or additional properties must be given to make an object type");
+            return panic(
+                "Either properties or additional properties must be given to make an object type",
+            );
         }
 
         const [propertyTypes, maybeAdditionalProperties] = maybeData;
-        const properties = mapMap(propertyTypes, cp =>
-            this.typeBuilder.makeClassProperty(this.makeIntersection(cp.typeData, emptyTypeAttributes), cp.isOptional)
+        const properties = mapMap(propertyTypes, (cp) =>
+            this.typeBuilder.makeClassProperty(
+                this.makeIntersection(cp.typeData, emptyTypeAttributes),
+                cp.isOptional,
+            ),
         );
         const additionalProperties =
             maybeAdditionalProperties === undefined
                 ? undefined
-                : this.makeIntersection(maybeAdditionalProperties, emptyTypeAttributes);
-        return this.typeBuilder.getUniqueObjectType(typeAttributes, properties, additionalProperties, forwardingRef);
+                : this.makeIntersection(
+                      maybeAdditionalProperties,
+                      emptyTypeAttributes,
+                  );
+        return this.typeBuilder.getUniqueObjectType(
+            typeAttributes,
+            properties,
+            additionalProperties,
+            forwardingRef,
+        );
     }
 
     protected makeArray(
         arrays: ReadonlySet<Type>,
         typeAttributes: TypeAttributes,
-        forwardingRef: TypeRef | undefined
+        forwardingRef: TypeRef | undefined,
     ): TypeRef {
         // FIXME: attributes
         const itemsType = this.makeIntersection(arrays, emptyTypeAttributes);
-        const tref = this.typeBuilder.getArrayType(typeAttributes, itemsType, forwardingRef);
+        const tref = this.typeBuilder.getArrayType(
+            typeAttributes,
+            itemsType,
+            forwardingRef,
+        );
         return tref;
     }
 }
@@ -332,36 +446,61 @@ class IntersectionUnionBuilder extends UnionBuilder<
 export function resolveIntersections(
     graph: TypeGraph,
     stringTypeMapping: StringTypeMapping,
-    debugPrintReconstitution: boolean
+    debugPrintReconstitution: boolean,
 ): [TypeGraph, boolean] {
     let needsRepeat = false;
 
-    function replace(types: ReadonlySet<Type>, builder: GraphRewriteBuilder<Type>, forwardingRef: TypeRef): TypeRef {
-        const intersections = setFilter(types, t => t instanceof IntersectionType) as Set<IntersectionType>;
-        const [members, intersectionAttributes] = setOperationMembersRecursively(
-            Array.from(intersections),
-            "intersect"
-        );
+    function replace(
+        types: ReadonlySet<Type>,
+        builder: GraphRewriteBuilder<Type>,
+        forwardingRef: TypeRef,
+    ): TypeRef {
+        const intersections = setFilter(
+            types,
+            (t) => t instanceof IntersectionType,
+        ) as Set<IntersectionType>;
+        const [members, intersectionAttributes] =
+            setOperationMembersRecursively(
+                Array.from(intersections),
+                "intersect",
+            );
         if (members.size === 0) {
-            const t = builder.getPrimitiveType("any", intersectionAttributes, forwardingRef);
+            const t = builder.getPrimitiveType(
+                "any",
+                intersectionAttributes,
+                forwardingRef,
+            );
             return t;
         }
 
         if (members.size === 1) {
-            return builder.reconstituteType(defined(iterableFirst(members)), intersectionAttributes, forwardingRef);
+            return builder.reconstituteType(
+                defined(iterableFirst(members)),
+                intersectionAttributes,
+                forwardingRef,
+            );
         }
 
         const accumulator = new IntersectionAccumulator();
         const extraAttributes = makeTypeAttributesInferred(
             combineTypeAttributes(
                 "intersect",
-                Array.from(members).map(t => accumulator.addType(t))
-            )
+                Array.from(members).map((t) => accumulator.addType(t)),
+            ),
         );
-        const attributes = combineTypeAttributes("intersect", intersectionAttributes, extraAttributes);
+        const attributes = combineTypeAttributes(
+            "intersect",
+            intersectionAttributes,
+            extraAttributes,
+        );
 
         const unionBuilder = new IntersectionUnionBuilder(builder);
-        const tref = unionBuilder.buildUnion(accumulator, true, attributes, forwardingRef);
+        const tref = unionBuilder.buildUnion(
+            accumulator,
+            true,
+            attributes,
+            forwardingRef,
+        );
         if (unionBuilder.createdNewIntersections) {
             needsRepeat = true;
         }
@@ -373,12 +512,22 @@ export function resolveIntersections(
     // See for example the intersections-nested.schema example.
     const allIntersections = setFilter(
         graph.allTypesUnordered(),
-        t => t instanceof IntersectionType
+        (t) => t instanceof IntersectionType,
     ) as Set<IntersectionType>;
     const resolvableIntersections = setFilter(allIntersections, canResolve);
     const groups = makeGroupsToFlatten(resolvableIntersections, undefined);
-    graph = graph.rewrite("resolve intersections", stringTypeMapping, false, groups, debugPrintReconstitution, replace);
+    graph = graph.rewrite(
+        "resolve intersections",
+        stringTypeMapping,
+        false,
+        groups,
+        debugPrintReconstitution,
+        replace,
+    );
 
     // console.log(`resolved ${resolvableIntersections.size} of ${intersections.size} intersections`);
-    return [graph, !needsRepeat && allIntersections.size === resolvableIntersections.size];
+    return [
+        graph,
+        !needsRepeat && allIntersections.size === resolvableIntersections.size,
+    ];
 }

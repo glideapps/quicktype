@@ -1,7 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { PassThrough } from "readable-stream";
 
-import { type Options } from ".";
+import type { Options } from "./index";
+
+export interface BufferedPassThrough extends PassThrough {
+    getBufferedValue: () => any;
+    getBufferedLength: () => number;
+
+    // for compat with _Readable.Writable
+    readonly writableObjectMode: never;
+}
 
 export default function bufferStream(opts: Options) {
     opts = Object.assign({}, opts);
@@ -12,10 +20,8 @@ export default function bufferStream(opts: Options) {
     let objectMode = false;
 
     if (array) {
-        // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
         objectMode = !(encoding || buffer);
     } else {
-        // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
         encoding = encoding || "utf8";
     }
 
@@ -26,11 +32,11 @@ export default function bufferStream(opts: Options) {
     let len = 0;
     const ret: any[] = [];
     const stream = new PassThrough({
-        objectMode
-    }) as any;
+        objectMode,
+    }) as BufferedPassThrough;
 
     if (encoding) {
-        stream.setEncoding(encoding);
+        stream.setEncoding(encoding as BufferEncoding);
     }
 
     stream.on("data", (chunk: any) => {

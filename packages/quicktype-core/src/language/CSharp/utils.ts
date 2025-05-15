@@ -1,18 +1,27 @@
 import unicode from "unicode-properties";
 
-import { minMaxLengthForType, minMaxValueForType } from "../../attributes/Constraints";
+import {
+    minMaxLengthForType,
+    minMaxValueForType,
+} from "../../attributes/Constraints";
 import { funPrefixNamer } from "../../Naming";
-import { type Sourcelike } from "../../Source";
+import type { Sourcelike } from "../../Source";
 import {
     type WordInName,
     combineWords,
     firstUpperWordStyle,
     splitIntoWords,
-    utf16LegalizeCharacters
+    utf16LegalizeCharacters,
 } from "../../support/Strings";
 import { panic } from "../../support/Support";
-import { type Transformation } from "../../Transformers";
-import { ArrayType, EnumType, type PrimitiveType, type Type, UnionType } from "../../Type";
+import type { Transformation } from "../../Transformers";
+import {
+    ArrayType,
+    EnumType,
+    type PrimitiveType,
+    type Type,
+    UnionType,
+} from "../../Type";
 import { nullableFromUnion } from "../../Type/TypeUtils";
 
 import { keywords } from "./constants";
@@ -20,30 +29,36 @@ import { keywords } from "./constants";
 export enum AccessModifier {
     None = "None",
     Public = "Public",
-    Internal = "Internal"
+    Internal = "Internal",
 }
 
 export function noFollow(t: Type): Type {
     return t;
 }
 
-export function needTransformerForType(t: Type): "automatic" | "manual" | "nullable" | "none" {
+export function needTransformerForType(
+    t: Type,
+): "automatic" | "manual" | "nullable" | "none" {
     if (t instanceof UnionType) {
         const maybeNullable = nullableFromUnion(t);
         if (maybeNullable === null) return "automatic";
-        if (needTransformerForType(maybeNullable) === "manual") return "nullable";
+        if (needTransformerForType(maybeNullable) === "manual")
+            return "nullable";
         return "none";
     }
 
     if (t instanceof ArrayType) {
         const itemsNeed = needTransformerForType(t.items);
-        if (itemsNeed === "manual" || itemsNeed === "nullable") return "automatic";
+        if (itemsNeed === "manual" || itemsNeed === "nullable")
+            return "automatic";
         return "none";
     }
 
     if (t instanceof EnumType) return "automatic";
-    if (t.kind === "double") return minMaxValueForType(t) !== undefined ? "manual" : "none";
-    if (t.kind === "integer-string" || t.kind === "bool-string") return "manual";
+    if (t.kind === "double")
+        return minMaxValueForType(t) !== undefined ? "manual" : "none";
+    if (t.kind === "integer-string" || t.kind === "bool-string")
+        return "manual";
     if (t.kind === "string") {
         return minMaxLengthForType(t) !== undefined ? "manual" : "none";
     }
@@ -111,7 +126,7 @@ export function csNameStyle(original: string): string {
         firstUpperWordStyle,
         firstUpperWordStyle,
         "",
-        isStartCharacter
+        isStartCharacter,
     );
 }
 
@@ -119,23 +134,23 @@ function csNameStyleKeep(original: string): string {
     const words: WordInName[] = [
         {
             word: original,
-            isAcronym: false
-        }
+            isAcronym: false,
+        },
     ];
 
     const result = combineWords(
         words,
         legalizeName,
-        x => x,
-        x => x,
-        x => x,
-        x => x,
+        (x) => x,
+        (x) => x,
+        (x) => x,
+        (x) => x,
         "",
-        isStartCharacter
+        isStartCharacter,
     );
 
     // @ts-expect-error needs strong type
-    return keywords.includes(result) ? "@" + result : result;
+    return keywords.includes(result) ? `@${result}` : result;
 }
 
 export function isValueType(t: Type): boolean {
@@ -143,5 +158,7 @@ export function isValueType(t: Type): boolean {
         return nullableFromUnion(t) === null;
     }
 
-    return ["integer", "double", "bool", "enum", "date-time", "uuid"].includes(t.kind);
+    return ["integer", "double", "bool", "enum", "date-time", "uuid"].includes(
+        t.kind,
+    );
 }

@@ -6,17 +6,17 @@ import {
     mapFilter,
     setIntersect,
     setIsSuperset,
-    setUnion
+    setUnion,
 } from "collection-utils";
 
 import { StringTypes } from "../attributes/StringTypes";
 import { emptyTypeAttributes } from "../attributes/TypeAttributes";
-import { type GraphRewriteBuilder } from "../GraphRewriting";
-import { type RunContext } from "../Run";
+import type { GraphRewriteBuilder } from "../GraphRewriting";
+import type { RunContext } from "../Run";
 import { assert, defined } from "../support/Support";
-import { type PrimitiveType } from "../Type/Type";
-import { type TypeGraph } from "../Type/TypeGraph";
-import { type TypeRef } from "../Type/TypeRef";
+import type { PrimitiveType } from "../Type/Type";
+import type { TypeGraph } from "../Type/TypeGraph";
+import type { TypeRef } from "../Type/TypeRef";
 import { stringTypesForType } from "../Type/TypeUtils";
 
 const MIN_LENGTH_FOR_ENUM = 10;
@@ -32,15 +32,19 @@ interface EnumInfo {
 }
 
 function isOwnEnum({ numValues, cases }: EnumInfo): boolean {
-    return numValues >= MIN_LENGTH_FOR_ENUM && cases.size < Math.sqrt(numValues);
+    return (
+        numValues >= MIN_LENGTH_FOR_ENUM && cases.size < Math.sqrt(numValues)
+    );
 }
 
 function enumCasesOverlap(
     newCases: ReadonlySet<string>,
     existingCases: ReadonlySet<string>,
-    newAreSubordinate: boolean
+    newAreSubordinate: boolean,
 ): boolean {
-    const smaller = newAreSubordinate ? newCases.size : Math.min(newCases.size, existingCases.size);
+    const smaller = newAreSubordinate
+        ? newCases.size
+        : Math.min(newCases.size, existingCases.size);
     const overlap = setIntersect(newCases, existingCases).size;
     return overlap >= smaller * REQUIRED_OVERLAP;
 }
@@ -49,15 +53,22 @@ function isAlwaysEmptyString(cases: string[]): boolean {
     return cases.length === 1 && cases[0] === "";
 }
 
-export function expandStrings(ctx: RunContext, graph: TypeGraph, inference: EnumInference): TypeGraph {
+export function expandStrings(
+    ctx: RunContext,
+    graph: TypeGraph,
+    inference: EnumInference,
+): TypeGraph {
     const stringTypeMapping = ctx.stringTypeMapping;
     const allStrings = Array.from(graph.allTypesUnordered()).filter(
-        t => t.kind === "string" && stringTypesForType(t as PrimitiveType).isRestricted
+        (t) =>
+            t.kind === "string" &&
+            stringTypesForType(t as PrimitiveType).isRestricted,
     ) as PrimitiveType[];
 
     function makeEnumInfo(t: PrimitiveType): EnumInfo | undefined {
         const stringTypes = stringTypesForType(t);
-        const mappedStringTypes = stringTypes.applyStringTypeMapping(stringTypeMapping);
+        const mappedStringTypes =
+            stringTypes.applyStringTypeMapping(stringTypeMapping);
         if (!mappedStringTypes.isRestricted) return undefined;
 
         const cases = defined(mappedStringTypes.cases);
@@ -69,7 +80,10 @@ export function expandStrings(ctx: RunContext, graph: TypeGraph, inference: Enum
             const keys = Array.from(cases.keys());
             if (isAlwaysEmptyString(keys)) return undefined;
 
-            const someCaseIsNotNumber = iterableSome(keys, key => /^[-+]?[0-9]+(\.[0-9]+)?$/.test(key) === false);
+            const someCaseIsNotNumber = iterableSome(
+                keys,
+                (key) => /^[-+]?[0-9]+(\.[0-9]+)?$/.test(key) === false,
+            );
             if (!someCaseIsNotNumber) return undefined;
         }
 
@@ -88,8 +102,13 @@ export function expandStrings(ctx: RunContext, graph: TypeGraph, inference: Enum
 
         // FIXME: refactor this
         // eslint-disable-next-line no-inner-declarations
-        function findOverlap(newCases: ReadonlySet<string>, newAreSubordinate: boolean): number {
-            return enumSets.findIndex(s => enumCasesOverlap(newCases, s, newAreSubordinate));
+        function findOverlap(
+            newCases: ReadonlySet<string>,
+            newAreSubordinate: boolean,
+        ): number {
+            return enumSets.findIndex((s) =>
+                enumCasesOverlap(newCases, s, newAreSubordinate),
+            );
         }
 
         // First, make case sets for all the enums that stand on their own.  If
@@ -145,16 +164,24 @@ export function expandStrings(ctx: RunContext, graph: TypeGraph, inference: Enum
     function replaceString(
         group: ReadonlySet<PrimitiveType>,
         builder: GraphRewriteBuilder<PrimitiveType>,
-        forwardingRef: TypeRef
+        forwardingRef: TypeRef,
     ): TypeRef {
         assert(group.size === 1);
         const t = defined(iterableFirst(group));
         const stringTypes = stringTypesForType(t);
-        const attributes = mapFilter(t.getAttributes(), a => a !== stringTypes);
-        const mappedStringTypes = stringTypes.applyStringTypeMapping(stringTypeMapping);
+        const attributes = mapFilter(
+            t.getAttributes(),
+            (a) => a !== stringTypes,
+        );
+        const mappedStringTypes =
+            stringTypes.applyStringTypeMapping(stringTypeMapping);
 
         if (!mappedStringTypes.isRestricted) {
-            return builder.getStringType(attributes, StringTypes.unrestricted, forwardingRef);
+            return builder.getStringType(
+                attributes,
+                StringTypes.unrestricted,
+                forwardingRef,
+            );
         }
 
         const setMatches = inference === "all" ? areEqual : setIsSuperset;
@@ -163,11 +190,19 @@ export function expandStrings(ctx: RunContext, graph: TypeGraph, inference: Enum
         const cases = defined(mappedStringTypes.cases);
         if (cases.size > 0) {
             const keys = new Set(cases.keys());
-            const fullCases = enumSets.find(s => setMatches(s, keys));
-            if (inference !== "none" && !isAlwaysEmptyString(Array.from(keys)) && fullCases !== undefined) {
+            const fullCases = enumSets.find((s) => setMatches(s, keys));
+            if (
+                inference !== "none" &&
+                !isAlwaysEmptyString(Array.from(keys)) &&
+                fullCases !== undefined
+            ) {
                 types.push(builder.getEnumType(emptyTypeAttributes, fullCases));
             } else {
-                return builder.getStringType(attributes, StringTypes.unrestricted, forwardingRef);
+                return builder.getStringType(
+                    attributes,
+                    StringTypes.unrestricted,
+                    forwardingRef,
+                );
             }
         }
 
@@ -183,7 +218,11 @@ export function expandStrings(ctx: RunContext, graph: TypeGraph, inference: Enum
             return builder.getPrimitiveType(kind, attributes, forwardingRef);
         }
 
-        types.push(...Array.from(transformations).map(k => builder.getPrimitiveType(k)));
+        types.push(
+            ...Array.from(transformations).map((k) =>
+                builder.getPrimitiveType(k),
+            ),
+        );
         assert(types.length > 0, "We got an empty string type");
         return builder.getUnionType(attributes, new Set(types), forwardingRef);
     }
@@ -192,8 +231,8 @@ export function expandStrings(ctx: RunContext, graph: TypeGraph, inference: Enum
         "expand strings",
         stringTypeMapping,
         false,
-        allStrings.map(t => [t]),
+        allStrings.map((t) => [t]),
         ctx.debugPrintReconstitution,
-        replaceString
+        replaceString,
     );
 }

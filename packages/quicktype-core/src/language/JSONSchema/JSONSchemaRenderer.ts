@@ -2,14 +2,14 @@ import { iterableFirst, mapFirst } from "collection-utils";
 
 import { addDescriptionToSchema } from "../../attributes/Description";
 import { ConvenienceRenderer } from "../../ConvenienceRenderer";
-import { type Name, type Namer } from "../../Naming";
+import type { Name, Namer } from "../../Naming";
 import { defined, panic } from "../../support/Support";
 import {
     type EnumType,
     type ObjectType,
     type Type,
     type UnionType,
-    transformedStringTypeTargetTypeKindsMap
+    transformedStringTypeTargetTypeKindsMap,
 } from "../../Type";
 import { matchTypeExhaustive } from "../../Type/TypeUtils";
 
@@ -51,7 +51,9 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
             return this.schemaForType(first);
         }
 
-        return { anyOf: Array.from(types).map((t: Type) => this.schemaForType(t)) };
+        return {
+            anyOf: Array.from(types).map((t: Type) => this.schemaForType(t)),
+        };
     }
 
     private makeRef(t: Type): Schema {
@@ -68,35 +70,42 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
     private schemaForType(t: Type): Schema {
         const schema = matchTypeExhaustive(
             t,
-            _noneType => {
+            (_noneType) => {
                 return panic("none type should have been replaced");
             },
-            _anyType => ({}),
-            _nullType => ({ type: "null" }),
-            _boolType => ({ type: "boolean" }),
-            _integerType => ({ type: "integer" }),
-            _doubleType => ({ type: "number" }),
-            _stringType => ({ type: "string" }),
-            arrayType => ({ type: "array", items: this.schemaForType(arrayType.items) }),
-            classType => this.makeRef(classType),
-            mapType => this.definitionForObject(mapType, undefined),
-            objectType => this.makeRef(objectType),
-            enumType => this.makeRef(enumType),
-            unionType => {
+            (_anyType) => ({}),
+            (_nullType) => ({ type: "null" }),
+            (_boolType) => ({ type: "boolean" }),
+            (_integerType) => ({ type: "integer" }),
+            (_doubleType) => ({ type: "number" }),
+            (_stringType) => ({ type: "string" }),
+            (arrayType) => ({
+                type: "array",
+                items: this.schemaForType(arrayType.items),
+            }),
+            (classType) => this.makeRef(classType),
+            (mapType) => this.definitionForObject(mapType, undefined),
+            (objectType) => this.makeRef(objectType),
+            (enumType) => this.makeRef(enumType),
+            (unionType) => {
                 if (this.unionNeedsName(unionType)) {
                     return this.makeRef(unionType);
-                } else {
-                    return this.definitionForUnion(unionType);
                 }
+
+                return this.definitionForUnion(unionType);
             },
-            transformedStringType => {
-                const target = transformedStringTypeTargetTypeKindsMap.get(transformedStringType.kind);
+            (transformedStringType) => {
+                const target = transformedStringTypeTargetTypeKindsMap.get(
+                    transformedStringType.kind,
+                );
                 if (target === undefined) {
-                    return panic(`Unknown transformed string type ${transformedStringType.kind}`);
+                    return panic(
+                        `Unknown transformed string type ${transformedStringType.kind}`,
+                    );
                 }
 
                 return { type: "string", format: target.jsonSchema };
-            }
+            },
         );
         if (schema.$ref === undefined) {
             this.addAttributesToSchema(t, schema);
@@ -105,7 +114,10 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
         return schema;
     }
 
-    private definitionForObject(o: ObjectType, title: string | undefined): Schema {
+    private definitionForObject(
+        o: ObjectType,
+        title: string | undefined,
+    ): Schema {
         let properties: Schema | undefined;
         let required: string[] | undefined;
         if (o.getProperties().size === 0) {
@@ -117,7 +129,10 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
             for (const [name, p] of o.getProperties()) {
                 const prop = this.schemaForType(p.type);
                 if (prop.description === undefined) {
-                    addDescriptionToSchema(prop, this.descriptionForClassProperty(o, name));
+                    addDescriptionToSchema(
+                        prop,
+                        this.descriptionForClassProperty(o, name),
+                    );
                 }
 
                 props[name] = prop;
@@ -131,13 +146,14 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
         }
 
         const additional = o.getAdditionalProperties();
-        const additionalProperties = additional !== undefined ? this.schemaForType(additional) : false;
+        const additionalProperties =
+            additional !== undefined ? this.schemaForType(additional) : false;
         const schema = {
             type: "object",
             additionalProperties,
             properties,
             required,
-            title
+            title,
         };
         this.addAttributesToSchema(o, schema);
         return schema;
@@ -161,8 +177,14 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
 
     protected emitSourceStructure(): void {
         // FIXME: Find a good way to do multiple top-levels.  Maybe multiple files?
-        const topLevelType = this.topLevels.size === 1 ? this.schemaForType(defined(mapFirst(this.topLevels))) : {};
-        const schema = Object.assign({ $schema: "http://json-schema.org/draft-06/schema#" }, topLevelType);
+        const topLevelType =
+            this.topLevels.size === 1
+                ? this.schemaForType(defined(mapFirst(this.topLevels)))
+                : {};
+        const schema = Object.assign(
+            { $schema: "http://json-schema.org/draft-06/schema#" },
+            topLevelType,
+        );
         const definitions: { [name: string]: Schema } = {};
         this.forEachObject("none", (o: ObjectType, name: Name) => {
             const title = defined(this.names.get(name));

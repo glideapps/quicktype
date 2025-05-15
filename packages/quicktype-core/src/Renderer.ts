@@ -2,21 +2,35 @@ import { iterableEnumerate } from "collection-utils";
 
 import { type AnnotationData, IssueAnnotationData } from "./Annotation";
 import { type Name, type Namespace, assignNames } from "./Naming";
-import { type NewlineSource, type Source, type Sourcelike, annotated, newline, sourcelikeToSource } from "./Source";
-import { type Comment } from "./support/Comments";
+import {
+    type NewlineSource,
+    type Source,
+    type Sourcelike,
+    annotated,
+    newline,
+    sourcelikeToSource,
+} from "./Source";
+import type { Comment } from "./support/Comments";
 import { assert, panic } from "./support/Support";
-import { type TargetLanguage } from "./TargetLanguage";
-import { type TypeGraph } from "./Type/TypeGraph";
+import type { TargetLanguage } from "./TargetLanguage";
+import type { TypeGraph } from "./Type/TypeGraph";
 
 export interface RenderResult {
     names: ReadonlyMap<Name, string>;
     sources: ReadonlyMap<string, Source>;
 }
 
-export type BlankLinePosition = "none" | "interposing" | "leading" | "leading-and-interposing";
+export type BlankLinePosition =
+    | "none"
+    | "interposing"
+    | "leading"
+    | "leading-and-interposing";
 export type BlankLineConfig = BlankLinePosition | [BlankLinePosition, number];
 
-function getBlankLineConfig(cfg: BlankLineConfig): { count: number; position: BlankLinePosition } {
+function getBlankLineConfig(cfg: BlankLineConfig): {
+    count: number;
+    position: BlankLinePosition;
+} {
     if (Array.isArray(cfg)) {
         return { position: cfg[0], count: cfg[1] };
     }
@@ -24,7 +38,10 @@ function getBlankLineConfig(cfg: BlankLineConfig): { count: number; position: Bl
     return { position: cfg, count: 1 };
 }
 
-function lineIndentation(line: string): { indent: number; text: string | null } {
+function lineIndentation(line: string): {
+    indent: number;
+    text: string | null;
+} {
     const len = line.length;
     let indent = 0;
     for (let i = 0; i < len; i++) {
@@ -100,13 +117,18 @@ class EmitContext {
     }
 
     public containsItem(item: Sourcelike): boolean {
-        const existingItem = this._currentEmitTarget.find((value: Sourcelike) => item === value);
+        const existingItem = this._currentEmitTarget.find(
+            (value: Sourcelike) => item === value,
+        );
         return existingItem !== undefined;
     }
 
     public ensureBlankLine(numBlankLines: number): void {
         if (this._preventBlankLine) return;
-        this._numBlankLinesNeeded = Math.max(this._numBlankLinesNeeded, numBlankLines);
+        this._numBlankLinesNeeded = Math.max(
+            this._numBlankLinesNeeded,
+            numBlankLines,
+        );
     }
 
     public preventBlankLine(): void {
@@ -116,7 +138,7 @@ class EmitContext {
 
     public changeIndent(offset: number): void {
         if (this._lastNewline === undefined) {
-            return panic("Cannot change indent for the first line");
+            panic("Cannot change indent for the first line");
         }
 
         this._lastNewline.indentationChange += offset;
@@ -138,7 +160,7 @@ export abstract class Renderer {
 
     public constructor(
         protected readonly targetLanguage: TargetLanguage,
-        renderContext: RenderContext
+        renderContext: RenderContext,
     ) {
         this.typeGraph = renderContext.typeGraph;
         this.leadingComments = renderContext.leadingComments;
@@ -223,7 +245,10 @@ export abstract class Renderer {
         const oldEmitContext = this._emitContext;
         this._emitContext = new EmitContext();
         emitter();
-        assert(!this._emitContext.isNested, "emit context not restored correctly");
+        assert(
+            !this._emitContext.isNested,
+            "emit context not restored correctly",
+        );
         const source = this._emitContext.source;
         this._emitContext = oldEmitContext;
         return source;
@@ -235,7 +260,10 @@ export abstract class Renderer {
         }
     }
 
-    protected emitAnnotated(annotation: AnnotationData, emitter: () => void): void {
+    protected emitAnnotated(
+        annotation: AnnotationData,
+        emitter: () => void,
+    ): void {
         const lines = this.gatherSource(emitter);
         const source = sourcelikeToSource(lines);
         this._emitContext.emitItem(annotated(annotation, source));
@@ -247,7 +275,9 @@ export abstract class Renderer {
 
     protected emitTable = (tableArray: Sourcelike[][]): void => {
         if (tableArray.length === 0) return;
-        const table = tableArray.map(r => r.map(sl => sourcelikeToSource(sl)));
+        const table = tableArray.map((r) =>
+            r.map((sl) => sourcelikeToSource(sl)),
+        );
         this._emitContext.emitItem({ kind: "table", table });
         this._emitContext.emitNewline();
     };
@@ -256,12 +286,21 @@ export abstract class Renderer {
         this._emitContext.changeIndent(offset);
     }
 
-    protected iterableForEach<T>(iterable: Iterable<T>, emitter: (v: T, position: ForEachPosition) => void): void {
+    protected iterableForEach<T>(
+        iterable: Iterable<T>,
+        emitter: (v: T, position: ForEachPosition) => void,
+    ): void {
         const items = Array.from(iterable);
         let onFirst = true;
         for (const [i, v] of iterableEnumerate(items)) {
             const position =
-                items.length === 1 ? "only" : onFirst ? "first" : i === items.length - 1 ? "last" : "middle";
+                items.length === 1
+                    ? "only"
+                    : onFirst
+                      ? "first"
+                      : i === items.length - 1
+                        ? "last"
+                        : "middle";
             emitter(v, position);
             onFirst = false;
         }
@@ -271,7 +310,7 @@ export abstract class Renderer {
         iterable: Iterable<[K, V]>,
         interposedBlankLines: number,
         leadingBlankLines: number,
-        emitter: (v: V, k: K, position: ForEachPosition) => void
+        emitter: (v: V, k: K, position: ForEachPosition) => void,
     ): boolean {
         let didEmit = false;
         this.iterableForEach(iterable, ([k, v], position) => {
@@ -290,12 +329,21 @@ export abstract class Renderer {
     protected forEachWithBlankLines<K, V>(
         iterable: Iterable<[K, V]>,
         blankLineConfig: BlankLineConfig,
-        emitter: (v: V, k: K, position: ForEachPosition) => void
+        emitter: (v: V, k: K, position: ForEachPosition) => void,
     ): boolean {
         const { position, count } = getBlankLineConfig(blankLineConfig);
-        const interposing = ["interposing", "leading-and-interposing"].includes(position);
-        const leading = ["leading", "leading-and-interposing"].includes(position);
-        return this.forEach(iterable, interposing ? count : 0, leading ? count : 0, emitter);
+        const interposing = ["interposing", "leading-and-interposing"].includes(
+            position,
+        );
+        const leading = ["leading", "leading-and-interposing"].includes(
+            position,
+        );
+        return this.forEach(
+            iterable,
+            interposing ? count : 0,
+            leading ? count : 0,
+            emitter,
+        );
     }
 
     // FIXME: make protected once JavaDateTimeRenderer is refactored
@@ -314,7 +362,9 @@ export abstract class Renderer {
 
     protected initializeEmitContextForFilename(filename: string): void {
         if (this._finishedEmitContexts.has(filename.toLowerCase())) {
-            const existingEmitContext = this._finishedEmitContexts.get(filename.toLowerCase());
+            const existingEmitContext = this._finishedEmitContexts.get(
+                filename.toLowerCase(),
+            );
             if (existingEmitContext !== undefined) {
                 this._emitContext = existingEmitContext;
             }
@@ -324,7 +374,7 @@ export abstract class Renderer {
     protected finishFile(filename: string): void {
         if (this._finishedFiles.has(filename)) {
             console.log(
-                `[WARNING] Tried to emit file ${filename} more than once. If performing multi-file output this warning can be safely ignored.`
+                `[WARNING] Tried to emit file ${filename} more than once. If performing multi-file output this warning can be safely ignored.`,
             );
         }
 
@@ -332,7 +382,10 @@ export abstract class Renderer {
         this._finishedFiles.set(filename, source);
 
         // [Michael Fey (@MrRooni), 2019-5-9] We save the current EmitContext for possible reuse later. We put it into the map with a lowercased version of the key so we can do a case-insensitive lookup later. The reason we lowercase it is because some schema (looking at you keyword-unions.schema) define objects of the same name with different casing. BOOL vs. bool, for example.
-        this._finishedEmitContexts.set(filename.toLowerCase(), this._emitContext);
+        this._finishedEmitContexts.set(
+            filename.toLowerCase(),
+            this._emitContext,
+        );
         this._emitContext = new EmitContext();
     }
 

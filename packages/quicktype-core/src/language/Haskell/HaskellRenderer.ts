@@ -1,24 +1,39 @@
 import { mapContains } from "collection-utils";
 
-import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../../ConvenienceRenderer";
-import { type Name, type Namer } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
-import { type MultiWord, type Sourcelike, multiWord, parenIfNeeded, singleWord } from "../../Source";
+import {
+    ConvenienceRenderer,
+    type ForbiddenWordsInfo,
+} from "../../ConvenienceRenderer";
+import type { Name, Namer } from "../../Naming";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
+import {
+    type MultiWord,
+    type Sourcelike,
+    multiWord,
+    parenIfNeeded,
+    singleWord,
+} from "../../Source";
 import { stringEscape } from "../../support/Strings";
-import { type TargetLanguage } from "../../TargetLanguage";
-import { type ClassProperty, type ClassType, type EnumType, type Type, type UnionType } from "../../Type";
+import type { TargetLanguage } from "../../TargetLanguage";
+import type {
+    ClassProperty,
+    ClassType,
+    EnumType,
+    Type,
+    UnionType,
+} from "../../Type";
 import { matchType, nullableFromUnion } from "../../Type/TypeUtils";
 
 import { forbiddenNames } from "./constants";
-import { type haskellOptions } from "./language";
+import type { haskellOptions } from "./language";
 import { lowerNamingFunction, upperNamingFunction } from "./utils";
 
 export class HaskellRenderer extends ConvenienceRenderer {
     public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        private readonly _options: OptionValues<typeof haskellOptions>
+        private readonly _options: OptionValues<typeof haskellOptions>,
     ) {
         super(targetLanguage, renderContext);
     }
@@ -35,7 +50,10 @@ export class HaskellRenderer extends ConvenienceRenderer {
         return lowerNamingFunction;
     }
 
-    protected forbiddenForObjectProperties(_c: ClassType, _className: Name): ForbiddenWordsInfo {
+    protected forbiddenForObjectProperties(
+        _c: ClassType,
+        _className: Name,
+    ): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: true };
     }
 
@@ -59,9 +77,14 @@ export class HaskellRenderer extends ConvenienceRenderer {
         u: UnionType,
         unionName: Name,
         fieldType: Type,
-        lookup: (n: Name) => string
+        lookup: (n: Name) => string,
     ): string {
-        const fieldName = super.proposeUnionMemberName(u, unionName, fieldType, lookup);
+        const fieldName = super.proposeUnionMemberName(
+            u,
+            unionName,
+            fieldType,
+            lookup,
+        );
         return `${fieldName}_in_${lookup(unionName)}`;
     }
 
@@ -71,12 +94,14 @@ export class HaskellRenderer extends ConvenienceRenderer {
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
         if (lines.length === 1) {
-            this.emitComments([{ customLines: lines, lineStart: "{-| ", lineEnd: " -}" }]);
+            this.emitComments([
+                { customLines: lines, lineStart: "{-| ", lineEnd: " -}" },
+            ]);
         } else {
             this.emitCommentLines(lines, {
                 firstLineStart: "{-| ",
                 lineStart: "",
-                afterComment: "-}"
+                afterComment: "-}",
             });
         }
     }
@@ -84,23 +109,37 @@ export class HaskellRenderer extends ConvenienceRenderer {
     private haskellType(t: Type, noOptional = false): MultiWord {
         return matchType<MultiWord>(
             t,
-            _anyType => multiWord(" ", "Maybe", "Text"),
-            _nullType => multiWord(" ", "Maybe", "Text"),
-            _boolType => singleWord("Bool"),
-            _integerType => singleWord("Int"),
-            _doubleType => singleWord("Float"),
-            _stringType => singleWord("Text"),
-            arrayType => {
+            (_anyType) => multiWord(" ", "Maybe", "Text"),
+            (_nullType) => multiWord(" ", "Maybe", "Text"),
+            (_boolType) => singleWord("Bool"),
+            (_integerType) => singleWord("Int"),
+            (_doubleType) => singleWord("Float"),
+            (_stringType) => singleWord("Text"),
+            (arrayType) => {
                 if (this._options.useList) {
-                    return multiWord("", "[", parenIfNeeded(this.haskellType(arrayType.items)), "]");
+                    return multiWord(
+                        "",
+                        "[",
+                        parenIfNeeded(this.haskellType(arrayType.items)),
+                        "]",
+                    );
                 }
 
-                return multiWord(" ", "Vector", parenIfNeeded(this.haskellType(arrayType.items)));
+                return multiWord(
+                    " ",
+                    "Vector",
+                    parenIfNeeded(this.haskellType(arrayType.items)),
+                );
             },
-            classType => singleWord(this.nameForNamedType(classType)),
-            mapType => multiWord(" ", "HashMap Text", parenIfNeeded(this.haskellType(mapType.values))),
-            enumType => singleWord(this.nameForNamedType(enumType)),
-            unionType => {
+            (classType) => singleWord(this.nameForNamedType(classType)),
+            (mapType) =>
+                multiWord(
+                    " ",
+                    "HashMap Text",
+                    parenIfNeeded(this.haskellType(mapType.values)),
+                ),
+            (enumType) => singleWord(this.nameForNamedType(enumType)),
+            (unionType) => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
                     const nullableType = this.haskellType(nullable);
@@ -109,32 +148,36 @@ export class HaskellRenderer extends ConvenienceRenderer {
                 }
 
                 return singleWord(this.nameForNamedType(unionType));
-            }
+            },
         );
     }
 
     private haskellProperty(p: ClassProperty): Sourcelike {
         if (p.isOptional) {
-            return multiWord(" ", "Maybe", parenIfNeeded(this.haskellType(p.type, true))).source;
-        } else {
-            return this.haskellType(p.type).source;
+            return multiWord(
+                " ",
+                "Maybe",
+                parenIfNeeded(this.haskellType(p.type, true)),
+            ).source;
         }
+
+        return this.haskellType(p.type).source;
     }
 
     private encoderNameForType(t: Type): MultiWord {
         return matchType<MultiWord>(
             t,
-            _anyType => singleWord("String"),
-            _nullType => singleWord("Null"),
-            _boolType => singleWord("Bool"),
-            _integerType => singleWord("Number"),
-            _doubleType => singleWord("Number"),
-            _stringType => singleWord("String"),
-            _arrayType => singleWord("Array"),
-            _classType => singleWord("Object"),
-            _mapType => singleWord("Object"),
-            _enumType => singleWord("Object"),
-            _unionType => singleWord("Object")
+            (_anyType) => singleWord("String"),
+            (_nullType) => singleWord("Null"),
+            (_boolType) => singleWord("Bool"),
+            (_integerType) => singleWord("Number"),
+            (_doubleType) => singleWord("Number"),
+            (_stringType) => singleWord("String"),
+            (_arrayType) => singleWord("Array"),
+            (_classType) => singleWord("Object"),
+            (_mapType) => singleWord("Object"),
+            (_enumType) => singleWord("Object"),
+            (_unionType) => singleWord("Object"),
         );
     }
 
@@ -145,7 +188,10 @@ export class HaskellRenderer extends ConvenienceRenderer {
     private emitClassDefinition(c: ClassType, className: Name): void {
         let description = this.descriptionForType(c);
         this.forEachClassProperty(c, "none", (name, jsonName) => {
-            const propertyDescription = this.descriptionForClassProperty(c, jsonName);
+            const propertyDescription = this.descriptionForClassProperty(
+                c,
+                jsonName,
+            );
             if (propertyDescription === undefined) return;
 
             if (description === undefined) {
@@ -163,7 +209,13 @@ export class HaskellRenderer extends ConvenienceRenderer {
         this.indent(() => {
             let onFirst = true;
             this.forEachClassProperty(c, "none", (name, _jsonName, p) => {
-                this.emitLine(onFirst ? "{ " : ", ", name, className, " :: ", this.haskellProperty(p));
+                this.emitLine(
+                    onFirst ? "{ " : ", ",
+                    name,
+                    className,
+                    " :: ",
+                    this.haskellProperty(p),
+                );
                 onFirst = false;
             });
             if (onFirst) {
@@ -179,7 +231,7 @@ export class HaskellRenderer extends ConvenienceRenderer {
         this.emitLine("data ", enumName);
         this.indent(() => {
             let onFirst = true;
-            this.forEachEnumCase(e, "none", name => {
+            this.forEachEnumCase(e, "none", (name) => {
                 const equalsOrPipe = onFirst ? "=" : "|";
                 this.emitLine(equalsOrPipe, " ", name, enumName);
                 onFirst = false;
@@ -193,12 +245,18 @@ export class HaskellRenderer extends ConvenienceRenderer {
         this.emitLine("data ", unionName);
         this.indent(() => {
             let onFirst = true;
-            this.forEachUnionMember(u, null, "none", null, (constructor, t) => {
+            this.forEachUnionMember(u, null, "none", null, (name, t) => {
                 const equalsOrPipe = onFirst ? "=" : "|";
                 if (t.kind === "null") {
-                    this.emitLine(equalsOrPipe, " ", constructor);
+                    this.emitLine(equalsOrPipe, " ", name);
                 } else {
-                    this.emitLine(equalsOrPipe, " ", constructor, " ", parenIfNeeded(this.haskellType(t)));
+                    this.emitLine(
+                        equalsOrPipe,
+                        " ",
+                        name,
+                        " ",
+                        parenIfNeeded(this.haskellType(t)),
+                    );
                 }
 
                 onFirst = false;
@@ -221,8 +279,8 @@ export class HaskellRenderer extends ConvenienceRenderer {
     }
 
     private emitClassEncoderInstance(c: ClassType, className: Name): void {
-        let classProperties: Array<Name | string> = [];
-        this.forEachClassProperty(c, "none", name => {
+        const classProperties: Array<Name | string> = [];
+        this.forEachClassProperty(c, "none", (name) => {
             classProperties.push(" ");
             classProperties.push(name);
             classProperties.push(className);
@@ -238,7 +296,14 @@ export class HaskellRenderer extends ConvenienceRenderer {
                     this.emitLine("object");
                     let onFirst = true;
                     this.forEachClassProperty(c, "none", (name, jsonName) => {
-                        this.emitLine(onFirst ? "[ " : ", ", '"', stringEscape(jsonName), '" .= ', name, className);
+                        this.emitLine(
+                            onFirst ? "[ " : ", ",
+                            '"',
+                            stringEscape(jsonName),
+                            '" .= ',
+                            name,
+                            className,
+                        );
                         onFirst = false;
                     });
                     if (onFirst) {
@@ -263,7 +328,14 @@ export class HaskellRenderer extends ConvenienceRenderer {
                     let onFirst = true;
                     this.forEachClassProperty(c, "none", (_, jsonName, p) => {
                         const operator = p.isOptional ? ".:?" : ".:";
-                        this.emitLine(onFirst ? "<$> " : "<*> ", "v ", operator, ' "', stringEscape(jsonName), '"');
+                        this.emitLine(
+                            onFirst ? "<$> " : "<*> ",
+                            "v ",
+                            operator,
+                            ' "',
+                            stringEscape(jsonName),
+                            '"',
+                        );
                         onFirst = false;
                     });
                 });
@@ -281,7 +353,14 @@ export class HaskellRenderer extends ConvenienceRenderer {
         this.emitLine("instance ToJSON ", enumName, " where");
         this.indent(() => {
             this.forEachEnumCase(e, "none", (name, jsonName) => {
-                this.emitLine("toJSON ", name, enumName, ' = "', stringEscape(jsonName), '"');
+                this.emitLine(
+                    "toJSON ",
+                    name,
+                    enumName,
+                    ' = "',
+                    stringEscape(jsonName),
+                    '"',
+                );
             });
         });
     }
@@ -294,7 +373,13 @@ export class HaskellRenderer extends ConvenienceRenderer {
                 this.emitLine("where");
                 this.indent(() => {
                     this.forEachEnumCase(e, "none", (name, jsonName) => {
-                        this.emitLine('parseText "', stringEscape(jsonName), '" = return ', name, enumName);
+                        this.emitLine(
+                            'parseText "',
+                            stringEscape(jsonName),
+                            '" = return ',
+                            name,
+                            enumName,
+                        );
                     });
                 });
             });
@@ -310,11 +395,11 @@ export class HaskellRenderer extends ConvenienceRenderer {
     private emitUnionEncoderInstance(u: UnionType, unionName: Name): void {
         this.emitLine("instance ToJSON ", unionName, " where");
         this.indent(() => {
-            this.forEachUnionMember(u, null, "none", null, (constructor, t) => {
+            this.forEachUnionMember(u, null, "none", null, (name, t) => {
                 if (t.kind === "null") {
-                    this.emitLine("toJSON ", constructor, " = Null");
+                    this.emitLine("toJSON ", name, " = Null");
                 } else {
-                    this.emitLine("toJSON (", constructor, " x) = toJSON x");
+                    this.emitLine("toJSON (", name, " x) = toJSON x");
                 }
             });
         });
@@ -323,16 +408,16 @@ export class HaskellRenderer extends ConvenienceRenderer {
     private emitUnionDecoderInstance(u: UnionType, unionName: Name): void {
         this.emitLine("instance FromJSON ", unionName, " where");
         this.indent(() => {
-            this.forEachUnionMember(u, null, "none", null, (constructor, t) => {
+            this.forEachUnionMember(u, null, "none", null, (name, t) => {
                 if (t.kind === "null") {
-                    this.emitLine("parseJSON Null = return ", constructor);
+                    this.emitLine("parseJSON Null = return ", name);
                 } else {
                     this.emitLine(
                         "parseJSON xs@(",
                         this.encoderNameForType(t).source,
                         " _) = (fmap ",
-                        constructor,
-                        " . parseJSON) xs"
+                        name,
+                        " . parseJSON) xs",
                     );
                 }
             });
@@ -393,26 +478,35 @@ import Data.Text (Text)`);
 
         this.forEachTopLevel(
             "leading-and-interposing",
-            (t: Type, topLevelName: Name) => this.emitTopLevelDefinition(t, topLevelName),
-            t => this.namedTypeToNameForTopLevel(t) === undefined
+            (t: Type, topLevelName: Name) =>
+                this.emitTopLevelDefinition(t, topLevelName),
+            (t) => this.namedTypeToNameForTopLevel(t) === undefined,
         );
 
         this.forEachNamedType(
             "leading-and-interposing",
-            (c: ClassType, className: Name) => this.emitClassDefinition(c, className),
-            (e: EnumType, enumName: Name) => this.emitEnumDefinition(e, enumName),
-            (u: UnionType, unionName: Name) => this.emitUnionDefinition(u, unionName)
+            (c: ClassType, className: Name) =>
+                this.emitClassDefinition(c, className),
+            (e: EnumType, enumName: Name) =>
+                this.emitEnumDefinition(e, enumName),
+            (u: UnionType, unionName: Name) =>
+                this.emitUnionDefinition(u, unionName),
         );
 
-        this.forEachTopLevel("leading-and-interposing", (_: Type, topLevelName: Name) =>
-            this.emitTopLevelFunctions(topLevelName)
+        this.forEachTopLevel(
+            "leading-and-interposing",
+            (_: Type, topLevelName: Name) =>
+                this.emitTopLevelFunctions(topLevelName),
         );
 
         this.forEachNamedType(
             "leading-and-interposing",
-            (c: ClassType, className: Name) => this.emitClassFunctions(c, className),
-            (e: EnumType, enumName: Name) => this.emitEnumFunctions(e, enumName),
-            (u: UnionType, unionName: Name) => this.emitUnionFunctions(u, unionName)
+            (c: ClassType, className: Name) =>
+                this.emitClassFunctions(c, className),
+            (e: EnumType, enumName: Name) =>
+                this.emitEnumFunctions(e, enumName),
+            (u: UnionType, unionName: Name) =>
+                this.emitUnionFunctions(u, unionName),
         );
 
         if (this._options.justTypes) return;

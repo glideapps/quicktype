@@ -1,6 +1,6 @@
 import { DefaultDateTimeRecognizer } from "../../DateTime";
-import { type Name } from "../../Naming";
-import { type ForEachPosition } from "../../Renderer";
+import type { Name } from "../../Naming";
+import type { ForEachPosition } from "../../Renderer";
 import {
     addPrefixIfNecessary,
     allLowerWordStyle,
@@ -15,9 +15,9 @@ import {
     isPrintable,
     legalizeCharacters,
     splitIntoWords,
-    utf32ConcatMap
+    utf32ConcatMap,
 } from "../../support/Strings";
-import { type ClassProperty } from "../../Type";
+import type { ClassProperty } from "../../Type";
 
 export const MAX_SAMELINE_PROPERTIES = 4;
 
@@ -61,7 +61,7 @@ export function swiftNameStyle(
     prefix: string,
     isUpper: boolean,
     original: string,
-    acronymsStyle: (s: string) => string = allUpperWordStyle
+    acronymsStyle: (s: string) => string = allUpperWordStyle,
 ): string {
     const words = splitIntoWords(original);
     const combined = combineWords(
@@ -72,7 +72,7 @@ export function swiftNameStyle(
         isUpper ? allUpperWordStyle : allLowerWordStyle,
         acronymsStyle,
         "",
-        isStartCharacter
+        isStartCharacter,
     );
     return addPrefixIfNecessary(prefix, combined);
 }
@@ -81,4 +81,6 @@ function unicodeEscape(codePoint: number): string {
     return "\\u{" + intToHex(codePoint, 0) + "}";
 }
 
-export const stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
+export const stringEscape = utf32ConcatMap(
+    escapeNonPrintableMapper(isPrintable, unicodeEscape),
+);
