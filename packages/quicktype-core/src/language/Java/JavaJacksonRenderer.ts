@@ -67,7 +67,7 @@ export class JacksonRenderer extends JavaRenderer {
         );
 
         const annotations: string[] = [
-            '@JsonProperty("' + stringEscape(jsonName) + '")',
+            `@JsonProperty("${stringEscape(jsonName)}")`,
         ];
 
         switch (p.type.kind) {
@@ -204,7 +204,7 @@ export class JacksonRenderer extends JavaRenderer {
 
                     break;
                 default:
-                    return panic("Requested type isnt an object!");
+                    panic("Requested type isnt an object!");
             }
         };
 
@@ -297,9 +297,7 @@ export class JacksonRenderer extends JavaRenderer {
                 this.indent(() => {
                     const fromVariable = "string";
                     this.emitLine(
-                        "String " +
-                            fromVariable +
-                            " = jsonParser.readValueAs(String.class);",
+                        `String ${fromVariable} = jsonParser.readValueAs(String.class);`,
                     );
 
                     stringBasedObjects.forEach((kind) => {

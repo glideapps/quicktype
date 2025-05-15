@@ -196,7 +196,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
     private static extractUnderlyingTyperefs(type: Type): number[] {
         const typeRefs: number[] = [];
         // Ignore enums and primitives
-        if (!type.isPrimitive() && type.kind != "enum") {
+        if (!type.isPrimitive() && type.kind !== "enum") {
             // need to extract constituent types for unions and intersections (which both extend SetOperationType)
             // and can ignore the union/intersection itself
             if (type instanceof SetOperationType) {

@@ -154,7 +154,8 @@ function makeLambda(vol: ValueOrLambda): MultiWord {
             vol.value,
             ")",
         );
-    } else if (vol.value !== undefined) {
+    }
+    if (vol.value !== undefined) {
         return multiWord(" ", "lambda x:", vol.value);
     }
 
@@ -583,7 +584,7 @@ export class JSONPythonRenderer extends PythonRenderer {
             }
 
             default:
-                return assertNever(cf);
+                assertNever(cf);
         }
     }
 
@@ -688,19 +689,24 @@ export class JSONPythonRenderer extends PythonRenderer {
                 v,
                 ")",
             ]);
-        } else if (xfer instanceof DecodingTransformer) {
+        }
+        if (xfer instanceof DecodingTransformer) {
             const consumer = xfer.consumer;
             const vol = this.deserializer(inputTransformer, xfer.sourceType);
             return consume(consumer, vol);
-        } else if (xfer instanceof EncodingTransformer) {
+        }
+        if (xfer instanceof EncodingTransformer) {
             return this.serializer(inputTransformer, xfer.sourceType);
-        } else if (xfer instanceof UnionInstantiationTransformer) {
+        }
+        if (xfer instanceof UnionInstantiationTransformer) {
             return inputTransformer;
-        } else if (xfer instanceof UnionMemberMatchTransformer) {
+        }
+        if (xfer instanceof UnionMemberMatchTransformer) {
             const consumer = xfer.transformer;
             const vol = isType(xfer.memberType, inputTransformer);
             return consume(consumer, vol);
-        } else if (xfer instanceof ParseStringTransformer) {
+        }
+        if (xfer instanceof ParseStringTransformer) {
             const consumer = xfer.consumer;
             const immediateTargetType =
                 consumer === undefined ? targetType : consumer.sourceType;
@@ -739,7 +745,8 @@ export class JSONPythonRenderer extends PythonRenderer {
             }
 
             return consume(consumer, vol);
-        } else if (xfer instanceof StringifyTransformer) {
+        }
+        if (xfer instanceof StringifyTransformer) {
             const consumer = xfer.consumer;
             let vol: ValueOrLambda;
             switch (xfer.sourceType.kind) {
@@ -769,9 +776,9 @@ export class JSONPythonRenderer extends PythonRenderer {
             }
 
             return consume(consumer, vol);
-        } else {
-            return panic(`Transformer ${xfer.kind} is not supported`);
         }
+
+        return panic(`Transformer ${xfer.kind} is not supported`);
     }
 
     // Returns the code to deserialize `value` as type `t`.  If `t` has

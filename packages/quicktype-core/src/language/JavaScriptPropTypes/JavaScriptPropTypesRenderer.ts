@@ -145,9 +145,9 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
     ): Sourcelike {
         if (this._jsOptions.moduleSystem) {
             return ["import ", lhs, " from ", moduleName, ";"];
-        } else {
-            return ["const ", lhs, " = require(", moduleName, ");"];
         }
+
+        return ["const ", lhs, " = require(", moduleName, ");"];
     }
 
     protected emitUsageComments(): void {

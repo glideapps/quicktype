@@ -131,8 +131,11 @@ export class SwiftRenderer extends ConvenienceRenderer {
         justTypes: Sourcelike,
         notJustTypes: Sourcelike,
     ): Sourcelike {
-        if (this._options.justTypes) return justTypes;
-        else return notJustTypes;
+        if (this._options.justTypes) {
+            return justTypes;
+        }
+
+        return notJustTypes;
     }
 
     private get lowerNamingFunction(): Namer {
@@ -152,9 +155,9 @@ export class SwiftRenderer extends ConvenienceRenderer {
             (this._options.optionalEnums && p.type.kind === "enum")
         ) {
             return [this.swiftType(p.type, true, true), "?"];
-        } else {
-            return this.swiftType(p.type, true);
         }
+
+        return this.swiftType(p.type, true);
     }
 
     protected swiftType(
@@ -206,11 +209,11 @@ export class SwiftRenderer extends ConvenienceRenderer {
             (transformedStringType) => {
                 if (transformedStringType.kind === "date-time") {
                     return "Date";
-                } else {
-                    return panic(
-                        `Transformed string type ${transformedStringType.kind} not supported`,
-                    );
                 }
+
+                return panic(
+                    `Transformed string type ${transformedStringType.kind} not supported`,
+                );
             },
         );
     }
@@ -401,7 +404,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
             protocols.unshift(baseClass);
         }
 
-        return protocols.length > 0 ? ": " + protocols.join(", ") : "";
+        return protocols.length > 0 ? `: ${protocols.join(", ")}` : "";
     }
 
     private getEnumPropertyGroups(c: ClassType): typeof groups {
@@ -456,7 +459,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
 
         assert(
             this._currentFilename === undefined,
-            "Previous file wasn't finished: " + this._currentFilename,
+            `Previous file wasn't finished: ${this._currentFilename}`,
         );
         // FIXME: The filenames should actually be Sourcelikes, too
         this._currentFilename = `${this.sourcelikeToString(basename)}.swift`;
@@ -907,7 +910,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         function sortBy(t: Type): string {
             const kind = t.kind;
             if (kind === "class") return kind;
-            return "_" + kind;
+            return `_${kind}`;
         }
 
         const renderUnionCase = (t: Type): void => {

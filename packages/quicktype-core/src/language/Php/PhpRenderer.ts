@@ -699,7 +699,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                     return;
                 }
 
-                throw Error("union are not supported:" + unionType);
+                throw Error(`union are not supported:${unionType}`);
             },
             (transformedStringType) => {
                 if (transformedStringType.kind === "date-time") {

@@ -86,7 +86,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
     protected makeUnionMemberNamer(): Namer {
         return funPrefixNamer(
             "upper",
-            (s) => scalaNameStyle(true, s) + "Value",
+            (s) => `${scalaNameStyle(true, s)}Value`,
         );
     }
 
@@ -231,9 +231,9 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
         const scalaType = (p: ClassProperty): Sourcelike => {
             if (p.isOptional) {
                 return [this.scalaType(p.type, true, true)];
-            } else {
-                return [this.scalaType(p.type, true)];
             }
+
+            return [this.scalaType(p.type, true)];
         };
 
         const emitLater: ClassProperty[] = [];
@@ -366,7 +366,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
         function sortBy(t: Type): string {
             const kind = t.kind;
             if (kind === "class") return kind;
-            return "_" + kind;
+            return `_${kind}`;
         }
 
         const emitLater: Type[] = [];

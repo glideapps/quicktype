@@ -228,13 +228,15 @@ export class RubyRenderer extends ConvenienceRenderer {
         function inner(): string {
             if (t instanceof ArrayType) {
                 return "[…]";
-            } else if (t instanceof MapType) {
-                return "{…}";
-            } else if (t instanceof ClassType) {
-                return "{…}";
-            } else {
-                return "…";
             }
+            if (t instanceof MapType) {
+                return "{…}";
+            }
+            if (t instanceof ClassType) {
+                return "{…}";
+            }
+
+            return "…";
         }
 
         return `"${inner()}"`;

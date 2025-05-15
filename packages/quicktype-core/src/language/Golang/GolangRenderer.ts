@@ -87,7 +87,7 @@ export class GoRenderer extends ConvenienceRenderer {
 
         assert(
             this._currentFilename === undefined,
-            "Previous file wasn't finished: " + this._currentFilename,
+            `Previous file wasn't finished: ${this._currentFilename}`,
         );
         this._currentFilename = `${this.sourcelikeToString(basename)}.go`;
         this.initializeEmitContextForFilename(this._currentFilename);
@@ -121,9 +121,9 @@ export class GoRenderer extends ConvenienceRenderer {
         const goType = this.goType(t, withIssues);
         if (isValueType(t)) {
             return ["*", goType];
-        } else {
-            return goType;
         }
+
+        return goType;
     }
 
     private propertyGoType(cp: ClassProperty): Sourcelike {
@@ -259,10 +259,7 @@ export class GoRenderer extends ConvenienceRenderer {
             docStrings.forEach((doc) => columns.push([doc]));
             const tags = this._options.fieldTags
                 .split(",")
-                .map(
-                    (tag) =>
-                        tag + ':"' + stringEscape(jsonName) + omitEmpty + '"',
-                )
+                .map((tag) => `${tag}:"${stringEscape(jsonName)}${omitEmpty}"`)
                 .join(" ");
             columns.push([
                 [name, " "],
@@ -384,13 +381,7 @@ export class GoRenderer extends ConvenienceRenderer {
                 });
                 const args = makeArgs(
                     (fn) => ["&x.", fn],
-                    (isClass, fn) => {
-                        if (isClass) {
-                            return "true, &c";
-                        } else {
-                            return ["true, &x.", fn];
-                        }
-                    },
+                    (isClass, fn) => (isClass ? "true, &c" : ["true, &x.", fn]),
                 );
                 this.emitLine(
                     "object, err := unmarshalUnion(data, ",
@@ -449,7 +440,7 @@ export class GoRenderer extends ConvenienceRenderer {
     ): void {
         if (!this._options.justTypes || this._options.justTypesAndPackage) {
             this.ensureBlankLine();
-            const packageDeclaration = "package " + this._options.packageName;
+            const packageDeclaration = `package ${this._options.packageName}`;
             this.emitLineOnce(packageDeclaration);
             this.ensureBlankLine();
         }
@@ -498,117 +489,117 @@ export class GoRenderer extends ConvenienceRenderer {
             this.emitPackageDefinitons(true, imports);
             this.ensureBlankLine();
             this.emitMultiline(`func unmarshalUnion(data []byte, pi **int64, pf **float64, pb **bool, ps **string, haveArray bool, pa interface{}, haveObject bool, pc interface{}, haveMap bool, pm interface{}, haveEnum bool, pe interface{}, nullable bool) (bool, error) {
-	if pi != nil {
-			*pi = nil
-	}
-	if pf != nil {
-			*pf = nil
-	}
-	if pb != nil {
-			*pb = nil
-	}
-	if ps != nil {
-			*ps = nil
-	}
+ if pi != nil {
+   *pi = nil
+ }
+ if pf != nil {
+   *pf = nil
+ }
+ if pb != nil {
+   *pb = nil
+ }
+ if ps != nil {
+   *ps = nil
+ }
 
-	dec := json.NewDecoder(bytes.NewReader(data))
-	dec.UseNumber()
-	tok, err := dec.Token()
-	if err != nil {
-			return false, err
-	}
+ dec := json.NewDecoder(bytes.NewReader(data))
+ dec.UseNumber()
+ tok, err := dec.Token()
+ if err != nil {
+   return false, err
+ }
 
-	switch v := tok.(type) {
-	case json.Number:
-			if pi != nil {
-					i, err := v.Int64()
-					if err == nil {
-							*pi = &i
-							return false, nil
-					}
-			}
-			if pf != nil {
-					f, err := v.Float64()
-					if err == nil {
-							*pf = &f
-							return false, nil
-					}
-					return false, errors.New("Unparsable number")
-			}
-			return false, errors.New("Union does not contain number")
-	case float64:
-			return false, errors.New("Decoder should not return float64")
-	case bool:
-			if pb != nil {
-					*pb = &v
-					return false, nil
-			}
-			return false, errors.New("Union does not contain bool")
-	case string:
-			if haveEnum {
-					return false, json.Unmarshal(data, pe)
-			}
-			if ps != nil {
-					*ps = &v
-					return false, nil
-			}
-			return false, errors.New("Union does not contain string")
-	case nil:
-			if nullable {
-					return false, nil
-			}
-			return false, errors.New("Union does not contain null")
-	case json.Delim:
-			if v == '{' {
-					if haveObject {
-							return true, json.Unmarshal(data, pc)
-					}
-					if haveMap {
-							return false, json.Unmarshal(data, pm)
-					}
-					return false, errors.New("Union does not contain object")
-			}
-			if v == '[' {
-					if haveArray {
-							return false, json.Unmarshal(data, pa)
-					}
-					return false, errors.New("Union does not contain array")
-			}
-			return false, errors.New("Cannot handle delimiter")
-	}
-	return false, errors.New("Cannot unmarshal union")
+ switch v := tok.(type) {
+ case json.Number:
+   if pi != nil {
+     i, err := v.Int64()
+     if err == nil {
+       *pi = &i
+       return false, nil
+     }
+   }
+   if pf != nil {
+     f, err := v.Float64()
+     if err == nil {
+       *pf = &f
+       return false, nil
+     }
+     return false, errors.New("Unparsable number")
+   }
+   return false, errors.New("Union does not contain number")
+ case float64:
+   return false, errors.New("Decoder should not return float64")
+ case bool:
+   if pb != nil {
+     *pb = &v
+     return false, nil
+   }
+   return false, errors.New("Union does not contain bool")
+ case string:
+   if haveEnum {
+     return false, json.Unmarshal(data, pe)
+   }
+   if ps != nil {
+     *ps = &v
+     return false, nil
+   }
+   return false, errors.New("Union does not contain string")
+ case nil:
+   if nullable {
+     return false, nil
+   }
+   return false, errors.New("Union does not contain null")
+ case json.Delim:
+   if v == '{' {
+     if haveObject {
+       return true, json.Unmarshal(data, pc)
+     }
+     if haveMap {
+       return false, json.Unmarshal(data, pm)
+     }
+     return false, errors.New("Union does not contain object")
+   }
+   if v == '[' {
+     if haveArray {
+       return false, json.Unmarshal(data, pa)
+     }
+     return false, errors.New("Union does not contain array")
+   }
+   return false, errors.New("Cannot handle delimiter")
+ }
+ return false, errors.New("Cannot unmarshal union")
 
 }
 
 func marshalUnion(pi *int64, pf *float64, pb *bool, ps *string, haveArray bool, pa interface{}, haveObject bool, pc interface{}, haveMap bool, pm interface{}, haveEnum bool, pe interface{}, nullable bool) ([]byte, error) {
-	if pi != nil {
-			return json.Marshal(*pi)
-	}
-	if pf != nil {
-			return json.Marshal(*pf)
-	}
-	if pb != nil {
-			return json.Marshal(*pb)
-	}
-	if ps != nil {
-			return json.Marshal(*ps)
-	}
-	if haveArray {
-			return json.Marshal(pa)
-	}
-	if haveObject {
-			return json.Marshal(pc)
-	}
-	if haveMap {
-			return json.Marshal(pm)
-	}
-	if haveEnum {
-			return json.Marshal(pe)
-	}
-	if nullable {
-			return json.Marshal(nil)
-	}
-	return nil, errors.New("Union must not be null")
+ if pi != nil {
+   return json.Marshal(*pi)
+ }
+ if pf != nil {
+   return json.Marshal(*pf)
+ }
+ if pb != nil {
+   return json.Marshal(*pb)
+ }
+ if ps != nil {
+   return json.Marshal(*ps)
+ }
+ if haveArray {
+   return json.Marshal(pa)
+ }
+ if haveObject {
+   return json.Marshal(pc)
+ }
+ if haveMap {
+   return json.Marshal(pm)
+ }
+ if haveEnum {
+   return json.Marshal(pe)
+ }
+ if nullable {
+   return json.Marshal(nil)
+ }
+ return nil, errors.New("Union must not be null")
 }`);
             this.endFile();
         }
@@ -708,14 +699,14 @@ func marshalUnion(pi *int64, pf *float64, pb *bool, ps *string, haveArray bool, 
         });
 
         const imports = new Set<string>();
-        usedTypes.forEach((k) => {
+        for (const k of usedTypes) {
             const typeImport = mapping.get(k);
             if (!typeImport) {
-                return;
+                continue;
             }
 
             imports.add(typeImport);
-        });
+        }
 
         return imports;
     }

@@ -86,7 +86,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
     protected makeUnionMemberNamer(): Namer {
         return funPrefixNamer(
             "upper",
-            (s) => scalaNameStyle(true, s) + "Value",
+            (s) => `${scalaNameStyle(true, s)}Value`,
         );
     }
 
@@ -173,13 +173,13 @@ export class Scala3Renderer extends ConvenienceRenderer {
                 if (nullable !== null) {
                     if (noOptional) {
                         return [this.scalaType(nullable, withIssues)];
-                    } else {
-                        return [
-                            "Option[",
-                            this.scalaType(nullable, withIssues),
-                            "]",
-                        ];
                     }
+
+                    return [
+                        "Option[",
+                        this.scalaType(nullable, withIssues),
+                        "]",
+                    ];
                 }
 
                 return this.nameForNamedType(unionType);
@@ -227,9 +227,9 @@ export class Scala3Renderer extends ConvenienceRenderer {
         const scalaType = (p: ClassProperty): Sourcelike => {
             if (p.isOptional) {
                 return ["Option[", this.scalaType(p.type, true, true), "]"];
-            } else {
-                return this.scalaType(p.type, true);
             }
+
+            return this.scalaType(p.type, true);
         };
 
         this.emitDescription(this.descriptionForType(c));
@@ -307,11 +307,11 @@ export class Scala3Renderer extends ConvenienceRenderer {
                 }
 
                 this.forEachEnumCase(e, "none", (name, jsonName) => {
-                    if (!(jsonName == "")) {
+                    if (!(jsonName === "")) {
                         const backticks =
                             shouldAddBacktick(jsonName) ||
                             jsonName.includes(" ") ||
-                            !isNaN(Number.parseInt(jsonName.charAt(0)));
+                            !Number.isNaN(Number.parseInt(jsonName.charAt(0)));
                         if (backticks) {
                             this.emitItem("`");
                         }
@@ -335,7 +335,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
         function sortBy(t: Type): string {
             const kind = t.kind;
             if (kind === "class") return kind;
-            return "_" + kind;
+            return `_${kind}`;
         }
 
         this.emitDescription(this.descriptionForType(u));

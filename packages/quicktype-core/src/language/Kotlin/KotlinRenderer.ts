@@ -94,7 +94,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
     protected makeUnionMemberNamer(): Namer {
         return funPrefixNamer(
             "upper",
-            (s) => kotlinNameStyle(true, s) + "Value",
+            (s) => `${kotlinNameStyle(true, s)}Value`,
         );
     }
 
@@ -249,9 +249,9 @@ export class KotlinRenderer extends ConvenienceRenderer {
         const kotlinType = (p: ClassProperty): Sourcelike => {
             if (p.isOptional) {
                 return [this.kotlinType(p.type, true, true), "?"];
-            } else {
-                return this.kotlinType(p.type, true);
             }
+
+            return this.kotlinType(p.type, true);
         };
 
         this.emitDescription(this.descriptionForType(c));
@@ -342,7 +342,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
         function sortBy(t: Type): string {
             const kind = t.kind;
             if (kind === "class") return kind;
-            return "_" + kind;
+            return `_${kind}`;
         }
 
         this.emitDescription(this.descriptionForType(u));

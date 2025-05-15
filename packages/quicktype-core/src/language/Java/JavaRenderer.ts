@@ -68,15 +68,15 @@ export class JavaRenderer extends ConvenienceRenderer {
         super(targetLanguage, renderContext);
 
         switch (_options.dateTimeProvider) {
-            default:
-            case "java8":
-                this._dateTimeProvider = new Java8DateTimeProvider(
+            case "legacy":
+                this._dateTimeProvider = new JavaLegacyDateTimeProvider(
                     this,
                     this._converterClassname,
                 );
                 break;
-            case "legacy":
-                this._dateTimeProvider = new JavaLegacyDateTimeProvider(
+            case "java8":
+            default:
+                this._dateTimeProvider = new Java8DateTimeProvider(
                     this,
                     this._converterClassname,
                 );
@@ -325,12 +325,12 @@ export class JavaRenderer extends ConvenienceRenderer {
                         this.javaType(true, arrayType.items, withIssues),
                         ">",
                     ];
-                } else {
-                    return [
-                        this.javaType(false, arrayType.items, withIssues),
-                        "[]",
-                    ];
                 }
+
+                return [
+                    this.javaType(false, arrayType.items, withIssues),
+                    "[]",
+                ];
             },
             (classType) => this.nameForNamedType(classType),
             (mapType) => [
@@ -382,9 +382,9 @@ export class JavaRenderer extends ConvenienceRenderer {
                         ...this.javaImport(arrayType.items),
                         "java.util.List",
                     ];
-                } else {
-                    return [...this.javaImport(arrayType.items)];
                 }
+
+                return [...this.javaImport(arrayType.items)];
             },
             (_classType) => [],
             (mapType) => [...this.javaImport(mapType.values), "java.util.Map"],
@@ -422,19 +422,21 @@ export class JavaRenderer extends ConvenienceRenderer {
         if (t instanceof ArrayType) {
             if (this._options.useList) {
                 return ["List"];
-            } else {
-                return [this.javaTypeWithoutGenerics(false, t.items), "[]"];
             }
-        } else if (t instanceof MapType) {
+
+            return [this.javaTypeWithoutGenerics(false, t.items), "[]"];
+        }
+        if (t instanceof MapType) {
             return "Map";
-        } else if (t instanceof UnionType) {
+        }
+        if (t instanceof UnionType) {
             const nullable = nullableFromUnion(t);
             if (nullable !== null)
                 return this.javaTypeWithoutGenerics(true, nullable);
             return this.nameForNamedType(t);
-        } else {
-            return this.javaType(reference, t);
         }
+
+        return this.javaType(reference, t);
     }
 
     protected emitClassAttributes(_c: ClassType, _className: Name): void {
@@ -519,17 +521,13 @@ export class JavaRenderer extends ConvenienceRenderer {
                     );
                     if (getter.length !== 0) {
                         this.emitLine(
-                            "@lombok.Getter(onMethod_ = {" +
-                                getter.join(", ") +
-                                "})",
+                            `@lombok.Getter(onMethod_ = {${getter.join(", ")}})`,
                         );
                     }
 
                     if (setter.length !== 0) {
                         this.emitLine(
-                            "@lombok.Setter(onMethod_ = {" +
-                                setter.join(", ") +
-                                "})",
+                            `@lombok.Setter(onMethod_ = {${setter.join(", ")}})`,
                         );
                     }
                 }

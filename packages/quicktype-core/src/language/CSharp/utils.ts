@@ -150,7 +150,7 @@ function csNameStyleKeep(original: string): string {
     );
 
     // @ts-expect-error needs strong type
-    return keywords.includes(result) ? "@" + result : result;
+    return keywords.includes(result) ? `@${result}` : result;
 }
 
 export function isValueType(t: Type): boolean {

@@ -283,15 +283,21 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     // Classes that don't require forward declarations can be stored
     // in std::optional ( or boost::optional )
     private optionalType(t: Type): string {
-        if (this.isOptionalAsValuePossible(t)) return this.optionalTypeStack();
-        else return this.optionalTypeHeap();
+        if (this.isOptionalAsValuePossible(t)) {
+            return this.optionalTypeStack();
+        }
+
+        return this.optionalTypeHeap();
     }
 
     // Returns a label that can be used to distinguish between
     // heap and stack based optional handling methods
     private optionalTypeLabel(t: Type): string {
-        if (this.isOptionalAsValuePossible(t)) return "stack";
-        else return "heap";
+        if (this.isOptionalAsValuePossible(t)) {
+            return "stack";
+        }
+
+        return "heap";
     }
 
     protected getConstraintMembers(): ConstraintMember[] {
@@ -456,9 +462,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     protected withConst(s: Sourcelike): Sourcelike {
         if (this._options.westConst) {
             return ["const ", s];
-        } else {
-            return [s, " const"];
         }
+
+        return [s, " const"];
     }
 
     protected emitInclude(global: boolean, name: Sourcelike): void {
@@ -751,9 +757,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             (_stringType) => {
                 if (forceNarrowString) {
                     return "std::string";
-                } else {
-                    return this._stringType.getType();
                 }
+
+                return this._stringType.getType();
             },
             (arrayType) => [
                 "std::vector<",
@@ -824,12 +830,12 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         forceNarrowString,
                         false,
                     );
-                } else {
-                    return [
-                        this.ourQualifier(inJsonNamespace),
-                        this.nameForNamedType(unionType),
-                    ];
                 }
+
+                return [
+                    this.ourQualifier(inJsonNamespace),
+                    this.nameForNamedType(unionType),
+                ];
             },
         );
         if (!isOptional) return typeSource;
@@ -1409,11 +1415,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                                     maybeNull !== null || p.isOptional,
                                     nonNulls,
                                 ];
-                            } else {
-                                const set = new Set<Type>();
-                                set.add(propType);
-                                return [true, set];
                             }
+
+                            const set = new Set<Type>();
+                            set.add(propType);
+                            return [true, set];
                         })();
                         if (nullOrOptional) {
                             cppType = this.cppTypeInOptional(

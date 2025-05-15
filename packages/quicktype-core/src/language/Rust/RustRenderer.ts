@@ -194,7 +194,8 @@ export class RustRenderer extends ConvenienceRenderer {
     private get visibility(): string {
         if (this._options.visibility === Visibility.Crate) {
             return "pub(crate) ";
-        } else if (this._options.visibility === Visibility.Public) {
+        }
+        if (this._options.visibility === Visibility.Public) {
             return "pub ";
         }
 
