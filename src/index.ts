@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 
 import { exceptionToString } from "@glideapps/ts-necessities";
 import chalk from "chalk";
-// eslint-disable-next-line @typescript-eslint/no-redeclare
 import {
     definedMap,
+    // biome-ignore lint/suspicious/noShadowRestrictedNames: <explanation>
     hasOwnProperty,
     mapFromObject,
     mapMap,
@@ -74,7 +74,7 @@ const wordWrap: (s: string) => string = _wordwrap(90);
 
 export interface CLIOptions<Lang extends LanguageName = LanguageName> {
     // We use this to access the inference flags
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     [option: string]: any;
     additionalSchema: string[];
     allPropertiesOptional: boolean;
@@ -808,11 +808,12 @@ async function getSourceURIs(
         return topLevels.map(
             (name) => [name, jsonMap[name]] as [string, string[]],
         );
-    } else if (options.src.length === 0) {
-        return [[options.topLevel, ["-"]]];
-    } else {
-        return [];
     }
+    if (options.src.length === 0) {
+        return [[options.topLevel, ["-"]]];
+    }
+
+    return [];
 }
 
 async function typeSourcesForURIs(
@@ -1081,7 +1082,7 @@ export async function makeQuicktypeOptions(
     }
 
     const components = definedMap(options.debug, (d) => d.split(","));
-    const debugAll = components !== undefined && components.includes("all");
+    const debugAll = components?.includes("all");
     let debugPrintGraph = debugAll;
     let checkProvenance = debugAll;
     let debugPrintReconstitution = debugAll;
@@ -1234,7 +1235,9 @@ export async function main(
     }
 
     const quicktypeOptions = await makeQuicktypeOptions(cliOptions);
-    if (quicktypeOptions === undefined) return;
+    if (quicktypeOptions === undefined) {
+        return;
+    }
 
     const resultsByFilename = await quicktypeMultiFile(quicktypeOptions);
 

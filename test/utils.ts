@@ -1,5 +1,5 @@
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 
 import * as _ from "lodash";
 import * as shell from "shelljs";
@@ -47,7 +47,8 @@ export function callAndExpectFailure<T>(message: string, f: () => T): void {
     } catch {
         return;
     }
-    return failWith(message, { result });
+
+    failWith(message, { result });
 }
 
 export function exec(
@@ -213,14 +214,15 @@ export function samplesFromSources(
             priority: samplesFromPaths(prioritySamples),
             others: samplesFromPaths(miscSamples),
         };
-    } else if (sources.length === 1 && fs.lstatSync(sources[0]).isDirectory()) {
+    }
+    if (sources.length === 1 && fs.lstatSync(sources[0]).isDirectory()) {
         return {
             priority: samplesFromPaths(testsInDir(sources[0], extension)),
             others: [],
         };
-    } else {
-        return { priority: samplesFromPaths(sources), others: [] };
     }
+
+    return { priority: samplesFromPaths(sources), others: [] };
 }
 
 export type ComparisonRelaxations = {
