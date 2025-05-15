@@ -161,7 +161,7 @@ class Run implements RunContext {
         this._options = Object.fromEntries(
             Object.entries(
                 Object.assign({}, defaultOptions, defaultInferenceFlags),
-            ).filter(([_, v]) => v !== undefined),
+            ).map(([k, v]) => [k, options[k as keyof typeof options] ?? v]),
         ) as Required<typeof options>;
     }
 
