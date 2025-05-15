@@ -30,10 +30,7 @@ import type {
     SerializedRenderResult,
     Span,
 } from "./Source";
-import type {
-    MultiFileRenderResult,
-    TargetLanguage,
-} from "./TargetLanguage";
+import type { MultiFileRenderResult, TargetLanguage } from "./TargetLanguage";
 import { TypeBuilder } from "./Type/TypeBuilder";
 import type { StringTypeMapping } from "./Type/TypeBuilderUtils";
 import { TypeGraph } from "./Type/TypeGraph";
@@ -305,15 +302,13 @@ class Run implements RunContext {
             typeBuilder.didAddForwardingIntersection ||
             !this._options.ignoreJsonRefs
         ) {
-            this.time(
-                "remove indirection intersections",
-                () =>
-                    (graph = removeIndirectionIntersections(
+            this.time("remove indirection intersections", () => {
+                graph = removeIndirectionIntersections(
                         graph,
                         stringTypeMapping,
                         debugPrintReconstitution,
-                    )),
             );
+            });
         }
 
         let unionsDone = false;
@@ -322,29 +317,25 @@ class Run implements RunContext {
             do {
                 const graphBeforeRewrites = graph;
                 if (!intersectionsDone) {
-                    this.time(
-                        "resolve intersections",
-                        () =>
-                            ([graph, intersectionsDone] = resolveIntersections(
+                    this.time("resolve intersections", () => {
+                        [graph, intersectionsDone] = resolveIntersections(
                                 graph,
                                 stringTypeMapping,
                                 debugPrintReconstitution,
-                            )),
                     );
+                    });
                 }
 
                 if (!unionsDone) {
-                    this.time(
-                        "flatten unions",
-                        () =>
-                            ([graph, unionsDone] = flattenUnions(
+                    this.time("flatten unions", () => {
+                        [graph, unionsDone] = flattenUnions(
                                 graph,
                                 stringTypeMapping,
                                 conflateNumbers,
                                 true,
                                 debugPrintReconstitution,
-                            )),
                     );
+                    });
                 }
 
                 if (graph === graphBeforeRewrites) {
@@ -356,29 +347,25 @@ class Run implements RunContext {
             } while (!intersectionsDone || !unionsDone);
         }
 
-        this.time(
-            "replace object type",
-            () =>
-                (graph = replaceObjectType(
+        this.time("replace object type", () => {
+            graph = replaceObjectType(
                     graph,
                     stringTypeMapping,
                     conflateNumbers,
                     targetLanguage.supportsFullObjectType,
                     debugPrintReconstitution,
-                )),
-        );
+            );
+        });
         do {
-            this.time(
-                "flatten unions",
-                () =>
-                    ([graph, unionsDone] = flattenUnions(
+            this.time("flatten unions", () => {
+                [graph, unionsDone] = flattenUnions(
                         graph,
                         stringTypeMapping,
                         conflateNumbers,
                         false,
                         debugPrintReconstitution,
-                    )),
             );
+            });
         } while (!unionsDone);
 
         if (this._options.combineClasses) {
@@ -395,18 +382,16 @@ class Run implements RunContext {
             if (combinedGraph === graph) {
                 graph = combinedGraph;
             } else {
-                this.time(
-                    "combine classes cleanup",
-                    () =>
-                        (graph = combineClasses(
+                this.time("combine classes cleanup", () => {
+                    graph = combineClasses(
                             this,
                             combinedGraph,
                             this._options.alphabetizeProperties,
                             false,
                             true,
                             debugPrintReconstitution,
-                        )),
                 );
+                });
             }
         }
 
@@ -433,84 +418,67 @@ class Run implements RunContext {
             : this._options.inferEnums
               ? "infer"
               : "none";
-        this.time(
-            "expand strings",
-            () => (graph = expandStrings(this, graph, enumInference)),
-        );
-        this.time(
-            "flatten unions",
-            () =>
-                ([graph, unionsDone] = flattenUnions(
+        this.time("expand strings", () => {
+            graph = expandStrings(this, graph, enumInference);
+        });
+        this.time("flatten unions", () => {
+            [graph, unionsDone] = flattenUnions(
                     graph,
                     stringTypeMapping,
                     conflateNumbers,
                     false,
                     debugPrintReconstitution,
-                )),
         );
+        });
         assert(
             unionsDone,
             "We should only have to flatten unions once after expanding strings",
         );
 
         if (allInputs.needSchemaProcessing) {
-            this.time(
-                "flatten strings",
-                () =>
-                    (graph = flattenStrings(
+            this.time("flatten strings", () => {
+                graph = flattenStrings(
                         graph,
                         stringTypeMapping,
                         debugPrintReconstitution,
-                    )),
-            );
+                );
+            });
         }
 
-        this.time(
-            "none to any",
-            () =>
-                (graph = noneToAny(
+        this.time("none to any", () => {
+            graph = noneToAny(
                     graph,
                     stringTypeMapping,
                     debugPrintReconstitution,
-                )),
         );
+        });
         if (!targetLanguage.supportsOptionalClassProperties) {
-            this.time(
-                "optional to nullable",
-                () =>
-                    (graph = optionalToNullable(
+            this.time("optional to nullable", () => {
+                graph = optionalToNullable(
                         graph,
                         stringTypeMapping,
                         debugPrintReconstitution,
-                    )),
-            );
+                );
+            });
         }
 
-        this.time(
-            "fixed point",
-            () =>
-                (graph = graph.rewriteFixedPoint(
-                    false,
-                    debugPrintReconstitution,
-                )),
-        );
+        this.time("fixed point", () => {
+            graph = graph.rewriteFixedPoint(false, debugPrintReconstitution);
+        });
 
-        this.time(
-            "make transformations",
-            () => (graph = makeTransformations(this, graph, targetLanguage)),
-        );
+        this.time("make transformations", () => {
+            graph = makeTransformations(this, graph, targetLanguage);
+        });
 
-        this.time(
-            "flatten unions",
-            () =>
-                ([graph, unionsDone] = flattenUnions(
+        this.time("flatten unions", () => {
+            [graph, unionsDone] = flattenUnions(
                     graph,
                     stringTypeMapping,
                     conflateNumbers,
                     false,
                     debugPrintReconstitution,
-                )),
         );
+        });
         assert(
             unionsDone,
             "We should only have to flatten unions once after making transformations",
@@ -523,14 +491,12 @@ class Run implements RunContext {
         // FIXME: We don't actually have to do this if any of the above graph
         // rewrites did anything.  We could just check whether the current graph
         // is different from the one we started out with.
-        this.time(
-            "GC",
-            () =>
-                (graph = graph.garbageCollect(
+        this.time("GC", () => {
+            graph = graph.garbageCollect(
                     this._options.alphabetizeProperties,
                     debugPrintReconstitution,
-                )),
         );
+        });
 
         if (this._options.debugPrintGraph) {
             console.log("\n# gather names");

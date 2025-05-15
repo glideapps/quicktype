@@ -121,9 +121,9 @@ export class BooleanOption<Name extends string> extends Option<Name, boolean> {
 
         if (this.definition.defaultValue) {
             return (value && !negated) as boolean;
-        } else {
-            return (value || !negated) as boolean;
         }
+
+        return (value || !negated) as boolean;
     }
 }
 
@@ -147,10 +147,9 @@ export class StringOption<Name extends string> extends Option<Name, string> {
     }
 }
 
-// FIXME: use const generics here
 export class EnumOption<
     Name extends string,
-    EnumMap extends Record<string, unknown>,
+    const EnumMap extends Record<string, unknown>,
     EnumKey extends Extract<keyof EnumMap, string> = Extract<
         keyof EnumMap,
         string
@@ -178,7 +177,7 @@ export class EnumOption<
         this._values = values;
     }
 
-    public getEnumValue<Key extends EnumKey>(name: Key): EnumMap[Key] {
+    public getEnumValue<const Key extends EnumKey>(name: Key): EnumMap[Key] {
         if (!name) {
             const defaultKey = this.definition.defaultValue as NonNullable<Key>;
             return this._values[defaultKey];
