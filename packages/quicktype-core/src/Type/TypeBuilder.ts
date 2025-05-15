@@ -505,7 +505,7 @@ export class TypeBuilder {
 
         const type = derefTypeRef(ref, this.typeGraph);
         if (!(type instanceof ArrayType)) {
-            return panic("Tried to set items of non-array type");
+            panic("Tried to set items of non-array type");
         }
 
         type.setItems(items);
@@ -630,7 +630,7 @@ export class TypeBuilder {
 
         const type = derefTypeRef(ref, this.typeGraph);
         if (!(type instanceof UnionType || type instanceof IntersectionType)) {
-            return panic("Tried to set members of non-set-operation type");
+            panic("Tried to set members of non-set-operation type");
         }
 
         type.setMembers(members);

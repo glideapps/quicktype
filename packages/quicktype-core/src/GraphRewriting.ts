@@ -95,13 +95,16 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
         );
         if (isTypeRef(trefs)) {
             return this._typeBuilder.lookupTypeRefs([trefs], undefined, false);
-        } else {
-            const maybeRefs = Array.from(trefs).map((tref) =>
-                this._typeBuilder.lookupTypeRefs([tref], undefined, false),
-            );
-            if (maybeRefs.some((tref) => tref === undefined)) return undefined;
-            return maybeRefs as readonly TypeRef[];
         }
+
+        const maybeRefs = Array.from(trefs).map((tref) =>
+            this._typeBuilder.lookupTypeRefs([tref], undefined, false),
+        );
+        if (maybeRefs.some((tref) => tref === undefined)) {
+            return undefined;
+        }
+
+        return maybeRefs as readonly TypeRef[];
     }
 
     public lookupMap<K>(
@@ -134,11 +137,11 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
         );
         if (isTypeRef(trefs)) {
             return this._typeBuilder.reconstituteTypeRef(trefs);
-        } else {
-            return Array.from(trefs).map((tref) =>
-                this._typeBuilder.reconstituteTypeRef(tref),
-            );
         }
+
+        return Array.from(trefs).map((tref) =>
+            this._typeBuilder.reconstituteTypeRef(tref),
+        );
     }
 
     public reconstituteMap<K>(

@@ -340,7 +340,7 @@ export class ArrayType extends Type {
 
     public setItems(itemsRef: TypeRef): void {
         if (this._itemsRef !== undefined) {
-            return panic("Can only set array items once");
+            panic("Can only set array items once");
         }
 
         this._itemsRef = itemsRef;
@@ -614,7 +614,7 @@ export class ObjectType extends Type {
 
                     break;
                 default:
-                    return panic(`Invalid object type kind ${this.kind}`);
+                    panic(`Invalid object type kind ${this.kind}`);
             }
         } else {
             switch (this.kind) {
@@ -629,7 +629,7 @@ export class ObjectType extends Type {
                     builder.getUniqueClassType(this.isFixed, undefined);
                     break;
                 default:
-                    return panic(`Invalid object type kind ${this.kind}`);
+                    panic(`Invalid object type kind ${this.kind}`);
             }
 
             const reconstitutedTypes = mapMap(sortedProperties, (cp) =>
@@ -838,7 +838,7 @@ export abstract class SetOperationType extends Type {
 
     public setMembers(memberRefs: ReadonlySet<TypeRef>): void {
         if (this._memberRefs !== undefined) {
-            return panic("Can only set map members once");
+            panic("Can only set map members once");
         }
 
         this._memberRefs = memberRefs;

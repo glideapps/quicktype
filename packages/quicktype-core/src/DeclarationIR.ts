@@ -179,7 +179,7 @@ export function declarationsForGraph(
                 canBeForwardDeclared,
             );
             if (forwardDeclarable.size === 0) {
-                return messageError("IRNoForwardDeclarableTypeInCycle", {});
+                messageError("IRNoForwardDeclarableTypeInCycle", {});
             }
 
             for (const t of forwardDeclarable) {

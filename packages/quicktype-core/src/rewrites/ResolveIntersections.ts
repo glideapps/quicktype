@@ -223,7 +223,7 @@ class IntersectionAccumulator
             } else if (newProperty !== undefined) {
                 defined(this._objectProperties).delete(name);
             } else {
-                return mustNotHappen();
+                mustNotHappen();
             }
         }
 

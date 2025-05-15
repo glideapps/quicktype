@@ -138,7 +138,7 @@ class EmitContext {
 
     public changeIndent(offset: number): void {
         if (this._lastNewline === undefined) {
-            return panic("Cannot change indent for the first line");
+            panic("Cannot change indent for the first line");
         }
 
         this._lastNewline.indentationChange += offset;

@@ -319,12 +319,13 @@ export function matchTypeExhaustive<U>(
         }[kind];
         if (f !== undefined) return f(t);
         return assertNever(f);
-    } else if (t instanceof ArrayType) return arrayType(t);
-    else if (t instanceof ClassType) return classType(t);
-    else if (t instanceof MapType) return mapType(t);
-    else if (t instanceof ObjectType) return objectType(t);
-    else if (t instanceof EnumType) return enumType(t);
-    else if (t instanceof UnionType) return unionType(t);
+    }
+    if (t instanceof ArrayType) return arrayType(t);
+    if (t instanceof ClassType) return classType(t);
+    if (t instanceof MapType) return mapType(t);
+    if (t instanceof ObjectType) return objectType(t);
+    if (t instanceof EnumType) return enumType(t);
+    if (t instanceof UnionType) return unionType(t);
     return panic(`Unknown type ${t.kind}`);
 }
 
