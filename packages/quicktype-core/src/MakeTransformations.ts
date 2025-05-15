@@ -1,12 +1,26 @@
-import { arraySortByInto, iterableFirst, iterableSome, mapMapEntries, setFilter, withDefault } from "collection-utils";
+import {
+    arraySortByInto,
+    iterableFirst,
+    iterableSome,
+    mapMapEntries,
+    setFilter,
+    withDefault,
+} from "collection-utils";
 
-import { minMaxLengthForType, minMaxValueForType } from "./attributes/Constraints";
+import {
+    minMaxLengthForType,
+    minMaxValueForType,
+} from "./attributes/Constraints";
 import { StringTypes } from "./attributes/StringTypes";
-import { type TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./attributes/TypeAttributes";
-import { type GraphRewriteBuilder } from "./GraphRewriting";
-import { type RunContext } from "./Run";
+import {
+    type TypeAttributes,
+    combineTypeAttributes,
+    emptyTypeAttributes,
+} from "./attributes/TypeAttributes";
+import type { GraphRewriteBuilder } from "./GraphRewriting";
+import type { RunContext } from "./Run";
 import { assert, defined, panic } from "./support/Support";
-import { type TargetLanguage } from "./TargetLanguage";
+import type { TargetLanguage } from "./TargetLanguage";
 import {
     ArrayDecodingTransformer,
     ChoiceTransformer,
@@ -20,7 +34,7 @@ import {
     Transformation,
     type Transformer,
     UnionInstantiationTransformer,
-    transformationTypeAttributeKind
+    transformationTypeAttributeKind,
 } from "./Transformers";
 import {
     ArrayType,
@@ -32,20 +46,26 @@ import {
     UnionType,
     isNumberTypeKind,
     isPrimitiveStringTypeKind,
-    targetTypeKindForTransformedStringTypeKind
+    targetTypeKindForTransformedStringTypeKind,
 } from "./Type";
-import { type TypeGraph } from "./Type/TypeGraph";
+import type { TypeGraph } from "./Type/TypeGraph";
 import { type TypeRef, typeRefIndex } from "./Type/TypeRef";
 
 function transformationAttributes(
     graph: TypeGraph,
     reconstitutedTargetType: TypeRef,
     transformer: Transformer,
-    debugPrintTransformations: boolean
+    debugPrintTransformations: boolean,
 ): TypeAttributes {
-    const transformation = new Transformation(graph, reconstitutedTargetType, transformer);
+    const transformation = new Transformation(
+        graph,
+        reconstitutedTargetType,
+        transformer,
+    );
     if (debugPrintTransformations) {
-        console.log(`transformation for ${typeRefIndex(reconstitutedTargetType)}:`);
+        console.log(
+            `transformation for ${typeRefIndex(reconstitutedTargetType)}:`,
+        );
         transformation.debugPrint();
         console.log("reverse:");
         transformation.reverse.debugPrint();
@@ -58,17 +78,22 @@ function makeEnumTransformer(
     graph: TypeGraph,
     enumType: EnumType,
     stringType: TypeRef,
-    continuation?: Transformer
+    continuation?: Transformer,
 ): Transformer {
     const sortedCases = Array.from(enumType.cases).sort();
     const caseTransformers = sortedCases.map(
-        c =>
+        (c) =>
             new StringMatchTransformer(
                 graph,
                 stringType,
-                new StringProducerTransformer(graph, stringType, continuation, c),
-                c
-            )
+                new StringProducerTransformer(
+                    graph,
+                    stringType,
+                    continuation,
+                    c,
+                ),
+                c,
+            ),
     );
     return new ChoiceTransformer(graph, stringType, caseTransformers);
 }
@@ -78,7 +103,7 @@ function replaceUnion(
     builder: GraphRewriteBuilder<Type>,
     forwardingRef: TypeRef,
     transformedTypes: Set<Type>,
-    debugPrintTransformations: boolean
+    debugPrintTransformations: boolean,
 ): TypeRef {
     const graph = builder.typeGraph;
 
@@ -92,10 +117,16 @@ function replaceUnion(
         // the union must be the target type, so if one already exists, use that
         // one, otherwise make a new one.
         if (isPrimitiveStringTypeKind(t.kind)) {
-            const targetTypeKind = targetTypeKindForTransformedStringTypeKind(t.kind);
+            const targetTypeKind = targetTypeKindForTransformedStringTypeKind(
+                t.kind,
+            );
             if (targetTypeKind !== undefined) {
                 const targetTypeMember = union.findMember(targetTypeKind);
-                additionalAttributes = combineTypeAttributes("union", additionalAttributes, t.getAttributes());
+                additionalAttributes = combineTypeAttributes(
+                    "union",
+                    additionalAttributes,
+                    t.getAttributes(),
+                );
                 if (targetTypeMember !== undefined) {
                     return builder.reconstituteType(targetTypeMember);
                 }
@@ -107,7 +138,10 @@ function replaceUnion(
         return builder.reconstituteType(t);
     }
 
-    const reconstitutedMembersByKind = mapMapEntries(union.members.entries(), m => [m.kind, reconstituteMember(m)]);
+    const reconstitutedMembersByKind = mapMapEntries(
+        union.members.entries(),
+        (m) => [m.kind, reconstituteMember(m)],
+    );
     const reconstitutedMemberSet = new Set(reconstitutedMembersByKind.values());
     const haveUnion = reconstitutedMemberSet.size > 1;
 
@@ -128,17 +162,26 @@ function replaceUnion(
         return new UnionInstantiationTransformer(graph, memberTypeRef);
     }
 
-    function transformerForKind(kind: TypeKind): DecodingTransformer | undefined {
+    function transformerForKind(
+        kind: TypeKind,
+    ): DecodingTransformer | undefined {
         const member = union.findMember(kind);
         if (member === undefined) return undefined;
         const memberTypeRef = memberForKind(kind);
-        return new DecodingTransformer(graph, memberTypeRef, consumer(memberTypeRef));
+        return new DecodingTransformer(
+            graph,
+            memberTypeRef,
+            consumer(memberTypeRef),
+        );
     }
 
     let maybeStringType: TypeRef | undefined = undefined;
     function getStringType(): TypeRef {
         if (maybeStringType === undefined) {
-            maybeStringType = builder.getStringType(emptyTypeAttributes, StringTypes.unrestricted);
+            maybeStringType = builder.getStringType(
+                emptyTypeAttributes,
+                StringTypes.unrestricted,
+            );
         }
 
         return maybeStringType;
@@ -153,21 +196,43 @@ function replaceUnion(
             }
 
             const [min, max] = minMax;
-            return new MinMaxLengthCheckTransformer(graph, getStringType(), consumer(memberRef), min, max);
+            return new MinMaxLengthCheckTransformer(
+                graph,
+                getStringType(),
+                consumer(memberRef),
+                min,
+                max,
+            );
         } else if (t instanceof EnumType && transformedTypes.has(t)) {
-            return makeEnumTransformer(graph, t, getStringType(), consumer(memberRef));
+            return makeEnumTransformer(
+                graph,
+                t,
+                getStringType(),
+                consumer(memberRef),
+            );
         } else {
-            return new ParseStringTransformer(graph, getStringType(), consumer(memberRef));
+            return new ParseStringTransformer(
+                graph,
+                getStringType(),
+                consumer(memberRef),
+            );
         }
     }
 
-    const stringTypes = arraySortByInto(Array.from(union.stringTypeMembers), t => t.kind);
+    const stringTypes = arraySortByInto(
+        Array.from(union.stringTypeMembers),
+        (t) => t.kind,
+    );
     let transformerForString: Transformer | undefined;
     if (stringTypes.length === 0) {
         transformerForString = undefined;
     } else if (stringTypes.length === 1) {
         const t = stringTypes[0];
-        transformerForString = new DecodingTransformer(graph, getStringType(), transformerForStringType(t));
+        transformerForString = new DecodingTransformer(
+            graph,
+            getStringType(),
+            transformerForStringType(t),
+        );
     } else {
         transformerForString = new DecodingTransformer(
             graph,
@@ -175,8 +240,8 @@ function replaceUnion(
             new ChoiceTransformer(
                 graph,
                 getStringType(),
-                stringTypes.map(t => defined(transformerForStringType(t)))
-            )
+                stringTypes.map((t) => defined(transformerForStringType(t))),
+            ),
         );
     }
 
@@ -184,7 +249,7 @@ function replaceUnion(
     const transformerForMap = transformerForKind("map");
     assert(
         transformerForClass === undefined || transformerForMap === undefined,
-        "Can't have both class and map in a transformed union"
+        "Can't have both class and map in a transformed union",
     );
     const transformerForObject = transformerForClass ?? transformerForMap;
 
@@ -197,13 +262,18 @@ function replaceUnion(
         transformerForKind("bool"),
         transformerForString,
         transformerForKind("array"),
-        transformerForObject
+        transformerForObject,
     );
-    const attributes = transformationAttributes(graph, reconstitutedTargetType, transformer, debugPrintTransformations);
+    const attributes = transformationAttributes(
+        graph,
+        reconstitutedTargetType,
+        transformer,
+        debugPrintTransformations,
+    );
     return builder.getPrimitiveType(
         "any",
         combineTypeAttributes("union", attributes, additionalAttributes),
-        forwardingRef
+        forwardingRef,
     );
 }
 
@@ -211,7 +281,7 @@ function replaceArray(
     arrayType: ArrayType,
     builder: GraphRewriteBuilder<Type>,
     forwardingRef: TypeRef,
-    debugPrintTransformations: boolean
+    debugPrintTransformations: boolean,
 ): TypeRef {
     const anyType = builder.getPrimitiveType("any");
     const anyArrayType = builder.getArrayType(emptyTypeAttributes, anyType);
@@ -221,19 +291,19 @@ function replaceArray(
         anyArrayType,
         undefined,
         reconstitutedItems,
-        new DecodingTransformer(builder.typeGraph, anyType, undefined)
+        new DecodingTransformer(builder.typeGraph, anyType, undefined),
     );
 
     const reconstitutedArray = builder.getArrayType(
         builder.reconstituteTypeAttributes(arrayType.getAttributes()),
-        reconstitutedItems
+        reconstitutedItems,
     );
 
     const attributes = transformationAttributes(
         builder.typeGraph,
         reconstitutedArray,
         transformer,
-        debugPrintTransformations
+        debugPrintTransformations,
     );
 
     return builder.getArrayType(attributes, anyType, forwardingRef);
@@ -243,43 +313,64 @@ function replaceEnum(
     enumType: EnumType,
     builder: GraphRewriteBuilder<Type>,
     forwardingRef: TypeRef,
-    debugPrintTransformations: boolean
+    debugPrintTransformations: boolean,
 ): TypeRef {
-    const stringType = builder.getStringType(emptyTypeAttributes, StringTypes.unrestricted);
+    const stringType = builder.getStringType(
+        emptyTypeAttributes,
+        StringTypes.unrestricted,
+    );
     const transformer = new DecodingTransformer(
         builder.typeGraph,
         stringType,
-        makeEnumTransformer(builder.typeGraph, enumType, stringType)
+        makeEnumTransformer(builder.typeGraph, enumType, stringType),
     );
-    const reconstitutedEnum = builder.getEnumType(enumType.getAttributes(), enumType.cases);
+    const reconstitutedEnum = builder.getEnumType(
+        enumType.getAttributes(),
+        enumType.cases,
+    );
     const attributes = transformationAttributes(
         builder.typeGraph,
         reconstitutedEnum,
         transformer,
-        debugPrintTransformations
+        debugPrintTransformations,
     );
-    return builder.getStringType(attributes, StringTypes.unrestricted, forwardingRef);
+    return builder.getStringType(
+        attributes,
+        StringTypes.unrestricted,
+        forwardingRef,
+    );
 }
 
 function replaceNumber(
     t: PrimitiveType,
     builder: GraphRewriteBuilder<Type>,
     forwardingRef: TypeRef,
-    debugPrintTransformations: boolean
+    debugPrintTransformations: boolean,
 ): TypeRef {
-    const stringType = builder.getStringType(emptyTypeAttributes, StringTypes.unrestricted);
+    const stringType = builder.getStringType(
+        emptyTypeAttributes,
+        StringTypes.unrestricted,
+    );
     const [min, max] = defined(minMaxValueForType(t));
     const transformer = new DecodingTransformer(
         builder.typeGraph,
         stringType,
-        new MinMaxValueTransformer(builder.typeGraph, stringType, undefined, min, max)
+        new MinMaxValueTransformer(
+            builder.typeGraph,
+            stringType,
+            undefined,
+            min,
+            max,
+        ),
     );
-    const reconstitutedAttributes = builder.reconstituteTypeAttributes(t.getAttributes());
+    const reconstitutedAttributes = builder.reconstituteTypeAttributes(
+        t.getAttributes(),
+    );
     const attributes = transformationAttributes(
         builder.typeGraph,
         builder.getPrimitiveType("double", reconstitutedAttributes, undefined),
         transformer,
-        debugPrintTransformations
+        debugPrintTransformations,
     );
     return builder.getPrimitiveType("double", attributes, forwardingRef);
 }
@@ -288,23 +379,38 @@ function replaceString(
     t: PrimitiveType,
     builder: GraphRewriteBuilder<Type>,
     forwardingRef: TypeRef,
-    debugPrintTransformations: boolean
+    debugPrintTransformations: boolean,
 ): TypeRef {
     const [min, max] = defined(minMaxLengthForType(t));
-    const reconstitutedAttributes = builder.reconstituteTypeAttributes(t.getAttributes());
-    const stringType = builder.getStringType(emptyTypeAttributes, StringTypes.unrestricted);
+    const reconstitutedAttributes = builder.reconstituteTypeAttributes(
+        t.getAttributes(),
+    );
+    const stringType = builder.getStringType(
+        emptyTypeAttributes,
+        StringTypes.unrestricted,
+    );
     const transformer = new DecodingTransformer(
         builder.typeGraph,
         stringType,
-        new MinMaxLengthCheckTransformer(builder.typeGraph, stringType, undefined, min, max)
+        new MinMaxLengthCheckTransformer(
+            builder.typeGraph,
+            stringType,
+            undefined,
+            min,
+            max,
+        ),
     );
     const attributes = transformationAttributes(
         builder.typeGraph,
         builder.getStringType(reconstitutedAttributes, undefined),
         transformer,
-        debugPrintTransformations
+        debugPrintTransformations,
     );
-    return builder.getStringType(attributes, StringTypes.unrestricted, forwardingRef);
+    return builder.getStringType(
+        attributes,
+        StringTypes.unrestricted,
+        forwardingRef,
+    );
 }
 
 function replaceTransformedStringType(
@@ -312,58 +418,102 @@ function replaceTransformedStringType(
     kind: PrimitiveStringTypeKind,
     builder: GraphRewriteBuilder<Type>,
     forwardingRef: TypeRef,
-    debugPrintTransformations: boolean
+    debugPrintTransformations: boolean,
 ): TypeRef {
-    const reconstitutedAttributes = builder.reconstituteTypeAttributes(t.getAttributes());
-    const targetTypeKind = withDefault(targetTypeKindForTransformedStringTypeKind(kind), kind);
-    const stringType = builder.getStringType(emptyTypeAttributes, StringTypes.unrestricted);
+    const reconstitutedAttributes = builder.reconstituteTypeAttributes(
+        t.getAttributes(),
+    );
+    const targetTypeKind = withDefault(
+        targetTypeKindForTransformedStringTypeKind(kind),
+        kind,
+    );
+    const stringType = builder.getStringType(
+        emptyTypeAttributes,
+        StringTypes.unrestricted,
+    );
     const transformer = new DecodingTransformer(
         builder.typeGraph,
         stringType,
-        new ParseStringTransformer(builder.typeGraph, stringType, undefined)
+        new ParseStringTransformer(builder.typeGraph, stringType, undefined),
     );
     const attributes = transformationAttributes(
         builder.typeGraph,
         builder.getPrimitiveType(targetTypeKind, reconstitutedAttributes),
         transformer,
-        debugPrintTransformations
+        debugPrintTransformations,
     );
-    return builder.getStringType(attributes, StringTypes.unrestricted, forwardingRef);
+    return builder.getStringType(
+        attributes,
+        StringTypes.unrestricted,
+        forwardingRef,
+    );
 }
 
-export function makeTransformations(ctx: RunContext, graph: TypeGraph, targetLanguage: TargetLanguage): TypeGraph {
-    const transformedTypes = setFilter(graph.allTypesUnordered(), t => {
+export function makeTransformations(
+    ctx: RunContext,
+    graph: TypeGraph,
+    targetLanguage: TargetLanguage,
+): TypeGraph {
+    const transformedTypes = setFilter(graph.allTypesUnordered(), (t) => {
         if (targetLanguage.needsTransformerForType(t)) return true;
         if (!(t instanceof UnionType)) return false;
         const stringMembers = t.stringTypeMembers;
         if (stringMembers.size <= 1) return false;
-        return iterableSome(stringMembers, m => targetLanguage.needsTransformerForType(m));
+        return iterableSome(stringMembers, (m) =>
+            targetLanguage.needsTransformerForType(m),
+        );
     });
 
     function replace(
         setOfOneUnion: ReadonlySet<Type>,
         builder: GraphRewriteBuilder<Type>,
-        forwardingRef: TypeRef
+        forwardingRef: TypeRef,
     ): TypeRef {
         const t = defined(iterableFirst(setOfOneUnion));
         if (t instanceof UnionType) {
-            return replaceUnion(t, builder, forwardingRef, transformedTypes, ctx.debugPrintTransformations);
+            return replaceUnion(
+                t,
+                builder,
+                forwardingRef,
+                transformedTypes,
+                ctx.debugPrintTransformations,
+            );
         }
 
         if (t instanceof ArrayType) {
-            return replaceArray(t, builder, forwardingRef, ctx.debugPrintTransformations);
+            return replaceArray(
+                t,
+                builder,
+                forwardingRef,
+                ctx.debugPrintTransformations,
+            );
         }
 
         if (t instanceof EnumType) {
-            return replaceEnum(t, builder, forwardingRef, ctx.debugPrintTransformations);
+            return replaceEnum(
+                t,
+                builder,
+                forwardingRef,
+                ctx.debugPrintTransformations,
+            );
         }
 
         if (t.kind === "string") {
-            return replaceString(t as PrimitiveType, builder, forwardingRef, ctx.debugPrintTransformations);
+            return replaceString(
+                t as PrimitiveType,
+                builder,
+                forwardingRef,
+                ctx.debugPrintTransformations,
+            );
         }
 
         if (isNumberTypeKind(t.kind)) {
-            return replaceNumber(t as PrimitiveType, builder, forwardingRef, ctx.debugPrintTransformations);
+            return replaceNumber(
+                t as PrimitiveType,
+                builder,
+                forwardingRef,
+                ctx.debugPrintTransformations,
+            );
         }
 
         if (isPrimitiveStringTypeKind(t.kind)) {
@@ -372,20 +522,20 @@ export function makeTransformations(ctx: RunContext, graph: TypeGraph, targetLan
                 t.kind,
                 builder,
                 forwardingRef,
-                ctx.debugPrintTransformations
+                ctx.debugPrintTransformations,
             );
         }
 
         return panic(`Cannot make transformation for type ${t.kind}`);
     }
 
-    const groups = Array.from(transformedTypes).map(t => [t]);
+    const groups = Array.from(transformedTypes).map((t) => [t]);
     return graph.rewrite(
         "make-transformations",
         ctx.stringTypeMapping,
         false,
         groups,
         ctx.debugPrintReconstitution,
-        replace
+        replace,
     );
 }

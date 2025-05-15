@@ -11,7 +11,7 @@ import {
     isPrintable,
     legalizeCharacters,
     splitIntoWords,
-    utf32ConcatMap
+    utf32ConcatMap,
 } from "../../support/Strings";
 
 function unicodeEscape(codePoint: number): string {
@@ -22,7 +22,9 @@ export function capitalizeFirstLetter(str: string): string {
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-export const stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
+export const stringEscape = utf32ConcatMap(
+    escapeNonPrintableMapper(isPrintable, unicodeEscape),
+);
 
 export function escapeDoubleQuotes(str: string): string {
     return str.replace(/"/g, '\\"');
@@ -36,7 +38,10 @@ const isStartCharacter = isLetterOrUnderscore;
 
 function isPartCharacter(utf16Unit: number): boolean {
     const category: string = unicode.getCategory(utf16Unit);
-    return ["Nd", "Pc", "Mn", "Mc"].includes(category) || isStartCharacter(utf16Unit);
+    return (
+        ["Nd", "Pc", "Mn", "Mc"].includes(category) ||
+        isStartCharacter(utf16Unit)
+    );
 }
 
 const legalizeName = legalizeCharacters(isPartCharacter);
@@ -55,7 +60,7 @@ export function simpleNameStyle(original: string, uppercase: boolean): string {
         allUpperWordStyle,
         allUpperWordStyle,
         "",
-        isStartCharacter
+        isStartCharacter,
     );
 }
 
@@ -69,6 +74,6 @@ export function memberNameStyle(original: string): string {
         allLowerWordStyle,
         allLowerWordStyle,
         "_",
-        isStartCharacter
+        isStartCharacter,
     );
 }

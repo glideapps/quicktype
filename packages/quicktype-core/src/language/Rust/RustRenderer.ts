@@ -1,19 +1,34 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import { mapFirst } from "collection-utils";
 
-import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../../Annotation";
-import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../../ConvenienceRenderer";
-import { type Name, type Namer } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
+import {
+    anyTypeIssueAnnotation,
+    nullTypeIssueAnnotation,
+} from "../../Annotation";
+import {
+    ConvenienceRenderer,
+    type ForbiddenWordsInfo,
+} from "../../ConvenienceRenderer";
+import type { Name, Namer } from "../../Naming";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
 import { type Sourcelike, maybeAnnotated } from "../../Source";
 import { defined } from "../../support/Support";
-import { type TargetLanguage } from "../../TargetLanguage";
-import { type ClassType, type EnumType, type Type, UnionType } from "../../Type";
-import { matchType, nullableFromUnion, removeNullFromUnion } from "../../Type/TypeUtils";
+import type { TargetLanguage } from "../../TargetLanguage";
+import {
+    type ClassType,
+    type EnumType,
+    type Type,
+    UnionType,
+} from "../../Type";
+import {
+    matchType,
+    nullableFromUnion,
+    removeNullFromUnion,
+} from "../../Type/TypeUtils";
 
 import { keywords } from "./constants";
-import { type rustOptions } from "./language";
+import type { rustOptions } from "./language";
 import {
     Density,
     type NamingStyleKey,
@@ -24,14 +39,14 @@ import {
     nameWithNamingStyle,
     namingStyles,
     rustStringEscape,
-    snakeNamingFunction
+    snakeNamingFunction,
 } from "./utils";
 
 export class RustRenderer extends ConvenienceRenderer {
     public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        private readonly _options: OptionValues<typeof rustOptions>
+        private readonly _options: OptionValues<typeof rustOptions>,
     ) {
         super(targetLanguage, renderContext);
     }
@@ -56,15 +71,24 @@ export class RustRenderer extends ConvenienceRenderer {
         return keywords;
     }
 
-    protected forbiddenForObjectProperties(_c: ClassType, _className: Name): ForbiddenWordsInfo {
+    protected forbiddenForObjectProperties(
+        _c: ClassType,
+        _className: Name,
+    ): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: true };
     }
 
-    protected forbiddenForUnionMembers(_u: UnionType, _unionName: Name): ForbiddenWordsInfo {
+    protected forbiddenForUnionMembers(
+        _u: UnionType,
+        _unionName: Name,
+    ): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: true };
     }
 
-    protected forbiddenForEnumCases(_e: EnumType, _enumName: Name): ForbiddenWordsInfo {
+    protected forbiddenForEnumCases(
+        _e: EnumType,
+        _enumName: Name,
+    ): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: true };
     }
 
@@ -84,20 +108,39 @@ export class RustRenderer extends ConvenienceRenderer {
     private rustType(t: Type, withIssues = false): Sourcelike {
         return matchType<Sourcelike>(
             t,
-            _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "Option<serde_json::Value>"),
-            _nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "Option<serde_json::Value>"),
-            _boolType => "bool",
-            _integerType => "i64",
-            _doubleType => "f64",
-            _stringType => "String",
-            arrayType => ["Vec<", this.rustType(arrayType.items, withIssues), ">"],
-            classType => this.nameForNamedType(classType),
-            mapType => ["HashMap<String, ", this.rustType(mapType.values, withIssues), ">"],
-            enumType => this.nameForNamedType(enumType),
-            unionType => {
+            (_anyType) =>
+                maybeAnnotated(
+                    withIssues,
+                    anyTypeIssueAnnotation,
+                    "Option<serde_json::Value>",
+                ),
+            (_nullType) =>
+                maybeAnnotated(
+                    withIssues,
+                    nullTypeIssueAnnotation,
+                    "Option<serde_json::Value>",
+                ),
+            (_boolType) => "bool",
+            (_integerType) => "i64",
+            (_doubleType) => "f64",
+            (_stringType) => "String",
+            (arrayType) => [
+                "Vec<",
+                this.rustType(arrayType.items, withIssues),
+                ">",
+            ],
+            (classType) => this.nameForNamedType(classType),
+            (mapType) => [
+                "HashMap<String, ",
+                this.rustType(mapType.values, withIssues),
+                ">",
+            ],
+            (enumType) => this.nameForNamedType(enumType),
+            (unionType) => {
                 const nullable = nullableFromUnion(unionType);
 
-                if (nullable !== null) return this.nullableRustType(nullable, withIssues);
+                if (nullable !== null)
+                    return this.nullableRustType(nullable, withIssues);
 
                 const [hasNull] = removeNullFromUnion(unionType);
 
@@ -107,8 +150,10 @@ export class RustRenderer extends ConvenienceRenderer {
                     ? ["Box<", this.nameForNamedType(unionType), ">"]
                     : this.nameForNamedType(unionType);
 
-                return hasNull !== null ? (["Option<", name, ">"] as Sourcelike) : name;
-            }
+                return hasNull !== null
+                    ? (["Option<", name, ">"] as Sourcelike)
+                    : name;
+            },
         );
     }
 
@@ -123,10 +168,12 @@ export class RustRenderer extends ConvenienceRenderer {
         propName: Name,
         jsonName: string,
         defaultNamingStyle: NamingStyleKey,
-        preferedNamingStyle: NamingStyleKey
+        preferedNamingStyle: NamingStyleKey,
     ): void {
         const escapedName = rustStringEscape(jsonName);
-        const name = namingStyles[defaultNamingStyle].fromParts(this.sourcelikeToString(propName).split(" "));
+        const name = namingStyles[defaultNamingStyle].fromParts(
+            this.sourcelikeToString(propName).split(" "),
+        );
         const styledName = nameWithNamingStyle(name, preferedNamingStyle);
         const namesDiffer = escapedName !== styledName;
         if (namesDiffer) {
@@ -137,7 +184,10 @@ export class RustRenderer extends ConvenienceRenderer {
     private emitSkipSerializeNone(t: Type): void {
         if (t instanceof UnionType) {
             const nullable = nullableFromUnion(t);
-            if (nullable !== null) this.emitLine('#[serde(skip_serializing_if = "Option::is_none")]');
+            if (nullable !== null)
+                this.emitLine(
+                    '#[serde(skip_serializing_if = "Option::is_none")]',
+                );
         }
     }
 
@@ -158,32 +208,50 @@ export class RustRenderer extends ConvenienceRenderer {
             this._options.deriveDebug ? "Debug, " : "",
             this._options.deriveClone ? "Clone, " : "",
             this._options.derivePartialEq ? "PartialEq, " : "",
-            "Serialize, Deserialize)]"
+            "Serialize, Deserialize)]",
         );
 
         // List the possible naming styles for every class property
         const propertiesNamingStyles: { [key: string]: string[] } = {};
         this.forEachClassProperty(c, "none", (_name, jsonName, _prop) => {
-            propertiesNamingStyles[jsonName] = listMatchingNamingStyles(jsonName);
+            propertiesNamingStyles[jsonName] =
+                listMatchingNamingStyles(jsonName);
         });
 
         // Set the default naming style on the struct
         const defaultStyle = "snake_case";
-        const preferedNamingStyle = getPreferredNamingStyle(Object.values(propertiesNamingStyles).flat(), defaultStyle);
+        const preferedNamingStyle = getPreferredNamingStyle(
+            Object.values(propertiesNamingStyles).flat(),
+            defaultStyle,
+        );
         if (preferedNamingStyle !== defaultStyle) {
             this.emitLine(`#[serde(rename_all = "${preferedNamingStyle}")]`);
         }
 
-        const blankLines = this._options.density === Density.Dense ? "none" : "interposing";
+        const blankLines =
+            this._options.density === Density.Dense ? "none" : "interposing";
         const structBody = (): void =>
             this.forEachClassProperty(c, blankLines, (name, jsonName, prop) => {
-                this.emitDescription(this.descriptionForClassProperty(c, jsonName));
-                this.emitRenameAttribute(name, jsonName, defaultStyle, preferedNamingStyle);
+                this.emitDescription(
+                    this.descriptionForClassProperty(c, jsonName),
+                );
+                this.emitRenameAttribute(
+                    name,
+                    jsonName,
+                    defaultStyle,
+                    preferedNamingStyle,
+                );
                 if (this._options.skipSerializingNone) {
                     this.emitSkipSerializeNone(prop.type);
                 }
 
-                this.emitLine(this.visibility, name, ": ", this.breakCycle(prop.type, true), ",");
+                this.emitLine(
+                    this.visibility,
+                    name,
+                    ": ",
+                    this.breakCycle(prop.type, true),
+                    ",",
+                );
             });
 
         this.emitBlock(["pub struct ", className], structBody);
@@ -208,18 +276,25 @@ export class RustRenderer extends ConvenienceRenderer {
             this._options.deriveDebug ? "Debug, " : "",
             this._options.deriveClone ? "Clone, " : "",
             this._options.derivePartialEq ? "PartialEq, " : "",
-            "Serialize, Deserialize)]"
+            "Serialize, Deserialize)]",
         );
         this.emitLine("#[serde(untagged)]");
 
         const [, nonNulls] = removeNullFromUnion(u);
 
-        const blankLines = this._options.density === Density.Dense ? "none" : "interposing";
+        const blankLines =
+            this._options.density === Density.Dense ? "none" : "interposing";
         this.emitBlock(["pub enum ", unionName], () =>
-            this.forEachUnionMember(u, nonNulls, blankLines, null, (fieldName, t) => {
-                const rustType = this.breakCycle(t, true);
-                this.emitLine([fieldName, "(", rustType, "),"]);
-            })
+            this.forEachUnionMember(
+                u,
+                nonNulls,
+                blankLines,
+                null,
+                (fieldName, t) => {
+                    const rustType = this.breakCycle(t, true);
+                    this.emitLine([fieldName, "(", rustType, "),"]);
+                },
+            ),
         );
     }
 
@@ -230,28 +305,38 @@ export class RustRenderer extends ConvenienceRenderer {
             this._options.deriveDebug ? "Debug, " : "",
             this._options.deriveClone ? "Clone, " : "",
             this._options.derivePartialEq ? "PartialEq, " : "",
-            "Serialize, Deserialize)]"
+            "Serialize, Deserialize)]",
         );
 
         // List the possible naming styles for every enum case
         const enumCasesNamingStyles: { [key: string]: string[] } = {};
         this.forEachEnumCase(e, "none", (_name, jsonName) => {
-            enumCasesNamingStyles[jsonName] = listMatchingNamingStyles(jsonName);
+            enumCasesNamingStyles[jsonName] =
+                listMatchingNamingStyles(jsonName);
         });
 
         // Set the default naming style on the enum
         const defaultStyle = "PascalCase";
-        const preferedNamingStyle = getPreferredNamingStyle(Object.values(enumCasesNamingStyles).flat(), defaultStyle);
+        const preferedNamingStyle = getPreferredNamingStyle(
+            Object.values(enumCasesNamingStyles).flat(),
+            defaultStyle,
+        );
         if (preferedNamingStyle !== defaultStyle) {
             this.emitLine(`#[serde(rename_all = "${preferedNamingStyle}")]`);
         }
 
-        const blankLines = this._options.density === Density.Dense ? "none" : "interposing";
+        const blankLines =
+            this._options.density === Density.Dense ? "none" : "interposing";
         this.emitBlock(["pub enum ", enumName], () =>
             this.forEachEnumCase(e, blankLines, (name, jsonName) => {
-                this.emitRenameAttribute(name, jsonName, defaultStyle, preferedNamingStyle);
+                this.emitRenameAttribute(
+                    name,
+                    jsonName,
+                    defaultStyle,
+                    preferedNamingStyle,
+                );
                 this.emitLine([name, ","]);
-            })
+            }),
         );
     }
 
@@ -265,7 +350,9 @@ export class RustRenderer extends ConvenienceRenderer {
             return;
         }
 
-        const topLevelName = defined(mapFirst(this.topLevels)).getCombinedName();
+        const topLevelName = defined(
+            mapFirst(this.topLevels),
+        ).getCombinedName();
         this.emitMultiline(
             `// Example code that deserializes and serializes the model.
 // extern crate serde;
@@ -278,7 +365,7 @@ export class RustRenderer extends ConvenienceRenderer {
 // fn main() {
 //     let json = r#"{"answer": 42}"#;
 //     let model: ${topLevelName} = serde_json::from_str(&json).unwrap();
-// }`
+// }`,
         );
     }
 
@@ -301,14 +388,14 @@ export class RustRenderer extends ConvenienceRenderer {
         this.forEachTopLevel(
             "leading",
             (t, name) => this.emitTopLevelAlias(t, name),
-            t => this.namedTypeToNameForTopLevel(t) === undefined
+            (t) => this.namedTypeToNameForTopLevel(t) === undefined,
         );
 
         this.forEachNamedType(
             "leading-and-interposing",
             (c: ClassType, name: Name) => this.emitStructDefinition(c, name),
             (e, name) => this.emitEnumDefinition(e, name),
-            (u, name) => this.emitUnion(u, name)
+            (u, name) => this.emitUnion(u, name),
         );
     }
 }

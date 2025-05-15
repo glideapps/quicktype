@@ -1,25 +1,56 @@
-import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../../Annotation";
-import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../../ConvenienceRenderer";
-import { DependencyName, type Name, type Namer, funPrefixNamer } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
+import {
+    anyTypeIssueAnnotation,
+    nullTypeIssueAnnotation,
+} from "../../Annotation";
+import {
+    ConvenienceRenderer,
+    type ForbiddenWordsInfo,
+} from "../../ConvenienceRenderer";
+import {
+    DependencyName,
+    type Name,
+    type Namer,
+    funPrefixNamer,
+} from "../../Naming";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
 import { type Sourcelike, maybeAnnotated } from "../../Source";
 import { acronymStyle } from "../../support/Acronyms";
 import { capitalize } from "../../support/Strings";
 import { assert, assertNever, defined } from "../../support/Support";
-import { type TargetLanguage } from "../../TargetLanguage";
-import { ArrayType, type ClassProperty, ClassType, EnumType, MapType, type Type, UnionType } from "../../Type";
-import { directlyReachableSingleNamedType, matchType, nullableFromUnion, removeNullFromUnion } from "../../Type/TypeUtils";
+import type { TargetLanguage } from "../../TargetLanguage";
+import {
+    ArrayType,
+    type ClassProperty,
+    ClassType,
+    EnumType,
+    MapType,
+    type Type,
+    UnionType,
+} from "../../Type";
+import {
+    directlyReachableSingleNamedType,
+    matchType,
+    nullableFromUnion,
+    removeNullFromUnion,
+} from "../../Type/TypeUtils";
 
 import { javaKeywords } from "./constants";
-import { Java8DateTimeProvider, type JavaDateTimeProvider, JavaLegacyDateTimeProvider } from "./DateTimeProvider";
-import { type javaOptions } from "./language";
+import {
+    Java8DateTimeProvider,
+    type JavaDateTimeProvider,
+    JavaLegacyDateTimeProvider,
+} from "./DateTimeProvider";
+import type { javaOptions } from "./language";
 import { javaNameStyle, stringEscape } from "./utils";
 
 export class JavaRenderer extends ConvenienceRenderer {
     private _currentFilename: string | undefined;
 
-    private readonly _gettersAndSettersForPropertyName = new Map<Name, [Name, Name]>();
+    private readonly _gettersAndSettersForPropertyName = new Map<
+        Name,
+        [Name, Name]
+    >();
 
     private _haveEmittedLeadingComments = false;
 
@@ -32,17 +63,23 @@ export class JavaRenderer extends ConvenienceRenderer {
     public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        protected readonly _options: OptionValues<typeof javaOptions>
+        protected readonly _options: OptionValues<typeof javaOptions>,
     ) {
         super(targetLanguage, renderContext);
 
         switch (_options.dateTimeProvider) {
             default:
             case "java8":
-                this._dateTimeProvider = new Java8DateTimeProvider(this, this._converterClassname);
+                this._dateTimeProvider = new Java8DateTimeProvider(
+                    this,
+                    this._converterClassname,
+                );
                 break;
             case "legacy":
-                this._dateTimeProvider = new JavaLegacyDateTimeProvider(this, this._converterClassname);
+                this._dateTimeProvider = new JavaLegacyDateTimeProvider(
+                    this,
+                    this._converterClassname,
+                );
                 break;
         }
     }
@@ -52,12 +89,15 @@ export class JavaRenderer extends ConvenienceRenderer {
             ...javaKeywords,
             ...this._converterKeywords,
             this._converterClassname,
-            ...this._dateTimeProvider.keywords
+            ...this._dateTimeProvider.keywords,
         ];
         return keywords;
     }
 
-    protected forbiddenForObjectProperties(_c: ClassType, _className: Name): ForbiddenWordsInfo {
+    protected forbiddenForObjectProperties(
+        _c: ClassType,
+        _className: Name,
+    ): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: true };
     }
 
@@ -93,17 +133,17 @@ export class JavaRenderer extends ConvenienceRenderer {
         _className: Name,
         _p: ClassProperty,
         _jsonName: string,
-        name: Name
+        name: Name,
     ): [Name, Name] {
         const getterName = new DependencyName(
             this.getNameStyling("propertyNamingFunction"),
             name.order,
-            lookup => `get_${lookup(name)}`
+            (lookup) => `get_${lookup(name)}`,
         );
         const setterName = new DependencyName(
             this.getNameStyling("propertyNamingFunction"),
             name.order,
-            lookup => `set_${lookup(name)}`
+            (lookup) => `set_${lookup(name)}`,
         );
         return [getterName, setterName];
     }
@@ -113,29 +153,53 @@ export class JavaRenderer extends ConvenienceRenderer {
         className: Name,
         p: ClassProperty,
         jsonName: string,
-        name: Name
+        name: Name,
     ): Name[] {
-        const getterAndSetterNames = this.makeNamesForPropertyGetterAndSetter(c, className, p, jsonName, name);
+        const getterAndSetterNames = this.makeNamesForPropertyGetterAndSetter(
+            c,
+            className,
+            p,
+            jsonName,
+            name,
+        );
         this._gettersAndSettersForPropertyName.set(name, getterAndSetterNames);
         return getterAndSetterNames;
     }
 
     private getNameStyling(convention: string): Namer {
         const styling: { [key: string]: Namer } = {
-            typeNamingFunction: funPrefixNamer("types", n =>
-                javaNameStyle(true, false, n, acronymStyle(this._options.acronymStyle))
+            typeNamingFunction: funPrefixNamer("types", (n) =>
+                javaNameStyle(
+                    true,
+                    false,
+                    n,
+                    acronymStyle(this._options.acronymStyle),
+                ),
             ),
-            propertyNamingFunction: funPrefixNamer("properties", n =>
-                javaNameStyle(false, false, n, acronymStyle(this._options.acronymStyle))
+            propertyNamingFunction: funPrefixNamer("properties", (n) =>
+                javaNameStyle(
+                    false,
+                    false,
+                    n,
+                    acronymStyle(this._options.acronymStyle),
+                ),
             ),
-            enumCaseNamingFunction: funPrefixNamer("enum-cases", n =>
-                javaNameStyle(true, true, n, acronymStyle(this._options.acronymStyle))
-            )
+            enumCaseNamingFunction: funPrefixNamer("enum-cases", (n) =>
+                javaNameStyle(
+                    true,
+                    true,
+                    n,
+                    acronymStyle(this._options.acronymStyle),
+                ),
+            ),
         };
         return styling[convention];
     }
 
-    protected fieldOrMethodName(methodName: string, topLevelName: Name): Sourcelike {
+    protected fieldOrMethodName(
+        methodName: string,
+        topLevelName: Name,
+    ): Sourcelike {
         if (this.topLevels.size === 1) {
             return methodName;
         }
@@ -143,7 +207,11 @@ export class JavaRenderer extends ConvenienceRenderer {
         return [topLevelName, capitalize(methodName)];
     }
 
-    protected methodName(prefix: string, suffix: string, topLevelName: Name): Sourcelike {
+    protected methodName(
+        prefix: string,
+        suffix: string,
+        topLevelName: Name,
+    ): Sourcelike {
         if (this.topLevels.size === 1) {
             return [prefix, suffix];
         }
@@ -168,12 +236,18 @@ export class JavaRenderer extends ConvenienceRenderer {
     }
 
     protected startFile(basename: Sourcelike): void {
-        assert(this._currentFilename === undefined, "Previous file wasn't finished");
+        assert(
+            this._currentFilename === undefined,
+            "Previous file wasn't finished",
+        );
         // FIXME: The filenames should actually be Sourcelikes, too
         this._currentFilename = `${this.sourcelikeToString(basename)}.java`;
         // FIXME: Why is this necessary?
         this.ensureBlankLine();
-        if (!this._haveEmittedLeadingComments && this.leadingComments !== undefined) {
+        if (
+            !this._haveEmittedLeadingComments &&
+            this.leadingComments !== undefined
+        ) {
             this.emitComments(this.leadingComments);
             this.ensureBlankLine();
             this._haveEmittedLeadingComments = true;
@@ -200,7 +274,11 @@ export class JavaRenderer extends ConvenienceRenderer {
     }
 
     public emitDescriptionBlock(lines: Sourcelike[]): void {
-        this.emitCommentLines(lines, { lineStart: " * ", beforeComment: "/**", afterComment: " */" });
+        this.emitCommentLines(lines, {
+            lineStart: " * ",
+            beforeComment: "/**",
+            afterComment: " */",
+        });
     }
 
     public emitBlock(line: Sourcelike, f: () => void): void {
@@ -209,7 +287,11 @@ export class JavaRenderer extends ConvenienceRenderer {
         this.emitLine("}");
     }
 
-    public emitTryCatch(main: () => void, handler: () => void, exception = "Exception"): void {
+    public emitTryCatch(
+        main: () => void,
+        handler: () => void,
+        exception = "Exception",
+    ): void {
         this.emitLine("try {");
         this.indent(main);
         this.emitLine("} catch (", exception, " ex) {");
@@ -221,31 +303,49 @@ export class JavaRenderer extends ConvenienceRenderer {
         this.emitTryCatch(f, () => this.emitLine("// Ignored"));
     }
 
-    protected javaType(reference: boolean, t: Type, withIssues = false): Sourcelike {
+    protected javaType(
+        reference: boolean,
+        t: Type,
+        withIssues = false,
+    ): Sourcelike {
         return matchType<Sourcelike>(
             t,
-            _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "Object"),
-            _nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "Object"),
-            _boolType => (reference ? "Boolean" : "boolean"),
-            _integerType => (reference ? "Long" : "long"),
-            _doubleType => (reference ? "Double" : "double"),
-            _stringType => "String",
-            arrayType => {
+            (_anyType) =>
+                maybeAnnotated(withIssues, anyTypeIssueAnnotation, "Object"),
+            (_nullType) =>
+                maybeAnnotated(withIssues, nullTypeIssueAnnotation, "Object"),
+            (_boolType) => (reference ? "Boolean" : "boolean"),
+            (_integerType) => (reference ? "Long" : "long"),
+            (_doubleType) => (reference ? "Double" : "double"),
+            (_stringType) => "String",
+            (arrayType) => {
                 if (this._options.useList) {
-                    return ["List<", this.javaType(true, arrayType.items, withIssues), ">"];
+                    return [
+                        "List<",
+                        this.javaType(true, arrayType.items, withIssues),
+                        ">",
+                    ];
                 } else {
-                    return [this.javaType(false, arrayType.items, withIssues), "[]"];
+                    return [
+                        this.javaType(false, arrayType.items, withIssues),
+                        "[]",
+                    ];
                 }
             },
-            classType => this.nameForNamedType(classType),
-            mapType => ["Map<String, ", this.javaType(true, mapType.values, withIssues), ">"],
-            enumType => this.nameForNamedType(enumType),
-            unionType => {
+            (classType) => this.nameForNamedType(classType),
+            (mapType) => [
+                "Map<String, ",
+                this.javaType(true, mapType.values, withIssues),
+                ">",
+            ],
+            (enumType) => this.nameForNamedType(enumType),
+            (unionType) => {
                 const nullable = nullableFromUnion(unionType);
-                if (nullable !== null) return this.javaType(true, nullable, withIssues);
+                if (nullable !== null)
+                    return this.javaType(true, nullable, withIssues);
                 return this.nameForNamedType(unionType);
             },
-            transformedStringType => {
+            (transformedStringType) => {
                 if (transformedStringType.kind === "time") {
                     return this._dateTimeProvider.timeType;
                 }
@@ -263,35 +363,40 @@ export class JavaRenderer extends ConvenienceRenderer {
                 }
 
                 return "String";
-            }
+            },
         );
     }
 
     protected javaImport(t: Type): string[] {
         return matchType<string[]>(
             t,
-            _anyType => [],
-            _nullType => [],
-            _boolType => [],
-            _integerType => [],
-            _doubleType => [],
-            _stringType => [],
-            arrayType => {
+            (_anyType) => [],
+            (_nullType) => [],
+            (_boolType) => [],
+            (_integerType) => [],
+            (_doubleType) => [],
+            (_stringType) => [],
+            (arrayType) => {
                 if (this._options.useList) {
-                    return [...this.javaImport(arrayType.items), "java.util.List"];
+                    return [
+                        ...this.javaImport(arrayType.items),
+                        "java.util.List",
+                    ];
                 } else {
                     return [...this.javaImport(arrayType.items)];
                 }
             },
-            _classType => [],
-            mapType => [...this.javaImport(mapType.values), "java.util.Map"],
-            _enumType => [],
-            unionType => {
+            (_classType) => [],
+            (mapType) => [...this.javaImport(mapType.values), "java.util.Map"],
+            (_enumType) => [],
+            (unionType) => {
                 const imports: string[] = [];
-                unionType.members.forEach(type => this.javaImport(type).forEach(imp => imports.push(imp)));
+                unionType.members.forEach((type) =>
+                    this.javaImport(type).forEach((imp) => imports.push(imp)),
+                );
                 return imports;
             },
-            transformedStringType => {
+            (transformedStringType) => {
                 if (transformedStringType.kind === "time") {
                     return this._dateTimeProvider.timeImports;
                 }
@@ -309,7 +414,7 @@ export class JavaRenderer extends ConvenienceRenderer {
                 }
 
                 return [];
-            }
+            },
         );
     }
 
@@ -324,7 +429,8 @@ export class JavaRenderer extends ConvenienceRenderer {
             return "Map";
         } else if (t instanceof UnionType) {
             const nullable = nullableFromUnion(t);
-            if (nullable !== null) return this.javaTypeWithoutGenerics(true, nullable);
+            if (nullable !== null)
+                return this.javaTypeWithoutGenerics(true, nullable);
             return this.nameForNamedType(t);
         } else {
             return this.javaType(reference, t);
@@ -343,7 +449,7 @@ export class JavaRenderer extends ConvenienceRenderer {
         _propertyName: Name,
         _jsonName: string,
         _p: ClassProperty,
-        _isSetter: boolean
+        _isSetter: boolean,
     ): string[] {
         return [];
     }
@@ -367,7 +473,7 @@ export class JavaRenderer extends ConvenienceRenderer {
     protected importsForClass(c: ClassType): string[] {
         const imports: string[] = [];
         this.forEachClassProperty(c, "none", (_name, _jsonName, p) => {
-            this.javaImport(p.type).forEach(imp => imports.push(imp));
+            this.javaImport(p.type).forEach((imp) => imports.push(imp));
         });
         imports.sort();
         return [...new Set(imports)];
@@ -377,54 +483,123 @@ export class JavaRenderer extends ConvenienceRenderer {
         const imports: string[] = [];
         const [, nonNulls] = removeNullFromUnion(u);
         this.forEachUnionMember(u, nonNulls, "none", null, (_fieldName, t) => {
-            this.javaImport(t).forEach(imp => imports.push(imp));
+            this.javaImport(t).forEach((imp) => imports.push(imp));
         });
         imports.sort();
         return [...new Set(imports)];
     }
 
     protected emitClassDefinition(c: ClassType, className: Name): void {
-        let imports = [...this.importsForType(c), ...this.importsForClass(c)];
+        const imports = [...this.importsForType(c), ...this.importsForClass(c)];
 
         this.emitFileHeader(className, imports);
         this.emitDescription(this.descriptionForType(c));
         this.emitClassAttributes(c, className);
         this.emitBlock(["public class ", className], () => {
             this.forEachClassProperty(c, "none", (name, jsonName, p) => {
-                if (this._options.lombok && this._options.lombokCopyAnnotations) {
-                    const getter = this.annotationsForAccessor(c, className, name, jsonName, p, false);
-                    const setter = this.annotationsForAccessor(c, className, name, jsonName, p, true);
+                if (
+                    this._options.lombok &&
+                    this._options.lombokCopyAnnotations
+                ) {
+                    const getter = this.annotationsForAccessor(
+                        c,
+                        className,
+                        name,
+                        jsonName,
+                        p,
+                        false,
+                    );
+                    const setter = this.annotationsForAccessor(
+                        c,
+                        className,
+                        name,
+                        jsonName,
+                        p,
+                        true,
+                    );
                     if (getter.length !== 0) {
-                        this.emitLine("@lombok.Getter(onMethod_ = {" + getter.join(", ") + "})");
+                        this.emitLine(
+                            "@lombok.Getter(onMethod_ = {" +
+                                getter.join(", ") +
+                                "})",
+                        );
                     }
 
                     if (setter.length !== 0) {
-                        this.emitLine("@lombok.Setter(onMethod_ = {" + setter.join(", ") + "})");
+                        this.emitLine(
+                            "@lombok.Setter(onMethod_ = {" +
+                                setter.join(", ") +
+                                "})",
+                        );
                     }
                 }
 
-                this.emitLine("private ", this.javaType(false, p.type, true), " ", name, ";");
+                this.emitLine(
+                    "private ",
+                    this.javaType(false, p.type, true),
+                    " ",
+                    name,
+                    ";",
+                );
             });
             if (!this._options.lombok) {
-                this.forEachClassProperty(c, "leading-and-interposing", (name, jsonName, p) => {
-                    this.emitDescription(this.descriptionForClassProperty(c, jsonName));
-                    const [getterName, setterName] = defined(this._gettersAndSettersForPropertyName.get(name));
-                    const rendered = this.javaType(false, p.type);
-                    this.annotationsForAccessor(c, className, name, jsonName, p, false).forEach(annotation =>
-                        this.emitLine(annotation)
-                    );
-                    this.emitLine("public ", rendered, " ", getterName, "() { return ", name, "; }");
-                    this.annotationsForAccessor(c, className, name, jsonName, p, true).forEach(annotation =>
-                        this.emitLine(annotation)
-                    );
-                    this.emitLine("public void ", setterName, "(", rendered, " value) { this.", name, " = value; }");
-                });
+                this.forEachClassProperty(
+                    c,
+                    "leading-and-interposing",
+                    (name, jsonName, p) => {
+                        this.emitDescription(
+                            this.descriptionForClassProperty(c, jsonName),
+                        );
+                        const [getterName, setterName] = defined(
+                            this._gettersAndSettersForPropertyName.get(name),
+                        );
+                        const rendered = this.javaType(false, p.type);
+                        this.annotationsForAccessor(
+                            c,
+                            className,
+                            name,
+                            jsonName,
+                            p,
+                            false,
+                        ).forEach((annotation) => this.emitLine(annotation));
+                        this.emitLine(
+                            "public ",
+                            rendered,
+                            " ",
+                            getterName,
+                            "() { return ",
+                            name,
+                            "; }",
+                        );
+                        this.annotationsForAccessor(
+                            c,
+                            className,
+                            name,
+                            jsonName,
+                            p,
+                            true,
+                        ).forEach((annotation) => this.emitLine(annotation));
+                        this.emitLine(
+                            "public void ",
+                            setterName,
+                            "(",
+                            rendered,
+                            " value) { this.",
+                            name,
+                            " = value; }",
+                        );
+                    },
+                );
             }
         });
         this.finishFile();
     }
 
-    protected unionField(u: UnionType, t: Type, withIssues = false): { fieldName: Sourcelike; fieldType: Sourcelike } {
+    protected unionField(
+        u: UnionType,
+        t: Type,
+        withIssues = false,
+    ): { fieldName: Sourcelike; fieldType: Sourcelike } {
         const fieldType = this.javaType(true, t, withIssues);
         // FIXME: "Value" should be part of the name.
         const fieldName = [this.nameForUnionMember(u, t), "Value"];
@@ -440,7 +615,10 @@ export class JavaRenderer extends ConvenienceRenderer {
     }
 
     protected emitUnionDefinition(u: UnionType, unionName: Name): void {
-        const imports = [...this.importsForType(u), ...this.importsForUnionMembers(u)];
+        const imports = [
+            ...this.importsForType(u),
+            ...this.importsForUnionMembers(u),
+        ];
 
         this.emitFileHeader(unionName, imports);
         this.emitDescription(this.descriptionForType(u));
@@ -470,7 +648,7 @@ export class JavaRenderer extends ConvenienceRenderer {
         this.emitFileHeader(enumName, this.importsForType(e));
         this.emitDescription(this.descriptionForType(e));
         const caseNames: Sourcelike[] = [];
-        this.forEachEnumCase(e, "none", name => {
+        this.forEachEnumCase(e, "none", (name) => {
             if (caseNames.length > 0) caseNames.push(", ");
             caseNames.push(name);
         });
@@ -484,7 +662,13 @@ export class JavaRenderer extends ConvenienceRenderer {
                 this.emitLine("switch (this) {");
                 this.indent(() => {
                     this.forEachEnumCase(e, "none", (name, jsonName) => {
-                        this.emitLine("case ", name, ': return "', stringEscape(jsonName), '";');
+                        this.emitLine(
+                            "case ",
+                            name,
+                            ': return "',
+                            stringEscape(jsonName),
+                            '";',
+                        );
                     });
                 });
                 this.emitLine("}");
@@ -493,12 +677,29 @@ export class JavaRenderer extends ConvenienceRenderer {
             this.ensureBlankLine();
 
             this.emitEnumDeserializationAttributes(e);
-            this.emitBlock(["public static ", enumName, " forValue(String value) throws IOException"], () => {
-                this.forEachEnumCase(e, "none", (name, jsonName) => {
-                    this.emitLine('if (value.equals("', stringEscape(jsonName), '")) return ', name, ";");
-                });
-                this.emitLine('throw new IOException("Cannot deserialize ', enumName, '");');
-            });
+            this.emitBlock(
+                [
+                    "public static ",
+                    enumName,
+                    " forValue(String value) throws IOException",
+                ],
+                () => {
+                    this.forEachEnumCase(e, "none", (name, jsonName) => {
+                        this.emitLine(
+                            'if (value.equals("',
+                            stringEscape(jsonName),
+                            '")) return ',
+                            name,
+                            ";",
+                        );
+                    });
+                    this.emitLine(
+                        'throw new IOException("Cannot deserialize ',
+                        enumName,
+                        '");',
+                    );
+                },
+            );
         });
         this.finishFile();
     }
@@ -508,7 +709,7 @@ export class JavaRenderer extends ConvenienceRenderer {
             "leading-and-interposing",
             (c: ClassType, n: Name) => this.emitClassDefinition(c, n),
             (e, n) => this.emitEnumDefinition(e, n),
-            (u, n) => this.emitUnionDefinition(u, n)
+            (u, n) => this.emitUnionDefinition(u, n),
         );
     }
 }

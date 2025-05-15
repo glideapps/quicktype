@@ -2,9 +2,9 @@ import { arrayIntercalate } from "collection-utils";
 
 import { ConvenienceRenderer } from "../../ConvenienceRenderer";
 import { type Name, type Namer, funPrefixNamer } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
-import { type Sourcelike } from "../../Source";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
+import type { Sourcelike } from "../../Source";
 import { AcronymStyleOptions, acronymStyle } from "../../support/Acronyms";
 import {
     allLowerWordStyle,
@@ -14,15 +14,22 @@ import {
     isLetterOrUnderscore,
     splitIntoWords,
     stringEscape,
-    utf16StringEscape
+    utf16StringEscape,
 } from "../../support/Strings";
 import { panic } from "../../support/Support";
-import { type TargetLanguage } from "../../TargetLanguage";
-import { ArrayType, type ClassProperty, EnumType, MapType, type ObjectType, type Type } from "../../Type";
+import type { TargetLanguage } from "../../TargetLanguage";
+import {
+    ArrayType,
+    type ClassProperty,
+    EnumType,
+    MapType,
+    type ObjectType,
+    type Type,
+} from "../../Type";
 import { matchType } from "../../Type/TypeUtils";
 import { legalizeName } from "../JavaScript/utils";
 
-import { type typeScriptEffectSchemaOptions } from "./language";
+import type { typeScriptEffectSchemaOptions } from "./language";
 
 export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
     private emittedObjects = new Set<Name>();
@@ -30,7 +37,9 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
     public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        private readonly _options: OptionValues<typeof typeScriptEffectSchemaOptions>
+        private readonly _options: OptionValues<
+            typeof typeScriptEffectSchemaOptions
+        >,
     ) {
         super(targetLanguage, renderContext);
     }
@@ -50,27 +59,30 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
             upper ? (s): string => capitalize(acronyms(s)) : allLowerWordStyle,
             acronyms,
             "",
-            isLetterOrUnderscore
+            isLetterOrUnderscore,
         );
     }
 
     protected makeNamedTypeNamer(): Namer {
-        return funPrefixNamer("types", s => this.nameStyle(s, true));
+        return funPrefixNamer("types", (s) => this.nameStyle(s, true));
     }
 
     protected makeUnionMemberNamer(): Namer {
-        return funPrefixNamer("properties", s => this.nameStyle(s, true));
+        return funPrefixNamer("properties", (s) => this.nameStyle(s, true));
     }
 
     protected namerForObjectProperty(): Namer {
-        return funPrefixNamer("properties", s => this.nameStyle(s, true));
+        return funPrefixNamer("properties", (s) => this.nameStyle(s, true));
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return funPrefixNamer("enum-cases", s => this.nameStyle(s, false));
+        return funPrefixNamer("enum-cases", (s) => this.nameStyle(s, false));
     }
 
-    private importStatement(lhs: Sourcelike, moduleName: Sourcelike): Sourcelike {
+    private importStatement(
+        lhs: Sourcelike,
+        moduleName: Sourcelike,
+    ): Sourcelike {
         return ["import ", lhs, " from ", moduleName, ";"];
     }
 
@@ -87,7 +99,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
         return ["S.optional(", this.typeMapTypeFor(p.type), ")"];
     }
 
-    private typeMapTypeFor(t: Type, required: boolean = true): Sourcelike {
+    private typeMapTypeFor(t: Type, required = true): Sourcelike {
         if (t.kind === "class" || t.kind === "object" || t.kind === "enum") {
             const name = this.nameForNamedType(t);
             if (this.emittedObjects.has(name)) {
@@ -99,19 +111,27 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
 
         const match = matchType<Sourcelike>(
             t,
-            _anyType => "S.Any",
-            _nullType => "S.Null",
-            _boolType => "S.Boolean",
-            _integerType => "S.Number",
-            _doubleType => "S.Number",
-            _stringType => "S.String",
-            arrayType => ["S.Array(", this.typeMapTypeFor(arrayType.items, false), ")"],
-            _classType => panic("Should already be handled."),
-            _mapType => ["S.Record({ key: S.String, value: ", this.typeMapTypeFor(_mapType.values, false), "})"],
-            _enumType => panic("Should already be handled."),
-            unionType => {
+            (_anyType) => "S.Any",
+            (_nullType) => "S.Null",
+            (_boolType) => "S.Boolean",
+            (_integerType) => "S.Number",
+            (_doubleType) => "S.Number",
+            (_stringType) => "S.String",
+            (arrayType) => [
+                "S.Array(",
+                this.typeMapTypeFor(arrayType.items, false),
+                ")",
+            ],
+            (_classType) => panic("Should already be handled."),
+            (_mapType) => [
+                "S.Record({ key: S.String, value: ",
+                this.typeMapTypeFor(_mapType.values, false),
+                "})",
+            ],
+            (_enumType) => panic("Should already be handled."),
+            (unionType) => {
                 const types = Array.from(unionType.getChildren());
-                let children: Sourcelike[] = [];
+                const children: Sourcelike[] = [];
                 let nullable = false;
                 for (const type of types) {
                     if (type.kind === "null") {
@@ -125,11 +145,15 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
                     return ["S.NullOr(", children[0], ")"];
                 }
 
-                return ["S.Union(", ...arrayIntercalate(", ", children), nullable ? ", S.Null)" : ")"];
+                return [
+                    "S.Union(",
+                    ...arrayIntercalate(", ", children),
+                    nullable ? ", S.Null)" : ")",
+                ];
             },
-            _transformedStringType => {
+            (_transformedStringType) => {
                 return "S.String";
-            }
+            },
         );
 
         if (required) {
@@ -142,10 +166,23 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
     private emitObject(name: Name, t: ObjectType): void {
         this.emittedObjects.add(name);
         this.ensureBlankLine();
-        this.emitLine("\nexport class ", name, " extends S.Class<", name, '>("', name, '")({');
+        this.emitLine(
+            "\nexport class ",
+            name,
+            " extends S.Class<",
+            name,
+            '>("',
+            name,
+            '")({',
+        );
         this.indent(() => {
             this.forEachClassProperty(t, "none", (_, jsonName, property) => {
-                this.emitLine(`"${utf16StringEscape(jsonName)}"`, ": ", this.typeMapTypeForProperty(property), ",");
+                this.emitLine(
+                    `"${utf16StringEscape(jsonName)}"`,
+                    ": ",
+                    this.typeMapTypeForProperty(property),
+                    ",",
+                );
             });
         });
         this.emitLine("}) {}");
@@ -159,11 +196,17 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
         this.indent(() =>
             this.forEachEnumCase(e, "none", (_, jsonName) => {
                 this.emitLine('"', stringEscape(jsonName), '",');
-            })
+            }),
         );
         this.emitLine(");");
         if (!this._options.justSchema) {
-            this.emitLine("export type ", enumName, " = S.Schema.Type<typeof ", enumName, ">;");
+            this.emitLine(
+                "export type ",
+                enumName,
+                " = S.Schema.Type<typeof ",
+                enumName,
+                ">;",
+            );
         }
     }
 
@@ -173,9 +216,13 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
         const recurse = (type: Type): void => {
             if (type.kind === "object" || type.kind === "class") {
                 names.push(this.nameForNamedType(type));
-                this.forEachClassProperty(type as ObjectType, "none", (_, __, prop) => {
-                    recurse(prop.type);
-                });
+                this.forEachClassProperty(
+                    type as ObjectType,
+                    "none",
+                    (_, __, prop) => {
+                        recurse(prop.type);
+                    },
+                );
             } else if (type instanceof ArrayType) {
                 recurse(type.items);
             } else if (type instanceof MapType) {
@@ -197,9 +244,12 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
     protected emitSchemas(): void {
         this.ensureBlankLine();
 
-        this.forEachEnum("leading-and-interposing", (u: EnumType, enumName: Name) => {
-            this.emitEnum(u, enumName);
-        });
+        this.forEachEnum(
+            "leading-and-interposing",
+            (u: EnumType, enumName: Name) => {
+                this.emitEnum(u, enumName);
+            },
+        );
 
         const order: number[] = [];
         const mapKey: Name[] = [];
@@ -218,11 +268,11 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
             const names = this.walkObjectNames(source);
 
             // must be behind all these names
-            names.forEach(name => {
+            names.forEach((name) => {
                 const depName = name;
 
                 // find this name's ordinal, if it has already been added
-                order.forEach(orderItem => {
+                order.forEach((orderItem) => {
                     const depIndex = orderItem;
                     if (mapKey[depIndex] === depName) {
                         // this is the index of the dependency, so make sure we come after it
@@ -236,7 +286,13 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
         });
 
         // now emit ordered source
-        order.forEach(i => this.emitGatheredSource(this.gatherSource(() => this.emitObject(mapKey[i], mapValue[i]))));
+        order.forEach((i) =>
+            this.emitGatheredSource(
+                this.gatherSource(() =>
+                    this.emitObject(mapKey[i], mapValue[i]),
+                ),
+            ),
+        );
     }
 
     protected emitSourceStructure(): void {

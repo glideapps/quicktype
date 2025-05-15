@@ -1,8 +1,0 @@
-dist
-node_modules
-packages/*/dist
-packages/*/node_modules
-test/runs
-test/input
-
-license

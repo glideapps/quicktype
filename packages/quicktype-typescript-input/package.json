@@ -18,7 +18,5 @@
     "devDependencies": {
         "@types/node": "18.19.31"
     },
-    "files": [
-        "dist"
-    ]
+    "files": ["dist"]
 }

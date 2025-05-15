@@ -61,6 +61,10 @@ export class DefaultDateTimeRecognizer implements DateTimeRecognizer {
     isDateTime(str: string): boolean {
         // http://tools.ietf.org/html/rfc3339#section-5.6
         const dateTime = str.split(DATE_TIME_SEPARATOR);
-        return dateTime.length === 2 && this.isDate(dateTime[0]) && this.isTime(dateTime[1]);
+        return (
+            dateTime.length === 2 &&
+            this.isDate(dateTime[0]) &&
+            this.isTime(dateTime[1])
+        );
     }
 }

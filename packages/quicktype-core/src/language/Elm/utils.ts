@@ -8,12 +8,14 @@ import {
     isLetterOrUnderscore,
     isLetterOrUnderscoreOrDigit,
     legalizeCharacters,
-    splitIntoWords
+    splitIntoWords,
 } from "../../support/Strings";
 import { type ClassProperty, UnionType } from "../../Type";
 import { nullableFromUnion } from "../../Type/TypeUtils";
 
-const legalizeName = legalizeCharacters(cp => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp));
+const legalizeName = legalizeCharacters(
+    (cp) => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp),
+);
 
 function elmNameStyle(original: string, upper: boolean): string {
     const words = splitIntoWords(original);
@@ -25,12 +27,16 @@ function elmNameStyle(original: string, upper: boolean): string {
         upper ? allUpperWordStyle : allLowerWordStyle,
         allUpperWordStyle,
         "",
-        isLetterOrUnderscore
+        isLetterOrUnderscore,
     );
 }
 
-export const upperNamingFunction = funPrefixNamer("upper", n => elmNameStyle(n, true));
-export const lowerNamingFunction = funPrefixNamer("lower", n => elmNameStyle(n, false));
+export const upperNamingFunction = funPrefixNamer("upper", (n) =>
+    elmNameStyle(n, true),
+);
+export const lowerNamingFunction = funPrefixNamer("lower", (n) =>
+    elmNameStyle(n, false),
+);
 
 interface RequiredOrOptional {
     fallback: string;
@@ -43,7 +49,10 @@ export function requiredOrOptional(p: ClassProperty): RequiredOrOptional {
     }
 
     const t = p.type;
-    if (p.isOptional || (t instanceof UnionType && nullableFromUnion(t) !== null)) {
+    if (
+        p.isOptional ||
+        (t instanceof UnionType && nullableFromUnion(t) !== null)
+    ) {
         return optional(" Nothing");
     }
 

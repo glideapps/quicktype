@@ -12,22 +12,41 @@ import { flattenUnions } from "./rewrites/FlattenUnions";
 import { inferMaps } from "./rewrites/InferMaps";
 import { replaceObjectType } from "./rewrites/ReplaceObjectType";
 import { resolveIntersections } from "./rewrites/ResolveIntersections";
-import { type Comment } from "./support/Comments";
+import type { Comment } from "./support/Comments";
 import { assert } from "./support/Support";
 
 import { gatherNames } from "./GatherNames";
-import { type InferenceFlags, defaultInferenceFlags, inferenceFlagNames, inferenceFlags } from "./Inference";
+import {
+    type InferenceFlags,
+    defaultInferenceFlags,
+    inferenceFlagNames,
+    inferenceFlags,
+} from "./Inference";
 import { makeTransformations } from "./MakeTransformations";
 import { messageError } from "./Messages";
-import { type Annotation, type Location, type SerializedRenderResult, type Span } from "./Source";
-import { type MultiFileRenderResult, type TargetLanguage } from "./TargetLanguage";
+import type {
+    Annotation,
+    Location,
+    SerializedRenderResult,
+    Span,
+} from "./Source";
+import type {
+    MultiFileRenderResult,
+    TargetLanguage,
+} from "./TargetLanguage";
 import { TypeBuilder } from "./Type/TypeBuilder";
-import { type StringTypeMapping } from "./Type/TypeBuilderUtils";
+import type { StringTypeMapping } from "./Type/TypeBuilderUtils";
 import { TypeGraph } from "./Type/TypeGraph";
-import { noneToAny, optionalToNullable, removeIndirectionIntersections } from "./Type/TypeGraphUtils";
-import { type FixMeOptionsType } from "./types";
+import {
+    noneToAny,
+    optionalToNullable,
+    removeIndirectionIntersections,
+} from "./Type/TypeGraphUtils";
+import type { FixMeOptionsType } from "./types";
 
-export function getTargetLanguage(nameOrInstance: LanguageName | TargetLanguage): TargetLanguage {
+export function getTargetLanguage(
+    nameOrInstance: LanguageName | TargetLanguage,
+): TargetLanguage {
     if (typeof nameOrInstance === "object") {
         return nameOrInstance;
     }
@@ -37,7 +56,9 @@ export function getTargetLanguage(nameOrInstance: LanguageName | TargetLanguage)
         return language;
     }
 
-    return messageError("DriverUnknownOutputLanguage", { lang: nameOrInstance });
+    return messageError("DriverUnknownOutputLanguage", {
+        lang: nameOrInstance,
+    });
 }
 
 /**
@@ -115,7 +136,7 @@ const defaultOptions: NonInferenceOptions = {
     debugPrintGatherNames: false,
     debugPrintTransformations: false,
     debugPrintTimes: false,
-    debugPrintSchemaResolving: false
+    debugPrintSchemaResolving: false,
 };
 
 export interface RunContext {
@@ -141,7 +162,11 @@ class Run implements RunContext {
     public constructor(options: Partial<Options>) {
         // We must not overwrite defaults with undefined values, which
         // we sometimes get.
-        this._options = Object.assign({}, defaultOptions, defaultInferenceFlags);
+        this._options = Object.assign(
+            {},
+            defaultOptions,
+            defaultInferenceFlags,
+        );
         for (const k of Object.getOwnPropertyNames(options)) {
             const v = (options as FixMeOptionsType)[k];
             if (v !== undefined) {
@@ -200,17 +225,27 @@ class Run implements RunContext {
     private makeGraphInputs(): GraphInputs {
         const targetLanguage = getTargetLanguage(this._options.lang);
         const stringTypeMapping = this.stringTypeMapping;
-        const conflateNumbers = !targetLanguage.supportsUnionsWithBothNumberTypes;
+        const conflateNumbers =
+            !targetLanguage.supportsUnionsWithBothNumberTypes;
         const typeBuilder = new TypeBuilder(
             stringTypeMapping,
             this._options.alphabetizeProperties,
             this._options.allPropertiesOptional,
             this._options.checkProvenance,
-            false
+            false,
         );
-				typeBuilder.typeGraph = new TypeGraph(typeBuilder, 0, this._options.checkProvenance);
+        typeBuilder.typeGraph = new TypeGraph(
+            typeBuilder,
+            0,
+            this._options.checkProvenance,
+        );
 
-        return { targetLanguage, stringTypeMapping, conflateNumbers, typeBuilder };
+        return {
+            targetLanguage,
+            stringTypeMapping,
+            conflateNumbers,
+            typeBuilder,
+        };
     }
 
     private async makeGraph(allInputs: InputData): Promise<TypeGraph> {
@@ -224,8 +259,8 @@ class Run implements RunContext {
                     graphInputs.typeBuilder,
                     this._options.inferMaps,
                     this._options.inferEnums,
-                    this._options.fixedTopLevels
-                )
+                    this._options.fixedTopLevels,
+                ),
         );
 
         return this.processGraph(allInputs, graphInputs);
@@ -240,15 +275,23 @@ class Run implements RunContext {
                 graphInputs.typeBuilder,
                 this._options.inferMaps,
                 this._options.inferEnums,
-                this._options.fixedTopLevels
-            )
+                this._options.fixedTopLevels,
+            ),
         );
 
         return this.processGraph(allInputs, graphInputs);
     }
 
-    private processGraph(allInputs: InputData, graphInputs: GraphInputs): TypeGraph {
-        const { targetLanguage, stringTypeMapping, conflateNumbers, typeBuilder } = graphInputs;
+    private processGraph(
+        allInputs: InputData,
+        graphInputs: GraphInputs,
+    ): TypeGraph {
+        const {
+            targetLanguage,
+            stringTypeMapping,
+            conflateNumbers,
+            typeBuilder,
+        } = graphInputs;
 
         let graph = typeBuilder.finish();
         if (this._options.debugPrintGraph) {
@@ -258,10 +301,18 @@ class Run implements RunContext {
 
         const debugPrintReconstitution = this.debugPrintReconstitution;
 
-        if (typeBuilder.didAddForwardingIntersection || !this._options.ignoreJsonRefs) {
+        if (
+            typeBuilder.didAddForwardingIntersection ||
+            !this._options.ignoreJsonRefs
+        ) {
             this.time(
                 "remove indirection intersections",
-                () => (graph = removeIndirectionIntersections(graph, stringTypeMapping, debugPrintReconstitution))
+                () =>
+                    (graph = removeIndirectionIntersections(
+                        graph,
+                        stringTypeMapping,
+                        debugPrintReconstitution,
+                    )),
             );
         }
 
@@ -277,8 +328,8 @@ class Run implements RunContext {
                             ([graph, intersectionsDone] = resolveIntersections(
                                 graph,
                                 stringTypeMapping,
-                                debugPrintReconstitution
-                            ))
+                                debugPrintReconstitution,
+                            )),
                     );
                 }
 
@@ -291,13 +342,16 @@ class Run implements RunContext {
                                 stringTypeMapping,
                                 conflateNumbers,
                                 true,
-                                debugPrintReconstitution
-                            ))
+                                debugPrintReconstitution,
+                            )),
                     );
                 }
 
                 if (graph === graphBeforeRewrites) {
-                    assert(intersectionsDone && unionsDone, "Graph didn't change but we're not done");
+                    assert(
+                        intersectionsDone && unionsDone,
+                        "Graph didn't change but we're not done",
+                    );
                 }
             } while (!intersectionsDone || !unionsDone);
         }
@@ -310,8 +364,8 @@ class Run implements RunContext {
                     stringTypeMapping,
                     conflateNumbers,
                     targetLanguage.supportsFullObjectType,
-                    debugPrintReconstitution
-                ))
+                    debugPrintReconstitution,
+                )),
         );
         do {
             this.time(
@@ -322,14 +376,21 @@ class Run implements RunContext {
                         stringTypeMapping,
                         conflateNumbers,
                         false,
-                        debugPrintReconstitution
-                    ))
+                        debugPrintReconstitution,
+                    )),
             );
         } while (!unionsDone);
 
         if (this._options.combineClasses) {
             const combinedGraph = this.time("combine classes", () =>
-                combineClasses(this, graph, this._options.alphabetizeProperties, true, false, debugPrintReconstitution)
+                combineClasses(
+                    this,
+                    graph,
+                    this._options.alphabetizeProperties,
+                    true,
+                    false,
+                    debugPrintReconstitution,
+                ),
             );
             if (combinedGraph === graph) {
                 graph = combinedGraph;
@@ -343,8 +404,8 @@ class Run implements RunContext {
                             this._options.alphabetizeProperties,
                             false,
                             true,
-                            debugPrintReconstitution
-                        ))
+                            debugPrintReconstitution,
+                        )),
                 );
             }
         }
@@ -352,7 +413,12 @@ class Run implements RunContext {
         if (this._options.inferMaps) {
             for (;;) {
                 const newGraph = this.time("infer maps", () =>
-                    inferMaps(graph, stringTypeMapping, true, debugPrintReconstitution)
+                    inferMaps(
+                        graph,
+                        stringTypeMapping,
+                        true,
+                        debugPrintReconstitution,
+                    ),
                 );
                 if (newGraph === graph) {
                     break;
@@ -362,8 +428,15 @@ class Run implements RunContext {
             }
         }
 
-        const enumInference = allInputs.needSchemaProcessing ? "all" : this._options.inferEnums ? "infer" : "none";
-        this.time("expand strings", () => (graph = expandStrings(this, graph, enumInference)));
+        const enumInference = allInputs.needSchemaProcessing
+            ? "all"
+            : this._options.inferEnums
+              ? "infer"
+              : "none";
+        this.time(
+            "expand strings",
+            () => (graph = expandStrings(this, graph, enumInference)),
+        );
         this.time(
             "flatten unions",
             () =>
@@ -372,29 +445,60 @@ class Run implements RunContext {
                     stringTypeMapping,
                     conflateNumbers,
                     false,
-                    debugPrintReconstitution
-                ))
+                    debugPrintReconstitution,
+                )),
         );
-        assert(unionsDone, "We should only have to flatten unions once after expanding strings");
+        assert(
+            unionsDone,
+            "We should only have to flatten unions once after expanding strings",
+        );
 
         if (allInputs.needSchemaProcessing) {
             this.time(
                 "flatten strings",
-                () => (graph = flattenStrings(graph, stringTypeMapping, debugPrintReconstitution))
+                () =>
+                    (graph = flattenStrings(
+                        graph,
+                        stringTypeMapping,
+                        debugPrintReconstitution,
+                    )),
             );
         }
 
-        this.time("none to any", () => (graph = noneToAny(graph, stringTypeMapping, debugPrintReconstitution)));
+        this.time(
+            "none to any",
+            () =>
+                (graph = noneToAny(
+                    graph,
+                    stringTypeMapping,
+                    debugPrintReconstitution,
+                )),
+        );
         if (!targetLanguage.supportsOptionalClassProperties) {
             this.time(
                 "optional to nullable",
-                () => (graph = optionalToNullable(graph, stringTypeMapping, debugPrintReconstitution))
+                () =>
+                    (graph = optionalToNullable(
+                        graph,
+                        stringTypeMapping,
+                        debugPrintReconstitution,
+                    )),
             );
         }
 
-        this.time("fixed point", () => (graph = graph.rewriteFixedPoint(false, debugPrintReconstitution)));
+        this.time(
+            "fixed point",
+            () =>
+                (graph = graph.rewriteFixedPoint(
+                    false,
+                    debugPrintReconstitution,
+                )),
+        );
 
-        this.time("make transformations", () => (graph = makeTransformations(this, graph, targetLanguage)));
+        this.time(
+            "make transformations",
+            () => (graph = makeTransformations(this, graph, targetLanguage)),
+        );
 
         this.time(
             "flatten unions",
@@ -404,10 +508,13 @@ class Run implements RunContext {
                     stringTypeMapping,
                     conflateNumbers,
                     false,
-                    debugPrintReconstitution
-                ))
+                    debugPrintReconstitution,
+                )),
         );
-        assert(unionsDone, "We should only have to flatten unions once after making transformations");
+        assert(
+            unionsDone,
+            "We should only have to flatten unions once after making transformations",
+        );
 
         // Sometimes we combine classes in ways that will the order come out
         // differently compared to what it would be from the equivalent schema,
@@ -418,7 +525,11 @@ class Run implements RunContext {
         // is different from the one we started out with.
         this.time(
             "GC",
-            () => (graph = graph.garbageCollect(this._options.alphabetizeProperties, debugPrintReconstitution))
+            () =>
+                (graph = graph.garbageCollect(
+                    this._options.alphabetizeProperties,
+                    debugPrintReconstitution,
+                )),
         );
 
         if (this._options.debugPrintGraph) {
@@ -426,7 +537,11 @@ class Run implements RunContext {
         }
 
         this.time("gather names", () =>
-            gatherNames(graph, !allInputs.needSchemaProcessing, this._options.debugPrintGatherNames)
+            gatherNames(
+                graph,
+                !allInputs.needSchemaProcessing,
+                this._options.debugPrintGatherNames,
+            ),
         );
         if (this._options.debugPrintGraph) {
             graph.printGraph();
@@ -436,9 +551,9 @@ class Run implements RunContext {
     }
 
     private makeSimpleTextResult(lines: string[]): MultiFileRenderResult {
-        return new Map([[this._options.outputFilename, { lines, annotations: [] }]] as Array<
-            [string, SerializedRenderResult]
-        >);
+        return new Map([
+            [this._options.outputFilename, { lines, annotations: [] }],
+        ] as Array<[string, SerializedRenderResult]>);
     }
 
     private preRun(): MultiFileRenderResult | [InputData, TargetLanguage] {
@@ -447,14 +562,26 @@ class Run implements RunContext {
 
         const targetLanguage = getTargetLanguage(this._options.lang);
         const inputData = this._options.inputData;
-        const needIR = inputData.needIR || !targetLanguage.names.includes("schema");
+        const needIR =
+            inputData.needIR || !targetLanguage.names.includes("schema");
 
-        const schemaString = needIR ? undefined : inputData.singleStringSchemaSource();
+        const schemaString = needIR
+            ? undefined
+            : inputData.singleStringSchemaSource();
         if (schemaString !== undefined) {
-            const lines = JSON.stringify(JSON.parse(schemaString), undefined, 4).split("\n");
+            const lines = JSON.stringify(
+                JSON.parse(schemaString),
+                undefined,
+                4,
+            ).split("\n");
             lines.push("");
             const srr = { lines, annotations: [] };
-            return new Map([[this._options.outputFilename, srr] as [string, SerializedRenderResult]]);
+            return new Map([
+                [this._options.outputFilename, srr] as [
+                    string,
+                    SerializedRenderResult,
+                ],
+            ]);
         }
 
         return [inputData, targetLanguage];
@@ -486,7 +613,10 @@ class Run implements RunContext {
         return this.renderGraph(targetLanguage, graph);
     }
 
-    private renderGraph(targetLanguage: TargetLanguage, graph: TypeGraph): MultiFileRenderResult {
+    private renderGraph(
+        targetLanguage: TargetLanguage,
+        graph: TypeGraph,
+    ): MultiFileRenderResult {
         if (this._options.noRender) {
             return this.makeSimpleTextResult(["Done.", ""]);
         }
@@ -497,7 +627,7 @@ class Run implements RunContext {
             this._options.alphabetizeProperties,
             this._options.leadingComments,
             this._options.rendererOptions,
-            this._options.indentation
+            this._options.indentation,
         );
     }
 }
@@ -508,11 +638,15 @@ class Run implements RunContext {
  * @param options Partial options.  For options that are not defined, the
  * defaults will be used.
  */
-export async function quicktypeMultiFile(options: Partial<Options>): Promise<MultiFileRenderResult> {
+export async function quicktypeMultiFile(
+    options: Partial<Options>,
+): Promise<MultiFileRenderResult> {
     return await new Run(options).run();
 }
 
-export function quicktypeMultiFileSync(options: Partial<Options>): MultiFileRenderResult {
+export function quicktypeMultiFileSync(
+    options: Partial<Options>,
+): MultiFileRenderResult {
     return new Run(options).runSync();
 }
 
@@ -521,7 +655,10 @@ function offsetLocation(loc: Location, lineOffset: number): Location {
 }
 
 function offsetSpan(span: Span, lineOffset: number): Span {
-    return { start: offsetLocation(span.start, lineOffset), end: offsetLocation(span.end, lineOffset) };
+    return {
+        start: offsetLocation(span.start, lineOffset),
+        end: offsetLocation(span.end, lineOffset),
+    };
 }
 
 /**
@@ -529,7 +666,9 @@ function offsetSpan(span: Span, lineOffset: number): Span {
  * are concatenated and prefixed with a `//`-style comment giving the
  * filename.
  */
-export function combineRenderResults(result: MultiFileRenderResult): SerializedRenderResult {
+export function combineRenderResults(
+    result: MultiFileRenderResult,
+): SerializedRenderResult {
     if (result.size <= 1) {
         const first = mapFirst(result);
         if (first === undefined) {
@@ -545,7 +684,10 @@ export function combineRenderResults(result: MultiFileRenderResult): SerializedR
         const offset = lines.length + 2;
         lines = lines.concat([`// ${filename}`, ""], srr.lines);
         annotations = annotations.concat(
-            srr.annotations.map(ann => ({ annotation: ann.annotation, span: offsetSpan(ann.span, offset) }))
+            srr.annotations.map((ann) => ({
+                annotation: ann.annotation,
+                span: offsetSpan(ann.span, offset),
+            })),
         );
     }
 
@@ -560,7 +702,9 @@ export function combineRenderResults(result: MultiFileRenderResult): SerializedR
  * @param options Partial options.  For options that are not defined, the
  * defaults will be used.
  */
-export async function quicktype(options: Partial<Options>): Promise<SerializedRenderResult> {
+export async function quicktype(
+    options: Partial<Options>,
+): Promise<SerializedRenderResult> {
     const result = await quicktypeMultiFile(options);
     return combineRenderResults(result);
 }

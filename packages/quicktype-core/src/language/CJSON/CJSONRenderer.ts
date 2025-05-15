@@ -4,19 +4,48 @@
 
 import { getAccessorName } from "../../attributes/AccessorNames";
 import { enumCaseValues } from "../../attributes/EnumValues";
-import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../../ConvenienceRenderer";
-import { type Name, type NameStyle, type Namer, funPrefixNamer } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
-import { type Sourcelike } from "../../Source";
-import { type NamingStyle, allUpperWordStyle, makeNameStyle } from "../../support/Strings";
-import { assert, assertNever, defined, numberEnumValues, panic } from "../../support/Support";
-import { type TargetLanguage } from "../../TargetLanguage";
-import { ArrayType, ClassType, EnumType, MapType, type Type, UnionType } from "../../Type";
-import { matchType, nullableFromUnion, removeNullFromUnion } from "../../Type/TypeUtils";
+import {
+    ConvenienceRenderer,
+    type ForbiddenWordsInfo,
+} from "../../ConvenienceRenderer";
+import {
+    type Name,
+    type NameStyle,
+    type Namer,
+    funPrefixNamer,
+} from "../../Naming";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
+import type { Sourcelike } from "../../Source";
+import {
+    type NamingStyle,
+    allUpperWordStyle,
+    makeNameStyle,
+} from "../../support/Strings";
+import {
+    assert,
+    assertNever,
+    defined,
+    numberEnumValues,
+    panic,
+} from "../../support/Support";
+import type { TargetLanguage } from "../../TargetLanguage";
+import {
+    ArrayType,
+    ClassType,
+    EnumType,
+    MapType,
+    type Type,
+    UnionType,
+} from "../../Type";
+import {
+    matchType,
+    nullableFromUnion,
+    removeNullFromUnion,
+} from "../../Type/TypeUtils";
 
 import { keywords } from "./constants";
-import { type cJSONOptions } from "./language";
+import type { cJSONOptions } from "./language";
 import {
     GlobalNames,
     IncludeKind,
@@ -24,7 +53,7 @@ import {
     type IncludeRecord,
     type TypeCJSON,
     type TypeRecord,
-    legalizeName
+    legalizeName,
 } from "./utils";
 
 export class CJSONRenderer extends ConvenienceRenderer {
@@ -44,7 +73,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
 
     protected readonly enumeratorNamingStyle: NamingStyle; /* Enum naming style */
 
-		private includes:string[];
+    private includes: string[];
 
     /**
      * Constructor
@@ -55,17 +84,23 @@ export class CJSONRenderer extends ConvenienceRenderer {
     public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        private readonly _options: OptionValues<typeof cJSONOptions>
+        private readonly _options: OptionValues<typeof cJSONOptions>,
     ) {
         super(targetLanguage, renderContext);
         this.typeIntegerSize = _options.typeIntegerSize;
         this.hashtableSize = _options.hashtableSize;
         this.typeNamingStyle = _options.typeNamingStyle;
-        this.namedTypeNameStyle = makeNameStyle(this.typeNamingStyle, legalizeName);
+        this.namedTypeNameStyle = makeNameStyle(
+            this.typeNamingStyle,
+            legalizeName,
+        );
         this.enumeratorNamingStyle = _options.enumeratorNamingStyle;
-        this.memberNameStyle = makeNameStyle(_options.memberNamingStyle, legalizeName);
+        this.memberNameStyle = makeNameStyle(
+            _options.memberNamingStyle,
+            legalizeName,
+        );
         this.forbiddenGlobalNames = [];
-				this.includes = [];
+        this.includes = [];
         for (const type of numberEnumValues(GlobalNames)) {
             const genName = this.namedTypeNameStyle(GlobalNames[type]);
             this.forbiddenGlobalNames.push(genName);
@@ -84,7 +119,10 @@ export class CJSONRenderer extends ConvenienceRenderer {
      * Build forbidden names for enums
      * @return Forbidden names for enums
      */
-    protected forbiddenForEnumCases(_enumType: EnumType, _enumName: Name): ForbiddenWordsInfo {
+    protected forbiddenForEnumCases(
+        _enumType: EnumType,
+        _enumName: Name,
+    ): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: true };
     }
 
@@ -92,7 +130,10 @@ export class CJSONRenderer extends ConvenienceRenderer {
      * Build forbidden names for unions members
      * @return Forbidden names for unions members
      */
-    protected forbiddenForUnionMembers(_u: UnionType, _unionName: Name): ForbiddenWordsInfo {
+    protected forbiddenForUnionMembers(
+        _u: UnionType,
+        _unionName: Name,
+    ): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: true };
     }
 
@@ -100,7 +141,10 @@ export class CJSONRenderer extends ConvenienceRenderer {
      * Build forbidden names for objects
      * @return Forbidden names for objects
      */
-    protected forbiddenForObjectProperties(_c: ClassType, _className: Name): ForbiddenWordsInfo {
+    protected forbiddenForObjectProperties(
+        _c: ClassType,
+        _className: Name,
+    ): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: true };
     }
 
@@ -133,7 +177,10 @@ export class CJSONRenderer extends ConvenienceRenderer {
      * @return enum member namer
      */
     protected makeEnumCaseNamer(): Namer {
-        return funPrefixNamer("enumerators", makeNameStyle(this.enumeratorNamingStyle, legalizeName));
+        return funPrefixNamer(
+            "enumerators",
+            makeNameStyle(this.enumeratorNamingStyle, legalizeName),
+        );
     }
 
     /**
@@ -148,9 +195,14 @@ export class CJSONRenderer extends ConvenienceRenderer {
         unionType: UnionType,
         unionName: Name,
         fieldType: Type,
-        lookup: (n: Name) => string
+        lookup: (n: Name) => string,
     ): string {
-        let fieldName = super.proposeUnionMemberName(unionType, unionName, fieldType, lookup);
+        let fieldName = super.proposeUnionMemberName(
+            unionType,
+            unionName,
+            fieldType,
+            lookup,
+        );
         if ("bool" === fieldName) {
             fieldName = "boolean";
         } else if ("double" === fieldName) {
@@ -167,7 +219,13 @@ export class CJSONRenderer extends ConvenienceRenderer {
      */
     protected emitTypedefAlias(fieldType: Type, fieldName: Name): void {
         if (this._options.addTypedefAlias) {
-            this.emitLine("typedef ", this.quicktypeTypeToCJSON(fieldType, false).cType, " ", fieldName, ";");
+            this.emitLine(
+                "typedef ",
+                this.quicktypeTypeToCJSON(fieldType, false).cType,
+                " ",
+                fieldName,
+                ";",
+            );
             this.ensureBlankLine();
         }
     }
@@ -194,7 +252,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
         this.startFile(proposedFilename);
 
         /* Create types */
-        this.forEachDeclaration("leading-and-interposing", decl => {
+        this.forEachDeclaration("leading-and-interposing", (decl) => {
             if (decl.kind === "forward") {
                 this.emitLine("struct ", this.nameForNamedType(decl.type), ";");
             } else if (decl.kind === "define") {
@@ -216,48 +274,63 @@ export class CJSONRenderer extends ConvenienceRenderer {
         /* Create top level type */
         this.forEachTopLevel(
             "leading",
-            (type: Type, className: Name) => this.emitTopLevelTypedef(type, className),
-            type => this.namedTypeToNameForTopLevel(type) === undefined
+            (type: Type, className: Name) =>
+                this.emitTopLevelTypedef(type, className),
+            (type) => this.namedTypeToNameForTopLevel(type) === undefined,
         );
 
         /* Create enum prototypes */
-        this.forEachEnum("leading-and-interposing", (enumType: EnumType, _enumName: Name) =>
-            this.emitEnumPrototypes(enumType)
+        this.forEachEnum(
+            "leading-and-interposing",
+            (enumType: EnumType, _enumName: Name) =>
+                this.emitEnumPrototypes(enumType),
         );
 
         /* Create union prototypes */
-        this.forEachUnion("leading-and-interposing", (unionType: UnionType) => this.emitUnionPrototypes(unionType));
+        this.forEachUnion("leading-and-interposing", (unionType: UnionType) =>
+            this.emitUnionPrototypes(unionType),
+        );
 
         /* Create class prototypes */
-        this.forEachObject("leading-and-interposing", (classType: ClassType, _className: Name) =>
-            this.emitClassPrototypes(classType)
+        this.forEachObject(
+            "leading-and-interposing",
+            (classType: ClassType, _className: Name) =>
+                this.emitClassPrototypes(classType),
         );
 
         /* Create top level prototypes */
         this.forEachTopLevel(
             "leading",
-            (type: Type, className: Name) => this.emitTopLevelPrototypes(type, className),
-            type => this.namedTypeToNameForTopLevel(type) === undefined
+            (type: Type, className: Name) =>
+                this.emitTopLevelPrototypes(type, className),
+            (type) => this.namedTypeToNameForTopLevel(type) === undefined,
         );
 
         /* Create enum functions */
-        this.forEachEnum("leading-and-interposing", (enumType: EnumType, _enumName: Name) =>
-            this.emitEnumFunctions(enumType)
+        this.forEachEnum(
+            "leading-and-interposing",
+            (enumType: EnumType, _enumName: Name) =>
+                this.emitEnumFunctions(enumType),
         );
 
         /* Create union functions */
-        this.forEachUnion("leading-and-interposing", (unionType: UnionType) => this.emitUnionFunctions(unionType));
+        this.forEachUnion("leading-and-interposing", (unionType: UnionType) =>
+            this.emitUnionFunctions(unionType),
+        );
 
         /* Create class functions */
-        this.forEachObject("leading-and-interposing", (classType: ClassType, _className: Name) =>
-            this.emitClassFunctions(classType)
+        this.forEachObject(
+            "leading-and-interposing",
+            (classType: ClassType, _className: Name) =>
+                this.emitClassFunctions(classType),
         );
 
         /* Create top level functions */
         this.forEachTopLevel(
             "leading",
-            (type: Type, className: Name) => this.emitTopLevelFunctions(type, className),
-            type => this.namedTypeToNameForTopLevel(type) === undefined
+            (type: Type, className: Name) =>
+                this.emitTopLevelFunctions(type, className),
+            (type) => this.namedTypeToNameForTopLevel(type) === undefined,
         );
 
         /* Close file */
@@ -268,7 +341,6 @@ export class CJSONRenderer extends ConvenienceRenderer {
      * Function called to create a multiple header files with types and generators
      */
     protected emitMultiSourceStructure(): void {
-
         /* Create each file */
         this.forEachNamedType(
             "leading-and-interposing",
@@ -280,14 +352,15 @@ export class CJSONRenderer extends ConvenienceRenderer {
             },
             (unionType, _name) => {
                 this.emitUnion(unionType);
-            }
+            },
         );
 
         /* Create top level file */
         this.forEachTopLevel(
             "leading",
-            (type: Type, className: Name) => this.emitTopLevel(type, className, this.includes),
-            type => this.namedTypeToNameForTopLevel(type) === undefined
+            (type: Type, className: Name) =>
+                this.emitTopLevel(type, className, this.includes),
+            (type) => this.namedTypeToNameForTopLevel(type) === undefined,
         );
     }
 
@@ -332,12 +405,24 @@ export class CJSONRenderer extends ConvenienceRenderer {
         this.emitBlock(
             ["enum ", enumName],
             () => {
-                const combinedName = allUpperWordStyle(this.sourcelikeToString(enumName));
+                const combinedName = allUpperWordStyle(
+                    this.sourcelikeToString(enumName),
+                );
                 this.forEachEnumCase(enumType, "none", (name, jsonName) => {
                     if (enumValues !== undefined) {
-                        const [enumValue] = getAccessorName(enumValues, jsonName);
+                        const [enumValue] = getAccessorName(
+                            enumValues,
+                            jsonName,
+                        );
                         if (enumValue !== undefined) {
-                            this.emitLine(combinedName, "_", name, " = ", enumValue.toString(), ",");
+                            this.emitLine(
+                                combinedName,
+                                "_",
+                                name,
+                                " = ",
+                                enumValue.toString(),
+                                ",",
+                            );
                         } else {
                             this.emitLine(combinedName, "_", name, ",");
                         }
@@ -347,7 +432,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                 });
             },
             "",
-            true
+            true,
         );
         this.ensureBlankLine();
         this.emitTypedefAlias(enumType, enumName);
@@ -360,8 +445,22 @@ export class CJSONRenderer extends ConvenienceRenderer {
     protected emitEnumPrototypes(enumType: EnumType): void {
         const enumName = this.nameForNamedType(enumType);
 
-        this.emitLine("enum ", enumName, " cJSON_Get", enumName, "Value(", this.withConst("cJSON"), " * j);");
-        this.emitLine("cJSON * cJSON_Create", enumName, "(", this.withConst(["enum ", enumName]), " x);");
+        this.emitLine(
+            "enum ",
+            enumName,
+            " cJSON_Get",
+            enumName,
+            "Value(",
+            this.withConst("cJSON"),
+            " * j);",
+        );
+        this.emitLine(
+            "cJSON * cJSON_Create",
+            enumName,
+            "(",
+            this.withConst(["enum ", enumName]),
+            " x);",
+        );
         this.ensureBlankLine();
     }
 
@@ -373,48 +472,72 @@ export class CJSONRenderer extends ConvenienceRenderer {
         const enumName = this.nameForNamedType(enumType);
 
         /* Create cJSON to enumName generator function */
-        this.emitBlock(["enum ", enumName, " cJSON_Get", enumName, "Value(", this.withConst("cJSON"), " * j)"], () => {
-            this.emitLine("enum ", enumName, " x = 0;");
-            this.emitBlock(["if (NULL != j)"], () => {
-                let onFirst = true;
-                const combinedName = allUpperWordStyle(this.sourcelikeToString(enumName));
-                this.forEachEnumCase(enumType, "none", (name, jsonName) => {
-                    this.emitLine(
-                        onFirst ? "" : "else ",
-                        'if (!strcmp(cJSON_GetStringValue(j), "',
-                        jsonName,
-                        '")) x = ',
-                        combinedName,
-                        "_",
-                        name,
-                        ";"
+        this.emitBlock(
+            [
+                "enum ",
+                enumName,
+                " cJSON_Get",
+                enumName,
+                "Value(",
+                this.withConst("cJSON"),
+                " * j)",
+            ],
+            () => {
+                this.emitLine("enum ", enumName, " x = 0;");
+                this.emitBlock(["if (NULL != j)"], () => {
+                    let onFirst = true;
+                    const combinedName = allUpperWordStyle(
+                        this.sourcelikeToString(enumName),
                     );
-                    onFirst = false;
+                    this.forEachEnumCase(enumType, "none", (name, jsonName) => {
+                        this.emitLine(
+                            onFirst ? "" : "else ",
+                            'if (!strcmp(cJSON_GetStringValue(j), "',
+                            jsonName,
+                            '")) x = ',
+                            combinedName,
+                            "_",
+                            name,
+                            ";",
+                        );
+                        onFirst = false;
+                    });
                 });
-            });
-            this.emitLine("return x;");
-        });
+                this.emitLine("return x;");
+            },
+        );
         this.ensureBlankLine();
 
         /* Create enumName to cJSON generator function */
-        this.emitBlock(["cJSON * cJSON_Create", enumName, "(", this.withConst(["enum ", enumName]), " x)"], () => {
-            this.emitLine("cJSON * j = NULL;");
-            this.emitBlock(["switch (x)"], () => {
-                const combinedName = allUpperWordStyle(this.sourcelikeToString(enumName));
-                this.forEachEnumCase(enumType, "none", (name, jsonName) => {
-                    this.emitLine(
-                        "case ",
-                        combinedName,
-                        "_",
-                        name,
-                        ': j = cJSON_CreateString("',
-                        jsonName,
-                        '"); break;'
+        this.emitBlock(
+            [
+                "cJSON * cJSON_Create",
+                enumName,
+                "(",
+                this.withConst(["enum ", enumName]),
+                " x)",
+            ],
+            () => {
+                this.emitLine("cJSON * j = NULL;");
+                this.emitBlock(["switch (x)"], () => {
+                    const combinedName = allUpperWordStyle(
+                        this.sourcelikeToString(enumName),
                     );
+                    this.forEachEnumCase(enumType, "none", (name, jsonName) => {
+                        this.emitLine(
+                            "case ",
+                            combinedName,
+                            "_",
+                            name,
+                            ': j = cJSON_CreateString("',
+                            jsonName,
+                            '"); break;',
+                        );
+                    });
                 });
-            });
-            this.emitLine("return j;");
-        });
+                this.emitLine("return j;");
+            },
+        );
         this.ensureBlankLine();
     }
 
@@ -463,23 +586,26 @@ export class CJSONRenderer extends ConvenienceRenderer {
                     ["union"],
                     () => {
                         for (const type of nonNulls) {
-                            const cJSON = this.quicktypeTypeToCJSON(type, false);
+                            const cJSON = this.quicktypeTypeToCJSON(
+                                type,
+                                false,
+                            );
                             this.emitLine(
                                 cJSON.cType,
                                 cJSON.optionalQualifier !== "" ? " " : "",
                                 cJSON.optionalQualifier,
                                 " ",
                                 this.nameForUnionMember(unionType, type),
-                                ";"
+                                ";",
                             );
                         }
                     },
                     "value",
-                    true
+                    true,
                 );
             },
             "",
-            true
+            true,
         );
         this.ensureBlankLine();
         this.emitTypedefAlias(unionType, unionName);
@@ -492,9 +618,27 @@ export class CJSONRenderer extends ConvenienceRenderer {
     protected emitUnionPrototypes(unionType: UnionType): void {
         const unionName = this.nameForNamedType(unionType);
 
-        this.emitLine("struct ", unionName, " * cJSON_Get", unionName, "Value(const cJSON * j);");
-        this.emitLine("cJSON * cJSON_Create", unionName, "(", this.withConst(["struct ", unionName]), " * x);");
-        this.emitLine("void cJSON_Delete", unionName, "(struct ", unionName, " * x);");
+        this.emitLine(
+            "struct ",
+            unionName,
+            " * cJSON_Get",
+            unionName,
+            "Value(const cJSON * j);",
+        );
+        this.emitLine(
+            "cJSON * cJSON_Create",
+            unionName,
+            "(",
+            this.withConst(["struct ", unionName]),
+            " * x);",
+        );
+        this.emitLine(
+            "void cJSON_Delete",
+            unionName,
+            "(struct ",
+            unionName,
+            " * x);",
+        );
         this.ensureBlankLine();
     }
 
@@ -507,325 +651,550 @@ export class CJSONRenderer extends ConvenienceRenderer {
         const unionName = this.nameForNamedType(unionType);
 
         /* Create cJSON to unionType generator function */
-        this.emitBlock(["struct ", unionName, " * cJSON_Get", unionName, "Value(const cJSON * j)"], () => {
-            let onFirst = true;
-            this.emitLine("struct ", unionName, " * x = cJSON_malloc(sizeof(struct ", unionName, "));");
-            this.emitBlock(["if (NULL != x)"], () => {
-                this.emitLine("memset(x, 0, sizeof(struct ", unionName, "));");
-                if (hasNull !== null) {
-                    this.emitBlock(["if (cJSON_IsNull(j))"], () => {
-                        this.emitLine("x->type = cJSON_NULL;");
-                    });
-                    onFirst = false;
-                }
+        this.emitBlock(
+            [
+                "struct ",
+                unionName,
+                " * cJSON_Get",
+                unionName,
+                "Value(const cJSON * j)",
+            ],
+            () => {
+                let onFirst = true;
+                this.emitLine(
+                    "struct ",
+                    unionName,
+                    " * x = cJSON_malloc(sizeof(struct ",
+                    unionName,
+                    "));",
+                );
+                this.emitBlock(["if (NULL != x)"], () => {
+                    this.emitLine(
+                        "memset(x, 0, sizeof(struct ",
+                        unionName,
+                        "));",
+                    );
+                    if (hasNull !== null) {
+                        this.emitBlock(["if (cJSON_IsNull(j))"], () => {
+                            this.emitLine("x->type = cJSON_NULL;");
+                        });
+                        onFirst = false;
+                    }
 
-                for (const type of nonNulls) {
-                    const cJSON = this.quicktypeTypeToCJSON(type, false);
-                    this.emitBlock([onFirst === true ? "if (" : "else if (", cJSON.isType, "(j))"], () => {
-                        this.emitLine("x->type = ", cJSON.cjsonType, ";");
-                        if (cJSON.cjsonType === "cJSON_Array" && cJSON.items !== undefined) {
-                            const level = 0;
-                            const child_level = 1;
-                            this.emitLine(cJSON.cType, " * x", child_level.toString(), " = list_create(false, NULL);");
-                            this.emitBlock(["if (NULL != x", child_level.toString(), ")"], () => {
-                                this.emitLine("cJSON * e", child_level.toString(), " = NULL;");
-                                this.emitBlock(
-                                    [
-                                        "cJSON_ArrayForEach(e",
+                    for (const type of nonNulls) {
+                        const cJSON = this.quicktypeTypeToCJSON(type, false);
+                        this.emitBlock(
+                            [
+                                onFirst === true ? "if (" : "else if (",
+                                cJSON.isType,
+                                "(j))",
+                            ],
+                            () => {
+                                this.emitLine(
+                                    "x->type = ",
+                                    cJSON.cjsonType,
+                                    ";",
+                                );
+                                if (
+                                    cJSON.cjsonType === "cJSON_Array" &&
+                                    cJSON.items !== undefined
+                                ) {
+                                    const level = 0;
+                                    const child_level = 1;
+                                    this.emitLine(
+                                        cJSON.cType,
+                                        " * x",
                                         child_level.toString(),
-                                        ", j",
-                                        level > 0 ? level.toString() : "",
-                                        ")"
-                                    ],
-                                    () => {
-                                        const add = (cJSON: TypeCJSON, level: number, child_level: number) => {
-                                            if (cJSON.items?.cjsonType === "cJSON_Array") {
-                                                /* Not supported */
-                                            } else if (cJSON.items?.cjsonType === "cJSON_Map") {
-                                                /* Not supported */
-                                            } else if (
-                                                cJSON.items?.cjsonType === "cJSON_Invalid" ||
-                                                cJSON.items?.cjsonType === "cJSON_NULL"
-                                            ) {
-                                                this.emitLine(
-                                                    "list_add_tail(x",
+                                        " = list_create(false, NULL);",
+                                    );
+                                    this.emitBlock(
+                                        [
+                                            "if (NULL != x",
+                                            child_level.toString(),
+                                            ")",
+                                        ],
+                                        () => {
+                                            this.emitLine(
+                                                "cJSON * e",
+                                                child_level.toString(),
+                                                " = NULL;",
+                                            );
+                                            this.emitBlock(
+                                                [
+                                                    "cJSON_ArrayForEach(e",
                                                     child_level.toString(),
-                                                    ", (",
-                                                    cJSON.items?.cType,
-                                                    " *)0xDEADBEEF, sizeof(",
-                                                    cJSON.items?.cType,
-                                                    " *));"
-                                                );
-                                            } else if (cJSON.items?.cjsonType === "cJSON_String") {
-                                                this.emitLine(
-                                                    "list_add_tail(x",
-                                                    child_level.toString(),
-                                                    ", strdup(",
-                                                    cJSON.items?.getValue,
-                                                    "(e",
-                                                    child_level.toString(),
-                                                    ")), sizeof(",
-                                                    cJSON.items?.cType,
-                                                    " *));"
-                                                );
-                                            } else if (
-                                                cJSON.items?.cjsonType === "cJSON_Object" ||
-                                                cJSON.items?.cjsonType === "cJSON_Union"
-                                            ) {
-                                                this.emitLine(
-                                                    "list_add_tail(x",
-                                                    child_level.toString(),
-                                                    ", ",
-                                                    cJSON.items?.getValue,
-                                                    "(e",
-                                                    child_level.toString(),
-                                                    "), sizeof(",
-                                                    cJSON.items?.cType,
-                                                    " *));"
-                                                );
-                                            } else {
-                                                this.emitLine(
-                                                    // @ts-expect-error awaiting refactor
-                                                    cJSON.items?.cType,
-                                                    " * tmp",
-                                                    level > 0 ? level.toString() : "",
-                                                    " = cJSON_malloc(sizeof(",
-                                                    cJSON.items?.cType,
-                                                    "));"
-                                                );
-                                                this.emitBlock(
-                                                    ["if (NULL != tmp", level > 0 ? level.toString() : "", ")"],
-                                                    () => {
-                                                        this.emitLine(
-                                                            "* tmp",
-                                                            level > 0 ? level.toString() : "",
-                                                            " = ",
-                                                            // @ts-expect-error awaiting refactor
-                                                            cJSON.items?.getValue,
-                                                            "(e",
-                                                            child_level.toString(),
-                                                            ");"
+                                                    ", j",
+                                                    level > 0
+                                                        ? level.toString()
+                                                        : "",
+                                                    ")",
+                                                ],
+                                                () => {
+                                                    const add = (
+                                                        cJSON: TypeCJSON,
+                                                        level: number,
+                                                        child_level: number,
+                                                    ) => {
+                                                        if (
+                                                            cJSON.items
+                                                                ?.cjsonType ===
+                                                            "cJSON_Array"
+                                                        ) {
+                                                            /* Not supported */
+                                                        } else if (
+                                                            cJSON.items
+                                                                ?.cjsonType ===
+                                                            "cJSON_Map"
+                                                        ) {
+                                                            /* Not supported */
+                                                        } else if (
+                                                            cJSON.items
+                                                                ?.cjsonType ===
+                                                                "cJSON_Invalid" ||
+                                                            cJSON.items
+                                                                ?.cjsonType ===
+                                                                "cJSON_NULL"
+                                                        ) {
+                                                            this.emitLine(
+                                                                "list_add_tail(x",
+                                                                child_level.toString(),
+                                                                ", (",
+                                                                cJSON.items
+                                                                    ?.cType,
+                                                                " *)0xDEADBEEF, sizeof(",
+                                                                cJSON.items
+                                                                    ?.cType,
+                                                                " *));",
+                                                            );
+                                                        } else if (
+                                                            cJSON.items
+                                                                ?.cjsonType ===
+                                                            "cJSON_String"
+                                                        ) {
+                                                            this.emitLine(
+                                                                "list_add_tail(x",
+                                                                child_level.toString(),
+                                                                ", strdup(",
+                                                                cJSON.items
+                                                                    ?.getValue,
+                                                                "(e",
+                                                                child_level.toString(),
+                                                                ")), sizeof(",
+                                                                cJSON.items
+                                                                    ?.cType,
+                                                                " *));",
+                                                            );
+                                                        } else if (
+                                                            cJSON.items
+                                                                ?.cjsonType ===
+                                                                "cJSON_Object" ||
+                                                            cJSON.items
+                                                                ?.cjsonType ===
+                                                                "cJSON_Union"
+                                                        ) {
+                                                            this.emitLine(
+                                                                "list_add_tail(x",
+                                                                child_level.toString(),
+                                                                ", ",
+                                                                cJSON.items
+                                                                    ?.getValue,
+                                                                "(e",
+                                                                child_level.toString(),
+                                                                "), sizeof(",
+                                                                cJSON.items
+                                                                    ?.cType,
+                                                                " *));",
+                                                            );
+                                                        } else {
+                                                            this.emitLine(
+                                                                // @ts-expect-error awaiting refactor
+                                                                cJSON.items
+                                                                    ?.cType,
+                                                                " * tmp",
+                                                                level > 0
+                                                                    ? level.toString()
+                                                                    : "",
+                                                                " = cJSON_malloc(sizeof(",
+                                                                cJSON.items
+                                                                    ?.cType,
+                                                                "));",
+                                                            );
+                                                            this.emitBlock(
+                                                                [
+                                                                    "if (NULL != tmp",
+                                                                    level > 0
+                                                                        ? level.toString()
+                                                                        : "",
+                                                                    ")",
+                                                                ],
+                                                                () => {
+                                                                    this.emitLine(
+                                                                        "* tmp",
+                                                                        level >
+                                                                            0
+                                                                            ? level.toString()
+                                                                            : "",
+                                                                        " = ",
+                                                                        // @ts-expect-error awaiting refactor
+                                                                        cJSON
+                                                                            .items
+                                                                            ?.getValue,
+                                                                        "(e",
+                                                                        child_level.toString(),
+                                                                        ");",
+                                                                    );
+                                                                    this.emitLine(
+                                                                        "list_add_tail(x",
+                                                                        child_level.toString(),
+                                                                        ", tmp",
+                                                                        level >
+                                                                            0
+                                                                            ? level.toString()
+                                                                            : "",
+                                                                        ", sizeof(",
+                                                                        // @ts-expect-error awaiting refactor
+                                                                        cJSON
+                                                                            .items
+                                                                            ?.cType,
+                                                                        " *));",
+                                                                    );
+                                                                },
+                                                            );
+                                                        }
+                                                    };
+
+                                                    if (
+                                                        cJSON.items?.isNullable
+                                                    ) {
+                                                        this.emitBlock(
+                                                            [
+                                                                "if (!cJSON_IsNull(e",
+                                                                child_level.toString(),
+                                                                "))",
+                                                            ],
+                                                            () => {
+                                                                add(
+                                                                    cJSON,
+                                                                    level,
+                                                                    child_level,
+                                                                );
+                                                            },
                                                         );
-                                                        this.emitLine(
-                                                            "list_add_tail(x",
-                                                            child_level.toString(),
-                                                            ", tmp",
-                                                            level > 0 ? level.toString() : "",
-                                                            ", sizeof(",
-                                                            // @ts-expect-error awaiting refactor
-                                                            cJSON.items?.cType,
-                                                            " *));"
+                                                        this.emitBlock(
+                                                            ["else"],
+                                                            () => {
+                                                                this.emitLine(
+                                                                    "list_add_tail(x",
+                                                                    child_level.toString(),
+                                                                    ", (void *)0xDEADBEEF, sizeof(void *));",
+                                                                );
+                                                            },
+                                                        );
+                                                    } else {
+                                                        add(
+                                                            cJSON,
+                                                            level,
+                                                            child_level,
                                                         );
                                                     }
-                                                );
-                                            }
-                                        };
-
-                                        if (cJSON.items?.isNullable) {
-                                            this.emitBlock(
-                                                ["if (!cJSON_IsNull(e", child_level.toString(), "))"],
-                                                () => {
-                                                    add(cJSON, level, child_level);
-                                                }
+                                                },
                                             );
-                                            this.emitBlock(["else"], () => {
-                                                this.emitLine(
-                                                    "list_add_tail(x",
-                                                    child_level.toString(),
-                                                    ", (void *)0xDEADBEEF, sizeof(void *));"
-                                                );
-                                            });
-                                        } else {
-                                            add(cJSON, level, child_level);
-                                        }
-                                    }
-                                );
-                                this.emitLine(
-                                    "x->value.",
-                                    this.nameForUnionMember(unionType, type),
-                                    " = x",
-                                    child_level.toString(),
-                                    ";"
-                                );
-                            });
-                        } else if (cJSON.cjsonType === "cJSON_Map" && cJSON.items !== undefined) {
-                            const level = 0;
-                            const child_level = 1;
-                            this.emitLine(
-                                cJSON.cType,
-                                " * x",
-                                child_level.toString(),
-                                " = hashtable_create(",
-                                this.hashtableSize,
-                                ", false);"
-                            );
-                            this.emitBlock(["if (NULL != x", child_level.toString(), ")"], () => {
-                                this.emitLine("cJSON * e", child_level.toString(), " = NULL;");
-                                this.emitBlock(
-                                    [
-                                        "cJSON_ArrayForEach(e",
+                                            this.emitLine(
+                                                "x->value.",
+                                                this.nameForUnionMember(
+                                                    unionType,
+                                                    type,
+                                                ),
+                                                " = x",
+                                                child_level.toString(),
+                                                ";",
+                                            );
+                                        },
+                                    );
+                                } else if (
+                                    cJSON.cjsonType === "cJSON_Map" &&
+                                    cJSON.items !== undefined
+                                ) {
+                                    const level = 0;
+                                    const child_level = 1;
+                                    this.emitLine(
+                                        cJSON.cType,
+                                        " * x",
                                         child_level.toString(),
-                                        ", j",
-                                        level > 0 ? level.toString() : "",
-                                        ")"
-                                    ],
-                                    () => {
-                                        const add = (cJSON: TypeCJSON, level: number, child_level: number) => {
-                                            if (cJSON.items?.cjsonType === "cJSON_Array") {
-                                                /* Not supported */
-                                            } else if (cJSON.items?.cjsonType === "cJSON_Map") {
-                                                /* Not supported */
-                                            } else if (
-                                                cJSON.items?.cjsonType === "cJSON_Invalid" ||
-                                                cJSON.items?.cjsonType === "cJSON_NULL"
-                                            ) {
-                                                this.emitLine(
-                                                    "hashtable_add(x",
+                                        " = hashtable_create(",
+                                        this.hashtableSize,
+                                        ", false);",
+                                    );
+                                    this.emitBlock(
+                                        [
+                                            "if (NULL != x",
+                                            child_level.toString(),
+                                            ")",
+                                        ],
+                                        () => {
+                                            this.emitLine(
+                                                "cJSON * e",
+                                                child_level.toString(),
+                                                " = NULL;",
+                                            );
+                                            this.emitBlock(
+                                                [
+                                                    "cJSON_ArrayForEach(e",
                                                     child_level.toString(),
-                                                    ", e",
-                                                    child_level.toString(),
-                                                    "->string, (",
-                                                    cJSON.items?.cType,
-                                                    " *)0xDEADBEEF, sizeof(",
-                                                    cJSON.items?.cType,
-                                                    " *));"
-                                                );
-                                            } else if (cJSON.items?.cjsonType === "cJSON_String") {
-                                                this.emitLine(
-                                                    "hashtable_add(x",
-                                                    child_level.toString(),
-                                                    ", e",
-                                                    child_level.toString(),
-                                                    "->string, strdup(",
-                                                    cJSON.items?.getValue,
-                                                    "(e",
-                                                    child_level.toString(),
-                                                    ")), sizeof(",
-                                                    cJSON.items?.cType,
-                                                    " *));"
-                                                );
-                                            } else if (
-                                                cJSON.items?.cjsonType === "cJSON_Object" ||
-                                                cJSON.items?.cjsonType === "cJSON_Union"
-                                            ) {
-                                                this.emitLine(
-                                                    "hashtable_add(x",
-                                                    child_level.toString(),
-                                                    ", e",
-                                                    child_level.toString(),
-                                                    "->string, ",
-                                                    cJSON.items?.getValue,
-                                                    "(e",
-                                                    child_level.toString(),
-                                                    "), sizeof(",
-                                                    cJSON.items?.cType,
-                                                    " *));"
-                                                );
-                                            } else {
-                                                this.emitLine(
-                                                    // @ts-expect-error awaiting refactor
-                                                    cJSON.items?.cType,
-                                                    " * tmp",
-                                                    level > 0 ? level.toString() : "",
-                                                    " = cJSON_malloc(sizeof(",
-                                                    cJSON.items?.cType,
-                                                    "));"
-                                                );
-                                                this.emitBlock(
-                                                    ["if (NULL != tmp", level > 0 ? level.toString() : "", ")"],
-                                                    () => {
-                                                        this.emitLine(
-                                                            "* tmp",
-                                                            level > 0 ? level.toString() : "",
-                                                            " = ",
-                                                            // @ts-expect-error awaiting refactor
-                                                            cJSON.items?.getValue,
-                                                            "(e",
-                                                            child_level.toString(),
-                                                            ");"
+                                                    ", j",
+                                                    level > 0
+                                                        ? level.toString()
+                                                        : "",
+                                                    ")",
+                                                ],
+                                                () => {
+                                                    const add = (
+                                                        cJSON: TypeCJSON,
+                                                        level: number,
+                                                        child_level: number,
+                                                    ) => {
+                                                        if (
+                                                            cJSON.items
+                                                                ?.cjsonType ===
+                                                            "cJSON_Array"
+                                                        ) {
+                                                            /* Not supported */
+                                                        } else if (
+                                                            cJSON.items
+                                                                ?.cjsonType ===
+                                                            "cJSON_Map"
+                                                        ) {
+                                                            /* Not supported */
+                                                        } else if (
+                                                            cJSON.items
+                                                                ?.cjsonType ===
+                                                                "cJSON_Invalid" ||
+                                                            cJSON.items
+                                                                ?.cjsonType ===
+                                                                "cJSON_NULL"
+                                                        ) {
+                                                            this.emitLine(
+                                                                "hashtable_add(x",
+                                                                child_level.toString(),
+                                                                ", e",
+                                                                child_level.toString(),
+                                                                "->string, (",
+                                                                cJSON.items
+                                                                    ?.cType,
+                                                                " *)0xDEADBEEF, sizeof(",
+                                                                cJSON.items
+                                                                    ?.cType,
+                                                                " *));",
+                                                            );
+                                                        } else if (
+                                                            cJSON.items
+                                                                ?.cjsonType ===
+                                                            "cJSON_String"
+                                                        ) {
+                                                            this.emitLine(
+                                                                "hashtable_add(x",
+                                                                child_level.toString(),
+                                                                ", e",
+                                                                child_level.toString(),
+                                                                "->string, strdup(",
+                                                                cJSON.items
+                                                                    ?.getValue,
+                                                                "(e",
+                                                                child_level.toString(),
+                                                                ")), sizeof(",
+                                                                cJSON.items
+                                                                    ?.cType,
+                                                                " *));",
+                                                            );
+                                                        } else if (
+                                                            cJSON.items
+                                                                ?.cjsonType ===
+                                                                "cJSON_Object" ||
+                                                            cJSON.items
+                                                                ?.cjsonType ===
+                                                                "cJSON_Union"
+                                                        ) {
+                                                            this.emitLine(
+                                                                "hashtable_add(x",
+                                                                child_level.toString(),
+                                                                ", e",
+                                                                child_level.toString(),
+                                                                "->string, ",
+                                                                cJSON.items
+                                                                    ?.getValue,
+                                                                "(e",
+                                                                child_level.toString(),
+                                                                "), sizeof(",
+                                                                cJSON.items
+                                                                    ?.cType,
+                                                                " *));",
+                                                            );
+                                                        } else {
+                                                            this.emitLine(
+                                                                // @ts-expect-error awaiting refactor
+                                                                cJSON.items
+                                                                    ?.cType,
+                                                                " * tmp",
+                                                                level > 0
+                                                                    ? level.toString()
+                                                                    : "",
+                                                                " = cJSON_malloc(sizeof(",
+                                                                cJSON.items
+                                                                    ?.cType,
+                                                                "));",
+                                                            );
+                                                            this.emitBlock(
+                                                                [
+                                                                    "if (NULL != tmp",
+                                                                    level > 0
+                                                                        ? level.toString()
+                                                                        : "",
+                                                                    ")",
+                                                                ],
+                                                                () => {
+                                                                    this.emitLine(
+                                                                        "* tmp",
+                                                                        level >
+                                                                            0
+                                                                            ? level.toString()
+                                                                            : "",
+                                                                        " = ",
+                                                                        // @ts-expect-error awaiting refactor
+                                                                        cJSON
+                                                                            .items
+                                                                            ?.getValue,
+                                                                        "(e",
+                                                                        child_level.toString(),
+                                                                        ");",
+                                                                    );
+                                                                    this.emitLine(
+                                                                        "hashtable_add(x",
+                                                                        child_level.toString(),
+                                                                        ", e",
+                                                                        child_level.toString(),
+                                                                        "->string, tmp",
+                                                                        level >
+                                                                            0
+                                                                            ? level.toString()
+                                                                            : "",
+                                                                        ", sizeof(",
+                                                                        // @ts-expect-error awaiting refactor
+                                                                        cJSON
+                                                                            .items
+                                                                            ?.cType,
+                                                                        " *));",
+                                                                    );
+                                                                },
+                                                            );
+                                                        }
+                                                    };
+
+                                                    if (
+                                                        cJSON.items?.isNullable
+                                                    ) {
+                                                        this.emitBlock(
+                                                            [
+                                                                "if (!cJSON_IsNull(e",
+                                                                child_level.toString(),
+                                                                "))",
+                                                            ],
+                                                            () => {
+                                                                add(
+                                                                    cJSON,
+                                                                    level,
+                                                                    child_level,
+                                                                );
+                                                            },
                                                         );
-                                                        this.emitLine(
-                                                            "hashtable_add(x",
-                                                            child_level.toString(),
-                                                            ", e",
-                                                            child_level.toString(),
-                                                            "->string, tmp",
-                                                            level > 0 ? level.toString() : "",
-                                                            ", sizeof(",
-                                                            // @ts-expect-error awaiting refactor
-                                                            cJSON.items?.cType,
-                                                            " *));"
+                                                        this.emitBlock(
+                                                            ["else"],
+                                                            () => {
+                                                                this.emitLine(
+                                                                    "hashtable_add(x",
+                                                                    child_level.toString(),
+                                                                    ", e",
+                                                                    child_level.toString(),
+                                                                    "->string, (void *)0xDEADBEEF, sizeof(void *));",
+                                                                );
+                                                            },
+                                                        );
+                                                    } else {
+                                                        add(
+                                                            cJSON,
+                                                            level,
+                                                            child_level,
                                                         );
                                                     }
-                                                );
-                                            }
-                                        };
-
-                                        if (cJSON.items?.isNullable) {
-                                            this.emitBlock(
-                                                ["if (!cJSON_IsNull(e", child_level.toString(), "))"],
-                                                () => {
-                                                    add(cJSON, level, child_level);
-                                                }
+                                                },
                                             );
-                                            this.emitBlock(["else"], () => {
-                                                this.emitLine(
-                                                    "hashtable_add(x",
-                                                    child_level.toString(),
-                                                    ", e",
-                                                    child_level.toString(),
-                                                    "->string, (void *)0xDEADBEEF, sizeof(void *));"
-                                                );
-                                            });
-                                        } else {
-                                            add(cJSON, level, child_level);
-                                        }
-                                    }
-                                );
-                                this.emitLine(
-                                    "x->value.",
-                                    this.nameForUnionMember(unionType, type),
-                                    " = x",
-                                    child_level.toString(),
-                                    ";"
-                                );
-                            });
-                        } else if (cJSON.cjsonType === "cJSON_Invalid" || cJSON.cjsonType === "cJSON_NULL") {
-                            this.emitLine(
-                                "x->value.",
-                                this.nameForUnionMember(unionType, type),
-                                " = (",
-                                cJSON.cType,
-                                " *)0xDEADBEEF;"
-                            );
-                        } else if (cJSON.cjsonType === "cJSON_String") {
-                            this.emitLine(
-                                "x->value.",
-                                this.nameForUnionMember(unionType, type),
-                                " = strdup(",
-                                cJSON.getValue,
-                                "(j));"
-                            );
-                        } else {
-                            this.emitLine(
-                                "x->value.",
-                                this.nameForUnionMember(unionType, type),
-                                " = ",
-                                cJSON.getValue,
-                                "(j);"
-                            );
-                        }
-                    });
-                    onFirst = false;
-                }
-            });
-            this.emitLine("return x;");
-        });
+                                            this.emitLine(
+                                                "x->value.",
+                                                this.nameForUnionMember(
+                                                    unionType,
+                                                    type,
+                                                ),
+                                                " = x",
+                                                child_level.toString(),
+                                                ";",
+                                            );
+                                        },
+                                    );
+                                } else if (
+                                    cJSON.cjsonType === "cJSON_Invalid" ||
+                                    cJSON.cjsonType === "cJSON_NULL"
+                                ) {
+                                    this.emitLine(
+                                        "x->value.",
+                                        this.nameForUnionMember(
+                                            unionType,
+                                            type,
+                                        ),
+                                        " = (",
+                                        cJSON.cType,
+                                        " *)0xDEADBEEF;",
+                                    );
+                                } else if (cJSON.cjsonType === "cJSON_String") {
+                                    this.emitLine(
+                                        "x->value.",
+                                        this.nameForUnionMember(
+                                            unionType,
+                                            type,
+                                        ),
+                                        " = strdup(",
+                                        cJSON.getValue,
+                                        "(j));",
+                                    );
+                                } else {
+                                    this.emitLine(
+                                        "x->value.",
+                                        this.nameForUnionMember(
+                                            unionType,
+                                            type,
+                                        ),
+                                        " = ",
+                                        cJSON.getValue,
+                                        "(j);",
+                                    );
+                                }
+                            },
+                        );
+                        onFirst = false;
+                    }
+                });
+                this.emitLine("return x;");
+            },
+        );
         this.ensureBlankLine();
 
         /* Create unionName to cJSON generator function */
         this.emitBlock(
-            ["cJSON * cJSON_Create", unionName, "(", this.withConst(["struct ", unionName]), " * x)"],
+            [
+                "cJSON * cJSON_Create",
+                unionName,
+                "(",
+                this.withConst(["struct ", unionName]),
+                " * x)",
+            ],
             () => {
                 this.emitLine("cJSON * j = NULL;");
                 this.emitBlock(["if (NULL != x)"], () => {
@@ -840,9 +1209,16 @@ export class CJSONRenderer extends ConvenienceRenderer {
                     for (const type of nonNulls) {
                         const cJSON = this.quicktypeTypeToCJSON(type, false);
                         this.emitBlock(
-                            [onFirst === true ? "if (" : "else if (", cJSON.cjsonType, " == x->type)"],
+                            [
+                                onFirst === true ? "if (" : "else if (",
+                                cJSON.cjsonType,
+                                " == x->type)",
+                            ],
                             () => {
-                                if (cJSON.cjsonType === "cJSON_Array" && cJSON.items !== undefined) {
+                                if (
+                                    cJSON.cjsonType === "cJSON_Array" &&
+                                    cJSON.items !== undefined
+                                ) {
                                     const level = 0;
                                     const child_level = 1;
                                     this.emitLine(
@@ -850,473 +1226,767 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                         child_level.toString(),
                                         " = ",
                                         cJSON.createObject,
-                                        "();"
+                                        "();",
                                     );
-                                    this.emitBlock(["if (NULL != j", child_level.toString(), ")"], () => {
-                                        this.emitLine(
-                                            // @ts-expect-error awaiting refactor
-                                            cJSON.items?.cType,
-                                            " * x",
+                                    this.emitBlock(
+                                        [
+                                            "if (NULL != j",
                                             child_level.toString(),
-                                            " = list_get_head(x",
-                                            level > 0 ? level.toString() : "",
-                                            "->value.",
-                                            this.nameForUnionMember(unionType, type),
-                                            ");"
-                                        );
-                                        this.emitBlock(["while (NULL != x", child_level.toString(), ")"], () => {
-                                            const add = (cJSON: TypeCJSON, child_level: number) => {
-                                                if (cJSON.items?.cjsonType === "cJSON_Array") {
-                                                    /* Not supported */
-                                                } else if (cJSON.items?.cjsonType === "cJSON_Map") {
-                                                    /* Not supported */
-                                                } else if (cJSON.items?.cjsonType === "cJSON_Invalid") {
-                                                    /* Nothing to do */
-                                                } else if (cJSON.items?.cjsonType === "cJSON_NULL") {
-                                                    this.emitLine(
-                                                        "cJSON_AddItemToArray(j",
-                                                        child_level.toString(),
-                                                        ", ",
-                                                        cJSON.items?.createObject,
-                                                        "());"
-                                                    );
-                                                } else if (
-                                                    cJSON.items?.cjsonType === "cJSON_String" ||
-                                                    cJSON.items?.cjsonType === "cJSON_Object" ||
-                                                    cJSON.items?.cjsonType === "cJSON_Union"
-                                                ) {
-                                                    this.emitLine(
-                                                        "cJSON_AddItemToArray(j",
-                                                        child_level.toString(),
-                                                        ", ",
-                                                        cJSON.items?.createObject,
-                                                        "(x",
-                                                        child_level.toString(),
-                                                        "));"
-                                                    );
-                                                } else {
-                                                    this.emitLine(
-                                                        "cJSON_AddItemToArray(j",
-                                                        child_level.toString(),
-                                                        ", ",
-                                                        // @ts-expect-error awaiting refactor
-                                                        cJSON.items?.createObject,
-                                                        "(*x",
-                                                        child_level.toString(),
-                                                        "));"
-                                                    );
-                                                }
-                                            };
-
-                                            if (cJSON.items?.isNullable) {
-                                                this.emitBlock(
-                                                    ["if ((void *)0xDEADBEEF != x", child_level.toString(), ")"],
-                                                    () => {
-                                                        add(cJSON, child_level);
-                                                    }
-                                                );
-                                                this.emitBlock(["else"], () => {
-                                                    this.emitLine(
-                                                        "cJSON_AddItemToArray(j",
-                                                        child_level.toString(),
-                                                        ", cJSON_CreateNull());"
-                                                    );
-                                                });
-                                            } else {
-                                                add(cJSON, child_level);
-                                            }
-
+                                            ")",
+                                        ],
+                                        () => {
                                             this.emitLine(
-                                                "x",
+                                                // @ts-expect-error awaiting refactor
+                                                cJSON.items?.cType,
+                                                " * x",
                                                 child_level.toString(),
-                                                " = list_get_next(x",
-                                                level > 0 ? level.toString() : "",
+                                                " = list_get_head(x",
+                                                level > 0
+                                                    ? level.toString()
+                                                    : "",
                                                 "->value.",
-                                                this.nameForUnionMember(unionType, type),
-                                                ");"
+                                                this.nameForUnionMember(
+                                                    unionType,
+                                                    type,
+                                                ),
+                                                ");",
                                             );
-                                        });
-                                        this.emitLine("j = j", child_level.toString(), ";");
-                                    });
-                                } else if (cJSON.cjsonType === "cJSON_Map" && cJSON.items !== undefined) {
-                                    const level = 0;
-                                    const child_level = 1;
-                                    this.emitLine(
-                                        "cJSON * j",
-                                        child_level.toString(),
-                                        " = ",
-                                        cJSON.createObject,
-                                        "();"
-                                    );
-                                    this.emitBlock(["if (NULL != j", child_level.toString(), ")"], () => {
-                                        this.emitLine("char **keys", child_level.toString(), " = NULL;");
-                                        this.emitLine(
-                                            "size_t count",
-                                            child_level.toString(),
-                                            " = hashtable_get_keys(x",
-                                            level > 0 ? level.toString() : "",
-                                            "->value.",
-                                            this.nameForUnionMember(unionType, type),
-                                            ", &keys",
-                                            child_level.toString(),
-                                            ");"
-                                        );
-                                        this.emitBlock(["if (NULL != keys", child_level.toString(), ")"], () => {
                                             this.emitBlock(
                                                 [
-                                                    "for (size_t index",
+                                                    "while (NULL != x",
                                                     child_level.toString(),
-                                                    " = 0; index",
-                                                    child_level.toString(),
-                                                    " < count",
-                                                    child_level.toString(),
-                                                    "; index",
-                                                    child_level.toString(),
-                                                    "++)"
+                                                    ")",
                                                 ],
                                                 () => {
-                                                    this.emitLine(
-                                                        // @ts-expect-error awaiting refactor
-                                                        cJSON.items?.cType,
-                                                        " *x",
-                                                        child_level.toString(),
-                                                        " = hashtable_lookup(x",
-                                                        level > 0 ? level.toString() : "",
-                                                        "->value.",
-                                                        this.nameForUnionMember(unionType, type),
-                                                        ", keys",
-                                                        child_level.toString(),
-                                                        "[index",
-                                                        child_level.toString(),
-                                                        "]);"
-                                                    );
-                                                    const add = (cJSON: TypeCJSON, child_level: number) => {
-                                                        if (cJSON.items?.cjsonType === "cJSON_Array") {
+                                                    const add = (
+                                                        cJSON: TypeCJSON,
+                                                        child_level: number,
+                                                    ) => {
+                                                        if (
+                                                            cJSON.items
+                                                                ?.cjsonType ===
+                                                            "cJSON_Array"
+                                                        ) {
                                                             /* Not supported */
-                                                        } else if (cJSON.items?.cjsonType === "cJSON_Map") {
-                                                            /* Not supported */
-                                                        } else if (cJSON.items?.cjsonType === "cJSON_Invalid") {
-                                                            /* Nothing to do */
-                                                        } else if (cJSON.items?.cjsonType === "cJSON_NULL") {
-                                                            this.emitLine(
-                                                                cJSON.addToObject,
-                                                                "(j",
-                                                                child_level.toString(),
-                                                                ", keys",
-                                                                child_level.toString(),
-                                                                "[index",
-                                                                child_level.toString(),
-                                                                "], ",
-                                                                cJSON.items?.createObject,
-                                                                "());"
-                                                            );
                                                         } else if (
-                                                            cJSON.items?.cjsonType === "cJSON_String" ||
-                                                            cJSON.items?.cjsonType === "cJSON_Object" ||
-                                                            cJSON.items?.cjsonType === "cJSON_Union"
+                                                            cJSON.items
+                                                                ?.cjsonType ===
+                                                            "cJSON_Map"
+                                                        ) {
+                                                            /* Not supported */
+                                                        } else if (
+                                                            cJSON.items
+                                                                ?.cjsonType ===
+                                                            "cJSON_Invalid"
+                                                        ) {
+                                                            /* Nothing to do */
+                                                        } else if (
+                                                            cJSON.items
+                                                                ?.cjsonType ===
+                                                            "cJSON_NULL"
                                                         ) {
                                                             this.emitLine(
-                                                                cJSON.addToObject,
-                                                                "(j",
+                                                                "cJSON_AddItemToArray(j",
                                                                 child_level.toString(),
-                                                                ", keys",
+                                                                ", ",
+                                                                cJSON.items
+                                                                    ?.createObject,
+                                                                "());",
+                                                            );
+                                                        } else if (
+                                                            cJSON.items
+                                                                ?.cjsonType ===
+                                                                "cJSON_String" ||
+                                                            cJSON.items
+                                                                ?.cjsonType ===
+                                                                "cJSON_Object" ||
+                                                            cJSON.items
+                                                                ?.cjsonType ===
+                                                                "cJSON_Union"
+                                                        ) {
+                                                            this.emitLine(
+                                                                "cJSON_AddItemToArray(j",
                                                                 child_level.toString(),
-                                                                "[index",
-                                                                child_level.toString(),
-                                                                "], ",
-                                                                cJSON.items?.createObject,
+                                                                ", ",
+                                                                cJSON.items
+                                                                    ?.createObject,
                                                                 "(x",
                                                                 child_level.toString(),
-                                                                "));"
+                                                                "));",
                                                             );
                                                         } else {
                                                             this.emitLine(
-                                                                cJSON.addToObject,
-                                                                "(j",
+                                                                "cJSON_AddItemToArray(j",
                                                                 child_level.toString(),
-                                                                ", keys",
-                                                                child_level.toString(),
-                                                                "[index",
-                                                                child_level.toString(),
-                                                                "], ",
+                                                                ", ",
                                                                 // @ts-expect-error awaiting refactor
-                                                                cJSON.items?.createObject,
+                                                                cJSON.items
+                                                                    ?.createObject,
                                                                 "(*x",
                                                                 child_level.toString(),
-                                                                "));"
+                                                                "));",
                                                             );
                                                         }
                                                     };
 
-                                                    if (cJSON.items?.isNullable) {
+                                                    if (
+                                                        cJSON.items?.isNullable
+                                                    ) {
                                                         this.emitBlock(
                                                             [
                                                                 "if ((void *)0xDEADBEEF != x",
                                                                 child_level.toString(),
-                                                                ")"
+                                                                ")",
                                                             ],
                                                             () => {
-                                                                add(cJSON, child_level);
-                                                            }
+                                                                add(
+                                                                    cJSON,
+                                                                    child_level,
+                                                                );
+                                                            },
                                                         );
-                                                        this.emitBlock(["else"], () => {
+                                                        this.emitBlock(
+                                                            ["else"],
+                                                            () => {
+                                                                this.emitLine(
+                                                                    "cJSON_AddItemToArray(j",
+                                                                    child_level.toString(),
+                                                                    ", cJSON_CreateNull());",
+                                                                );
+                                                            },
+                                                        );
+                                                    } else {
+                                                        add(cJSON, child_level);
+                                                    }
+
+                                                    this.emitLine(
+                                                        "x",
+                                                        child_level.toString(),
+                                                        " = list_get_next(x",
+                                                        level > 0
+                                                            ? level.toString()
+                                                            : "",
+                                                        "->value.",
+                                                        this.nameForUnionMember(
+                                                            unionType,
+                                                            type,
+                                                        ),
+                                                        ");",
+                                                    );
+                                                },
+                                            );
+                                            this.emitLine(
+                                                "j = j",
+                                                child_level.toString(),
+                                                ";",
+                                            );
+                                        },
+                                    );
+                                } else if (
+                                    cJSON.cjsonType === "cJSON_Map" &&
+                                    cJSON.items !== undefined
+                                ) {
+                                    const level = 0;
+                                    const child_level = 1;
+                                    this.emitLine(
+                                        "cJSON * j",
+                                        child_level.toString(),
+                                        " = ",
+                                        cJSON.createObject,
+                                        "();",
+                                    );
+                                    this.emitBlock(
+                                        [
+                                            "if (NULL != j",
+                                            child_level.toString(),
+                                            ")",
+                                        ],
+                                        () => {
+                                            this.emitLine(
+                                                "char **keys",
+                                                child_level.toString(),
+                                                " = NULL;",
+                                            );
+                                            this.emitLine(
+                                                "size_t count",
+                                                child_level.toString(),
+                                                " = hashtable_get_keys(x",
+                                                level > 0
+                                                    ? level.toString()
+                                                    : "",
+                                                "->value.",
+                                                this.nameForUnionMember(
+                                                    unionType,
+                                                    type,
+                                                ),
+                                                ", &keys",
+                                                child_level.toString(),
+                                                ");",
+                                            );
+                                            this.emitBlock(
+                                                [
+                                                    "if (NULL != keys",
+                                                    child_level.toString(),
+                                                    ")",
+                                                ],
+                                                () => {
+                                                    this.emitBlock(
+                                                        [
+                                                            "for (size_t index",
+                                                            child_level.toString(),
+                                                            " = 0; index",
+                                                            child_level.toString(),
+                                                            " < count",
+                                                            child_level.toString(),
+                                                            "; index",
+                                                            child_level.toString(),
+                                                            "++)",
+                                                        ],
+                                                        () => {
                                                             this.emitLine(
-                                                                cJSON.addToObject,
-                                                                "(j",
+                                                                // @ts-expect-error awaiting refactor
+                                                                cJSON.items
+                                                                    ?.cType,
+                                                                " *x",
                                                                 child_level.toString(),
+                                                                " = hashtable_lookup(x",
+                                                                level > 0
+                                                                    ? level.toString()
+                                                                    : "",
+                                                                "->value.",
+                                                                this.nameForUnionMember(
+                                                                    unionType,
+                                                                    type,
+                                                                ),
                                                                 ", keys",
                                                                 child_level.toString(),
                                                                 "[index",
                                                                 child_level.toString(),
-                                                                "], cJSON_CreateNull());"
+                                                                "]);",
                                                             );
-                                                        });
-                                                    } else {
-                                                        add(cJSON, child_level);
-                                                    }
-                                                }
+                                                            const add = (
+                                                                cJSON: TypeCJSON,
+                                                                child_level: number,
+                                                            ) => {
+                                                                if (
+                                                                    cJSON.items
+                                                                        ?.cjsonType ===
+                                                                    "cJSON_Array"
+                                                                ) {
+                                                                    /* Not supported */
+                                                                } else if (
+                                                                    cJSON.items
+                                                                        ?.cjsonType ===
+                                                                    "cJSON_Map"
+                                                                ) {
+                                                                    /* Not supported */
+                                                                } else if (
+                                                                    cJSON.items
+                                                                        ?.cjsonType ===
+                                                                    "cJSON_Invalid"
+                                                                ) {
+                                                                    /* Nothing to do */
+                                                                } else if (
+                                                                    cJSON.items
+                                                                        ?.cjsonType ===
+                                                                    "cJSON_NULL"
+                                                                ) {
+                                                                    this.emitLine(
+                                                                        cJSON.addToObject,
+                                                                        "(j",
+                                                                        child_level.toString(),
+                                                                        ", keys",
+                                                                        child_level.toString(),
+                                                                        "[index",
+                                                                        child_level.toString(),
+                                                                        "], ",
+                                                                        cJSON
+                                                                            .items
+                                                                            ?.createObject,
+                                                                        "());",
+                                                                    );
+                                                                } else if (
+                                                                    cJSON.items
+                                                                        ?.cjsonType ===
+                                                                        "cJSON_String" ||
+                                                                    cJSON.items
+                                                                        ?.cjsonType ===
+                                                                        "cJSON_Object" ||
+                                                                    cJSON.items
+                                                                        ?.cjsonType ===
+                                                                        "cJSON_Union"
+                                                                ) {
+                                                                    this.emitLine(
+                                                                        cJSON.addToObject,
+                                                                        "(j",
+                                                                        child_level.toString(),
+                                                                        ", keys",
+                                                                        child_level.toString(),
+                                                                        "[index",
+                                                                        child_level.toString(),
+                                                                        "], ",
+                                                                        cJSON
+                                                                            .items
+                                                                            ?.createObject,
+                                                                        "(x",
+                                                                        child_level.toString(),
+                                                                        "));",
+                                                                    );
+                                                                } else {
+                                                                    this.emitLine(
+                                                                        cJSON.addToObject,
+                                                                        "(j",
+                                                                        child_level.toString(),
+                                                                        ", keys",
+                                                                        child_level.toString(),
+                                                                        "[index",
+                                                                        child_level.toString(),
+                                                                        "], ",
+                                                                        // @ts-expect-error awaiting refactor
+                                                                        cJSON
+                                                                            .items
+                                                                            ?.createObject,
+                                                                        "(*x",
+                                                                        child_level.toString(),
+                                                                        "));",
+                                                                    );
+                                                                }
+                                                            };
+
+                                                            if (
+                                                                cJSON.items
+                                                                    ?.isNullable
+                                                            ) {
+                                                                this.emitBlock(
+                                                                    [
+                                                                        "if ((void *)0xDEADBEEF != x",
+                                                                        child_level.toString(),
+                                                                        ")",
+                                                                    ],
+                                                                    () => {
+                                                                        add(
+                                                                            cJSON,
+                                                                            child_level,
+                                                                        );
+                                                                    },
+                                                                );
+                                                                this.emitBlock(
+                                                                    ["else"],
+                                                                    () => {
+                                                                        this.emitLine(
+                                                                            cJSON.addToObject,
+                                                                            "(j",
+                                                                            child_level.toString(),
+                                                                            ", keys",
+                                                                            child_level.toString(),
+                                                                            "[index",
+                                                                            child_level.toString(),
+                                                                            "], cJSON_CreateNull());",
+                                                                        );
+                                                                    },
+                                                                );
+                                                            } else {
+                                                                add(
+                                                                    cJSON,
+                                                                    child_level,
+                                                                );
+                                                            }
+                                                        },
+                                                    );
+                                                    this.emitLine(
+                                                        "cJSON_free(keys",
+                                                        child_level.toString(),
+                                                        ");",
+                                                    );
+                                                },
                                             );
-                                            this.emitLine("cJSON_free(keys", child_level.toString(), ");");
-                                        });
-                                        this.emitLine("j = j", child_level.toString(), ";");
-                                    });
-                                } else if (cJSON.cjsonType === "cJSON_Invalid") {
+                                            this.emitLine(
+                                                "j = j",
+                                                child_level.toString(),
+                                                ";",
+                                            );
+                                        },
+                                    );
+                                } else if (
+                                    cJSON.cjsonType === "cJSON_Invalid"
+                                ) {
                                     /* Nothing to do */
                                 } else if (cJSON.cjsonType === "cJSON_NULL") {
-                                    this.emitLine("j = ", cJSON.createObject, "();");
+                                    this.emitLine(
+                                        "j = ",
+                                        cJSON.createObject,
+                                        "();",
+                                    );
                                 } else {
                                     this.emitLine(
                                         "j = ",
                                         cJSON.createObject,
                                         "(x->value.",
-                                        this.nameForUnionMember(unionType, type),
-                                        ");"
+                                        this.nameForUnionMember(
+                                            unionType,
+                                            type,
+                                        ),
+                                        ");",
                                     );
                                 }
-                            }
+                            },
                         );
                         onFirst = false;
                     }
                 });
                 this.emitLine("return j;");
-            }
+            },
         );
         this.ensureBlankLine();
 
         /* Create unionName delete function */
-        this.emitBlock(["void cJSON_Delete", unionName, "(struct ", unionName, " * x)"], () => {
-            this.emitBlock(["if (NULL != x)"], () => {
-                let onFirst = true;
-                for (const type of nonNulls) {
-                    const cJSON = this.quicktypeTypeToCJSON(type, false);
-                    this.emitBlock([onFirst === true ? "if (" : "else if (", cJSON.cjsonType, " == x->type)"], () => {
-                        if (cJSON.cjsonType === "cJSON_Array" && cJSON.items !== undefined) {
-                            const level = 0;
-                            const child_level = 1;
-                            this.emitBlock(
-                                [
-                                    "if (NULL != x",
-                                    level > 0 ? level.toString() : "",
-                                    "->value.",
-                                    this.nameForUnionMember(unionType, type),
-                                    ")"
-                                ],
-                                () => {
-                                    this.emitLine(
-                                        // @ts-expect-error awaiting refactor
-                                        cJSON.items?.cType,
-                                        " * x",
-                                        child_level.toString(),
-                                        " = list_get_head(x",
-                                        level > 0 ? level.toString() : "",
-                                        "->value.",
-                                        this.nameForUnionMember(unionType, type),
-                                        ");"
-                                    );
-                                    this.emitBlock(["while (NULL != x", child_level.toString(), ")"], () => {
-                                        if (cJSON.items?.cjsonType === "cJSON_Array") {
-                                            /* Not supported */
-                                        } else if (cJSON.items?.cjsonType === "cJSON_Map") {
-                                            /* Not supported */
-                                        } else if (
-                                            cJSON.items?.cjsonType === "cJSON_Invalid" ||
-                                            cJSON.items?.cjsonType === "cJSON_NULL"
-                                        ) {
-                                            /* Nothing to do */
-                                        } else {
-                                            if (cJSON.items?.isNullable) {
-                                                this.emitBlock(
-                                                    ["if ((void *)0xDEADBEEF != x", child_level.toString(), ")"],
-                                                    () => {
-                                                        this.emitLine(
-                                                            // @ts-expect-error awaiting refactor
-                                                            cJSON.items?.deleteType,
-                                                            "(x",
-                                                            child_level.toString(),
-                                                            ");"
-                                                        );
-                                                    }
-                                                );
-                                            } else {
-                                                this.emitLine(
-                                                    // @ts-expect-error awaiting refactor
-                                                    cJSON.items?.deleteType,
-                                                    "(x",
-                                                    child_level.toString(),
-                                                    ");"
-                                                );
-                                            }
-                                        }
-
-                                        this.emitLine(
-                                            "x",
-                                            child_level.toString(),
-                                            " = list_get_next(x",
+        this.emitBlock(
+            ["void cJSON_Delete", unionName, "(struct ", unionName, " * x)"],
+            () => {
+                this.emitBlock(["if (NULL != x)"], () => {
+                    let onFirst = true;
+                    for (const type of nonNulls) {
+                        const cJSON = this.quicktypeTypeToCJSON(type, false);
+                        this.emitBlock(
+                            [
+                                onFirst === true ? "if (" : "else if (",
+                                cJSON.cjsonType,
+                                " == x->type)",
+                            ],
+                            () => {
+                                if (
+                                    cJSON.cjsonType === "cJSON_Array" &&
+                                    cJSON.items !== undefined
+                                ) {
+                                    const level = 0;
+                                    const child_level = 1;
+                                    this.emitBlock(
+                                        [
+                                            "if (NULL != x",
                                             level > 0 ? level.toString() : "",
                                             "->value.",
-                                            this.nameForUnionMember(unionType, type),
-                                            ");"
-                                        );
-                                    });
-                                    this.emitLine(
-                                        cJSON.deleteType,
-                                        "(x",
-                                        level > 0 ? level.toString() : "",
-                                        "->value.",
-                                        this.nameForUnionMember(unionType, type),
-                                        ");"
-                                    );
-                                }
-                            );
-                        } else if (cJSON.cjsonType === "cJSON_Map" && cJSON.items !== undefined) {
-                            const level = 0;
-                            const child_level = 1;
-                            this.emitBlock(
-                                [
-                                    "if (NULL != x",
-                                    level > 0 ? level.toString() : "",
-                                    "->value.",
-                                    this.nameForUnionMember(unionType, type),
-                                    ")"
-                                ],
-                                () => {
-                                    this.emitLine("char **keys", child_level.toString(), " = NULL;");
-                                    this.emitLine(
-                                        "size_t count",
-                                        child_level.toString(),
-                                        " = hashtable_get_keys(x",
-                                        level > 0 ? level.toString() : "",
-                                        "->value.",
-                                        this.nameForUnionMember(unionType, type),
-                                        ", &keys",
-                                        child_level.toString(),
-                                        ");"
-                                    );
-                                    this.emitBlock(["if (NULL != keys", child_level.toString(), ")"], () => {
-                                        this.emitBlock(
-                                            [
-                                                "for (size_t index",
+                                            this.nameForUnionMember(
+                                                unionType,
+                                                type,
+                                            ),
+                                            ")",
+                                        ],
+                                        () => {
+                                            this.emitLine(
+                                                // @ts-expect-error awaiting refactor
+                                                cJSON.items?.cType,
+                                                " * x",
                                                 child_level.toString(),
-                                                " = 0; index",
-                                                child_level.toString(),
-                                                " < count",
-                                                child_level.toString(),
-                                                "; index",
-                                                child_level.toString(),
-                                                "++)"
-                                            ],
-                                            () => {
-                                                this.emitLine(
-                                                    // @ts-expect-error awaiting refactor
-                                                    cJSON.items?.cType,
-                                                    " *x",
+                                                " = list_get_head(x",
+                                                level > 0
+                                                    ? level.toString()
+                                                    : "",
+                                                "->value.",
+                                                this.nameForUnionMember(
+                                                    unionType,
+                                                    type,
+                                                ),
+                                                ");",
+                                            );
+                                            this.emitBlock(
+                                                [
+                                                    "while (NULL != x",
                                                     child_level.toString(),
-                                                    " = hashtable_lookup(x",
-                                                    level > 0 ? level.toString() : "",
-                                                    "->value.",
-                                                    this.nameForUnionMember(unionType, type),
-                                                    ", keys",
-                                                    child_level.toString(),
-                                                    "[index",
-                                                    child_level.toString(),
-                                                    "]);"
-                                                );
-                                                this.emitBlock(["if (NULL != x", child_level.toString(), ")"], () => {
-                                                    if (cJSON.items?.cjsonType === "cJSON_Array") {
-                                                        /* Not supported */
-                                                    } else if (cJSON.items?.cjsonType === "cJSON_Map") {
+                                                    ")",
+                                                ],
+                                                () => {
+                                                    if (
+                                                        cJSON.items
+                                                            ?.cjsonType ===
+                                                        "cJSON_Array"
+                                                    ) {
                                                         /* Not supported */
                                                     } else if (
-                                                        cJSON.items?.cjsonType === "cJSON_Invalid" ||
-                                                        cJSON.items?.cjsonType === "cJSON_NULL"
+                                                        cJSON.items
+                                                            ?.cjsonType ===
+                                                        "cJSON_Map"
+                                                    ) {
+                                                        /* Not supported */
+                                                    } else if (
+                                                        cJSON.items
+                                                            ?.cjsonType ===
+                                                            "cJSON_Invalid" ||
+                                                        cJSON.items
+                                                            ?.cjsonType ===
+                                                            "cJSON_NULL"
                                                     ) {
                                                         /* Nothing to do */
                                                     } else {
-                                                        if (cJSON.items?.isNullable) {
+                                                        if (
+                                                            cJSON.items
+                                                                ?.isNullable
+                                                        ) {
                                                             this.emitBlock(
                                                                 [
                                                                     "if ((void *)0xDEADBEEF != x",
                                                                     child_level.toString(),
-                                                                    ")"
+                                                                    ")",
                                                                 ],
                                                                 () => {
                                                                     this.emitLine(
                                                                         // @ts-expect-error awaiting refactor
-                                                                        cJSON.items?.deleteType,
+                                                                        cJSON
+                                                                            .items
+                                                                            ?.deleteType,
                                                                         "(x",
                                                                         child_level.toString(),
-                                                                        ");"
+                                                                        ");",
                                                                     );
-                                                                }
+                                                                },
                                                             );
                                                         } else {
                                                             this.emitLine(
                                                                 // @ts-expect-error awaiting refactor
-                                                                cJSON.items?.deleteType,
+                                                                cJSON.items
+                                                                    ?.deleteType,
                                                                 "(x",
                                                                 child_level.toString(),
-                                                                ");"
+                                                                ");",
                                                             );
                                                         }
                                                     }
-                                                });
-                                            }
-                                        );
-                                        this.emitLine("cJSON_free(keys", child_level.toString(), ");");
-                                    });
+
+                                                    this.emitLine(
+                                                        "x",
+                                                        child_level.toString(),
+                                                        " = list_get_next(x",
+                                                        level > 0
+                                                            ? level.toString()
+                                                            : "",
+                                                        "->value.",
+                                                        this.nameForUnionMember(
+                                                            unionType,
+                                                            type,
+                                                        ),
+                                                        ");",
+                                                    );
+                                                },
+                                            );
+                                            this.emitLine(
+                                                cJSON.deleteType,
+                                                "(x",
+                                                level > 0
+                                                    ? level.toString()
+                                                    : "",
+                                                "->value.",
+                                                this.nameForUnionMember(
+                                                    unionType,
+                                                    type,
+                                                ),
+                                                ");",
+                                            );
+                                        },
+                                    );
+                                } else if (
+                                    cJSON.cjsonType === "cJSON_Map" &&
+                                    cJSON.items !== undefined
+                                ) {
+                                    const level = 0;
+                                    const child_level = 1;
+                                    this.emitBlock(
+                                        [
+                                            "if (NULL != x",
+                                            level > 0 ? level.toString() : "",
+                                            "->value.",
+                                            this.nameForUnionMember(
+                                                unionType,
+                                                type,
+                                            ),
+                                            ")",
+                                        ],
+                                        () => {
+                                            this.emitLine(
+                                                "char **keys",
+                                                child_level.toString(),
+                                                " = NULL;",
+                                            );
+                                            this.emitLine(
+                                                "size_t count",
+                                                child_level.toString(),
+                                                " = hashtable_get_keys(x",
+                                                level > 0
+                                                    ? level.toString()
+                                                    : "",
+                                                "->value.",
+                                                this.nameForUnionMember(
+                                                    unionType,
+                                                    type,
+                                                ),
+                                                ", &keys",
+                                                child_level.toString(),
+                                                ");",
+                                            );
+                                            this.emitBlock(
+                                                [
+                                                    "if (NULL != keys",
+                                                    child_level.toString(),
+                                                    ")",
+                                                ],
+                                                () => {
+                                                    this.emitBlock(
+                                                        [
+                                                            "for (size_t index",
+                                                            child_level.toString(),
+                                                            " = 0; index",
+                                                            child_level.toString(),
+                                                            " < count",
+                                                            child_level.toString(),
+                                                            "; index",
+                                                            child_level.toString(),
+                                                            "++)",
+                                                        ],
+                                                        () => {
+                                                            this.emitLine(
+                                                                // @ts-expect-error awaiting refactor
+                                                                cJSON.items
+                                                                    ?.cType,
+                                                                " *x",
+                                                                child_level.toString(),
+                                                                " = hashtable_lookup(x",
+                                                                level > 0
+                                                                    ? level.toString()
+                                                                    : "",
+                                                                "->value.",
+                                                                this.nameForUnionMember(
+                                                                    unionType,
+                                                                    type,
+                                                                ),
+                                                                ", keys",
+                                                                child_level.toString(),
+                                                                "[index",
+                                                                child_level.toString(),
+                                                                "]);",
+                                                            );
+                                                            this.emitBlock(
+                                                                [
+                                                                    "if (NULL != x",
+                                                                    child_level.toString(),
+                                                                    ")",
+                                                                ],
+                                                                () => {
+                                                                    if (
+                                                                        cJSON
+                                                                            .items
+                                                                            ?.cjsonType ===
+                                                                        "cJSON_Array"
+                                                                    ) {
+                                                                        /* Not supported */
+                                                                    } else if (
+                                                                        cJSON
+                                                                            .items
+                                                                            ?.cjsonType ===
+                                                                        "cJSON_Map"
+                                                                    ) {
+                                                                        /* Not supported */
+                                                                    } else if (
+                                                                        cJSON
+                                                                            .items
+                                                                            ?.cjsonType ===
+                                                                            "cJSON_Invalid" ||
+                                                                        cJSON
+                                                                            .items
+                                                                            ?.cjsonType ===
+                                                                            "cJSON_NULL"
+                                                                    ) {
+                                                                        /* Nothing to do */
+                                                                    } else {
+                                                                        if (
+                                                                            cJSON
+                                                                                .items
+                                                                                ?.isNullable
+                                                                        ) {
+                                                                            this.emitBlock(
+                                                                                [
+                                                                                    "if ((void *)0xDEADBEEF != x",
+                                                                                    child_level.toString(),
+                                                                                    ")",
+                                                                                ],
+                                                                                () => {
+                                                                                    this.emitLine(
+                                                                                        // @ts-expect-error awaiting refactor
+                                                                                        cJSON
+                                                                                            .items
+                                                                                            ?.deleteType,
+                                                                                        "(x",
+                                                                                        child_level.toString(),
+                                                                                        ");",
+                                                                                    );
+                                                                                },
+                                                                            );
+                                                                        } else {
+                                                                            this.emitLine(
+                                                                                // @ts-expect-error awaiting refactor
+                                                                                cJSON
+                                                                                    .items
+                                                                                    ?.deleteType,
+                                                                                "(x",
+                                                                                child_level.toString(),
+                                                                                ");",
+                                                                            );
+                                                                        }
+                                                                    }
+                                                                },
+                                                            );
+                                                        },
+                                                    );
+                                                    this.emitLine(
+                                                        "cJSON_free(keys",
+                                                        child_level.toString(),
+                                                        ");",
+                                                    );
+                                                },
+                                            );
+                                            this.emitLine(
+                                                cJSON.deleteType,
+                                                "(x",
+                                                level > 0
+                                                    ? level.toString()
+                                                    : "",
+                                                "->value.",
+                                                this.nameForUnionMember(
+                                                    unionType,
+                                                    type,
+                                                ),
+                                                ");",
+                                            );
+                                        },
+                                    );
+                                } else if (
+                                    cJSON.cjsonType === "cJSON_Invalid" ||
+                                    cJSON.cjsonType === "cJSON_NULL"
+                                ) {
+                                    /* Nothing to do */
+                                } else if (
+                                    cJSON.cjsonType === "cJSON_String" ||
+                                    cJSON.cjsonType === "cJSON_Object" ||
+                                    cJSON.cjsonType === "cJSON_Union"
+                                ) {
                                     this.emitLine(
                                         cJSON.deleteType,
-                                        "(x",
-                                        level > 0 ? level.toString() : "",
-                                        "->value.",
-                                        this.nameForUnionMember(unionType, type),
-                                        ");"
+                                        "(x->value.",
+                                        this.nameForUnionMember(
+                                            unionType,
+                                            type,
+                                        ),
+                                        ");",
                                     );
+                                } else {
+                                    /* Nothing to do */
                                 }
-                            );
-                        } else if (cJSON.cjsonType === "cJSON_Invalid" || cJSON.cjsonType === "cJSON_NULL") {
-                            /* Nothing to do */
-                        } else if (
-                            cJSON.cjsonType === "cJSON_String" ||
-                            cJSON.cjsonType === "cJSON_Object" ||
-                            cJSON.cjsonType === "cJSON_Union"
-                        ) {
-                            this.emitLine(
-                                cJSON.deleteType,
-                                "(x->value.",
-                                this.nameForUnionMember(unionType, type),
-                                ");"
-                            );
-                        } else {
-                            /* Nothing to do */
-                        }
-                    });
-                    onFirst = false;
-                }
+                            },
+                        );
+                        onFirst = false;
+                    }
 
-                this.emitLine("cJSON_free(x);");
-            });
-        });
+                    this.emitLine("cJSON_free(x);");
+                });
+            },
+        );
         this.ensureBlankLine();
     }
 
@@ -1358,21 +2028,33 @@ export class CJSONRenderer extends ConvenienceRenderer {
         this.emitBlock(
             ["struct ", className],
             () => {
-                this.forEachClassProperty(classType, "none", (name, jsonName, property) => {
-                    this.emitDescription(this.descriptionForClassProperty(classType, jsonName));
-                    const cJSON = this.quicktypeTypeToCJSON(property.type, property.isOptional);
-                    this.emitLine(
-                        cJSON.cType,
-                        cJSON.optionalQualifier !== "" ? " " : "",
-                        cJSON.optionalQualifier,
-                        " ",
-                        name,
-                        ";"
-                    );
-                });
+                this.forEachClassProperty(
+                    classType,
+                    "none",
+                    (name, jsonName, property) => {
+                        this.emitDescription(
+                            this.descriptionForClassProperty(
+                                classType,
+                                jsonName,
+                            ),
+                        );
+                        const cJSON = this.quicktypeTypeToCJSON(
+                            property.type,
+                            property.isOptional,
+                        );
+                        this.emitLine(
+                            cJSON.cType,
+                            cJSON.optionalQualifier !== "" ? " " : "",
+                            cJSON.optionalQualifier,
+                            " ",
+                            name,
+                            ";",
+                        );
+                    },
+                );
             },
             "",
-            true
+            true,
         );
         this.ensureBlankLine();
         this.emitTypedefAlias(classType, className);
@@ -1385,11 +2067,45 @@ export class CJSONRenderer extends ConvenienceRenderer {
     protected emitClassPrototypes(classType: ClassType): void {
         const className = this.nameForNamedType(classType);
 
-        this.emitLine("struct ", className, " * cJSON_Parse", className, "(", this.withConst("char"), " * s);");
-        this.emitLine("struct ", className, " * cJSON_Get", className, "Value(", this.withConst("cJSON"), " * j);");
-        this.emitLine("cJSON * cJSON_Create", className, "(", this.withConst(["struct ", className]), " * x);");
-        this.emitLine("char * cJSON_Print", className, "(", this.withConst(["struct ", className]), " * x);");
-        this.emitLine("void cJSON_Delete", className, "(struct ", className, " * x);");
+        this.emitLine(
+            "struct ",
+            className,
+            " * cJSON_Parse",
+            className,
+            "(",
+            this.withConst("char"),
+            " * s);",
+        );
+        this.emitLine(
+            "struct ",
+            className,
+            " * cJSON_Get",
+            className,
+            "Value(",
+            this.withConst("cJSON"),
+            " * j);",
+        );
+        this.emitLine(
+            "cJSON * cJSON_Create",
+            className,
+            "(",
+            this.withConst(["struct ", className]),
+            " * x);",
+        );
+        this.emitLine(
+            "char * cJSON_Print",
+            className,
+            "(",
+            this.withConst(["struct ", className]),
+            " * x);",
+        );
+        this.emitLine(
+            "void cJSON_Delete",
+            className,
+            "(struct ",
+            className,
+            " * x);",
+        );
         this.ensureBlankLine();
     }
 
@@ -1402,7 +2118,15 @@ export class CJSONRenderer extends ConvenienceRenderer {
 
         /* Create string to className generator function */
         this.emitBlock(
-            ["struct ", className, " * cJSON_Parse", className, "(", this.withConst("char"), " * s)"],
+            [
+                "struct ",
+                className,
+                " * cJSON_Parse",
+                className,
+                "(",
+                this.withConst("char"),
+                " * s)",
+            ],
             () => {
                 this.emitLine("struct ", className, " * x = NULL;");
                 this.emitBlock(["if (NULL != s)"], () => {
@@ -1413,1529 +2137,2470 @@ export class CJSONRenderer extends ConvenienceRenderer {
                     });
                 });
                 this.emitLine("return x;");
-            }
+            },
         );
         this.ensureBlankLine();
 
         /* Create cJSON to className generator function */
         this.emitBlock(
-            ["struct ", className, " * cJSON_Get", className, "Value(", this.withConst("cJSON"), " * j)"],
+            [
+                "struct ",
+                className,
+                " * cJSON_Get",
+                className,
+                "Value(",
+                this.withConst("cJSON"),
+                " * j)",
+            ],
             () => {
                 this.emitLine("struct ", className, " * x = NULL;");
                 this.emitBlock(["if (NULL != j)"], () => {
-                    this.emitBlock(["if (NULL != (x = cJSON_malloc(sizeof(struct ", className, "))))"], () => {
-                        this.emitLine("memset(x, 0, sizeof(struct ", className, "));");
-                        const recur = (type: Type, level: number) => {
-                            if (type instanceof ArrayType) {
-                                const child_level = level + 1;
-                                const cJSON = this.quicktypeTypeToCJSON(type.items, false);
-                                this.emitLine("list_t * x", child_level.toString(), " = list_create(false, NULL);");
-                                this.emitBlock(["if (NULL != x", child_level.toString(), ")"], () => {
-                                    this.emitLine("cJSON * e", child_level.toString(), " = NULL;");
+                    this.emitBlock(
+                        [
+                            "if (NULL != (x = cJSON_malloc(sizeof(struct ",
+                            className,
+                            "))))",
+                        ],
+                        () => {
+                            this.emitLine(
+                                "memset(x, 0, sizeof(struct ",
+                                className,
+                                "));",
+                            );
+                            const recur = (type: Type, level: number) => {
+                                if (type instanceof ArrayType) {
+                                    const child_level = level + 1;
+                                    const cJSON = this.quicktypeTypeToCJSON(
+                                        type.items,
+                                        false,
+                                    );
+                                    this.emitLine(
+                                        "list_t * x",
+                                        child_level.toString(),
+                                        " = list_create(false, NULL);",
+                                    );
                                     this.emitBlock(
-                                        ["cJSON_ArrayForEach(e", child_level.toString(), ", e", level.toString(), ")"],
+                                        [
+                                            "if (NULL != x",
+                                            child_level.toString(),
+                                            ")",
+                                        ],
                                         () => {
-                                            if (cJSON.cjsonType === "cJSON_Array") {
-                                                const child_level2 = child_level + 1;
-                                                recur(type.items, child_level);
-                                                this.emitLine(
-                                                    "list_add_tail(x",
+                                            this.emitLine(
+                                                "cJSON * e",
+                                                child_level.toString(),
+                                                " = NULL;",
+                                            );
+                                            this.emitBlock(
+                                                [
+                                                    "cJSON_ArrayForEach(e",
                                                     child_level.toString(),
-                                                    ", x",
-                                                    child_level2.toString(),
-                                                    ", sizeof(",
-                                                    // @ts-expect-error awaiting refactor
-                                                    cJSON.items?.cType,
-                                                    " *));"
-                                                );
-                                            } else if (cJSON.cjsonType === "cJSON_Map") {
-                                                /* Not supported */
-                                            } else if (
-                                                cJSON.cjsonType === "cJSON_Invalid" ||
-                                                cJSON.cjsonType === "cJSON_NULL"
-                                            ) {
-                                                this.emitLine(
-                                                    "list_add_tail(x",
-                                                    child_level.toString(),
-                                                    ", (",
-                                                    cJSON.cType,
-                                                    " *)0xDEADBEEF, sizeof(",
-                                                    cJSON.cType,
-                                                    " *));"
-                                                );
-                                            } else if (cJSON.cjsonType === "cJSON_String") {
-                                                this.emitLine(
-                                                    "list_add_tail(x",
-                                                    child_level.toString(),
-                                                    ", strdup(",
-                                                    cJSON.getValue,
-                                                    "(e",
-                                                    child_level.toString(),
-                                                    ")), sizeof(",
-                                                    cJSON.cType,
-                                                    " *));"
-                                                );
-                                            } else if (
-                                                cJSON.cjsonType === "cJSON_Object" ||
-                                                cJSON.cjsonType === "cJSON_Union"
-                                            ) {
-                                                this.emitLine(
-                                                    "list_add_tail(x",
-                                                    child_level.toString(),
-                                                    ", ",
-                                                    cJSON.getValue,
-                                                    "(e",
-                                                    child_level.toString(),
-                                                    "), sizeof(",
-                                                    cJSON.cType,
-                                                    " *));"
-                                                );
-                                            } else {
-                                                this.emitLine(
-                                                    cJSON.cType,
-                                                    " * tmp",
-                                                    level > 0 ? level.toString() : "",
-                                                    " = cJSON_malloc(sizeof(",
-                                                    cJSON.cType,
-                                                    "));"
-                                                );
-                                                this.emitBlock(
-                                                    ["if (NULL != tmp", level > 0 ? level.toString() : "", ")"],
-                                                    () => {
-                                                        this.emitLine(
-                                                            "* tmp",
-                                                            level > 0 ? level.toString() : "",
-                                                            " = ",
-                                                            cJSON.getValue,
-                                                            "(e",
-                                                            child_level.toString(),
-                                                            ");"
+                                                    ", e",
+                                                    level.toString(),
+                                                    ")",
+                                                ],
+                                                () => {
+                                                    if (
+                                                        cJSON.cjsonType ===
+                                                        "cJSON_Array"
+                                                    ) {
+                                                        const child_level2 =
+                                                            child_level + 1;
+                                                        recur(
+                                                            type.items,
+                                                            child_level,
                                                         );
                                                         this.emitLine(
                                                             "list_add_tail(x",
                                                             child_level.toString(),
-                                                            ", tmp",
-                                                            level > 0 ? level.toString() : "",
+                                                            ", x",
+                                                            child_level2.toString(),
                                                             ", sizeof(",
-                                                            cJSON.cType,
-                                                            " *));"
+                                                            // @ts-expect-error awaiting refactor
+                                                            cJSON.items?.cType,
+                                                            " *));",
                                                         );
-                                                    }
-                                                );
-                                            }
-                                        }
-                                    );
-                                });
-                            } else if (type instanceof ClassType) {
-                                this.forEachClassProperty(type, "none", (name, jsonName, property) => {
-                                    const cJSON = this.quicktypeTypeToCJSON(property.type, property.isOptional);
-                                    this.emitBlock(
-                                        !cJSON.isNullable
-                                            ? [
-                                                  "if (cJSON_HasObjectItem(j",
-                                                  level > 0 ? level.toString() : "",
-                                                  ', "',
-                                                  jsonName,
-                                                  '"))'
-                                              ]
-                                            : [
-                                                  "if ((cJSON_HasObjectItem(j",
-                                                  level > 0 ? level.toString() : "",
-                                                  ', "',
-                                                  jsonName,
-                                                  '")) && (!cJSON_IsNull(cJSON_GetObjectItemCaseSensitive(j',
-                                                  level > 0 ? level.toString() : "",
-                                                  ', "',
-                                                  jsonName,
-                                                  '"))))'
-                                              ],
-                                        () => {
-                                            if (cJSON.cjsonType === "cJSON_Array" && cJSON.items !== undefined) {
-                                                const child_level = level + 1;
-                                                this.emitLine(
-                                                    cJSON.cType,
-                                                    " * x",
-                                                    child_level.toString(),
-                                                    " = list_create(false, NULL);"
-                                                );
-                                                this.emitBlock(["if (NULL != x", child_level.toString(), ")"], () => {
-                                                    this.emitLine("cJSON * e", child_level.toString(), " = NULL;");
-                                                    this.emitLine(
-                                                        "cJSON * j",
-                                                        child_level.toString(),
-                                                        " = cJSON_GetObjectItemCaseSensitive(j",
-                                                        level > 0 ? level.toString() : "",
-                                                        ', "',
-                                                        jsonName,
-                                                        '");'
-                                                    );
-                                                    this.emitBlock(
-                                                        [
-                                                            "cJSON_ArrayForEach(e",
+                                                    } else if (
+                                                        cJSON.cjsonType ===
+                                                        "cJSON_Map"
+                                                    ) {
+                                                        /* Not supported */
+                                                    } else if (
+                                                        cJSON.cjsonType ===
+                                                            "cJSON_Invalid" ||
+                                                        cJSON.cjsonType ===
+                                                            "cJSON_NULL"
+                                                    ) {
+                                                        this.emitLine(
+                                                            "list_add_tail(x",
                                                             child_level.toString(),
-                                                            ", j",
+                                                            ", (",
+                                                            cJSON.cType,
+                                                            " *)0xDEADBEEF, sizeof(",
+                                                            cJSON.cType,
+                                                            " *));",
+                                                        );
+                                                    } else if (
+                                                        cJSON.cjsonType ===
+                                                        "cJSON_String"
+                                                    ) {
+                                                        this.emitLine(
+                                                            "list_add_tail(x",
                                                             child_level.toString(),
-                                                            ")"
-                                                        ],
-                                                        () => {
-                                                            const add = (
-                                                                type: Type,
-                                                                cJSON: TypeCJSON,
-                                                                level: number,
-                                                                child_level: number
-                                                            ) => {
-                                                                if (cJSON.items?.cjsonType === "cJSON_Array") {
-                                                                    if (type instanceof ArrayType) {
-                                                                        const child_level2 = child_level + 1;
-                                                                        recur(type.items, child_level);
-                                                                        this.emitLine(
-                                                                            "list_add_tail(x",
-                                                                            child_level.toString(),
-                                                                            ", x",
-                                                                            child_level2.toString(),
-                                                                            ", sizeof(",
-                                                                            cJSON.items?.cType,
-                                                                            " *));"
-                                                                        );
-                                                                    } else {
-                                                                        panic("Invalid type");
-                                                                    }
-                                                                } else if (cJSON.items?.cjsonType === "cJSON_Map") {
-                                                                    /* Not supported */
-                                                                } else if (
-                                                                    cJSON.items?.cjsonType === "cJSON_Invalid" ||
-                                                                    cJSON.items?.cjsonType === "cJSON_NULL"
-                                                                ) {
-                                                                    this.emitLine(
-                                                                        "list_add_tail(x",
-                                                                        child_level.toString(),
-                                                                        ", (",
-                                                                        cJSON.items?.cType,
-                                                                        " *)0xDEADBEEF, sizeof(",
-                                                                        cJSON.items?.cType,
-                                                                        " *));"
-                                                                    );
-                                                                } else if (cJSON.items?.cjsonType === "cJSON_String") {
-                                                                    this.emitLine(
-                                                                        "list_add_tail(x",
-                                                                        child_level.toString(),
-                                                                        ", strdup(",
-                                                                        cJSON.items?.getValue,
-                                                                        "(e",
-                                                                        child_level.toString(),
-                                                                        ")), sizeof(",
-                                                                        cJSON.items?.cType,
-                                                                        " *));"
-                                                                    );
-                                                                } else if (
-                                                                    cJSON.items?.cjsonType === "cJSON_Object" ||
-                                                                    cJSON.items?.cjsonType === "cJSON_Union"
-                                                                ) {
-                                                                    this.emitLine(
-                                                                        "list_add_tail(x",
-                                                                        child_level.toString(),
-                                                                        ", ",
-                                                                        cJSON.items?.getValue,
-                                                                        "(e",
-                                                                        child_level.toString(),
-                                                                        "), sizeof(",
-                                                                        cJSON.items?.cType,
-                                                                        " *));"
-                                                                    );
-                                                                } else {
-                                                                    this.emitLine(
-                                                                        // @ts-expect-error awaiting refactor
-                                                                        cJSON.items?.cType,
-                                                                        " * tmp",
-                                                                        level > 0 ? level.toString() : "",
-                                                                        " = cJSON_malloc(sizeof(",
-                                                                        cJSON.items?.cType,
-                                                                        "));"
-                                                                    );
-                                                                    this.emitBlock(
-                                                                        [
-                                                                            "if (NULL != tmp",
-                                                                            level > 0 ? level.toString() : "",
-                                                                            ")"
-                                                                        ],
-                                                                        () => {
-                                                                            this.emitLine(
-                                                                                "* tmp",
-                                                                                level > 0 ? level.toString() : "",
-                                                                                " = ",
-                                                                                // @ts-expect-error awaiting refactor
-                                                                                cJSON.items?.getValue,
-                                                                                "(e",
-                                                                                child_level.toString(),
-                                                                                ");"
-                                                                            );
-                                                                            this.emitLine(
-                                                                                "list_add_tail(x",
-                                                                                child_level.toString(),
-                                                                                ", tmp",
-                                                                                level > 0 ? level.toString() : "",
-                                                                                ", sizeof(",
-                                                                                // @ts-expect-error awaiting refactor
-                                                                                cJSON.items?.cType,
-                                                                                " *));"
-                                                                            );
-                                                                        }
-                                                                    );
-                                                                }
-                                                            };
-
-                                                            if (cJSON.items?.isNullable) {
-                                                                this.emitBlock(
-                                                                    [
-                                                                        "if (!cJSON_IsNull(e",
-                                                                        child_level.toString(),
-                                                                        "))"
-                                                                    ],
-                                                                    () => {
-                                                                        add(property.type, cJSON, level, child_level);
-                                                                    }
-                                                                );
-                                                                this.emitBlock(["else"], () => {
-                                                                    this.emitLine(
-                                                                        "list_add_tail(x",
-                                                                        child_level.toString(),
-                                                                        ", (void *)0xDEADBEEF, sizeof(void *));"
-                                                                    );
-                                                                });
-                                                            } else {
-                                                                add(property.type, cJSON, level, child_level);
-                                                            }
-                                                        }
-                                                    );
-                                                    this.emitLine(
-                                                        "x",
-                                                        level > 0 ? level.toString() : "",
-                                                        "->",
-                                                        name,
-                                                        " = x",
-                                                        child_level.toString(),
-                                                        ";"
-                                                    );
-                                                });
-                                            } else if (cJSON.cjsonType === "cJSON_Map" && cJSON.items !== undefined) {
-                                                const child_level = level + 1;
-                                                this.emitLine(
-                                                    cJSON.cType,
-                                                    " * x",
-                                                    child_level.toString(),
-                                                    " = hashtable_create(",
-                                                    this.hashtableSize,
-                                                    ", false);"
-                                                );
-                                                this.emitBlock(["if (NULL != x", child_level.toString(), ")"], () => {
-                                                    this.emitLine("cJSON * e", child_level.toString(), " = NULL;");
-                                                    this.emitLine(
-                                                        "cJSON * j",
-                                                        child_level.toString(),
-                                                        " = cJSON_GetObjectItemCaseSensitive(j",
-                                                        level > 0 ? level.toString() : "",
-                                                        ', "',
-                                                        jsonName,
-                                                        '");'
-                                                    );
-                                                    this.emitBlock(
-                                                        [
-                                                            "cJSON_ArrayForEach(e",
+                                                            ", strdup(",
+                                                            cJSON.getValue,
+                                                            "(e",
                                                             child_level.toString(),
-                                                            ", j",
+                                                            ")), sizeof(",
+                                                            cJSON.cType,
+                                                            " *));",
+                                                        );
+                                                    } else if (
+                                                        cJSON.cjsonType ===
+                                                            "cJSON_Object" ||
+                                                        cJSON.cjsonType ===
+                                                            "cJSON_Union"
+                                                    ) {
+                                                        this.emitLine(
+                                                            "list_add_tail(x",
                                                             child_level.toString(),
-                                                            ")"
-                                                        ],
-                                                        () => {
-                                                            const add = (
-                                                                type: Type,
-                                                                cJSON: TypeCJSON,
-                                                                level: number,
-                                                                child_level: number
-                                                            ) => {
-                                                                if (cJSON.items?.cjsonType === "cJSON_Array") {
-                                                                    if (type instanceof MapType) {
-                                                                        const child_level2 = child_level + 1;
-                                                                        recur(type.values, child_level);
-                                                                        this.emitLine(
-                                                                            "hashtable_add(x",
-                                                                            child_level.toString(),
-                                                                            ", e",
-                                                                            child_level.toString(),
-                                                                            "->string, x",
-                                                                            child_level2.toString(),
-                                                                            ", sizeof(",
-                                                                            cJSON.items?.cType,
-                                                                            " *));"
-                                                                        );
-                                                                    } else {
-                                                                        panic("Invalid type");
-                                                                    }
-                                                                } else if (cJSON.items?.cjsonType === "cJSON_Map") {
-                                                                    /* Not supported */
-                                                                } else if (
-                                                                    cJSON.items?.cjsonType === "cJSON_Invalid" ||
-                                                                    cJSON.items?.cjsonType === "cJSON_NULL"
-                                                                ) {
-                                                                    this.emitLine(
-                                                                        "hashtable_add(x",
-                                                                        child_level.toString(),
-                                                                        ", e",
-                                                                        child_level.toString(),
-                                                                        "->string, (",
-                                                                        cJSON.items?.cType,
-                                                                        " *)0xDEADBEEF, sizeof(",
-                                                                        cJSON.items?.cType,
-                                                                        " *));"
-                                                                    );
-                                                                } else if (cJSON.items?.cjsonType === "cJSON_String") {
-                                                                    this.emitLine(
-                                                                        "hashtable_add(x",
-                                                                        child_level.toString(),
-                                                                        ", e",
-                                                                        child_level.toString(),
-                                                                        "->string, strdup(",
-                                                                        cJSON.items?.getValue,
-                                                                        "(e",
-                                                                        child_level.toString(),
-                                                                        ")), sizeof(",
-                                                                        cJSON.items?.cType,
-                                                                        " *));"
-                                                                    );
-                                                                } else if (
-                                                                    cJSON.items?.cjsonType === "cJSON_Object" ||
-                                                                    cJSON.items?.cjsonType === "cJSON_Union"
-                                                                ) {
-                                                                    this.emitLine(
-                                                                        "hashtable_add(x",
-                                                                        child_level.toString(),
-                                                                        ", e",
-                                                                        child_level.toString(),
-                                                                        "->string, ",
-                                                                        cJSON.items?.getValue,
-                                                                        "(e",
-                                                                        child_level.toString(),
-                                                                        "), sizeof(",
-                                                                        cJSON.items?.cType,
-                                                                        " *));"
-                                                                    );
-                                                                } else {
-                                                                    this.emitLine(
-                                                                        // @ts-expect-error awaiting refactor
-                                                                        cJSON.items?.cType,
-                                                                        " * tmp",
-                                                                        level > 0 ? level.toString() : "",
-                                                                        " = cJSON_malloc(sizeof(",
-                                                                        cJSON.items?.cType,
-                                                                        "));"
-                                                                    );
-                                                                    this.emitBlock(
-                                                                        [
-                                                                            "if (NULL != tmp",
-                                                                            level > 0 ? level.toString() : "",
-                                                                            ")"
-                                                                        ],
-                                                                        () => {
-                                                                            this.emitLine(
-                                                                                "* tmp",
-                                                                                level > 0 ? level.toString() : "",
-                                                                                " = ",
-                                                                                // @ts-expect-error awaiting refactor
-                                                                                cJSON.items?.getValue,
-                                                                                "(e",
-                                                                                child_level.toString(),
-                                                                                ");"
-                                                                            );
-                                                                            this.emitLine(
-                                                                                "hashtable_add(x",
-                                                                                child_level.toString(),
-                                                                                ", e",
-                                                                                child_level.toString(),
-                                                                                "->string, tmp",
-                                                                                level > 0 ? level.toString() : "",
-                                                                                ", sizeof(",
-                                                                                // @ts-expect-error awaiting refactor
-                                                                                cJSON.items?.cType,
-                                                                                " *));"
-                                                                            );
-                                                                        }
-                                                                    );
-                                                                }
-                                                            };
-
-                                                            if (cJSON.items?.isNullable) {
-                                                                this.emitBlock(
-                                                                    [
-                                                                        "if (!cJSON_IsNull(e",
-                                                                        child_level.toString(),
-                                                                        "))"
-                                                                    ],
-                                                                    () => {
-                                                                        add(property.type, cJSON, level, child_level);
-                                                                    }
-                                                                );
-                                                                this.emitBlock(["else"], () => {
-                                                                    this.emitLine(
-                                                                        "hashtable_add(x",
-                                                                        child_level.toString(),
-                                                                        ", e",
-                                                                        child_level.toString(),
-                                                                        "->string, (void *)0xDEADBEEF, sizeof(void *));"
-                                                                    );
-                                                                });
-                                                            } else {
-                                                                add(property.type, cJSON, level, child_level);
-                                                            }
-                                                        }
-                                                    );
-                                                    this.emitLine(
-                                                        "x",
-                                                        level > 0 ? level.toString() : "",
-                                                        "->",
-                                                        name,
-                                                        " = x",
-                                                        child_level.toString(),
-                                                        ";"
-                                                    );
-                                                });
-                                            } else if (
-                                                cJSON.cjsonType === "cJSON_Invalid" ||
-                                                cJSON.cjsonType === "cJSON_NULL"
-                                            ) {
-                                                this.emitLine(
-                                                    "x",
-                                                    level > 0 ? level.toString() : "",
-                                                    "->",
-                                                    name,
-                                                    " = (",
-                                                    cJSON.cType,
-                                                    " *)0xDEADBEEF;"
-                                                );
-                                            } else if (cJSON.cjsonType === "cJSON_String") {
-                                                this.emitLine(
-                                                    "x",
-                                                    level > 0 ? level.toString() : "",
-                                                    "->",
-                                                    name,
-                                                    " = strdup(",
-                                                    cJSON.getValue,
-                                                    "(cJSON_GetObjectItemCaseSensitive(j",
-                                                    level > 0 ? level.toString() : "",
-                                                    ', "',
-                                                    jsonName,
-                                                    '")));'
-                                                );
-                                            } else if (
-                                                cJSON.cjsonType === "cJSON_Object" ||
-                                                cJSON.cjsonType === "cJSON_Union"
-                                            ) {
-                                                this.emitLine(
-                                                    "x",
-                                                    level > 0 ? level.toString() : "",
-                                                    "->",
-                                                    name,
-                                                    " = ",
-                                                    cJSON.getValue,
-                                                    "(cJSON_GetObjectItemCaseSensitive(j",
-                                                    level > 0 ? level.toString() : "",
-                                                    ', "',
-                                                    jsonName,
-                                                    '"));'
-                                                );
-                                            } else {
-                                                if (property.isOptional || cJSON.isNullable) {
-                                                    this.emitBlock(
-                                                        [
-                                                            "if (NULL != (x",
-                                                            level > 0 ? level.toString() : "",
-                                                            "->",
-                                                            name,
+                                                            ", ",
+                                                            cJSON.getValue,
+                                                            "(e",
+                                                            child_level.toString(),
+                                                            "), sizeof(",
+                                                            cJSON.cType,
+                                                            " *));",
+                                                        );
+                                                    } else {
+                                                        this.emitLine(
+                                                            cJSON.cType,
+                                                            " * tmp",
+                                                            level > 0
+                                                                ? level.toString()
+                                                                : "",
                                                             " = cJSON_malloc(sizeof(",
                                                             cJSON.cType,
-                                                            "))))"
-                                                        ],
-                                                        () => {
+                                                            "));",
+                                                        );
+                                                        this.emitBlock(
+                                                            [
+                                                                "if (NULL != tmp",
+                                                                level > 0
+                                                                    ? level.toString()
+                                                                    : "",
+                                                                ")",
+                                                            ],
+                                                            () => {
+                                                                this.emitLine(
+                                                                    "* tmp",
+                                                                    level > 0
+                                                                        ? level.toString()
+                                                                        : "",
+                                                                    " = ",
+                                                                    cJSON.getValue,
+                                                                    "(e",
+                                                                    child_level.toString(),
+                                                                    ");",
+                                                                );
+                                                                this.emitLine(
+                                                                    "list_add_tail(x",
+                                                                    child_level.toString(),
+                                                                    ", tmp",
+                                                                    level > 0
+                                                                        ? level.toString()
+                                                                        : "",
+                                                                    ", sizeof(",
+                                                                    cJSON.cType,
+                                                                    " *));",
+                                                                );
+                                                            },
+                                                        );
+                                                    }
+                                                },
+                                            );
+                                        },
+                                    );
+                                } else if (type instanceof ClassType) {
+                                    this.forEachClassProperty(
+                                        type,
+                                        "none",
+                                        (name, jsonName, property) => {
+                                            const cJSON =
+                                                this.quicktypeTypeToCJSON(
+                                                    property.type,
+                                                    property.isOptional,
+                                                );
+                                            this.emitBlock(
+                                                !cJSON.isNullable
+                                                    ? [
+                                                          "if (cJSON_HasObjectItem(j",
+                                                          level > 0
+                                                              ? level.toString()
+                                                              : "",
+                                                          ', "',
+                                                          jsonName,
+                                                          '"))',
+                                                      ]
+                                                    : [
+                                                          "if ((cJSON_HasObjectItem(j",
+                                                          level > 0
+                                                              ? level.toString()
+                                                              : "",
+                                                          ', "',
+                                                          jsonName,
+                                                          '")) && (!cJSON_IsNull(cJSON_GetObjectItemCaseSensitive(j',
+                                                          level > 0
+                                                              ? level.toString()
+                                                              : "",
+                                                          ', "',
+                                                          jsonName,
+                                                          '"))))',
+                                                      ],
+                                                () => {
+                                                    if (
+                                                        cJSON.cjsonType ===
+                                                            "cJSON_Array" &&
+                                                        cJSON.items !==
+                                                            undefined
+                                                    ) {
+                                                        const child_level =
+                                                            level + 1;
+                                                        this.emitLine(
+                                                            cJSON.cType,
+                                                            " * x",
+                                                            child_level.toString(),
+                                                            " = list_create(false, NULL);",
+                                                        );
+                                                        this.emitBlock(
+                                                            [
+                                                                "if (NULL != x",
+                                                                child_level.toString(),
+                                                                ")",
+                                                            ],
+                                                            () => {
+                                                                this.emitLine(
+                                                                    "cJSON * e",
+                                                                    child_level.toString(),
+                                                                    " = NULL;",
+                                                                );
+                                                                this.emitLine(
+                                                                    "cJSON * j",
+                                                                    child_level.toString(),
+                                                                    " = cJSON_GetObjectItemCaseSensitive(j",
+                                                                    level > 0
+                                                                        ? level.toString()
+                                                                        : "",
+                                                                    ', "',
+                                                                    jsonName,
+                                                                    '");',
+                                                                );
+                                                                this.emitBlock(
+                                                                    [
+                                                                        "cJSON_ArrayForEach(e",
+                                                                        child_level.toString(),
+                                                                        ", j",
+                                                                        child_level.toString(),
+                                                                        ")",
+                                                                    ],
+                                                                    () => {
+                                                                        const add =
+                                                                            (
+                                                                                type: Type,
+                                                                                cJSON: TypeCJSON,
+                                                                                level: number,
+                                                                                child_level: number,
+                                                                            ) => {
+                                                                                if (
+                                                                                    cJSON
+                                                                                        .items
+                                                                                        ?.cjsonType ===
+                                                                                    "cJSON_Array"
+                                                                                ) {
+                                                                                    if (
+                                                                                        type instanceof
+                                                                                        ArrayType
+                                                                                    ) {
+                                                                                        const child_level2 =
+                                                                                            child_level +
+                                                                                            1;
+                                                                                        recur(
+                                                                                            type.items,
+                                                                                            child_level,
+                                                                                        );
+                                                                                        this.emitLine(
+                                                                                            "list_add_tail(x",
+                                                                                            child_level.toString(),
+                                                                                            ", x",
+                                                                                            child_level2.toString(),
+                                                                                            ", sizeof(",
+                                                                                            cJSON
+                                                                                                .items
+                                                                                                ?.cType,
+                                                                                            " *));",
+                                                                                        );
+                                                                                    } else {
+                                                                                        panic(
+                                                                                            "Invalid type",
+                                                                                        );
+                                                                                    }
+                                                                                } else if (
+                                                                                    cJSON
+                                                                                        .items
+                                                                                        ?.cjsonType ===
+                                                                                    "cJSON_Map"
+                                                                                ) {
+                                                                                    /* Not supported */
+                                                                                } else if (
+                                                                                    cJSON
+                                                                                        .items
+                                                                                        ?.cjsonType ===
+                                                                                        "cJSON_Invalid" ||
+                                                                                    cJSON
+                                                                                        .items
+                                                                                        ?.cjsonType ===
+                                                                                        "cJSON_NULL"
+                                                                                ) {
+                                                                                    this.emitLine(
+                                                                                        "list_add_tail(x",
+                                                                                        child_level.toString(),
+                                                                                        ", (",
+                                                                                        cJSON
+                                                                                            .items
+                                                                                            ?.cType,
+                                                                                        " *)0xDEADBEEF, sizeof(",
+                                                                                        cJSON
+                                                                                            .items
+                                                                                            ?.cType,
+                                                                                        " *));",
+                                                                                    );
+                                                                                } else if (
+                                                                                    cJSON
+                                                                                        .items
+                                                                                        ?.cjsonType ===
+                                                                                    "cJSON_String"
+                                                                                ) {
+                                                                                    this.emitLine(
+                                                                                        "list_add_tail(x",
+                                                                                        child_level.toString(),
+                                                                                        ", strdup(",
+                                                                                        cJSON
+                                                                                            .items
+                                                                                            ?.getValue,
+                                                                                        "(e",
+                                                                                        child_level.toString(),
+                                                                                        ")), sizeof(",
+                                                                                        cJSON
+                                                                                            .items
+                                                                                            ?.cType,
+                                                                                        " *));",
+                                                                                    );
+                                                                                } else if (
+                                                                                    cJSON
+                                                                                        .items
+                                                                                        ?.cjsonType ===
+                                                                                        "cJSON_Object" ||
+                                                                                    cJSON
+                                                                                        .items
+                                                                                        ?.cjsonType ===
+                                                                                        "cJSON_Union"
+                                                                                ) {
+                                                                                    this.emitLine(
+                                                                                        "list_add_tail(x",
+                                                                                        child_level.toString(),
+                                                                                        ", ",
+                                                                                        cJSON
+                                                                                            .items
+                                                                                            ?.getValue,
+                                                                                        "(e",
+                                                                                        child_level.toString(),
+                                                                                        "), sizeof(",
+                                                                                        cJSON
+                                                                                            .items
+                                                                                            ?.cType,
+                                                                                        " *));",
+                                                                                    );
+                                                                                } else {
+                                                                                    this.emitLine(
+                                                                                        // @ts-expect-error awaiting refactor
+                                                                                        cJSON
+                                                                                            .items
+                                                                                            ?.cType,
+                                                                                        " * tmp",
+                                                                                        level >
+                                                                                            0
+                                                                                            ? level.toString()
+                                                                                            : "",
+                                                                                        " = cJSON_malloc(sizeof(",
+                                                                                        cJSON
+                                                                                            .items
+                                                                                            ?.cType,
+                                                                                        "));",
+                                                                                    );
+                                                                                    this.emitBlock(
+                                                                                        [
+                                                                                            "if (NULL != tmp",
+                                                                                            level >
+                                                                                            0
+                                                                                                ? level.toString()
+                                                                                                : "",
+                                                                                            ")",
+                                                                                        ],
+                                                                                        () => {
+                                                                                            this.emitLine(
+                                                                                                "* tmp",
+                                                                                                level >
+                                                                                                    0
+                                                                                                    ? level.toString()
+                                                                                                    : "",
+                                                                                                " = ",
+                                                                                                // @ts-expect-error awaiting refactor
+                                                                                                cJSON
+                                                                                                    .items
+                                                                                                    ?.getValue,
+                                                                                                "(e",
+                                                                                                child_level.toString(),
+                                                                                                ");",
+                                                                                            );
+                                                                                            this.emitLine(
+                                                                                                "list_add_tail(x",
+                                                                                                child_level.toString(),
+                                                                                                ", tmp",
+                                                                                                level >
+                                                                                                    0
+                                                                                                    ? level.toString()
+                                                                                                    : "",
+                                                                                                ", sizeof(",
+                                                                                                // @ts-expect-error awaiting refactor
+                                                                                                cJSON
+                                                                                                    .items
+                                                                                                    ?.cType,
+                                                                                                " *));",
+                                                                                            );
+                                                                                        },
+                                                                                    );
+                                                                                }
+                                                                            };
+
+                                                                        if (
+                                                                            cJSON
+                                                                                .items
+                                                                                ?.isNullable
+                                                                        ) {
+                                                                            this.emitBlock(
+                                                                                [
+                                                                                    "if (!cJSON_IsNull(e",
+                                                                                    child_level.toString(),
+                                                                                    "))",
+                                                                                ],
+                                                                                () => {
+                                                                                    add(
+                                                                                        property.type,
+                                                                                        cJSON,
+                                                                                        level,
+                                                                                        child_level,
+                                                                                    );
+                                                                                },
+                                                                            );
+                                                                            this.emitBlock(
+                                                                                [
+                                                                                    "else",
+                                                                                ],
+                                                                                () => {
+                                                                                    this.emitLine(
+                                                                                        "list_add_tail(x",
+                                                                                        child_level.toString(),
+                                                                                        ", (void *)0xDEADBEEF, sizeof(void *));",
+                                                                                    );
+                                                                                },
+                                                                            );
+                                                                        } else {
+                                                                            add(
+                                                                                property.type,
+                                                                                cJSON,
+                                                                                level,
+                                                                                child_level,
+                                                                            );
+                                                                        }
+                                                                    },
+                                                                );
+                                                                this.emitLine(
+                                                                    "x",
+                                                                    level > 0
+                                                                        ? level.toString()
+                                                                        : "",
+                                                                    "->",
+                                                                    name,
+                                                                    " = x",
+                                                                    child_level.toString(),
+                                                                    ";",
+                                                                );
+                                                            },
+                                                        );
+                                                    } else if (
+                                                        cJSON.cjsonType ===
+                                                            "cJSON_Map" &&
+                                                        cJSON.items !==
+                                                            undefined
+                                                    ) {
+                                                        const child_level =
+                                                            level + 1;
+                                                        this.emitLine(
+                                                            cJSON.cType,
+                                                            " * x",
+                                                            child_level.toString(),
+                                                            " = hashtable_create(",
+                                                            this.hashtableSize,
+                                                            ", false);",
+                                                        );
+                                                        this.emitBlock(
+                                                            [
+                                                                "if (NULL != x",
+                                                                child_level.toString(),
+                                                                ")",
+                                                            ],
+                                                            () => {
+                                                                this.emitLine(
+                                                                    "cJSON * e",
+                                                                    child_level.toString(),
+                                                                    " = NULL;",
+                                                                );
+                                                                this.emitLine(
+                                                                    "cJSON * j",
+                                                                    child_level.toString(),
+                                                                    " = cJSON_GetObjectItemCaseSensitive(j",
+                                                                    level > 0
+                                                                        ? level.toString()
+                                                                        : "",
+                                                                    ', "',
+                                                                    jsonName,
+                                                                    '");',
+                                                                );
+                                                                this.emitBlock(
+                                                                    [
+                                                                        "cJSON_ArrayForEach(e",
+                                                                        child_level.toString(),
+                                                                        ", j",
+                                                                        child_level.toString(),
+                                                                        ")",
+                                                                    ],
+                                                                    () => {
+                                                                        const add =
+                                                                            (
+                                                                                type: Type,
+                                                                                cJSON: TypeCJSON,
+                                                                                level: number,
+                                                                                child_level: number,
+                                                                            ) => {
+                                                                                if (
+                                                                                    cJSON
+                                                                                        .items
+                                                                                        ?.cjsonType ===
+                                                                                    "cJSON_Array"
+                                                                                ) {
+                                                                                    if (
+                                                                                        type instanceof
+                                                                                        MapType
+                                                                                    ) {
+                                                                                        const child_level2 =
+                                                                                            child_level +
+                                                                                            1;
+                                                                                        recur(
+                                                                                            type.values,
+                                                                                            child_level,
+                                                                                        );
+                                                                                        this.emitLine(
+                                                                                            "hashtable_add(x",
+                                                                                            child_level.toString(),
+                                                                                            ", e",
+                                                                                            child_level.toString(),
+                                                                                            "->string, x",
+                                                                                            child_level2.toString(),
+                                                                                            ", sizeof(",
+                                                                                            cJSON
+                                                                                                .items
+                                                                                                ?.cType,
+                                                                                            " *));",
+                                                                                        );
+                                                                                    } else {
+                                                                                        panic(
+                                                                                            "Invalid type",
+                                                                                        );
+                                                                                    }
+                                                                                } else if (
+                                                                                    cJSON
+                                                                                        .items
+                                                                                        ?.cjsonType ===
+                                                                                    "cJSON_Map"
+                                                                                ) {
+                                                                                    /* Not supported */
+                                                                                } else if (
+                                                                                    cJSON
+                                                                                        .items
+                                                                                        ?.cjsonType ===
+                                                                                        "cJSON_Invalid" ||
+                                                                                    cJSON
+                                                                                        .items
+                                                                                        ?.cjsonType ===
+                                                                                        "cJSON_NULL"
+                                                                                ) {
+                                                                                    this.emitLine(
+                                                                                        "hashtable_add(x",
+                                                                                        child_level.toString(),
+                                                                                        ", e",
+                                                                                        child_level.toString(),
+                                                                                        "->string, (",
+                                                                                        cJSON
+                                                                                            .items
+                                                                                            ?.cType,
+                                                                                        " *)0xDEADBEEF, sizeof(",
+                                                                                        cJSON
+                                                                                            .items
+                                                                                            ?.cType,
+                                                                                        " *));",
+                                                                                    );
+                                                                                } else if (
+                                                                                    cJSON
+                                                                                        .items
+                                                                                        ?.cjsonType ===
+                                                                                    "cJSON_String"
+                                                                                ) {
+                                                                                    this.emitLine(
+                                                                                        "hashtable_add(x",
+                                                                                        child_level.toString(),
+                                                                                        ", e",
+                                                                                        child_level.toString(),
+                                                                                        "->string, strdup(",
+                                                                                        cJSON
+                                                                                            .items
+                                                                                            ?.getValue,
+                                                                                        "(e",
+                                                                                        child_level.toString(),
+                                                                                        ")), sizeof(",
+                                                                                        cJSON
+                                                                                            .items
+                                                                                            ?.cType,
+                                                                                        " *));",
+                                                                                    );
+                                                                                } else if (
+                                                                                    cJSON
+                                                                                        .items
+                                                                                        ?.cjsonType ===
+                                                                                        "cJSON_Object" ||
+                                                                                    cJSON
+                                                                                        .items
+                                                                                        ?.cjsonType ===
+                                                                                        "cJSON_Union"
+                                                                                ) {
+                                                                                    this.emitLine(
+                                                                                        "hashtable_add(x",
+                                                                                        child_level.toString(),
+                                                                                        ", e",
+                                                                                        child_level.toString(),
+                                                                                        "->string, ",
+                                                                                        cJSON
+                                                                                            .items
+                                                                                            ?.getValue,
+                                                                                        "(e",
+                                                                                        child_level.toString(),
+                                                                                        "), sizeof(",
+                                                                                        cJSON
+                                                                                            .items
+                                                                                            ?.cType,
+                                                                                        " *));",
+                                                                                    );
+                                                                                } else {
+                                                                                    this.emitLine(
+                                                                                        // @ts-expect-error awaiting refactor
+                                                                                        cJSON
+                                                                                            .items
+                                                                                            ?.cType,
+                                                                                        " * tmp",
+                                                                                        level >
+                                                                                            0
+                                                                                            ? level.toString()
+                                                                                            : "",
+                                                                                        " = cJSON_malloc(sizeof(",
+                                                                                        cJSON
+                                                                                            .items
+                                                                                            ?.cType,
+                                                                                        "));",
+                                                                                    );
+                                                                                    this.emitBlock(
+                                                                                        [
+                                                                                            "if (NULL != tmp",
+                                                                                            level >
+                                                                                            0
+                                                                                                ? level.toString()
+                                                                                                : "",
+                                                                                            ")",
+                                                                                        ],
+                                                                                        () => {
+                                                                                            this.emitLine(
+                                                                                                "* tmp",
+                                                                                                level >
+                                                                                                    0
+                                                                                                    ? level.toString()
+                                                                                                    : "",
+                                                                                                " = ",
+                                                                                                // @ts-expect-error awaiting refactor
+                                                                                                cJSON
+                                                                                                    .items
+                                                                                                    ?.getValue,
+                                                                                                "(e",
+                                                                                                child_level.toString(),
+                                                                                                ");",
+                                                                                            );
+                                                                                            this.emitLine(
+                                                                                                "hashtable_add(x",
+                                                                                                child_level.toString(),
+                                                                                                ", e",
+                                                                                                child_level.toString(),
+                                                                                                "->string, tmp",
+                                                                                                level >
+                                                                                                    0
+                                                                                                    ? level.toString()
+                                                                                                    : "",
+                                                                                                ", sizeof(",
+                                                                                                // @ts-expect-error awaiting refactor
+                                                                                                cJSON
+                                                                                                    .items
+                                                                                                    ?.cType,
+                                                                                                " *));",
+                                                                                            );
+                                                                                        },
+                                                                                    );
+                                                                                }
+                                                                            };
+
+                                                                        if (
+                                                                            cJSON
+                                                                                .items
+                                                                                ?.isNullable
+                                                                        ) {
+                                                                            this.emitBlock(
+                                                                                [
+                                                                                    "if (!cJSON_IsNull(e",
+                                                                                    child_level.toString(),
+                                                                                    "))",
+                                                                                ],
+                                                                                () => {
+                                                                                    add(
+                                                                                        property.type,
+                                                                                        cJSON,
+                                                                                        level,
+                                                                                        child_level,
+                                                                                    );
+                                                                                },
+                                                                            );
+                                                                            this.emitBlock(
+                                                                                [
+                                                                                    "else",
+                                                                                ],
+                                                                                () => {
+                                                                                    this.emitLine(
+                                                                                        "hashtable_add(x",
+                                                                                        child_level.toString(),
+                                                                                        ", e",
+                                                                                        child_level.toString(),
+                                                                                        "->string, (void *)0xDEADBEEF, sizeof(void *));",
+                                                                                    );
+                                                                                },
+                                                                            );
+                                                                        } else {
+                                                                            add(
+                                                                                property.type,
+                                                                                cJSON,
+                                                                                level,
+                                                                                child_level,
+                                                                            );
+                                                                        }
+                                                                    },
+                                                                );
+                                                                this.emitLine(
+                                                                    "x",
+                                                                    level > 0
+                                                                        ? level.toString()
+                                                                        : "",
+                                                                    "->",
+                                                                    name,
+                                                                    " = x",
+                                                                    child_level.toString(),
+                                                                    ";",
+                                                                );
+                                                            },
+                                                        );
+                                                    } else if (
+                                                        cJSON.cjsonType ===
+                                                            "cJSON_Invalid" ||
+                                                        cJSON.cjsonType ===
+                                                            "cJSON_NULL"
+                                                    ) {
+                                                        this.emitLine(
+                                                            "x",
+                                                            level > 0
+                                                                ? level.toString()
+                                                                : "",
+                                                            "->",
+                                                            name,
+                                                            " = (",
+                                                            cJSON.cType,
+                                                            " *)0xDEADBEEF;",
+                                                        );
+                                                    } else if (
+                                                        cJSON.cjsonType ===
+                                                        "cJSON_String"
+                                                    ) {
+                                                        this.emitLine(
+                                                            "x",
+                                                            level > 0
+                                                                ? level.toString()
+                                                                : "",
+                                                            "->",
+                                                            name,
+                                                            " = strdup(",
+                                                            cJSON.getValue,
+                                                            "(cJSON_GetObjectItemCaseSensitive(j",
+                                                            level > 0
+                                                                ? level.toString()
+                                                                : "",
+                                                            ', "',
+                                                            jsonName,
+                                                            '")));',
+                                                        );
+                                                    } else if (
+                                                        cJSON.cjsonType ===
+                                                            "cJSON_Object" ||
+                                                        cJSON.cjsonType ===
+                                                            "cJSON_Union"
+                                                    ) {
+                                                        this.emitLine(
+                                                            "x",
+                                                            level > 0
+                                                                ? level.toString()
+                                                                : "",
+                                                            "->",
+                                                            name,
+                                                            " = ",
+                                                            cJSON.getValue,
+                                                            "(cJSON_GetObjectItemCaseSensitive(j",
+                                                            level > 0
+                                                                ? level.toString()
+                                                                : "",
+                                                            ', "',
+                                                            jsonName,
+                                                            '"));',
+                                                        );
+                                                    } else {
+                                                        if (
+                                                            property.isOptional ||
+                                                            cJSON.isNullable
+                                                        ) {
+                                                            this.emitBlock(
+                                                                [
+                                                                    "if (NULL != (x",
+                                                                    level > 0
+                                                                        ? level.toString()
+                                                                        : "",
+                                                                    "->",
+                                                                    name,
+                                                                    " = cJSON_malloc(sizeof(",
+                                                                    cJSON.cType,
+                                                                    "))))",
+                                                                ],
+                                                                () => {
+                                                                    this.emitLine(
+                                                                        "*x",
+                                                                        level >
+                                                                            0
+                                                                            ? level.toString()
+                                                                            : "",
+                                                                        "->",
+                                                                        name,
+                                                                        " = ",
+                                                                        cJSON.getValue,
+                                                                        "(cJSON_GetObjectItemCaseSensitive(j",
+                                                                        level >
+                                                                            0
+                                                                            ? level.toString()
+                                                                            : "",
+                                                                        ', "',
+                                                                        jsonName,
+                                                                        '"));',
+                                                                    );
+                                                                },
+                                                            );
+                                                        } else {
                                                             this.emitLine(
-                                                                "*x",
-                                                                level > 0 ? level.toString() : "",
+                                                                "x",
+                                                                level > 0
+                                                                    ? level.toString()
+                                                                    : "",
                                                                 "->",
                                                                 name,
                                                                 " = ",
                                                                 cJSON.getValue,
                                                                 "(cJSON_GetObjectItemCaseSensitive(j",
-                                                                level > 0 ? level.toString() : "",
+                                                                level > 0
+                                                                    ? level.toString()
+                                                                    : "",
                                                                 ', "',
                                                                 jsonName,
-                                                                '"));'
+                                                                '"));',
                                                             );
                                                         }
+                                                    }
+                                                },
+                                            );
+                                            if (
+                                                !property.isOptional &&
+                                                !cJSON.isNullable
+                                            ) {
+                                                if (
+                                                    cJSON.cjsonType ===
+                                                    "cJSON_Array"
+                                                ) {
+                                                    this.emitBlock(
+                                                        ["else"],
+                                                        () => {
+                                                            this.emitLine(
+                                                                "x",
+                                                                level > 0
+                                                                    ? level.toString()
+                                                                    : "",
+                                                                "->",
+                                                                name,
+                                                                " = list_create(false, NULL);",
+                                                            );
+                                                        },
+                                                    );
+                                                } else if (
+                                                    cJSON.cjsonType ===
+                                                    "cJSON_Map"
+                                                ) {
+                                                    this.emitBlock(
+                                                        ["else"],
+                                                        () => {
+                                                            this.emitLine(
+                                                                "x",
+                                                                level > 0
+                                                                    ? level.toString()
+                                                                    : "",
+                                                                "->",
+                                                                name,
+                                                                " = hashtable_create(",
+                                                                this
+                                                                    .hashtableSize,
+                                                                ", false);",
+                                                            );
+                                                        },
+                                                    );
+                                                } else if (
+                                                    cJSON.cjsonType ===
+                                                        "cJSON_Invalid" ||
+                                                    cJSON.cjsonType ===
+                                                        "cJSON_NULL"
+                                                ) {
+                                                    this.emitBlock(
+                                                        ["else"],
+                                                        () => {
+                                                            this.emitLine(
+                                                                "x",
+                                                                level > 0
+                                                                    ? level.toString()
+                                                                    : "",
+                                                                "->",
+                                                                name,
+                                                                " = (",
+                                                                cJSON.cType,
+                                                                " *)0xDEADBEEF;",
+                                                            );
+                                                        },
+                                                    );
+                                                } else if (
+                                                    cJSON.cjsonType ===
+                                                    "cJSON_String"
+                                                ) {
+                                                    this.emitBlock(
+                                                        ["else"],
+                                                        () => {
+                                                            this.emitBlock(
+                                                                [
+                                                                    "if (NULL != (x",
+                                                                    level > 0
+                                                                        ? level.toString()
+                                                                        : "",
+                                                                    "->",
+                                                                    name,
+                                                                    " = cJSON_malloc(sizeof(",
+                                                                    cJSON.cType,
+                                                                    "))))",
+                                                                ],
+                                                                () => {
+                                                                    this.emitLine(
+                                                                        "x",
+                                                                        level >
+                                                                            0
+                                                                            ? level.toString()
+                                                                            : "",
+                                                                        "->",
+                                                                        name,
+                                                                        "[0] = '\\0';",
+                                                                    );
+                                                                },
+                                                            );
+                                                        },
                                                     );
                                                 } else {
-                                                    this.emitLine(
-                                                        "x",
-                                                        level > 0 ? level.toString() : "",
-                                                        "->",
-                                                        name,
-                                                        " = ",
-                                                        cJSON.getValue,
-                                                        "(cJSON_GetObjectItemCaseSensitive(j",
-                                                        level > 0 ? level.toString() : "",
-                                                        ', "',
-                                                        jsonName,
-                                                        '"));'
-                                                    );
+                                                    /* Nothing to do */
                                                 }
                                             }
-                                        }
+                                        },
                                     );
-                                    if (!property.isOptional && !cJSON.isNullable) {
-                                        if (cJSON.cjsonType === "cJSON_Array") {
-                                            this.emitBlock(["else"], () => {
-                                                this.emitLine(
-                                                    "x",
-                                                    level > 0 ? level.toString() : "",
-                                                    "->",
-                                                    name,
-                                                    " = list_create(false, NULL);"
-                                                );
-                                            });
-                                        } else if (cJSON.cjsonType === "cJSON_Map") {
-                                            this.emitBlock(["else"], () => {
-                                                this.emitLine(
-                                                    "x",
-                                                    level > 0 ? level.toString() : "",
-                                                    "->",
-                                                    name,
-                                                    " = hashtable_create(",
-                                                    this.hashtableSize,
-                                                    ", false);"
-                                                );
-                                            });
-                                        } else if (
-                                            cJSON.cjsonType === "cJSON_Invalid" ||
-                                            cJSON.cjsonType === "cJSON_NULL"
-                                        ) {
-                                            this.emitBlock(["else"], () => {
-                                                this.emitLine(
-                                                    "x",
-                                                    level > 0 ? level.toString() : "",
-                                                    "->",
-                                                    name,
-                                                    " = (",
-                                                    cJSON.cType,
-                                                    " *)0xDEADBEEF;"
-                                                );
-                                            });
-                                        } else if (cJSON.cjsonType === "cJSON_String") {
-                                            this.emitBlock(["else"], () => {
-                                                this.emitBlock(
-                                                    [
-                                                        "if (NULL != (x",
-                                                        level > 0 ? level.toString() : "",
-                                                        "->",
-                                                        name,
-                                                        " = cJSON_malloc(sizeof(",
-                                                        cJSON.cType,
-                                                        "))))"
-                                                    ],
-                                                    () => {
-                                                        this.emitLine(
-                                                            "x",
-                                                            level > 0 ? level.toString() : "",
-                                                            "->",
-                                                            name,
-                                                            "[0] = '\\0';"
-                                                        );
-                                                    }
-                                                );
-                                            });
-                                        } else {
-                                            /* Nothing to do */
-                                        }
-                                    }
-                                });
-                            }
-                        };
+                                }
+                            };
 
-                        recur(classType, 0);
-                    });
+                            recur(classType, 0);
+                        },
+                    );
                 });
                 this.emitLine("return x;");
-            }
+            },
         );
         this.ensureBlankLine();
 
         /* Create className to cJSON generator function */
         this.emitBlock(
-            ["cJSON * cJSON_Create", className, "(", this.withConst(["struct ", className]), " * x)"],
+            [
+                "cJSON * cJSON_Create",
+                className,
+                "(",
+                this.withConst(["struct ", className]),
+                " * x)",
+            ],
             () => {
                 this.emitLine("cJSON * j = NULL;");
                 this.emitBlock(["if (NULL != x)"], () => {
-                    this.emitBlock(["if (NULL != (j = cJSON_CreateObject()))"], () => {
-                        const recur = (type: Type, level: number) => {
-                            if (type instanceof ArrayType) {
-                                const child_level = level + 1;
-                                const cJSON = this.quicktypeTypeToCJSON(type.items, false);
-                                this.emitLine("cJSON * j", child_level.toString(), " = cJSON_CreateArray();");
-                                this.emitBlock(["if (NULL != j", child_level.toString(), ")"], () => {
-                                    this.emitLine(
-                                        cJSON.cType,
-                                        " * x",
-                                        child_level.toString(),
-                                        " = list_get_head(x",
-                                        level.toString(),
-                                        ");"
+                    this.emitBlock(
+                        ["if (NULL != (j = cJSON_CreateObject()))"],
+                        () => {
+                            const recur = (type: Type, level: number) => {
+                                if (type instanceof ArrayType) {
+                                    const child_level = level + 1;
+                                    const cJSON = this.quicktypeTypeToCJSON(
+                                        type.items,
+                                        false,
                                     );
-                                    this.emitBlock(["while (NULL != x", child_level.toString(), ")"], () => {
-                                        if (cJSON.cjsonType === "cJSON_Array") {
-                                            const child_level2 = child_level + 1;
-                                            recur(type.items, child_level);
-                                            this.emitLine(
-                                                "cJSON_AddItemToArray(j",
-                                                child_level.toString(),
-                                                ", j",
-                                                child_level2.toString(),
-                                                ");"
-                                            );
-                                        } else if (cJSON.cjsonType === "cJSON_Map") {
-                                            /* Not supported */
-                                        } else if (cJSON.cjsonType === "cJSON_Invalid") {
-                                            /* Nothing to do */
-                                        } else if (cJSON.cjsonType === "cJSON_NULL") {
-                                            this.emitLine(
-                                                "cJSON_AddItemToArray(j",
-                                                child_level.toString(),
-                                                ", ",
-                                                cJSON.createObject,
-                                                "());"
-                                            );
-                                        } else if (
-                                            cJSON.cjsonType === "cJSON_String" ||
-                                            cJSON.cjsonType === "cJSON_Object" ||
-                                            cJSON.cjsonType === "cJSON_Union"
-                                        ) {
-                                            this.emitLine(
-                                                "cJSON_AddItemToArray(j",
-                                                child_level.toString(),
-                                                ", ",
-                                                cJSON.createObject,
-                                                "(x",
-                                                child_level.toString(),
-                                                "));"
-                                            );
-                                        } else {
-                                            this.emitLine(
-                                                "cJSON_AddItemToArray(j",
-                                                child_level.toString(),
-                                                ", ",
-                                                cJSON.createObject,
-                                                "(*x",
-                                                child_level.toString(),
-                                                "));"
-                                            );
-                                        }
-
-                                        this.emitLine(
-                                            "x",
+                                    this.emitLine(
+                                        "cJSON * j",
+                                        child_level.toString(),
+                                        " = cJSON_CreateArray();",
+                                    );
+                                    this.emitBlock(
+                                        [
+                                            "if (NULL != j",
                                             child_level.toString(),
-                                            " = list_get_next(x",
-                                            level.toString(),
-                                            ");"
-                                        );
-                                    });
-                                });
-                            } else if (type instanceof ClassType) {
-                                this.forEachClassProperty(type, "none", (name, jsonName, property) => {
-                                    const cJSON = this.quicktypeTypeToCJSON(property.type, property.isOptional);
-                                    if (cJSON.cjsonType === "cJSON_Array" && cJSON.items !== undefined) {
-                                        const child_level = level + 1;
-                                        this.emitBlock(
-                                            ["if (NULL != x", level > 0 ? level.toString() : "", "->", name, ")"],
-                                            () => {
-                                                this.emitLine(
-                                                    "cJSON * j",
+                                            ")",
+                                        ],
+                                        () => {
+                                            this.emitLine(
+                                                cJSON.cType,
+                                                " * x",
+                                                child_level.toString(),
+                                                " = list_get_head(x",
+                                                level.toString(),
+                                                ");",
+                                            );
+                                            this.emitBlock(
+                                                [
+                                                    "while (NULL != x",
                                                     child_level.toString(),
-                                                    " = cJSON_AddArrayToObject(j",
-                                                    level > 0 ? level.toString() : "",
-                                                    ', "',
-                                                    jsonName,
-                                                    '");'
-                                                );
-                                                this.emitBlock(["if (NULL != j", child_level.toString(), ")"], () => {
+                                                    ")",
+                                                ],
+                                                () => {
+                                                    if (
+                                                        cJSON.cjsonType ===
+                                                        "cJSON_Array"
+                                                    ) {
+                                                        const child_level2 =
+                                                            child_level + 1;
+                                                        recur(
+                                                            type.items,
+                                                            child_level,
+                                                        );
+                                                        this.emitLine(
+                                                            "cJSON_AddItemToArray(j",
+                                                            child_level.toString(),
+                                                            ", j",
+                                                            child_level2.toString(),
+                                                            ");",
+                                                        );
+                                                    } else if (
+                                                        cJSON.cjsonType ===
+                                                        "cJSON_Map"
+                                                    ) {
+                                                        /* Not supported */
+                                                    } else if (
+                                                        cJSON.cjsonType ===
+                                                        "cJSON_Invalid"
+                                                    ) {
+                                                        /* Nothing to do */
+                                                    } else if (
+                                                        cJSON.cjsonType ===
+                                                        "cJSON_NULL"
+                                                    ) {
+                                                        this.emitLine(
+                                                            "cJSON_AddItemToArray(j",
+                                                            child_level.toString(),
+                                                            ", ",
+                                                            cJSON.createObject,
+                                                            "());",
+                                                        );
+                                                    } else if (
+                                                        cJSON.cjsonType ===
+                                                            "cJSON_String" ||
+                                                        cJSON.cjsonType ===
+                                                            "cJSON_Object" ||
+                                                        cJSON.cjsonType ===
+                                                            "cJSON_Union"
+                                                    ) {
+                                                        this.emitLine(
+                                                            "cJSON_AddItemToArray(j",
+                                                            child_level.toString(),
+                                                            ", ",
+                                                            cJSON.createObject,
+                                                            "(x",
+                                                            child_level.toString(),
+                                                            "));",
+                                                        );
+                                                    } else {
+                                                        this.emitLine(
+                                                            "cJSON_AddItemToArray(j",
+                                                            child_level.toString(),
+                                                            ", ",
+                                                            cJSON.createObject,
+                                                            "(*x",
+                                                            child_level.toString(),
+                                                            "));",
+                                                        );
+                                                    }
+
                                                     this.emitLine(
-                                                        // @ts-expect-error awaiting refactor
-                                                        cJSON.items?.cType,
-                                                        " * x",
+                                                        "x",
                                                         child_level.toString(),
-                                                        " = list_get_head(x",
-                                                        level > 0 ? level.toString() : "",
+                                                        " = list_get_next(x",
+                                                        level.toString(),
+                                                        ");",
+                                                    );
+                                                },
+                                            );
+                                        },
+                                    );
+                                } else if (type instanceof ClassType) {
+                                    this.forEachClassProperty(
+                                        type,
+                                        "none",
+                                        (name, jsonName, property) => {
+                                            const cJSON =
+                                                this.quicktypeTypeToCJSON(
+                                                    property.type,
+                                                    property.isOptional,
+                                                );
+                                            if (
+                                                cJSON.cjsonType ===
+                                                    "cJSON_Array" &&
+                                                cJSON.items !== undefined
+                                            ) {
+                                                const child_level = level + 1;
+                                                this.emitBlock(
+                                                    [
+                                                        "if (NULL != x",
+                                                        level > 0
+                                                            ? level.toString()
+                                                            : "",
                                                         "->",
                                                         name,
-                                                        ");"
-                                                    );
-                                                    this.emitBlock(
-                                                        ["while (NULL != x", child_level.toString(), ")"],
-                                                        () => {
-                                                            const add = (
-                                                                type: Type,
-                                                                cJSON: TypeCJSON,
-                                                                child_level: number
-                                                            ) => {
-                                                                if (cJSON.items?.cjsonType === "cJSON_Array") {
-                                                                    if (type instanceof ArrayType) {
-                                                                        const child_level2 = child_level + 1;
-                                                                        recur(type.items, child_level);
-                                                                        this.emitLine(
-                                                                            "cJSON_AddItemToArray(j",
-                                                                            child_level.toString(),
-                                                                            ", j",
-                                                                            child_level2.toString(),
-                                                                            ");"
-                                                                        );
-                                                                    } else {
-                                                                        panic("Invalid type");
-                                                                    }
-                                                                } else if (cJSON.items?.cjsonType === "cJSON_Map") {
-                                                                    /* Not supported */
-                                                                } else if (cJSON.items?.cjsonType === "cJSON_Invalid") {
-                                                                    /* Nothing to do */
-                                                                } else if (cJSON.items?.cjsonType === "cJSON_NULL") {
-                                                                    this.emitLine(
-                                                                        "cJSON_AddItemToArray(j",
-                                                                        child_level.toString(),
-                                                                        ", ",
-                                                                        cJSON.items?.createObject,
-                                                                        "());"
-                                                                    );
-                                                                } else if (
-                                                                    cJSON.items?.cjsonType === "cJSON_String" ||
-                                                                    cJSON.items?.cjsonType === "cJSON_Object" ||
-                                                                    cJSON.items?.cjsonType === "cJSON_Union"
-                                                                ) {
-                                                                    this.emitLine(
-                                                                        "cJSON_AddItemToArray(j",
-                                                                        child_level.toString(),
-                                                                        ", ",
-                                                                        cJSON.items?.createObject,
-                                                                        "(x",
-                                                                        child_level.toString(),
-                                                                        "));"
-                                                                    );
-                                                                } else {
-                                                                    this.emitLine(
-                                                                        "cJSON_AddItemToArray(j",
-                                                                        child_level.toString(),
-                                                                        ", ",
-                                                                        // @ts-expect-error awaiting refactor
-                                                                        cJSON.items?.createObject,
-                                                                        "(*x",
-                                                                        child_level.toString(),
-                                                                        "));"
-                                                                    );
-                                                                }
-                                                            };
-
-                                                            if (cJSON.items?.isNullable) {
+                                                        ")",
+                                                    ],
+                                                    () => {
+                                                        this.emitLine(
+                                                            "cJSON * j",
+                                                            child_level.toString(),
+                                                            " = cJSON_AddArrayToObject(j",
+                                                            level > 0
+                                                                ? level.toString()
+                                                                : "",
+                                                            ', "',
+                                                            jsonName,
+                                                            '");',
+                                                        );
+                                                        this.emitBlock(
+                                                            [
+                                                                "if (NULL != j",
+                                                                child_level.toString(),
+                                                                ")",
+                                                            ],
+                                                            () => {
+                                                                this.emitLine(
+                                                                    // @ts-expect-error awaiting refactor
+                                                                    cJSON.items
+                                                                        ?.cType,
+                                                                    " * x",
+                                                                    child_level.toString(),
+                                                                    " = list_get_head(x",
+                                                                    level > 0
+                                                                        ? level.toString()
+                                                                        : "",
+                                                                    "->",
+                                                                    name,
+                                                                    ");",
+                                                                );
                                                                 this.emitBlock(
                                                                     [
-                                                                        "if ((void *)0xDEADBEEF != x",
+                                                                        "while (NULL != x",
                                                                         child_level.toString(),
-                                                                        ")"
+                                                                        ")",
                                                                     ],
                                                                     () => {
-                                                                        add(property.type, cJSON, child_level);
-                                                                    }
-                                                                );
-                                                                this.emitBlock(["else"], () => {
-                                                                    this.emitLine(
-                                                                        "cJSON_AddItemToArray(j",
-                                                                        child_level.toString(),
-                                                                        ", cJSON_CreateNull());"
-                                                                    );
-                                                                });
-                                                            } else {
-                                                                add(property.type, cJSON, child_level);
-                                                            }
+                                                                        const add =
+                                                                            (
+                                                                                type: Type,
+                                                                                cJSON: TypeCJSON,
+                                                                                child_level: number,
+                                                                            ) => {
+                                                                                if (
+                                                                                    cJSON
+                                                                                        .items
+                                                                                        ?.cjsonType ===
+                                                                                    "cJSON_Array"
+                                                                                ) {
+                                                                                    if (
+                                                                                        type instanceof
+                                                                                        ArrayType
+                                                                                    ) {
+                                                                                        const child_level2 =
+                                                                                            child_level +
+                                                                                            1;
+                                                                                        recur(
+                                                                                            type.items,
+                                                                                            child_level,
+                                                                                        );
+                                                                                        this.emitLine(
+                                                                                            "cJSON_AddItemToArray(j",
+                                                                                            child_level.toString(),
+                                                                                            ", j",
+                                                                                            child_level2.toString(),
+                                                                                            ");",
+                                                                                        );
+                                                                                    } else {
+                                                                                        panic(
+                                                                                            "Invalid type",
+                                                                                        );
+                                                                                    }
+                                                                                } else if (
+                                                                                    cJSON
+                                                                                        .items
+                                                                                        ?.cjsonType ===
+                                                                                    "cJSON_Map"
+                                                                                ) {
+                                                                                    /* Not supported */
+                                                                                } else if (
+                                                                                    cJSON
+                                                                                        .items
+                                                                                        ?.cjsonType ===
+                                                                                    "cJSON_Invalid"
+                                                                                ) {
+                                                                                    /* Nothing to do */
+                                                                                } else if (
+                                                                                    cJSON
+                                                                                        .items
+                                                                                        ?.cjsonType ===
+                                                                                    "cJSON_NULL"
+                                                                                ) {
+                                                                                    this.emitLine(
+                                                                                        "cJSON_AddItemToArray(j",
+                                                                                        child_level.toString(),
+                                                                                        ", ",
+                                                                                        cJSON
+                                                                                            .items
+                                                                                            ?.createObject,
+                                                                                        "());",
+                                                                                    );
+                                                                                } else if (
+                                                                                    cJSON
+                                                                                        .items
+                                                                                        ?.cjsonType ===
+                                                                                        "cJSON_String" ||
+                                                                                    cJSON
+                                                                                        .items
+                                                                                        ?.cjsonType ===
+                                                                                        "cJSON_Object" ||
+                                                                                    cJSON
+                                                                                        .items
+                                                                                        ?.cjsonType ===
+                                                                                        "cJSON_Union"
+                                                                                ) {
+                                                                                    this.emitLine(
+                                                                                        "cJSON_AddItemToArray(j",
+                                                                                        child_level.toString(),
+                                                                                        ", ",
+                                                                                        cJSON
+                                                                                            .items
+                                                                                            ?.createObject,
+                                                                                        "(x",
+                                                                                        child_level.toString(),
+                                                                                        "));",
+                                                                                    );
+                                                                                } else {
+                                                                                    this.emitLine(
+                                                                                        "cJSON_AddItemToArray(j",
+                                                                                        child_level.toString(),
+                                                                                        ", ",
+                                                                                        // @ts-expect-error awaiting refactor
+                                                                                        cJSON
+                                                                                            .items
+                                                                                            ?.createObject,
+                                                                                        "(*x",
+                                                                                        child_level.toString(),
+                                                                                        "));",
+                                                                                    );
+                                                                                }
+                                                                            };
 
-                                                            this.emitLine(
-                                                                "x",
-                                                                child_level.toString(),
-                                                                " = list_get_next(x",
-                                                                level > 0 ? level.toString() : "",
-                                                                "->",
-                                                                name,
-                                                                ");"
-                                                            );
-                                                        }
-                                                    );
-                                                });
-                                            }
-                                        );
-                                    } else if (cJSON.cjsonType === "cJSON_Map" && cJSON.items !== undefined) {
-                                        const child_level = level + 1;
-                                        this.emitBlock(
-                                            ["if (NULL != x", level > 0 ? level.toString() : "", "->", name, ")"],
-                                            () => {
-                                                this.emitLine(
-                                                    "cJSON * j",
-                                                    child_level.toString(),
-                                                    " = ",
-                                                    cJSON.createObject,
-                                                    "();"
+                                                                        if (
+                                                                            cJSON
+                                                                                .items
+                                                                                ?.isNullable
+                                                                        ) {
+                                                                            this.emitBlock(
+                                                                                [
+                                                                                    "if ((void *)0xDEADBEEF != x",
+                                                                                    child_level.toString(),
+                                                                                    ")",
+                                                                                ],
+                                                                                () => {
+                                                                                    add(
+                                                                                        property.type,
+                                                                                        cJSON,
+                                                                                        child_level,
+                                                                                    );
+                                                                                },
+                                                                            );
+                                                                            this.emitBlock(
+                                                                                [
+                                                                                    "else",
+                                                                                ],
+                                                                                () => {
+                                                                                    this.emitLine(
+                                                                                        "cJSON_AddItemToArray(j",
+                                                                                        child_level.toString(),
+                                                                                        ", cJSON_CreateNull());",
+                                                                                    );
+                                                                                },
+                                                                            );
+                                                                        } else {
+                                                                            add(
+                                                                                property.type,
+                                                                                cJSON,
+                                                                                child_level,
+                                                                            );
+                                                                        }
+
+                                                                        this.emitLine(
+                                                                            "x",
+                                                                            child_level.toString(),
+                                                                            " = list_get_next(x",
+                                                                            level >
+                                                                                0
+                                                                                ? level.toString()
+                                                                                : "",
+                                                                            "->",
+                                                                            name,
+                                                                            ");",
+                                                                        );
+                                                                    },
+                                                                );
+                                                            },
+                                                        );
+                                                    },
                                                 );
-                                                this.emitBlock(["if (NULL != j", child_level.toString(), ")"], () => {
-                                                    this.emitLine("char **keys", child_level.toString(), " = NULL;");
-                                                    this.emitLine(
-                                                        "size_t count",
-                                                        child_level.toString(),
-                                                        " = hashtable_get_keys(x",
-                                                        level > 0 ? level.toString() : "",
+                                            } else if (
+                                                cJSON.cjsonType ===
+                                                    "cJSON_Map" &&
+                                                cJSON.items !== undefined
+                                            ) {
+                                                const child_level = level + 1;
+                                                this.emitBlock(
+                                                    [
+                                                        "if (NULL != x",
+                                                        level > 0
+                                                            ? level.toString()
+                                                            : "",
                                                         "->",
                                                         name,
-                                                        ", &keys",
-                                                        child_level.toString(),
-                                                        ");"
-                                                    );
-                                                    this.emitBlock(
-                                                        ["if (NULL != keys", child_level.toString(), ")"],
-                                                        () => {
-                                                            this.emitBlock(
-                                                                [
-                                                                    "for (size_t index",
+                                                        ")",
+                                                    ],
+                                                    () => {
+                                                        this.emitLine(
+                                                            "cJSON * j",
+                                                            child_level.toString(),
+                                                            " = ",
+                                                            cJSON.createObject,
+                                                            "();",
+                                                        );
+                                                        this.emitBlock(
+                                                            [
+                                                                "if (NULL != j",
+                                                                child_level.toString(),
+                                                                ")",
+                                                            ],
+                                                            () => {
+                                                                this.emitLine(
+                                                                    "char **keys",
                                                                     child_level.toString(),
-                                                                    " = 0; index",
+                                                                    " = NULL;",
+                                                                );
+                                                                this.emitLine(
+                                                                    "size_t count",
                                                                     child_level.toString(),
-                                                                    " < count",
+                                                                    " = hashtable_get_keys(x",
+                                                                    level > 0
+                                                                        ? level.toString()
+                                                                        : "",
+                                                                    "->",
+                                                                    name,
+                                                                    ", &keys",
                                                                     child_level.toString(),
-                                                                    "; index",
-                                                                    child_level.toString(),
-                                                                    "++)"
-                                                                ],
-                                                                () => {
-                                                                    this.emitLine(
-                                                                        // @ts-expect-error awaiting refactor
-                                                                        cJSON.items?.cType,
-                                                                        " *x",
+                                                                    ");",
+                                                                );
+                                                                this.emitBlock(
+                                                                    [
+                                                                        "if (NULL != keys",
                                                                         child_level.toString(),
-                                                                        " = hashtable_lookup(x",
-                                                                        level > 0 ? level.toString() : "",
-                                                                        "->",
-                                                                        name,
-                                                                        ", keys",
-                                                                        child_level.toString(),
-                                                                        "[index",
-                                                                        child_level.toString(),
-                                                                        "]);"
-                                                                    );
-                                                                    const add = (
-                                                                        type: Type,
-                                                                        cJSON: TypeCJSON,
-                                                                        child_level: number
-                                                                    ) => {
-                                                                        if (cJSON.items?.cjsonType === "cJSON_Array") {
-                                                                            if (type instanceof MapType) {
-                                                                                const child_level2 = child_level + 1;
-                                                                                recur(type.values, child_level);
+                                                                        ")",
+                                                                    ],
+                                                                    () => {
+                                                                        this.emitBlock(
+                                                                            [
+                                                                                "for (size_t index",
+                                                                                child_level.toString(),
+                                                                                " = 0; index",
+                                                                                child_level.toString(),
+                                                                                " < count",
+                                                                                child_level.toString(),
+                                                                                "; index",
+                                                                                child_level.toString(),
+                                                                                "++)",
+                                                                            ],
+                                                                            () => {
                                                                                 this.emitLine(
-                                                                                    cJSON.addToObject,
-                                                                                    "(j",
+                                                                                    // @ts-expect-error awaiting refactor
+                                                                                    cJSON
+                                                                                        .items
+                                                                                        ?.cType,
+                                                                                    " *x",
                                                                                     child_level.toString(),
+                                                                                    " = hashtable_lookup(x",
+                                                                                    level >
+                                                                                        0
+                                                                                        ? level.toString()
+                                                                                        : "",
+                                                                                    "->",
+                                                                                    name,
                                                                                     ", keys",
                                                                                     child_level.toString(),
                                                                                     "[index",
                                                                                     child_level.toString(),
-                                                                                    "], j",
-                                                                                    child_level2.toString(),
-                                                                                    ");"
+                                                                                    "]);",
                                                                                 );
-                                                                            } else {
-                                                                                panic("Invalid type");
-                                                                            }
-                                                                        } else if (
-                                                                            cJSON.items?.cjsonType === "cJSON_Map"
-                                                                        ) {
-                                                                            /* Not supported */
-                                                                        } else if (
-                                                                            cJSON.items?.cjsonType === "cJSON_Invalid"
-                                                                        ) {
-                                                                            /* Nothing to do */
-                                                                        } else if (
-                                                                            cJSON.items?.cjsonType === "cJSON_NULL"
-                                                                        ) {
-                                                                            this.emitLine(
-                                                                                cJSON.addToObject,
-                                                                                "(j",
-                                                                                child_level.toString(),
-                                                                                ", keys",
-                                                                                child_level.toString(),
-                                                                                "[index",
-                                                                                child_level.toString(),
-                                                                                "], ",
-                                                                                cJSON.items?.createObject,
-                                                                                "());"
-                                                                            );
-                                                                        } else if (
-                                                                            cJSON.items?.cjsonType === "cJSON_String" ||
-                                                                            cJSON.items?.cjsonType === "cJSON_Object" ||
-                                                                            cJSON.items?.cjsonType === "cJSON_Union"
-                                                                        ) {
-                                                                            this.emitLine(
-                                                                                cJSON.addToObject,
-                                                                                "(j",
-                                                                                child_level.toString(),
-                                                                                ", keys",
-                                                                                child_level.toString(),
-                                                                                "[index",
-                                                                                child_level.toString(),
-                                                                                "], ",
-                                                                                cJSON.items?.createObject,
-                                                                                "(x",
-                                                                                child_level.toString(),
-                                                                                "));"
-                                                                            );
-                                                                        } else {
-                                                                            this.emitLine(
-                                                                                cJSON.addToObject,
-                                                                                "(j",
-                                                                                child_level.toString(),
-                                                                                ", keys",
-                                                                                child_level.toString(),
-                                                                                "[index",
-                                                                                child_level.toString(),
-                                                                                "], ",
-                                                                                // @ts-expect-error awaiting refactor
-                                                                                cJSON.items?.createObject,
-                                                                                "(*x",
-                                                                                child_level.toString(),
-                                                                                "));"
-                                                                            );
-                                                                        }
-                                                                    };
+                                                                                const add =
+                                                                                    (
+                                                                                        type: Type,
+                                                                                        cJSON: TypeCJSON,
+                                                                                        child_level: number,
+                                                                                    ) => {
+                                                                                        if (
+                                                                                            cJSON
+                                                                                                .items
+                                                                                                ?.cjsonType ===
+                                                                                            "cJSON_Array"
+                                                                                        ) {
+                                                                                            if (
+                                                                                                type instanceof
+                                                                                                MapType
+                                                                                            ) {
+                                                                                                const child_level2 =
+                                                                                                    child_level +
+                                                                                                    1;
+                                                                                                recur(
+                                                                                                    type.values,
+                                                                                                    child_level,
+                                                                                                );
+                                                                                                this.emitLine(
+                                                                                                    cJSON.addToObject,
+                                                                                                    "(j",
+                                                                                                    child_level.toString(),
+                                                                                                    ", keys",
+                                                                                                    child_level.toString(),
+                                                                                                    "[index",
+                                                                                                    child_level.toString(),
+                                                                                                    "], j",
+                                                                                                    child_level2.toString(),
+                                                                                                    ");",
+                                                                                                );
+                                                                                            } else {
+                                                                                                panic(
+                                                                                                    "Invalid type",
+                                                                                                );
+                                                                                            }
+                                                                                        } else if (
+                                                                                            cJSON
+                                                                                                .items
+                                                                                                ?.cjsonType ===
+                                                                                            "cJSON_Map"
+                                                                                        ) {
+                                                                                            /* Not supported */
+                                                                                        } else if (
+                                                                                            cJSON
+                                                                                                .items
+                                                                                                ?.cjsonType ===
+                                                                                            "cJSON_Invalid"
+                                                                                        ) {
+                                                                                            /* Nothing to do */
+                                                                                        } else if (
+                                                                                            cJSON
+                                                                                                .items
+                                                                                                ?.cjsonType ===
+                                                                                            "cJSON_NULL"
+                                                                                        ) {
+                                                                                            this.emitLine(
+                                                                                                cJSON.addToObject,
+                                                                                                "(j",
+                                                                                                child_level.toString(),
+                                                                                                ", keys",
+                                                                                                child_level.toString(),
+                                                                                                "[index",
+                                                                                                child_level.toString(),
+                                                                                                "], ",
+                                                                                                cJSON
+                                                                                                    .items
+                                                                                                    ?.createObject,
+                                                                                                "());",
+                                                                                            );
+                                                                                        } else if (
+                                                                                            cJSON
+                                                                                                .items
+                                                                                                ?.cjsonType ===
+                                                                                                "cJSON_String" ||
+                                                                                            cJSON
+                                                                                                .items
+                                                                                                ?.cjsonType ===
+                                                                                                "cJSON_Object" ||
+                                                                                            cJSON
+                                                                                                .items
+                                                                                                ?.cjsonType ===
+                                                                                                "cJSON_Union"
+                                                                                        ) {
+                                                                                            this.emitLine(
+                                                                                                cJSON.addToObject,
+                                                                                                "(j",
+                                                                                                child_level.toString(),
+                                                                                                ", keys",
+                                                                                                child_level.toString(),
+                                                                                                "[index",
+                                                                                                child_level.toString(),
+                                                                                                "], ",
+                                                                                                cJSON
+                                                                                                    .items
+                                                                                                    ?.createObject,
+                                                                                                "(x",
+                                                                                                child_level.toString(),
+                                                                                                "));",
+                                                                                            );
+                                                                                        } else {
+                                                                                            this.emitLine(
+                                                                                                cJSON.addToObject,
+                                                                                                "(j",
+                                                                                                child_level.toString(),
+                                                                                                ", keys",
+                                                                                                child_level.toString(),
+                                                                                                "[index",
+                                                                                                child_level.toString(),
+                                                                                                "], ",
+                                                                                                // @ts-expect-error awaiting refactor
+                                                                                                cJSON
+                                                                                                    .items
+                                                                                                    ?.createObject,
+                                                                                                "(*x",
+                                                                                                child_level.toString(),
+                                                                                                "));",
+                                                                                            );
+                                                                                        }
+                                                                                    };
 
-                                                                    if (cJSON.items?.isNullable) {
-                                                                        this.emitBlock(
-                                                                            [
-                                                                                "if ((void *)0xDEADBEEF != x",
-                                                                                child_level.toString(),
-                                                                                ")"
-                                                                            ],
-                                                                            () => {
-                                                                                add(property.type, cJSON, child_level);
-                                                                            }
+                                                                                if (
+                                                                                    cJSON
+                                                                                        .items
+                                                                                        ?.isNullable
+                                                                                ) {
+                                                                                    this.emitBlock(
+                                                                                        [
+                                                                                            "if ((void *)0xDEADBEEF != x",
+                                                                                            child_level.toString(),
+                                                                                            ")",
+                                                                                        ],
+                                                                                        () => {
+                                                                                            add(
+                                                                                                property.type,
+                                                                                                cJSON,
+                                                                                                child_level,
+                                                                                            );
+                                                                                        },
+                                                                                    );
+                                                                                    this.emitBlock(
+                                                                                        [
+                                                                                            "else",
+                                                                                        ],
+                                                                                        () => {
+                                                                                            this.emitLine(
+                                                                                                cJSON.addToObject,
+                                                                                                "(j",
+                                                                                                child_level.toString(),
+                                                                                                ", keys",
+                                                                                                child_level.toString(),
+                                                                                                "[index",
+                                                                                                child_level.toString(),
+                                                                                                "], cJSON_CreateNull());",
+                                                                                            );
+                                                                                        },
+                                                                                    );
+                                                                                } else {
+                                                                                    add(
+                                                                                        property.type,
+                                                                                        cJSON,
+                                                                                        child_level,
+                                                                                    );
+                                                                                }
+                                                                            },
                                                                         );
-                                                                        this.emitBlock(["else"], () => {
-                                                                            this.emitLine(
-                                                                                cJSON.addToObject,
-                                                                                "(j",
-                                                                                child_level.toString(),
-                                                                                ", keys",
-                                                                                child_level.toString(),
-                                                                                "[index",
-                                                                                child_level.toString(),
-                                                                                "], cJSON_CreateNull());"
-                                                                            );
-                                                                        });
-                                                                    } else {
-                                                                        add(property.type, cJSON, child_level);
-                                                                    }
-                                                                }
-                                                            );
+                                                                        this.emitLine(
+                                                                            "cJSON_free(keys",
+                                                                            child_level.toString(),
+                                                                            ");",
+                                                                        );
+                                                                    },
+                                                                );
+                                                                this.emitLine(
+                                                                    cJSON.addToObject,
+                                                                    "(j",
+                                                                    level > 0
+                                                                        ? level.toString()
+                                                                        : "",
+                                                                    ', "',
+                                                                    jsonName,
+                                                                    '", j',
+                                                                    child_level.toString(),
+                                                                    ");",
+                                                                );
+                                                            },
+                                                        );
+                                                    },
+                                                );
+                                            } else if (
+                                                cJSON.cjsonType ===
+                                                "cJSON_Invalid"
+                                            ) {
+                                                /* Nothing to do */
+                                            } else if (
+                                                cJSON.cjsonType === "cJSON_NULL"
+                                            ) {
+                                                if (property.isOptional) {
+                                                    this.emitBlock(
+                                                        [
+                                                            "if (NULL != x",
+                                                            level > 0
+                                                                ? level.toString()
+                                                                : "",
+                                                            "->",
+                                                            name,
+                                                            ")",
+                                                        ],
+                                                        () => {
                                                             this.emitLine(
-                                                                "cJSON_free(keys",
-                                                                child_level.toString(),
-                                                                ");"
+                                                                cJSON.addToObject,
+                                                                "(j",
+                                                                level > 0
+                                                                    ? level.toString()
+                                                                    : "",
+                                                                ', "',
+                                                                jsonName,
+                                                                '");',
                                                             );
-                                                        }
+                                                        },
                                                     );
+                                                } else {
                                                     this.emitLine(
                                                         cJSON.addToObject,
                                                         "(j",
-                                                        level > 0 ? level.toString() : "",
+                                                        level > 0
+                                                            ? level.toString()
+                                                            : "",
                                                         ', "',
                                                         jsonName,
-                                                        '", j',
-                                                        child_level.toString(),
-                                                        ");"
-                                                    );
-                                                });
-                                            }
-                                        );
-                                    } else if (cJSON.cjsonType === "cJSON_Invalid") {
-                                        /* Nothing to do */
-                                    } else if (cJSON.cjsonType === "cJSON_NULL") {
-                                        if (property.isOptional) {
-                                            this.emitBlock(
-                                                ["if (NULL != x", level > 0 ? level.toString() : "", "->", name, ")"],
-                                                () => {
-                                                    this.emitLine(
-                                                        cJSON.addToObject,
-                                                        "(j",
-                                                        level > 0 ? level.toString() : "",
-                                                        ', "',
-                                                        jsonName,
-                                                        '");'
+                                                        '");',
                                                     );
                                                 }
-                                            );
-                                        } else {
-                                            this.emitLine(
-                                                cJSON.addToObject,
-                                                "(j",
-                                                level > 0 ? level.toString() : "",
-                                                ', "',
-                                                jsonName,
-                                                '");'
-                                            );
-                                        }
-                                    } else if (cJSON.cjsonType === "cJSON_String") {
-                                        this.emitBlock(
-                                            ["if (NULL != x", level > 0 ? level.toString() : "", "->", name, ")"],
-                                            () => {
-                                                this.emitLine(
-                                                    cJSON.addToObject,
-                                                    "(j",
-                                                    level > 0 ? level.toString() : "",
-                                                    ', "',
-                                                    jsonName,
-                                                    '", x',
-                                                    level > 0 ? level.toString() : "",
-                                                    "->",
-                                                    name,
-                                                    ");"
+                                            } else if (
+                                                cJSON.cjsonType ===
+                                                "cJSON_String"
+                                            ) {
+                                                this.emitBlock(
+                                                    [
+                                                        "if (NULL != x",
+                                                        level > 0
+                                                            ? level.toString()
+                                                            : "",
+                                                        "->",
+                                                        name,
+                                                        ")",
+                                                    ],
+                                                    () => {
+                                                        this.emitLine(
+                                                            cJSON.addToObject,
+                                                            "(j",
+                                                            level > 0
+                                                                ? level.toString()
+                                                                : "",
+                                                            ', "',
+                                                            jsonName,
+                                                            '", x',
+                                                            level > 0
+                                                                ? level.toString()
+                                                                : "",
+                                                            "->",
+                                                            name,
+                                                            ");",
+                                                        );
+                                                    },
                                                 );
-                                            }
-                                        );
-                                        if (!property.isOptional && !cJSON.isNullable) {
-                                            this.emitBlock(["else"], () => {
-                                                this.emitLine(
-                                                    cJSON.addToObject,
-                                                    "(j",
-                                                    level > 0 ? level.toString() : "",
-                                                    ', "',
-                                                    jsonName,
-                                                    '", "");'
-                                                );
-                                            });
-                                        }
-                                    } else if (
-                                        cJSON.cjsonType === "cJSON_Object" ||
-                                        cJSON.cjsonType === "cJSON_Union"
-                                    ) {
-                                        if (property.isOptional || cJSON.isNullable) {
-                                            this.emitBlock(
-                                                ["if (NULL != x", level > 0 ? level.toString() : "", "->", name, ")"],
-                                                () => {
+                                                if (
+                                                    !property.isOptional &&
+                                                    !cJSON.isNullable
+                                                ) {
+                                                    this.emitBlock(
+                                                        ["else"],
+                                                        () => {
+                                                            this.emitLine(
+                                                                cJSON.addToObject,
+                                                                "(j",
+                                                                level > 0
+                                                                    ? level.toString()
+                                                                    : "",
+                                                                ', "',
+                                                                jsonName,
+                                                                '", "");',
+                                                            );
+                                                        },
+                                                    );
+                                                }
+                                            } else if (
+                                                cJSON.cjsonType ===
+                                                    "cJSON_Object" ||
+                                                cJSON.cjsonType ===
+                                                    "cJSON_Union"
+                                            ) {
+                                                if (
+                                                    property.isOptional ||
+                                                    cJSON.isNullable
+                                                ) {
+                                                    this.emitBlock(
+                                                        [
+                                                            "if (NULL != x",
+                                                            level > 0
+                                                                ? level.toString()
+                                                                : "",
+                                                            "->",
+                                                            name,
+                                                            ")",
+                                                        ],
+                                                        () => {
+                                                            this.emitLine(
+                                                                cJSON.addToObject,
+                                                                "(j",
+                                                                level > 0
+                                                                    ? level.toString()
+                                                                    : "",
+                                                                ', "',
+                                                                jsonName,
+                                                                '", ',
+                                                                cJSON.createObject,
+                                                                "(x",
+                                                                level > 0
+                                                                    ? level.toString()
+                                                                    : "",
+                                                                "->",
+                                                                name,
+                                                                "));",
+                                                            );
+                                                        },
+                                                    );
+                                                } else {
                                                     this.emitLine(
                                                         cJSON.addToObject,
                                                         "(j",
-                                                        level > 0 ? level.toString() : "",
+                                                        level > 0
+                                                            ? level.toString()
+                                                            : "",
                                                         ', "',
                                                         jsonName,
                                                         '", ',
                                                         cJSON.createObject,
                                                         "(x",
-                                                        level > 0 ? level.toString() : "",
+                                                        level > 0
+                                                            ? level.toString()
+                                                            : "",
                                                         "->",
                                                         name,
-                                                        "));"
+                                                        "));",
                                                     );
                                                 }
-                                            );
-                                        } else {
-                                            this.emitLine(
-                                                cJSON.addToObject,
-                                                "(j",
-                                                level > 0 ? level.toString() : "",
-                                                ', "',
-                                                jsonName,
-                                                '", ',
-                                                cJSON.createObject,
-                                                "(x",
-                                                level > 0 ? level.toString() : "",
-                                                "->",
-                                                name,
-                                                "));"
-                                            );
-                                        }
-                                    } else if (cJSON.cjsonType === "cJSON_Enum") {
-                                        if (property.isOptional || cJSON.isNullable) {
-                                            this.emitBlock(
-                                                ["if (NULL != x", level > 0 ? level.toString() : "", "->", name, ")"],
-                                                () => {
+                                            } else if (
+                                                cJSON.cjsonType === "cJSON_Enum"
+                                            ) {
+                                                if (
+                                                    property.isOptional ||
+                                                    cJSON.isNullable
+                                                ) {
+                                                    this.emitBlock(
+                                                        [
+                                                            "if (NULL != x",
+                                                            level > 0
+                                                                ? level.toString()
+                                                                : "",
+                                                            "->",
+                                                            name,
+                                                            ")",
+                                                        ],
+                                                        () => {
+                                                            this.emitLine(
+                                                                cJSON.addToObject,
+                                                                "(j",
+                                                                level > 0
+                                                                    ? level.toString()
+                                                                    : "",
+                                                                ', "',
+                                                                jsonName,
+                                                                '", ',
+                                                                cJSON.createObject,
+                                                                "(*x",
+                                                                level > 0
+                                                                    ? level.toString()
+                                                                    : "",
+                                                                "->",
+                                                                name,
+                                                                "));",
+                                                            );
+                                                        },
+                                                    );
+                                                } else {
                                                     this.emitLine(
                                                         cJSON.addToObject,
                                                         "(j",
-                                                        level > 0 ? level.toString() : "",
+                                                        level > 0
+                                                            ? level.toString()
+                                                            : "",
                                                         ', "',
                                                         jsonName,
                                                         '", ',
                                                         cJSON.createObject,
-                                                        "(*x",
-                                                        level > 0 ? level.toString() : "",
+                                                        "(x",
+                                                        level > 0
+                                                            ? level.toString()
+                                                            : "",
                                                         "->",
                                                         name,
-                                                        "));"
+                                                        "));",
                                                     );
                                                 }
-                                            );
-                                        } else {
-                                            this.emitLine(
-                                                cJSON.addToObject,
-                                                "(j",
-                                                level > 0 ? level.toString() : "",
-                                                ', "',
-                                                jsonName,
-                                                '", ',
-                                                cJSON.createObject,
-                                                "(x",
-                                                level > 0 ? level.toString() : "",
-                                                "->",
-                                                name,
-                                                "));"
-                                            );
-                                        }
-                                    } else {
-                                        if (property.isOptional || cJSON.isNullable) {
-                                            this.emitBlock(
-                                                ["if (NULL != x", level > 0 ? level.toString() : "", "->", name, ")"],
-                                                () => {
+                                            } else {
+                                                if (
+                                                    property.isOptional ||
+                                                    cJSON.isNullable
+                                                ) {
+                                                    this.emitBlock(
+                                                        [
+                                                            "if (NULL != x",
+                                                            level > 0
+                                                                ? level.toString()
+                                                                : "",
+                                                            "->",
+                                                            name,
+                                                            ")",
+                                                        ],
+                                                        () => {
+                                                            this.emitLine(
+                                                                cJSON.addToObject,
+                                                                "(j",
+                                                                level > 0
+                                                                    ? level.toString()
+                                                                    : "",
+                                                                ', "',
+                                                                jsonName,
+                                                                '", *x',
+                                                                level > 0
+                                                                    ? level.toString()
+                                                                    : "",
+                                                                "->",
+                                                                name,
+                                                                ");",
+                                                            );
+                                                        },
+                                                    );
+                                                } else {
                                                     this.emitLine(
                                                         cJSON.addToObject,
                                                         "(j",
-                                                        level > 0 ? level.toString() : "",
+                                                        level > 0
+                                                            ? level.toString()
+                                                            : "",
                                                         ', "',
                                                         jsonName,
-                                                        '", *x',
-                                                        level > 0 ? level.toString() : "",
+                                                        '", x',
+                                                        level > 0
+                                                            ? level.toString()
+                                                            : "",
                                                         "->",
                                                         name,
-                                                        ");"
+                                                        ");",
                                                     );
                                                 }
-                                            );
-                                        } else {
-                                            this.emitLine(
-                                                cJSON.addToObject,
-                                                "(j",
-                                                level > 0 ? level.toString() : "",
-                                                ', "',
-                                                jsonName,
-                                                '", x',
-                                                level > 0 ? level.toString() : "",
-                                                "->",
-                                                name,
-                                                ");"
-                                            );
-                                        }
-                                    }
+                                            }
 
-                                    if (cJSON.isNullable) {
-                                        this.emitBlock(["else"], () => {
-                                            this.emitLine(
-                                                "cJSON_AddNullToObject(j",
-                                                level > 0 ? level.toString() : "",
-                                                ', "',
-                                                jsonName,
-                                                '");'
-                                            );
-                                        });
-                                    }
-                                });
-                            }
-                        };
+                                            if (cJSON.isNullable) {
+                                                this.emitBlock(["else"], () => {
+                                                    this.emitLine(
+                                                        "cJSON_AddNullToObject(j",
+                                                        level > 0
+                                                            ? level.toString()
+                                                            : "",
+                                                        ', "',
+                                                        jsonName,
+                                                        '");',
+                                                    );
+                                                });
+                                            }
+                                        },
+                                    );
+                                }
+                            };
 
-                        recur(classType, 0);
-                    });
+                            recur(classType, 0);
+                        },
+                    );
                 });
                 this.emitLine("return j;");
-            }
+            },
         );
         this.ensureBlankLine();
 
         /* Create className to string generator function */
-        this.emitBlock(["char * cJSON_Print", className, "(", this.withConst(["struct ", className]), " * x)"], () => {
-            this.emitLine("char * s = NULL;");
-            this.emitBlock(["if (NULL != x)"], () => {
-                this.emitLine("cJSON * j = cJSON_Create", className, "(x);");
-                this.emitBlock(["if (NULL != j)"], () => {
-                    this.emitLine(this._options.printStyle ? "s = cJSON_PrintUnformatted(j);" : "s = cJSON_Print(j);");
-                    this.emitLine("cJSON_Delete(j);");
+        this.emitBlock(
+            [
+                "char * cJSON_Print",
+                className,
+                "(",
+                this.withConst(["struct ", className]),
+                " * x)",
+            ],
+            () => {
+                this.emitLine("char * s = NULL;");
+                this.emitBlock(["if (NULL != x)"], () => {
+                    this.emitLine(
+                        "cJSON * j = cJSON_Create",
+                        className,
+                        "(x);",
+                    );
+                    this.emitBlock(["if (NULL != j)"], () => {
+                        this.emitLine(
+                            this._options.printStyle
+                                ? "s = cJSON_PrintUnformatted(j);"
+                                : "s = cJSON_Print(j);",
+                        );
+                        this.emitLine("cJSON_Delete(j);");
+                    });
                 });
-            });
-            this.emitLine("return s;");
-        });
+                this.emitLine("return s;");
+            },
+        );
         this.ensureBlankLine();
 
         /* Create className delete function */
-        this.emitBlock(["void cJSON_Delete", className, "(struct ", className, " * x)"], () => {
-            this.emitBlock(["if (NULL != x)"], () => {
-                const recur = (type: Type, level: number) => {
-                    if (type instanceof ArrayType) {
-                        const child_level = level + 1;
-                        const cJSON = this.quicktypeTypeToCJSON(type.items, false);
-                        this.emitLine(
-                            cJSON.cType,
-                            " * x",
-                            child_level.toString(),
-                            " = list_get_head(x",
-                            level.toString(),
-                            ");"
-                        );
-                        this.emitBlock(["while (NULL != x", child_level.toString(), ")"], () => {
-                            if (cJSON.cjsonType === "cJSON_Array") {
-                                recur(type.items, child_level);
-                                this.emitLine(cJSON.deleteType, "(x", child_level.toString(), ");");
-                            } else if (cJSON.cjsonType === "cJSON_Map") {
-                                /* Not supported */
-                            } else if (cJSON.cjsonType === "cJSON_Invalid" || cJSON.cjsonType === "cJSON_NULL") {
-                                /* Nothing to do */
-                            } else {
-                                this.emitLine(cJSON.deleteType, "(x", child_level.toString(), ");");
-                            }
-
-                            this.emitLine("x", child_level.toString(), " = list_get_next(x", level.toString(), ");");
-                        });
-                    } else if (type instanceof ClassType) {
-                        this.forEachClassProperty(type, "none", (name, _jsonName, property) => {
-                            const cJSON = this.quicktypeTypeToCJSON(property.type, property.isOptional);
-                            if (cJSON.cjsonType === "cJSON_Array" && cJSON.items !== undefined) {
-                                const child_level = level + 1;
-                                this.emitBlock(
-                                    ["if (NULL != x", level > 0 ? level.toString() : "", "->", name, ")"],
-                                    () => {
-                                        this.emitLine(
-                                            // @ts-expect-error awaiting refactor
-                                            cJSON.items?.cType,
-                                            " * x",
-                                            child_level.toString(),
-                                            " = list_get_head(x",
-                                            level > 0 ? level.toString() : "",
-                                            "->",
-                                            name,
-                                            ");"
-                                        );
-                                        this.emitBlock(["while (NULL != x", child_level.toString(), ")"], () => {
-                                            if (cJSON.items?.cjsonType === "cJSON_Array") {
-                                                if (property.type instanceof ArrayType) {
-                                                    recur(property.type.items, child_level);
-                                                    this.emitLine(
-                                                        cJSON.items?.deleteType,
-                                                        "(x",
-                                                        child_level.toString(),
-                                                        ");"
-                                                    );
-                                                } else {
-                                                    panic("Invalid type");
-                                                }
-                                            } else if (cJSON.items?.cjsonType === "cJSON_Map") {
-                                                /* Not supported */
-                                            } else if (
-                                                cJSON.items?.cjsonType === "cJSON_Invalid" ||
-                                                cJSON.items?.cjsonType === "cJSON_NULL"
-                                            ) {
-                                                /* Nothing to do */
-                                            } else {
-                                                if (cJSON.items?.isNullable) {
-                                                    this.emitBlock(
-                                                        ["if ((void *)0xDEADBEEF != x", child_level.toString(), ")"],
-                                                        () => {
-                                                            this.emitLine(
-                                                                // @ts-expect-error awaiting refactor
-                                                                cJSON.items?.deleteType,
-                                                                "(x",
-                                                                child_level.toString(),
-                                                                ");"
-                                                            );
-                                                        }
-                                                    );
-                                                } else {
-                                                    this.emitLine(
-                                                        // @ts-expect-error awaiting refactor
-                                                        cJSON.items?.deleteType,
-                                                        "(x",
-                                                        child_level.toString(),
-                                                        ");"
-                                                    );
-                                                }
-                                            }
-
-                                            this.emitLine(
-                                                "x",
-                                                child_level.toString(),
-                                                " = list_get_next(x",
-                                                level > 0 ? level.toString() : "",
-                                                "->",
-                                                name,
-                                                ");"
-                                            );
-                                        });
+        this.emitBlock(
+            ["void cJSON_Delete", className, "(struct ", className, " * x)"],
+            () => {
+                this.emitBlock(["if (NULL != x)"], () => {
+                    const recur = (type: Type, level: number) => {
+                        if (type instanceof ArrayType) {
+                            const child_level = level + 1;
+                            const cJSON = this.quicktypeTypeToCJSON(
+                                type.items,
+                                false,
+                            );
+                            this.emitLine(
+                                cJSON.cType,
+                                " * x",
+                                child_level.toString(),
+                                " = list_get_head(x",
+                                level.toString(),
+                                ");",
+                            );
+                            this.emitBlock(
+                                [
+                                    "while (NULL != x",
+                                    child_level.toString(),
+                                    ")",
+                                ],
+                                () => {
+                                    if (cJSON.cjsonType === "cJSON_Array") {
+                                        recur(type.items, child_level);
                                         this.emitLine(
                                             cJSON.deleteType,
                                             "(x",
-                                            level > 0 ? level.toString() : "",
-                                            "->",
-                                            name,
-                                            ");"
+                                            child_level.toString(),
+                                            ");",
+                                        );
+                                    } else if (
+                                        cJSON.cjsonType === "cJSON_Map"
+                                    ) {
+                                        /* Not supported */
+                                    } else if (
+                                        cJSON.cjsonType === "cJSON_Invalid" ||
+                                        cJSON.cjsonType === "cJSON_NULL"
+                                    ) {
+                                        /* Nothing to do */
+                                    } else {
+                                        this.emitLine(
+                                            cJSON.deleteType,
+                                            "(x",
+                                            child_level.toString(),
+                                            ");",
                                         );
                                     }
-                                );
-                            } else if (cJSON.cjsonType === "cJSON_Map" && cJSON.items !== undefined) {
-                                const child_level = level + 1;
-                                this.emitBlock(
-                                    ["if (NULL != x", level > 0 ? level.toString() : "", "->", name, ")"],
-                                    () => {
-                                        this.emitLine("char **keys", child_level.toString(), " = NULL;");
-                                        this.emitLine(
-                                            "size_t count",
-                                            child_level.toString(),
-                                            " = hashtable_get_keys(x",
-                                            level > 0 ? level.toString() : "",
-                                            "->",
-                                            name,
-                                            ", &keys",
-                                            child_level.toString(),
-                                            ");"
+
+                                    this.emitLine(
+                                        "x",
+                                        child_level.toString(),
+                                        " = list_get_next(x",
+                                        level.toString(),
+                                        ");",
+                                    );
+                                },
+                            );
+                        } else if (type instanceof ClassType) {
+                            this.forEachClassProperty(
+                                type,
+                                "none",
+                                (name, _jsonName, property) => {
+                                    const cJSON = this.quicktypeTypeToCJSON(
+                                        property.type,
+                                        property.isOptional,
+                                    );
+                                    if (
+                                        cJSON.cjsonType === "cJSON_Array" &&
+                                        cJSON.items !== undefined
+                                    ) {
+                                        const child_level = level + 1;
+                                        this.emitBlock(
+                                            [
+                                                "if (NULL != x",
+                                                level > 0
+                                                    ? level.toString()
+                                                    : "",
+                                                "->",
+                                                name,
+                                                ")",
+                                            ],
+                                            () => {
+                                                this.emitLine(
+                                                    // @ts-expect-error awaiting refactor
+                                                    cJSON.items?.cType,
+                                                    " * x",
+                                                    child_level.toString(),
+                                                    " = list_get_head(x",
+                                                    level > 0
+                                                        ? level.toString()
+                                                        : "",
+                                                    "->",
+                                                    name,
+                                                    ");",
+                                                );
+                                                this.emitBlock(
+                                                    [
+                                                        "while (NULL != x",
+                                                        child_level.toString(),
+                                                        ")",
+                                                    ],
+                                                    () => {
+                                                        if (
+                                                            cJSON.items
+                                                                ?.cjsonType ===
+                                                            "cJSON_Array"
+                                                        ) {
+                                                            if (
+                                                                property.type instanceof
+                                                                ArrayType
+                                                            ) {
+                                                                recur(
+                                                                    property
+                                                                        .type
+                                                                        .items,
+                                                                    child_level,
+                                                                );
+                                                                this.emitLine(
+                                                                    cJSON.items
+                                                                        ?.deleteType,
+                                                                    "(x",
+                                                                    child_level.toString(),
+                                                                    ");",
+                                                                );
+                                                            } else {
+                                                                panic(
+                                                                    "Invalid type",
+                                                                );
+                                                            }
+                                                        } else if (
+                                                            cJSON.items
+                                                                ?.cjsonType ===
+                                                            "cJSON_Map"
+                                                        ) {
+                                                            /* Not supported */
+                                                        } else if (
+                                                            cJSON.items
+                                                                ?.cjsonType ===
+                                                                "cJSON_Invalid" ||
+                                                            cJSON.items
+                                                                ?.cjsonType ===
+                                                                "cJSON_NULL"
+                                                        ) {
+                                                            /* Nothing to do */
+                                                        } else {
+                                                            if (
+                                                                cJSON.items
+                                                                    ?.isNullable
+                                                            ) {
+                                                                this.emitBlock(
+                                                                    [
+                                                                        "if ((void *)0xDEADBEEF != x",
+                                                                        child_level.toString(),
+                                                                        ")",
+                                                                    ],
+                                                                    () => {
+                                                                        this.emitLine(
+                                                                            // @ts-expect-error awaiting refactor
+                                                                            cJSON
+                                                                                .items
+                                                                                ?.deleteType,
+                                                                            "(x",
+                                                                            child_level.toString(),
+                                                                            ");",
+                                                                        );
+                                                                    },
+                                                                );
+                                                            } else {
+                                                                this.emitLine(
+                                                                    // @ts-expect-error awaiting refactor
+                                                                    cJSON.items
+                                                                        ?.deleteType,
+                                                                    "(x",
+                                                                    child_level.toString(),
+                                                                    ");",
+                                                                );
+                                                            }
+                                                        }
+
+                                                        this.emitLine(
+                                                            "x",
+                                                            child_level.toString(),
+                                                            " = list_get_next(x",
+                                                            level > 0
+                                                                ? level.toString()
+                                                                : "",
+                                                            "->",
+                                                            name,
+                                                            ");",
+                                                        );
+                                                    },
+                                                );
+                                                this.emitLine(
+                                                    cJSON.deleteType,
+                                                    "(x",
+                                                    level > 0
+                                                        ? level.toString()
+                                                        : "",
+                                                    "->",
+                                                    name,
+                                                    ");",
+                                                );
+                                            },
                                         );
-                                        this.emitBlock(["if (NULL != keys", child_level.toString(), ")"], () => {
+                                    } else if (
+                                        cJSON.cjsonType === "cJSON_Map" &&
+                                        cJSON.items !== undefined
+                                    ) {
+                                        const child_level = level + 1;
+                                        this.emitBlock(
+                                            [
+                                                "if (NULL != x",
+                                                level > 0
+                                                    ? level.toString()
+                                                    : "",
+                                                "->",
+                                                name,
+                                                ")",
+                                            ],
+                                            () => {
+                                                this.emitLine(
+                                                    "char **keys",
+                                                    child_level.toString(),
+                                                    " = NULL;",
+                                                );
+                                                this.emitLine(
+                                                    "size_t count",
+                                                    child_level.toString(),
+                                                    " = hashtable_get_keys(x",
+                                                    level > 0
+                                                        ? level.toString()
+                                                        : "",
+                                                    "->",
+                                                    name,
+                                                    ", &keys",
+                                                    child_level.toString(),
+                                                    ");",
+                                                );
+                                                this.emitBlock(
+                                                    [
+                                                        "if (NULL != keys",
+                                                        child_level.toString(),
+                                                        ")",
+                                                    ],
+                                                    () => {
+                                                        this.emitBlock(
+                                                            [
+                                                                "for (size_t index",
+                                                                child_level.toString(),
+                                                                " = 0; index",
+                                                                child_level.toString(),
+                                                                " < count",
+                                                                child_level.toString(),
+                                                                "; index",
+                                                                child_level.toString(),
+                                                                "++)",
+                                                            ],
+                                                            () => {
+                                                                this.emitLine(
+                                                                    // @ts-expect-error awaiting refactor
+                                                                    cJSON.items
+                                                                        ?.cType,
+                                                                    " *x",
+                                                                    child_level.toString(),
+                                                                    " = hashtable_lookup(x",
+                                                                    level > 0
+                                                                        ? level.toString()
+                                                                        : "",
+                                                                    "->",
+                                                                    name,
+                                                                    ", keys",
+                                                                    child_level.toString(),
+                                                                    "[index",
+                                                                    child_level.toString(),
+                                                                    "]);",
+                                                                );
+                                                                this.emitBlock(
+                                                                    [
+                                                                        "if (NULL != x",
+                                                                        child_level.toString(),
+                                                                        ")",
+                                                                    ],
+                                                                    () => {
+                                                                        if (
+                                                                            cJSON
+                                                                                .items
+                                                                                ?.cjsonType ===
+                                                                            "cJSON_Array"
+                                                                        ) {
+                                                                            if (
+                                                                                property.type instanceof
+                                                                                MapType
+                                                                            ) {
+                                                                                recur(
+                                                                                    property
+                                                                                        .type
+                                                                                        .values,
+                                                                                    child_level,
+                                                                                );
+                                                                                this.emitLine(
+                                                                                    cJSON
+                                                                                        .items
+                                                                                        ?.deleteType,
+                                                                                    "(x",
+                                                                                    child_level.toString(),
+                                                                                    ");",
+                                                                                );
+                                                                            } else {
+                                                                                panic(
+                                                                                    "Invalid type",
+                                                                                );
+                                                                            }
+                                                                        } else if (
+                                                                            cJSON
+                                                                                .items
+                                                                                ?.cjsonType ===
+                                                                            "cJSON_Map"
+                                                                        ) {
+                                                                            /* Not supported */
+                                                                        } else if (
+                                                                            cJSON
+                                                                                .items
+                                                                                ?.cjsonType ===
+                                                                                "cJSON_Invalid" ||
+                                                                            cJSON
+                                                                                .items
+                                                                                ?.cjsonType ===
+                                                                                "cJSON_NULL"
+                                                                        ) {
+                                                                            /* Nothing to do */
+                                                                        } else {
+                                                                            if (
+                                                                                cJSON
+                                                                                    .items
+                                                                                    ?.isNullable
+                                                                            ) {
+                                                                                this.emitBlock(
+                                                                                    [
+                                                                                        "if ((void *)0xDEADBEEF != x",
+                                                                                        child_level.toString(),
+                                                                                        ")",
+                                                                                    ],
+                                                                                    () => {
+                                                                                        this.emitLine(
+                                                                                            // @ts-expect-error awaiting refactor
+                                                                                            cJSON
+                                                                                                .items
+                                                                                                ?.deleteType,
+                                                                                            "(x",
+                                                                                            child_level.toString(),
+                                                                                            ");",
+                                                                                        );
+                                                                                    },
+                                                                                );
+                                                                            } else {
+                                                                                this.emitLine(
+                                                                                    // @ts-expect-error awaiting refactor
+                                                                                    cJSON
+                                                                                        .items
+                                                                                        ?.deleteType,
+                                                                                    "(x",
+                                                                                    child_level.toString(),
+                                                                                    ");",
+                                                                                );
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                );
+                                                            },
+                                                        );
+                                                        this.emitLine(
+                                                            "cJSON_free(keys",
+                                                            child_level.toString(),
+                                                            ");",
+                                                        );
+                                                    },
+                                                );
+                                                this.emitLine(
+                                                    cJSON.deleteType,
+                                                    "(x",
+                                                    level > 0
+                                                        ? level.toString()
+                                                        : "",
+                                                    "->",
+                                                    name,
+                                                    ");",
+                                                );
+                                            },
+                                        );
+                                    } else if (
+                                        cJSON.cjsonType === "cJSON_Invalid" ||
+                                        cJSON.cjsonType === "cJSON_NULL"
+                                    ) {
+                                        /* Nothing to do */
+                                    } else if (
+                                        cJSON.cjsonType === "cJSON_String" ||
+                                        cJSON.cjsonType === "cJSON_Object" ||
+                                        cJSON.cjsonType === "cJSON_Union"
+                                    ) {
+                                        this.emitBlock(
+                                            [
+                                                "if (NULL != x",
+                                                level > 0
+                                                    ? level.toString()
+                                                    : "",
+                                                "->",
+                                                name,
+                                                ")",
+                                            ],
+                                            () => {
+                                                this.emitLine(
+                                                    cJSON.deleteType,
+                                                    "(x",
+                                                    level > 0
+                                                        ? level.toString()
+                                                        : "",
+                                                    "->",
+                                                    name,
+                                                    ");",
+                                                );
+                                            },
+                                        );
+                                    } else {
+                                        if (
+                                            property.isOptional ||
+                                            cJSON.isNullable
+                                        ) {
                                             this.emitBlock(
                                                 [
-                                                    "for (size_t index",
-                                                    child_level.toString(),
-                                                    " = 0; index",
-                                                    child_level.toString(),
-                                                    " < count",
-                                                    child_level.toString(),
-                                                    "; index",
-                                                    child_level.toString(),
-                                                    "++)"
+                                                    "if (NULL != x",
+                                                    level > 0
+                                                        ? level.toString()
+                                                        : "",
+                                                    "->",
+                                                    name,
+                                                    ")",
                                                 ],
                                                 () => {
                                                     this.emitLine(
-                                                        // @ts-expect-error awaiting refactor
-                                                        cJSON.items?.cType,
-                                                        " *x",
-                                                        child_level.toString(),
-                                                        " = hashtable_lookup(x",
-                                                        level > 0 ? level.toString() : "",
+                                                        cJSON.deleteType,
+                                                        "(x",
+                                                        level > 0
+                                                            ? level.toString()
+                                                            : "",
                                                         "->",
                                                         name,
-                                                        ", keys",
-                                                        child_level.toString(),
-                                                        "[index",
-                                                        child_level.toString(),
-                                                        "]);"
+                                                        ");",
                                                     );
-                                                    this.emitBlock(
-                                                        ["if (NULL != x", child_level.toString(), ")"],
-                                                        () => {
-                                                            if (cJSON.items?.cjsonType === "cJSON_Array") {
-                                                                if (property.type instanceof MapType) {
-                                                                    recur(property.type.values, child_level);
-                                                                    this.emitLine(
-                                                                        cJSON.items?.deleteType,
-                                                                        "(x",
-                                                                        child_level.toString(),
-                                                                        ");"
-                                                                    );
-                                                                } else {
-                                                                    panic("Invalid type");
-                                                                }
-                                                            } else if (cJSON.items?.cjsonType === "cJSON_Map") {
-                                                                /* Not supported */
-                                                            } else if (
-                                                                cJSON.items?.cjsonType === "cJSON_Invalid" ||
-                                                                cJSON.items?.cjsonType === "cJSON_NULL"
-                                                            ) {
-                                                                /* Nothing to do */
-                                                            } else {
-                                                                if (cJSON.items?.isNullable) {
-                                                                    this.emitBlock(
-                                                                        [
-                                                                            "if ((void *)0xDEADBEEF != x",
-                                                                            child_level.toString(),
-                                                                            ")"
-                                                                        ],
-                                                                        () => {
-                                                                            this.emitLine(
-                                                                                // @ts-expect-error awaiting refactor
-                                                                                cJSON.items?.deleteType,
-                                                                                "(x",
-                                                                                child_level.toString(),
-                                                                                ");"
-                                                                            );
-                                                                        }
-                                                                    );
-                                                                } else {
-                                                                    this.emitLine(
-                                                                        // @ts-expect-error awaiting refactor
-                                                                        cJSON.items?.deleteType,
-                                                                        "(x",
-                                                                        child_level.toString(),
-                                                                        ");"
-                                                                    );
-                                                                }
-                                                            }
-                                                        }
-                                                    );
-                                                }
-                                            );
-                                            this.emitLine("cJSON_free(keys", child_level.toString(), ");");
-                                        });
-                                        this.emitLine(
-                                            cJSON.deleteType,
-                                            "(x",
-                                            level > 0 ? level.toString() : "",
-                                            "->",
-                                            name,
-                                            ");"
-                                        );
-                                    }
-                                );
-                            } else if (cJSON.cjsonType === "cJSON_Invalid" || cJSON.cjsonType === "cJSON_NULL") {
-                                /* Nothing to do */
-                            } else if (
-                                cJSON.cjsonType === "cJSON_String" ||
-                                cJSON.cjsonType === "cJSON_Object" ||
-                                cJSON.cjsonType === "cJSON_Union"
-                            ) {
-                                this.emitBlock(
-                                    ["if (NULL != x", level > 0 ? level.toString() : "", "->", name, ")"],
-                                    () => {
-                                        this.emitLine(
-                                            cJSON.deleteType,
-                                            "(x",
-                                            level > 0 ? level.toString() : "",
-                                            "->",
-                                            name,
-                                            ");"
-                                        );
-                                    }
-                                );
-                            } else {
-                                if (property.isOptional || cJSON.isNullable) {
-                                    this.emitBlock(
-                                        ["if (NULL != x", level > 0 ? level.toString() : "", "->", name, ")"],
-                                        () => {
-                                            this.emitLine(
-                                                cJSON.deleteType,
-                                                "(x",
-                                                level > 0 ? level.toString() : "",
-                                                "->",
-                                                name,
-                                                ");"
+                                                },
                                             );
                                         }
-                                    );
-                                }
-                            }
-                        });
-                    }
-                };
+                                    }
+                                },
+                            );
+                        }
+                    };
 
-                recur(classType, 0);
-                this.emitLine("cJSON_free(x);");
-            });
-        });
+                    recur(classType, 0);
+                    this.emitLine("cJSON_free(x);");
+                });
+            },
+        );
         this.ensureBlankLine();
     }
 
@@ -2945,13 +4610,17 @@ export class CJSONRenderer extends ConvenienceRenderer {
      * @param className: top level class name
      * @param includes: Array of includes
      */
-    protected emitTopLevel(type: Type, className: Name, includes: string[]): void {
+    protected emitTopLevel(
+        type: Type,
+        className: Name,
+        includes: string[],
+    ): void {
         /* Create file */
         const filename = this.sourcelikeToString(className).concat(".h");
         this.startFile(filename);
 
         /* Create includes - This create too much includes but this is safer because of specific corner cases */
-        includes.forEach(name => {
+        includes.forEach((name) => {
             this.emitIncludeLine(name);
         });
         this.ensureBlankLine();
@@ -2983,11 +4652,11 @@ export class CJSONRenderer extends ConvenienceRenderer {
                     cJSON.cType,
                     cJSON.optionalQualifier !== "" ? " " : "",
                     cJSON.optionalQualifier,
-                    " value;"
+                    " value;",
                 );
             },
             "",
-            true
+            true,
         );
         this.ensureBlankLine();
         this.emitTypedefAlias(type, className);
@@ -2999,11 +4668,45 @@ export class CJSONRenderer extends ConvenienceRenderer {
      * @param className: top level class name
      */
     protected emitTopLevelPrototypes(_type: Type, className: Name): void {
-        this.emitLine("struct ", className, " * cJSON_Parse", className, "(", this.withConst("char"), " * s);");
-        this.emitLine("struct ", className, " * cJSON_Get", className, "Value(", this.withConst("cJSON"), " * j);");
-        this.emitLine("cJSON * cJSON_Create", className, "(", this.withConst(["struct ", className]), " * x);");
-        this.emitLine("char * cJSON_Print", className, "(", this.withConst(["struct ", className]), " * x);");
-        this.emitLine("void cJSON_Delete", className, "(struct ", className, " * x);");
+        this.emitLine(
+            "struct ",
+            className,
+            " * cJSON_Parse",
+            className,
+            "(",
+            this.withConst("char"),
+            " * s);",
+        );
+        this.emitLine(
+            "struct ",
+            className,
+            " * cJSON_Get",
+            className,
+            "Value(",
+            this.withConst("cJSON"),
+            " * j);",
+        );
+        this.emitLine(
+            "cJSON * cJSON_Create",
+            className,
+            "(",
+            this.withConst(["struct ", className]),
+            " * x);",
+        );
+        this.emitLine(
+            "char * cJSON_Print",
+            className,
+            "(",
+            this.withConst(["struct ", className]),
+            " * x);",
+        );
+        this.emitLine(
+            "void cJSON_Delete",
+            className,
+            "(struct ",
+            className,
+            " * x);",
+        );
         this.ensureBlankLine();
     }
 
@@ -3015,7 +4718,15 @@ export class CJSONRenderer extends ConvenienceRenderer {
     protected emitTopLevelFunctions(type: Type, className: Name): void {
         /* Create string to className generator function */
         this.emitBlock(
-            ["struct ", className, " * cJSON_Parse", className, "(", this.withConst("char"), " * s)"],
+            [
+                "struct ",
+                className,
+                " * cJSON_Parse",
+                className,
+                "(",
+                this.withConst("char"),
+                " * s)",
+            ],
             () => {
                 this.emitLine("struct ", className, " * x = NULL;");
                 this.emitBlock(["if (NULL != s)"], () => {
@@ -3026,270 +4737,451 @@ export class CJSONRenderer extends ConvenienceRenderer {
                     });
                 });
                 this.emitLine("return x;");
-            }
+            },
         );
         this.ensureBlankLine();
 
         /* Create cJSON to className generator function */
         this.emitBlock(
-            ["struct ", className, " * cJSON_Get", className, "Value(", this.withConst("cJSON"), " * j)"],
+            [
+                "struct ",
+                className,
+                " * cJSON_Get",
+                className,
+                "Value(",
+                this.withConst("cJSON"),
+                " * j)",
+            ],
             () => {
                 this.emitLine("struct ", className, " * x = NULL;");
                 this.emitBlock(["if (NULL != j)"], () => {
-                    this.emitBlock(["if (NULL != (x = cJSON_malloc(sizeof(struct ", className, "))))"], () => {
-                        this.emitLine("memset(x, 0, sizeof(struct ", className, "));");
-                        const cJSON = this.quicktypeTypeToCJSON(type, false);
-                        if (cJSON.cjsonType === "cJSON_Array" && cJSON.items !== undefined) {
-                            this.emitLine("x->value = list_create(false, NULL);");
-                            this.emitBlock(["if (NULL != x->value)"], () => {
-                                this.emitLine("cJSON * e = NULL;");
-                                this.emitBlock(["cJSON_ArrayForEach(e, j)"], () => {
-                                    const add = (cJSON: TypeCJSON) => {
-                                        if (cJSON.items?.cjsonType === "cJSON_Array") {
-                                            /* Not supported */
-                                        } else if (cJSON.items?.cjsonType === "cJSON_Map") {
-                                            /* Not supported */
-                                        } else if (
-                                            cJSON.items?.cjsonType === "cJSON_Invalid" ||
-                                            cJSON.items?.cjsonType === "cJSON_NULL"
-                                        ) {
-                                            this.emitLine(
-                                                "list_add_tail(x->value, (",
-                                                cJSON.items?.cType,
-                                                " *)0xDEADBEAF, sizeof(",
-                                                cJSON.items?.cType,
-                                                " *));"
-                                            );
-                                        } else if (cJSON.items?.cjsonType === "cJSON_String") {
-                                            this.emitLine(
-                                                "list_add_tail(x->value, strdup(",
-                                                cJSON.items?.getValue,
-                                                "(e)), sizeof(",
-                                                cJSON.items?.cType,
-                                                " *));"
-                                            );
-                                        } else {
-                                            this.emitLine(
-                                                "list_add_tail(x->value, ",
-                                                // @ts-expect-error awaiting refactor
-                                                cJSON.items?.getValue,
-                                                "(e), sizeof(",
-                                                cJSON.items?.cType,
-                                                " *));"
-                                            );
-                                        }
-                                    };
+                    this.emitBlock(
+                        [
+                            "if (NULL != (x = cJSON_malloc(sizeof(struct ",
+                            className,
+                            "))))",
+                        ],
+                        () => {
+                            this.emitLine(
+                                "memset(x, 0, sizeof(struct ",
+                                className,
+                                "));",
+                            );
+                            const cJSON = this.quicktypeTypeToCJSON(
+                                type,
+                                false,
+                            );
+                            if (
+                                cJSON.cjsonType === "cJSON_Array" &&
+                                cJSON.items !== undefined
+                            ) {
+                                this.emitLine(
+                                    "x->value = list_create(false, NULL);",
+                                );
+                                this.emitBlock(
+                                    ["if (NULL != x->value)"],
+                                    () => {
+                                        this.emitLine("cJSON * e = NULL;");
+                                        this.emitBlock(
+                                            ["cJSON_ArrayForEach(e, j)"],
+                                            () => {
+                                                const add = (
+                                                    cJSON: TypeCJSON,
+                                                ) => {
+                                                    if (
+                                                        cJSON.items
+                                                            ?.cjsonType ===
+                                                        "cJSON_Array"
+                                                    ) {
+                                                        /* Not supported */
+                                                    } else if (
+                                                        cJSON.items
+                                                            ?.cjsonType ===
+                                                        "cJSON_Map"
+                                                    ) {
+                                                        /* Not supported */
+                                                    } else if (
+                                                        cJSON.items
+                                                            ?.cjsonType ===
+                                                            "cJSON_Invalid" ||
+                                                        cJSON.items
+                                                            ?.cjsonType ===
+                                                            "cJSON_NULL"
+                                                    ) {
+                                                        this.emitLine(
+                                                            "list_add_tail(x->value, (",
+                                                            cJSON.items?.cType,
+                                                            " *)0xDEADBEAF, sizeof(",
+                                                            cJSON.items?.cType,
+                                                            " *));",
+                                                        );
+                                                    } else if (
+                                                        cJSON.items
+                                                            ?.cjsonType ===
+                                                        "cJSON_String"
+                                                    ) {
+                                                        this.emitLine(
+                                                            "list_add_tail(x->value, strdup(",
+                                                            cJSON.items
+                                                                ?.getValue,
+                                                            "(e)), sizeof(",
+                                                            cJSON.items?.cType,
+                                                            " *));",
+                                                        );
+                                                    } else {
+                                                        this.emitLine(
+                                                            "list_add_tail(x->value, ",
+                                                            // @ts-expect-error awaiting refactor
+                                                            cJSON.items
+                                                                ?.getValue,
+                                                            "(e), sizeof(",
+                                                            cJSON.items?.cType,
+                                                            " *));",
+                                                        );
+                                                    }
+                                                };
 
-                                    if (cJSON.items?.isNullable) {
-                                        this.emitBlock(["if (!cJSON_IsNull(e))"], () => {
-                                            add(cJSON);
-                                        });
-                                        this.emitBlock(["else"], () => {
-                                            this.emitLine(
-                                                "list_add_tail(x->value, (void *)0xDEADBEEF, sizeof(void *));"
-                                            );
-                                        });
-                                    } else {
-                                        add(cJSON);
-                                    }
-                                });
-                            });
-                        } else if (cJSON.cjsonType === "cJSON_Map" && cJSON.items !== undefined) {
-                            this.emitLine("x->value = hashtable_create(", this.hashtableSize, ", false);");
-                            this.emitBlock(["if (NULL != x->value)"], () => {
-                                this.emitLine("cJSON * e = NULL;");
-                                this.emitBlock(["cJSON_ArrayForEach(e, j)"], () => {
-                                    const add = (cJSON: TypeCJSON) => {
-                                        if (cJSON.items?.cjsonType === "cJSON_Array") {
-                                            /* Not supported */
-                                        } else if (cJSON.items?.cjsonType === "cJSON_Map") {
-                                            /* Not supported */
-                                        } else if (
-                                            cJSON.items?.cjsonType === "cJSON_Invalid" ||
-                                            cJSON.items?.cjsonType === "cJSON_NULL"
-                                        ) {
-                                            this.emitLine(
-                                                "hashtable_add(x->value, e->string, (",
-                                                cJSON.items?.cType,
-                                                " *)0xDEADBEEF, sizeof(",
-                                                cJSON.items?.cType,
-                                                " *));"
-                                            );
-                                        } else if (cJSON.items?.cjsonType === "cJSON_String") {
-                                            this.emitLine(
-                                                "hashtable_add(x->value, e->string, strdup(",
-                                                cJSON.items?.getValue,
-                                                "(e)), sizeof(",
-                                                cJSON.items?.cType,
-                                                " *));"
-                                            );
-                                        } else {
-                                            this.emitLine(
-                                                "hashtable_add(x->value, e->string, ",
-                                                // @ts-expect-error awaiting refactor
-                                                cJSON.items?.getValue,
-                                                "(e), sizeof(",
-                                                cJSON.items?.cType,
-                                                " *));"
-                                            );
-                                        }
-                                    };
+                                                if (cJSON.items?.isNullable) {
+                                                    this.emitBlock(
+                                                        [
+                                                            "if (!cJSON_IsNull(e))",
+                                                        ],
+                                                        () => {
+                                                            add(cJSON);
+                                                        },
+                                                    );
+                                                    this.emitBlock(
+                                                        ["else"],
+                                                        () => {
+                                                            this.emitLine(
+                                                                "list_add_tail(x->value, (void *)0xDEADBEEF, sizeof(void *));",
+                                                            );
+                                                        },
+                                                    );
+                                                } else {
+                                                    add(cJSON);
+                                                }
+                                            },
+                                        );
+                                    },
+                                );
+                            } else if (
+                                cJSON.cjsonType === "cJSON_Map" &&
+                                cJSON.items !== undefined
+                            ) {
+                                this.emitLine(
+                                    "x->value = hashtable_create(",
+                                    this.hashtableSize,
+                                    ", false);",
+                                );
+                                this.emitBlock(
+                                    ["if (NULL != x->value)"],
+                                    () => {
+                                        this.emitLine("cJSON * e = NULL;");
+                                        this.emitBlock(
+                                            ["cJSON_ArrayForEach(e, j)"],
+                                            () => {
+                                                const add = (
+                                                    cJSON: TypeCJSON,
+                                                ) => {
+                                                    if (
+                                                        cJSON.items
+                                                            ?.cjsonType ===
+                                                        "cJSON_Array"
+                                                    ) {
+                                                        /* Not supported */
+                                                    } else if (
+                                                        cJSON.items
+                                                            ?.cjsonType ===
+                                                        "cJSON_Map"
+                                                    ) {
+                                                        /* Not supported */
+                                                    } else if (
+                                                        cJSON.items
+                                                            ?.cjsonType ===
+                                                            "cJSON_Invalid" ||
+                                                        cJSON.items
+                                                            ?.cjsonType ===
+                                                            "cJSON_NULL"
+                                                    ) {
+                                                        this.emitLine(
+                                                            "hashtable_add(x->value, e->string, (",
+                                                            cJSON.items?.cType,
+                                                            " *)0xDEADBEEF, sizeof(",
+                                                            cJSON.items?.cType,
+                                                            " *));",
+                                                        );
+                                                    } else if (
+                                                        cJSON.items
+                                                            ?.cjsonType ===
+                                                        "cJSON_String"
+                                                    ) {
+                                                        this.emitLine(
+                                                            "hashtable_add(x->value, e->string, strdup(",
+                                                            cJSON.items
+                                                                ?.getValue,
+                                                            "(e)), sizeof(",
+                                                            cJSON.items?.cType,
+                                                            " *));",
+                                                        );
+                                                    } else {
+                                                        this.emitLine(
+                                                            "hashtable_add(x->value, e->string, ",
+                                                            // @ts-expect-error awaiting refactor
+                                                            cJSON.items
+                                                                ?.getValue,
+                                                            "(e), sizeof(",
+                                                            cJSON.items?.cType,
+                                                            " *));",
+                                                        );
+                                                    }
+                                                };
 
-                                    if (cJSON.items?.isNullable) {
-                                        this.emitBlock(["if (!cJSON_IsNull(e))"], () => {
-                                            add(cJSON);
-                                        });
-                                        this.emitBlock(["else"], () => {
-                                            this.emitLine(
-                                                "hashtable_add(x->value, e->string, (void *)0xDEADBEEF, sizeof(void *));"
-                                            );
-                                        });
-                                    } else {
-                                        add(cJSON);
-                                    }
-                                });
-                            });
-                        } else if (cJSON.cjsonType === "cJSON_Invalid") {
-                            /* Nothing to do */
-                        } else if (cJSON.cjsonType === "cJSON_NULL") {
-                            this.emitLine("x->value = (", cJSON.cType, " *)0xDEADBEEF;");
-                        } else if (cJSON.cjsonType === "cJSON_String") {
-                            this.emitLine("x->value = strdup(", cJSON.getValue, "(j));");
-                        } else {
-                            this.emitLine("x->value = ", cJSON.getValue, "(j);");
-                        }
-                    });
+                                                if (cJSON.items?.isNullable) {
+                                                    this.emitBlock(
+                                                        [
+                                                            "if (!cJSON_IsNull(e))",
+                                                        ],
+                                                        () => {
+                                                            add(cJSON);
+                                                        },
+                                                    );
+                                                    this.emitBlock(
+                                                        ["else"],
+                                                        () => {
+                                                            this.emitLine(
+                                                                "hashtable_add(x->value, e->string, (void *)0xDEADBEEF, sizeof(void *));",
+                                                            );
+                                                        },
+                                                    );
+                                                } else {
+                                                    add(cJSON);
+                                                }
+                                            },
+                                        );
+                                    },
+                                );
+                            } else if (cJSON.cjsonType === "cJSON_Invalid") {
+                                /* Nothing to do */
+                            } else if (cJSON.cjsonType === "cJSON_NULL") {
+                                this.emitLine(
+                                    "x->value = (",
+                                    cJSON.cType,
+                                    " *)0xDEADBEEF;",
+                                );
+                            } else if (cJSON.cjsonType === "cJSON_String") {
+                                this.emitLine(
+                                    "x->value = strdup(",
+                                    cJSON.getValue,
+                                    "(j));",
+                                );
+                            } else {
+                                this.emitLine(
+                                    "x->value = ",
+                                    cJSON.getValue,
+                                    "(j);",
+                                );
+                            }
+                        },
+                    );
                 });
                 this.emitLine("return x;");
-            }
+            },
         );
         this.ensureBlankLine();
 
         /* Create className to cJSON generator function */
         this.emitBlock(
-            ["cJSON * cJSON_Create", className, "(", this.withConst(["struct ", className]), " * x)"],
+            [
+                "cJSON * cJSON_Create",
+                className,
+                "(",
+                this.withConst(["struct ", className]),
+                " * x)",
+            ],
             () => {
                 this.emitLine("cJSON * j = NULL;");
                 this.emitBlock(["if (NULL != x)"], () => {
                     const cJSON = this.quicktypeTypeToCJSON(type, false);
-                    if (cJSON.cjsonType === "cJSON_Array" && cJSON.items !== undefined) {
+                    if (
+                        cJSON.cjsonType === "cJSON_Array" &&
+                        cJSON.items !== undefined
+                    ) {
                         this.emitBlock(["if (NULL != x->value)"], () => {
                             this.emitLine("j = ", cJSON.createObject, "();");
                             this.emitBlock(["if (NULL != j)"], () => {
-                                // @ts-expect-error awaiting refactor
-                                this.emitLine(cJSON.items?.cType, " * x1 = list_get_head(x->value);");
+                                this.emitLine(
+                                    // @ts-expect-error awaiting refactor
+                                    cJSON.items?.cType,
+                                    " * x1 = list_get_head(x->value);",
+                                );
                                 this.emitBlock(["while (NULL != x1)"], () => {
                                     const add = (cJSON: TypeCJSON) => {
-                                        if (cJSON.items?.cjsonType === "cJSON_Array") {
+                                        if (
+                                            cJSON.items?.cjsonType ===
+                                            "cJSON_Array"
+                                        ) {
                                             /* Not supported */
-                                        } else if (cJSON.items?.cjsonType === "cJSON_Map") {
-                                            /* Not supported */
-                                        } else if (cJSON.items?.cjsonType === "cJSON_Invalid") {
-                                            /* Nothing to do */
-                                        } else if (cJSON.items?.cjsonType === "cJSON_NULL") {
-                                            this.emitLine(
-                                                "cJSON_AddItemToArray(j, ",
-                                                cJSON.items?.createObject,
-                                                "());"
-                                            );
                                         } else if (
-                                            cJSON.items?.cjsonType === "cJSON_String" ||
-                                            cJSON.items?.cjsonType === "cJSON_Object" ||
-                                            cJSON.items?.cjsonType === "cJSON_Union"
+                                            cJSON.items?.cjsonType ===
+                                            "cJSON_Map"
+                                        ) {
+                                            /* Not supported */
+                                        } else if (
+                                            cJSON.items?.cjsonType ===
+                                            "cJSON_Invalid"
+                                        ) {
+                                            /* Nothing to do */
+                                        } else if (
+                                            cJSON.items?.cjsonType ===
+                                            "cJSON_NULL"
                                         ) {
                                             this.emitLine(
                                                 "cJSON_AddItemToArray(j, ",
                                                 cJSON.items?.createObject,
-                                                "(x1));"
+                                                "());",
+                                            );
+                                        } else if (
+                                            cJSON.items?.cjsonType ===
+                                                "cJSON_String" ||
+                                            cJSON.items?.cjsonType ===
+                                                "cJSON_Object" ||
+                                            cJSON.items?.cjsonType ===
+                                                "cJSON_Union"
+                                        ) {
+                                            this.emitLine(
+                                                "cJSON_AddItemToArray(j, ",
+                                                cJSON.items?.createObject,
+                                                "(x1));",
                                             );
                                         } else {
                                             this.emitLine(
                                                 "cJSON_AddItemToArray(j, ",
                                                 // @ts-expect-error awaiting refactor
                                                 cJSON.items?.createObject,
-                                                "(*x1));"
+                                                "(*x1));",
                                             );
                                         }
                                     };
 
                                     if (cJSON.items?.isNullable) {
-                                        this.emitBlock(["if ((void *)0xDEADBEEF != x1)"], () => {
-                                            add(cJSON);
-                                        });
+                                        this.emitBlock(
+                                            ["if ((void *)0xDEADBEEF != x1)"],
+                                            () => {
+                                                add(cJSON);
+                                            },
+                                        );
                                         this.emitBlock(["else"], () => {
-                                            this.emitLine("cJSON_AddItemToArray(j, cJSON_CreateNull());");
+                                            this.emitLine(
+                                                "cJSON_AddItemToArray(j, cJSON_CreateNull());",
+                                            );
                                         });
                                     } else {
                                         add(cJSON);
                                     }
 
-                                    this.emitLine("x1 = list_get_next(x->value);");
+                                    this.emitLine(
+                                        "x1 = list_get_next(x->value);",
+                                    );
                                 });
                             });
                         });
-                    } else if (cJSON.cjsonType === "cJSON_Map" && cJSON.items !== undefined) {
+                    } else if (
+                        cJSON.cjsonType === "cJSON_Map" &&
+                        cJSON.items !== undefined
+                    ) {
                         this.emitBlock(["if (NULL != x->value)"], () => {
                             this.emitLine("j = ", cJSON.createObject, "();");
                             this.emitBlock(["if (NULL != j)"], () => {
                                 this.emitLine("char **keys = NULL;");
-                                this.emitLine("size_t count = hashtable_get_keys(x->value, &keys);");
+                                this.emitLine(
+                                    "size_t count = hashtable_get_keys(x->value, &keys);",
+                                );
                                 this.emitBlock(["if (NULL != keys)"], () => {
-                                    this.emitBlock(["for (size_t index = 0; index < count; index++)"], () => {
-                                        this.emitLine(
-                                            // @ts-expect-error awaiting refactor
-                                            cJSON.items?.cType,
-                                            " *x2 = hashtable_lookup(x->value, keys[index]);"
-                                        );
-                                        const add = (cJSON: TypeCJSON) => {
-                                            if (cJSON.items?.cjsonType === "cJSON_Array") {
-                                                /* Not supported */
-                                            } else if (cJSON.items?.cjsonType === "cJSON_Map") {
-                                                /* Not supported */
-                                            } else if (cJSON.items?.cjsonType === "cJSON_Invalid") {
-                                                /* Nothing to do */
-                                            } else if (cJSON.items?.cjsonType === "cJSON_NULL") {
-                                                this.emitLine(
-                                                    cJSON.addToObject,
-                                                    "(j, keys[index], ",
-                                                    cJSON.items?.createObject,
-                                                    "());"
-                                                );
-                                            } else if (
-                                                cJSON.items?.cjsonType === "cJSON_String" ||
-                                                cJSON.items?.cjsonType === "cJSON_Object" ||
-                                                cJSON.items?.cjsonType === "cJSON_Union"
-                                            ) {
-                                                this.emitLine(
-                                                    cJSON.addToObject,
-                                                    "(j, keys[index], ",
-                                                    cJSON.items?.createObject,
-                                                    "(x2));"
-                                                );
-                                            } else {
-                                                this.emitLine(
-                                                    cJSON.addToObject,
-                                                    "(j, keys[index], ",
-                                                    // @ts-expect-error awaiting refactor
-                                                    cJSON.items?.createObject,
-                                                    "(*x2));"
-                                                );
-                                            }
-                                        };
+                                    this.emitBlock(
+                                        [
+                                            "for (size_t index = 0; index < count; index++)",
+                                        ],
+                                        () => {
+                                            this.emitLine(
+                                                // @ts-expect-error awaiting refactor
+                                                cJSON.items?.cType,
+                                                " *x2 = hashtable_lookup(x->value, keys[index]);",
+                                            );
+                                            const add = (cJSON: TypeCJSON) => {
+                                                if (
+                                                    cJSON.items?.cjsonType ===
+                                                    "cJSON_Array"
+                                                ) {
+                                                    /* Not supported */
+                                                } else if (
+                                                    cJSON.items?.cjsonType ===
+                                                    "cJSON_Map"
+                                                ) {
+                                                    /* Not supported */
+                                                } else if (
+                                                    cJSON.items?.cjsonType ===
+                                                    "cJSON_Invalid"
+                                                ) {
+                                                    /* Nothing to do */
+                                                } else if (
+                                                    cJSON.items?.cjsonType ===
+                                                    "cJSON_NULL"
+                                                ) {
+                                                    this.emitLine(
+                                                        cJSON.addToObject,
+                                                        "(j, keys[index], ",
+                                                        cJSON.items
+                                                            ?.createObject,
+                                                        "());",
+                                                    );
+                                                } else if (
+                                                    cJSON.items?.cjsonType ===
+                                                        "cJSON_String" ||
+                                                    cJSON.items?.cjsonType ===
+                                                        "cJSON_Object" ||
+                                                    cJSON.items?.cjsonType ===
+                                                        "cJSON_Union"
+                                                ) {
+                                                    this.emitLine(
+                                                        cJSON.addToObject,
+                                                        "(j, keys[index], ",
+                                                        cJSON.items
+                                                            ?.createObject,
+                                                        "(x2));",
+                                                    );
+                                                } else {
+                                                    this.emitLine(
+                                                        cJSON.addToObject,
+                                                        "(j, keys[index], ",
+                                                        // @ts-expect-error awaiting refactor
+                                                        cJSON.items
+                                                            ?.createObject,
+                                                        "(*x2));",
+                                                    );
+                                                }
+                                            };
 
-                                        if (cJSON.items?.isNullable) {
-                                            this.emitBlock(["if ((void *)0xDEADBEEF != x2)"], () => {
-                                                add(cJSON);
-                                            });
-                                            this.emitBlock(["else"], () => {
-                                                this.emitLine(
-                                                    cJSON.addToObject,
-                                                    "(j, keys[index], cJSON_CreateNull());"
+                                            if (cJSON.items?.isNullable) {
+                                                this.emitBlock(
+                                                    [
+                                                        "if ((void *)0xDEADBEEF != x2)",
+                                                    ],
+                                                    () => {
+                                                        add(cJSON);
+                                                    },
                                                 );
-                                            });
-                                        } else {
-                                            add(cJSON);
-                                        }
-                                    });
+                                                this.emitBlock(["else"], () => {
+                                                    this.emitLine(
+                                                        cJSON.addToObject,
+                                                        "(j, keys[index], cJSON_CreateNull());",
+                                                    );
+                                                });
+                                            } else {
+                                                add(cJSON);
+                                            }
+                                        },
+                                    );
                                     this.emitLine("cJSON_free(keys);");
                                 });
                             });
@@ -3299,90 +5191,158 @@ export class CJSONRenderer extends ConvenienceRenderer {
                     } else if (cJSON.cjsonType === "cJSON_NULL") {
                         this.emitLine("j = ", cJSON.createObject, "();");
                     } else {
-                        this.emitLine("j = ", cJSON.createObject, "(x->value);");
+                        this.emitLine(
+                            "j = ",
+                            cJSON.createObject,
+                            "(x->value);",
+                        );
                     }
                 });
                 this.emitLine("return j;");
-            }
+            },
         );
         this.ensureBlankLine();
 
         /* Create className to string generator function */
-        this.emitBlock(["char * cJSON_Print", className, "(", this.withConst(["struct ", className]), " * x)"], () => {
-            this.emitLine("char * s = NULL;");
-            this.emitBlock(["if (NULL != x)"], () => {
-                this.emitLine("cJSON * j = cJSON_Create", className, "(x);");
-                this.emitBlock(["if (NULL != j)"], () => {
-                    this.emitLine("s = cJSON_Print(j);");
-                    this.emitLine("cJSON_Delete(j);");
+        this.emitBlock(
+            [
+                "char * cJSON_Print",
+                className,
+                "(",
+                this.withConst(["struct ", className]),
+                " * x)",
+            ],
+            () => {
+                this.emitLine("char * s = NULL;");
+                this.emitBlock(["if (NULL != x)"], () => {
+                    this.emitLine(
+                        "cJSON * j = cJSON_Create",
+                        className,
+                        "(x);",
+                    );
+                    this.emitBlock(["if (NULL != j)"], () => {
+                        this.emitLine("s = cJSON_Print(j);");
+                        this.emitLine("cJSON_Delete(j);");
+                    });
                 });
-            });
-            this.emitLine("return s;");
-        });
+                this.emitLine("return s;");
+            },
+        );
         this.ensureBlankLine();
 
         /* Create className delete function */
-        this.emitBlock(["void cJSON_Delete", className, "(struct ", className, " * x)"], () => {
-            this.emitBlock(["if (NULL != x)"], () => {
-                const cJSON = this.quicktypeTypeToCJSON(type, false);
-                if (cJSON.cjsonType === "cJSON_Array" && cJSON.items !== undefined) {
-                    this.emitBlock(["if (NULL != x->value)"], () => {
-                        // @ts-expect-error awaiting refactor
-                        this.emitLine(cJSON.items?.cType, " * x1 = list_get_head(x->value);");
-                        this.emitBlock(["while (NULL != x1)"], () => {
-                            if (cJSON.items?.isNullable) {
-                                this.emitBlock(["if ((void *)0xDEADBEEF != x1)"], () => {
-                                    // @ts-expect-error awaiting refactor
-                                    this.emitLine(cJSON.items?.deleteType, "(x1);");
-                                });
-                            } else {
+        this.emitBlock(
+            ["void cJSON_Delete", className, "(struct ", className, " * x)"],
+            () => {
+                this.emitBlock(["if (NULL != x)"], () => {
+                    const cJSON = this.quicktypeTypeToCJSON(type, false);
+                    if (
+                        cJSON.cjsonType === "cJSON_Array" &&
+                        cJSON.items !== undefined
+                    ) {
+                        this.emitBlock(["if (NULL != x->value)"], () => {
+                            this.emitLine(
                                 // @ts-expect-error awaiting refactor
-                                this.emitLine(cJSON.items?.deleteType, "(x1);");
-                            }
-
-                            this.emitLine("x1 = list_get_next(x->value);");
-                        });
-                        this.emitLine(cJSON.deleteType, "(x->value);");
-                    });
-                } else if (cJSON.cjsonType === "cJSON_Map" && cJSON.items !== undefined) {
-                    this.emitBlock(["if (NULL != x->value)"], () => {
-                        this.emitLine("char **keys = NULL;");
-                        this.emitLine("size_t count = hashtable_get_keys(x->value, &keys);");
-                        this.emitBlock(["if (NULL != keys)"], () => {
-                            this.emitBlock(["for (size_t index = 0; index < count; index++)"], () => {
-                                // @ts-expect-error awaiting refactor
-                                this.emitLine(cJSON.items?.cType, " *x2 = hashtable_lookup(x->value, keys[index]);");
-                                this.emitBlock(["if (NULL != x2)"], () => {
-                                    if (cJSON.items?.isNullable) {
-                                        this.emitBlock(["if ((", cJSON.items?.cType, " *)0xDEADBEEF != x2)"], () => {
-                                            // @ts-expect-error awaiting refactor
-                                            this.emitLine(cJSON.items?.deleteType, "(x2);");
-                                        });
-                                    } else {
+                                cJSON.items?.cType,
+                                " * x1 = list_get_head(x->value);",
+                            );
+                            this.emitBlock(["while (NULL != x1)"], () => {
+                                if (cJSON.items?.isNullable) {
+                                    this.emitBlock(
+                                        ["if ((void *)0xDEADBEEF != x1)"],
+                                        () => {
+                                            this.emitLine(
+                                                // @ts-expect-error awaiting refactor
+                                                cJSON.items?.deleteType,
+                                                "(x1);",
+                                            );
+                                        },
+                                    );
+                                } else {
+                                    this.emitLine(
                                         // @ts-expect-error awaiting refactor
-                                        this.emitLine(cJSON.items?.deleteType, "(x2);");
-                                    }
-                                });
-                            });
-                            this.emitLine("cJSON_free(keys);");
-                        });
-                        this.emitLine(cJSON.deleteType, "(x->value);");
-                    });
-                } else if (cJSON.cjsonType === "cJSON_Invalid" || cJSON.cjsonType === "cJSON_NULL") {
-                    /* Nothing to do */
-                } else if (
-                    cJSON.cjsonType === "cJSON_String" ||
-                    cJSON.cjsonType === "cJSON_Object" ||
-                    cJSON.cjsonType === "cJSON_Union"
-                ) {
-                    this.emitLine(cJSON.deleteType, "(x->value);");
-                } else {
-                    /* Nothing to do */
-                }
+                                        cJSON.items?.deleteType,
+                                        "(x1);",
+                                    );
+                                }
 
-                this.emitLine("cJSON_free(x);");
-            });
-        });
+                                this.emitLine("x1 = list_get_next(x->value);");
+                            });
+                            this.emitLine(cJSON.deleteType, "(x->value);");
+                        });
+                    } else if (
+                        cJSON.cjsonType === "cJSON_Map" &&
+                        cJSON.items !== undefined
+                    ) {
+                        this.emitBlock(["if (NULL != x->value)"], () => {
+                            this.emitLine("char **keys = NULL;");
+                            this.emitLine(
+                                "size_t count = hashtable_get_keys(x->value, &keys);",
+                            );
+                            this.emitBlock(["if (NULL != keys)"], () => {
+                                this.emitBlock(
+                                    [
+                                        "for (size_t index = 0; index < count; index++)",
+                                    ],
+                                    () => {
+                                        this.emitLine(
+                                            // @ts-expect-error awaiting refactor
+                                            cJSON.items?.cType,
+                                            " *x2 = hashtable_lookup(x->value, keys[index]);",
+                                        );
+                                        this.emitBlock(
+                                            ["if (NULL != x2)"],
+                                            () => {
+                                                if (cJSON.items?.isNullable) {
+                                                    this.emitBlock(
+                                                        [
+                                                            "if ((",
+                                                            cJSON.items?.cType,
+                                                            " *)0xDEADBEEF != x2)",
+                                                        ],
+                                                        () => {
+                                                            this.emitLine(
+                                                                // @ts-expect-error awaiting refactor
+                                                                cJSON.items
+                                                                    ?.deleteType,
+                                                                "(x2);",
+                                                            );
+                                                        },
+                                                    );
+                                                } else {
+                                                    this.emitLine(
+                                                        // @ts-expect-error awaiting refactor
+                                                        cJSON.items?.deleteType,
+                                                        "(x2);",
+                                                    );
+                                                }
+                                            },
+                                        );
+                                    },
+                                );
+                                this.emitLine("cJSON_free(keys);");
+                            });
+                            this.emitLine(cJSON.deleteType, "(x->value);");
+                        });
+                    } else if (
+                        cJSON.cjsonType === "cJSON_Invalid" ||
+                        cJSON.cjsonType === "cJSON_NULL"
+                    ) {
+                        /* Nothing to do */
+                    } else if (
+                        cJSON.cjsonType === "cJSON_String" ||
+                        cJSON.cjsonType === "cJSON_Object" ||
+                        cJSON.cjsonType === "cJSON_Union"
+                    ) {
+                        this.emitLine(cJSON.deleteType, "(x->value);");
+                    } else {
+                        /* Nothing to do */
+                    }
+
+                    this.emitLine("cJSON_free(x);");
+                });
+            },
+        );
         this.ensureBlankLine();
     }
 
@@ -3393,11 +5353,15 @@ export class CJSONRenderer extends ConvenienceRenderer {
      * @param isNullable: true if the field is nullable
      * @return cJSON type
      */
-    protected quicktypeTypeToCJSON(t: Type, isOptional: boolean, isNullable = false): TypeCJSON {
+    protected quicktypeTypeToCJSON(
+        t: Type,
+        isOptional: boolean,
+        isNullable = false,
+    ): TypeCJSON {
         /* Compute cJSON type */
         return matchType<TypeCJSON>(
             t,
-            _anyType => {
+            (_anyType) => {
                 return {
                     cType: "void",
                     optionalQualifier: "*",
@@ -3408,10 +5372,10 @@ export class CJSONRenderer extends ConvenienceRenderer {
                     createObject: "",
                     deleteType: "",
                     items: undefined,
-                    isNullable
+                    isNullable,
                 };
             },
-            _nullType => {
+            (_nullType) => {
                 return {
                     cType: "void",
                     optionalQualifier: "*",
@@ -3422,10 +5386,10 @@ export class CJSONRenderer extends ConvenienceRenderer {
                     createObject: "cJSON_CreateNull",
                     deleteType: "cJSON_free",
                     items: undefined,
-                    isNullable
+                    isNullable,
                 };
             },
-            _boolType => {
+            (_boolType) => {
                 return {
                     cType: "bool",
                     optionalQualifier: isOptional === true ? "*" : "",
@@ -3436,10 +5400,10 @@ export class CJSONRenderer extends ConvenienceRenderer {
                     createObject: "cJSON_CreateBool",
                     deleteType: "cJSON_free",
                     items: undefined,
-                    isNullable
+                    isNullable,
                 };
             },
-            _integerType => {
+            (_integerType) => {
                 return {
                     cType: this.typeIntegerSize,
                     optionalQualifier: isOptional === true ? "*" : "",
@@ -3450,10 +5414,10 @@ export class CJSONRenderer extends ConvenienceRenderer {
                     createObject: "cJSON_CreateNumber",
                     deleteType: "cJSON_free",
                     items: undefined,
-                    isNullable
+                    isNullable,
                 };
             },
-            _doubleType => {
+            (_doubleType) => {
                 return {
                     cType: "double",
                     optionalQualifier: isOptional === true ? "*" : "",
@@ -3464,10 +5428,10 @@ export class CJSONRenderer extends ConvenienceRenderer {
                     createObject: "cJSON_CreateNumber",
                     deleteType: "cJSON_free",
                     items: undefined,
-                    isNullable
+                    isNullable,
                 };
             },
-            _stringType => {
+            (_stringType) => {
                 return {
                     cType: "char",
                     optionalQualifier: "*",
@@ -3478,10 +5442,10 @@ export class CJSONRenderer extends ConvenienceRenderer {
                     createObject: "cJSON_CreateString",
                     deleteType: "cJSON_free",
                     items: undefined,
-                    isNullable
+                    isNullable,
                 };
             },
-            arrayType => {
+            (arrayType) => {
                 const items = this.quicktypeTypeToCJSON(arrayType.items, false);
                 return {
                     cType: "list_t",
@@ -3493,24 +5457,34 @@ export class CJSONRenderer extends ConvenienceRenderer {
                     createObject: "cJSON_CreateArray",
                     deleteType: "list_release",
                     items,
-                    isNullable
+                    isNullable,
                 };
             },
-            classType => {
+            (classType) => {
                 return {
                     cType: ["struct ", this.nameForNamedType(classType)],
                     optionalQualifier: "*",
                     cjsonType: "cJSON_Object",
                     isType: "cJSON_IsObject",
-                    getValue: ["cJSON_Get", this.nameForNamedType(classType), "Value"],
+                    getValue: [
+                        "cJSON_Get",
+                        this.nameForNamedType(classType),
+                        "Value",
+                    ],
                     addToObject: "cJSON_AddItemToObject",
-                    createObject: ["cJSON_Create", this.nameForNamedType(classType)],
-                    deleteType: ["cJSON_Delete", this.nameForNamedType(classType)],
+                    createObject: [
+                        "cJSON_Create",
+                        this.nameForNamedType(classType),
+                    ],
+                    deleteType: [
+                        "cJSON_Delete",
+                        this.nameForNamedType(classType),
+                    ],
                     items: undefined,
-                    isNullable
+                    isNullable,
                 };
             },
-            mapType => {
+            (mapType) => {
                 const items = this.quicktypeTypeToCJSON(mapType.values, false);
                 return {
                     cType: "hashtable_t",
@@ -3522,24 +5496,31 @@ export class CJSONRenderer extends ConvenienceRenderer {
                     createObject: "cJSON_CreateObject",
                     deleteType: "hashtable_release",
                     items,
-                    isNullable
+                    isNullable,
                 };
             },
-            enumType => {
+            (enumType) => {
                 return {
                     cType: ["enum ", this.nameForNamedType(enumType)],
                     optionalQualifier: isOptional === true ? "*" : "",
                     cjsonType: "cJSON_Enum",
                     isType: "cJSON_IsString",
-                    getValue: ["cJSON_Get", this.nameForNamedType(enumType), "Value"],
+                    getValue: [
+                        "cJSON_Get",
+                        this.nameForNamedType(enumType),
+                        "Value",
+                    ],
                     addToObject: "cJSON_AddItemToObject",
-                    createObject: ["cJSON_Create", this.nameForNamedType(enumType)],
+                    createObject: [
+                        "cJSON_Create",
+                        this.nameForNamedType(enumType),
+                    ],
                     deleteType: "cJSON_free",
                     items: undefined,
-                    isNullable
+                    isNullable,
                 };
             },
-            unionType => {
+            (unionType) => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
                     return this.quicktypeTypeToCJSON(nullable, true, true);
@@ -3549,15 +5530,25 @@ export class CJSONRenderer extends ConvenienceRenderer {
                         optionalQualifier: "*",
                         cjsonType: "cJSON_Union",
                         isType: "",
-                        getValue: ["cJSON_Get", this.nameForNamedType(unionType), "Value"],
+                        getValue: [
+                            "cJSON_Get",
+                            this.nameForNamedType(unionType),
+                            "Value",
+                        ],
                         addToObject: "cJSON_AddItemToObject",
-                        createObject: ["cJSON_Create", this.nameForNamedType(unionType)],
-                        deleteType: ["cJSON_Delete", this.nameForNamedType(unionType)],
+                        createObject: [
+                            "cJSON_Create",
+                            this.nameForNamedType(unionType),
+                        ],
+                        deleteType: [
+                            "cJSON_Delete",
+                            this.nameForNamedType(unionType),
+                        ],
                         items: undefined,
-                        isNullable
+                        isNullable,
                     };
                 }
-            }
+            },
         );
     }
 
@@ -3567,7 +5558,10 @@ export class CJSONRenderer extends ConvenienceRenderer {
      */
     protected startFile(proposedFilename: Sourcelike): void {
         /* Check if previous file is closed, create a new file */
-        assert(this.currentFilename === undefined, "Previous file wasn't finished");
+        assert(
+            this.currentFilename === undefined,
+            "Previous file wasn't finished",
+        );
         if (proposedFilename !== undefined) {
             this.currentFilename = this.sourcelikeToString(proposedFilename);
         }
@@ -3583,20 +5577,30 @@ export class CJSONRenderer extends ConvenienceRenderer {
                 "To get json data from cJSON object use the following: struct <type> * data = cJSON_Get<type>Value(<cjson>);",
                 "To get cJSON object from json data use the following: cJSON * cjson = cJSON_Create<type>(<data>);",
                 "To print json string from json data use the following: char * string = cJSON_Print<type>(<data>);",
-                "To delete json data use the following: cJSON_Delete<type>(<data>);"
+                "To delete json data use the following: cJSON_Delete<type>(<data>);",
             ]);
             this.ensureBlankLine();
 
             /* Write include guard */
             this.emitLine(
                 "#ifndef __",
-                allUpperWordStyle(this.currentFilename.replace(new RegExp(/[^a-zA-Z0-9]+/, "g"), "_")),
-                "__"
+                allUpperWordStyle(
+                    this.currentFilename.replace(
+                        new RegExp(/[^a-zA-Z0-9]+/, "g"),
+                        "_",
+                    ),
+                ),
+                "__",
             );
             this.emitLine(
                 "#define __",
-                allUpperWordStyle(this.currentFilename.replace(new RegExp(/[^a-zA-Z0-9]+/, "g"), "_")),
-                "__"
+                allUpperWordStyle(
+                    this.currentFilename.replace(
+                        new RegExp(/[^a-zA-Z0-9]+/, "g"),
+                        "_",
+                    ),
+                ),
+                "__",
             );
             this.ensureBlankLine();
 
@@ -3645,8 +5649,13 @@ export class CJSONRenderer extends ConvenienceRenderer {
             /* Write include guard */
             this.emitLine(
                 "#endif /* __",
-                allUpperWordStyle(this.currentFilename.replace(new RegExp(/[^a-zA-Z0-9]+/, "g"), "_")),
-                "__ */"
+                allUpperWordStyle(
+                    this.currentFilename.replace(
+                        new RegExp(/[^a-zA-Z0-9]+/, "g"),
+                        "_",
+                    ),
+                ),
+                "__ */",
             );
             this.ensureBlankLine();
 
@@ -3687,7 +5696,12 @@ export class CJSONRenderer extends ConvenienceRenderer {
      * @pram global: true if global include, false otherwise (default)
      */
     protected emitIncludeLine(name: Sourcelike, global = false): void {
-        this.emitLine("#include ", global ? "<" : '"', name, global ? ">" : '"');
+        this.emitLine(
+            "#include ",
+            global ? "<" : '"',
+            name,
+            global ? ">" : '"',
+        );
     }
 
     /**
@@ -3695,7 +5709,11 @@ export class CJSONRenderer extends ConvenienceRenderer {
      * @param lines: description block lines
      */
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
-        this.emitCommentLines(lines, { lineStart: " * ", beforeComment: "/**", afterComment: " */" });
+        this.emitCommentLines(lines, {
+            lineStart: " * ",
+            beforeComment: "/**",
+            afterComment: " */",
+        });
     }
 
     /**
@@ -3711,7 +5729,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
         f: () => void,
         withName = "",
         withSemicolon = false,
-        withIndent = true
+        withIndent = true,
     ): void {
         this.emitLine(line, " {");
         this.preventBlankLine();
@@ -3742,15 +5760,22 @@ export class CJSONRenderer extends ConvenienceRenderer {
      * @param type: class, union or enum type
      * @param filename: current file name
      */
-    protected emitIncludes(type: ClassType | UnionType | EnumType, filename: string): void {
+    protected emitIncludes(
+        type: ClassType | UnionType | EnumType,
+        filename: string,
+    ): void {
         /* List required includes */
         const includes: IncludeMap = new Map();
         if (type instanceof UnionType) {
             this.updateIncludes(false, includes, type);
         } else if (type instanceof ClassType) {
-            this.forEachClassProperty(type, "none", (_name, _jsonName, property) => {
-                this.updateIncludes(true, includes, property.type);
-            });
+            this.forEachClassProperty(
+                type,
+                "none",
+                (_name, _jsonName, property) => {
+                    this.updateIncludes(true, includes, property.type);
+                },
+            );
         }
 
         /* Emit includes */
@@ -3772,16 +5797,26 @@ export class CJSONRenderer extends ConvenienceRenderer {
      * @param includes: include map
      * @param propertyType: property type
      */
-    protected updateIncludes(isClassMember: boolean, includes: IncludeMap, propertyType: Type): void {
+    protected updateIncludes(
+        isClassMember: boolean,
+        includes: IncludeMap,
+        propertyType: Type,
+    ): void {
         const propTypes = this.generatedTypes(isClassMember, propertyType);
         for (const t of propTypes) {
             const typeName = this.sourcelikeToString(t.name);
-            const propRecord: IncludeRecord = { kind: undefined, typeKind: undefined };
+            const propRecord: IncludeRecord = {
+                kind: undefined,
+                typeKind: undefined,
+            };
             if (t.type instanceof ClassType) {
                 /* We can NOT forward declare direct class members, e.g. a class type is included at level#0 */
                 /* HOWEVER if it is not a direct class member, then we can SURELY forward declare it */
                 propRecord.typeKind = "class";
-                propRecord.kind = t.level === 0 ? IncludeKind.Include : IncludeKind.ForwardDeclare;
+                propRecord.kind =
+                    t.level === 0
+                        ? IncludeKind.Include
+                        : IncludeKind.ForwardDeclare;
                 if (t.forceInclude) {
                     propRecord.kind = IncludeKind.Include;
                 }
@@ -3807,7 +5842,10 @@ export class CJSONRenderer extends ConvenienceRenderer {
             if (includes.has(typeName)) {
                 const incKind = includes.get(typeName);
                 /* If we already include the type as typed include, do not write it over with forward declare */
-                if (incKind !== undefined && incKind.kind === IncludeKind.ForwardDeclare) {
+                if (
+                    incKind !== undefined &&
+                    incKind.kind === IncludeKind.ForwardDeclare
+                ) {
                     includes.set(typeName, propRecord);
                 }
             } else {
@@ -3824,7 +5862,12 @@ export class CJSONRenderer extends ConvenienceRenderer {
      */
     protected generatedTypes(isClassMember: boolean, type: Type): TypeRecord[] {
         const result: TypeRecord[] = [];
-        const recur = (forceInclude: boolean, isVariant: boolean, l: number, t: Type) => {
+        const recur = (
+            forceInclude: boolean,
+            isVariant: boolean,
+            l: number,
+            t: Type,
+        ) => {
             if (t instanceof ArrayType) {
                 recur(forceInclude, isVariant, l + 1, t.items);
             } else if (t instanceof ClassType) {
@@ -3833,7 +5876,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                     type: t,
                     level: l,
                     variant: isVariant,
-                    forceInclude
+                    forceInclude,
                 });
             } else if (t instanceof MapType) {
                 recur(forceInclude, isVariant, l + 1, t.values);
@@ -3843,7 +5886,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                     type: t,
                     level: l,
                     variant: isVariant,
-                    forceInclude: false
+                    forceInclude: false,
                 });
             } else if (t instanceof UnionType) {
                 /**
@@ -3867,7 +5910,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                         type: t,
                         level: l,
                         variant: true,
-                        forceInclude
+                        forceInclude,
                     });
                     /** intentional "fall-through", add all subtypes as well - but forced include */
                 }

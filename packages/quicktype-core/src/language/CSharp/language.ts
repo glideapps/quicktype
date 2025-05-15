@@ -1,11 +1,20 @@
-import { type ConvenienceRenderer } from "../../ConvenienceRenderer";
-import { type RenderContext } from "../../Renderer";
-import { BooleanOption, EnumOption, StringOption, getOptionValues } from "../../RendererOptions";
+import type { ConvenienceRenderer } from "../../ConvenienceRenderer";
+import type { RenderContext } from "../../Renderer";
+import {
+    BooleanOption,
+    EnumOption,
+    StringOption,
+    getOptionValues,
+} from "../../RendererOptions";
 import { assertNever } from "../../support/Support";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type PrimitiveStringTypeKind, type TransformedStringTypeKind, type Type } from "../../Type";
-import { type StringTypeMapping } from "../../Type/TypeBuilderUtils";
-import { type FixMeOptionsType } from "../../types";
+import type {
+    PrimitiveStringTypeKind,
+    TransformedStringTypeKind,
+    Type,
+} from "../../Type";
+import type { StringTypeMapping } from "../../Type/TypeBuilderUtils";
+import type { FixMeOptionsType } from "../../types";
 
 import { NewtonsoftCSharpRenderer } from "./NewtonSoftCSharpRenderer";
 import { SystemTextJsonCSharpRenderer } from "./SystemTextJsonCSharpRenderer";
@@ -24,40 +33,45 @@ export const cSharpOptions = {
         "Serialization framework",
         {
             NewtonSoft: "NewtonSoft",
-            SystemTextJson: "SystemTextJson"
+            SystemTextJson: "SystemTextJson",
         } as const,
-        "NewtonSoft"
+        "NewtonSoft",
     ),
     useList: new EnumOption(
         "array-type",
         "Use T[] or List<T>",
         {
             array: false,
-            list: true
+            list: true,
         },
-        "array"
+        "array",
     ),
     dense: new EnumOption(
         "density",
         "Property density",
         {
             normal: false,
-            dense: true
+            dense: true,
         } as const,
         "normal",
-        "secondary"
+        "secondary",
     ),
     // FIXME: Do this via a configurable named eventually.
-    namespace: new StringOption("namespace", "Generated namespace", "NAME", "QuickType"),
+    namespace: new StringOption(
+        "namespace",
+        "Generated namespace",
+        "NAME",
+        "QuickType",
+    ),
     version: new EnumOption(
         "csharp-version",
         "C# version",
         {
             "5": 5,
-            "6": 6
+            "6": 6,
         } as const,
         "6",
-        "secondary"
+        "secondary",
     ),
     virtual: new BooleanOption("virtual", "Generate virtual properties", false),
     typeForAny: new EnumOption(
@@ -65,53 +79,79 @@ export const cSharpOptions = {
         'Type to use for "any"',
         {
             object: "object",
-            dynamic: "dynamic"
+            dynamic: "dynamic",
         } as const,
         "object",
-        "secondary"
+        "secondary",
     ),
     useDecimal: new EnumOption(
         "number-type",
         "Type to use for numbers",
         {
             double: false,
-            decimal: true
+            decimal: true,
         } as const,
         "double",
-        "secondary"
+        "secondary",
     ),
     features: new EnumOption(
         "features",
         "Output features",
         {
-            "complete": { namespaces: true, helpers: true, attributes: true },
-            "attributes-only": { namespaces: true, helpers: false, attributes: true },
-            "just-types-and-namespace": { namespaces: true, helpers: false, attributes: false },
-            "just-types": { namespaces: true, helpers: false, attributes: false }
+            complete: { namespaces: true, helpers: true, attributes: true },
+            "attributes-only": {
+                namespaces: true,
+                helpers: false,
+                attributes: true,
+            },
+            "just-types-and-namespace": {
+                namespaces: true,
+                helpers: false,
+                attributes: false,
+            },
+            "just-types": {
+                namespaces: true,
+                helpers: false,
+                attributes: false,
+            },
         } as const,
-        "complete"
+        "complete",
     ),
     baseclass: new EnumOption(
         "base-class",
         "Base class",
         {
             EntityData: "EntityData",
-            Object: undefined
+            Object: undefined,
         } as const,
         "Object",
-        "secondary"
+        "secondary",
     ),
-    checkRequired: new BooleanOption("check-required", "Fail if required properties are missing", false),
-    keepPropertyName: new BooleanOption("keep-property-name", "Keep original field name generate", false)
+    checkRequired: new BooleanOption(
+        "check-required",
+        "Fail if required properties are missing",
+        false,
+    ),
+    keepPropertyName: new BooleanOption(
+        "keep-property-name",
+        "Keep original field name generate",
+        false,
+    ),
 } as const;
 
 export const newtonsoftCSharpOptions = Object.assign({}, cSharpOptions, {});
 
 export const systemTextJsonCSharpOptions = Object.assign({}, cSharpOptions, {});
 
-export const cSharpLanguageConfig = { displayName: "C#", names: ["cs", "csharp"], extension: "cs" } as const;
+export const cSharpLanguageConfig = {
+    displayName: "C#",
+    names: ["cs", "csharp"],
+    extension: "cs",
+} as const;
 
-export class CSharpTargetLanguage extends TargetLanguage<typeof cSharpLanguageConfig> {
+export class CSharpTargetLanguage extends TargetLanguage<
+    typeof cSharpLanguageConfig
+> {
     public constructor() {
         super(cSharpLanguageConfig);
     }
@@ -121,7 +161,8 @@ export class CSharpTargetLanguage extends TargetLanguage<typeof cSharpLanguageCo
     }
 
     public get stringTypeMapping(): StringTypeMapping {
-        const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
+        const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> =
+            new Map();
         mapping.set("date", "date-time");
         mapping.set("time", "date-time");
         mapping.set("date-time", "date-time");
@@ -145,7 +186,10 @@ export class CSharpTargetLanguage extends TargetLanguage<typeof cSharpLanguageCo
         return need !== "none" && need !== "nullable";
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): ConvenienceRenderer {
+    protected makeRenderer(
+        renderContext: RenderContext,
+        untypedOptionValues: FixMeOptionsType,
+    ): ConvenienceRenderer {
         const options = getOptionValues(cSharpOptions, untypedOptionValues);
 
         switch (options.framework) {
@@ -153,13 +197,19 @@ export class CSharpTargetLanguage extends TargetLanguage<typeof cSharpLanguageCo
                 return new NewtonsoftCSharpRenderer(
                     this,
                     renderContext,
-                    getOptionValues(newtonsoftCSharpOptions, untypedOptionValues)
+                    getOptionValues(
+                        newtonsoftCSharpOptions,
+                        untypedOptionValues,
+                    ),
                 );
             case "SystemTextJson":
                 return new SystemTextJsonCSharpRenderer(
                     this,
                     renderContext,
-                    getOptionValues(systemTextJsonCSharpOptions, untypedOptionValues)
+                    getOptionValues(
+                        systemTextJsonCSharpOptions,
+                        untypedOptionValues,
+                    ),
                 );
             default:
                 return assertNever(options.framework);

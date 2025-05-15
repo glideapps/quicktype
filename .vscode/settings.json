@@ -23,7 +23,7 @@
     },
 
     "[json]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.defaultFormatter": "biomejs.biome",
         "editor.wordWrap": "on",
         "editor.insertSpaces": true,
         "editor.tabSize": 4,

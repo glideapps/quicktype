@@ -11,7 +11,7 @@ import {
     isPrintable,
     legalizeCharacters,
     splitIntoWords,
-    utf32ConcatMap
+    utf32ConcatMap,
 } from "../../support/Strings";
 
 import * as keywords from "./constants";
@@ -19,21 +19,28 @@ import * as keywords from "./constants";
 export enum Strictness {
     Strict = "Strict::",
     Coercible = "Coercible::",
-    None = "Types::"
+    None = "Types::",
 }
 
-export const forbiddenForObjectProperties = Array.from(new Set([...keywords.keywords, ...keywords.reservedProperties]));
+export const forbiddenForObjectProperties = Array.from(
+    new Set([...keywords.keywords, ...keywords.reservedProperties]),
+);
 function unicodeEscape(codePoint: number): string {
     return "\\u{" + intToHex(codePoint, 0) + "}";
 }
 
-export const stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
+export const stringEscape = utf32ConcatMap(
+    escapeNonPrintableMapper(isPrintable, unicodeEscape),
+);
 
 const isStartCharacter = isLetterOrUnderscore;
 
 function isPartCharacter(utf16Unit: number): boolean {
     const category: string = unicode.getCategory(utf16Unit);
-    return ["Nd", "Pc", "Mn", "Mc"].includes(category) || isStartCharacter(utf16Unit);
+    return (
+        ["Nd", "Pc", "Mn", "Mc"].includes(category) ||
+        isStartCharacter(utf16Unit)
+    );
 }
 
 const legalizeName = legalizeCharacters(isPartCharacter);
@@ -52,7 +59,7 @@ export function simpleNameStyle(original: string, uppercase: boolean): string {
         allUpperWordStyle,
         allUpperWordStyle,
         "",
-        isStartCharacter
+        isStartCharacter,
     );
 }
 
@@ -66,6 +73,6 @@ export function memberNameStyle(original: string): string {
         allLowerWordStyle,
         allLowerWordStyle,
         "_",
-        isStartCharacter
+        isStartCharacter,
     );
 }

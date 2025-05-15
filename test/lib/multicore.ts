@@ -19,21 +19,23 @@ function randomPick<T>(arr: T[]): T {
 
 function guys(n: number): string {
     return _.range(n)
-        .map(_i => randomPick(WORKERS))
+        .map((_i) => randomPick(WORKERS))
         .join(" ");
 }
 
-export async function inParallel<Item, Result, Acc>(args: ParallelArgs<Item, Result, Acc>) {
-    let { queue } = args;
-    let items = queue.map((item, i) => {
+export async function inParallel<Item, Result, Acc>(
+    args: ParallelArgs<Item, Result, Acc>,
+) {
+    const { queue } = args;
+    const items = queue.map((item, i) => {
         return { item, i };
     });
 
     if (cluster.isPrimary) {
-        let { setup, workers, map } = args;
+        const { setup, workers, map } = args;
         await setup();
 
-        cluster.on("message", worker => {
+        cluster.on("message", (worker) => {
             const msg = items.pop();
             if (msg !== undefined) {
                 worker.send(msg);
@@ -57,26 +59,26 @@ export async function inParallel<Item, Result, Acc>(args: ParallelArgs<Item, Res
         console.error(`* Forking ${workers} workers ${guys(workers)}`);
         if (workers < 2) {
             // We run everything on the master process if only one worker
-            for (let { item, i } of items) {
+            for (const { item, i } of items) {
                 await map(item, i);
             }
         } else {
-            _.range(workers).forEach(i =>
+            _.range(workers).forEach((i) =>
                 cluster.fork({
                     worker: i,
                     // https://github.com/TypeStrong/ts-node/issues/367
-                    TS_NODE_PROJECT: "test/tsconfig.json"
-                })
+                    TS_NODE_PROJECT: "test/tsconfig.json",
+                }),
             );
         }
     } else {
         // Setup a worker
-        let { map } = args;
+        const { map } = args;
 
         // master sends a { fixtureName, sample } to run
         process.on("message", async ({ item, i }) => {
             process.send?.({
-                result: await map(item, i)
+                result: await map(item, i),
             });
         });
 

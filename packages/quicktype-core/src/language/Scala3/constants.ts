@@ -24,7 +24,7 @@ export const invalidSymbols = [
     ":",
     "~",
     "`",
-    "."
+    ".",
 ] as const;
 
 export const keywords = [
@@ -83,5 +83,5 @@ export const keywords = [
     "Array",
     "List",
     "Map",
-    "Enum"
+    "Enum",
 ] as const;

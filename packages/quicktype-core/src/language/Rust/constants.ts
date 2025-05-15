@@ -72,5 +72,5 @@ export const keywords = [
     "union",
 
     // Conflict between `std::Option` and potentially generated Option
-    "option"
+    "option",
 ] as const;

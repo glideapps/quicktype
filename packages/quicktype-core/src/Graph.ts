@@ -75,21 +75,33 @@ function stronglyConnectedComponents(successors: number[][]): number[][] {
         }
     }
 
-    assert(countComponentGraphNodes(sccs) === numNodes, "We didn't put all the nodes into SCCs");
+    assert(
+        countComponentGraphNodes(sccs) === numNodes,
+        "We didn't put all the nodes into SCCs",
+    );
 
     return sccs;
 }
 
-function buildComponentOfNodeMap(successors: number[][], components: number[][]): number[] {
+function buildComponentOfNodeMap(
+    successors: number[][],
+    components: number[][],
+): number[] {
     const numComponents = components.length;
     const numNodes = successors.length;
 
-    assert(numNodes === countComponentGraphNodes(components), "Components don't match up with graph");
+    assert(
+        numNodes === countComponentGraphNodes(components),
+        "Components don't match up with graph",
+    );
 
     const componentOfNode: number[] = repeated(numNodes, -1);
     for (let c = 0; c < numComponents; c++) {
         for (const n of components[c]) {
-            assert(componentOfNode[n] < 0, "We have a node that's in two components");
+            assert(
+                componentOfNode[n] < 0,
+                "We have a node that's in two components",
+            );
             componentOfNode[n] = c;
         }
     }
@@ -97,7 +109,10 @@ function buildComponentOfNodeMap(successors: number[][], components: number[][])
     return componentOfNode;
 }
 
-function buildMetaSuccessors(successors: number[][], components: number[][]): number[][] {
+function buildMetaSuccessors(
+    successors: number[][],
+    components: number[][],
+): number[][] {
     const numComponents = components.length;
     const componentOfNode = buildComponentOfNodeMap(successors, components);
     const componentAdded: boolean[] = repeated(numComponents, false);
@@ -177,15 +192,21 @@ export class Graph<T> {
     public constructor(
         nodes: Iterable<T>,
         invertDirection: boolean,
-        edges: number[][] | ((node: T) => ReadonlySet<T>)
+        edges: number[][] | ((node: T) => ReadonlySet<T>),
     ) {
         this._nodes = Array.from(nodes);
-        this._indexByNode = new Map(this._nodes.map((n, i): [T, number] => [n, i]));
+        this._indexByNode = new Map(
+            this._nodes.map((n, i): [T, number] => [n, i]),
+        );
         let edgesArray: number[][];
         if (Array.isArray(edges)) {
             edgesArray = edges;
         } else {
-            edgesArray = this._nodes.map(n => Array.from(edges(n)).map(s => defined(this._indexByNode.get(s))));
+            edgesArray = this._nodes.map((n) =>
+                Array.from(edges(n)).map((s) =>
+                    defined(this._indexByNode.get(s)),
+                ),
+            );
         }
 
         if (invertDirection) {
@@ -205,11 +226,15 @@ export class Graph<T> {
 
     public findRoots(): ReadonlySet<T> {
         const roots = findRoots(this._successors);
-        return new Set(roots.map(n => this._nodes[n]));
+        return new Set(roots.map((n) => this._nodes[n]));
     }
 
     // The subgraph starting at `root` must be acyclic.
-    public dfsTraversal(root: T, preOrder: boolean, process: (node: T) => void): void {
+    public dfsTraversal(
+        root: T,
+        preOrder: boolean,
+        process: (node: T) => void,
+    ): void {
         const visited = repeated(this.size, false);
 
         const visit = (v: number): void => {
@@ -234,15 +259,21 @@ export class Graph<T> {
 
     public stronglyConnectedComponents(): Graph<ReadonlySet<T>> {
         const components = stronglyConnectedComponents(this._successors);
-        const componentSuccessors = buildMetaSuccessors(this._successors, components);
+        const componentSuccessors = buildMetaSuccessors(
+            this._successors,
+            components,
+        );
         return new Graph(
-            components.map(ns => setMap(ns, n => this._nodes[n])),
+            components.map((ns) => setMap(ns, (n) => this._nodes[n])),
             false,
-            componentSuccessors
+            componentSuccessors,
         );
     }
 
-    public makeDot(includeNode: (n: T) => boolean, nodeLabel: (n: T) => string): string {
+    public makeDot(
+        includeNode: (n: T) => boolean,
+        nodeLabel: (n: T) => string,
+    ): string {
         const lines: string[] = [];
         lines.push("digraph G {");
         lines.push("    ordering = out;");

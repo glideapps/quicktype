@@ -1,4 +1,4 @@
-import { type Sourcelike } from "../Source";
+import type { Sourcelike } from "../Source";
 
 export interface CommentOptions {
     afterComment?: string;
@@ -18,7 +18,10 @@ type CustomCommentConfig = CommentOptions & {
     customLines: Sourcelike[];
 };
 
-export type CommentConfig = DescriptionBlockCommentConfig | InlineCommentConfig | CustomCommentConfig;
+export type CommentConfig =
+    | DescriptionBlockCommentConfig
+    | InlineCommentConfig
+    | CustomCommentConfig;
 
 export type Comment = string | CommentConfig;
 

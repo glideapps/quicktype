@@ -47,5 +47,5 @@ export const keywords = [
     "JsonObject",
     "JsonValue",
     "Converter",
-    "Klaxon"
+    "Klaxon",
 ] as const;

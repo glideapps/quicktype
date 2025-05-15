@@ -1,6 +1,6 @@
 import { messageError } from "../Messages";
 import { assert } from "../support/Support";
-import { type FixMeOptionsType } from "../types";
+import type { FixMeOptionsType } from "../types";
 
 import type { OptionDefinition, OptionKind, OptionValues } from "./types";
 
@@ -15,7 +15,10 @@ export abstract class Option<Name extends string, T> {
 
     public constructor(definition: OptionDefinition<Name, T>) {
         this.definition = definition;
-        assert(definition.kind !== undefined, "Renderer option kind must be defined");
+        assert(
+            definition.kind !== undefined,
+            "Renderer option kind must be defined",
+        );
     }
 
     public get name(): Name {
@@ -34,9 +37,13 @@ export abstract class Option<Name extends string, T> {
     }
 }
 
-export function getOptionValues<Name extends string, T, Options extends Record<string, Option<Name, T>>>(
+export function getOptionValues<
+    Name extends string,
+    T,
+    Options extends Record<string, Option<Name, T>>,
+>(
     options: Options,
-    untypedOptionValues: FixMeOptionsType
+    untypedOptionValues: FixMeOptionsType,
 ): OptionValues<Options> {
     const optionValues: FixMeOptionsType = {};
 
@@ -62,13 +69,18 @@ export class BooleanOption<Name extends string> extends Option<Name, boolean> {
      * @param defaultValue The default value.
      * @param kind Whether it's a primary or secondary option.
      */
-    public constructor(name: Name, description: string, defaultValue: boolean, kind: OptionKind = "primary") {
+    public constructor(
+        name: Name,
+        description: string,
+        defaultValue: boolean,
+        kind: OptionKind = "primary",
+    ) {
         super({
             name,
             kind,
             type: Boolean,
             description,
-            defaultValue
+            defaultValue,
         });
     }
 
@@ -78,15 +90,15 @@ export class BooleanOption<Name extends string> extends Option<Name, boolean> {
     } {
         const negated = Object.assign({}, this.definition, {
             name: `no-${this.name}`,
-            defaultValue: !this.definition.defaultValue
+            defaultValue: !this.definition.defaultValue,
         });
         const display = Object.assign({}, this.definition, {
             name: `[no-]${this.name}`,
-            description: `${this.definition.description} (${this.definition.defaultValue ? "on" : "off"} by default)`
+            description: `${this.definition.description} (${this.definition.defaultValue ? "on" : "off"} by default)`,
         });
         return {
             display: [display],
-            actual: [this.definition, negated]
+            actual: [this.definition, negated],
         };
     }
 
@@ -121,7 +133,7 @@ export class StringOption<Name extends string> extends Option<Name, string> {
         description: string,
         typeLabel: string,
         defaultValue: string,
-        kind: OptionKind = "primary"
+        kind: OptionKind = "primary",
     ) {
         const definition = {
             name,
@@ -129,7 +141,7 @@ export class StringOption<Name extends string> extends Option<Name, string> {
             type: String,
             description,
             typeLabel,
-            defaultValue
+            defaultValue,
         };
         super(definition);
     }
@@ -139,7 +151,10 @@ export class StringOption<Name extends string> extends Option<Name, string> {
 export class EnumOption<
     Name extends string,
     EnumMap extends Record<string, unknown>,
-    EnumKey extends Extract<keyof EnumMap, string> = Extract<keyof EnumMap, string>
+    EnumKey extends Extract<keyof EnumMap, string> = Extract<
+        keyof EnumMap,
+        string
+    >,
 > extends Option<Name, EnumKey> {
     private readonly _values: EnumMap;
 
@@ -148,7 +163,7 @@ export class EnumOption<
         description: string,
         values: EnumMap,
         defaultValue: NoInfer<EnumKey>,
-        kind: OptionKind = "primary"
+        kind: OptionKind = "primary",
     ) {
         const definition = {
             name,
@@ -156,7 +171,7 @@ export class EnumOption<
             type: String,
             description,
             typeLabel: Object.keys(values).join("|"),
-            defaultValue
+            defaultValue,
         };
         super(definition);
 
@@ -170,7 +185,10 @@ export class EnumOption<
         }
 
         if (!(name in this._values)) {
-            return messageError("RendererUnknownOptionValue", { value: name, name: this.name });
+            return messageError("RendererUnknownOptionValue", {
+                value: name,
+                name: this.name,
+            });
         }
 
         return this._values[name];
