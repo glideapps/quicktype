@@ -6,7 +6,7 @@ import {
     getOptionValues,
 } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
-import type { FixMeOptionsType } from "../../types";
+import type { LanguageName, RendererOptions } from "../../types";
 
 import { ObjectiveCRenderer } from "./ObjectiveCRenderer";
 import { DEFAULT_CLASS_PREFIX } from "./utils";
@@ -54,9 +54,9 @@ export class ObjectiveCTargetLanguage extends TargetLanguage<
         return objectiveCOptions;
     }
 
-    protected makeRenderer(
+    protected makeRenderer<Lang extends LanguageName = "objective-c">(
         renderContext: RenderContext,
-        untypedOptionValues: FixMeOptionsType,
+        untypedOptionValues: RendererOptions<Lang>,
     ): ObjectiveCRenderer {
         return new ObjectiveCRenderer(
             this,

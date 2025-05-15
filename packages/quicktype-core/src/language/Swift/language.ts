@@ -13,7 +13,7 @@ import type {
     TransformedStringTypeKind,
 } from "../../Type";
 import type { StringTypeMapping } from "../../Type/TypeBuilderUtils";
-import type { FixMeOptionsType } from "../../types";
+import type { LanguageName, RendererOptions } from "../../types";
 
 import { SwiftRenderer } from "./SwiftRenderer";
 import { SwiftDateTimeRecognizer } from "./utils";
@@ -156,9 +156,9 @@ export class SwiftTargetLanguage extends TargetLanguage<
         return true;
     }
 
-    protected makeRenderer(
+    protected makeRenderer<Lang extends LanguageName = "swift">(
         renderContext: RenderContext,
-        untypedOptionValues: FixMeOptionsType,
+        untypedOptionValues: RendererOptions<Lang>,
     ): SwiftRenderer {
         return new SwiftRenderer(
             this,

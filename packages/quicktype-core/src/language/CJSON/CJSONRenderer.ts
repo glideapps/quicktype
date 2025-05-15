@@ -5524,30 +5524,30 @@ export class CJSONRenderer extends ConvenienceRenderer {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
                     return this.quicktypeTypeToCJSON(nullable, true, true);
-                } else {
-                    return {
-                        cType: ["struct ", this.nameForNamedType(unionType)],
-                        optionalQualifier: "*",
-                        cjsonType: "cJSON_Union",
-                        isType: "",
-                        getValue: [
-                            "cJSON_Get",
-                            this.nameForNamedType(unionType),
-                            "Value",
-                        ],
-                        addToObject: "cJSON_AddItemToObject",
-                        createObject: [
-                            "cJSON_Create",
-                            this.nameForNamedType(unionType),
-                        ],
-                        deleteType: [
-                            "cJSON_Delete",
-                            this.nameForNamedType(unionType),
-                        ],
-                        items: undefined,
-                        isNullable,
-                    };
                 }
+
+                return {
+                    cType: ["struct ", this.nameForNamedType(unionType)],
+                    optionalQualifier: "*",
+                    cjsonType: "cJSON_Union",
+                    isType: "",
+                    getValue: [
+                        "cJSON_Get",
+                        this.nameForNamedType(unionType),
+                        "Value",
+                    ],
+                    addToObject: "cJSON_AddItemToObject",
+                    createObject: [
+                        "cJSON_Create",
+                        this.nameForNamedType(unionType),
+                    ],
+                    deleteType: [
+                        "cJSON_Delete",
+                        this.nameForNamedType(unionType),
+                    ],
+                    items: undefined,
+                    isNullable,
+                };
             },
         );
     }

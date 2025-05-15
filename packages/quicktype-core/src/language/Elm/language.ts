@@ -6,7 +6,7 @@ import {
     getOptionValues,
 } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
-import type { FixMeOptionsType } from "../../types";
+import type { LanguageName, RendererOptions } from "../../types";
 
 import { ElmRenderer } from "./ElmRenderer";
 
@@ -55,9 +55,9 @@ export class ElmTargetLanguage extends TargetLanguage<
         return true;
     }
 
-    protected makeRenderer(
+    protected makeRenderer<Lang extends LanguageName = "elm">(
         renderContext: RenderContext,
-        untypedOptionValues: FixMeOptionsType,
+        untypedOptionValues: RendererOptions<Lang>,
     ): ElmRenderer {
         return new ElmRenderer(
             this,

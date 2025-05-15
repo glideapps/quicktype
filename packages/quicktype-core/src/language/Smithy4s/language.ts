@@ -7,7 +7,7 @@ import {
 } from "../../RendererOptions";
 import { assertNever } from "../../support/Support";
 import { TargetLanguage } from "../../TargetLanguage";
-import type { FixMeOptionsType } from "../../types";
+import type { LanguageName, RendererOptions } from "../../types";
 
 import { Smithy4sRenderer } from "./Smithy4sRenderer";
 
@@ -51,9 +51,9 @@ export class SmithyTargetLanguage extends TargetLanguage<
         return true;
     }
 
-    protected makeRenderer(
+    protected makeRenderer<Lang extends LanguageName = "smithy4a">(
         renderContext: RenderContext,
-        untypedOptionValues: FixMeOptionsType,
+        untypedOptionValues: RendererOptions<Lang>,
     ): ConvenienceRenderer {
         const options = getOptionValues(smithyOptions, untypedOptionValues);
 

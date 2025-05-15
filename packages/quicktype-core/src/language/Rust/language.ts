@@ -5,7 +5,7 @@ import {
     getOptionValues,
 } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
-import type { FixMeOptionsType } from "../../types";
+import type { LanguageName, RendererOptions } from "../../types";
 
 import { RustRenderer } from "./RustRenderer";
 import { Density, Visibility } from "./utils";
@@ -67,9 +67,9 @@ export class RustTargetLanguage extends TargetLanguage<
         return rustOptions;
     }
 
-    protected makeRenderer(
+    protected makeRenderer<Lang extends LanguageName = "rust">(
         renderContext: RenderContext,
-        untypedOptionValues: FixMeOptionsType,
+        untypedOptionValues: RendererOptions<Lang>,
     ): RustRenderer {
         return new RustRenderer(
             this,

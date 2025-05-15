@@ -1,6 +1,6 @@
 import { messageError } from "../Messages";
 import { assert } from "../support/Support";
-import type { FixMeOptionsType } from "../types";
+import type { LanguageName, RendererOptions } from "../types";
 
 import type { OptionDefinition, OptionKind, OptionValues } from "./types";
 
@@ -38,14 +38,13 @@ export abstract class Option<Name extends string, T> {
 }
 
 export function getOptionValues<
-    Name extends string,
-    T,
-    Options extends Record<string, Option<Name, T>>,
+    const Options extends Record<string, Option<string, unknown>>,
+    Lang extends LanguageName,
 >(
     options: Options,
-    untypedOptionValues: FixMeOptionsType,
+    untypedOptionValues: RendererOptions<Lang>,
 ): OptionValues<Options> {
-    const optionValues: FixMeOptionsType = {};
+    const optionValues: Record<string, unknown> = {};
 
     for (const [key, option] of Object.entries(options)) {
         const value = option.getValue(untypedOptionValues);

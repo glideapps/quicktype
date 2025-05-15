@@ -1,7 +1,7 @@
 import type { RenderContext } from "../../Renderer";
 import { BooleanOption, getOptionValues } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
-import type { FixMeOptionsType } from "../../types";
+import type { LanguageName, RendererOptions } from "../../types";
 
 import { TypeScriptEffectSchemaRenderer } from "./TypeScriptEffectSchemaRenderer";
 
@@ -26,9 +26,11 @@ export class TypeScriptEffectSchemaTargetLanguage extends TargetLanguage<
         return {};
     }
 
-    protected makeRenderer(
+    protected makeRenderer<
+        Lang extends LanguageName = "typescript-effect-schema",
+    >(
         renderContext: RenderContext,
-        untypedOptionValues: FixMeOptionsType,
+        untypedOptionValues: RendererOptions<Lang>,
     ): TypeScriptEffectSchemaRenderer {
         return new TypeScriptEffectSchemaRenderer(
             this,

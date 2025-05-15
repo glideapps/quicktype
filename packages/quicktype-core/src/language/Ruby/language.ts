@@ -6,7 +6,7 @@ import {
     getOptionValues,
 } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
-import type { FixMeOptionsType } from "../../types";
+import type { LanguageName, RendererOptions } from "../../types";
 
 import { RubyRenderer } from "./RubyRenderer";
 import { Strictness } from "./utils";
@@ -57,9 +57,9 @@ export class RubyTargetLanguage extends TargetLanguage<
         return "  ";
     }
 
-    protected makeRenderer(
+    protected makeRenderer<Lang extends LanguageName = "ruby">(
         renderContext: RenderContext,
-        untypedOptionValues: FixMeOptionsType,
+        untypedOptionValues: RendererOptions<Lang>,
     ): RubyRenderer {
         return new RubyRenderer(
             this,

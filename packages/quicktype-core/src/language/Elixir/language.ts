@@ -5,7 +5,7 @@ import {
     getOptionValues,
 } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
-import type { FixMeOptionsType } from "../../types";
+import type { LanguageName, RendererOptions } from "../../types";
 
 import { ElixirRenderer } from "./ElixirRenderer";
 
@@ -44,9 +44,9 @@ export class ElixirTargetLanguage extends TargetLanguage<
         return "  ";
     }
 
-    protected makeRenderer(
+    protected makeRenderer<Lang extends LanguageName = "elixir">(
         renderContext: RenderContext,
-        untypedOptionValues: FixMeOptionsType,
+        untypedOptionValues: RendererOptions<Lang>,
     ): ElixirRenderer {
         return new ElixirRenderer(
             this,

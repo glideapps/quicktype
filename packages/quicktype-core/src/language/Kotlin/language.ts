@@ -8,7 +8,7 @@ import {
 import { AcronymStyleOptions, acronymOption } from "../../support/Acronyms";
 import { assertNever } from "../../support/Support";
 import { TargetLanguage } from "../../TargetLanguage";
-import type { FixMeOptionsType } from "../../types";
+import type { LanguageName, RendererOptions } from "../../types";
 
 import { KotlinJacksonRenderer } from "./KotlinJacksonRenderer";
 import { KotlinKlaxonRenderer } from "./KotlinKlaxonRenderer";
@@ -56,9 +56,9 @@ export class KotlinTargetLanguage extends TargetLanguage<
         return true;
     }
 
-    protected makeRenderer(
+    protected makeRenderer<Lang extends LanguageName = "kotlin">(
         renderContext: RenderContext,
-        untypedOptionValues: FixMeOptionsType,
+        untypedOptionValues: RendererOptions<Lang>,
     ): ConvenienceRenderer {
         const options = getOptionValues(kotlinOptions, untypedOptionValues);
 

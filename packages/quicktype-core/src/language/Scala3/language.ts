@@ -7,7 +7,7 @@ import {
 } from "../../RendererOptions";
 import { assertNever } from "../../support/Support";
 import { TargetLanguage } from "../../TargetLanguage";
-import type { FixMeOptionsType } from "../../types";
+import type { LanguageName, RendererOptions } from "../../types";
 
 import { CirceRenderer } from "./CirceRenderer";
 import { Scala3Renderer } from "./Scala3Renderer";
@@ -52,9 +52,9 @@ export class Scala3TargetLanguage extends TargetLanguage<
         return true;
     }
 
-    protected makeRenderer(
+    protected makeRenderer<Lang extends LanguageName = "scala3">(
         renderContext: RenderContext,
-        untypedOptionValues: FixMeOptionsType,
+        untypedOptionValues: RendererOptions<Lang>,
     ): ConvenienceRenderer {
         const options = getOptionValues(scala3Options, untypedOptionValues);
 
