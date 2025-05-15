@@ -359,17 +359,17 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 if (nullable !== null) {
                     if (this.implicitlyConvertsFromJSON(nullable)) {
                         return ["NSNullify(", typed, ")"];
-                    } else {
-                        return [
-                            "NSNullify(",
-                            this.toDynamicExpression(nullable, typed),
-                            ")",
-                        ];
                     }
-                } else {
-                    // TODO support unions
-                    return typed;
+
+                    return [
+                        "NSNullify(",
+                        this.toDynamicExpression(nullable, typed),
+                        ")",
+                    ];
                 }
+
+                // TODO support unions
+                return typed;
             },
         );
     }
@@ -377,25 +377,30 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
     protected implicitlyConvertsFromJSON(t: Type): boolean {
         if (t instanceof ClassType) {
             return false;
-        } else if (t instanceof EnumType) {
+        }
+        if (t instanceof EnumType) {
             return false;
-        } else if (t instanceof ArrayType) {
+        }
+        if (t instanceof ArrayType) {
             return this.implicitlyConvertsFromJSON(t.items);
-        } else if (t instanceof MapType) {
+        }
+        if (t instanceof MapType) {
             return this.implicitlyConvertsFromJSON(t.values);
-        } else if (t.isPrimitive()) {
+        }
+        if (t.isPrimitive()) {
             return true;
-        } else if (t instanceof UnionType) {
+        }
+        if (t instanceof UnionType) {
             const nullable = nullableFromUnion(t);
             if (nullable !== null) {
                 return this.implicitlyConvertsFromJSON(nullable);
-            } else {
-                // We don't support unions yet, so this is just untyped
-                return true;
             }
-        } else {
-            return false;
+
+            // We don't support unions yet, so this is just untyped
+            return true;
         }
+
+        return false;
     }
 
     protected implicitlyConvertsToJSON(t: Type): boolean {

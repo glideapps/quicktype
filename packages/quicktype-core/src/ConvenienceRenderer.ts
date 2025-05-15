@@ -933,9 +933,9 @@ export abstract class ConvenienceRenderer extends Renderer {
                     return defined(this.names.get(name));
                 },
             );
-        } else {
-            return properties;
         }
+
+        return properties;
     }
 
     protected forEachClassProperty(

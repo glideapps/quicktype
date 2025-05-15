@@ -187,15 +187,12 @@ export class DecodingTransformer extends ProducerTransformer {
 
         if (this.consumer === undefined) {
             return new EncodingTransformer(this.graph, targetTypeRef);
-        } else {
-            return this.consumer.reverse(
-                targetTypeRef,
-                new EncodingTransformer(
-                    this.graph,
-                    this.consumer.sourceTypeRef,
-                ),
-            );
         }
+
+        return this.consumer.reverse(
+            targetTypeRef,
+            new EncodingTransformer(this.graph, this.consumer.sourceTypeRef),
+        );
     }
 
     public reconstitute<TBuilder extends BaseGraphRewriteBuilder>(
@@ -299,17 +296,17 @@ export class ArrayDecodingTransformer extends ProducerTransformer {
                 this.itemTransformer.sourceTypeRef,
                 itemTransformer,
             );
-        } else {
-            return this.consumer.reverse(
-                targetTypeRef,
-                new ArrayEncodingTransformer(
-                    this.graph,
-                    this.consumer.sourceTypeRef,
-                    this.itemTransformer.sourceTypeRef,
-                    itemTransformer,
-                ),
-            );
         }
+
+        return this.consumer.reverse(
+            targetTypeRef,
+            new ArrayEncodingTransformer(
+                this.graph,
+                this.consumer.sourceTypeRef,
+                this.itemTransformer.sourceTypeRef,
+                itemTransformer,
+            ),
+        );
     }
 
     public reconstitute<TBuilder extends BaseGraphRewriteBuilder>(
@@ -637,9 +634,9 @@ export class DecodingChoiceTransformer extends Transformer {
                 // its continuation can fail.
                 if (xfer instanceof UnionMemberMatchTransformer) {
                     return !xfer.transformer.canFail;
-                } else {
-                    return !xfer.canFail;
                 }
+
+                return !xfer.canFail;
             });
             if (nonfailing.length === 0) return xfers;
 
@@ -951,17 +948,17 @@ export class StringProducerTransformer extends ProducerTransformer {
                 continuationTransformer,
                 this.result,
             );
-        } else {
-            return this.consumer.reverse(
-                targetTypeRef,
-                new StringMatchTransformer(
-                    this.graph,
-                    this.consumer.sourceTypeRef,
-                    continuationTransformer,
-                    this.result,
-                ),
-            );
         }
+
+        return this.consumer.reverse(
+            targetTypeRef,
+            new StringMatchTransformer(
+                this.graph,
+                this.consumer.sourceTypeRef,
+                continuationTransformer,
+                this.result,
+            ),
+        );
     }
 
     public reconstitute<TBuilder extends BaseGraphRewriteBuilder>(
@@ -1014,16 +1011,16 @@ export class ParseStringTransformer extends ProducerTransformer {
                 targetTypeRef,
                 continuationTransformer,
             );
-        } else {
-            return this.consumer.reverse(
-                targetTypeRef,
-                new StringifyTransformer(
-                    this.graph,
-                    this.consumer.sourceTypeRef,
-                    continuationTransformer,
-                ),
-            );
         }
+
+        return this.consumer.reverse(
+            targetTypeRef,
+            new StringifyTransformer(
+                this.graph,
+                this.consumer.sourceTypeRef,
+                continuationTransformer,
+            ),
+        );
     }
 
     public reconstitute<TBuilder extends BaseGraphRewriteBuilder>(
@@ -1065,16 +1062,16 @@ export class StringifyTransformer extends ProducerTransformer {
                 targetTypeRef,
                 continuationTransformer,
             );
-        } else {
-            return this.consumer.reverse(
-                targetTypeRef,
-                new ParseStringTransformer(
-                    this.graph,
-                    this.consumer.sourceTypeRef,
-                    continuationTransformer,
-                ),
-            );
         }
+
+        return this.consumer.reverse(
+            targetTypeRef,
+            new ParseStringTransformer(
+                this.graph,
+                this.consumer.sourceTypeRef,
+                continuationTransformer,
+            ),
+        );
     }
 
     public reconstitute<TBuilder extends BaseGraphRewriteBuilder>(
@@ -1120,18 +1117,18 @@ export class MinMaxLengthCheckTransformer extends ProducerTransformer {
                 this.minLength,
                 this.maxLength,
             );
-        } else {
-            return this.consumer.reverse(
-                targetTypeRef,
-                new MinMaxLengthCheckTransformer(
-                    this.graph,
-                    this.consumer.sourceTypeRef,
-                    continuationTransformer,
-                    this.minLength,
-                    this.maxLength,
-                ),
-            );
         }
+
+        return this.consumer.reverse(
+            targetTypeRef,
+            new MinMaxLengthCheckTransformer(
+                this.graph,
+                this.consumer.sourceTypeRef,
+                continuationTransformer,
+                this.minLength,
+                this.maxLength,
+            ),
+        );
     }
 
     public reconstitute<TBuilder extends BaseGraphRewriteBuilder>(
@@ -1183,18 +1180,18 @@ export class MinMaxValueTransformer extends ProducerTransformer {
                 this.minimum,
                 this.maximum,
             );
-        } else {
-            return this.consumer.reverse(
-                targetTypeRef,
-                new MinMaxValueTransformer(
-                    this.graph,
-                    this.consumer.sourceTypeRef,
-                    continuationTransformer,
-                    this.minimum,
-                    this.maximum,
-                ),
-            );
         }
+
+        return this.consumer.reverse(
+            targetTypeRef,
+            new MinMaxValueTransformer(
+                this.graph,
+                this.consumer.sourceTypeRef,
+                continuationTransformer,
+                this.minimum,
+                this.maximum,
+            ),
+        );
     }
 
     public reconstitute<TBuilder extends BaseGraphRewriteBuilder>(
@@ -1317,7 +1314,10 @@ export function transformationForType(t: Type): Transformation | undefined {
 export function followTargetType(t: Type): Type {
     for (;;) {
         const xf = transformationForType(t);
-        if (xf === undefined) return t;
+        if (xf === undefined) {
+            return t;
+        }
+
         t = xf.targetType;
     }
 }

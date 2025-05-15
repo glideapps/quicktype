@@ -10,7 +10,7 @@ import type {
     TransformedStringTypeKind,
 } from "../../Type";
 import type { StringTypeMapping } from "../../Type/TypeBuilderUtils";
-import type { FixMeOptionsType } from "../../types";
+import type { LanguageName, RendererOptions } from "../../types";
 
 import { DartRenderer } from "./DartRenderer";
 
@@ -99,9 +99,9 @@ export class DartTargetLanguage extends TargetLanguage<
         return mapping;
     }
 
-    protected makeRenderer(
+    protected makeRenderer<Lang extends LanguageName = "dart">(
         renderContext: RenderContext,
-        untypedOptionValues: FixMeOptionsType,
+        untypedOptionValues: RendererOptions<Lang>,
     ): DartRenderer {
         const options = getOptionValues(dartOptions, untypedOptionValues);
         return new DartRenderer(this, renderContext, options);

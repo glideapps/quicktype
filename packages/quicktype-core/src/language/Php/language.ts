@@ -7,7 +7,7 @@ import type {
     TransformedStringTypeKind,
 } from "../../Type";
 import type { StringTypeMapping } from "../../Type/TypeBuilderUtils";
-import type { FixMeOptionsType } from "../../types";
+import type { LanguageName, RendererOptions } from "../../types";
 
 import { PhpRenderer } from "./PhpRenderer";
 
@@ -40,9 +40,9 @@ export class PhpTargetLanguage extends TargetLanguage<
         return true;
     }
 
-    protected makeRenderer(
+    protected makeRenderer<Lang extends LanguageName = "php">(
         renderContext: RenderContext,
-        untypedOptionValues: FixMeOptionsType,
+        untypedOptionValues: RendererOptions<Lang>,
     ): PhpRenderer {
         const options = getOptionValues(phpOptions, untypedOptionValues);
         return new PhpRenderer(this, renderContext, options);

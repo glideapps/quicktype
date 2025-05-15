@@ -5,7 +5,7 @@ import {
     arrayLast,
     arrayMapSync,
     definedMap,
-    // eslint-disable-next-line @typescript-eslint/no-redeclare
+    // biome-ignore lint/suspicious/noShadowRestrictedNames: <explanation>
     hasOwnProperty,
     hashCodeOf,
     hashString,
@@ -328,7 +328,7 @@ export class Ref {
 
         const address =
             this.addressURI === undefined ? "" : this.addressURI.toString();
-        return address + "#" + this.path.map(elementToString).join("/");
+        return `${address}#${this.path.map(elementToString).join("/")}`;
     }
 
     private lookup(
@@ -365,20 +365,20 @@ export class Ref {
                     }
 
                     return this.lookup(local[index], rest, root);
-                } else {
-                    if (!hasOwnProperty(local, key)) {
-                        return messageError(
-                            "SchemaKeyNotInObject",
-                            withRef(refMaker, { key }),
-                        );
-                    }
+                }
 
-                    return this.lookup(
-                        checkJSONSchemaObject(local, refMaker)[first.key],
-                        rest,
-                        root,
+                if (!hasOwnProperty(local, key)) {
+                    return messageError(
+                        "SchemaKeyNotInObject",
+                        withRef(refMaker, { key }),
                     );
                 }
+
+                return this.lookup(
+                    checkJSONSchemaObject(local, refMaker)[first.key],
+                    rest,
+                    root,
+                );
 
             case PathElementKind.Type:
                 return panic('Cannot look up path that indexes "type"');
@@ -677,12 +677,12 @@ function typeKindForJSONSchemaFormat(
 function schemaFetchError(base: Location | undefined, address: string): never {
     if (base === undefined) {
         return messageError("SchemaFetchErrorTopLevel", { address });
-    } else {
-        return messageError("SchemaFetchError", {
-            address,
-            base: base.canonicalRef,
-        });
     }
+
+    return messageError("SchemaFetchError", {
+        address,
+        base: base.canonicalRef,
+    });
 }
 
 class Resolver {
@@ -1011,9 +1011,9 @@ async function addTypesInSchema(
                         new Set(),
                         schema.$ref !== undefined,
                     );
-                } else {
-                    return typeNames.makeInferred();
                 }
+
+                return typeNames.makeInferred();
             });
         }
 
@@ -1027,9 +1027,9 @@ async function addTypesInSchema(
                     attributes,
                     StringTypes.unrestricted,
                 );
-            } else {
-                return typeBuilder.getPrimitiveType(kind, attributes);
             }
+
+            return typeBuilder.getPrimitiveType(kind, attributes);
         }
 
         async function makeArrayType(): Promise<TypeRef> {
@@ -1435,17 +1435,17 @@ async function refsInSchemaForURI(
         }
 
         return mapMap(mapFromObject(schema), (_, name) => ref.push(name));
-    } else {
-        let name: string;
-        if (typeof schema === "object" && typeof schema.title === "string") {
-            name = schema.title;
-        } else {
-            const maybeName = nameFromURI(uri);
-            name = maybeName ?? defaultName;
-        }
-
-        return [name, ref];
     }
+
+    let name: string;
+    if (typeof schema === "object" && typeof schema.title === "string") {
+        name = schema.title;
+    } else {
+        const maybeName = nameFromURI(uri);
+        name = maybeName ?? defaultName;
+    }
+
+    return [name, ref];
 }
 
 class InputJSONSchemaStore extends JSONSchemaStore {
@@ -1594,7 +1594,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
     }
 
     public addTypesSync(): void {
-        return panic("addTypesSync not supported in JSONSchemaInput");
+        panic("addTypesSync not supported in JSONSchemaInput");
     }
 
     public async addSource(schemaSource: JSONSchemaSourceData): Promise<void> {

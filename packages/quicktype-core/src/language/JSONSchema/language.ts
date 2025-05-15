@@ -4,7 +4,7 @@ import {
     type StringTypeMapping,
     getNoStringTypeMapping,
 } from "../../Type/TypeBuilderUtils";
-import type { FixMeOptionsType } from "../../types";
+import type { LanguageName, RendererOptions } from "../../types";
 
 import { JSONSchemaRenderer } from "./JSONSchemaRenderer";
 
@@ -37,9 +37,9 @@ export class JSONSchemaTargetLanguage extends TargetLanguage<
         return true;
     }
 
-    protected makeRenderer(
+    protected makeRenderer<Lang extends LanguageName = "json-schema">(
         renderContext: RenderContext,
-        _untypedOptionValues: FixMeOptionsType,
+        _untypedOptionValues: RendererOptions<Lang>,
     ): JSONSchemaRenderer {
         return new JSONSchemaRenderer(this, renderContext);
     }

@@ -203,20 +203,21 @@ function replaceUnion(
                 min,
                 max,
             );
-        } else if (t instanceof EnumType && transformedTypes.has(t)) {
+        }
+        if (t instanceof EnumType && transformedTypes.has(t)) {
             return makeEnumTransformer(
                 graph,
                 t,
                 getStringType(),
                 consumer(memberRef),
             );
-        } else {
-            return new ParseStringTransformer(
-                graph,
-                getStringType(),
-                consumer(memberRef),
-            );
         }
+
+        return new ParseStringTransformer(
+            graph,
+            getStringType(),
+            consumer(memberRef),
+        );
     }
 
     const stringTypes = arraySortByInto(

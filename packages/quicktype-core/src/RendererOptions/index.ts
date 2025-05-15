@@ -1,6 +1,6 @@
 import { messageError } from "../Messages";
 import { assert } from "../support/Support";
-import type { FixMeOptionsType } from "../types";
+import type { LanguageName, RendererOptions } from "../types";
 
 import type { OptionDefinition, OptionKind, OptionValues } from "./types";
 
@@ -38,14 +38,13 @@ export abstract class Option<Name extends string, T> {
 }
 
 export function getOptionValues<
-    Name extends string,
-    T,
-    Options extends Record<string, Option<Name, T>>,
+    const Options extends Record<string, Option<string, unknown>>,
+    Lang extends LanguageName,
 >(
     options: Options,
-    untypedOptionValues: FixMeOptionsType,
+    untypedOptionValues: RendererOptions<Lang>,
 ): OptionValues<Options> {
-    const optionValues: FixMeOptionsType = {};
+    const optionValues: Record<string, unknown> = {};
 
     for (const [key, option] of Object.entries(options)) {
         const value = option.getValue(untypedOptionValues);
@@ -121,9 +120,9 @@ export class BooleanOption<Name extends string> extends Option<Name, boolean> {
 
         if (this.definition.defaultValue) {
             return (value && !negated) as boolean;
-        } else {
-            return (value || !negated) as boolean;
         }
+
+        return (value || !negated) as boolean;
     }
 }
 
@@ -147,10 +146,9 @@ export class StringOption<Name extends string> extends Option<Name, string> {
     }
 }
 
-// FIXME: use const generics here
 export class EnumOption<
     Name extends string,
-    EnumMap extends Record<string, unknown>,
+    const EnumMap extends Record<string, unknown>,
     EnumKey extends Extract<keyof EnumMap, string> = Extract<
         keyof EnumMap,
         string
@@ -178,7 +176,7 @@ export class EnumOption<
         this._values = values;
     }
 
-    public getEnumValue<Key extends EnumKey>(name: Key): EnumMap[Key] {
+    public getEnumValue<const Key extends EnumKey>(name: Key): EnumMap[Key] {
         if (!name) {
             const defaultKey = this.definition.defaultValue as NonNullable<Key>;
             return this._values[defaultKey];

@@ -194,7 +194,7 @@ import com.fasterxml.jackson.module.kotlin.*`);
         const propertyOpts: Sourcelike[] = [];
 
         if (namesDiffer || isPrefixBool) {
-            propertyOpts.push('"' + escapedName + '"');
+            propertyOpts.push(`"${escapedName}"`);
         }
 
         if (required) {

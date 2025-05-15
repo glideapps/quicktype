@@ -97,7 +97,7 @@ export class JSONInput<T> implements Input<JSONSourceData<T>> {
     private setDescription(topLevelName: string, description: string): void {
         const topLevel = this._topLevels.get(topLevelName);
         if (topLevel === undefined) {
-            return panic(
+            panic(
                 "Trying to set description for a top-level that doesn't exist",
             );
         }
@@ -139,7 +139,7 @@ export class JSONInput<T> implements Input<JSONSourceData<T>> {
             );
             this.addSamples(name, values, description);
         } catch (e) {
-            return messageParseError(name, description, e);
+            messageParseError(name, description, e);
         }
     }
 
@@ -212,7 +212,7 @@ export function jsonInputForTargetLanguage(
 
 export class InputData {
     // FIXME: Make into a Map, indexed by kind.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     private _inputs: Set<Input<any>> = new Set();
 
     public addInput<T>(input: Input<T>): void {

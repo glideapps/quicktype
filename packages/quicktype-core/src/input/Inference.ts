@@ -432,12 +432,12 @@ export class TypeInference {
                 properties,
                 forwardingRef,
             );
-        } else {
-            return this._typeBuilder.getClassType(
-                typeAttributes,
-                properties,
-                forwardingRef,
-            );
         }
+
+        return this._typeBuilder.getClassType(
+            typeAttributes,
+            properties,
+            forwardingRef,
+        );
     }
 }

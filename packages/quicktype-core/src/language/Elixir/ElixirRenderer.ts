@@ -86,17 +86,17 @@ export class ElixirRenderer extends ConvenienceRenderer {
     private nameForNamedTypeWithNamespace(t: Type): Sourcelike {
         if (this._options.namespace) {
             return [this._options.namespace, ".", this.nameForNamedType(t)];
-        } else {
-            return [this.nameForNamedType(t)];
         }
+
+        return [this.nameForNamedType(t)];
     }
 
     private nameWithNamespace(n: Name): Sourcelike {
         if (this._options.namespace) {
             return [this._options.namespace, ".", n];
-        } else {
-            return [n];
         }
+
+        return [n];
     }
 
     private elixirType(t: Type, isOptional = false): Sourcelike {
@@ -339,26 +339,30 @@ export class ElixirRenderer extends ConvenienceRenderer {
             .sort((a, b) => {
                 if (a instanceof ClassType && !(b instanceof ClassType)) {
                     return -1;
-                } else if (
-                    b instanceof ClassType &&
-                    !(a instanceof ClassType)
-                ) {
-                    return 1;
-                } else if (a.kind === "bool" && b.kind !== "bool") {
-                    return -1;
-                } else if (b.kind === "bool" && a.kind !== "bool") {
-                    return 1;
-                } else if (a instanceof EnumType && !(b instanceof EnumType)) {
-                    return -1;
-                } else if (b instanceof EnumType && !(a instanceof EnumType)) {
-                    return 1;
-                } else if (a.isPrimitive() && !b.isPrimitive()) {
-                    return -1;
-                } else if (b.isPrimitive() && !a.isPrimitive()) {
-                    return 1;
-                } else {
-                    return 0;
                 }
+                if (b instanceof ClassType && !(a instanceof ClassType)) {
+                    return 1;
+                }
+                if (a.kind === "bool" && b.kind !== "bool") {
+                    return -1;
+                }
+                if (b.kind === "bool" && a.kind !== "bool") {
+                    return 1;
+                }
+                if (a instanceof EnumType && !(b instanceof EnumType)) {
+                    return -1;
+                }
+                if (b instanceof EnumType && !(a instanceof EnumType)) {
+                    return 1;
+                }
+                if (a.isPrimitive() && !b.isPrimitive()) {
+                    return -1;
+                }
+                if (b.isPrimitive() && !a.isPrimitive()) {
+                    return 1;
+                }
+
+                return 0;
             });
     }
 
@@ -492,42 +496,44 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 const arrayElement = arrayType.items;
                 if (arrayElement instanceof ArrayType) {
                     return primitive;
-                } else if (arrayElement.isPrimitive()) {
-                    return primitive;
-                } else if (arrayElement instanceof MapType) {
-                    return primitive;
-                } else {
-                    if (optional) {
-                        return [
-                            "m",
-                            '["',
-                            jsonName,
-                            '"] && Enum.map(m["',
-                            jsonName,
-                            '"], &',
-                            this.nameOfTransformFunction(
-                                arrayElement,
-                                name,
-                                false,
-                                "_element",
-                            ),
-                            "/1)",
-                        ];
-                    } else {
-                        return [
-                            'Enum.map(m["',
-                            jsonName,
-                            '"], &',
-                            this.nameOfTransformFunction(
-                                arrayElement,
-                                name,
-                                false,
-                                "_element",
-                            ),
-                            "/1)",
-                        ];
-                    }
                 }
+                if (arrayElement.isPrimitive()) {
+                    return primitive;
+                }
+                if (arrayElement instanceof MapType) {
+                    return primitive;
+                }
+
+                if (optional) {
+                    return [
+                        "m",
+                        '["',
+                        jsonName,
+                        '"] && Enum.map(m["',
+                        jsonName,
+                        '"], &',
+                        this.nameOfTransformFunction(
+                            arrayElement,
+                            name,
+                            false,
+                            "_element",
+                        ),
+                        "/1)",
+                    ];
+                }
+
+                return [
+                    'Enum.map(m["',
+                    jsonName,
+                    '"], &',
+                    this.nameOfTransformFunction(
+                        arrayElement,
+                        name,
+                        false,
+                        "_element",
+                    ),
+                    "/1)",
+                ];
             },
             (classType) => [
                 optional ? [primitive, " && "] : "",
@@ -543,38 +549,39 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 );
                 if (mapValueTypesNotPrimitive.length === 0) {
                     return [primitive];
-                } else {
-                    if (mapType.values.kind === "union") {
-                        return [
-                            'm["',
-                            jsonName,
-                            '"]\n|> Map.new(fn {key, value} -> {key, ',
-                            this.nameOfTransformFunction(
-                                mapType.values,
-                                jsonName,
-                                false,
-                            ),
-                            "_value(value)} end)",
-                        ];
-                    } else if (
-                        mapType.values instanceof EnumType ||
-                        mapType.values instanceof ClassType
-                    ) {
-                        return [
-                            'm["',
-                            jsonName,
-                            '"]\n|> Map.new(fn {key, value} -> {key, ',
-                            this.nameOfTransformFunction(
-                                mapType.values,
-                                jsonName,
-                                false,
-                            ),
-                            "(value)} end)",
-                        ];
-                    }
-
-                    return [primitive];
                 }
+
+                if (mapType.values.kind === "union") {
+                    return [
+                        'm["',
+                        jsonName,
+                        '"]\n|> Map.new(fn {key, value} -> {key, ',
+                        this.nameOfTransformFunction(
+                            mapType.values,
+                            jsonName,
+                            false,
+                        ),
+                        "_value(value)} end)",
+                    ];
+                }
+                if (
+                    mapType.values instanceof EnumType ||
+                    mapType.values instanceof ClassType
+                ) {
+                    return [
+                        'm["',
+                        jsonName,
+                        '"]\n|> Map.new(fn {key, value} -> {key, ',
+                        this.nameOfTransformFunction(
+                            mapType.values,
+                            jsonName,
+                            false,
+                        ),
+                        "(value)} end)",
+                    ];
+                }
+
+                return [primitive];
             },
             (enumType) => {
                 return [
@@ -640,45 +647,46 @@ export class ElixirRenderer extends ConvenienceRenderer {
 
                 if (arrayElement.isPrimitive()) {
                     return expression;
-                } else if (arrayElement instanceof MapType) {
-                    return expression;
-                } else {
-                    if (arrayElement.kind === "array") {
-                        return expression;
-                    } else {
-                        if (optional) {
-                            return [
-                                "struct.",
-                                e,
-                                " && Enum.map(struct.",
-                                e,
-                                ", &",
-                                this.nameOfTransformFunction(
-                                    arrayElement,
-                                    e,
-                                    true,
-                                    "_element",
-                                ),
-                                "/1)",
-                            ];
-                        } else {
-                            return [
-                                "struct.",
-                                e,
-                                " && Enum.map(struct.",
-                                e,
-                                ", &",
-                                this.nameOfTransformFunction(
-                                    arrayElement,
-                                    e,
-                                    true,
-                                    "_element",
-                                ),
-                                "/1)",
-                            ];
-                        }
-                    }
                 }
+                if (arrayElement instanceof MapType) {
+                    return expression;
+                }
+
+                if (arrayElement.kind === "array") {
+                    return expression;
+                }
+
+                if (optional) {
+                    return [
+                        "struct.",
+                        e,
+                        " && Enum.map(struct.",
+                        e,
+                        ", &",
+                        this.nameOfTransformFunction(
+                            arrayElement,
+                            e,
+                            true,
+                            "_element",
+                        ),
+                        "/1)",
+                    ];
+                }
+
+                return [
+                    "struct.",
+                    e,
+                    " && Enum.map(struct.",
+                    e,
+                    ", &",
+                    this.nameOfTransformFunction(
+                        arrayElement,
+                        e,
+                        true,
+                        "_element",
+                    ),
+                    "/1)",
+                ];
             },
             (classType) => [
                 optional ? ["struct.", e, " && "] : "",
@@ -695,38 +703,31 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 );
                 if (mapValueTypesNotPrimitive.length === 0) {
                     return [expression];
-                } else {
-                    if (mapType.values.kind === "union") {
-                        return [
-                            "struct.",
-                            e,
-                            "\n|> Map.new(fn {key, value} -> {key, ",
-                            this.nameOfTransformFunction(
-                                mapType.values,
-                                e,
-                                true,
-                            ),
-                            "_value(value)} end)",
-                        ];
-                    } else if (
-                        mapType.values instanceof EnumType ||
-                        mapType.values instanceof ClassType
-                    ) {
-                        return [
-                            "struct.",
-                            e,
-                            "\n|> Map.new(fn {key, value} -> {key, ",
-                            this.nameOfTransformFunction(
-                                mapType.values,
-                                e,
-                                true,
-                            ),
-                            "(value)} end)",
-                        ];
-                    }
-
-                    return [expression];
                 }
+
+                if (mapType.values.kind === "union") {
+                    return [
+                        "struct.",
+                        e,
+                        "\n|> Map.new(fn {key, value} -> {key, ",
+                        this.nameOfTransformFunction(mapType.values, e, true),
+                        "_value(value)} end)",
+                    ];
+                }
+                if (
+                    mapType.values instanceof EnumType ||
+                    mapType.values instanceof ClassType
+                ) {
+                    return [
+                        "struct.",
+                        e,
+                        "\n|> Map.new(fn {key, value} -> {key, ",
+                        this.nameOfTransformFunction(mapType.values, e, true),
+                        "(value)} end)",
+                    ];
+                }
+
+                return [expression];
             },
             (enumType) => {
                 return [

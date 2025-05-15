@@ -14,7 +14,7 @@ import type {
     Type,
 } from "../../Type";
 import type { StringTypeMapping } from "../../Type/TypeBuilderUtils";
-import type { FixMeOptionsType } from "../../types";
+import type { LanguageName, RendererOptions } from "../../types";
 
 import { NewtonsoftCSharpRenderer } from "./NewtonSoftCSharpRenderer";
 import { SystemTextJsonCSharpRenderer } from "./SystemTextJsonCSharpRenderer";
@@ -186,9 +186,9 @@ export class CSharpTargetLanguage extends TargetLanguage<
         return need !== "none" && need !== "nullable";
     }
 
-    protected makeRenderer(
+    protected makeRenderer<Lang extends LanguageName = "csharp">(
         renderContext: RenderContext,
-        untypedOptionValues: FixMeOptionsType,
+        untypedOptionValues: RendererOptions<Lang>,
     ): ConvenienceRenderer {
         const options = getOptionValues(cSharpOptions, untypedOptionValues);
 

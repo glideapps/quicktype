@@ -204,23 +204,23 @@ export class PythonRenderer extends ConvenienceRenderer {
                             "]]",
                             ...rest,
                         ];
-                    } else {
-                        return [
-                            this.withTyping("Optional"),
-                            "[",
-                            defined(iterableFirst(memberTypes)),
-                            "]",
-                            ...rest,
-                        ];
                     }
-                } else {
+
                     return [
-                        this.withTyping("Union"),
+                        this.withTyping("Optional"),
                         "[",
-                        arrayIntercalate(", ", memberTypes),
+                        defined(iterableFirst(memberTypes)),
                         "]",
+                        ...rest,
                     ];
                 }
+
+                return [
+                    this.withTyping("Union"),
+                    "[",
+                    arrayIntercalate(", ", memberTypes),
+                    "]",
+                ];
             },
             (transformedStringType) => {
                 if (transformedStringType.kind === "date-time") {
@@ -335,9 +335,9 @@ export class PythonRenderer extends ConvenienceRenderer {
                     ? 1
                     : 0;
             });
-        } else {
-            return super.sortClassProperties(properties, propertyNames);
         }
+
+        return super.sortClassProperties(properties, propertyNames);
     }
 
     protected emitClass(t: ClassType): void {

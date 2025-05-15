@@ -87,7 +87,7 @@ export class GoRenderer extends ConvenienceRenderer {
 
         assert(
             this._currentFilename === undefined,
-            "Previous file wasn't finished: " + this._currentFilename,
+            `Previous file wasn't finished: ${this._currentFilename}`,
         );
         this._currentFilename = `${this.sourcelikeToString(basename)}.go`;
         this.initializeEmitContextForFilename(this._currentFilename);
@@ -121,9 +121,9 @@ export class GoRenderer extends ConvenienceRenderer {
         const goType = this.goType(t, withIssues);
         if (isValueType(t)) {
             return ["*", goType];
-        } else {
-            return goType;
         }
+
+        return goType;
     }
 
     private propertyGoType(cp: ClassProperty): Sourcelike {
@@ -259,10 +259,7 @@ export class GoRenderer extends ConvenienceRenderer {
             docStrings.forEach((doc) => columns.push([doc]));
             const tags = this._options.fieldTags
                 .split(",")
-                .map(
-                    (tag) =>
-                        tag + ':"' + stringEscape(jsonName) + omitEmpty + '"',
-                )
+                .map((tag) => `${tag}:"${stringEscape(jsonName)}${omitEmpty}"`)
                 .join(" ");
             columns.push([
                 [name, " "],
@@ -384,13 +381,7 @@ export class GoRenderer extends ConvenienceRenderer {
                 });
                 const args = makeArgs(
                     (fn) => ["&x.", fn],
-                    (isClass, fn) => {
-                        if (isClass) {
-                            return "true, &c";
-                        } else {
-                            return ["true, &x.", fn];
-                        }
-                    },
+                    (isClass, fn) => (isClass ? "true, &c" : ["true, &x.", fn]),
                 );
                 this.emitLine(
                     "object, err := unmarshalUnion(data, ",
@@ -449,7 +440,7 @@ export class GoRenderer extends ConvenienceRenderer {
     ): void {
         if (!this._options.justTypes || this._options.justTypesAndPackage) {
             this.ensureBlankLine();
-            const packageDeclaration = "package " + this._options.packageName;
+            const packageDeclaration = `package ${this._options.packageName}`;
             this.emitLineOnce(packageDeclaration);
             this.ensureBlankLine();
         }
@@ -577,7 +568,6 @@ export class GoRenderer extends ConvenienceRenderer {
 			return false, errors.New("Cannot handle delimiter")
 	}
 	return false, errors.New("Cannot unmarshal union")
-
 }
 
 func marshalUnion(pi *int64, pf *float64, pb *bool, ps *string, haveArray bool, pa interface{}, haveObject bool, pc interface{}, haveMap bool, pm interface{}, haveEnum bool, pe interface{}, nullable bool) ([]byte, error) {
@@ -708,14 +698,14 @@ func marshalUnion(pi *int64, pf *float64, pb *bool, ps *string, haveArray bool, 
         });
 
         const imports = new Set<string>();
-        usedTypes.forEach((k) => {
+        for (const k of usedTypes) {
             const typeImport = mapping.get(k);
             if (!typeImport) {
-                return;
+                continue;
             }
 
             imports.add(typeImport);
-        });
+        }
 
         return imports;
     }

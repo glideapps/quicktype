@@ -90,9 +90,9 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
             (unionType) => {
                 if (this.unionNeedsName(unionType)) {
                     return this.makeRef(unionType);
-                } else {
-                    return this.definitionForUnion(unionType);
                 }
+
+                return this.definitionForUnion(unionType);
             },
             (transformedStringType) => {
                 const target = transformedStringTypeTargetTypeKindsMap.get(

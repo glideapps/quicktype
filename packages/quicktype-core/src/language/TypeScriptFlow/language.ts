@@ -6,7 +6,7 @@ import type {
     TransformedStringTypeKind,
 } from "../../Type";
 import type { StringTypeMapping } from "../../Type/TypeBuilderUtils";
-import type { FixMeOptionsType } from "../../types";
+import type { LanguageName, RendererOptions } from "../../types";
 import { javaScriptOptions } from "../JavaScript";
 
 import { FlowRenderer } from "./FlowRenderer";
@@ -76,9 +76,9 @@ export class TypeScriptTargetLanguage extends TargetLanguage<
         return true;
     }
 
-    protected makeRenderer(
+    protected makeRenderer<Lang extends LanguageName = "typescript">(
         renderContext: RenderContext,
-        untypedOptionValues: FixMeOptionsType,
+        untypedOptionValues: RendererOptions<Lang>,
     ): TypeScriptRenderer {
         return new TypeScriptRenderer(
             this,
@@ -122,9 +122,9 @@ export class FlowTargetLanguage extends TargetLanguage<
         return true;
     }
 
-    protected makeRenderer(
+    protected makeRenderer<Lang extends LanguageName = "flow">(
         renderContext: RenderContext,
-        untypedOptionValues: FixMeOptionsType,
+        untypedOptionValues: RendererOptions<Lang>,
     ): FlowRenderer {
         return new FlowRenderer(
             this,

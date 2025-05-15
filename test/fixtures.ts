@@ -1,7 +1,7 @@
 import * as _ from "lodash";
-import * as path from "path";
-import * as fs from "fs";
-import { randomBytes } from "crypto";
+import * as path from "node:path";
+import * as fs from "node:fs";
+import { randomBytes } from "node:crypto";
 import * as shell from "shelljs";
 
 const Ajv = require("ajv");
@@ -143,11 +143,11 @@ function timeEnd(message: string, suffix: string): void {
     const start = timeMap.get(message);
     const fullMessage = message + suffix;
     if (start === undefined) {
-        console.log(fullMessage + ": " + chalk.red("UNKNOWN TIMING"));
+        console.log(`${fullMessage}: ${chalk.red("UNKNOWN TIMING")}`);
         return;
     }
     const diff = Date.now() - start;
-    console.log(fullMessage + `: ${diff} ms`);
+    console.log(`${fullMessage}: ${diff} ms`);
 }
 
 export abstract class Fixture {
@@ -190,7 +190,7 @@ export abstract class Fixture {
             (v, k) => `${k}: ${v}`,
         ).join(", ");
         const messageParts = [
-            `*`,
+            "*",
             chalk.dim(`[${index + 1}/${total}]`),
             chalk.magenta(this.name) + chalk.dim(`(${rendererOptions})`),
             path.join(cwd, chalk.cyan(path.basename(sample.path))),
@@ -226,7 +226,7 @@ abstract class LanguageFixture extends Fixture {
             return;
         }
 
-        console.error(`* Setting up`, chalk.magenta(this.name), `fixture`);
+        console.error(`* Setting up ${chalk.magenta(this.name)} fixture`);
 
         await inDir(this.language.base, async () => {
             await execAsync(setupCommand);
@@ -472,6 +472,7 @@ class JSONFixture extends LanguageFixture {
                             ),
                             (p) => p.endsWith(`/${filename}`),
                         );
+
                         if (input === undefined) {
                             return failWith(
                                 `quick-test sample ${filename} not found`,
@@ -485,13 +486,13 @@ class JSONFixture extends LanguageFixture {
                                 saveOutput: false,
                             },
                         ];
-                    } else {
-                        return _.map(combinationInputs, (p) => ({
-                            path: defined(p),
-                            additionalRendererOptions: qt,
-                            saveOutput: false,
-                        }));
                     }
+
+                    return _.map(combinationInputs, (p) => ({
+                        path: defined(p),
+                        additionalRendererOptions: qt,
+                        saveOutput: false,
+                    }));
                 })
                 .value();
             priority = quickTestSamples.concat(priority);
@@ -601,7 +602,9 @@ class JSONSchemaJSONFixture extends JSONToXToYFixture {
         additionalFiles: string[],
     ): Promise<number> {
         const input = JSON.parse(fs.readFileSync(filename, "utf8"));
-        const schema = JSON.parse(fs.readFileSync(this.language.output, "utf8"));
+        const schema = JSON.parse(
+            fs.readFileSync(this.language.output, "utf8"),
+        );
 
         const ajv = new Ajv({
             format: "full",
@@ -823,7 +826,7 @@ function graphQLSchemaFilename(baseName: string): string {
             { baseName },
         );
     }
-    return baseMatch[1] + ".gqlschema";
+    return `${baseMatch[1]}.gqlschema`;
 }
 
 class GraphQLFixture extends LanguageFixture {
@@ -1007,13 +1010,13 @@ class CommandSuccessfulLanguageFixture extends LanguageFixture {
                                 saveOutput: false,
                             },
                         ];
-                    } else {
-                        return _.map(combinationInputs, (p) => ({
-                            path: defined(p),
-                            additionalRendererOptions: qt,
-                            saveOutput: false,
-                        }));
                     }
+
+                    return _.map(combinationInputs, (p) => ({
+                        path: defined(p),
+                        additionalRendererOptions: qt,
+                        saveOutput: false,
+                    }));
                 })
                 .value();
             priority = quickTestSamples.concat(priority);

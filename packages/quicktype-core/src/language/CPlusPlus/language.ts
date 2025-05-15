@@ -6,7 +6,7 @@ import {
     getOptionValues,
 } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
-import type { FixMeOptionsType } from "../../types";
+import type { LanguageName, RendererOptions } from "../../types";
 
 import { CPlusPlusRenderer } from "./CPlusPlusRenderer";
 
@@ -137,9 +137,9 @@ export class CPlusPlusTargetLanguage extends TargetLanguage<
         return true;
     }
 
-    protected makeRenderer(
+    protected makeRenderer<Lang extends LanguageName = "c++">(
         renderContext: RenderContext,
-        untypedOptionValues: FixMeOptionsType,
+        untypedOptionValues: RendererOptions<Lang>,
     ): CPlusPlusRenderer {
         return new CPlusPlusRenderer(
             this,

@@ -42,9 +42,9 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
             return funPrefixNamer("properties", (s) =>
                 this.nameStyle(s, false),
             );
-        } else {
-            return super.namerForObjectProperty();
         }
+
+        return super.namerForObjectProperty();
     }
 
     protected sourceFor(t: Type): MultiWord {
@@ -78,9 +78,9 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
                     arrayType.items instanceof ArrayType
                 ) {
                     return singleWord(["Array<", itemType.source, ">"]);
-                } else {
-                    return singleWord([parenIfNeeded(itemType), "[]"]);
                 }
+
+                return singleWord([parenIfNeeded(itemType), "[]"]);
             },
             (_classType) => panic("We handled this above"),
             (mapType) =>
@@ -99,9 +99,9 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
                         (c) => parenIfNeeded(this.sourceFor(c)),
                     );
                     return multiWord(" | ", ...children);
-                } else {
-                    return singleWord(this.nameForNamedType(unionType));
                 }
+
+                return singleWord(this.nameForNamedType(unionType));
             },
             (transformedStringType) => {
                 if (transformedStringType.kind === "date-time") {
@@ -126,7 +126,7 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
 
             if (this._tsFlowOptions.readonly) {
                 propertyName = modifySource(
-                    (_propertyName) => "readonly " + _propertyName,
+                    (_propertyName) => `readonly ${_propertyName}`,
                     propertyName,
                 );
             }

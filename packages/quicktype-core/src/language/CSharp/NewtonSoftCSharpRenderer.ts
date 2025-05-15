@@ -517,14 +517,9 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         if (consumer === undefined) {
             emitFinish(value);
             return true;
-        } else {
-            return this.emitTransformer(
-                value,
-                consumer,
-                targetType,
-                emitFinish,
-            );
         }
+
+        return this.emitTransformer(value, consumer, targetType, emitFinish);
     }
 
     private emitDecodeTransformer(
@@ -553,7 +548,8 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                     "), null, serializer);",
                 );
             } else if (source.kind !== "null") {
-                const output = targetType.kind === "double" ? targetType : source;
+                const output =
+                    targetType.kind === "double" ? targetType : source;
                 this.emitLine(
                     "var ",
                     variableName,
@@ -569,7 +565,9 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 targetType,
                 emitFinish,
             );
-        } else if (xfer instanceof ArrayDecodingTransformer) {
+        }
+
+        if (xfer instanceof ArrayDecodingTransformer) {
             // FIXME: Consume StartArray
             if (!(targetType instanceof ArrayType)) {
                 return panic("Array decoding must produce an array type");
@@ -602,7 +600,9 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
 
             emitFinish(result);
             return true;
-        } else if (xfer instanceof DecodingChoiceTransformer) {
+        }
+
+        if (xfer instanceof DecodingChoiceTransformer) {
             this.emitDecoderSwitch(() => {
                 const nullTransformer = xfer.nullTransformer;
                 if (nullTransformer !== undefined) {
@@ -666,15 +666,16 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 );
             });
             return false;
-        } else {
-            return panic("Unknown transformer");
         }
+
+        return panic("Unknown transformer");
     }
 
     private stringCaseValue(t: Type, stringCase: string): Sourcelike {
         if (t.kind === "string") {
             return ['"', utf16StringEscape(stringCase), '"'];
-        } else if (t instanceof EnumType) {
+        }
+        if (t instanceof EnumType) {
             return [
                 this.nameForNamedType(t),
                 ".",
@@ -731,15 +732,15 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 });
                 // FIXME: Can we check for exhaustiveness?  For enums it should be easy.
                 return false;
-            } else {
-                for (const caseXfer of caseXfers) {
-                    this.emitTransformer(
-                        variable,
-                        caseXfer,
-                        targetType,
-                        emitFinish,
-                    );
-                }
+            }
+
+            for (const caseXfer of caseXfers) {
+                this.emitTransformer(
+                    variable,
+                    caseXfer,
+                    targetType,
+                    emitFinish,
+                );
             }
         } else if (xfer instanceof UnionMemberMatchTransformer) {
             const memberType = xfer.memberType;

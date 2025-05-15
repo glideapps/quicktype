@@ -251,17 +251,23 @@ export function inferTransformedStringTypeKindForString(
 
     if (recognizer.isDate(s)) {
         return "date";
-    } else if (recognizer.isTime(s)) {
+    }
+    if (recognizer.isTime(s)) {
         return "time";
-    } else if (recognizer.isDateTime(s)) {
+    }
+    if (recognizer.isDateTime(s)) {
         return "date-time";
-    } else if (isIntegerString(s)) {
+    }
+    if (isIntegerString(s)) {
         return "integer-string";
-    } else if (s === "false" || s === "true") {
+    }
+    if (s === "false" || s === "true") {
         return "bool-string";
-    } else if (isUUID(s)) {
+    }
+    if (isUUID(s)) {
         return "uuid";
-    } else if (isURI(s)) {
+    }
+    if (isURI(s)) {
         return "uri";
     }
 

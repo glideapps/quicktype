@@ -28,7 +28,7 @@ import {
     getOptionValues,
 } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
-import type { FixMeOptionsType } from "../../types";
+import type { LanguageName, RendererOptions } from "../../types";
 
 import { CJSONRenderer } from "./CJSONRenderer";
 
@@ -156,9 +156,9 @@ export class CJSONTargetLanguage extends TargetLanguage<
      * @param untypedOptionValues
      * @return cJSON renderer
      */
-    protected makeRenderer(
+    protected makeRenderer<Lang extends LanguageName = "cjson">(
         renderContext: RenderContext,
-        untypedOptionValues: FixMeOptionsType,
+        untypedOptionValues: RendererOptions<Lang>,
     ): CJSONRenderer {
         return new CJSONRenderer(
             this,

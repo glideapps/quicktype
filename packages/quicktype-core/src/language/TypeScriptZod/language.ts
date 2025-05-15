@@ -6,7 +6,7 @@ import type {
     TransformedStringTypeKind,
 } from "../../Type";
 import type { StringTypeMapping } from "../../Type/TypeBuilderUtils";
-import type { FixMeOptionsType } from "../../types";
+import type { LanguageName, RendererOptions } from "../../types";
 
 import { TypeScriptZodRenderer } from "./TypeScriptZodRenderer";
 
@@ -43,9 +43,9 @@ export class TypeScriptZodTargetLanguage extends TargetLanguage<
         return true;
     }
 
-    protected makeRenderer(
+    protected makeRenderer<Lang extends LanguageName = "typescript-zod">(
         renderContext: RenderContext,
-        untypedOptionValues: FixMeOptionsType,
+        untypedOptionValues: RendererOptions<Lang>,
     ): TypeScriptZodRenderer {
         return new TypeScriptZodRenderer(
             this,

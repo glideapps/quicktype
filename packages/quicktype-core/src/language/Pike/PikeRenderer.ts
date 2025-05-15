@@ -123,10 +123,9 @@ export class PikeRenderer extends ConvenienceRenderer {
                 ]),
             (_classType) => singleWord(this.nameForNamedType(_classType)),
             (mapType) => {
-                let valueSource: Sourcelike;
                 const v = mapType.values;
+                const valueSource: Sourcelike = this.sourceFor(v).source;
 
-                valueSource = this.sourceFor(v).source;
                 return singleWord(["mapping(string:", valueSource, ")"]);
             },
             (_enumType) => singleWord("enum"),
@@ -136,9 +135,9 @@ export class PikeRenderer extends ConvenienceRenderer {
                         (c) => parenIfNeeded(this.sourceFor(c)),
                     );
                     return multiWord("|", ...children);
-                } else {
-                    return singleWord(this.nameForNamedType(unionType));
                 }
+
+                return singleWord(this.nameForNamedType(unionType));
             },
         );
     }

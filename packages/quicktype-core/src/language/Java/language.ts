@@ -12,7 +12,7 @@ import type {
     TransformedStringTypeKind,
 } from "../../Type";
 import type { StringTypeMapping } from "../../Type/TypeBuilderUtils";
-import type { FixMeOptionsType } from "../../types";
+import type { LanguageName, RendererOptions } from "../../types";
 
 import { JacksonRenderer } from "./JavaJacksonRenderer";
 import { JavaRenderer } from "./JavaRenderer";
@@ -69,9 +69,9 @@ export class JavaTargetLanguage extends TargetLanguage<
         return true;
     }
 
-    protected makeRenderer(
+    protected makeRenderer<Lang extends LanguageName = "java">(
         renderContext: RenderContext,
-        untypedOptionValues: FixMeOptionsType,
+        untypedOptionValues: RendererOptions<Lang>,
     ): JavaRenderer {
         const options = getOptionValues(javaOptions, untypedOptionValues);
         if (options.justTypes) {

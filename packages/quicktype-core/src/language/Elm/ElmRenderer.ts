@@ -222,9 +222,9 @@ export class ElmRenderer extends ConvenienceRenderer {
                 "Maybe",
                 parenIfNeeded(this.elmType(p.type, true)),
             ).source;
-        } else {
-            return this.elmType(p.type).source;
         }
+
+        return this.elmType(p.type).source;
     }
 
     private decoderNameForNamedType(t: Type): Name {
@@ -279,9 +279,9 @@ export class ElmRenderer extends ConvenienceRenderer {
                 "Jdec.nullable",
                 parenIfNeeded(this.decoderNameForType(p.type, true)),
             );
-        } else {
-            return this.decoderNameForType(p.type);
         }
+
+        return this.decoderNameForType(p.type);
     }
 
     private encoderNameForNamedType(t: Type): Name {
@@ -336,9 +336,9 @@ export class ElmRenderer extends ConvenienceRenderer {
                 "makeNullableEncoder",
                 parenIfNeeded(this.encoderNameForType(p.type, true)),
             );
-        } else {
-            return this.encoderNameForType(p.type);
         }
+
+        return this.encoderNameForType(p.type);
     }
 
     private emitTopLevelDefinition(t: Type, topLevelName: Name): void {
@@ -409,15 +409,15 @@ export class ElmRenderer extends ConvenienceRenderer {
         this.emitLine("type ", unionName);
         this.indent(() => {
             let onFirst = true;
-            this.forEachUnionMember(u, null, "none", null, (constructor, t) => {
+            this.forEachUnionMember(u, null, "none", null, (name, t) => {
                 const equalsOrPipe = onFirst ? "=" : "|";
                 if (t.kind === "null") {
-                    this.emitLine(equalsOrPipe, " ", constructor);
+                    this.emitLine(equalsOrPipe, " ", name);
                 } else {
                     this.emitLine(
                         equalsOrPipe,
                         " ",
-                        constructor,
+                        name,
                         " ",
                         parenIfNeeded(this.elmType(t)),
                     );
@@ -559,9 +559,11 @@ export class ElmRenderer extends ConvenienceRenderer {
         function sortOrder(_: Name, t: Type): string {
             if (t.kind === "array") {
                 return "  array";
-            } else if (t.kind === "double") {
+            }
+            if (t.kind === "double") {
                 return " xdouble";
-            } else if (t.isPrimitive()) {
+            }
+            if (t.isPrimitive()) {
                 return " " + t.kind;
             }
 
@@ -580,14 +582,10 @@ export class ElmRenderer extends ConvenienceRenderer {
                     null,
                     "none",
                     sortOrder,
-                    (constructor, t) => {
+                    (name, t) => {
                         const bracketOrComma = onFirst ? "[" : ",";
                         if (t.kind === "null") {
-                            this.emitLine(
-                                bracketOrComma,
-                                " Jdec.null ",
-                                constructor,
-                            );
+                            this.emitLine(bracketOrComma, " Jdec.null ", name);
                         } else {
                             const decoder = parenIfNeeded(
                                 this.decoderNameForType(t),
@@ -595,7 +593,7 @@ export class ElmRenderer extends ConvenienceRenderer {
                             this.emitLine(
                                 bracketOrComma,
                                 " Jdec.map ",
-                                constructor,
+                                name,
                                 " ",
                                 decoder,
                             );
@@ -613,20 +611,14 @@ export class ElmRenderer extends ConvenienceRenderer {
         this.emitLine(encoderName, " : ", unionName, " -> Jenc.Value");
         this.emitLine(encoderName, " x = case x of");
         this.indent(() => {
-            this.forEachUnionMember(
-                u,
-                null,
-                "none",
-                sortOrder,
-                (constructor, t) => {
-                    if (t.kind === "null") {
-                        this.emitLine(constructor, " -> Jenc.null");
-                    } else {
-                        const encoder = this.encoderNameForType(t).source;
-                        this.emitLine(constructor, " y -> ", encoder, " y");
-                    }
-                },
-            );
+            this.forEachUnionMember(u, null, "none", sortOrder, (name, t) => {
+                if (t.kind === "null") {
+                    this.emitLine(name, " -> Jenc.null");
+                } else {
+                    const encoder = this.encoderNameForType(t).source;
+                    this.emitLine(name, " y -> ", encoder, " y");
+                }
+            });
         });
     }
 

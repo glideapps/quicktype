@@ -3,7 +3,7 @@ import { EnumOption, getOptionValues } from "../../RendererOptions";
 import { AcronymStyleOptions, acronymOption } from "../../support/Acronyms";
 import { convertersOption } from "../../support/Converters";
 import { TargetLanguage } from "../../TargetLanguage";
-import type { FixMeOptionsType } from "../../types";
+import type { LanguageName, RendererOptions } from "../../types";
 
 import { JavaScriptPropTypesRenderer } from "./JavaScriptPropTypesRenderer";
 
@@ -38,9 +38,9 @@ export class JavaScriptPropTypesTargetLanguage extends TargetLanguage<
         return javaScriptPropTypesOptions;
     }
 
-    protected makeRenderer(
+    protected makeRenderer<Lang extends LanguageName = "javascript-prop-types">(
         renderContext: RenderContext,
-        untypedOptionValues: FixMeOptionsType,
+        untypedOptionValues: RendererOptions<Lang>,
     ): JavaScriptPropTypesRenderer {
         return new JavaScriptPropTypesRenderer(
             this,

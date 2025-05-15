@@ -65,13 +65,13 @@ export class CirceRenderer extends Scala3Renderer {
                             this.nameForNamedType(nullable),
                             "]",
                         ];
-                    } else {
-                        return [
-                            "Encoder.AsObject[Option[",
-                            this.nameForNamedType(nullable),
-                            "]]",
-                        ];
                     }
+
+                    return [
+                        "Encoder.AsObject[Option[",
+                        this.nameForNamedType(nullable),
+                        "]]",
+                    ];
                 }
 
                 return [

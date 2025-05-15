@@ -159,9 +159,9 @@ export class HaskellRenderer extends ConvenienceRenderer {
                 "Maybe",
                 parenIfNeeded(this.haskellType(p.type, true)),
             ).source;
-        } else {
-            return this.haskellType(p.type).source;
         }
+
+        return this.haskellType(p.type).source;
     }
 
     private encoderNameForType(t: Type): MultiWord {
@@ -245,15 +245,15 @@ export class HaskellRenderer extends ConvenienceRenderer {
         this.emitLine("data ", unionName);
         this.indent(() => {
             let onFirst = true;
-            this.forEachUnionMember(u, null, "none", null, (constructor, t) => {
+            this.forEachUnionMember(u, null, "none", null, (name, t) => {
                 const equalsOrPipe = onFirst ? "=" : "|";
                 if (t.kind === "null") {
-                    this.emitLine(equalsOrPipe, " ", constructor);
+                    this.emitLine(equalsOrPipe, " ", name);
                 } else {
                     this.emitLine(
                         equalsOrPipe,
                         " ",
-                        constructor,
+                        name,
                         " ",
                         parenIfNeeded(this.haskellType(t)),
                     );
@@ -395,11 +395,11 @@ export class HaskellRenderer extends ConvenienceRenderer {
     private emitUnionEncoderInstance(u: UnionType, unionName: Name): void {
         this.emitLine("instance ToJSON ", unionName, " where");
         this.indent(() => {
-            this.forEachUnionMember(u, null, "none", null, (constructor, t) => {
+            this.forEachUnionMember(u, null, "none", null, (name, t) => {
                 if (t.kind === "null") {
-                    this.emitLine("toJSON ", constructor, " = Null");
+                    this.emitLine("toJSON ", name, " = Null");
                 } else {
-                    this.emitLine("toJSON (", constructor, " x) = toJSON x");
+                    this.emitLine("toJSON (", name, " x) = toJSON x");
                 }
             });
         });
@@ -408,15 +408,15 @@ export class HaskellRenderer extends ConvenienceRenderer {
     private emitUnionDecoderInstance(u: UnionType, unionName: Name): void {
         this.emitLine("instance FromJSON ", unionName, " where");
         this.indent(() => {
-            this.forEachUnionMember(u, null, "none", null, (constructor, t) => {
+            this.forEachUnionMember(u, null, "none", null, (name, t) => {
                 if (t.kind === "null") {
-                    this.emitLine("parseJSON Null = return ", constructor);
+                    this.emitLine("parseJSON Null = return ", name);
                 } else {
                     this.emitLine(
                         "parseJSON xs@(",
                         this.encoderNameForType(t).source,
                         " _) = (fmap ",
-                        constructor,
+                        name,
                         " . parseJSON) xs",
                     );
                 }

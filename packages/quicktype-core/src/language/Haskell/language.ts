@@ -6,7 +6,7 @@ import {
     getOptionValues,
 } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
-import type { FixMeOptionsType } from "../../types";
+import type { LanguageName, RendererOptions } from "../../types";
 
 import { HaskellRenderer } from "./HaskellRenderer";
 
@@ -54,9 +54,9 @@ export class HaskellTargetLanguage extends TargetLanguage<
         return true;
     }
 
-    protected makeRenderer(
+    protected makeRenderer<Lang extends LanguageName = "haskell">(
         renderContext: RenderContext,
-        untypedOptionValues: FixMeOptionsType,
+        untypedOptionValues: RendererOptions<Lang>,
     ): HaskellRenderer {
         return new HaskellRenderer(
             this,

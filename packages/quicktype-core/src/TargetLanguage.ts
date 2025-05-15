@@ -10,7 +10,7 @@ import { defined } from "./support/Support";
 import type { Type } from "./Type/Type";
 import type { StringTypeMapping } from "./Type/TypeBuilderUtils";
 import type { TypeGraph } from "./Type/TypeGraph";
-import type { FixMeOptionsType } from "./types";
+import type { LanguageName, RendererOptions } from "./types";
 
 export type MultiFileRenderResult = ReadonlyMap<string, SerializedRenderResult>;
 
@@ -59,17 +59,17 @@ export abstract class TargetLanguage<
         return defined(this.names[0]);
     }
 
-    protected abstract makeRenderer(
+    protected abstract makeRenderer<Lang extends LanguageName>(
         renderContext: RenderContext,
-        optionValues: FixMeOptionsType,
+        optionValues: RendererOptions<Lang>,
     ): Renderer;
 
-    public renderGraphAndSerialize(
+    public renderGraphAndSerialize<Lang extends LanguageName>(
         typeGraph: TypeGraph,
         givenOutputFilename: string,
         alphabetizeProperties: boolean,
         leadingComments: Comment[] | undefined,
-        rendererOptions: FixMeOptionsType,
+        rendererOptions: RendererOptions<Lang>,
         indentation?: string,
     ): MultiFileRenderResult {
         if (indentation === undefined) {

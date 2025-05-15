@@ -14,7 +14,7 @@ import {
     UnionType,
 } from "../../Type";
 import type { StringTypeMapping } from "../../Type/TypeBuilderUtils";
-import type { FixMeOptionsType } from "../../types";
+import type { LanguageName, RendererOptions } from "../../types";
 
 import { JSONPythonRenderer } from "./JSONPythonRenderer";
 import { PythonRenderer } from "./PythonRenderer";
@@ -96,15 +96,15 @@ export class PythonTargetLanguage extends TargetLanguage<
         return t.kind === "integer-string" || t.kind === "bool-string";
     }
 
-    protected makeRenderer(
+    protected makeRenderer<Lang extends LanguageName = "python">(
         renderContext: RenderContext,
-        untypedOptionValues: FixMeOptionsType,
+        untypedOptionValues: RendererOptions<Lang>,
     ): PythonRenderer {
         const options = getOptionValues(pythonOptions, untypedOptionValues);
         if (options.justTypes) {
             return new PythonRenderer(this, renderContext, options);
-        } else {
-            return new JSONPythonRenderer(this, renderContext, options);
         }
+
+        return new JSONPythonRenderer(this, renderContext, options);
     }
 }
