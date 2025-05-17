@@ -38,6 +38,13 @@
         "@types/wordwrap": "^1.0.3",
         "typescript": "~5.8.3"
     },
+    "overrides": {
+        "cross-fetch": {
+            "node-fetch": {
+                "whatwg-url": "^13.0.0"
+            }
+        }
+    },
     "files": ["dist"],
     "browser": {
         "fs": false
