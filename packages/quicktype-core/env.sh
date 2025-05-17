@@ -1,15 +1,11 @@
 #!/usr/bin/env bash
 
-echo $PUBLISH
-
-if [[ $PUBLISH == true ]]
-then
+if [[ $PUBLISH == true ]]; then
   echo 'HAS PUBLISH, exit'
   exit 0
 fi
 
-if [[ $CI ]]
-then
+if [[ $CI ]]; then
 	if [[ "$OSTYPE" == "darwin"* ]]; then
 		grep -rl '$fetch' src | xargs sed -i '' -e 's/$fetch/$fetch.ci/g'
 	else
