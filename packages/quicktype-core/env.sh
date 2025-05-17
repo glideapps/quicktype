@@ -2,10 +2,12 @@
 
 echo $PUBLISH
 
-if [[ $PUBLISH ]]
+if [[ $PUBLISH == true ]]
 then
   echo 'HAS PUBLISH, exit'
   exit 0
+else
+	echo 'false'
 fi
 
 if [[ $CI ]]
