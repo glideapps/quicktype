@@ -49,7 +49,9 @@ export async function readableFromFileOrURL(
             });
 
             return defined(response.body) as unknown as Readable;
-        } else if (isNode) {
+        }
+
+        if (isNode) {
             if (fileOrURL === "-") {
                 // Cast node readable to isomorphic readable from readable-stream
                 return process.stdin as unknown as Readable;
