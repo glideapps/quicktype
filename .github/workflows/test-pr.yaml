@@ -75,6 +75,8 @@ jobs:
         steps:
             - uses: actions/checkout@v3
             - uses: ./.github/workflows/setup
+              env:
+                PUBLISH: false
 
             - name: Setup PHP
               if: ${{ contains(matrix.fixture, 'php') }}
