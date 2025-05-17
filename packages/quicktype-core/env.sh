@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 
-if [ -n $NODE_AUTH_TOKEN ]
+echo $NODE_AUTH_TOKEN
+
+if [ -v $NODE_AUTH_TOKEN ]
 then
+else
 	echo 'HAS NODE_AUTH_TOKEN, exit'
 	exit 0
 fi
