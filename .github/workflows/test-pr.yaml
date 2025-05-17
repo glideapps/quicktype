@@ -11,7 +11,7 @@ jobs:
             - uses: actions/checkout@v3
             - uses: ./.github/workflows/setup
               env:
-                PUBLISH: false
+                PUBLISH: true
 
     test:
         needs: [build]
