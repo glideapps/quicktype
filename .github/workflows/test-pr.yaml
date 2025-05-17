@@ -10,8 +10,7 @@ jobs:
         steps:
             - uses: actions/checkout@v3
             - uses: ./.github/workflows/setup
-              env:
-                    NODE_AUTH_TOKEN: true
+
 
     test:
         needs: [build]
