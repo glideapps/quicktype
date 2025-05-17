@@ -10,8 +10,9 @@ jobs:
         steps:
             - uses: actions/checkout@v3
             - uses: ./.github/workflows/setup
+              env:
+                PUBLISH: true
             - run: npm run pub
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
                   VSCE_TOKEN: ${{ secrets.VSCE_TOKEN }}
-                  PUBLISH: true
