@@ -1,4 +1,4 @@
-import * as fs from "fs";
+import * as fs from "node:fs";
 
 import { defined, exceptionToString } from "@glideapps/ts-necessities";
 import { isNode } from "browser-or-node";
@@ -10,11 +10,7 @@ import { panic } from "../../support/Support";
 
 import { getStream } from "./get-stream";
 
-// We need to use cross-fetch in CI or if fetch is not available in the global scope
-// We use a dynamic import to avoid punycode deprecated dependency warning on node > 20
-const fetch = process.env.CI
-    ? require("cross-fetch").default
-    : ((global as any).fetch ?? require("cross-fetch").default);
+import { fetch } from "./$fetch";
 
 interface HttpHeaders {
     [key: string]: string;
@@ -25,10 +21,7 @@ function parseHeaders(httpHeaders?: string[]): HttpHeaders {
         return {};
     }
 
-    return httpHeaders.reduce((
-        result: HttpHeaders,
-        httpHeader: string,
-    ) => {
+    return httpHeaders.reduce((result: HttpHeaders, httpHeader: string) => {
         if (httpHeader !== undefined && httpHeader.length > 0) {
             const split = httpHeader.indexOf(":");
 
@@ -56,7 +49,9 @@ export async function readableFromFileOrURL(
             });
 
             return defined(response.body) as unknown as Readable;
-        } else if (isNode) {
+        }
+
+        if (isNode) {
             if (fileOrURL === "-") {
                 // Cast node readable to isomorphic readable from readable-stream
                 return process.stdin as unknown as Readable;
