@@ -2,7 +2,6 @@
 
 echo $CI
 echo $NODE_AUTH_TOKEN
-echo ($CI & !$NODE_AUTH_TOKEN)
 
 
 if [[ ! -v NODE_AUTH_TOKEN ]]
