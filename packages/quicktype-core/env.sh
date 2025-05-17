@@ -10,6 +10,7 @@ fi
 
 if [[ $CI ]]
 then
-	pwd
+	ls
+	grep -rl '$fetch' src
   grep -rl '$fetch' src | xargs sed -i '' -e 's/$fetch/$fetch.ci/g'
 fi
