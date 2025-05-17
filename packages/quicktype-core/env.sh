@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-if [ $PUBLISH ]
+echo $PUBLISH
+
+if [[ $PUBLISH ]]
 then
   echo 'HAS PUBLISH, exit'
   exit 0
