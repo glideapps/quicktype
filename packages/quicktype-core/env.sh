@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 
-echo $NODE_AUTH_TOKEN
+echo $PUBLISH
 
-if [ -v $NODE_AUTH_TOKEN ] && [[ $CI ]]
+if [ $PUBLISH ]
 then
-    grep -rl '$fetch' src | xargs sed -i '' -e 's/$fetch/$fetch.ci/g'
-else
-  echo 'HAS NODE_AUTH_TOKEN, skip'
+	echo 'HAS PUBLISH, exit'
+	exit 0
+fi
+
+if [[ $CI ]]
+then
+	grep -rl '$fetch' src | xargs sed -i '' -e 's/$fetch/$fetch.ci/g'
 fi
