@@ -4,7 +4,7 @@ echo $CI
 echo $NODE_AUTH_TOKEN
 
 
-if [[ ! -v NODE_AUTH_TOKEN ]]
+if [[ $NODE_AUTH_TOKEN ]]
 then
 	echo 'HAS NODE_AUTH_TOKEN, exit'
 	exit 0
