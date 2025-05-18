@@ -170,6 +170,7 @@ export class EnumOption<
             description,
             typeLabel: Object.keys(values).join("|"),
             defaultValue,
+            values,
         };
         super(definition);
 

@@ -11,6 +11,7 @@ export interface OptionDefinition<Name extends string = string, T = unknown> {
     alias?: string;
     defaultOption?: boolean;
     defaultValue?: T;
+    values?: Record<string, unknown>;
     description: string;
     kind?: OptionKind;
     multiple?: boolean;
