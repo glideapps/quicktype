@@ -77,7 +77,7 @@ export class BooleanOption<Name extends string> extends Option<Name, boolean> {
         super({
             name,
             kind,
-            type: "boolean",
+            optionType: "boolean",
             description,
             defaultValue,
         });
@@ -134,15 +134,14 @@ export class StringOption<Name extends string> extends Option<Name, string> {
         defaultValue: string,
         kind: OptionKind = "primary",
     ) {
-        const definition = {
+        super({
             name,
             kind,
-            type: "string",
+            optionType: "string",
             description,
             typeLabel,
             defaultValue,
-        };
-        super(definition);
+        });
     }
 }
 
@@ -163,16 +162,15 @@ export class EnumOption<
         defaultValue: NoInfer<EnumKey>,
         kind: OptionKind = "primary",
     ) {
-        const definition = {
+        super({
             name,
             kind,
-            type: "enum",
+            optionType: "enum",
             description,
             typeLabel: Object.keys(values).join("|"),
             defaultValue,
             values,
-        };
-        super(definition);
+        });
 
         this._values = values;
     }

@@ -452,7 +452,6 @@ function makeOptionDefinitions(
             name: "src",
             optionType: "string",
             multiple: true,
-            defaultOption: true,
             typeLabel: "FILE|URL|DIRECTORY",
             description: "The file, url, or data directory to type.",
             kind: "cli",
@@ -469,7 +468,7 @@ function makeOptionDefinitions(
         mapMap(mapFromObject(inferenceFlags), (flag, name) => {
             return {
                 name: dashedFromCamelCase(negatedInferenceFlagName(name)),
-                optionType: "boolean",
+                optionType: "boolean" as const,
                 description: flag.negationDescription + ".",
                 kind: "cli" as const,
             };
