@@ -1,45 +1,67 @@
-import { type RenderContext } from "../../Renderer";
-import { BooleanOption, EnumOption, type Option, StringOption, getOptionValues } from "../../RendererOptions";
+import type { RenderContext } from "../../Renderer";
+import {
+    BooleanOption,
+    EnumOption,
+    StringOption,
+    getOptionValues,
+} from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import type { LanguageName, RendererOptions } from "../../types";
 
 import { ObjectiveCRenderer } from "./ObjectiveCRenderer";
 import { DEFAULT_CLASS_PREFIX } from "./utils";
 
-export type MemoryAttribute = "assign" | "strong" | "copy";
-export interface OutputFeatures {
-    implementation: boolean;
-    interface: boolean;
-}
-
 export const objectiveCOptions = {
-    features: new EnumOption("features", "Interface and implementation", [
-        ["all", { interface: true, implementation: true }],
-        ["interface", { interface: true, implementation: false }],
-        ["implementation", { interface: false, implementation: true }]
-    ]),
+    features: new EnumOption(
+        "features",
+        "Interface and implementation",
+        {
+            all: { interface: true, implementation: true },
+            interface: { interface: true, implementation: false },
+            implementation: { interface: false, implementation: true },
+        } as const,
+        "all",
+    ),
     justTypes: new BooleanOption("just-types", "Plain types only", false),
-    marshallingFunctions: new BooleanOption("functions", "C-style functions", false),
-    classPrefix: new StringOption("class-prefix", "Class prefix", "PREFIX", DEFAULT_CLASS_PREFIX),
-    extraComments: new BooleanOption("extra-comments", "Extra comments", false)
+    marshallingFunctions: new BooleanOption(
+        "functions",
+        "C-style functions",
+        false,
+    ),
+    classPrefix: new StringOption(
+        "class-prefix",
+        "Class prefix",
+        "PREFIX",
+        DEFAULT_CLASS_PREFIX,
+    ),
+    extraComments: new BooleanOption("extra-comments", "Extra comments", false),
 };
 
-export class ObjectiveCTargetLanguage extends TargetLanguage {
+export const objectiveCLanguageConfig = {
+    displayName: "Objective-C",
+    names: ["objc", "objective-c", "objectivec"],
+    extension: "m",
+} as const;
+
+export class ObjectiveCTargetLanguage extends TargetLanguage<
+    typeof objectiveCLanguageConfig
+> {
     public constructor() {
-        super("Objective-C", ["objc", "objective-c", "objectivec"], "m");
+        super(objectiveCLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [
-            objectiveCOptions.justTypes,
-            objectiveCOptions.classPrefix,
-            objectiveCOptions.features,
-            objectiveCOptions.extraComments,
-            objectiveCOptions.marshallingFunctions
-        ];
+    public getOptions(): typeof objectiveCOptions {
+        return objectiveCOptions;
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): ObjectiveCRenderer {
-        return new ObjectiveCRenderer(this, renderContext, getOptionValues(objectiveCOptions, untypedOptionValues));
+    protected makeRenderer<Lang extends LanguageName = "objective-c">(
+        renderContext: RenderContext,
+        untypedOptionValues: RendererOptions<Lang>,
+    ): ObjectiveCRenderer {
+        return new ObjectiveCRenderer(
+            this,
+            renderContext,
+            getOptionValues(objectiveCOptions, untypedOptionValues),
+        );
     }
 }

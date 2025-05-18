@@ -1,22 +1,39 @@
-import { type RenderContext } from "../../Renderer";
-import { BooleanOption, type Option, StringOption, getOptionValues } from "../../RendererOptions";
+import type { RenderContext } from "../../Renderer";
+import {
+    BooleanOption,
+    StringOption,
+    getOptionValues,
+} from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import type { LanguageName, RendererOptions } from "../../types";
 
 import { ElixirRenderer } from "./ElixirRenderer";
 
 export const elixirOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
-    namespace: new StringOption("namespace", "Specify a module namespace", "NAME", "")
+    namespace: new StringOption(
+        "namespace",
+        "Specify a module namespace",
+        "NAME",
+        "",
+    ),
 };
 
-export class ElixirTargetLanguage extends TargetLanguage {
+export const elixirLanguageConfig = {
+    displayName: "Elixir",
+    names: ["elixir"],
+    extension: "ex",
+} as const;
+
+export class ElixirTargetLanguage extends TargetLanguage<
+    typeof elixirLanguageConfig
+> {
     public constructor() {
-        super("Elixir", ["elixir"], "ex");
+        super(elixirLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [elixirOptions.justTypes, elixirOptions.namespace];
+    public getOptions(): typeof elixirOptions {
+        return elixirOptions;
     }
 
     public get supportsOptionalClassProperties(): boolean {
@@ -27,7 +44,14 @@ export class ElixirTargetLanguage extends TargetLanguage {
         return "  ";
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): ElixirRenderer {
-        return new ElixirRenderer(this, renderContext, getOptionValues(elixirOptions, untypedOptionValues));
+    protected makeRenderer<Lang extends LanguageName = "elixir">(
+        renderContext: RenderContext,
+        untypedOptionValues: RendererOptions<Lang>,
+    ): ElixirRenderer {
+        return new ElixirRenderer(
+            this,
+            renderContext,
+            getOptionValues(elixirOptions, untypedOptionValues),
+        );
     }
 }

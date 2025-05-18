@@ -1,9 +1,9 @@
-import { type Name } from "../../Naming";
+import type { Name } from "../../Naming";
 import { type Sourcelike, modifySource } from "../../Source";
 import { camelCase, utf16StringEscape } from "../../support/Strings";
-import { type ClassType, type EnumType, type Type } from "../../Type";
-import { isNamedType } from "../../TypeUtils";
-import { type JavaScriptTypeAnnotations } from "../JavaScript";
+import type { ClassType, EnumType, Type } from "../../Type";
+import { isNamedType } from "../../Type/TypeUtils";
+import type { JavaScriptTypeAnnotations } from "../JavaScript";
 
 import { TypeScriptFlowBaseRenderer } from "./TypeScriptFlowBaseRenderer";
 import { tsFlowTypeAnnotations } from "./utils";
@@ -14,14 +14,30 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
     }
 
     protected deserializerFunctionLine(t: Type, name: Name): Sourcelike {
-        const jsonType = this._tsFlowOptions.rawType === "json" ? "string" : "any";
-        return ["public static to", name, "(json: ", jsonType, "): ", this.sourceFor(t).source];
+        const jsonType =
+            this._tsFlowOptions.rawType === "json" ? "string" : "any";
+        return [
+            "public static to",
+            name,
+            "(json: ",
+            jsonType,
+            "): ",
+            this.sourceFor(t).source,
+        ];
     }
 
     protected serializerFunctionLine(t: Type, name: Name): Sourcelike {
         const camelCaseName = modifySource(camelCase, name);
-        const returnType = this._tsFlowOptions.rawType === "json" ? "string" : "any";
-        return ["public static ", camelCaseName, "ToJson(value: ", this.sourceFor(t).source, "): ", returnType];
+        const returnType =
+            this._tsFlowOptions.rawType === "json" ? "string" : "any";
+        return [
+            "public static ",
+            camelCaseName,
+            "ToJson(value: ",
+            this.sourceFor(t).source,
+            "): ",
+            returnType,
+        ];
     }
 
     protected get moduleLine(): string | undefined {
@@ -43,9 +59,13 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
             (_t, name) => {
                 topLevelNames.push(", ", name);
             },
-            isNamedType
+            isNamedType,
         );
-        this.emitLine("//   import { Convert", topLevelNames, ' } from "./file";');
+        this.emitLine(
+            "//   import { Convert",
+            topLevelNames,
+            ' } from "./file";',
+        );
     }
 
     protected emitEnum(e: EnumType, enumName: Name): void {
@@ -56,7 +76,7 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
 
         if (this._tsFlowOptions.preferUnions) {
             let items = "";
-            e.cases.forEach(item => {
+            e.cases.forEach((item) => {
                 if (items === "") {
                     items += `"${utf16StringEscape(item)}"`;
                     return;
@@ -82,7 +102,7 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
             "",
             () => {
                 this.emitClassBlockBody(c);
-            }
+            },
         );
     }
 }

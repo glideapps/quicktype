@@ -2,35 +2,52 @@ import { mapMap } from "collection-utils";
 
 import { ConvenienceRenderer } from "./ConvenienceRenderer";
 import { type DateTimeRecognizer, DefaultDateTimeRecognizer } from "./DateTime";
-import { type RenderContext, type Renderer } from "./Renderer";
-import { type Option, type OptionDefinition } from "./RendererOptions";
+import type { RenderContext, Renderer } from "./Renderer";
+import type { Option, OptionDefinition } from "./RendererOptions";
 import { type SerializedRenderResult, serializeRenderResult } from "./Source";
-import { type Comment } from "./support/Comments";
+import type { Comment } from "./support/Comments";
 import { defined } from "./support/Support";
-import { type Type } from "./Type";
-import { type StringTypeMapping } from "./TypeBuilder";
-import { type TypeGraph } from "./TypeGraph";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "./types";
+import type { Type } from "./Type/Type";
+import type { StringTypeMapping } from "./Type/TypeBuilderUtils";
+import type { TypeGraph } from "./Type/TypeGraph";
+import type { LanguageName, RendererOptions } from "./types";
 
 export type MultiFileRenderResult = ReadonlyMap<string, SerializedRenderResult>;
 
-export abstract class TargetLanguage {
-    public constructor(
-        public readonly displayName: string,
-        public readonly names: string[],
-        public readonly extension: string
-    ) {}
+export interface LanguageConfig {
+    readonly displayName: string;
+    readonly extension: string;
+    readonly names: readonly string[];
+}
 
-    protected abstract getOptions(): Array<Option<FixMeOptionsAnyType>>;
+export abstract class TargetLanguage<
+    Config extends LanguageConfig = LanguageConfig,
+> {
+    public readonly displayName: Config["displayName"];
 
-    public get optionDefinitions(): OptionDefinition[] {
-        return this.getOptions().map(o => o.definition);
+    public readonly names: Config["names"];
+
+    public readonly extension: Config["extension"];
+
+    public constructor({ displayName, names, extension }: Config) {
+        this.displayName = displayName;
+        this.names = names;
+        this.extension = extension;
     }
 
-    public get cliOptionDefinitions(): { actual: OptionDefinition[]; display: OptionDefinition[] } {
-        let actual: OptionDefinition[] = [];
-        let display: OptionDefinition[] = [];
-        for (const { cliDefinitions } of this.getOptions()) {
+    protected abstract getOptions(): Record<string, Option<string, unknown>>;
+
+    public get optionDefinitions(): Array<OptionDefinition<string, unknown>> {
+        return Object.values(this.getOptions()).map((o) => o.definition);
+    }
+
+    public get cliOptionDefinitions(): {
+        actual: Array<OptionDefinition<string, unknown>>;
+        display: Array<OptionDefinition<string, unknown>>;
+    } {
+        let actual: Array<OptionDefinition<string, unknown>> = [];
+        let display: Array<OptionDefinition<string, unknown>> = [];
+        for (const { cliDefinitions } of Object.values(this.getOptions())) {
             actual = actual.concat(cliDefinitions.actual);
             display = display.concat(cliDefinitions.display);
         }
@@ -38,19 +55,22 @@ export abstract class TargetLanguage {
         return { actual, display };
     }
 
-    public get name(): string {
+    public get name(): (typeof this.names)[0] {
         return defined(this.names[0]);
     }
 
-    protected abstract makeRenderer(renderContext: RenderContext, optionValues: FixMeOptionsType): Renderer;
+    protected abstract makeRenderer<Lang extends LanguageName>(
+        renderContext: RenderContext,
+        optionValues: RendererOptions<Lang>,
+    ): Renderer;
 
-    public renderGraphAndSerialize(
+    public renderGraphAndSerialize<Lang extends LanguageName>(
         typeGraph: TypeGraph,
         givenOutputFilename: string,
         alphabetizeProperties: boolean,
         leadingComments: Comment[] | undefined,
-        rendererOptions: FixMeOptionsType,
-        indentation?: string
+        rendererOptions: RendererOptions<Lang>,
+        indentation?: string,
     ): MultiFileRenderResult {
         if (indentation === undefined) {
             indentation = this.defaultIndentation;
@@ -63,7 +83,9 @@ export abstract class TargetLanguage {
         }
 
         const renderResult = renderer.render(givenOutputFilename);
-        return mapMap(renderResult.sources, s => serializeRenderResult(s, renderResult.names, defined(indentation)));
+        return mapMap(renderResult.sources, (s) =>
+            serializeRenderResult(s, renderResult.names, defined(indentation)),
+        );
     }
 
     protected get defaultIndentation(): string {

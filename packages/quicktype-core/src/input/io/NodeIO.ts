@@ -1,20 +1,16 @@
-import * as fs from "fs";
+import * as fs from "node:fs";
 
 import { defined, exceptionToString } from "@glideapps/ts-necessities";
 import { isNode } from "browser-or-node";
-import _fetch from "cross-fetch";
 import isURL from "is-url";
-import { type Readable } from "readable-stream";
+import type { Readable } from "readable-stream";
 
 import { messageError } from "../../Messages";
 import { panic } from "../../support/Support";
 
 import { getStream } from "./get-stream";
 
-// Only use cross-fetch in CI
-// FIXME: type global
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const fetch = process.env.CI ? _fetch : (global as any).fetch ?? _fetch;
+import { fetch } from "./$fetch";
 
 interface HttpHeaders {
     [key: string]: string;
@@ -25,7 +21,7 @@ function parseHeaders(httpHeaders?: string[]): HttpHeaders {
         return {};
     }
 
-    return httpHeaders.reduce(function (result: HttpHeaders, httpHeader: string) {
+    return httpHeaders.reduce((result: HttpHeaders, httpHeader: string) => {
         if (httpHeader !== undefined && httpHeader.length > 0) {
             const split = httpHeader.indexOf(":");
 
@@ -42,38 +38,57 @@ function parseHeaders(httpHeaders?: string[]): HttpHeaders {
     }, {} as HttpHeaders);
 }
 
-export async function readableFromFileOrURL(fileOrURL: string, httpHeaders?: string[]): Promise<Readable> {
+export async function readableFromFileOrURL(
+    fileOrURL: string,
+    httpHeaders?: string[],
+): Promise<Readable> {
     try {
         if (isURL(fileOrURL)) {
             const response = await fetch(fileOrURL, {
-                headers: parseHeaders(httpHeaders)
+                headers: parseHeaders(httpHeaders),
             });
 
             return defined(response.body) as unknown as Readable;
-        } else if (isNode) {
+        }
+
+        if (isNode) {
             if (fileOrURL === "-") {
                 // Cast node readable to isomorphic readable from readable-stream
                 return process.stdin as unknown as Readable;
             }
 
-            const filePath = fs.lstatSync(fileOrURL).isSymbolicLink() ? fs.readlinkSync(fileOrURL) : fileOrURL;
+            const filePath = fs.lstatSync(fileOrURL).isSymbolicLink()
+                ? fs.readlinkSync(fileOrURL)
+                : fileOrURL;
             if (fs.existsSync(filePath)) {
                 // Cast node readable to isomorphic readable from readable-stream
-                return fs.createReadStream(filePath, "utf8") as unknown as Readable;
+                return fs.createReadStream(
+                    filePath,
+                    "utf8",
+                ) as unknown as Readable;
             }
         }
     } catch (e) {
-        return messageError("MiscReadError", { fileOrURL, message: exceptionToString(e) });
+        return messageError("MiscReadError", {
+            fileOrURL,
+            message: exceptionToString(e),
+        });
     }
 
     return messageError("DriverInputFileDoesNotExist", { filename: fileOrURL });
 }
 
-export async function readFromFileOrURL(fileOrURL: string, httpHeaders?: string[]): Promise<string> {
+export async function readFromFileOrURL(
+    fileOrURL: string,
+    httpHeaders?: string[],
+): Promise<string> {
     const readable = await readableFromFileOrURL(fileOrURL, httpHeaders);
     try {
         return await getStream(readable);
     } catch (e) {
-        return messageError("MiscReadError", { fileOrURL, message: exceptionToString(e) });
+        return messageError("MiscReadError", {
+            fileOrURL,
+            message: exceptionToString(e),
+        });
     }
 }

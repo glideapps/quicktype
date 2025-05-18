@@ -11,18 +11,18 @@ import {
     isPrintable,
     legalizeCharacters,
     splitIntoWords,
-    utf32ConcatMap
+    utf32ConcatMap,
 } from "../../support/Strings";
 
 export enum Density {
     Normal = "Normal",
-    Dense = "Dense"
+    Dense = "Dense",
 }
 
 export enum Visibility {
     Private = "Private",
     Crate = "Crate",
-    Public = "Public"
+    Public = "Public",
 }
 
 type NameToParts = (name: string) => string[];
@@ -37,49 +37,70 @@ export const namingStyles = {
     snake_case: {
         regex: /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/,
         toParts: (name: string): string[] => name.split("_"),
-        fromParts: (parts: string[]): string => parts.map(p => p.toLowerCase()).join("_")
+        fromParts: (parts: string[]): string =>
+            parts.map((p) => p.toLowerCase()).join("_"),
     },
     SCREAMING_SNAKE_CASE: {
         regex: /^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$/,
         toParts: (name: string): string[] => name.split("_"),
-        fromParts: (parts: string[]): string => parts.map(p => p.toUpperCase()).join("_")
+        fromParts: (parts: string[]): string =>
+            parts.map((p) => p.toUpperCase()).join("_"),
     },
     camelCase: {
         regex: /^[a-z]+([A-Z0-9][a-z]*)*$/,
-        toParts: (name: string): string[] => namingStyles.snake_case.toParts(name.replace(/(.)([A-Z])/g, "$1_$2")),
+        toParts: (name: string): string[] =>
+            namingStyles.snake_case.toParts(
+                name.replace(/(.)([A-Z])/g, "$1_$2"),
+            ),
         fromParts: (parts: string[]): string =>
             parts
                 .map((p, i) =>
-                    i === 0 ? p.toLowerCase() : p.substring(0, 1).toUpperCase() + p.substring(1).toLowerCase()
+                    i === 0
+                        ? p.toLowerCase()
+                        : p.substring(0, 1).toUpperCase() +
+                          p.substring(1).toLowerCase(),
                 )
-                .join("")
+                .join(""),
     },
     PascalCase: {
         regex: /^[A-Z][a-z]*([A-Z0-9][a-z]*)*$/,
-        toParts: (name: string): string[] => namingStyles.snake_case.toParts(name.replace(/(.)([A-Z])/g, "$1_$2")),
+        toParts: (name: string): string[] =>
+            namingStyles.snake_case.toParts(
+                name.replace(/(.)([A-Z])/g, "$1_$2"),
+            ),
         fromParts: (parts: string[]): string =>
-            parts.map(p => p.substring(0, 1).toUpperCase() + p.substring(1).toLowerCase()).join("")
+            parts
+                .map(
+                    (p) =>
+                        p.substring(0, 1).toUpperCase() +
+                        p.substring(1).toLowerCase(),
+                )
+                .join(""),
     },
     "kebab-case": {
         regex: /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/,
         toParts: (name: string): string[] => name.split("-"),
-        fromParts: (parts: string[]): string => parts.map(p => p.toLowerCase()).join("-")
+        fromParts: (parts: string[]): string =>
+            parts.map((p) => p.toLowerCase()).join("-"),
     },
     "SCREAMING-KEBAB-CASE": {
         regex: /^[A-Z][A-Z0-9]*(-[A-Z0-9]+)*$/,
         toParts: (name: string): string[] => name.split("-"),
-        fromParts: (parts: string[]): string => parts.map(p => p.toUpperCase()).join("-")
+        fromParts: (parts: string[]): string =>
+            parts.map((p) => p.toUpperCase()).join("-"),
     },
     lowercase: {
         regex: /^[a-z][a-z0-9]*$/,
         toParts: (name: string): string[] => [name],
-        fromParts: (parts: string[]): string => parts.map(p => p.toLowerCase()).join("")
+        fromParts: (parts: string[]): string =>
+            parts.map((p) => p.toLowerCase()).join(""),
     },
     UPPERCASE: {
         regex: /^[A-Z][A-Z0-9]*$/,
         toParts: (name: string): string[] => [name],
-        fromParts: (parts: string[]): string => parts.map(p => p.toUpperCase()).join("")
-    }
+        fromParts: (parts: string[]): string =>
+            parts.map((p) => p.toUpperCase()).join(""),
+    },
 } as const;
 
 namingStyles satisfies Record<string, NamingStyle>;
@@ -117,14 +138,19 @@ function rustStyle(original: string, isSnakeCase: boolean): string {
         wordStyle,
         wordStyle,
         isSnakeCase ? "_" : "",
-        isAsciiLetterOrUnderscore
+        isAsciiLetterOrUnderscore,
     );
 
     return combined === "_" ? "_underscore" : combined;
 }
 
-export const snakeNamingFunction = funPrefixNamer("default", (original: string) => rustStyle(original, true));
-export const camelNamingFunction = funPrefixNamer("camel", (original: string) => rustStyle(original, false));
+export const snakeNamingFunction = funPrefixNamer(
+    "default",
+    (original: string) => rustStyle(original, true),
+);
+export const camelNamingFunction = funPrefixNamer("camel", (original: string) =>
+    rustStyle(original, false),
+);
 
 const standardUnicodeRustEscape = (codePoint: number): string => {
     if (codePoint <= 0xffff) {
@@ -134,14 +160,21 @@ const standardUnicodeRustEscape = (codePoint: number): string => {
     }
 };
 
-export const rustStringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, standardUnicodeRustEscape));
+export const rustStringEscape = utf32ConcatMap(
+    escapeNonPrintableMapper(isPrintable, standardUnicodeRustEscape),
+);
 
-export function getPreferredNamingStyle(namingStyleOccurences: string[], defaultStyle: NamingStyleKey): NamingStyleKey {
-    const occurrences = Object.fromEntries(Object.keys(namingStyles).map(key => [key, 0]));
-    namingStyleOccurences.forEach(style => ++occurrences[style]);
+export function getPreferredNamingStyle(
+    namingStyleOccurences: string[],
+    defaultStyle: NamingStyleKey,
+): NamingStyleKey {
+    const occurrences = Object.fromEntries(
+        Object.keys(namingStyles).map((key) => [key, 0]),
+    );
+    namingStyleOccurences.forEach((style) => ++occurrences[style]);
     const max = Math.max(...Object.values(occurrences));
-    const preferedStyles = Object.entries(occurrences).flatMap(([style, num]) =>
-        num === max ? [style] : []
+    const preferedStyles = Object.entries(occurrences).flatMap(
+        ([style, num]) => (num === max ? [style] : []),
     ) as NamingStyleKey[];
     if (preferedStyles.includes(defaultStyle)) {
         return defaultStyle;
@@ -151,12 +184,16 @@ export function getPreferredNamingStyle(namingStyleOccurences: string[], default
 }
 
 export function listMatchingNamingStyles(name: string): NamingStyleKey[] {
-    return Object.entries(namingStyles).flatMap(([namingStyleKey, { regex }]) =>
-        regex.test(name) ? [namingStyleKey] : []
+    return Object.entries(namingStyles).flatMap(
+        ([namingStyleKey, { regex }]) =>
+            regex.test(name) ? [namingStyleKey] : [],
     ) as NamingStyleKey[];
 }
 
-export function nameWithNamingStyle(name: string, style: NamingStyleKey): string {
+export function nameWithNamingStyle(
+    name: string,
+    style: NamingStyleKey,
+): string {
     if (namingStyles[style].regex.test(name)) {
         return name;
     }

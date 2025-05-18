@@ -1,28 +1,46 @@
-import { type ConvenienceRenderer } from "../../ConvenienceRenderer";
-import { type RenderContext } from "../../Renderer";
-import { EnumOption, type Option, StringOption, getOptionValues } from "../../RendererOptions";
+import type { ConvenienceRenderer } from "../../ConvenienceRenderer";
+import type { RenderContext } from "../../Renderer";
+import {
+    EnumOption,
+    StringOption,
+    getOptionValues,
+} from "../../RendererOptions";
 import { assertNever } from "../../support/Support";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import type { LanguageName, RendererOptions } from "../../types";
 
 import { Smithy4sRenderer } from "./Smithy4sRenderer";
 
 export enum Framework {
-    None = "None"
+    None = "None",
 }
 
 export const smithyOptions = {
-    framework: new EnumOption("framework", "Serialization framework", [["just-types", Framework.None]], undefined),
-    packageName: new StringOption("package", "Package", "PACKAGE", "quicktype")
+    // FIXME: why does this exist
+    framework: new EnumOption(
+        "framework",
+        "Serialization framework",
+        { "just-types": Framework.None } as const,
+        "just-types",
+    ),
+    packageName: new StringOption("package", "Package", "PACKAGE", "quicktype"),
 };
 
-export class SmithyTargetLanguage extends TargetLanguage {
+export const smithyLanguageConfig = {
+    displayName: "Smithy",
+    names: ["smithy4a"],
+    extension: "smithy",
+} as const;
+
+export class SmithyTargetLanguage extends TargetLanguage<
+    typeof smithyLanguageConfig
+> {
     public constructor() {
-        super("Smithy", ["Smithy"], "smithy");
+        super(smithyLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [smithyOptions.framework, smithyOptions.packageName];
+    public getOptions(): typeof smithyOptions {
+        return smithyOptions;
     }
 
     public get supportsOptionalClassProperties(): boolean {
@@ -33,7 +51,10 @@ export class SmithyTargetLanguage extends TargetLanguage {
         return true;
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): ConvenienceRenderer {
+    protected makeRenderer<Lang extends LanguageName = "smithy4a">(
+        renderContext: RenderContext,
+        untypedOptionValues: RendererOptions<Lang>,
+    ): ConvenienceRenderer {
         const options = getOptionValues(smithyOptions, untypedOptionValues);
 
         switch (options.framework) {

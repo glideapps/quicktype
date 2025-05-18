@@ -1,19 +1,25 @@
-import { type RenderContext } from "../../Renderer";
-import { type Option } from "../../RendererOptions";
+import type { RenderContext } from "../../Renderer";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type FixMeOptionsAnyType } from "../../types";
 
 import { PikeRenderer } from "./PikeRenderer";
 
 export const pikeOptions = {};
 
-export class PikeTargetLanguage extends TargetLanguage {
+export const pikeLanguageConfig = {
+    displayName: "Pike",
+    names: ["pike", "pikelang"],
+    extension: "pmod",
+} as const;
+
+export class PikeTargetLanguage extends TargetLanguage<
+    typeof pikeLanguageConfig
+> {
     public constructor() {
-        super("Pike", ["pike", "pikelang"], "pmod");
+        super(pikeLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [];
+    public getOptions(): {} {
+        return {};
     }
 
     protected makeRenderer(renderContext: RenderContext): PikeRenderer {

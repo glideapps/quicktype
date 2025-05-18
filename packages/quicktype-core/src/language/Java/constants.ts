@@ -65,5 +65,5 @@ export const javaKeywords = [
     "while",
     "null",
     "false",
-    "true"
+    "true",
 ] as const;

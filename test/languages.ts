@@ -1,8 +1,15 @@
+import type { LanguageName } from "quicktype-core";
+
 import * as process from "process";
 // @ts-ignore
-import { RendererOptions } from "../dist/quicktype-core/Run";
+import type { RendererOptions } from "../dist/quicktype-core/Run";
 
-const easySampleJSONs = ["bitcoin-block.json", "pokedex.json", "simple-object.json", "getting-started.json"];
+const easySampleJSONs = [
+    "bitcoin-block.json",
+    "pokedex.json",
+    "simple-object.json",
+    "getting-started.json",
+];
 
 export type LanguageFeature =
     | "enum"
@@ -18,7 +25,7 @@ export type LanguageFeature =
     | "pattern";
 
 export interface Language {
-    name: string;
+    name: LanguageName;
     base: string;
     setupCommand?: string;
     compileCommand?: string;
@@ -50,17 +57,26 @@ export const CSharpLanguage: Language = {
     diffViaSchema: true,
     skipDiffViaSchema: ["34702.json", "437e7.json"],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults", "strict-optional", "date-time", "integer-string", "bool-string", "uuid"],
+    features: [
+        "enum",
+        "union",
+        "no-defaults",
+        "strict-optional",
+        "date-time",
+        "integer-string",
+        "bool-string",
+        "uuid",
+    ],
     output: "QuickType.cs",
     topLevel: "TopLevel",
     skipJSON: [
         "nbl-stats.json", // See issue #823
         "empty-enum.json", // https://github.com/JamesNK/Newtonsoft.Json/issues/1687
-        "31189.json" // JSON.NET doesn't accept year 0000 as 1BC, though it should
+        "31189.json", // JSON.NET doesn't accept year 0000 as 1BC, though it should
     ],
     skipMiscJSON: false,
     skipSchema: [
-        "top-level-enum.schema" // The code we generate for top-level enums is incompatible with the driver
+        "top-level-enum.schema", // The code we generate for top-level enums is incompatible with the driver
     ],
     rendererOptions: { "check-required": "true" },
     quickTestRendererOptions: [
@@ -68,9 +84,9 @@ export const CSharpLanguage: Language = {
         { "csharp-version": "5" },
         { density: "dense" },
         { "number-type": "decimal" },
-        { "any-type": "dynamic" }
+        { "any-type": "dynamic" },
     ],
-    sourceFiles: ["src/language/CSharp/index.ts"]
+    sourceFiles: ["src/language/CSharp/index.ts"],
 };
 
 export const CSharpLanguageSystemTextJson: Language = {
@@ -84,15 +100,24 @@ export const CSharpLanguageSystemTextJson: Language = {
     diffViaSchema: true,
     skipDiffViaSchema: ["34702.json", "437e7.json"],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults", "strict-optional", "date-time", "integer-string", "bool-string", "uuid"],
+    features: [
+        "enum",
+        "union",
+        "no-defaults",
+        "strict-optional",
+        "date-time",
+        "integer-string",
+        "bool-string",
+        "uuid",
+    ],
     output: "QuickType.cs",
     topLevel: "TopLevel",
     skipJSON: [
-        "31189.json" // .NET doesn't accept year 0000 as 1BC, though it should
+        "31189.json", // .NET doesn't accept year 0000 as 1BC, though it should
     ],
     skipMiscJSON: false,
     skipSchema: [
-        "top-level-enum.schema" // The code we generate for top-level enums is incompatible with the driver
+        "top-level-enum.schema", // The code we generate for top-level enums is incompatible with the driver
     ],
     rendererOptions: { "check-required": "true", framework: "SystemTextJson" },
     quickTestRendererOptions: [
@@ -100,9 +125,9 @@ export const CSharpLanguageSystemTextJson: Language = {
         { "csharp-version": "6" },
         { density: "dense" },
         { "number-type": "decimal" },
-        { "any-type": "dynamic" }
+        { "any-type": "dynamic" },
     ],
-    sourceFiles: ["src/language/CSharp/index.ts"]
+    sourceFiles: ["src/language/CSharp/index.ts"],
 };
 
 export const JavaLanguage: Language = {
@@ -120,34 +145,38 @@ export const JavaLanguage: Language = {
     features: ["enum", "union", "uuid"],
     output: "src/main/java/io/quicktype/TopLevel.java",
     topLevel: "TopLevel",
-    skipJSON: ["identifiers.json", "simple-identifiers.json", "nst-test-suite.json"],
+    skipJSON: [
+        "identifiers.json",
+        "simple-identifiers.json",
+        "nst-test-suite.json",
+    ],
     skipMiscJSON: false,
     skipSchema: ["keyword-unions.schema"], // generates classes with names that are case-insensitively equal
     rendererOptions: {},
     quickTestRendererOptions: [{ "array-type": "list" }],
-    sourceFiles: ["src/language/Java/index.ts"]
+    sourceFiles: ["src/language/Java/index.ts"],
 };
 
 export const JavaLanguageWithLegacyDateTime: Language = {
     ...JavaLanguage,
     skipSchema: [
         ...JavaLanguage.skipSchema,
-        "date-time.schema" // Expects less strict serialization.
+        "date-time.schema", // Expects less strict serialization.
     ],
     skipJSON: [
         ...(JavaLanguage.skipJSON !== undefined ? JavaLanguage.skipJSON : []),
         "0a358.json", // Expects less strict serialization (optional milliseconds).
-        "337ed.json" // Expects less strict serialization (optional milliseconds).
+        "337ed.json", // Expects less strict serialization (optional milliseconds).
     ],
     skipMiscJSON: true, // Handles edge cases differently and does not allow optional milliseconds.
     rendererOptions: { "datetime-provider": "legacy" },
-    quickTestRendererOptions: [{ "array-type": "list" }]
+    quickTestRendererOptions: [{ "array-type": "list" }],
 };
 
 export const JavaLanguageWithLombok: Language = {
     ...JavaLanguage,
     base: "test/fixtures/java-lombok",
-    quickTestRendererOptions: [{ "array-type": "list", lombok: "true" }]
+    quickTestRendererOptions: [{ "array-type": "list", lombok: "true" }],
 };
 
 export const PythonLanguage: Language = {
@@ -167,22 +196,30 @@ export const PythonLanguage: Language = {
         "7681c.json",
         "c3303.json",
         "e8b04.json",
-        "f6a65.json"
+        "f6a65.json",
     ],
     allowMissingNull: true,
-    features: ["enum", "union", "no-defaults", "date-time", "integer-string", "bool-string", "uuid"],
+    features: [
+        "enum",
+        "union",
+        "no-defaults",
+        "date-time",
+        "integer-string",
+        "bool-string",
+        "uuid",
+    ],
     output: "quicktype.py",
     topLevel: "TopLevel",
     skipJSON: [
-        "31189.json" // year 0 is out of range
+        "31189.json", // year 0 is out of range
     ],
     skipMiscJSON: false,
     skipSchema: [
-        "keyword-unions.schema" // Requires more than 255 arguments
+        "keyword-unions.schema", // Requires more than 255 arguments
     ],
     rendererOptions: {},
     quickTestRendererOptions: [{ "python-version": "3.5" }],
-    sourceFiles: ["src/language/Python/index.ts"]
+    sourceFiles: ["src/language/Python/index.ts"],
 };
 
 export const RustLanguage: Language = {
@@ -208,7 +245,7 @@ export const RustLanguage: Language = {
         "af2d1.json",
         "c3303.json",
         "e8b04.json",
-        "f6a65.json"
+        "f6a65.json",
     ],
     allowMissingNull: false,
     features: ["enum", "union", "no-defaults"],
@@ -222,9 +259,9 @@ export const RustLanguage: Language = {
         { density: "dense" },
         { visibility: "crate" },
         { visibility: "private" },
-        { visibility: "public" }
+        { visibility: "public" },
     ],
-    sourceFiles: ["src/language/Rust/index.ts"]
+    sourceFiles: ["src/language/Rust/index.ts"],
 };
 
 export const CrystalLanguage: Language = {
@@ -251,19 +288,19 @@ export const CrystalLanguage: Language = {
         "4961a.json",
         "32431.json",
         "68c30.json",
-        "e8b04.json"
+        "e8b04.json",
     ],
     skipSchema: [
         // Crystal does not handle enum mapping
         "enum.schema",
         // Crystal does not support top-level primitives
         "top-level-enum.schema",
-        "keyword-unions.schema"
+        "keyword-unions.schema",
     ],
     skipMiscJSON: false,
     rendererOptions: {},
     quickTestRendererOptions: [],
-    sourceFiles: ["src/language/Crystal/index.ts"]
+    sourceFiles: ["src/language/Crystal/index.ts"],
 };
 
 export const RubyLanguage: Language = {
@@ -325,7 +362,7 @@ export const RubyLanguage: Language = {
         "e53b5.json",
         "f22f5.json",
         "f3139.json",
-        "e8b04.json"
+        "e8b04.json",
     ],
     allowMissingNull: true,
     features: ["enum", "union", "no-defaults"],
@@ -346,16 +383,16 @@ export const RubyLanguage: Language = {
         "union-constructor-clash.json",
         "unions.json",
         "nbl-stats.json",
-        "kitchen-sink.json"
+        "kitchen-sink.json",
     ],
     skipSchema: [
         // We don't generate a convenience method for top-level enums
-        "top-level-enum.schema"
+        "top-level-enum.schema",
     ],
     skipMiscJSON: false,
     rendererOptions: {},
     quickTestRendererOptions: [["pokedex.json", { namespace: "QuickType" }]],
-    sourceFiles: ["src/language/ruby/index.ts"]
+    sourceFiles: ["src/language/ruby/index.ts"],
 };
 
 export const GoLanguage: Language = {
@@ -373,7 +410,7 @@ export const GoLanguage: Language = {
         "337ed.json",
         "34702.json",
         "7eb30.json",
-        "e8b04.json"
+        "e8b04.json",
     ],
     allowMissingNull: false,
     features: ["union"],
@@ -395,17 +432,17 @@ export const GoLanguage: Language = {
         "437e7.json",
         "127a1.json",
         "26b49.json",
-        "0cffa.json"
+        "0cffa.json",
     ],
     skipMiscJSON: false,
     skipSchema: [
         // can't differenciate empty array and nothing for optional empty array
         // (omitempty).
-        "postman-collection.schema"
+        "postman-collection.schema",
     ],
     rendererOptions: {},
     quickTestRendererOptions: [],
-    sourceFiles: ["src/language/Golang/index.ts"]
+    sourceFiles: ["src/language/Golang/index.ts"],
 };
 
 export const CJSONLanguage: Language = {
@@ -413,7 +450,8 @@ export const CJSONLanguage: Language = {
     base: "test/fixtures/cjson",
     setupCommand:
         "curl -o cJSON.c https://raw.githubusercontent.com/DaveGamble/cJSON/v1.7.15/cJSON.c && curl -o cJSON.h https://raw.githubusercontent.com/DaveGamble/cJSON/v1.7.15/cJSON.h && curl -o list.h https://raw.githubusercontent.com/joelguittet/c-list/master/include/list.h && curl -o list.c https://raw.githubusercontent.com/joelguittet/c-list/master/src/list.c && curl -o hashtable.h https://raw.githubusercontent.com/joelguittet/c-hashtable/master/include/hashtable.h && curl -o hashtable.c https://raw.githubusercontent.com/joelguittet/c-hashtable/master/src/hashtable.c",
-    compileCommand: "gcc -O0 -o quicktype -I. cJSON.c hashtable.c list.c main.c -lpthread",
+    compileCommand:
+        "gcc -O0 -o quicktype -I. cJSON.c hashtable.c list.c main.c -lpthread",
     runCommand(sample: string) {
         return `valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --error-exitcode=1 ./quicktype "${sample}"`;
     },
@@ -428,10 +466,17 @@ export const CJSONLanguage: Language = {
         "fcca3.json",
         "bug427.json",
         "github-events.json",
-        "keywords.json"
+        "keywords.json",
     ],
     allowMissingNull: false,
-    features: ["minmax", "minmaxlength", "pattern", "enum", "union", "no-defaults"],
+    features: [
+        "minmax",
+        "minmaxlength",
+        "pattern",
+        "enum",
+        "union",
+        "no-defaults",
+    ],
     output: "TopLevel.h",
     topLevel: "TopLevel",
     skipJSON: [
@@ -448,7 +493,7 @@ export const CJSONLanguage: Language = {
         /* Map in Array in TopLevel is not supported (for the current implementation, can be added later, need recursivity) */
         "combinations2.json",
         /* Array in Array in Union is not supported (for the current implementation, can be added later, need recursivity) */
-        "combinations4.json"
+        "combinations4.json",
     ],
     skipMiscJSON: false,
     skipSchema: [
@@ -479,11 +524,11 @@ export const CJSONLanguage: Language = {
         "optional-any.schema",
         "required-non-properties.schema",
         /* Other cases not supported */
-        "implicit-class-array-union.schema"
+        "implicit-class-array-union.schema",
     ],
     rendererOptions: {},
     quickTestRendererOptions: [{ "source-style": "single-source" }],
-    sourceFiles: ["src/language/CJSON/index.ts"]
+    sourceFiles: ["src/language/CJSON/index.ts"],
 };
 
 export const CPlusPlusLanguage: Language = {
@@ -510,10 +555,17 @@ export const CPlusPlusLanguage: Language = {
         "c3303.json",
         "e8b04.json",
         "f6a65.json",
-        "fcca3.json"
+        "fcca3.json",
     ],
     allowMissingNull: false,
-    features: ["minmax", "minmaxlength", "pattern", "enum", "union", "no-defaults"],
+    features: [
+        "minmax",
+        "minmaxlength",
+        "pattern",
+        "enum",
+        "union",
+        "no-defaults",
+    ],
     output: "TopLevel.hpp",
     topLevel: "TopLevel",
     skipJSON: [
@@ -526,12 +578,12 @@ export const CPlusPlusLanguage: Language = {
         "combinations1.json",
         "combinations2.json",
         "combinations3.json",
-        "combinations4.json"
+        "combinations4.json",
     ],
     skipMiscJSON: false,
     skipSchema: [
         // uses too much memory
-        "keyword-unions.schema"
+        "keyword-unions.schema",
     ],
     rendererOptions: {},
     quickTestRendererOptions: [
@@ -540,9 +592,9 @@ export const CPlusPlusLanguage: Language = {
         { "code-format": "with-struct" },
         { wstring: "use-wstring" },
         { "const-style": "east-const" },
-        { boost: "false" }
+        { boost: "false" },
     ],
-    sourceFiles: ["src/language/CPlusPlus/index.ts"]
+    sourceFiles: ["src/language/CPlusPlus/index.ts"],
 };
 
 export const ElmLanguage: Language = {
@@ -582,7 +634,7 @@ export const ElmLanguage: Language = {
         "be234.json",
         "c3303.json",
         "e8b04.json",
-        "f6a65.json"
+        "f6a65.json",
     ],
     allowMissingNull: false,
     features: ["enum", "union", "no-defaults"],
@@ -598,7 +650,7 @@ export const ElmLanguage: Language = {
         "bug790.json",
         "list.json",
         "nst-test-suite.json",
-        "keywords.json" // stack overflow
+        "keywords.json", // stack overflow
     ],
     skipMiscJSON: false,
     skipSchema: [
@@ -610,11 +662,11 @@ export const ElmLanguage: Language = {
         "postman-collection.schema", // recursion
         "vega-lite.schema", // recursion
         "simple-ref.schema", // recursion
-        "keyword-unions.schema" // can't handle "hasOwnProperty" for some reason
+        "keyword-unions.schema", // can't handle "hasOwnProperty" for some reason
     ],
     rendererOptions: {},
     quickTestRendererOptions: [{ "array-type": "list" }],
-    sourceFiles: ["src/language/Elm/index.ts"]
+    sourceFiles: ["src/language/Elm/index.ts"],
 };
 
 export const SwiftLanguage: Language = {
@@ -659,7 +711,7 @@ export const SwiftLanguage: Language = {
         "f6a65.json", // date-time issues
         "fcca3.json",
         "f82d9.json",
-        "bug863.json" // Unable to resolve reserved keyword use, "description"
+        "bug863.json", // Unable to resolve reserved keyword use, "description"
     ],
     allowMissingNull: true,
     features: ["enum", "union", "no-defaults", "date-time"],
@@ -672,7 +724,7 @@ export const SwiftLanguage: Language = {
         "blns-object.json",
         // Doesn't seem to work on Linux, works on MacOS
         "nst-test-suite.json",
-        "null-safe.json"
+        "null-safe.json",
     ],
     skipMiscJSON: false,
     skipSchema: [
@@ -689,7 +741,7 @@ export const SwiftLanguage: Language = {
         "class-with-additional.schema",
         "class-map-union.schema",
         "vega-lite.schema",
-        "top-level-primitive.schema"
+        "top-level-primitive.schema",
     ],
     rendererOptions: { "support-linux": "true" },
     quickTestRendererOptions: [
@@ -700,9 +752,9 @@ export const SwiftLanguage: Language = {
         { "access-level": "internal" },
         { "access-level": "public" },
         { protocol: "equatable" },
-        ["simple-object.json", { protocol: "hashable" }]
+        ["simple-object.json", { protocol: "hashable" }],
     ],
-    sourceFiles: ["src/language/Swift/index.ts"]
+    sourceFiles: ["src/language/Swift/index.ts"],
 };
 
 export const ObjectiveCLanguage: Language = {
@@ -734,13 +786,13 @@ export const ObjectiveCLanguage: Language = {
         // Could not convert JSON to model: Error Domain=JSONSerialization Code=-1 "(null)" UserInfo={exception=-[NSNull countByEnumeratingWithState:objects:count:]: unrecognized selector sent to instance 0x7fff807b6ea0}
         "combinations2.json",
         "combinations3.json",
-        "combinations4.json"
+        "combinations4.json",
     ],
     skipMiscJSON: false,
     skipSchema: [],
     rendererOptions: { functions: "true" },
     quickTestRendererOptions: [],
-    sourceFiles: ["src/language/Objective-C/index.ts"]
+    sourceFiles: ["src/language/Objective-C/index.ts"],
 };
 
 export const TypeScriptLanguage: Language = {
@@ -766,14 +818,14 @@ export const TypeScriptLanguage: Language = {
         "c8c7e.json",
         "cda6c.json",
         "e53b5.json",
-        "e8b04.json"
+        "e8b04.json",
     ],
     allowMissingNull: false,
     features: ["enum", "union", "no-defaults", "strict-optional", "date-time"],
     output: "TopLevel.ts",
     topLevel: "TopLevel",
     skipJSON: [
-        "7681c.json" // year 0 is out of range
+        "7681c.json", // year 0 is out of range
     ],
     skipMiscJSON: false,
     skipSchema: ["keyword-unions.schema"], // can't handle "constructor" property
@@ -786,9 +838,9 @@ export const TypeScriptLanguage: Language = {
         ["pokedex.json", { "prefer-types": "true" }],
         { "acronym-style": "pascal" },
         { converters: "all-objects" },
-        { readonly: "true" }
+        { readonly: "true" },
     ],
-    sourceFiles: ["src/language/TypeScript/index.ts"]
+    sourceFiles: ["src/language/TypeScript/index.ts"],
 };
 
 export const JavaScriptLanguage: Language = {
@@ -805,7 +857,7 @@ export const JavaScriptLanguage: Language = {
     output: "TopLevel.js",
     topLevel: "TopLevel",
     skipJSON: [
-        "7681c.json" // year 0 is out of range
+        "7681c.json", // year 0 is out of range
     ],
     skipMiscJSON: false,
     skipSchema: ["keyword-unions.schema"], // can't handle "constructor" property
@@ -813,9 +865,9 @@ export const JavaScriptLanguage: Language = {
     quickTestRendererOptions: [
         { "runtime-typecheck": "false" },
         { "runtime-typecheck-ignore-unknown-properties": "true" },
-        { converters: "top-level" }
+        { converters: "top-level" },
     ],
-    sourceFiles: ["src/language/JavaScript/index.ts"]
+    sourceFiles: ["src/language/JavaScript/index.ts"],
 };
 
 export const JavaScriptPropTypesLanguage: Language = {
@@ -837,7 +889,7 @@ export const JavaScriptPropTypesLanguage: Language = {
         "bug790.json", // renderer does not support recursion
         "recursive.json", // renderer does not support recursion
         "spotify-album.json", // renderer does not support recursion
-        "76ae1.json" // renderer does not support recursion
+        "76ae1.json", // renderer does not support recursion
     ],
     skipSchema: [],
     skipMiscJSON: false,
@@ -845,9 +897,9 @@ export const JavaScriptPropTypesLanguage: Language = {
     quickTestRendererOptions: [
         { "runtime-typecheck": "false" },
         { "runtime-typecheck-ignore-unknown-properties": "true" },
-        { converters: "top-level" }
+        { converters: "top-level" },
     ],
-    sourceFiles: ["src/language/JavaScriptPropTypes/index.ts"]
+    sourceFiles: ["src/language/JavaScriptPropTypes/index.ts"],
 };
 
 export const FlowLanguage: Language = {
@@ -863,20 +915,20 @@ export const FlowLanguage: Language = {
     output: "TopLevel.js",
     topLevel: "TopLevel",
     skipJSON: [
-        "7681c.json" // year 0 is out of range
+        "7681c.json", // year 0 is out of range
     ],
     skipMiscJSON: false,
     skipSchema: [
-        "keyword-unions.schema" // can't handle "constructor" property
+        "keyword-unions.schema", // can't handle "constructor" property
     ],
     rendererOptions: { "explicit-unions": "yes" },
     quickTestRendererOptions: [
         { "runtime-typecheck": "false" },
         { "runtime-typecheck-ignore-unknown-properties": "true" },
         { "nice-property-names": "true" },
-        { "declare-unions": "true" }
+        { "declare-unions": "true" },
     ],
-    sourceFiles: ["src/language/Flow/index.ts"]
+    sourceFiles: ["src/language/Flow/index.ts"],
 };
 
 export const Scala3Language: Language = {
@@ -936,7 +988,7 @@ I havea no idea how to encode these tests correctly.
         "combinations3.json",
         "combinations4.json",
         "unions.json",
-        "nst-test-suite.json"
+        "nst-test-suite.json",
     ],
     skipSchema: [
         // 12 skips
@@ -951,12 +1003,12 @@ I havea no idea how to encode these tests correctly.
         "enum.schema",
         "class-with-additional.schema",
         "class-map-union.schema",
-        "keyword-unions.schema"
+        "keyword-unions.schema",
     ],
     skipMiscJSON: false,
     rendererOptions: { framework: "circe" },
     quickTestRendererOptions: [],
-    sourceFiles: ["src/language/Scala3/index.ts"]
+    sourceFiles: ["src/language/Scala3/index.ts"],
 };
 
 export const Smithy4sLanguage: Language = {
@@ -1016,13 +1068,13 @@ I havea no idea how to encode these tests correctly.
         "combinations3.json",
         "combinations4.json",
         "unions.json",
-        "nst-test-suite.json"
+        "nst-test-suite.json",
     ],
     skipSchema: [],
     skipMiscJSON: false,
     rendererOptions: { framework: "just-types" },
     quickTestRendererOptions: [],
-    sourceFiles: ["src/language/Smithy4s/index.ts"]
+    sourceFiles: ["src/language/Smithy4s/index.ts"],
 };
 
 export const KotlinLanguage: Language = {
@@ -1038,7 +1090,7 @@ export const KotlinLanguage: Language = {
         "keywords.json",
         // TODO Investigate these
         "34702.json",
-        "76ae1.json"
+        "76ae1.json",
     ],
     allowMissingNull: true,
     features: ["enum", "union", "no-defaults"],
@@ -1076,7 +1128,7 @@ export const KotlinLanguage: Language = {
         // TODO Investigate these
         "af2d1.json",
         "32431.json",
-        "bug427.json"
+        "bug427.json",
     ],
     skipSchema: [
         // Very weird - the types are correct, but it can (de)serialize the string,
@@ -1102,12 +1154,12 @@ export const KotlinLanguage: Language = {
         "keyword-unions.schema",
         // Klaxon does not support top-level primitives
         "top-level-enum.schema",
-        "top-level-primitive.schema"
+        "top-level-primitive.schema",
     ],
     skipMiscJSON: false,
     rendererOptions: {},
     quickTestRendererOptions: [],
-    sourceFiles: ["src/language/Kotlin/index.ts"]
+    sourceFiles: ["src/language/Kotlin/index.ts"],
 };
 
 export const KotlinJacksonLanguage: Language = {
@@ -1123,7 +1175,7 @@ export const KotlinJacksonLanguage: Language = {
         "keywords.json",
         // TODO Investigate these
         "34702.json",
-        "76ae1.json"
+        "76ae1.json",
     ],
     allowMissingNull: true,
     features: ["enum", "union", "no-defaults"],
@@ -1160,7 +1212,7 @@ export const KotlinJacksonLanguage: Language = {
         // TODO Investigate these
         "af2d1.json",
         "32431.json",
-        "bug427.json"
+        "bug427.json",
     ],
     skipSchema: [
         // Very weird - the types are correct, but it can (de)serialize the string,
@@ -1186,12 +1238,12 @@ export const KotlinJacksonLanguage: Language = {
         "keyword-unions.schema",
         // Klaxon does not support top-level primitives
         "top-level-enum.schema",
-        "top-level-primitive.schema"
+        "top-level-primitive.schema",
     ],
     skipMiscJSON: false,
     rendererOptions: { framework: "jackson" },
     quickTestRendererOptions: [],
-    sourceFiles: ["src/language/Kotlin/index.ts"]
+    sourceFiles: ["src/language/Kotlin/index.ts"],
 };
 
 export const DartLanguage: Language = {
@@ -1221,7 +1273,7 @@ export const DartLanguage: Language = {
         "us-senators.json",
         "0a91a.json",
         "github-events.json",
-        "keywords.json"
+        "keywords.json",
     ],
     skipSchema: [
         "enum-with-null.schema",
@@ -1236,12 +1288,12 @@ export const DartLanguage: Language = {
         "simple-ref.schema",
         "keyword-unions.schema",
         "ref-remote.schema",
-        "uuid.schema"
+        "uuid.schema",
     ],
     skipMiscJSON: true,
     rendererOptions: {},
     quickTestRendererOptions: [],
-    sourceFiles: ["src/language/Dart/index.ts"]
+    sourceFiles: ["src/language/Dart/index.ts"],
 };
 
 export const PikeLanguage: Language = {
@@ -1277,7 +1329,7 @@ export const PikeLanguage: Language = {
         "d23d5.json",
         "dc44f.json",
         "dec3a.json",
-        "f22f5.json"
+        "f22f5.json",
     ],
     skipMiscJSON: false,
     skipSchema: [
@@ -1290,11 +1342,11 @@ export const PikeLanguage: Language = {
         "class-with-additional.schema",
         "multi-type-enum.schema",
         "class-map-union.schema",
-        "implicit-class-array-union.schema"
+        "implicit-class-array-union.schema",
     ],
     rendererOptions: {},
     quickTestRendererOptions: [],
-    sourceFiles: ["src/language/Pike/index.ts"]
+    sourceFiles: ["src/language/Pike/index.ts"],
 };
 
 export const HaskellLanguage: Language = {
@@ -1321,7 +1373,7 @@ export const HaskellLanguage: Language = {
         "76ae1.json",
         "af2d1.json",
         "be234.json",
-        "e8b04.json"
+        "e8b04.json",
     ],
     allowMissingNull: false,
     features: ["enum", "union", "no-defaults"],
@@ -1364,7 +1416,7 @@ export const HaskellLanguage: Language = {
         "recursive.json",
         "bug427.json",
         "nst-test-suite.json",
-        "keywords.json"
+        "keywords.json",
     ],
     skipMiscJSON: false,
     skipSchema: [
@@ -1379,17 +1431,17 @@ export const HaskellLanguage: Language = {
         "keyword-unions.schema",
         "optional-any.schema",
         "required.schema",
-        "required-non-properties.schema"
+        "required-non-properties.schema",
     ],
     rendererOptions: {},
     quickTestRendererOptions: [{ "array-type": "list" }],
-    sourceFiles: ["src/language/Haskell/index.ts"]
+    sourceFiles: ["src/language/Haskell/index.ts"],
 };
 
 export const PHPLanguage: Language = {
     name: "php",
     base: "test/fixtures/php",
-    runCommand: sample => `php main.php \"${sample}\"`,
+    runCommand: (sample) => `php main.php \"${sample}\"`,
     diffViaSchema: false,
     skipDiffViaSchema: [],
     allowMissingNull: true,
@@ -1401,7 +1453,7 @@ export const PHPLanguage: Language = {
     skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [],
-    sourceFiles: ["src/language/Php/index.ts"]
+    sourceFiles: ["src/language/Php/index.ts"],
 };
 
 export const TypeScriptZodLanguage: Language = {
@@ -1435,7 +1487,7 @@ export const TypeScriptZodLanguage: Language = {
         "76ae1.json",
         "af2d1.json",
         "be234.json",
-        "e8b04.json"
+        "e8b04.json",
     ],
     allowMissingNull: false,
     features: ["enum", "union", "no-defaults", "date-time"],
@@ -1500,7 +1552,7 @@ export const TypeScriptZodLanguage: Language = {
         "keywords.json",
         "ed095.json",
         "7681c.json",
-        "32d5c.json"
+        "32d5c.json",
     ],
     skipMiscJSON: false,
     skipSchema: [
@@ -1515,11 +1567,11 @@ export const TypeScriptZodLanguage: Language = {
         "keyword-unions.schema",
         "optional-any.schema",
         "required.schema",
-        "required-non-properties.schema"
+        "required-non-properties.schema",
     ],
     rendererOptions: {},
     quickTestRendererOptions: [{ "array-type": "list" }],
-    sourceFiles: ["src/language/TypeScriptZod/index.ts"]
+    sourceFiles: ["src/language/TypeScriptZod/index.ts"],
 };
 
 export const TypeScriptEffectSchemaLanguage: Language = {
@@ -1553,7 +1605,7 @@ export const TypeScriptEffectSchemaLanguage: Language = {
         "76ae1.json",
         "af2d1.json",
         "be234.json",
-        "e8b04.json"
+        "e8b04.json",
     ],
     allowMissingNull: false,
     features: ["enum", "union", "no-defaults"],
@@ -1616,7 +1668,7 @@ export const TypeScriptEffectSchemaLanguage: Language = {
         "bug427.json",
         "nst-test-suite.json",
         "keywords.json",
-        "ed095.json"
+        "ed095.json",
     ],
     skipMiscJSON: false,
     skipSchema: [
@@ -1631,11 +1683,11 @@ export const TypeScriptEffectSchemaLanguage: Language = {
         "keyword-unions.schema",
         "optional-any.schema",
         "required.schema",
-        "required-non-properties.schema"
+        "required-non-properties.schema",
     ],
     rendererOptions: {},
     quickTestRendererOptions: [{ "array-type": "list" }],
-    sourceFiles: ["src/language/TypeScriptEffectSchema/index.ts"]
+    sourceFiles: ["src/language/TypeScriptEffectSchema/index.ts"],
 };
 
 export const ElixirLanguage: Language = {
@@ -1669,7 +1721,7 @@ export const ElixirLanguage: Language = {
         "bug427.json",
         "keywords.json",
         "kitchen-sink.json",
-        "reddit.json"
+        "reddit.json",
     ],
     allowMissingNull: false,
     features: ["enum", "no-defaults", "strict-optional"],
@@ -1677,7 +1729,7 @@ export const ElixirLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [
         // Some field names are too long to be expressed as atoms and some contain invalid characters.
-        "blns-object.json"
+        "blns-object.json",
     ],
     skipMiscJSON: false,
     skipSchema: [
@@ -1692,9 +1744,9 @@ export const ElixirLanguage: Language = {
 
         // The test incorrectly succeeds due to the emitter being permissive for unions that contain only primitives. A future enhancement
         // for the Elixir emitter could be a user-controlled 'strict' mode that pattern matches even on unions of only primitive types.
-        "go-schema-pattern-properties.schema"
+        "go-schema-pattern-properties.schema",
     ],
     rendererOptions: {},
     quickTestRendererOptions: [],
-    sourceFiles: ["src/language/Elixir/index.ts"]
+    sourceFiles: ["src/language/Elixir/index.ts"],
 };

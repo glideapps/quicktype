@@ -1,18 +1,28 @@
-import { type RenderContext } from "../../Renderer";
-import { type Option } from "../../RendererOptions";
+import type { RenderContext } from "../../Renderer";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type StringTypeMapping, getNoStringTypeMapping } from "../../TypeBuilder";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import {
+    type StringTypeMapping,
+    getNoStringTypeMapping,
+} from "../../Type/TypeBuilderUtils";
+import type { LanguageName, RendererOptions } from "../../types";
 
 import { JSONSchemaRenderer } from "./JSONSchemaRenderer";
 
-export class JSONSchemaTargetLanguage extends TargetLanguage {
+export const JSONSchemaLanguageConfig = {
+    displayName: "JSON Schema",
+    names: ["schema", "json-schema"],
+    extension: "schema",
+} as const;
+
+export class JSONSchemaTargetLanguage extends TargetLanguage<
+    typeof JSONSchemaLanguageConfig
+> {
     public constructor() {
-        super("JSON Schema", ["schema", "json-schema"], "schema");
+        super(JSONSchemaLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [];
+    public getOptions(): {} {
+        return {};
     }
 
     public get stringTypeMapping(): StringTypeMapping {
@@ -27,7 +37,10 @@ export class JSONSchemaTargetLanguage extends TargetLanguage {
         return true;
     }
 
-    protected makeRenderer(renderContext: RenderContext, _untypedOptionValues: FixMeOptionsType): JSONSchemaRenderer {
+    protected makeRenderer<Lang extends LanguageName = "json-schema">(
+        renderContext: RenderContext,
+        _untypedOptionValues: RendererOptions<Lang>,
+    ): JSONSchemaRenderer {
         return new JSONSchemaRenderer(this, renderContext);
     }
 }

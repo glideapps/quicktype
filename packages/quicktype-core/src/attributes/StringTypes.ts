@@ -7,24 +7,32 @@ import {
     mapMap,
     mapMergeWithInto,
     setIntersect,
-    setUnionInto
+    setUnionInto,
 } from "collection-utils";
 
-import { type DateTimeRecognizer } from "../DateTime";
+import type { DateTimeRecognizer } from "../DateTime";
 import { assert, defined } from "../support/Support";
-import { type TransformedStringTypeKind } from "../Type";
-// eslint-disable-next-line import/no-cycle
-import { type StringTypeMapping, stringTypeMappingGet } from "../TypeBuilder";
+import type { TransformedStringTypeKind } from "../Type/TransformedStringType";
+import {
+    type StringTypeMapping,
+    stringTypeMappingGet,
+} from "../Type/TypeBuilderUtils";
 
 import { TypeAttributeKind } from "./TypeAttributes";
 
 export class StringTypes {
-    public static readonly unrestricted: StringTypes = new StringTypes(undefined, new Set());
+    public static readonly unrestricted: StringTypes = new StringTypes(
+        undefined,
+        new Set(),
+    );
 
     public static fromCase(s: string, count: number): StringTypes {
         const caseMap: { [name: string]: number } = {};
         caseMap[s] = count;
-        return new StringTypes(new Map([[s, count] as [string, number]]), new Set());
+        return new StringTypes(
+            new Map([[s, count] as [string, number]]),
+            new Set(),
+        );
     }
 
     public static fromCases(cases: string[]): StringTypes {
@@ -33,16 +41,22 @@ export class StringTypes {
             caseMap[s] = 1;
         }
 
-        return new StringTypes(new Map(cases.map(s => [s, 1] as [string, number])), new Set());
+        return new StringTypes(
+            new Map(cases.map((s) => [s, 1] as [string, number])),
+            new Set(),
+        );
     }
 
     // undefined means no restrictions
     public constructor(
         public readonly cases: ReadonlyMap<string, number> | undefined,
-        public readonly transformations: ReadonlySet<TransformedStringTypeKind>
+        public readonly transformations: ReadonlySet<TransformedStringTypeKind>,
     ) {
         if (cases === undefined) {
-            assert(transformations.size === 0, "We can't have an unrestricted string that also allows transformations");
+            assert(
+                transformations.size === 0,
+                "We can't have an unrestricted string that also allows transformations",
+            );
         }
     }
 
@@ -68,7 +82,10 @@ export class StringTypes {
         return new StringTypes(cases, transformations);
     }
 
-    public intersect(othersArray: StringTypes[], startIndex: number): StringTypes {
+    public intersect(
+        othersArray: StringTypes[],
+        startIndex: number,
+    ): StringTypes {
         let cases = this.cases;
         let transformations = this.transformations;
 
@@ -76,21 +93,30 @@ export class StringTypes {
             const other = othersArray[i];
 
             if (cases === undefined) {
-                cases = definedMap(other.cases, m => new Map(m));
+                cases = definedMap(other.cases, (m) => new Map(m));
             } else if (other.cases !== undefined) {
                 const thisCases = cases;
                 const otherCases = other.cases;
 
-                const intersects = setIntersect(thisCases.keys(), new Set(otherCases.keys()));
-                const entries = intersects.size > 0 ? intersects.entries() : new Set(thisCases.keys()).entries();
-                cases = mapMap(entries, k => {
+                const intersects = setIntersect(
+                    thisCases.keys(),
+                    new Set(otherCases.keys()),
+                );
+                const entries =
+                    intersects.size > 0
+                        ? intersects.entries()
+                        : new Set(thisCases.keys()).entries();
+                cases = mapMap(entries, (k) => {
                     const thisValue = defined(thisCases.get(k));
                     const otherValue = otherCases.get(k) ?? Math.min();
                     return Math.min(thisValue, otherValue);
                 });
             }
 
-            transformations = setIntersect(transformations, other.transformations);
+            transformations = setIntersect(
+                transformations,
+                other.transformations,
+            );
         }
 
         return new StringTypes(cases, transformations);
@@ -111,7 +137,10 @@ export class StringTypes {
 
     public equals<T extends StringTypes>(other: T): boolean {
         if (!(other instanceof StringTypes)) return false;
-        return areEqual(this.cases, other.cases) && areEqual(this.transformations, other.transformations);
+        return (
+            areEqual(this.cases, other.cases) &&
+            areEqual(this.transformations, other.transformations)
+        );
     }
 
     public hashCode(): number {
@@ -131,7 +160,9 @@ export class StringTypes {
             if (firstKey === undefined) {
                 parts.push("enum with no cases");
             } else {
-                parts.push(`${enumCases.size.toString()} enums: ${firstKey} (${enumCases.get(firstKey)}), ...`);
+                parts.push(
+                    `${enumCases.size.toString()} enums: ${firstKey} (${enumCases.get(firstKey)}), ...`,
+                );
             }
         }
 
@@ -171,7 +202,8 @@ class StringTypesTypeAttributeKind extends TypeAttributeKind<StringTypes> {
     }
 }
 
-export const stringTypesTypeAttributeKind: TypeAttributeKind<StringTypes> = new StringTypesTypeAttributeKind();
+export const stringTypesTypeAttributeKind: TypeAttributeKind<StringTypes> =
+    new StringTypesTypeAttributeKind();
 
 const INTEGER_STRING = /^(0|-?[1-9]\d*)$/;
 // We're restricting numbers to what's representable as 32 bit
@@ -184,7 +216,7 @@ function isIntegerString(s: string): boolean {
         return false;
     }
 
-    const i = parseInt(s, 10);
+    const i = Number.parseInt(s, 10);
     return i >= MIN_INTEGER_STRING && i <= MAX_INTEGER_STRING;
 }
 
@@ -212,23 +244,30 @@ function isURI(s: string): boolean {
  */
 export function inferTransformedStringTypeKindForString(
     s: string,
-    recognizer: DateTimeRecognizer
+    recognizer: DateTimeRecognizer,
 ): TransformedStringTypeKind | undefined {
-    if (s.length === 0 || !"0123456789-abcdefth".includes(s[0])) return undefined;
+    if (s.length === 0 || !"0123456789-abcdefth".includes(s[0]))
+        return undefined;
 
     if (recognizer.isDate(s)) {
         return "date";
-    } else if (recognizer.isTime(s)) {
+    }
+    if (recognizer.isTime(s)) {
         return "time";
-    } else if (recognizer.isDateTime(s)) {
+    }
+    if (recognizer.isDateTime(s)) {
         return "date-time";
-    } else if (isIntegerString(s)) {
+    }
+    if (isIntegerString(s)) {
         return "integer-string";
-    } else if (s === "false" || s === "true") {
+    }
+    if (s === "false" || s === "true") {
         return "bool-string";
-    } else if (isUUID(s)) {
+    }
+    if (isUUID(s)) {
         return "uuid";
-    } else if (isURI(s)) {
+    }
+    if (isURI(s)) {
         return "uri";
     }
 

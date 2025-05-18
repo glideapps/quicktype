@@ -1,46 +1,51 @@
-import { type ConvenienceRenderer } from "../../ConvenienceRenderer";
-import { type RenderContext } from "../../Renderer";
-import { EnumOption, type Option, StringOption, getOptionValues } from "../../RendererOptions";
+import type { ConvenienceRenderer } from "../../ConvenienceRenderer";
+import type { RenderContext } from "../../Renderer";
+import {
+    EnumOption,
+    StringOption,
+    getOptionValues,
+} from "../../RendererOptions";
 import { AcronymStyleOptions, acronymOption } from "../../support/Acronyms";
 import { assertNever } from "../../support/Support";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import type { LanguageName, RendererOptions } from "../../types";
 
 import { KotlinJacksonRenderer } from "./KotlinJacksonRenderer";
 import { KotlinKlaxonRenderer } from "./KotlinKlaxonRenderer";
 import { KotlinRenderer } from "./KotlinRenderer";
 import { KotlinXRenderer } from "./KotlinXRenderer";
 
-export enum Framework {
-    None = "None",
-    Jackson = "Jackson",
-    Klaxon = "Klaxon",
-    KotlinX = "KotlinX"
-}
-
 export const kotlinOptions = {
     framework: new EnumOption(
         "framework",
         "Serialization framework",
-        [
-            ["just-types", Framework.None],
-            ["jackson", Framework.Jackson],
-            ["klaxon", Framework.Klaxon],
-            ["kotlinx", Framework.KotlinX]
-        ],
-        "klaxon"
+        {
+            "just-types": "None",
+            jackson: "Jackson",
+            klaxon: "Klaxon",
+            kotlinx: "KotlinX",
+        } as const,
+        "klaxon",
     ),
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
-    packageName: new StringOption("package", "Package", "PACKAGE", "quicktype")
+    packageName: new StringOption("package", "Package", "PACKAGE", "quicktype"),
 };
 
-export class KotlinTargetLanguage extends TargetLanguage {
+export const kotlinLanguageConfig = {
+    displayName: "Kotlin",
+    names: ["kotlin"],
+    extension: "kt",
+} as const;
+
+export class KotlinTargetLanguage extends TargetLanguage<
+    typeof kotlinLanguageConfig
+> {
     public constructor() {
-        super("Kotlin", ["kotlin"], "kt");
+        super(kotlinLanguageConfig);
     }
 
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [kotlinOptions.framework, kotlinOptions.acronymStyle, kotlinOptions.packageName];
+    public getOptions(): typeof kotlinOptions {
+        return kotlinOptions;
     }
 
     public get supportsOptionalClassProperties(): boolean {
@@ -51,17 +56,20 @@ export class KotlinTargetLanguage extends TargetLanguage {
         return true;
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): ConvenienceRenderer {
+    protected makeRenderer<Lang extends LanguageName = "kotlin">(
+        renderContext: RenderContext,
+        untypedOptionValues: RendererOptions<Lang>,
+    ): ConvenienceRenderer {
         const options = getOptionValues(kotlinOptions, untypedOptionValues);
 
         switch (options.framework) {
-            case Framework.None:
+            case "None":
                 return new KotlinRenderer(this, renderContext, options);
-            case Framework.Jackson:
+            case "Jackson":
                 return new KotlinJacksonRenderer(this, renderContext, options);
-            case Framework.Klaxon:
+            case "Klaxon":
                 return new KotlinKlaxonRenderer(this, renderContext, options);
-            case Framework.KotlinX:
+            case "KotlinX":
                 return new KotlinXRenderer(this, renderContext, options);
             default:
                 return assertNever(options.framework);

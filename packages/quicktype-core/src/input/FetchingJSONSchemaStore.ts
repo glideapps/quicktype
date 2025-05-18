@@ -10,6 +10,10 @@ export class FetchingJSONSchemaStore extends JSONSchemaStore {
 
     public async fetch(address: string): Promise<JSONSchema | undefined> {
         // console.log(`Fetching ${address}`);
-        return parseJSON(await readFromFileOrURL(address, this._httpHeaders), "JSON Schema", address);
+        return parseJSON(
+            await readFromFileOrURL(address, this._httpHeaders),
+            "JSON Schema",
+            address,
+        );
     }
 }

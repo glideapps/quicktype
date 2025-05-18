@@ -8,7 +8,7 @@ export const tsFlowTypeAnnotations = {
     anyMap: ": { [k: string]: any }",
     string: ": string",
     stringArray: ": string[]",
-    boolean: ": boolean"
+    boolean: ": boolean",
 };
 
 export function quotePropertyName(original: string): string {

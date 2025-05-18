@@ -1,8 +1,8 @@
-import { type Name } from "../../Naming";
+import type { Name } from "../../Naming";
 import { utf16StringEscape } from "../../support/Strings";
 import { defined } from "../../support/Support";
-import { type ClassType, type EnumType } from "../../Type";
-import { type JavaScriptTypeAnnotations } from "../JavaScript";
+import type { ClassType, EnumType } from "../../Type";
+import type { JavaScriptTypeAnnotations } from "../JavaScript";
 
 import { TypeScriptFlowBaseRenderer } from "./TypeScriptFlowBaseRenderer";
 import { tsFlowTypeAnnotations } from "./utils";

@@ -24,13 +24,8 @@
     "engines": {
         "vscode": "^1.87.0"
     },
-    "categories": [
-        "Other"
-    ],
-    "keywords": [
-        "json",
-        "converter"
-    ],
+    "categories": ["Other"],
+    "keywords": ["json", "converter"],
     "markdown": "github",
     "main": "dist/extension.js",
     "vsce": {
@@ -144,7 +139,7 @@
     },
     "devDependencies": {
         "@types/mocha": "^10.0.6",
-        "@types/node": "18.x",
+        "@types/node": "~22.14.0",
         "@types/node-persist": "^3.1.8",
         "@types/readable-stream": "^4.0.10",
         "@types/vscode": "^1.87.0",
@@ -154,7 +149,7 @@
         "@vscode/test-electron": "^2.3.9",
         "@vscode/vsce": "^2.25.0",
         "eslint": "^8.56.0",
-        "typescript": "^5.3.3",
+        "typescript": "~5.8.3",
         "node-persist": "^4.0.1",
         "quicktype-core": "file:../quicktype-core",
         "quicktype-typescript-input": "file:../quicktype-typescript-input",

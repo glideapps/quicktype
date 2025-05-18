@@ -94,7 +94,10 @@ export function load(): MarkovChain {
     return JSON.parse(inflateBase64(encodedMarkovChain));
 }
 
-export function evaluateFull(mc: MarkovChain, word: string): [number, number[]] {
+export function evaluateFull(
+    mc: MarkovChain,
+    word: string,
+): [number, number[]] {
     const { trie, depth } = mc;
     if (word.length < depth) {
         return [1, []];
@@ -128,8 +131,15 @@ function randomInt(lower: number, upper: number): number {
     return lower + Math.floor(Math.random() * range);
 }
 
-export function generate(mc: MarkovChain, state: string, unseenWeight: number): string {
-    assert(state.length === mc.depth - 1, "State and chain length don't match up");
+export function generate(
+    mc: MarkovChain,
+    state: string,
+    unseenWeight: number,
+): string {
+    assert(
+        state.length === mc.depth - 1,
+        "State and chain length don't match up",
+    );
     const t = lookup(mc.trie, state, 0);
     if (typeof t === "number") {
         return panic("Wrong depth?");
@@ -139,7 +149,9 @@ export function generate(mc: MarkovChain, state: string, unseenWeight: number): 
         return String.fromCharCode(randomInt(32, 127));
     }
 
-    const counts = t.arr.map((x, i) => (x === null ? (i === 0 ? 0 : unseenWeight) : (x as number)));
+    const counts = t.arr.map((x, i) =>
+        x === null ? (i === 0 ? 0 : unseenWeight) : (x as number),
+    );
     let n = 0;
     for (const c of counts) {
         n += c;
@@ -185,6 +197,6 @@ export function test(): void {
 
     testWord(
         mc,
-        "\ud83d\udebe \ud83c\udd92 \ud83c\udd93 \ud83c\udd95 \ud83c\udd96 \ud83c\udd97 \ud83c\udd99 \ud83c\udfe7"
+        "\ud83d\udebe \ud83c\udd92 \ud83c\udd93 \ud83c\udd95 \ud83c\udd96 \ud83c\udd97 \ud83c\udd99 \ud83c\udfe7",
     );
 }

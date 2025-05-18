@@ -1,6 +1,4 @@
-import { iterableFind } from "collection-utils";
-
-import { type TargetLanguage } from "../TargetLanguage";
+import type { TargetLanguage } from "../TargetLanguage";
 
 import { CJSONTargetLanguage } from "./CJSON";
 import { CPlusPlusTargetLanguage } from "./CPlusPlus";
@@ -25,11 +23,16 @@ import { RustTargetLanguage } from "./Rust";
 import { Scala3TargetLanguage } from "./Scala3";
 import { SmithyTargetLanguage } from "./Smithy4s";
 import { SwiftTargetLanguage } from "./Swift";
+import type {
+    LanguageDisplayName,
+    LanguageName,
+    LanguageNameMap,
+} from "./types";
 import { TypeScriptEffectSchemaTargetLanguage } from "./TypeScriptEffectSchema";
 import { FlowTargetLanguage, TypeScriptTargetLanguage } from "./TypeScriptFlow";
 import { TypeScriptZodTargetLanguage } from "./TypeScriptZod";
 
-export const all: TargetLanguage[] = [
+export const all = [
     new CJSONTargetLanguage(),
     new CPlusPlusTargetLanguage(),
     new CrystalTargetLanguage(),
@@ -48,7 +51,7 @@ export const all: TargetLanguage[] = [
     new ObjectiveCTargetLanguage(),
     new PhpTargetLanguage(),
     new PikeTargetLanguage(),
-    new PythonTargetLanguage("Python", ["python", "py"], "py"),
+    new PythonTargetLanguage(),
     new RubyTargetLanguage(),
     new RustTargetLanguage(),
     new Scala3TargetLanguage(),
@@ -56,15 +59,43 @@ export const all: TargetLanguage[] = [
     new SwiftTargetLanguage(),
     new TypeScriptTargetLanguage(),
     new TypeScriptEffectSchemaTargetLanguage(),
-    new TypeScriptZodTargetLanguage()
-];
+    new TypeScriptZodTargetLanguage(),
+] as const;
 
-export function languageNamed(name: string, targetLanguages?: TargetLanguage[]): TargetLanguage | undefined {
-    if (targetLanguages === undefined) {
-        targetLanguages = all;
+all satisfies readonly TargetLanguage[];
+
+export function languageNamed<Name extends LanguageName>(
+    name: Name,
+    targetLanguages: readonly TargetLanguage[] = all,
+): LanguageNameMap[Name] {
+    const foundLanguage = targetLanguages.find((language) =>
+        language.names.includes(name),
+    );
+    if (!foundLanguage) {
+        throw new Error(`Unknown language name: ${name}`);
     }
 
-    const maybeTargetLanguage = iterableFind(targetLanguages, l => l.names.includes(name) || l.displayName === name);
-    if (maybeTargetLanguage !== undefined) return maybeTargetLanguage;
-    return iterableFind(targetLanguages, l => l.extension === name);
+    return foundLanguage as LanguageNameMap[Name];
+}
+
+export function isLanguageName(maybeName: string): maybeName is LanguageName {
+    if (
+        all.some((lang) =>
+            (lang.names as readonly string[]).includes(maybeName),
+        )
+    ) {
+        return true;
+    }
+
+    return false;
+}
+
+export function isLanguageDisplayName(
+    maybeName: string,
+): maybeName is LanguageDisplayName {
+    if (all.some((lang) => lang.displayName === maybeName)) {
+        return true;
+    }
+
+    return false;
 }

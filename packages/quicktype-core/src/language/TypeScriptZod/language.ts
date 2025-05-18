@@ -1,31 +1,39 @@
-import { type RenderContext } from "../../Renderer";
-import { BooleanOption, type Option, getOptionValues } from "../../RendererOptions";
+import type { RenderContext } from "../../Renderer";
+import { BooleanOption, getOptionValues } from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type PrimitiveStringTypeKind, type TransformedStringTypeKind } from "../../Type";
-import { type StringTypeMapping } from "../../TypeBuilder";
-import { type FixMeOptionsAnyType, type FixMeOptionsType } from "../../types";
+import type {
+    PrimitiveStringTypeKind,
+    TransformedStringTypeKind,
+} from "../../Type";
+import type { StringTypeMapping } from "../../Type/TypeBuilderUtils";
+import type { LanguageName, RendererOptions } from "../../types";
 
 import { TypeScriptZodRenderer } from "./TypeScriptZodRenderer";
 
 export const typeScriptZodOptions = {
-    justSchema: new BooleanOption("just-schema", "Schema only", false)
+    justSchema: new BooleanOption("just-schema", "Schema only", false),
 };
 
-export class TypeScriptZodTargetLanguage extends TargetLanguage {
-    protected getOptions(): Array<Option<FixMeOptionsAnyType>> {
-        return [];
+export const typeScriptZodLanguageConfig = {
+    displayName: "TypeScript Zod",
+    names: ["typescript-zod"],
+    extension: "ts",
+} as const;
+
+export class TypeScriptZodTargetLanguage extends TargetLanguage<
+    typeof typeScriptZodLanguageConfig
+> {
+    public constructor() {
+        super(typeScriptZodLanguageConfig);
     }
 
-    public constructor(
-        displayName: string = "TypeScript Zod",
-        names: string[] = ["typescript-zod"],
-        extension: string = "ts"
-    ) {
-        super(displayName, names, extension);
+    public getOptions(): {} {
+        return {};
     }
 
     public get stringTypeMapping(): StringTypeMapping {
-        const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
+        const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> =
+            new Map();
         const dateTimeType = "date-time";
         mapping.set("date-time", dateTimeType);
         return mapping;
@@ -35,11 +43,14 @@ export class TypeScriptZodTargetLanguage extends TargetLanguage {
         return true;
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): TypeScriptZodRenderer {
+    protected makeRenderer<Lang extends LanguageName = "typescript-zod">(
+        renderContext: RenderContext,
+        untypedOptionValues: RendererOptions<Lang>,
+    ): TypeScriptZodRenderer {
         return new TypeScriptZodRenderer(
             this,
             renderContext,
-            getOptionValues(typeScriptZodOptions, untypedOptionValues)
+            getOptionValues(typeScriptZodOptions, untypedOptionValues),
         );
     }
 }

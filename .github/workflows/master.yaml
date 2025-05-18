@@ -6,10 +6,12 @@ on:
 
 jobs:
     publish:
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-22.04
         steps:
             - uses: actions/checkout@v3
             - uses: ./.github/workflows/setup
+              env:
+                PUBLISH: true
             - run: npm run pub
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
