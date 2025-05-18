@@ -16,7 +16,7 @@ export interface OptionDefinition<Name extends string = string, T = unknown> {
     kind?: OptionKind;
     multiple?: boolean;
     name: Name;
-    type: StringConstructor | BooleanConstructor;
+    optionType: "string" | "boolean" | "enum";
     typeLabel?: string;
 }
 

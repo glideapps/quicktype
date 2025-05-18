@@ -77,7 +77,7 @@ export class BooleanOption<Name extends string> extends Option<Name, boolean> {
         super({
             name,
             kind,
-            type: Boolean,
+            type: "boolean",
             description,
             defaultValue,
         });
@@ -137,7 +137,7 @@ export class StringOption<Name extends string> extends Option<Name, string> {
         const definition = {
             name,
             kind,
-            type: String,
+            type: "string",
             description,
             typeLabel,
             defaultValue,
@@ -166,7 +166,7 @@ export class EnumOption<
         const definition = {
             name,
             kind,
-            type: String,
+            type: "enum",
             description,
             typeLabel: Object.keys(values).join("|"),
             defaultValue,

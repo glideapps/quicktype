@@ -411,7 +411,7 @@ function makeOptionDefinitions(
         {
             name: "out",
             alias: "o",
-            type: String,
+            optionType: "string",
             typeLabel: "FILE",
             description: "The output file. Determines --lang and --top-level.",
             kind: "cli",
@@ -419,7 +419,7 @@ function makeOptionDefinitions(
         {
             name: "top-level",
             alias: "t",
-            type: String,
+            optionType: "string",
             typeLabel: "NAME",
             description: "The name for the top level type.",
             kind: "cli",
@@ -432,7 +432,7 @@ function makeOptionDefinitions(
                   {
                       name: "lang",
                       alias: "l",
-                      type: String,
+                      optionType: "string",
                       typeLabel: "LANG",
                       description: "The target language.",
                       kind: "cli",
@@ -442,7 +442,7 @@ function makeOptionDefinitions(
         {
             name: "src-lang",
             alias: "s",
-            type: String,
+            optionType: "string",
             defaultValue: undefined,
             typeLabel: "SRC_LANG",
             description: "The source language (default is json).",
@@ -450,7 +450,7 @@ function makeOptionDefinitions(
         },
         {
             name: "src",
-            type: String,
+            optionType: "string",
             multiple: true,
             defaultOption: true,
             typeLabel: "FILE|URL|DIRECTORY",
@@ -459,7 +459,7 @@ function makeOptionDefinitions(
         },
         {
             name: "src-urls",
-            type: String,
+            optionType: "string",
             typeLabel: "FILE",
             description: "Tracery grammar describing URLs to crawl.",
             kind: "cli",
@@ -469,7 +469,7 @@ function makeOptionDefinitions(
         mapMap(mapFromObject(inferenceFlags), (flag, name) => {
             return {
                 name: dashedFromCamelCase(negatedInferenceFlagName(name)),
-                type: Boolean,
+                optionType: "boolean",
                 description: flag.negationDescription + ".",
                 kind: "cli" as const,
             };
@@ -478,21 +478,21 @@ function makeOptionDefinitions(
     const afterInference: OptionDefinition[] = [
         {
             name: "graphql-schema",
-            type: String,
+            optionType: "string",
             typeLabel: "FILE",
             description: "GraphQL introspection file.",
             kind: "cli",
         },
         {
             name: "graphql-introspect",
-            type: String,
+            optionType: "string",
             typeLabel: "URL",
             description: "Introspect GraphQL schema from a server.",
             kind: "cli",
         },
         {
             name: "http-method",
-            type: String,
+            optionType: "string",
             typeLabel: "METHOD",
             description:
                 "HTTP method to use for the GraphQL introspection query.",
@@ -500,7 +500,7 @@ function makeOptionDefinitions(
         },
         {
             name: "http-header",
-            type: String,
+            optionType: "string",
             multiple: true,
             typeLabel: "HEADER",
             description:
@@ -510,7 +510,7 @@ function makeOptionDefinitions(
         {
             name: "additional-schema",
             alias: "S",
-            type: String,
+            optionType: "string",
             multiple: true,
             typeLabel: "FILE",
             description: "Register the $id's of additional JSON Schema files.",
@@ -518,38 +518,38 @@ function makeOptionDefinitions(
         },
         {
             name: "no-render",
-            type: Boolean,
+            optionType: "boolean",
             description: "Don't render output.",
             kind: "cli",
         },
         {
             name: "alphabetize-properties",
-            type: Boolean,
+            optionType: "boolean",
             description: "Alphabetize order of class properties.",
             kind: "cli",
         },
         {
             name: "all-properties-optional",
-            type: Boolean,
+            optionType: "boolean",
             description: "Make all class properties optional.",
             kind: "cli",
         },
         {
             name: "build-markov-chain",
-            type: String,
+            optionType: "string",
             typeLabel: "FILE",
             description: "Markov chain corpus filename.",
             kind: "cli",
         },
         {
             name: "quiet",
-            type: Boolean,
+            optionType: "boolean",
             description: "Don't show issues in the generated code.",
             kind: "cli",
         },
         {
             name: "debug",
-            type: String,
+            optionType: "string",
             typeLabel: "OPTIONS or all",
             description:
                 "Comma separated debug options: print-graph, print-reconstitution, print-gather-names, print-transformations, print-schema-resolving, print-times, provenance",
@@ -557,7 +557,7 @@ function makeOptionDefinitions(
         },
         {
             name: "telemetry",
-            type: String,
+            optionType: "string",
             typeLabel: "enable|disable",
             description: "Enable anonymous telemetry to help improve quicktype",
             kind: "cli",
@@ -565,14 +565,14 @@ function makeOptionDefinitions(
         {
             name: "help",
             alias: "h",
-            type: Boolean,
+            optionType: "boolean",
             description: "Get some help.",
             kind: "cli",
         },
         {
             name: "version",
             alias: "v",
-            type: Boolean,
+            optionType: "boolean",
             description: "Display the version of quicktype",
             kind: "cli",
         },
