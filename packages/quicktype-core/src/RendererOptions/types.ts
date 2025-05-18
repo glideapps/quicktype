@@ -8,14 +8,25 @@ import type { EnumOption, Option } from "./index";
 export type OptionKind = "primary" | "secondary" | "cli";
 
 export interface OptionDefinition<Name extends string = string, T = unknown> {
-    alias?: string;
-    defaultOption?: boolean;
-    defaultValue?: T;
-    description: string;
-    kind?: OptionKind;
-    multiple?: boolean;
+    /** Option Name */
     name: Name;
-    type: StringConstructor | BooleanConstructor;
+    /** Option Alias for CLI */
+    alias?: string;
+    /** Option Description */
+    description: string;
+    /** Category of Option */
+    optionType: "string" | "boolean" | "enum";
+    /** Default Value for Option */
+    defaultValue?: T;
+    /** Enum only, map of possible keys and values */
+    values?: Record<string, unknown>;
+
+    /** Primary, Secondary, or CLI */
+    kind?: OptionKind;
+    /** Whether multiple CLI inputs are allowed for this option */
+    multiple?: boolean;
+
+    // Unknown
     typeLabel?: string;
 }
 
