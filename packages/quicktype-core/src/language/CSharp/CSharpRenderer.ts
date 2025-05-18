@@ -24,6 +24,7 @@ import type {
 } from "../../Type";
 import {
     directlyReachableSingleNamedType,
+    matchCompoundType,
     matchType,
     nullableFromUnion,
     removeNullFromUnion,
@@ -526,4 +527,25 @@ export class CSharpRenderer extends ConvenienceRenderer {
 
         this.emitDefaultFollowingComments();
     }
+
+    protected emitDependencyUsings(): void {
+        let genericEmited: boolean = false;
+        let ensureGenericOnce = () => {
+            if (!genericEmited) {
+                this.emitUsing("System.Collections.Generic");
+                genericEmited = true;
+            }
+        }
+        this.typeGraph.allTypesUnordered().forEach(_ => {
+            matchCompoundType(
+                _,
+                _arrayType => this._csOptions.useList ? ensureGenericOnce() : undefined,
+                _classType => { },
+                _mapType => ensureGenericOnce(),
+                _objectType => { },
+                _unionType => { }
+            )
+        });
+    }
+
 }

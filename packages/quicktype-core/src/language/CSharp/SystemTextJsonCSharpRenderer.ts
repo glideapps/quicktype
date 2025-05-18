@@ -152,8 +152,10 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
     }
 
     protected emitUsings(): void {
-        // FIXME: We need System.Collections.Generic whenever we have maps or use List.
-        if (!this._needAttributes && !this._needHelpers) return;
+        if (!this._needAttributes && !this._needHelpers) {
+            this.emitDependencyUsings();
+            return;
+        }
 
         super.emitUsings();
         this.ensureBlankLine();
