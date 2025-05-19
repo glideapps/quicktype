@@ -38,7 +38,7 @@
         "quicktype-graphql-input": "20.0.2",
         "quicktype-typescript-input": "20.0.2",
         "readable-stream": "^4.5.2",
-        "stream-json": "1.8.0",
+        "stream-json": "1.9.1",
         "string-to-stream": "^3.0.1",
         "typescript": "~5.8.3"
     },
@@ -51,7 +51,7 @@
         "@types/lodash": "^4.17.0",
         "@types/semver": "^7.5.0",
         "@types/shelljs": "^0.8.15",
-        "@types/stream-json": "^1.7.3",
+        "@types/stream-json": "^1.7.8",
         "@types/urijs": "^1.19.25",
         "@types/wordwrap": "^1.0.3",
         "@typescript-eslint/eslint-plugin": "^6.3.0",
