@@ -5,24 +5,14 @@ import * as path from "node:path";
 
 import chalk from "chalk";
 import { definedMap, withDefault } from "collection-utils";
-import getUsage from "command-line-usage";
 import * as _ from "lodash";
-import type { Readable } from "readable-stream";
-import stringToStream from "string-to-stream";
 import _wordwrap from "wordwrap";
 
 import {
-    FetchingJSONSchemaStore,
-    InputData,
     IssueAnnotationData,
-    JSONInput,
-    JSONSchemaInput,
-    type JSONSourceData,
-    type OptionDefinition,
     type Options,
     type SerializedRenderResult,
     type TargetLanguage,
-    assertNever,
     defaultTargetLanguages,
     defined,
     getStream,
@@ -36,9 +26,7 @@ import {
     sourcesFromPostmanCollection,
     trainMarkovChain,
 } from "quicktype-core";
-import { GraphQLInput } from "quicktype-graphql-input";
 
-import { CompressedJSONFromStream } from "./CompressedJSONFromStream";
 import { introspectServer } from "./GraphQLIntrospection";
 import type {
     GraphQLTypeSource,
@@ -47,215 +35,19 @@ import type {
 } from "./TypeSource";
 import { parseCLIOptions } from "./cli.options";
 import { inferCLIOptions } from "./inference";
-import { makeOptionDefinitions } from "./optionDefinitions";
 import {
-    makeLangTypeLabel,
     negatedInferenceFlagName,
+    stringSourceDataToStreamSourceData,
     typeNameFromFilename,
 } from "./utils";
 import type { CLIOptions } from "./CLIOptions.types";
 import { getSources, makeTypeScriptSource } from "./sources";
+import { usage } from "./usage";
+import { makeInputData } from "./input";
 
 const packageJSON = require("../package.json");
 
 const wordWrap: (s: string) => string = _wordwrap(90);
-
-interface ColumnDefinition {
-    name: string;
-    padding?: { left: string; right: string };
-    width?: number;
-}
-
-interface TableOptions {
-    columns: ColumnDefinition[];
-}
-
-interface UsageSection {
-    content?: string | string[];
-    header?: string;
-    hide?: string[];
-    optionList?: OptionDefinition[];
-    tableOptions?: TableOptions;
-}
-
-const tableOptionsForOptions: TableOptions = {
-    columns: [
-        {
-            name: "option",
-            width: 60,
-        },
-        {
-            name: "description",
-            width: 60,
-        },
-    ],
-};
-
-function makeSectionsBeforeRenderers(
-    targetLanguages: readonly TargetLanguage[],
-): UsageSection[] {
-    const langDisplayNames = targetLanguages
-        .map((r) => r.displayName)
-        .join(", ");
-
-    return [
-        {
-            header: "Synopsis",
-            content: [
-                `$ quicktype [${chalk.bold("--lang")} LANG] [${chalk.bold("--src-lang")} SRC_LANG] [${chalk.bold(
-                    "--out",
-                )} FILE] FILE|URL ...`,
-                "",
-                `  LANG ... ${makeLangTypeLabel(targetLanguages)}`,
-                "",
-                "SRC_LANG ... json|schema|graphql|postman|typescript",
-            ],
-        },
-        {
-            header: "Description",
-            content: `Given JSON sample data, quicktype outputs code for working with that data in ${langDisplayNames}.`,
-        },
-        {
-            header: "Options",
-            optionList: makeOptionDefinitions(targetLanguages),
-            hide: ["no-render", "build-markov-chain"],
-            tableOptions: tableOptionsForOptions,
-        },
-    ];
-}
-
-const sectionsAfterRenderers: UsageSection[] = [
-    {
-        header: "Examples",
-        content: [
-            chalk.dim("Generate C# to parse a Bitcoin API"),
-            "$ quicktype -o LatestBlock.cs https://blockchain.info/latestblock",
-            "",
-            chalk.dim(
-                "Generate Go code from a directory of samples containing:",
-            ),
-            chalk.dim(
-                `  - Foo.json
-  + Bar
-    - bar-sample-1.json
-    - bar-sample-2.json
-  - Baz.url`,
-            ),
-            "$ quicktype -l go samples",
-            "",
-            chalk.dim("Generate JSON Schema, then TypeScript"),
-            "$ quicktype -o schema.json https://blockchain.info/latestblock",
-            "$ quicktype -o bitcoin.ts --src-lang schema schema.json",
-        ],
-    },
-    {
-        content: `Learn more at ${chalk.bold("quicktype.io")}`,
-    },
-];
-
-function usage(targetLanguages: readonly TargetLanguage[]): void {
-    const rendererSections: UsageSection[] = [];
-
-    for (const language of targetLanguages) {
-        const definitions = language.cliOptionDefinitions.display;
-        if (definitions.length === 0) continue;
-
-        rendererSections.push({
-            header: `Options for ${language.displayName}`,
-            optionList: definitions,
-            tableOptions: tableOptionsForOptions,
-        });
-    }
-
-    const sections = _.concat(
-        makeSectionsBeforeRenderers(targetLanguages),
-        rendererSections,
-        sectionsAfterRenderers,
-    );
-
-    console.log(getUsage(sections));
-}
-
-export function jsonInputForTargetLanguage(
-    _targetLanguage: string | TargetLanguage,
-    languages?: TargetLanguage[],
-    handleJSONRefs = false,
-): JSONInput<Readable> {
-    let targetLanguage: TargetLanguage;
-    if (typeof _targetLanguage === "string") {
-        const languageName = isLanguageName(_targetLanguage)
-            ? _targetLanguage
-            : "typescript";
-        targetLanguage = defined(languageNamed(languageName, languages));
-    } else {
-        targetLanguage = _targetLanguage;
-    }
-
-    const compressedJSON = new CompressedJSONFromStream(
-        targetLanguage.dateTimeRecognizer,
-        handleJSONRefs,
-    );
-    return new JSONInput(compressedJSON);
-}
-
-async function makeInputData(
-    sources: TypeSource[],
-    targetLanguage: TargetLanguage,
-    additionalSchemaAddresses: readonly string[],
-    handleJSONRefs: boolean,
-    httpHeaders?: string[],
-): Promise<InputData> {
-    const inputData = new InputData();
-
-    for (const source of sources) {
-        switch (source.kind) {
-            case "graphql":
-                await inputData.addSource(
-                    "graphql",
-                    source,
-                    () => new GraphQLInput(),
-                );
-                break;
-            case "json":
-                await inputData.addSource("json", source, () =>
-                    jsonInputForTargetLanguage(
-                        targetLanguage,
-                        undefined,
-                        handleJSONRefs,
-                    ),
-                );
-                break;
-            case "schema":
-                await inputData.addSource(
-                    "schema",
-                    source,
-                    () =>
-                        new JSONSchemaInput(
-                            new FetchingJSONSchemaStore(httpHeaders),
-                            [],
-                            additionalSchemaAddresses,
-                        ),
-                );
-                break;
-            default:
-                return assertNever(source);
-        }
-    }
-
-    return inputData;
-}
-
-function stringSourceDataToStreamSourceData(
-    src: JSONSourceData<string>,
-): JSONSourceData<Readable> {
-    return {
-        name: src.name,
-        description: src.description,
-        samples: src.samples.map(
-            (sample) => stringToStream(sample) as Readable,
-        ),
-    };
-}
 
 export async function makeQuicktypeOptions(
     options: CLIOptions,

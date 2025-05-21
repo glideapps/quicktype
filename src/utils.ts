@@ -1,12 +1,15 @@
 import * as path from "node:path";
 
-import _ from "lodash";
+import * as _ from "lodash";
+import type { Readable } from "readable-stream";
+import stringToStream from "string-to-stream";
+import _wordwrap from "wordwrap";
 
 import {
-    type TargetLanguage,
     assert,
-    capitalize,
     splitIntoWords,
+    type JSONSourceData,
+    type TargetLanguage,
 } from "quicktype-core";
 
 export function makeLangTypeLabel(
@@ -28,7 +31,7 @@ export function negatedInferenceFlagName(inputName: string): string {
         name = name.slice(prefix.length);
     }
 
-    return `no${capitalize(name)}`;
+    return `no${_.capitalize(name)}`;
 }
 
 export function dashedFromCamelCase(name: string): string {
@@ -40,4 +43,16 @@ export function dashedFromCamelCase(name: string): string {
 export function typeNameFromFilename(filename: string): string {
     const name = path.basename(filename);
     return name.substring(0, name.lastIndexOf("."));
+}
+
+export function stringSourceDataToStreamSourceData(
+    src: JSONSourceData<string>,
+): JSONSourceData<Readable> {
+    return {
+        name: src.name,
+        description: src.description,
+        samples: src.samples.map(
+            (sample) => stringToStream(sample) as Readable,
+        ),
+    };
 }
