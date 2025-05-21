@@ -1,4 +1,4 @@
-import * as os from "os";
+import * as os from "node:os";
 import * as _ from "lodash";
 
 import { inParallel } from "./lib/multicore";
@@ -63,8 +63,8 @@ async function main(sources: string[]) {
             );
 
             for (const fixture of fixtures) {
-                await execAsync(`rm -rf test/runs`);
-                await execAsync(`mkdir -p test/runs`);
+                await execAsync("rm -rf test/runs");
+                await execAsync("mkdir -p test/runs");
 
                 await fixture.setup();
             }

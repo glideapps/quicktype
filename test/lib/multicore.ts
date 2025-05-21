@@ -1,6 +1,5 @@
-import cluster from "cluster";
-import process from "process";
-import * as _ from "lodash";
+import cluster from "node:cluster";
+import process from "node:process";
 
 const exit = require("exit");
 
@@ -18,8 +17,8 @@ function randomPick<T>(arr: T[]): T {
 }
 
 function guys(n: number): string {
-    return _.range(n)
-        .map((_i) => randomPick(WORKERS))
+    return Array.from({ length: n })
+        .map(() => randomPick(WORKERS))
         .join(" ");
 }
 
@@ -63,13 +62,13 @@ export async function inParallel<Item, Result, Acc>(
                 await map(item, i);
             }
         } else {
-            _.range(workers).forEach((i) =>
+            for (let i = 0; i < workers; i++) {
                 cluster.fork({
                     worker: i,
                     // https://github.com/TypeStrong/ts-node/issues/367
                     TS_NODE_PROJECT: "test/tsconfig.json",
-                }),
-            );
+                });
+            }
         }
     } else {
         // Setup a worker
