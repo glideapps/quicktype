@@ -1,4 +1,7 @@
+import * as path from "node:path";
+
 import _ from "lodash";
+
 import {
     type TargetLanguage,
     assert,
@@ -32,4 +35,9 @@ export function dashedFromCamelCase(name: string): string {
     return splitIntoWords(name)
         .map((w) => w.word.toLowerCase())
         .join("-");
+}
+
+export function typeNameFromFilename(filename: string): string {
+    const name = path.basename(filename);
+    return name.substring(0, name.lastIndexOf("."));
 }
