@@ -1,9 +1,8 @@
-import * as os from "os";
-import * as _ from "lodash";
+import * as os from "node:os";
 
 import { inParallel } from "./lib/multicore";
 import { execAsync, type Sample } from "./utils";
-import { type Fixture, allFixtures } from "./fixtures";
+import { allFixtures } from "./fixtures";
 import { affectedFixtures, divideParallelJobs } from "./buildkite";
 
 const exit = require("exit");
@@ -20,8 +19,8 @@ async function main(sources: string[]) {
     const fixturesFromCmdline = process.env.FIXTURE;
     if (fixturesFromCmdline) {
         const fixtureNames = fixturesFromCmdline.split(",");
-        fixtures = _.filter(fixtures, (fixture) =>
-            _.some(fixtureNames, (name) => fixture.runForName(name)),
+        fixtures = fixtures.filter((fixture) =>
+            fixtureNames.some(fixture.runForName),
         );
     }
 
@@ -34,24 +33,24 @@ async function main(sources: string[]) {
     // Get an array of all { sample, fixtureName } objects we'll run.
     // We can't just put the fixture in there because these WorkItems
     // will be sent in a message, removing all code.
-    const samples = _.map(fixtures, (fixture) => ({
+    const samples = fixtures.map((fixture) => ({
         fixtureName: fixture.name,
         samples: fixture.getSamples(sources),
     }));
-    const priority = _.flatMap(samples, (x) =>
-        _.map(x.samples.priority, (s) => ({
-            fixtureName: x.fixtureName,
-            sample: s,
+    const priority = samples.flatMap((sample) =>
+        sample.samples.priority.map((prioritySample) => ({
+            fixtureName: sample.fixtureName,
+            sample: prioritySample,
         })),
     );
-    const others = _.flatMap(samples, (x) =>
-        _.map(x.samples.others, (s) => ({
-            fixtureName: x.fixtureName,
-            sample: s,
+    const others = samples.flatMap((sample) =>
+        sample.samples.others.map((otherSample) => ({
+            fixtureName: sample.fixtureName,
+            sample: otherSample,
         })),
     );
 
-    const tests = divideParallelJobs(_.concat(priority, others));
+    const tests = divideParallelJobs(priority.concat(others));
 
     await inParallel({
         queue: tests,
@@ -63,17 +62,18 @@ async function main(sources: string[]) {
             );
 
             for (const fixture of fixtures) {
-                await execAsync(`rm -rf test/runs`);
-                await execAsync(`mkdir -p test/runs`);
+                await execAsync("rm -rf test/runs");
+                await execAsync("mkdir -p test/runs");
 
                 await fixture.setup();
             }
         },
 
         map: async ({ sample, fixtureName }: WorkItem, index) => {
-            const fixture = _.find(fixtures, { name: fixtureName }) as Fixture;
+            const fixture = fixtures.find(({ name }) => name === fixtureName);
+
             try {
-                await fixture.runWithSample(sample, index, tests.length);
+                await fixture?.runWithSample(sample, index, tests.length);
             } catch (e) {
                 console.trace(e);
                 exit(1);
