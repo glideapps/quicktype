@@ -3,17 +3,8 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-import { exceptionToString } from "@glideapps/ts-necessities";
 import chalk from "chalk";
-import {
-    definedMap,
-    // biome-ignore lint/suspicious/noShadowRestrictedNames: <explanation>
-    hasOwnProperty,
-    mapFromObject,
-    mapMap,
-    withDefault,
-} from "collection-utils";
-import commandLineArgs from "command-line-args";
+import { definedMap, withDefault } from "collection-utils";
 import getUsage from "command-line-usage";
 import * as _ from "lodash";
 import type { Readable } from "readable-stream";
@@ -27,21 +18,15 @@ import {
     JSONInput,
     JSONSchemaInput,
     type JSONSourceData,
-    type LanguageName,
     type OptionDefinition,
     type Options,
-    type RendererOptions,
     type SerializedRenderResult,
     type TargetLanguage,
-    assert,
     assertNever,
-    capitalize,
     defaultTargetLanguages,
     defined,
     getStream,
-    getTargetLanguage,
     inferenceFlagNames,
-    inferenceFlags,
     isLanguageName,
     languageNamed,
     messageAssert,
@@ -52,7 +37,6 @@ import {
     readFromFileOrURL,
     readableFromFileOrURL,
     sourcesFromPostmanCollection,
-    splitIntoWords,
     trainMarkovChain,
 } from "quicktype-core";
 import { GraphQLInput } from "quicktype-graphql-input";
@@ -67,13 +51,15 @@ import type {
     TypeSource,
 } from "./TypeSource";
 import { urlsFromURLGrammar } from "./URLGrammar";
+import { parseCLIOptions } from "./cli.options";
+import { inferCLIOptions } from "./inference";
+import { makeOptionDefinitions } from "./optionDefinitions";
+import { makeLangTypeLabel, negatedInferenceFlagName } from "./utils";
 import type { CLIOptions } from "./CLIOptions.types";
 
 const packageJSON = require("../package.json");
 
 const wordWrap: (s: string) => string = _wordwrap(90);
-
-const defaultDefaultTargetLanguageName = "go";
 
 async function sourceFromFileOrUrlArray(
     name: string,
@@ -240,317 +226,6 @@ async function samplesFromDirectory(
     return sources;
 }
 
-function inferLang(
-    options: Partial<CLIOptions>,
-    defaultLanguage: LanguageName,
-): string | LanguageName {
-    // Output file extension determines the language if language is undefined
-    if (options.out !== undefined) {
-        const extension = path.extname(options.out);
-        if (extension === "") {
-            return messageError("DriverNoLanguageOrExtension", {});
-        }
-
-        return extension.slice(1);
-    }
-
-    return defaultLanguage;
-}
-
-function inferTopLevel(options: Partial<CLIOptions>): string {
-    // Output file name determines the top-level if undefined
-    if (options.out !== undefined) {
-        const extension = path.extname(options.out);
-        const without = path.basename(options.out).replace(extension, "");
-        return without;
-    }
-
-    // Source determines the top-level if undefined
-    if (options.src !== undefined && options.src.length === 1) {
-        const src = options.src[0];
-        const extension = path.extname(src);
-        const without = path.basename(src).replace(extension, "");
-        return without;
-    }
-
-    return "TopLevel";
-}
-
-function inferCLIOptions(
-    opts: Partial<CLIOptions>,
-    targetLanguage: TargetLanguage | undefined,
-): CLIOptions {
-    let srcLang = opts.srcLang;
-    if (
-        opts.graphqlSchema !== undefined ||
-        opts.graphqlIntrospect !== undefined
-    ) {
-        messageAssert(
-            srcLang === undefined || srcLang === "graphql",
-            "DriverSourceLangMustBeGraphQL",
-            {},
-        );
-        srcLang = "graphql";
-    } else if (
-        opts.src !== undefined &&
-        opts.src.length > 0 &&
-        opts.src.every((file) => _.endsWith(file, ".ts"))
-    ) {
-        srcLang = "typescript";
-    } else {
-        messageAssert(srcLang !== "graphql", "DriverGraphQLSchemaNeeded", {});
-        srcLang = withDefault<string>(srcLang, "json");
-    }
-
-    let language: TargetLanguage;
-    if (targetLanguage !== undefined) {
-        language = targetLanguage;
-    } else {
-        const languageName =
-            opts.lang ?? inferLang(opts, defaultDefaultTargetLanguageName);
-
-        if (isLanguageName(languageName)) {
-            language = languageNamed(languageName);
-        } else {
-            return messageError("DriverUnknownOutputLanguage", {
-                lang: languageName,
-            });
-        }
-    }
-
-    const options: CLIOptions = {
-        src: opts.src ?? [],
-        srcUrls: opts.srcUrls,
-        srcLang: srcLang,
-        lang: language.name as LanguageName,
-        topLevel: opts.topLevel ?? inferTopLevel(opts),
-        noRender: !!opts.noRender,
-        alphabetizeProperties: !!opts.alphabetizeProperties,
-        allPropertiesOptional: !!opts.allPropertiesOptional,
-        rendererOptions: opts.rendererOptions ?? {},
-        help: opts.help ?? false,
-        quiet: opts.quiet ?? false,
-        version: opts.version ?? false,
-        out: opts.out,
-        buildMarkovChain: opts.buildMarkovChain,
-        additionalSchema: opts.additionalSchema ?? [],
-        graphqlSchema: opts.graphqlSchema,
-        graphqlIntrospect: opts.graphqlIntrospect,
-        httpMethod: opts.httpMethod,
-        httpHeader: opts.httpHeader,
-        debug: opts.debug,
-        telemetry: opts.telemetry,
-    };
-    for (const flagName of inferenceFlagNames) {
-        const cliName = negatedInferenceFlagName(flagName);
-        options[cliName] = !!opts[cliName];
-    }
-
-    return options;
-}
-
-function makeLangTypeLabel(targetLanguages: readonly TargetLanguage[]): string {
-    assert(
-        targetLanguages.length > 0,
-        "Must have at least one target language",
-    );
-    return targetLanguages
-        .map((r) => _.minBy(r.names, (s) => s.length))
-        .join("|");
-}
-
-function negatedInferenceFlagName(inputName: string): string {
-    let name = inputName;
-    const prefix = "infer";
-    if (name.startsWith(prefix)) {
-        name = name.slice(prefix.length);
-    }
-
-    return `no${capitalize(name)}`;
-}
-
-function dashedFromCamelCase(name: string): string {
-    return splitIntoWords(name)
-        .map((w) => w.word.toLowerCase())
-        .join("-");
-}
-
-function makeOptionDefinitions(
-    targetLanguages: readonly TargetLanguage[],
-): OptionDefinition[] {
-    const beforeLang: OptionDefinition[] = [
-        {
-            name: "out",
-            alias: "o",
-            optionType: "string",
-            typeLabel: "FILE",
-            description: "The output file. Determines --lang and --top-level.",
-            kind: "cli",
-        },
-        {
-            name: "top-level",
-            alias: "t",
-            optionType: "string",
-            typeLabel: "NAME",
-            description: "The name for the top level type.",
-            kind: "cli",
-        },
-    ];
-    const lang: OptionDefinition[] =
-        targetLanguages.length < 2
-            ? []
-            : [
-                  {
-                      name: "lang",
-                      alias: "l",
-                      optionType: "string",
-                      typeLabel: "LANG",
-                      description: "The target language.",
-                      kind: "cli",
-                  },
-              ];
-    const afterLang: OptionDefinition[] = [
-        {
-            name: "src-lang",
-            alias: "s",
-            optionType: "string",
-            defaultValue: undefined,
-            typeLabel: "SRC_LANG",
-            description: "The source language (default is json).",
-            kind: "cli",
-        },
-        {
-            name: "src",
-            optionType: "string",
-            multiple: true,
-            typeLabel: "FILE|URL|DIRECTORY",
-            description: "The file, url, or data directory to type.",
-            kind: "cli",
-        },
-        {
-            name: "src-urls",
-            optionType: "string",
-            typeLabel: "FILE",
-            description: "Tracery grammar describing URLs to crawl.",
-            kind: "cli",
-        },
-    ];
-    const inference: OptionDefinition[] = Array.from(
-        mapMap(mapFromObject(inferenceFlags), (flag, name) => {
-            return {
-                name: dashedFromCamelCase(negatedInferenceFlagName(name)),
-                optionType: "boolean" as const,
-                // biome-ignore lint/style/useTemplate: <explanation>
-                description: flag.negationDescription + ".",
-                kind: "cli" as const,
-            };
-        }).values(),
-    );
-    const afterInference: OptionDefinition[] = [
-        {
-            name: "graphql-schema",
-            optionType: "string",
-            typeLabel: "FILE",
-            description: "GraphQL introspection file.",
-            kind: "cli",
-        },
-        {
-            name: "graphql-introspect",
-            optionType: "string",
-            typeLabel: "URL",
-            description: "Introspect GraphQL schema from a server.",
-            kind: "cli",
-        },
-        {
-            name: "http-method",
-            optionType: "string",
-            typeLabel: "METHOD",
-            description:
-                "HTTP method to use for the GraphQL introspection query.",
-            kind: "cli",
-        },
-        {
-            name: "http-header",
-            optionType: "string",
-            multiple: true,
-            typeLabel: "HEADER",
-            description:
-                "Header(s) to attach to all HTTP requests, including the GraphQL introspection query.",
-            kind: "cli",
-        },
-        {
-            name: "additional-schema",
-            alias: "S",
-            optionType: "string",
-            multiple: true,
-            typeLabel: "FILE",
-            description: "Register the $id's of additional JSON Schema files.",
-            kind: "cli",
-        },
-        {
-            name: "no-render",
-            optionType: "boolean",
-            description: "Don't render output.",
-            kind: "cli",
-        },
-        {
-            name: "alphabetize-properties",
-            optionType: "boolean",
-            description: "Alphabetize order of class properties.",
-            kind: "cli",
-        },
-        {
-            name: "all-properties-optional",
-            optionType: "boolean",
-            description: "Make all class properties optional.",
-            kind: "cli",
-        },
-        {
-            name: "build-markov-chain",
-            optionType: "string",
-            typeLabel: "FILE",
-            description: "Markov chain corpus filename.",
-            kind: "cli",
-        },
-        {
-            name: "quiet",
-            optionType: "boolean",
-            description: "Don't show issues in the generated code.",
-            kind: "cli",
-        },
-        {
-            name: "debug",
-            optionType: "string",
-            typeLabel: "OPTIONS or all",
-            description:
-                "Comma separated debug options: print-graph, print-reconstitution, print-gather-names, print-transformations, print-schema-resolving, print-times, provenance",
-            kind: "cli",
-        },
-        {
-            name: "telemetry",
-            optionType: "string",
-            typeLabel: "enable|disable",
-            description: "Enable anonymous telemetry to help improve quicktype",
-            kind: "cli",
-        },
-        {
-            name: "help",
-            alias: "h",
-            optionType: "boolean",
-            description: "Get some help.",
-            kind: "cli",
-        },
-        {
-            name: "version",
-            alias: "v",
-            optionType: "boolean",
-            description: "Display the version of quicktype",
-            kind: "cli",
-        },
-    ];
-    return beforeLang.concat(lang, afterLang, inference, afterInference);
-}
-
 interface ColumnDefinition {
     name: string;
     padding?: { left: string; right: string };
@@ -643,104 +318,6 @@ const sectionsAfterRenderers: UsageSection[] = [
         content: `Learn more at ${chalk.bold("quicktype.io")}`,
     },
 ];
-
-export function parseCLIOptions(
-    argv: string[],
-    inputTargetLanguage?: TargetLanguage,
-): CLIOptions {
-    if (argv.length === 0) {
-        return inferCLIOptions({ help: true }, inputTargetLanguage);
-    }
-
-    const targetLanguages = inputTargetLanguage
-        ? [inputTargetLanguage]
-        : defaultTargetLanguages;
-    const optionDefinitions = makeOptionDefinitions(targetLanguages);
-
-    // We can only fully parse the options once we know which renderer is selected,
-    // because there are renderer-specific options.  But we only know which renderer
-    // is selected after we've parsed the options.  Hence, we parse the options
-    // twice.  This is the first parse to get the renderer:
-    const incompleteOptions = inferCLIOptions(
-        parseOptions(optionDefinitions, argv, true),
-        inputTargetLanguage,
-    );
-
-    let targetLanguage = inputTargetLanguage as TargetLanguage;
-    if (inputTargetLanguage === undefined) {
-        const languageName = isLanguageName(incompleteOptions.lang)
-            ? incompleteOptions.lang
-            : "typescript";
-        targetLanguage = getTargetLanguage(languageName);
-    }
-
-    const rendererOptionDefinitions =
-        targetLanguage.cliOptionDefinitions.actual;
-    // Use the global options as well as the renderer options from now on:
-    const allOptionDefinitions = _.concat(
-        optionDefinitions,
-        rendererOptionDefinitions,
-    );
-    // This is the parse that counts:
-    return inferCLIOptions(
-        parseOptions(allOptionDefinitions, argv, false),
-        targetLanguage,
-    );
-}
-
-// Parse the options in argv and split them into global options and renderer options,
-// according to each option definition's `renderer` field.  If `partial` is false this
-// will throw if it encounters an unknown option.
-function parseOptions(
-    definitions: OptionDefinition[],
-    argv: string[],
-    partial: boolean,
-): Partial<CLIOptions> {
-    let opts: commandLineArgs.CommandLineOptions;
-    try {
-        opts = commandLineArgs(definitions, { argv, partial });
-    } catch (e) {
-        assert(!partial, "Partial option parsing should not have failed");
-        return messageError("DriverCLIOptionParsingFailed", {
-            message: exceptionToString(e),
-        });
-    }
-
-    for (const k of Object.keys(opts)) {
-        if (opts[k] === null) {
-            return messageError("DriverCLIOptionParsingFailed", {
-                message: `Missing value for command line option "${k}"`,
-            });
-        }
-    }
-
-    const options: {
-        [key: string]: unknown;
-        rendererOptions: RendererOptions;
-    } = { rendererOptions: {} };
-    for (const optionDefinition of definitions) {
-        if (!hasOwnProperty(opts, optionDefinition.name)) {
-            continue;
-        }
-
-        const optionValue = opts[optionDefinition.name] as string;
-        if (optionDefinition.kind !== "cli") {
-            (
-                options.rendererOptions as Record<
-                    typeof optionDefinition.name,
-                    unknown
-                >
-            )[optionDefinition.name] = optionValue;
-        } else {
-            const k = _.lowerFirst(
-                optionDefinition.name.split("-").map(_.upperFirst).join(""),
-            );
-            options[k] = optionValue;
-        }
-    }
-
-    return options;
-}
 
 function usage(targetLanguages: readonly TargetLanguage[]): void {
     const rendererSections: UsageSection[] = [];
@@ -942,13 +519,13 @@ export async function makeQuicktypeOptions(
 ): Promise<Partial<Options> | undefined> {
     if (options.help) {
         usage(targetLanguages ?? defaultTargetLanguages);
-        return undefined;
+        return;
     }
 
     if (options.version) {
         console.log(`quicktype version ${packageJSON.version}`);
         console.log("Visit quicktype.io for more info.");
-        return undefined;
+        return;
     }
 
     if (options.buildMarkovChain !== undefined) {
@@ -956,7 +533,7 @@ export async function makeQuicktypeOptions(
         const lines = contents.split("\n");
         const mc = trainMarkovChain(lines, 3);
         console.log(JSON.stringify(mc));
-        return undefined;
+        return;
     }
 
     let sources: TypeSource[] = [];
@@ -982,13 +559,13 @@ export async function makeQuicktypeOptions(
             if (numSources !== 1) {
                 if (wroteSchemaToFile) {
                     // We're done.
-                    return undefined;
+                    return;
                 }
 
                 if (numSources === 0) {
                     if (schemaString !== undefined) {
                         console.log(schemaString);
-                        return undefined;
+                        return;
                     }
 
                     return messageError("DriverNoGraphQLQueryGiven", {});
