@@ -20,7 +20,7 @@ export function writeOutput(
     cliOptions: CLIOptions,
     resultsByFilename: ReadonlyMap<string, SerializedRenderResult>,
 ): void {
-    let onFirst = true;
+    let isFirstRun = true;
     for (const [filename, { lines, annotations }] of resultsByFilename) {
         const output = lines.join("\n");
 
@@ -30,7 +30,7 @@ export function writeOutput(
                 output,
             );
         } else {
-            if (!onFirst) {
+            if (!isFirstRun) {
                 process.stdout.write("\n");
             }
 
@@ -45,10 +45,13 @@ export function writeOutput(
             continue;
         }
 
-        for (const sa of annotations) {
-            const annotation = sa.annotation;
-            if (!(annotation instanceof IssueAnnotationData)) continue;
-            const lineNumber = sa.span.start.line;
+        for (const sourceAnnotation of annotations) {
+            const annotation = sourceAnnotation.annotation;
+            if (!(annotation instanceof IssueAnnotationData)) {
+                continue;
+            }
+
+            const lineNumber = sourceAnnotation.span.start.line;
             const humanLineNumber = lineNumber + 1;
             console.error(
                 `\nIssue in line ${humanLineNumber}: ${annotation.message}`,
@@ -56,7 +59,7 @@ export function writeOutput(
             console.error(`${humanLineNumber}: ${lines[lineNumber]}`);
         }
 
-        onFirst = false;
+        isFirstRun = false;
     }
 }
 
