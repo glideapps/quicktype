@@ -70,7 +70,7 @@ async function main(sources: string[]) {
         },
 
         map: async ({ sample, fixtureName }: WorkItem, index) => {
-            const fixture = fixtures.find(({ name }) => name === fixtureName);
+            const fixture = fixtures.find((fixture) => fixture.name === fixtureName);
 
             try {
                 await fixture?.runWithSample(sample, index, tests.length);
