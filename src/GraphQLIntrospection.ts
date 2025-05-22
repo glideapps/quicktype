@@ -32,6 +32,7 @@ export async function introspectServer(
         headers[matches[1]] = matches[2];
     }
 
+    // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
     let result;
     try {
         const response = await fetch(url, {

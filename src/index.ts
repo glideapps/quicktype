@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 import * as fs from "node:fs";
 import * as path from "node:path";
 
@@ -67,7 +68,6 @@ import type {
 } from "./TypeSource";
 import { urlsFromURLGrammar } from "./URLGrammar";
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
 const packageJSON = require("../package.json");
 
 const wordWrap: (s: string) => string = _wordwrap(90);
@@ -389,13 +389,14 @@ function makeLangTypeLabel(targetLanguages: readonly TargetLanguage[]): string {
         .join("|");
 }
 
-function negatedInferenceFlagName(name: string): string {
+function negatedInferenceFlagName(inputName: string): string {
+    let name = inputName;
     const prefix = "infer";
     if (name.startsWith(prefix)) {
         name = name.slice(prefix.length);
     }
 
-    return "no" + capitalize(name);
+    return `no${capitalize(name)}`;
 }
 
 function dashedFromCamelCase(name: string): string {
@@ -469,6 +470,7 @@ function makeOptionDefinitions(
             return {
                 name: dashedFromCamelCase(negatedInferenceFlagName(name)),
                 optionType: "boolean" as const,
+                // biome-ignore lint/style/useTemplate: <explanation>
                 description: flag.negationDescription + ".",
                 kind: "cli" as const,
             };
@@ -674,16 +676,15 @@ const sectionsAfterRenderers: UsageSection[] = [
 
 export function parseCLIOptions(
     argv: string[],
-    targetLanguage?: TargetLanguage,
+    inputTargetLanguage?: TargetLanguage,
 ): CLIOptions {
     if (argv.length === 0) {
-        return inferCLIOptions({ help: true }, targetLanguage);
+        return inferCLIOptions({ help: true }, inputTargetLanguage);
     }
 
-    const targetLanguages =
-        targetLanguage === undefined
-            ? defaultTargetLanguages
-            : [targetLanguage];
+    const targetLanguages = inputTargetLanguage
+        ? [inputTargetLanguage]
+        : defaultTargetLanguages;
     const optionDefinitions = makeOptionDefinitions(targetLanguages);
 
     // We can only fully parse the options once we know which renderer is selected,
@@ -692,9 +693,11 @@ export function parseCLIOptions(
     // twice.  This is the first parse to get the renderer:
     const incompleteOptions = inferCLIOptions(
         parseOptions(optionDefinitions, argv, true),
-        targetLanguage,
+        inputTargetLanguage,
     );
-    if (targetLanguage === undefined) {
+
+    let targetLanguage = inputTargetLanguage as TargetLanguage;
+    if (inputTargetLanguage === undefined) {
         const languageName = isLanguageName(incompleteOptions.lang)
             ? incompleteOptions.lang
             : "typescript";
@@ -828,7 +831,11 @@ async function typeSourcesForURIs(
         case "schema":
             return uris.map(
                 (uri) =>
-                    ({ kind: "schema", name, uris: [uri] }) as SchemaTypeSource,
+                    ({
+                        kind: "schema",
+                        name,
+                        uris: [uri],
+                    }) as SchemaTypeSource,
             );
         default:
             return panic(
@@ -879,15 +886,18 @@ function makeTypeScriptSource(fileNames: string[]): SchemaTypeSource {
 }
 
 export function jsonInputForTargetLanguage(
-    targetLanguage: string | TargetLanguage,
+    _targetLanguage: string | TargetLanguage,
     languages?: TargetLanguage[],
     handleJSONRefs = false,
 ): JSONInput<Readable> {
-    if (typeof targetLanguage === "string") {
-        const languageName = isLanguageName(targetLanguage)
-            ? targetLanguage
+    let targetLanguage: TargetLanguage;
+    if (typeof _targetLanguage === "string") {
+        const languageName = isLanguageName(_targetLanguage)
+            ? _targetLanguage
             : "typescript";
         targetLanguage = defined(languageNamed(languageName, languages));
+    } else {
+        targetLanguage = _targetLanguage;
     }
 
     const compressedJSON = new CompressedJSONFromStream(
@@ -983,7 +993,7 @@ export async function makeQuicktypeOptions(
     let leadingComments: string[] | undefined = undefined;
     let fixedTopLevels = false;
     switch (options.srcLang) {
-        case "graphql":
+        case "graphql": {
             let schemaString: string | undefined = undefined;
             let wroteSchemaToFile = false;
             if (options.graphqlIntrospect !== undefined) {
@@ -1040,6 +1050,7 @@ export async function makeQuicktypeOptions(
 
             sources = gqlSources;
             break;
+        }
         case "json":
         case "schema":
             sources = await getSources(options);
