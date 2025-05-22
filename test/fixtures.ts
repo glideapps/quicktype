@@ -103,7 +103,7 @@ function runEnvForLanguage(
     const newEnv = Object.assign({}, process.env);
 
     for (const option of Object.keys(additionalRendererOptions)) {
-        newEnv["QUICKTYPE_" + option.toUpperCase().replace("-", "_")] = (
+        newEnv[`QUICKTYPE_${option.toUpperCase().replace("-", "_")}`] = (
             additionalRendererOptions[
                 option as keyof typeof additionalRendererOptions
             ] as Option<string, unknown>
@@ -216,10 +216,6 @@ export abstract class Fixture {
 }
 
 abstract class LanguageFixture extends Fixture {
-    constructor(language: languages.Language) {
-        super(language);
-    }
-
     async setup() {
         const setupCommand = this.language.setupCommand;
         if (!setupCommand || ONLY_OUTPUT) {
