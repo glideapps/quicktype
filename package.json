@@ -64,6 +64,7 @@
         "semver": "^7.5.4",
         "shelljs": "^0.8.5",
         "ts-node": "^10.9.2",
+        "vitest": "^3.1.4",
         "watch": "^1.0.2"
     },
     "overrides": {
@@ -73,6 +74,8 @@
             }
         }
     },
-    "files": ["dist"],
+    "files": [
+        "dist"
+    ],
     "bin": "dist/index.js"
 }
