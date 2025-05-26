@@ -19,9 +19,14 @@ async function main(sources: string[]) {
     const fixturesFromCmdline = process.env.FIXTURE;
     if (fixturesFromCmdline) {
         const fixtureNames = fixturesFromCmdline.split(",");
-        fixtures = fixtures.filter((fixture) =>
-            fixtureNames.some(fixture.runForName),
-        );
+        fixtures = fixtures.filter((fixture) => {
+            console.log({ fixture });
+
+            return fixtureNames.some((name) => {
+                console.log({ name });
+                return fixture.runForName(name);
+            });
+        });
     }
 
     if (allFixtures.length !== fixtures.length) {
@@ -70,7 +75,9 @@ async function main(sources: string[]) {
         },
 
         map: async ({ sample, fixtureName }: WorkItem, index) => {
-            const fixture = fixtures.find((fixture) => fixture.name === fixtureName);
+            const fixture = fixtures.find(
+                (fixture) => fixture.name === fixtureName,
+            );
 
             try {
                 await fixture?.runWithSample(sample, index, tests.length);
