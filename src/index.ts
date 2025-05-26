@@ -455,6 +455,7 @@ function makeOptionDefinitions(
             typeLabel: "FILE|URL|DIRECTORY",
             description: "The file, url, or data directory to type.",
             kind: "cli",
+            defaultOption: true,
         },
         {
             name: "src-urls",
