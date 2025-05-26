@@ -726,7 +726,13 @@ function parseOptions(
 ): Partial<CLIOptions> {
     let opts: commandLineArgs.CommandLineOptions;
     try {
-        opts = commandLineArgs(definitions, { argv, partial });
+        opts = commandLineArgs(
+            definitions.map((def) => ({
+                ...def,
+                type: def.optionType === "boolean" ? Boolean : String,
+            })),
+            { argv, partial },
+        );
     } catch (e) {
         assert(!partial, "Partial option parsing should not have failed");
         return messageError("DriverCLIOptionParsingFailed", {
