@@ -19,6 +19,7 @@ export function makeOptionDefinitions(
             typeLabel: "FILE",
             description: "The output file. Determines --lang and --top-level.",
             kind: "cli",
+            defaultOption: true,
         },
         {
             name: "top-level",

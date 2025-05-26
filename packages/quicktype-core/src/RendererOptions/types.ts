@@ -1,4 +1,5 @@
 import type { EnumOption, Option } from "./index";
+import type { OptionDefinition as CommandLineArgsOptionDefinition } from "command-line-args";
 
 /**
  * Primary options show up in the web UI in the "Language" settings tab,
@@ -6,16 +7,16 @@ import type { EnumOption, Option } from "./index";
  * CLI is only for cli
  */
 export type OptionKind = "primary" | "secondary" | "cli";
+export type OptionType = "string" | "boolean" | "enum";
 
-export interface OptionDefinition<Name extends string = string, T = unknown> {
+export interface OptionDefinition<Name extends string = string, T = unknown>
+    extends CommandLineArgsOptionDefinition {
     /** Option Name */
     name: Name;
-    /** Option Alias for CLI */
-    alias?: string;
     /** Option Description */
     description: string;
     /** Category of Option */
-    optionType: "string" | "boolean" | "enum";
+    optionType: OptionType;
     /** Default Value for Option */
     defaultValue?: T;
     /** Enum only, map of possible keys and values */

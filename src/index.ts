@@ -15,6 +15,7 @@ import { parseCLIOptions } from "./cli.options";
 import { inferCLIOptions } from "./inference";
 import { makeQuicktypeOptions } from "./quicktype.options";
 import type { CLIOptions } from "./CLIOptions.types";
+export type { CLIOptions };
 
 export function writeOutput(
     cliOptions: CLIOptions,

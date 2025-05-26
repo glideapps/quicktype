@@ -20,7 +20,7 @@ async function main(sources: string[]) {
     if (fixturesFromCmdline) {
         const fixtureNames = fixturesFromCmdline.split(",");
         fixtures = fixtures.filter((fixture) =>
-            fixtureNames.some(fixture.runForName),
+            fixtureNames.some((name) => fixture.runForName(name)),
         );
     }
 
@@ -70,7 +70,9 @@ async function main(sources: string[]) {
         },
 
         map: async ({ sample, fixtureName }: WorkItem, index) => {
-            const fixture = fixtures.find(({ name }) => name === fixtureName);
+            const fixture = fixtures.find(
+                (fixture) => fixture.name === fixtureName,
+            );
 
             try {
                 await fixture?.runWithSample(sample, index, tests.length);
