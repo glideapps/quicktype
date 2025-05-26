@@ -3,6 +3,7 @@ import type { Moment } from "moment";
 import type { ComparisonRelaxations } from "../utils";
 
 function pathToString(path: string[]): string {
+    // biome-ignore lint/style/useTemplate: <explanation>
     return "." + path.join(".");
 }
 
@@ -13,9 +14,13 @@ declare namespace Math {
 
 function tryParseMoment(s: string): [Moment | undefined, boolean] {
     let m = moment(s);
-    if (m.isValid()) return [m, false];
+    if (m.isValid()) {
+        return [m, false];
+    }
     m = moment(s, "HH:mm:ss.SSZ");
-    if (m.isValid()) return [m, true];
+    if (m.isValid()) {
+        return [m, true];
+    }
     return [undefined, false];
 }
 
