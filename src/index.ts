@@ -456,6 +456,7 @@ function makeOptionDefinitions(
             typeLabel: "FILE|URL|DIRECTORY",
             description: "The file, url, or data directory to type.",
             kind: "cli",
+            defaultOption: true,
         },
         {
             name: "src-urls",
@@ -728,7 +729,13 @@ function parseOptions(
 ): Partial<CLIOptions> {
     let opts: commandLineArgs.CommandLineOptions;
     try {
-        opts = commandLineArgs(definitions, { argv, partial });
+        opts = commandLineArgs(
+            definitions.map((def) => ({
+                ...def,
+                type: def.optionType === "boolean" ? Boolean : String,
+            })),
+            { argv, partial },
+        );
     } catch (e) {
         assert(!partial, "Partial option parsing should not have failed");
         return messageError("DriverCLIOptionParsingFailed", {
