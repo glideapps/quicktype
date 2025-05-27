@@ -1,8 +1,4 @@
 import { exceptionToString } from "@glideapps/ts-necessities";
-import {
-    // biome-ignore lint/suspicious/noShadowRestrictedNames: <explanation>
-    hasOwnProperty,
-} from "collection-utils";
 import commandLineArgs from "command-line-args";
 import _ from "lodash";
 
@@ -58,7 +54,7 @@ function parseOptions(
         rendererOptions: RendererOptions;
     } = { rendererOptions: {} };
     for (const optionDefinition of definitions) {
-        if (!hasOwnProperty(opts, optionDefinition.name)) {
+        if (!(optionDefinition.name in opts)) {
             continue;
         }
 
