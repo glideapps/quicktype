@@ -7,10 +7,13 @@ import _wordwrap from "wordwrap";
 
 import {
     assert,
+    type InferenceFlagName,
     splitIntoWords,
     type JSONSourceData,
     type TargetLanguage,
 } from "quicktype-core";
+
+import type { NegatedInferenceFlagName } from "./CLIOptions.types";
 
 export function makeLangTypeLabel(
     targetLanguages: readonly TargetLanguage[],
@@ -24,14 +27,14 @@ export function makeLangTypeLabel(
         .join("|");
 }
 
-export function negatedInferenceFlagName(inputName: string): string {
-    let name = inputName;
-    const prefix = "infer";
-    if (name.startsWith(prefix)) {
-        name = name.slice(prefix.length);
-    }
-
-    return `no${_.capitalize(name)}`;
+export function negatedInferenceFlagName<Input extends InferenceFlagName>(
+    inputName: Input,
+): NegatedInferenceFlagName<Input> {
+    const withoutLeadingInfer = inputName.replace(/^infer/, "");
+    const asPascalCase = withoutLeadingInfer.replace(/^\w/, (x) =>
+        x.toUpperCase(),
+    );
+    return `no${asPascalCase}` as NegatedInferenceFlagName<Input>;
 }
 
 export function dashedFromCamelCase(name: string): string {

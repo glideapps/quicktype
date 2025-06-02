@@ -66,7 +66,9 @@ export function parseOptions(
                     unknown
                 >
             )[optionDefinition.name] = optionValue;
-        } else {
+        }
+        // Inference flags
+        else {
             const k = _.lowerFirst(
                 optionDefinition.name.split("-").map(_.upperFirst).join(""),
             );

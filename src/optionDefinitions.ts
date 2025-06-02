@@ -1,6 +1,5 @@
-import { mapFromObject, mapMap } from "collection-utils";
-
 import {
+    type InferenceFlagName,
     type OptionDefinition,
     type TargetLanguage,
     inferenceFlags,
@@ -69,16 +68,16 @@ export function makeOptionDefinitions(
             kind: "cli",
         },
     ];
-    const inference: OptionDefinition[] = Array.from(
-        mapMap(mapFromObject(inferenceFlags), (flag, name) => {
-            return {
-                name: dashedFromCamelCase(negatedInferenceFlagName(name)),
-                optionType: "boolean" as const,
-                // biome-ignore lint/style/useTemplate: <explanation>
-                description: flag.negationDescription + ".",
-                kind: "cli" as const,
-            };
-        }).values(),
+    const inference: OptionDefinition[] = Object.entries(inferenceFlags).map(
+        ([name, flag]) => ({
+            name: dashedFromCamelCase(
+                negatedInferenceFlagName(name as InferenceFlagName),
+            ),
+            optionType: "boolean" as const,
+            // biome-ignore lint/style/useTemplate: <explanation>
+            description: flag.negationDescription + ".",
+            kind: "cli" as const,
+        }),
     );
     const afterInference: OptionDefinition[] = [
         {

@@ -1,9 +1,22 @@
-import type { LanguageName, RendererOptions } from "quicktype-core";
+import type {
+    LanguageName,
+    RendererOptions,
+    InferenceFlagName,
+} from "quicktype-core";
 
-export interface CLIOptions<Lang extends LanguageName = LanguageName> {
-    // We use this to access the inference flags
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    [option: string]: any;
+type CamelToPascal<T extends string> =
+    T extends `${infer FirstChar}${infer Rest}`
+        ? `${Capitalize<FirstChar>}${Rest}`
+        : never;
+
+export type NegatedInferenceFlagName<
+    Input extends InferenceFlagName = InferenceFlagName,
+> = `no${CamelToPascal<Input extends `infer${infer Name}` ? Name : Input>}`;
+
+export interface CLIOptions<Lang extends LanguageName = LanguageName>
+    extends Partial<
+        Record<InferenceFlagName | NegatedInferenceFlagName, boolean>
+    > {
     additionalSchema: string[];
     allPropertiesOptional: boolean;
     alphabetizeProperties: boolean;
