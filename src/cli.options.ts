@@ -23,7 +23,7 @@ import type { CLIOptions } from "./CLIOptions.types";
 // Parse the options in argv and split them into global options and renderer options,
 // according to each option definition's `renderer` field.  If `partial` is false this
 // will throw if it encounters an unknown option.
-function parseOptions(
+export function parseOptions(
     definitions: OptionDefinition[],
     argv: string[],
     partial: boolean,
