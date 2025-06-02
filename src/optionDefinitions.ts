@@ -184,3 +184,8 @@ export function makeOptionDefinitions(
     ];
     return beforeLang.concat(lang, afterLang, inference, afterInference);
 }
+
+export const transformDefinition = (def: OptionDefinition) => ({
+    ...def,
+    type: def.optionType === "boolean" ? Boolean : String,
+});

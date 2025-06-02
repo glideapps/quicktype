@@ -14,7 +14,10 @@ import {
 } from "quicktype-core";
 
 import { inferCLIOptions } from "./inference";
-import { makeOptionDefinitions } from "./optionDefinitions";
+import {
+    makeOptionDefinitions,
+    transformDefinition,
+} from "./optionDefinitions";
 import type { CLIOptions } from "./CLIOptions.types";
 
 // Parse the options in argv and split them into global options and renderer options,
@@ -27,13 +30,10 @@ function parseOptions(
 ): Partial<CLIOptions> {
     let opts: commandLineArgs.CommandLineOptions;
     try {
-        opts = commandLineArgs(
-            definitions.map((def) => ({
-                ...def,
-                type: def.optionType === "boolean" ? Boolean : String,
-            })),
-            { argv, partial },
-        );
+        opts = commandLineArgs(definitions.map(transformDefinition), {
+            argv,
+            partial,
+        });
     } catch (e) {
         assert(!partial, "Partial option parsing should not have failed");
         return messageError("DriverCLIOptionParsingFailed", {

@@ -12,6 +12,7 @@
         "pub": "script/publish.sh",
         "build": "npm run clean && npm run build --workspaces --if-present && tsc",
         "test": "script/test",
+        "test:cli": "vitest",
         "start": "script/watch",
         "clean": "rm -rf dist *~ packages/*/{dist,out}",
         "debug": "node --inspect-brk --max-old-space-size=4096 ./dist/index.js",
@@ -74,8 +75,6 @@
             }
         }
     },
-    "files": [
-        "dist"
-    ],
+    "files": ["dist"],
     "bin": "dist/index.js"
 }
