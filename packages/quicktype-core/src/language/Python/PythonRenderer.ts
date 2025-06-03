@@ -1,19 +1,38 @@
-import { arrayIntercalate, iterableFirst, mapSortBy, mapUpdateInto, setUnionInto } from "collection-utils";
+import {
+    arrayIntercalate,
+    iterableFirst,
+    mapSortBy,
+    mapUpdateInto,
+    setUnionInto,
+} from "collection-utils";
 
-import { ConvenienceRenderer, type ForbiddenWordsInfo } from "../../ConvenienceRenderer";
+import {
+    ConvenienceRenderer,
+    type ForbiddenWordsInfo,
+} from "../../ConvenienceRenderer";
 import { type Name, type Namer, funPrefixNamer } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
 import { type Sourcelike, modifySource } from "../../Source";
 import { stringEscape } from "../../support/Strings";
 import { defined, panic } from "../../support/Support";
-import { type TargetLanguage } from "../../TargetLanguage";
+import type { TargetLanguage } from "../../TargetLanguage";
 import { followTargetType } from "../../Transformers";
-import { type ClassProperty, ClassType, EnumType, type Type, UnionType } from "../../Type";
-import { matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
+import {
+    type ClassProperty,
+    ClassType,
+    EnumType,
+    type Type,
+    UnionType,
+} from "../../Type";
+import {
+    matchType,
+    nullableFromUnion,
+    removeNullFromUnion,
+} from "../../Type/TypeUtils";
 
 import { forbiddenPropertyNames, forbiddenTypeNames } from "./constants";
-import { type pythonOptions } from "./language";
+import type { pythonOptions } from "./language";
 import { classNameStyle, snakeNameStyle } from "./utils";
 
 export class PythonRenderer extends ConvenienceRenderer {
@@ -24,7 +43,7 @@ export class PythonRenderer extends ConvenienceRenderer {
     public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        protected readonly pyOptions: OptionValues<typeof pythonOptions>
+        protected readonly pyOptions: OptionValues<typeof pythonOptions>,
     ) {
         super(targetLanguage, renderContext);
     }
@@ -33,8 +52,14 @@ export class PythonRenderer extends ConvenienceRenderer {
         return forbiddenTypeNames;
     }
 
-    protected forbiddenForObjectProperties(_: ClassType, _classNamed: Name): ForbiddenWordsInfo {
-        return { names: forbiddenPropertyNames as unknown as string[], includeGlobalForbidden: false };
+    protected forbiddenForObjectProperties(
+        _: ClassType,
+        _classNamed: Name,
+    ): ForbiddenWordsInfo {
+        return {
+            names: forbiddenPropertyNames as unknown as string[],
+            includeGlobalForbidden: false,
+        };
     }
 
     protected makeNamedTypeNamer(): Namer {
@@ -42,7 +67,9 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected namerForObjectProperty(): Namer {
-        return funPrefixNamer("property", s => snakeNameStyle(s, false, this.pyOptions.nicePropertyNames));
+        return funPrefixNamer("property", (s) =>
+            snakeNameStyle(s, false, this.pyOptions.nicePropertyNames),
+        );
     }
 
     protected makeUnionMemberNamer(): null {
@@ -50,7 +77,9 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return funPrefixNamer("enum-case", s => snakeNameStyle(s, true, this.pyOptions.nicePropertyNames));
+        return funPrefixNamer("enum-case", (s) =>
+            snakeNameStyle(s, true, this.pyOptions.nicePropertyNames),
+        );
     }
 
     protected get commentLineStart(): string {
@@ -59,19 +88,21 @@ export class PythonRenderer extends ConvenienceRenderer {
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
         if (lines.length === 1) {
-            const docstring = modifySource(content => {
+            const docstring = modifySource((content) => {
                 if (content.endsWith('"')) {
                     return content.slice(0, -1) + '\\"';
                 }
 
                 return content;
             }, lines[0]);
-            this.emitComments([{ customLines: [docstring], lineStart: '"""', lineEnd: '"""' }]);
+            this.emitComments([
+                { customLines: [docstring], lineStart: '"""', lineEnd: '"""' },
+            ]);
         } else {
             this.emitCommentLines(lines, {
                 firstLineStart: '"""',
                 lineStart: "",
-                afterComment: '"""'
+                afterComment: '"""',
             });
         }
     }
@@ -101,7 +132,9 @@ export class PythonRenderer extends ConvenienceRenderer {
             // place, but right now we just make the type source and then throw it away.  It's
             // not a performance issue, so it's fine, I just bemoan this special case, and
             // potential others down the road.
-            mapUpdateInto(this.imports, module, s => (s ? setUnionInto(s, [name]) : new Set([name])));
+            mapUpdateInto(this.imports, module, (s) =>
+                s ? setUnionInto(s, [name]) : new Set([name]),
+            );
         }
 
         return name;
@@ -122,25 +155,38 @@ export class PythonRenderer extends ConvenienceRenderer {
 
         return matchType<Sourcelike>(
             actualType,
-            _anyType => this.withTyping("Any"),
-            _nullType => "None",
-            _boolType => "bool",
-            _integerType => "int",
-            _doubletype => "float",
-            _stringType => "str",
-            arrayType => [this.withTyping("List"), "[", this.pythonType(arrayType.items), "]"],
-            classType => this.namedType(classType),
-            mapType => [this.withTyping("Dict"), "[str, ", this.pythonType(mapType.values), "]"],
-            enumType => this.namedType(enumType),
-            unionType => {
+            (_anyType) => this.withTyping("Any"),
+            (_nullType) => "None",
+            (_boolType) => "bool",
+            (_integerType) => "int",
+            (_doubletype) => "float",
+            (_stringType) => "str",
+            (arrayType) => [
+                this.withTyping("List"),
+                "[",
+                this.pythonType(arrayType.items),
+                "]",
+            ],
+            (classType) => this.namedType(classType),
+            (mapType) => [
+                this.withTyping("Dict"),
+                "[str, ",
+                this.pythonType(mapType.values),
+                "]",
+            ],
+            (enumType) => this.namedType(enumType),
+            (unionType) => {
                 const [hasNull, nonNulls] = removeNullFromUnion(unionType);
-                const memberTypes = Array.from(nonNulls).map(m => this.pythonType(m));
+                const memberTypes = Array.from(nonNulls).map((m) =>
+                    this.pythonType(m),
+                );
 
                 if (hasNull !== null) {
-                    let rest: string[] = [];
+                    const rest: string[] = [];
                     if (
                         !this.getAlphabetizeProperties() &&
-                        (this.pyOptions.features.dataClasses || this.pyOptions.pydanticBaseModel) &&
+                        (this.pyOptions.features.dataClasses ||
+                            this.pyOptions.pydanticBaseModel) &&
                         _isRootTypeDef
                     ) {
                         // Only push "= None" if this is a root level type def
@@ -156,16 +202,27 @@ export class PythonRenderer extends ConvenienceRenderer {
                             "[Union[",
                             arrayIntercalate(", ", memberTypes),
                             "]]",
-                            ...rest
+                            ...rest,
                         ];
-                    } else {
-                        return [this.withTyping("Optional"), "[", defined(iterableFirst(memberTypes)), "]", ...rest];
                     }
-                } else {
-                    return [this.withTyping("Union"), "[", arrayIntercalate(", ", memberTypes), "]"];
+
+                    return [
+                        this.withTyping("Optional"),
+                        "[",
+                        defined(iterableFirst(memberTypes)),
+                        "]",
+                        ...rest,
+                    ];
                 }
+
+                return [
+                    this.withTyping("Union"),
+                    "[",
+                    arrayIntercalate(", ", memberTypes),
+                    "]",
+                ];
             },
-            transformedStringType => {
+            (transformedStringType) => {
                 if (transformedStringType.kind === "date-time") {
                     return this.withImport("datetime", "datetime");
                 }
@@ -174,21 +231,35 @@ export class PythonRenderer extends ConvenienceRenderer {
                     return this.withImport("uuid", "UUID");
                 }
 
-                return panic(`Transformed type ${transformedStringType.kind} not supported`);
-            }
+                return panic(
+                    `Transformed type ${transformedStringType.kind} not supported`,
+                );
+            },
         );
     }
 
     protected declarationLine(t: Type): Sourcelike {
         if (t instanceof ClassType) {
             if (this.pyOptions.pydanticBaseModel) {
-                return ["class ", this.nameForNamedType(t), "(", this.withImport("pydantic", "BaseModel"), "):"];
+                return [
+                    "class ",
+                    this.nameForNamedType(t),
+                    "(",
+                    this.withImport("pydantic", "BaseModel"),
+                    "):",
+                ];
             }
             return ["class ", this.nameForNamedType(t), ":"];
         }
 
         if (t instanceof EnumType) {
-            return ["class ", this.nameForNamedType(t), "(", this.withImport("enum", "Enum"), "):"];
+            return [
+                "class ",
+                this.nameForNamedType(t),
+                "(",
+                this.withImport("enum", "Enum"),
+                "):",
+            ];
         }
 
         return panic(`Can't declare type ${t.kind}`);
@@ -203,23 +274,33 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected emitClassMembers(t: ClassType): void {
-        if (this.pyOptions.features.dataClasses || this.pyOptions.pydanticBaseModel) return;
+        if (
+            this.pyOptions.features.dataClasses ||
+            this.pyOptions.pydanticBaseModel
+        )
+            return;
 
         const args: Sourcelike[] = [];
         this.forEachClassProperty(t, "none", (name, _, cp) => {
             args.push([name, this.typeHint(": ", this.pythonType(cp.type))]);
         });
         this.emitBlock(
-            ["def __init__(self, ", arrayIntercalate(", ", args), ")", this.typeHint(" -> None"), ":"],
+            [
+                "def __init__(self, ",
+                arrayIntercalate(", ", args),
+                ")",
+                this.typeHint(" -> None"),
+                ":",
+            ],
             () => {
                 if (args.length === 0) {
                     this.emitLine("pass");
                 } else {
-                    this.forEachClassProperty(t, "none", name => {
+                    this.forEachClassProperty(t, "none", (name) => {
                         this.emitLine("self.", name, " = ", name);
                     });
                 }
-            }
+            },
         );
     }
 
@@ -241,19 +322,29 @@ export class PythonRenderer extends ConvenienceRenderer {
 
     protected sortClassProperties(
         properties: ReadonlyMap<string, ClassProperty>,
-        propertyNames: ReadonlyMap<string, Name>
+        propertyNames: ReadonlyMap<string, Name>,
     ): ReadonlyMap<string, ClassProperty> {
-        if (this.pyOptions.features.dataClasses || this.pyOptions.pydanticBaseModel) {
+        if (
+            this.pyOptions.features.dataClasses ||
+            this.pyOptions.pydanticBaseModel
+        ) {
             return mapSortBy(properties, (p: ClassProperty) => {
-                return (p.type instanceof UnionType && nullableFromUnion(p.type) != null) || p.isOptional ? 1 : 0;
+                return (p.type instanceof UnionType &&
+                    nullableFromUnion(p.type) != null) ||
+                    p.isOptional
+                    ? 1
+                    : 0;
             });
-        } else {
-            return super.sortClassProperties(properties, propertyNames);
         }
+
+        return super.sortClassProperties(properties, propertyNames);
     }
 
     protected emitClass(t: ClassType): void {
-        if (this.pyOptions.features.dataClasses && !this.pyOptions.pydanticBaseModel) {
+        if (
+            this.pyOptions.features.dataClasses &&
+            !this.pyOptions.pydanticBaseModel
+        ) {
             this.emitLine("@", this.withImport("dataclasses", "dataclass"));
         }
 
@@ -262,10 +353,22 @@ export class PythonRenderer extends ConvenienceRenderer {
                 if (t.getProperties().size === 0) {
                     this.emitLine("pass");
                 } else {
-                    this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
-                        this.emitLine(name, this.typeHint(": ", this.pythonType(cp.type, true)));
-                        this.emitDescription(this.descriptionForClassProperty(t, jsonName));
-                    });
+                    this.forEachClassProperty(
+                        t,
+                        "none",
+                        (name, jsonName, cp) => {
+                            this.emitLine(
+                                name,
+                                this.typeHint(
+                                    ": ",
+                                    this.pythonType(cp.type, true),
+                                ),
+                            );
+                            this.emitDescription(
+                                this.descriptionForClassProperty(t, jsonName),
+                            );
+                        },
+                    );
                 }
 
                 this.ensureBlankLine();
@@ -285,7 +388,12 @@ export class PythonRenderer extends ConvenienceRenderer {
 
     protected emitImports(): void {
         this.imports.forEach((names, module) => {
-            this.emitLine("from ", module, " import ", Array.from(names).join(", "));
+            this.emitLine(
+                "from ",
+                module,
+                " import ",
+                Array.from(names).join(", "),
+            );
         });
     }
 
@@ -302,10 +410,10 @@ export class PythonRenderer extends ConvenienceRenderer {
             this.forEachNamedType(
                 ["interposing", 2],
                 (c: ClassType) => this.emitClass(c),
-                e => this.emitEnum(e),
-                _u => {
+                (e) => this.emitEnum(e),
+                (_u) => {
                     return;
-                }
+                },
             );
         });
 

@@ -2,9 +2,9 @@ import { arrayIntercalate } from "collection-utils";
 
 import { ConvenienceRenderer } from "../../ConvenienceRenderer";
 import { type Name, type Namer, funPrefixNamer } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
-import { type Sourcelike } from "../../Source";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
+import type { Sourcelike } from "../../Source";
 import { acronymStyle } from "../../support/Acronyms";
 import {
     allLowerWordStyle,
@@ -12,31 +12,36 @@ import {
     combineWords,
     firstUpperWordStyle,
     splitIntoWords,
-    utf16StringEscape
+    utf16StringEscape,
 } from "../../support/Strings";
 import { panic } from "../../support/Support";
-import { type TargetLanguage } from "../../TargetLanguage";
+import type { TargetLanguage } from "../../TargetLanguage";
 import {
     type ArrayType,
     type ClassProperty,
     type ClassType,
     type ObjectType,
     PrimitiveType,
-    type Type
+    type Type,
 } from "../../Type";
-import { directlyReachableSingleNamedType, matchType } from "../../TypeUtils";
+import {
+    directlyReachableSingleNamedType,
+    matchType,
+} from "../../Type/TypeUtils";
 import { isES3IdentifierStart } from "../JavaScript/unicodeMaps";
 import { legalizeName } from "../JavaScript/utils";
 
-import { type javaScriptPropTypesOptions } from "./language";
+import type { javaScriptPropTypesOptions } from "./language";
 
-const identityNamingFunction = funPrefixNamer("properties", s => s);
+const identityNamingFunction = funPrefixNamer("properties", (s) => s);
 
 export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
     public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        private readonly _jsOptions: OptionValues<typeof javaScriptPropTypesOptions>
+        private readonly _jsOptions: OptionValues<
+            typeof javaScriptPropTypesOptions
+        >,
     ) {
         super(targetLanguage, renderContext);
     }
@@ -52,12 +57,12 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
             upper ? (s): string => capitalize(acronyms(s)) : allLowerWordStyle,
             acronyms,
             "",
-            isES3IdentifierStart
+            isES3IdentifierStart,
         );
     }
 
     protected makeNamedTypeNamer(): Namer {
-        return funPrefixNamer("types", s => this.nameStyle(s, true));
+        return funPrefixNamer("types", (s) => this.nameStyle(s, true));
     }
 
     protected namerForObjectProperty(): Namer {
@@ -69,7 +74,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return funPrefixNamer("enum-cases", s => this.nameStyle(s, false));
+        return funPrefixNamer("enum-cases", (s) => this.nameStyle(s, false));
     }
 
     protected namedTypeToNameForTopLevel(type: Type): Type | undefined {
@@ -81,7 +86,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         className: Name,
         p: ClassProperty,
         jsonName: string,
-        _assignedName: string | undefined
+        _assignedName: string | undefined,
     ): Name | undefined {
         // Ignore the assigned name
         return super.makeNameForProperty(c, className, p, jsonName, undefined);
@@ -94,25 +99,33 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
 
         const match = matchType<Sourcelike>(
             t,
-            _anyType => "PropTypes.any",
-            _nullType => "PropTypes.any",
-            _boolType => "PropTypes.bool",
-            _integerType => "PropTypes.number",
-            _doubleType => "PropTypes.number",
-            _stringType => "PropTypes.string",
-            arrayType => ["PropTypes.arrayOf(", this.typeMapTypeFor(arrayType.items, false), ")"],
-            _classType => panic("Should already be handled."),
-            _mapType => "PropTypes.object",
-            _enumType => panic("Should already be handled."),
-            unionType => {
-                const children = Array.from(unionType.getChildren()).map((type: Type) =>
-                    this.typeMapTypeFor(type, false)
+            (_anyType) => "PropTypes.any",
+            (_nullType) => "PropTypes.any",
+            (_boolType) => "PropTypes.bool",
+            (_integerType) => "PropTypes.number",
+            (_doubleType) => "PropTypes.number",
+            (_stringType) => "PropTypes.string",
+            (arrayType) => [
+                "PropTypes.arrayOf(",
+                this.typeMapTypeFor(arrayType.items, false),
+                ")",
+            ],
+            (_classType) => panic("Should already be handled."),
+            (_mapType) => "PropTypes.object",
+            (_enumType) => panic("Should already be handled."),
+            (unionType) => {
+                const children = Array.from(unionType.getChildren()).map(
+                    (type: Type) => this.typeMapTypeFor(type, false),
                 );
-                return ["PropTypes.oneOfType([", ...arrayIntercalate(", ", children), "])"];
+                return [
+                    "PropTypes.oneOfType([",
+                    ...arrayIntercalate(", ", children),
+                    "])",
+                ];
             },
-            _transformedStringType => {
+            (_transformedStringType) => {
                 return "PropTypes.string";
-            }
+            },
         );
 
         if (required) {
@@ -126,12 +139,15 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         return this.typeMapTypeFor(p.type);
     }
 
-    private importStatement(lhs: Sourcelike, moduleName: Sourcelike): Sourcelike {
+    private importStatement(
+        lhs: Sourcelike,
+        moduleName: Sourcelike,
+    ): Sourcelike {
         if (this._jsOptions.moduleSystem) {
             return ["import ", lhs, " from ", moduleName, ";"];
-        } else {
-            return ["const ", lhs, " = require(", moduleName, ");"];
         }
+
+        return ["const ", lhs, " = require(", moduleName, ");"];
     }
 
     protected emitUsageComments(): void {
@@ -148,13 +164,17 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
                 "",
                 "MyComponent.propTypes = {",
                 "  input: MyShape",
-                "};"
+                "};",
             ],
-            { lineStart: "// " }
+            { lineStart: "// " },
         );
     }
 
-    protected emitBlock(source: Sourcelike, end: Sourcelike, emit: () => void): void {
+    protected emitBlock(
+        source: Sourcelike,
+        end: Sourcelike,
+        emit: () => void,
+    ): void {
         this.emitLine(source, "{");
         this.indent(emit);
         this.emitLine("}", end);
@@ -169,7 +189,13 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         if (this._jsOptions.moduleSystem) {
             this.emitLine("export const ", name, " = ", value, ";");
         } else {
-            this.emitLine("module.exports = exports = { ", name, ": ", value, " };");
+            this.emitLine(
+                "module.exports = exports = { ",
+                name,
+                ": ",
+                value,
+                " };",
+            );
         }
     }
 
@@ -182,15 +208,25 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
 
         this.forEachEnum("none", (enumType, enumName) => {
             const options: Sourcelike = [];
-            this.forEachEnumCase(enumType, "none", (name: Name, _jsonName, _position) => {
-                options.push("'");
-                options.push(name);
-                options.push("'");
-                options.push(", ");
-            });
+            this.forEachEnumCase(
+                enumType,
+                "none",
+                (name: Name, _jsonName, _position) => {
+                    options.push("'");
+                    options.push(name);
+                    options.push("'");
+                    options.push(", ");
+                },
+            );
             options.pop();
 
-            this.emitLine(["const _", enumName, " = PropTypes.oneOfType([", ...options, "]);"]);
+            this.emitLine([
+                "const _",
+                enumName,
+                " = PropTypes.oneOfType([",
+                ...options,
+                "]);",
+            ]);
         });
 
         const order: number[] = [];
@@ -208,14 +244,14 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
 
             // pull out all names
             const source = mapValue[index];
-            const names = source.filter(value => value as Name);
+            const names = source.filter((value) => value as Name);
 
             // must be behind all these names
-            names.forEach(name => {
+            names.forEach((name) => {
                 const depName = name;
 
                 // find this name's ordinal, if it has already been added
-                order.forEach(orderItem => {
+                order.forEach((orderItem) => {
                     const depIndex = orderItem;
                     if (mapKey[depIndex] === depName) {
                         // this is the index of the dependency, so make sure we come after it
@@ -229,7 +265,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         });
 
         // now emit ordered source
-        order.forEach(i => this.emitGatheredSource(mapValue[i]));
+        order.forEach((i) => this.emitGatheredSource(mapValue[i]));
 
         // now emit top levels
         this.forEachTopLevel("none", (type, name) => {
@@ -239,7 +275,11 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
             } else {
                 if (type.kind === "array") {
                     this.ensureBlankLine();
-                    this.emitExport(name, ["PropTypes.arrayOf(", this.typeMapTypeFor((type as ArrayType).items), ")"]);
+                    this.emitExport(name, [
+                        "PropTypes.arrayOf(",
+                        this.typeMapTypeFor((type as ArrayType).items),
+                        ")",
+                    ]);
                 } else {
                     this.ensureBlankLine();
                     this.emitExport(name, ["_", name]);
@@ -253,7 +293,12 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         this.emitLine("_", name, " = PropTypes.shape({");
         this.indent(() => {
             this.forEachClassProperty(t, "none", (_, jsonName, property) => {
-                this.emitLine(`"${utf16StringEscape(jsonName)}"`, ": ", this.typeMapTypeForProperty(property), ",");
+                this.emitLine(
+                    `"${utf16StringEscape(jsonName)}"`,
+                    ": ",
+                    this.typeMapTypeForProperty(property),
+                    ",",
+                );
             });
         });
         this.emitLine("});");

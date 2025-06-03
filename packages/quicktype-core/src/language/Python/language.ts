@@ -1,11 +1,20 @@
 import { iterableSome } from "collection-utils";
 
-import { type RenderContext } from "../../Renderer";
-import { BooleanOption, EnumOption, getOptionValues } from "../../RendererOptions";
+import type { RenderContext } from "../../Renderer";
+import {
+    BooleanOption,
+    EnumOption,
+    getOptionValues,
+} from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type PrimitiveStringTypeKind, type TransformedStringTypeKind, type Type, UnionType } from "../../Type";
-import { type StringTypeMapping } from "../../TypeBuilder";
-import { type FixMeOptionsType } from "../../types";
+import {
+    type PrimitiveStringTypeKind,
+    type TransformedStringTypeKind,
+    type Type,
+    UnionType,
+} from "../../Type";
+import type { StringTypeMapping } from "../../Type/TypeBuilderUtils";
+import type { LanguageName, RendererOptions } from "../../types";
 
 import { JSONPythonRenderer } from "./JSONPythonRenderer";
 import { PythonRenderer } from "./PythonRenderer";
@@ -22,18 +31,32 @@ export const pythonOptions = {
         {
             "3.5": { typeHints: false, dataClasses: false },
             "3.6": { typeHints: true, dataClasses: false },
-            "3.7": { typeHints: true, dataClasses: true }
+            "3.7": { typeHints: true, dataClasses: true },
         },
-        "3.6"
+        "3.6",
     ),
     justTypes: new BooleanOption("just-types", "Classes only", false),
-    nicePropertyNames: new BooleanOption("nice-property-names", "Transform property names to be Pythonic", true),
-    pydanticBaseModel: new BooleanOption("pydantic-base-model", "Uses pydantic BaseModel", false)
+    nicePropertyNames: new BooleanOption(
+        "nice-property-names",
+        "Transform property names to be Pythonic",
+        true,
+    ),
+    pydanticBaseModel: new BooleanOption(
+        "pydantic-base-model",
+        "Uses pydantic BaseModel",
+        false,
+    ),
 };
 
-export const pythonLanguageConfig = { displayName: "Python", names: ["python", "py"], extension: "py" } as const;
+export const pythonLanguageConfig = {
+    displayName: "Python",
+    names: ["python", "py"],
+    extension: "py",
+} as const;
 
-export class PythonTargetLanguage extends TargetLanguage<typeof pythonLanguageConfig> {
+export class PythonTargetLanguage extends TargetLanguage<
+    typeof pythonLanguageConfig
+> {
     public constructor() {
         super(pythonLanguageConfig);
     }
@@ -43,7 +66,8 @@ export class PythonTargetLanguage extends TargetLanguage<typeof pythonLanguageCo
     }
 
     public get stringTypeMapping(): StringTypeMapping {
-        const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
+        const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> =
+            new Map();
         const dateTimeType = "date-time";
         mapping.set("date", dateTimeType);
         mapping.set("time", dateTimeType);
@@ -64,18 +88,23 @@ export class PythonTargetLanguage extends TargetLanguage<typeof pythonLanguageCo
 
     public needsTransformerForType(t: Type): boolean {
         if (t instanceof UnionType) {
-            return iterableSome(t.members, m => this.needsTransformerForType(m));
+            return iterableSome(t.members, (m) =>
+                this.needsTransformerForType(m),
+            );
         }
 
         return t.kind === "integer-string" || t.kind === "bool-string";
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): PythonRenderer {
+    protected makeRenderer<Lang extends LanguageName = "python">(
+        renderContext: RenderContext,
+        untypedOptionValues: RendererOptions<Lang>,
+    ): PythonRenderer {
         const options = getOptionValues(pythonOptions, untypedOptionValues);
         if (options.justTypes) {
             return new PythonRenderer(this, renderContext, options);
-        } else {
-            return new JSONPythonRenderer(this, renderContext, options);
         }
+
+        return new JSONPythonRenderer(this, renderContext, options);
     }
 }

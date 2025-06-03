@@ -50,5 +50,5 @@ export const keywords = [
     "sscanf",
     "switch",
     "typeof",
-    "global"
+    "global",
 ] as const;

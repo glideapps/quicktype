@@ -1,7 +1,12 @@
-import { type RenderContext } from "../../Renderer";
-import { BooleanOption, EnumOption, StringOption, getOptionValues } from "../../RendererOptions";
+import type { RenderContext } from "../../Renderer";
+import {
+    BooleanOption,
+    EnumOption,
+    StringOption,
+    getOptionValues,
+} from "../../RendererOptions";
 import { TargetLanguage } from "../../TargetLanguage";
-import { type FixMeOptionsType } from "../../types";
+import type { LanguageName, RendererOptions } from "../../types";
 
 import { RubyRenderer } from "./RubyRenderer";
 import { Strictness } from "./utils";
@@ -14,20 +19,28 @@ export const rubyOptions = {
         {
             strict: Strictness.Strict,
             coercible: Strictness.Coercible,
-            none: Strictness.None
+            none: Strictness.None,
         } as const,
-        "strict"
+        "strict",
     ),
-    namespace: new StringOption("namespace", "Specify a wrapping Namespace", "NAME", "", "secondary")
+    namespace: new StringOption(
+        "namespace",
+        "Specify a wrapping Namespace",
+        "NAME",
+        "",
+        "secondary",
+    ),
 };
 
 export const rubyLanguageConfig = {
     displayName: "Ruby",
     names: ["ruby"],
-    extension: "rb"
+    extension: "rb",
 } as const;
 
-export class RubyTargetLanguage extends TargetLanguage<typeof rubyLanguageConfig> {
+export class RubyTargetLanguage extends TargetLanguage<
+    typeof rubyLanguageConfig
+> {
     public constructor() {
         super(rubyLanguageConfig);
     }
@@ -44,7 +57,14 @@ export class RubyTargetLanguage extends TargetLanguage<typeof rubyLanguageConfig
         return "  ";
     }
 
-    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: FixMeOptionsType): RubyRenderer {
-        return new RubyRenderer(this, renderContext, getOptionValues(rubyOptions, untypedOptionValues));
+    protected makeRenderer<Lang extends LanguageName = "ruby">(
+        renderContext: RenderContext,
+        untypedOptionValues: RendererOptions<Lang>,
+    ): RubyRenderer {
+        return new RubyRenderer(
+            this,
+            renderContext,
+            getOptionValues(rubyOptions, untypedOptionValues),
+        );
     }
 }

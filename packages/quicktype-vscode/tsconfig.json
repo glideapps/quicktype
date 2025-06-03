@@ -3,10 +3,7 @@
         "module": "commonjs",
         "target": "es6",
         "outDir": "out",
-        "lib": [
-            "es6",
-            "esnext.asynciterable"
-        ],
+        "lib": ["es6", "esnext.asynciterable"],
         "sourceMap": true,
         "rootDir": ".",
         "allowJs": false,
@@ -15,8 +12,5 @@
         "noUnusedParameters": true,
         "esModuleInterop": true
     },
-    "exclude": [
-        "node_modules",
-        ".vscode-test"
-    ]
+    "exclude": ["node_modules", ".vscode-test"]
 }

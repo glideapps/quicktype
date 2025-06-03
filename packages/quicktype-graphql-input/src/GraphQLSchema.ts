@@ -20,7 +20,7 @@ export enum __DirectiveLocation {
     ENUM = "ENUM", // Location adjacent to an enum definition.
     ENUM_VALUE = "ENUM_VALUE", // Location adjacent to an enum value definition.
     INPUT_OBJECT = "INPUT_OBJECT", // Location adjacent to an input object type definition.
-    INPUT_FIELD_DEFINITION = "INPUT_FIELD_DEFINITION" // Location adjacent to an input object field definition.
+    INPUT_FIELD_DEFINITION = "INPUT_FIELD_DEFINITION", // Location adjacent to an input object field definition.
 }
 
 // An enum describing what kind of type a given `__Type` is.
@@ -32,7 +32,7 @@ export enum TypeKind {
     ENUM = "ENUM", // Indicates this type is an enum. `enumValues` is a valid field.
     INPUT_OBJECT = "INPUT_OBJECT", // Indicates this type is an input object. `inputFields` is a valid field.
     LIST = "LIST", // Indicates this type is a list. `ofType` is a valid field.
-    NON_NULL = "NON_NULL" // Indicates this type is a non-null. `ofType` is a valid field.
+    NON_NULL = "NON_NULL", // Indicates this type is a non-null. `ofType` is a valid field.
 }
 
 export type GraphQLSchema = {

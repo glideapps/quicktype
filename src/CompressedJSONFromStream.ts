@@ -1,4 +1,4 @@
-import { type Readable } from "readable-stream";
+import type { Readable } from "readable-stream";
 import { Parser } from "stream-json";
 
 import { CompressedJSON, type Value } from "quicktype-core";
@@ -15,18 +15,21 @@ const methodMap: { [name: string]: string } = {
     stringValue: "commitString",
     nullValue: "commitNull",
     trueValue: "handleTrueValue",
-    falseValue: "handleFalseValue"
+    falseValue: "handleFalseValue",
 };
 
 export class CompressedJSONFromStream extends CompressedJSON<Readable> {
     public async parse(readStream: Readable): Promise<Value> {
         const combo = new Parser({ packKeys: true, packStrings: true });
-        combo.on("data", (item: { name: string; value: string | undefined }) => {
-            if (typeof methodMap[item.name] === "string") {
-                // @ts-expect-error FIXME: strongly type this
-                this[methodMap[item.name]](item.value);
-            }
-        });
+        combo.on(
+            "data",
+            (item: { name: string; value: string | undefined }) => {
+                if (typeof methodMap[item.name] === "string") {
+                    // @ts-expect-error FIXME: strongly type this
+                    this[methodMap[item.name]](item.value);
+                }
+            },
+        );
         const promise = new Promise<Value>((resolve, reject) => {
             combo.on("end", () => {
                 resolve(this.finish());

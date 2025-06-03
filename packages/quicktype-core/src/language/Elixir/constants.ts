@@ -74,7 +74,7 @@ export const forbiddenModuleNames = [
     "UndefinedFunctionError",
     "UnicodeConversionError",
     "Version",
-    "WithClauseError"
+    "WithClauseError",
 ] as const;
 
 export const reservedWords = [
@@ -97,5 +97,5 @@ export const reservedWords = [
     "catch",
     "rescue",
     "after",
-    "else"
+    "else",
 ] as const;

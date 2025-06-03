@@ -2,7 +2,7 @@ import { assert, panic } from "./support/Support";
 
 export function breakCycles<T>(
     outEdges: number[][],
-    chooseBreaker: (cycle: number[]) => [number, T]
+    chooseBreaker: (cycle: number[]) => [number, T],
 ): Array<[number, T]> {
     const numNodes = outEdges.length;
     const inEdges: number[][] = [];
@@ -59,7 +59,10 @@ export function breakCycles<T>(
                 continue;
             }
 
-            assert(inDegree[i] === 0 || outDegree[i] === 0, "Can't have nodes in the worklist with in and out edges");
+            assert(
+                inDegree[i] === 0 || outDegree[i] === 0,
+                "Can't have nodes in the worklist with in and out edges",
+            );
 
             removeNode(i);
             continue;
@@ -83,7 +86,7 @@ export function breakCycles<T>(
             // We could count the number of reachable nodes for all nodes in the graph,
             // and then pick one of the nodes with the lowest number, which would pick
             // the dependee cycle.
-            const maybeEdge = outEdges[n].find(x => !done[x]);
+            const maybeEdge = outEdges[n].find((x) => !done[x]);
             if (maybeEdge === undefined) {
                 return panic("Presumed cycle is not a cycle");
             }

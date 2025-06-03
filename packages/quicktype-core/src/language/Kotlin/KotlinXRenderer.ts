@@ -1,13 +1,18 @@
-import { type Name } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
+import type { Name } from "../../Naming";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
 import { type Sourcelike, modifySource } from "../../Source";
 import { camelCase } from "../../support/Strings";
-import { type TargetLanguage } from "../../TargetLanguage";
-import { type ArrayType, type EnumType, type MapType, type Type } from "../../Type";
+import type { TargetLanguage } from "../../TargetLanguage";
+import type {
+    ArrayType,
+    EnumType,
+    MapType,
+    Type,
+} from "../../Type";
 
 import { KotlinRenderer } from "./KotlinRenderer";
-import { type kotlinOptions } from "./language";
+import type { kotlinOptions } from "./language";
 import { stringEscape } from "./utils";
 
 /**
@@ -18,7 +23,7 @@ export class KotlinXRenderer extends KotlinRenderer {
     public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        _kotlinOptions: OptionValues<typeof kotlinOptions>
+        _kotlinOptions: OptionValues<typeof kotlinOptions>,
     ) {
         super(targetLanguage, renderContext, _kotlinOptions);
     }
@@ -27,7 +32,11 @@ export class KotlinXRenderer extends KotlinRenderer {
         return ["JsonElement", optional];
     }
 
-    protected arrayType(arrayType: ArrayType, withIssues = false, noOptional = false): Sourcelike {
+    protected arrayType(
+        arrayType: ArrayType,
+        withIssues = false,
+        noOptional = false,
+    ): Sourcelike {
         const valType = this.kotlinType(arrayType.items, withIssues, true);
         const name = this.sourcelikeToString(valType);
         if (name === "JsonObject" || name === "JsonElement") {
@@ -37,7 +46,11 @@ export class KotlinXRenderer extends KotlinRenderer {
         return super.arrayType(arrayType, withIssues, noOptional);
     }
 
-    protected mapType(mapType: MapType, withIssues = false, noOptional = false): Sourcelike {
+    protected mapType(
+        mapType: MapType,
+        withIssues = false,
+        noOptional = false,
+    ): Sourcelike {
         const valType = this.kotlinType(mapType.values, withIssues, true);
         const name = this.sourcelikeToString(valType);
         if (name === "JsonObject" || name === "JsonElement") {
@@ -62,15 +75,21 @@ export class KotlinXRenderer extends KotlinRenderer {
     }
 
     protected emitUsageHeader(): void {
-        this.emitLine("// To parse the JSON, install kotlin's serialization plugin and do:");
+        this.emitLine(
+            "// To parse the JSON, install kotlin's serialization plugin and do:",
+        );
         this.emitLine("//");
         const table: Sourcelike[][] = [];
-        table.push(["// val ", "json", " = Json { allowStructuredMapKeys = true }"]);
+        table.push([
+            "// val ",
+            "json",
+            " = Json { allowStructuredMapKeys = true }",
+        ]);
         this.forEachTopLevel("none", (_, name) => {
             table.push([
                 "// val ",
                 modifySource(camelCase, name),
-                ` = json.parse(${this.sourcelikeToString(name)}.serializer(), jsonString)`
+                ` = json.parse(${this.sourcelikeToString(name)}.serializer(), jsonString)`,
             ]);
         });
         this.emitTable(table);
@@ -89,7 +108,12 @@ export class KotlinXRenderer extends KotlinRenderer {
         this.emitLine("@Serializable");
     }
 
-    protected renameAttribute(name: Name, jsonName: string, _required: boolean, meta: Array<() => void>): void {
+    protected renameAttribute(
+        name: Name,
+        jsonName: string,
+        _required: boolean,
+        meta: Array<() => void>,
+    ): void {
         const rename = this._rename(name, jsonName);
         if (rename !== undefined) {
             meta.push(() => this.emitLine(rename));
@@ -114,7 +138,12 @@ export class KotlinXRenderer extends KotlinRenderer {
             let count = e.cases.size;
             this.forEachEnumCase(e, "none", (name, json) => {
                 const jsonEnum = stringEscape(json);
-                this.emitLine(`@SerialName("${jsonEnum}") `, name, `("${jsonEnum}")`, --count === 0 ? ";" : ",");
+                this.emitLine(
+                    `@SerialName("${jsonEnum}") `,
+                    name,
+                    `("${jsonEnum}")`,
+                    --count === 0 ? ";" : ",",
+                );
             });
         });
     }

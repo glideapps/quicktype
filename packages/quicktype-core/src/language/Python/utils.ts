@@ -7,7 +7,7 @@ import {
     firstUpperWordStyle,
     originalWord,
     splitIntoWords,
-    utf16LegalizeCharacters
+    utf16LegalizeCharacters,
 } from "../../support/Strings";
 
 function isNormalizedStartCharacter3(utf16Unit: number): boolean {
@@ -56,7 +56,7 @@ export function classNameStyle(original: string): string {
         allUpperWordStyle,
         allUpperWordStyle,
         "",
-        isStartCharacter3
+        isStartCharacter3,
     );
 }
 
@@ -68,9 +68,22 @@ function getWordStyle(uppercase: boolean, forceSnakeNameStyle: boolean) {
     return uppercase ? allUpperWordStyle : allLowerWordStyle;
 }
 
-export function snakeNameStyle(original: string, uppercase: boolean, forceSnakeNameStyle: boolean): string {
+export function snakeNameStyle(
+    original: string,
+    uppercase: boolean,
+    forceSnakeNameStyle: boolean,
+): string {
     const wordStyle = getWordStyle(uppercase, forceSnakeNameStyle);
     const separator = forceSnakeNameStyle ? "_" : "";
     const words = splitIntoWords(original);
-    return combineWords(words, legalizeName3, wordStyle, wordStyle, wordStyle, wordStyle, separator, isStartCharacter3);
+    return combineWords(
+        words,
+        legalizeName3,
+        wordStyle,
+        wordStyle,
+        wordStyle,
+        wordStyle,
+        separator,
+        isStartCharacter3,
+    );
 }

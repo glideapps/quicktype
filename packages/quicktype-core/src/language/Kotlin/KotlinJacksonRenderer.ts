@@ -1,12 +1,12 @@
 import { arrayIntercalate, iterableSome } from "collection-utils";
 
-import { type Name } from "../../Naming";
-import { type RenderContext } from "../../Renderer";
-import { type OptionValues } from "../../RendererOptions";
+import type { Name } from "../../Naming";
+import type { RenderContext } from "../../Renderer";
+import type { OptionValues } from "../../RendererOptions";
 import { type Sourcelike, modifySource } from "../../Source";
 import { camelCase } from "../../support/Strings";
 import { mustNotHappen } from "../../support/Support";
-import { type TargetLanguage } from "../../TargetLanguage";
+import type { TargetLanguage } from "../../TargetLanguage";
 import {
     type ArrayType,
     ClassType,
@@ -14,19 +14,19 @@ import {
     type MapType,
     type PrimitiveType,
     type Type,
-    UnionType
+    UnionType,
 } from "../../Type";
-import { matchType, nullableFromUnion } from "../../TypeUtils";
+import { matchType, nullableFromUnion } from "../../Type/TypeUtils";
 
 import { KotlinRenderer } from "./KotlinRenderer";
-import { type kotlinOptions } from "./language";
+import type { kotlinOptions } from "./language";
 import { stringEscape } from "./utils";
 
 export class KotlinJacksonRenderer extends KotlinRenderer {
     public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        _kotlinOptions: OptionValues<typeof kotlinOptions>
+        _kotlinOptions: OptionValues<typeof kotlinOptions>,
     ) {
         super(targetLanguage, renderContext, _kotlinOptions);
     }
@@ -34,29 +34,37 @@ export class KotlinJacksonRenderer extends KotlinRenderer {
     private unionMemberJsonValueGuard(t: Type, _e: Sourcelike): Sourcelike {
         return matchType<Sourcelike>(
             t,
-            _anyType => "is Any",
-            _nullType => "null",
-            _boolType => "is BooleanNode",
-            _integerType => "is IntNode, is LongNode",
-            _doubleType => "is DoubleNode",
-            _stringType => "is TextNode",
-            _arrayType => "is ArrayNode",
+            (_anyType) => "is Any",
+            (_nullType) => "null",
+            (_boolType) => "is BooleanNode",
+            (_integerType) => "is IntNode, is LongNode",
+            (_doubleType) => "is DoubleNode",
+            (_stringType) => "is TextNode",
+            (_arrayType) => "is ArrayNode",
             // These could be stricter, but for now we don't allow maps
             // and objects in the same union
-            _classType => "is ObjectNode",
-            _mapType => "is ObjectNode",
+            (_classType) => "is ObjectNode",
+            (_mapType) => "is ObjectNode",
             // This could be stricter, but for now we don't allow strings
             // and enums in the same union
-            _enumType => "is TextNode",
-            _unionType => mustNotHappen()
+            (_enumType) => "is TextNode",
+            (_unionType) => mustNotHappen(),
         );
     }
 
     protected emitUsageHeader(): void {
-        this.emitLine("// To parse the JSON, install jackson-module-kotlin and do:");
+        this.emitLine(
+            "// To parse the JSON, install jackson-module-kotlin and do:",
+        );
         this.emitLine("//");
         this.forEachTopLevel("none", (_, name) => {
-            this.emitLine("//   val ", modifySource(camelCase, name), " = ", name, ".fromJson(jsonString)");
+            this.emitLine(
+                "//   val ",
+                modifySource(camelCase, name),
+                " = ",
+                name,
+                ".fromJson(jsonString)",
+            );
         });
     }
 
@@ -74,17 +82,17 @@ import com.fasterxml.jackson.module.kotlin.*`);
 
         const hasUnions = iterableSome(
             this.typeGraph.allNamedTypes(),
-            t => t instanceof UnionType && nullableFromUnion(t) === null
+            (t) => t instanceof UnionType && nullableFromUnion(t) === null,
         );
         const hasEmptyObjects = iterableSome(
             this.typeGraph.allNamedTypes(),
-            c => c instanceof ClassType && c.getProperties().size === 0
+            (c) => c instanceof ClassType && c.getProperties().size === 0,
         );
         if (hasUnions || this.haveEnums || hasEmptyObjects) {
             this.emitGenericConverter();
         }
 
-        let converters: Sourcelike[][] = [];
+        const converters: Sourcelike[][] = [];
         // if (hasEmptyObjects) {
         //     converters.push([["convert(JsonNode::class,"], [" { it },"], [" { writeValueAsString(it) })"]]);
         // }
@@ -92,22 +100,26 @@ import com.fasterxml.jackson.module.kotlin.*`);
             converters.push([
                 ["convert(", name, "::class,"],
                 [" { ", name, ".fromValue(it.asText()) },"],
-                [' { "\\"${it.value}\\"" })']
+                [' { "\\"${it.value}\\"" })'],
             ]);
         });
         this.forEachUnion("none", (_, name) => {
             converters.push([
                 ["convert(", name, "::class,"],
                 [" { ", name, ".fromJson(it) },"],
-                [" { it.toJson() }, true)"]
+                [" { it.toJson() }, true)"],
             ]);
         });
 
         this.ensureBlankLine();
         this.emitLine("val mapper = jacksonObjectMapper().apply {");
         this.indent(() => {
-            this.emitLine("propertyNamingStrategy = PropertyNamingStrategy.LOWER_CAMEL_CASE");
-            this.emitLine("setSerializationInclusion(JsonInclude.Include.NON_NULL)");
+            this.emitLine(
+                "propertyNamingStrategy = PropertyNamingStrategy.LOWER_CAMEL_CASE",
+            );
+            this.emitLine(
+                "setSerializationInclusion(JsonInclude.Include.NON_NULL)",
+            );
         });
 
         if (converters.length > 0) {
@@ -120,14 +132,26 @@ import com.fasterxml.jackson.module.kotlin.*`);
     protected emitTopLevelArray(t: ArrayType, name: Name): void {
         const elementType = this.kotlinType(t.items);
         this.emitBlock(
-            ["class ", name, "(elements: Collection<", elementType, ">) : ArrayList<", elementType, ">(elements)"],
+            [
+                "class ",
+                name,
+                "(elements: Collection<",
+                elementType,
+                ">) : ArrayList<",
+                elementType,
+                ">(elements)",
+            ],
             () => {
                 this.emitLine("fun toJson() = mapper.writeValueAsString(this)");
                 this.ensureBlankLine();
                 this.emitBlock("companion object", () => {
-                    this.emitLine("fun fromJson(json: String) = mapper.readValue<", name, ">(json)");
+                    this.emitLine(
+                        "fun fromJson(json: String) = mapper.readValue<",
+                        name,
+                        ">(json)",
+                    );
                 });
-            }
+            },
         );
     }
 
@@ -141,15 +165,19 @@ import com.fasterxml.jackson.module.kotlin.*`);
                 elementType,
                 ">) : HashMap<String, ",
                 elementType,
-                ">(elements)"
+                ">(elements)",
             ],
             () => {
                 this.emitLine("fun toJson() = mapper.writeValueAsString(this)");
                 this.ensureBlankLine();
                 this.emitBlock("companion object", () => {
-                    this.emitLine("fun fromJson(json: String) = mapper.readValue<", name, ">(json)");
+                    this.emitLine(
+                        "fun fromJson(json: String) = mapper.readValue<",
+                        name,
+                        ">(json)",
+                    );
                 });
-            }
+            },
         );
     }
 
@@ -157,7 +185,7 @@ import com.fasterxml.jackson.module.kotlin.*`);
         propName: Name,
         jsonName: string,
         required: boolean,
-        ignore = false
+        ignore = false,
     ): Sourcelike | undefined {
         const escapedName = stringEscape(jsonName);
         const namesDiffer = this.sourcelikeToString(propName) !== escapedName;
@@ -166,7 +194,7 @@ import com.fasterxml.jackson.module.kotlin.*`);
         const propertyOpts: Sourcelike[] = [];
 
         if (namesDiffer || isPrefixBool) {
-            propertyOpts.push('"' + escapedName + '"');
+            propertyOpts.push(`"${escapedName}"`);
         }
 
         if (required) {
@@ -174,8 +202,16 @@ import com.fasterxml.jackson.module.kotlin.*`);
         }
 
         if (propertyOpts.length > 0) {
-            properties.push(["@get:JsonProperty(", arrayIntercalate(", ", propertyOpts), ")"]);
-            properties.push(["@field:JsonProperty(", arrayIntercalate(", ", propertyOpts), ")"]);
+            properties.push([
+                "@get:JsonProperty(",
+                arrayIntercalate(", ", propertyOpts),
+                ")",
+            ]);
+            properties.push([
+                "@field:JsonProperty(",
+                arrayIntercalate(", ", propertyOpts),
+                ")",
+            ]);
         }
 
         if (ignore) {
@@ -193,13 +229,20 @@ import com.fasterxml.jackson.module.kotlin.*`);
     }
 
     protected emitClassDefinitionMethods(c: ClassType, className: Name): void {
-        const isTopLevel = iterableSome(this.topLevels, ([_, top]) => top === c);
+        const isTopLevel = iterableSome(
+            this.topLevels,
+            ([_, top]) => top === c,
+        );
         if (isTopLevel) {
             this.emitBlock(")", () => {
                 this.emitLine("fun toJson() = mapper.writeValueAsString(this)");
                 this.ensureBlankLine();
                 this.emitBlock("companion object", () => {
-                    this.emitLine("fun fromJson(json: String) = mapper.readValue<", className, ">(json)");
+                    this.emitLine(
+                        "fun fromJson(json: String) = mapper.readValue<",
+                        className,
+                        ">(json)",
+                    );
                 });
             });
         } else {
@@ -207,7 +250,12 @@ import com.fasterxml.jackson.module.kotlin.*`);
         }
     }
 
-    protected renameAttribute(name: Name, jsonName: string, required: boolean, meta: Array<() => void>): void {
+    protected renameAttribute(
+        name: Name,
+        jsonName: string,
+        required: boolean,
+        meta: Array<() => void>,
+    ): void {
         const rename = this.jacksonRenameAttribute(name, jsonName, required);
         if (rename !== undefined) {
             meta.push(() => this.emitLine(rename));
@@ -220,18 +268,35 @@ import com.fasterxml.jackson.module.kotlin.*`);
         this.emitBlock(["enum class ", enumName, "(val value: String)"], () => {
             let count = e.cases.size;
             this.forEachEnumCase(e, "none", (name, json) => {
-                this.emitLine(name, `("${stringEscape(json)}")`, --count === 0 ? ";" : ",");
+                this.emitLine(
+                    name,
+                    `("${stringEscape(json)}")`,
+                    --count === 0 ? ";" : ",",
+                );
             });
             this.ensureBlankLine();
             this.emitBlock("companion object", () => {
-                this.emitBlock(["fun fromValue(value: String): ", enumName, " = when (value)"], () => {
-                    let table: Sourcelike[][] = [];
-                    this.forEachEnumCase(e, "none", (name, json) => {
-                        table.push([[`"${stringEscape(json)}"`], [" -> ", name]]);
-                    });
-                    table.push([["else"], [" -> throw IllegalArgumentException()"]]);
-                    this.emitTable(table);
-                });
+                this.emitBlock(
+                    [
+                        "fun fromValue(value: String): ",
+                        enumName,
+                        " = when (value)",
+                    ],
+                    () => {
+                        const table: Sourcelike[][] = [];
+                        this.forEachEnumCase(e, "none", (name, json) => {
+                            table.push([
+                                [`"${stringEscape(json)}"`],
+                                [" -> ", name],
+                            ]);
+                        });
+                        table.push([
+                            ["else"],
+                            [" -> throw IllegalArgumentException()"],
+                        ]);
+                        this.emitTable(table);
+                    },
+                );
             });
         });
     }
@@ -254,13 +319,15 @@ private fun <T> ObjectMapper.convert(k: kotlin.reflect.KClass<*>, fromJson: (Jso
         u: UnionType,
         nonNulls: ReadonlySet<Type>,
         maybeNull: PrimitiveType | null,
-        unionName: Name
+        unionName: Name,
     ): void {
         this.ensureBlankLine();
-        this.emitLine("fun toJson(): String = mapper.writeValueAsString(when (this) {");
+        this.emitLine(
+            "fun toJson(): String = mapper.writeValueAsString(when (this) {",
+        );
         this.indent(() => {
-            let toJsonTable: Sourcelike[][] = [];
-            this.forEachUnionMember(u, nonNulls, "none", null, name => {
+            const toJsonTable: Sourcelike[][] = [];
+            this.forEachUnionMember(u, nonNulls, "none", null, (name) => {
                 toJsonTable.push([["is ", name], [" -> this.value"]]);
             });
             if (maybeNull !== null) {
@@ -273,18 +340,37 @@ private fun <T> ObjectMapper.convert(k: kotlin.reflect.KClass<*>, fromJson: (Jso
         this.emitLine("})");
         this.ensureBlankLine();
         this.emitBlock("companion object", () => {
-            this.emitLine("fun fromJson(jn: JsonNode): ", unionName, " = when (jn) {");
+            this.emitLine(
+                "fun fromJson(jn: JsonNode): ",
+                unionName,
+                " = when (jn) {",
+            );
             this.indent(() => {
-                let table: Sourcelike[][] = [];
-                this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
-                    table.push([[this.unionMemberJsonValueGuard(t, "jn")], [" -> ", name, "(mapper.treeToValue(jn))"]]);
-                });
+                const table: Sourcelike[][] = [];
+                this.forEachUnionMember(
+                    u,
+                    nonNulls,
+                    "none",
+                    null,
+                    (name, t) => {
+                        table.push([
+                            [this.unionMemberJsonValueGuard(t, "jn")],
+                            [" -> ", name, "(mapper.treeToValue(jn))"],
+                        ]);
+                    },
+                );
                 if (maybeNull !== null) {
                     const name = this.nameForUnionMember(u, maybeNull);
-                    table.push([[this.unionMemberJsonValueGuard(maybeNull, "jn")], [" -> ", name, "()"]]);
+                    table.push([
+                        [this.unionMemberJsonValueGuard(maybeNull, "jn")],
+                        [" -> ", name, "()"],
+                    ]);
                 }
 
-                table.push([["else"], [" -> throw IllegalArgumentException()"]]);
+                table.push([
+                    ["else"],
+                    [" -> throw IllegalArgumentException()"],
+                ]);
                 this.emitTable(table);
             });
             this.emitLine("}");
