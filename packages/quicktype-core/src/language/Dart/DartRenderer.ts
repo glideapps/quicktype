@@ -469,7 +469,7 @@ export class DartRenderer extends ConvenienceRenderer {
                     defined(this._enumValues.get(enumType)),
                     ".map[",
                     dynamic,
-                    this._options.nullSafety ? "]!" : "]",
+                    (this._options.nullSafety && !isNullable) ? "]!" : "]"
                 ];
             },
             (unionType) => {
