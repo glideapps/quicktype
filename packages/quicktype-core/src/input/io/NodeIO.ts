@@ -1,4 +1,5 @@
 import * as fs from "node:fs";
+import * as path from "node:path";
 
 import { defined, exceptionToString } from "@glideapps/ts-necessities";
 import { isNode } from "browser-or-node";
@@ -38,6 +39,18 @@ function parseHeaders(httpHeaders?: string[]): HttpHeaders {
     }, {} as HttpHeaders);
 }
 
+function resolveSymbolicLink(filePath: string): string {
+    if (!fs.lstatSync(filePath).isSymbolicLink()) {
+        return filePath;
+    }
+
+    const linkPath = fs.readlinkSync(filePath);
+    if (path.isAbsolute(linkPath)) {
+        return linkPath;
+    }
+    return path.join(path.dirname(filePath), linkPath);
+}
+
 export async function readableFromFileOrURL(
     fileOrURL: string,
     httpHeaders?: string[],
@@ -57,9 +70,7 @@ export async function readableFromFileOrURL(
                 return process.stdin as unknown as Readable;
             }
 
-            const filePath = fs.lstatSync(fileOrURL).isSymbolicLink()
-                ? fs.readlinkSync(fileOrURL)
-                : fileOrURL;
+            const filePath = resolveSymbolicLink(fileOrURL);
             if (fs.existsSync(filePath)) {
                 // Cast node readable to isomorphic readable from readable-stream
                 return fs.createReadStream(
