@@ -147,7 +147,7 @@
         "@typescript-eslint/parser": "^7.7.0",
         "@vscode/test-cli": "^0.0.6",
         "@vscode/test-electron": "^2.3.9",
-        "@vscode/vsce": "^2.25.0",
+        "@vscode/vsce": "^3.5.0",
         "eslint": "^8.56.0",
         "typescript": "~5.8.3",
         "node-persist": "^4.0.1",
