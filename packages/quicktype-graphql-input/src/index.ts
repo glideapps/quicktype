@@ -1,4 +1,5 @@
 import { iterableFirst, mapFromObject, setMap } from "collection-utils";
+import { Kind } from "graphql";
 import * as graphql from "graphql/language";
 import type {
     DirectiveNode,
@@ -159,7 +160,7 @@ function makeScalar(builder: TypeBuilder, ft: GQLType): TypeRef {
     }
 }
 
-function hasOptionalDirectives(directives?: DirectiveNode[]): boolean {
+function hasOptionalDirectives(directives?: readonly DirectiveNode[]): boolean {
     if (!directives) return false;
     for (const d of directives) {
         const name = d.name.value;
@@ -180,7 +181,7 @@ function expandSelectionSet(
     inType: GQLType,
     optional: boolean,
 ): Selection[] {
-    return selectionSet.selections
+    return [...selectionSet.selections]
         .reverse()
         .map((s) => ({
             selection: s,
@@ -366,7 +367,7 @@ class GQLQuery {
             if (!nextItem) break;
             const { selection, optional, inType } = nextItem;
             switch (selection.kind) {
-                case "Field":
+                case Kind.FIELD:
                     const fieldName = selection.name.value;
                     const givenName = selection.alias
                         ? selection.alias.value
@@ -383,7 +384,7 @@ class GQLQuery {
                         builder.makeClassProperty(fieldType, optional),
                     );
                     break;
-                case "FragmentSpread": {
+                case Kind.FRAGMENT_SPREAD: {
                     const fragment = this.getFragment(selection.name.value);
                     const fragmentType =
                         this._schema.types[fragment.typeCondition.name.value];
@@ -398,7 +399,7 @@ class GQLQuery {
                     break;
                 }
 
-                case "InlineFragment": {
+                case Kind.INLINE_FRAGMENT: {
                     // FIXME: support type conditions with discriminated unions
                     const fragmentType = selection.typeCondition
                         ? this._schema.types[selection.typeCondition.name.value]

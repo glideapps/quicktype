@@ -1,6 +1,6 @@
 import { exceptionToString } from "@glideapps/ts-necessities";
 import fetch from "cross-fetch";
-import { introspectionQuery } from "graphql";
+import { getIntrospectionQuery } from "graphql";
 
 import { panic } from "quicktype-core";
 
@@ -37,7 +37,7 @@ export async function introspectServer(
         const response = await fetch(url, {
             method,
             headers: headers,
-            body: JSON.stringify({ query: introspectionQuery }),
+            body: JSON.stringify({ query: getIntrospectionQuery() }),
         });
 
         result = await response.json();
