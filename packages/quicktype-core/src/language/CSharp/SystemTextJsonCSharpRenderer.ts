@@ -217,9 +217,12 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
         const isNullable = followTargetType(property.type).isNullable;
         const isOptional = property.isOptional;
 
-        if (isOptional && !isNullable) {
+        if (!isOptional) {
+            attributes.push(["[", "JsonRequired", "]"]);
+        } else if (isOptional && !isNullable) {
             attributes.push(["[", "JsonIgnore", "(Condition = JsonIgnoreCondition.WhenWritingNull)]"]);
         }
+
 
         // const requiredClass = this._options.dense ? "R" : "Required";
         // const nullValueHandlingClass = this._options.dense ? "N" : "NullValueHandling";
