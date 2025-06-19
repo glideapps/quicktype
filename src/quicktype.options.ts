@@ -28,7 +28,7 @@ import type {
 } from "./TypeSource";
 import { makeInputData } from "./input";
 import { getSources, makeTypeScriptSource } from "./sources";
-import { usage } from "./usage";
+import { displayUsage } from "./usage";
 import {
     negatedInferenceFlagName,
     stringSourceDataToStreamSourceData,
@@ -45,7 +45,7 @@ export async function makeQuicktypeOptions(
     targetLanguages?: TargetLanguage[],
 ): Promise<Partial<Options> | undefined> {
     if (options.help) {
-        usage(targetLanguages ?? defaultTargetLanguages);
+        displayUsage(targetLanguages ?? defaultTargetLanguages);
         return;
     }
 
@@ -58,8 +58,8 @@ export async function makeQuicktypeOptions(
     if (options.buildMarkovChain !== undefined) {
         const contents = fs.readFileSync(options.buildMarkovChain).toString();
         const lines = contents.split("\n");
-        const mc = trainMarkovChain(lines, 3);
-        console.log(JSON.stringify(mc));
+        const markovChain = trainMarkovChain(lines, 3);
+        console.log(JSON.stringify(markovChain));
         return;
     }
 

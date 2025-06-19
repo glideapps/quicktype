@@ -103,7 +103,7 @@ const sectionsAfterRenderers: UsageSection[] = [
     },
 ];
 
-export function usage(targetLanguages: readonly TargetLanguage[]): void {
+export function displayUsage(targetLanguages: readonly TargetLanguage[]): void {
     const rendererSections: UsageSection[] = [];
 
     for (const language of targetLanguages) {
