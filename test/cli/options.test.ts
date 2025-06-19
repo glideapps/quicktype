@@ -2,7 +2,7 @@ import { describe, expect, it, beforeEach } from "vitest";
 
 import commandLineArgs from "command-line-args";
 
-import type { Option } from "../../packages/quicktype-core";
+import { inferenceFlagNames, type Option } from "../../packages/quicktype-core";
 import type { EnumOption } from "../../packages/quicktype-core/dist/RendererOptions";
 import { Chance } from "../../packages/quicktype-core/src/support/Chance";
 import { all as sourceLanguages } from "../../packages/quicktype-core/dist/language/All";
@@ -14,6 +14,8 @@ import {
 } from "../../src/optionDefinitions";
 
 import * as fixtureLanguages from "../languages";
+import { inferCLIOptions } from "../../src/inference";
+import { negatedInferenceFlagName } from "../../src/utils";
 
 const optionsDefinitions = makeOptionDefinitions([]);
 const chance = new Chance(0);
@@ -56,6 +58,56 @@ it("should call command-line-args for all generic cli options", () => {
     }, {});
 
     expect(args).toStrictEqual(expectedOutput);
+});
+
+it("should process inference cli options correctly", () => {
+    const randomTargetLang = chance.pick(sourceLanguages);
+
+    // throw for graphql check
+    const parsedOptions = parseOptions(optionsDefinitions, argv, true);
+    expect(() => inferCLIOptions(parsedOptions, randomTargetLang)).toThrow();
+
+    // pass graphql check
+    parsedOptions.srcLang = "graphql";
+    expect(() =>
+        inferCLIOptions(parsedOptions, randomTargetLang),
+    ).not.toThrow();
+
+    // infer ts input
+    parsedOptions.srcLang = undefined;
+    parsedOptions.graphqlIntrospect = undefined;
+    parsedOptions.graphqlSchema = undefined;
+    parsedOptions.src = parsedOptions.src?.map((str) => `${str}.ts`);
+    expect(inferCLIOptions(parsedOptions, randomTargetLang)).toMatchObject({
+        srcLang: "typescript",
+    });
+
+    // throw on unknown target lang
+    expect(() => inferCLIOptions(parsedOptions, undefined)).toThrow();
+
+    // infer target lang
+    parsedOptions.lang = undefined;
+    parsedOptions.out = `${parsedOptions.out}.${randomTargetLang.extension}`;
+
+    const inferredOptionsWithTargetLang = inferCLIOptions(
+        parsedOptions,
+        undefined,
+    );
+    expect(inferredOptionsWithTargetLang).toMatchObject({
+        lang: randomTargetLang.name,
+    });
+
+    // check inference flags
+    for (const flagName of inferenceFlagNames) {
+        const negatedFlagName = negatedInferenceFlagName(flagName);
+
+        expect(inferredOptionsWithTargetLang[flagName]).toEqual(
+            !!parsedOptions[flagName],
+        );
+        expect(inferredOptionsWithTargetLang[negatedFlagName]).toEqual(
+            !parsedOptions[flagName],
+        );
+    }
 });
 
 for (const [name, fixtureLanguage] of Object.entries(fixtureLanguages)) {
@@ -123,3 +175,5 @@ for (const [name, fixtureLanguage] of Object.entries(fixtureLanguages)) {
         expect(isAllRendererOptionsValid).toBeTruthy();
     });
 }
+
+// test quicktype options method

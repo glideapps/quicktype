@@ -121,6 +121,7 @@ export function inferCLIOptions(
     for (const flagName of inferenceFlagNames) {
         const cliName = negatedInferenceFlagName(flagName);
         options[cliName] = !!opts[cliName];
+        options[flagName] = !opts[cliName];
     }
 
     return options;
