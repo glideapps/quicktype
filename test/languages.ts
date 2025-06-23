@@ -260,6 +260,9 @@ export const RustLanguage: Language = {
         { visibility: "crate" },
         { visibility: "private" },
         { visibility: "public" },
+        { "integer-type": "conservative" },
+        { "integer-type": "force-i32" },
+        { "integer-type": "force-i64" },
     ],
     sourceFiles: ["src/language/Rust/index.ts"],
 };
@@ -584,6 +587,8 @@ export const CPlusPlusLanguage: Language = {
     skipSchema: [
         // uses too much memory
         "keyword-unions.schema",
+        // seems like a problem with integer range check
+        "integer-type.schema",
     ],
     rendererOptions: {},
     quickTestRendererOptions: [

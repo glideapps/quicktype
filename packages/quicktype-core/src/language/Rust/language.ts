@@ -10,6 +10,12 @@ import type { LanguageName, RendererOptions } from "../../types";
 import { RustRenderer } from "./RustRenderer";
 import { Density, Visibility } from "./utils";
 
+export enum IntegerType {
+    Conservative = "conservative",
+    ForceI32 = "force-i32",
+    ForceI64 = "force-i64",
+}
+
 export const rustOptions = {
     density: new EnumOption(
         "density",
@@ -29,6 +35,16 @@ export const rustOptions = {
             public: Visibility.Public,
         } as const,
         "private",
+    ),
+    integerType: new EnumOption(
+        "integer-type",
+        "Integer type inference",
+        {
+            conservative: IntegerType.Conservative,
+            "force-i32": IntegerType.ForceI32,
+            "force-i64": IntegerType.ForceI64,
+        } as const,
+        "conservative",
     ),
     deriveDebug: new BooleanOption("derive-debug", "Derive Debug impl", false),
     deriveClone: new BooleanOption("derive-clone", "Derive Clone impl", false),

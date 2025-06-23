@@ -1,0 +1,43 @@
+{
+  "type": "object",
+  "properties": {
+    "small_positive": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "large_positive": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 5000000000
+    },
+    "small_negative": {
+      "type": "integer",
+      "minimum": -100,
+      "maximum": 0
+    },
+    "large_negative": {
+      "type": "integer",
+      "minimum": -5000000000,
+      "maximum": 0
+    },
+    "i32_range": {
+      "type": "integer",
+      "minimum": -2147483648,
+      "maximum": 2147483647
+    },
+    "beyond_i32": {
+      "type": "integer",
+      "minimum": -9223372036854775808,
+      "maximum": 9223372036854775807
+    }
+  },
+  "required": [
+    "small_positive",
+    "large_positive",
+    "small_negative",
+    "large_negative",
+    "i32_range",
+    "beyond_i32"
+  ]
+}

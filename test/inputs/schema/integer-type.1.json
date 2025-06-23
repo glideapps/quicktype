@@ -1,0 +1,8 @@
+{
+  "small_positive": 50,
+  "large_positive": 2500000000,
+  "small_negative": -50,
+  "large_negative": -2500000000,
+  "i32_range": 1000000000,
+  "beyond_i32": 9000000000000000000
+}

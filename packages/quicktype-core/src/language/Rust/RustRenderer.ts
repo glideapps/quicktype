@@ -27,8 +27,10 @@ import {
     removeNullFromUnion,
 } from "../../Type/TypeUtils";
 
+import { minMaxValueForType } from "../../attributes/Constraints";
 import { keywords } from "./constants";
 import type { rustOptions } from "./language";
+import { IntegerType } from "./language";
 import {
     Density,
     type NamingStyleKey,
@@ -96,6 +98,33 @@ export class RustRenderer extends ConvenienceRenderer {
         return "/// ";
     }
 
+    private getIntegerType(integerType: Type): string {
+        switch (this._options.integerType) {
+            case IntegerType.ForceI32:
+                return "i32";
+            case IntegerType.ForceI64:
+                return "i64";
+            case IntegerType.Conservative:
+            default: {
+                const minMax = minMaxValueForType(integerType);
+                if (minMax !== undefined) {
+                    const [min, max] = minMax;
+                    // Check if values fit in i32 range: [-2147483648, 2147483647]
+                    const i32Min = -2147483648;
+                    const i32Max = 2147483647;
+                    
+                    if (
+                        (min === undefined || min >= i32Min) &&
+                        (max === undefined || max <= i32Max)
+                    ) {
+                        return "i32";
+                    }
+                }
+                return "i64";
+            }
+        }
+    }
+
     private nullableRustType(t: Type, withIssues: boolean): Sourcelike {
         return ["Option<", this.breakCycle(t, withIssues), ">"];
     }
@@ -121,7 +150,7 @@ export class RustRenderer extends ConvenienceRenderer {
                     "Option<serde_json::Value>",
                 ),
             (_boolType) => "bool",
-            (_integerType) => "i64",
+            (integerType) => this.getIntegerType(integerType),
             (_doubleType) => "f64",
             (_stringType) => "String",
             (arrayType) => [
