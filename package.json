@@ -11,7 +11,7 @@
     "scripts": {
         "pub": "script/publish.sh",
         "build": "npm run clean && npm run build --workspaces --if-present && tsc",
-        "test": "script/test && npm run test:cli",
+        "test": "script/test",
         "test:cli": "vitest run",
         "test:dev": "vitest dev",
         "start": "script/watch",
