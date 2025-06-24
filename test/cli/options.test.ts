@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach } from "vitest";
+import { expect, it, beforeEach } from "vitest";
 
 import commandLineArgs from "command-line-args";
 
@@ -12,10 +12,10 @@ import {
     makeOptionDefinitions,
     transformDefinition,
 } from "../../src/optionDefinitions";
+import { negatedInferenceFlagName } from "../../src/utils";
+import { inferCLIOptions } from "../../src/inference";
 
 import * as fixtureLanguages from "../languages";
-import { inferCLIOptions } from "../../src/inference";
-import { negatedInferenceFlagName } from "../../src/utils";
 
 const optionsDefinitions = makeOptionDefinitions([]);
 const chance = new Chance(0);
@@ -175,5 +175,3 @@ for (const [name, fixtureLanguage] of Object.entries(fixtureLanguages)) {
         expect(isAllRendererOptionsValid).toBeTruthy();
     });
 }
-
-// test quicktype options method
