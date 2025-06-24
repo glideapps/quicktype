@@ -99,7 +99,7 @@ export async function makeQuicktypeOptions(
                 }
             }
 
-            const gqlSources: GraphQLTypeSource[] = [];
+            const graphqlSources: GraphQLTypeSource[] = [];
             for (const queryFile of options.src) {
                 let schemaFileName: string | undefined = undefined;
                 if (schemaString === undefined) {
@@ -119,10 +119,10 @@ export async function makeQuicktypeOptions(
                     numSources === 1
                         ? options.topLevel
                         : typeNameFromFilename(queryFile);
-                gqlSources.push({ kind: "graphql", name, schema, query });
+                graphqlSources.push({ kind: "graphql", name, schema, query });
             }
 
-            sources = gqlSources;
+            sources = graphqlSources;
             break;
         }
         case "json":
@@ -134,10 +134,10 @@ export async function makeQuicktypeOptions(
             break;
         case "postman":
             for (const collectionFile of options.src) {
-                const collectionJSON = fs.readFileSync(collectionFile, "utf8");
+                const collectionJson = fs.readFileSync(collectionFile, "utf8");
                 const { sources: postmanSources, description } =
                     sourcesFromPostmanCollection(
-                        collectionJSON,
+                        collectionJson,
                         collectionFile,
                     );
                 for (const src of postmanSources) {

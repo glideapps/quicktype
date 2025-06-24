@@ -38,7 +38,7 @@ export interface CLIOptions<Lang extends LanguageName = LanguageName>
     src: string[];
     srcLang: string;
     srcUrls?: string;
-    telemetry?: string;
+    telemetry?: "enable" | "disable";
     topLevel: string;
 
     version: boolean;
