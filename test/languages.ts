@@ -1,6 +1,6 @@
 import type { LanguageName } from "quicktype-core";
 
-import * as process from "process";
+import * as process from "node:process";
 // @ts-ignore
 import type { RendererOptions } from "../dist/quicktype-core/Run";
 
@@ -42,7 +42,7 @@ export interface Language {
     skipMiscJSON: boolean;
     skipSchema: string[];
     rendererOptions: RendererOptions;
-    quickTestRendererOptions: (RendererOptions | [string, RendererOptions])[];
+    quickTestRendererOptions: RendererOptions[];
     sourceFiles?: string[];
 }
 
@@ -672,7 +672,7 @@ export const ElmLanguage: Language = {
 export const SwiftLanguage: Language = {
     name: "swift",
     base: "test/fixtures/swift",
-    compileCommand: `swiftc -o quicktype main.swift quicktype.swift`,
+    compileCommand: "swiftc -o quicktype main.swift quicktype.swift",
     runCommand(sample: string) {
         return `./quicktype "${sample}"`;
     },
@@ -760,7 +760,7 @@ export const SwiftLanguage: Language = {
 export const ObjectiveCLanguage: Language = {
     name: "objective-c",
     base: "test/fixtures/objective-c",
-    compileCommand: `clang -Werror -framework Foundation *.m -o test`,
+    compileCommand: "clang -Werror -framework Foundation *.m -o test",
     runCommand(sample: string) {
         return `cp "${sample}" sample.json && ./test sample.json`;
     },
