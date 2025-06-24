@@ -224,11 +224,19 @@ export async function makeQuicktypeOptions(
         debugPrintSchemaResolving,
         debugPrintTimes,
     };
+
     for (const flagName of inferenceFlagNames) {
         const cliName = negatedInferenceFlagName(flagName);
-        const v = options[cliName];
-        if (typeof v === "boolean") {
-            quicktypeOptions[flagName] = !v;
+        const negatedValue = options[cliName];
+        const positiveValue = options[flagName];
+        const value = !(positiveValue == null)
+            ? positiveValue
+            : !(negatedValue == null)
+              ? negatedValue
+              : undefined;
+
+        if (typeof value === "boolean") {
+            quicktypeOptions[flagName] = !value;
         } else {
             quicktypeOptions[flagName] = true;
         }
