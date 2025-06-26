@@ -429,7 +429,7 @@ export class JSONPythonRenderer extends PythonRenderer {
                 ")",
                 this.typeHint(
                     " -> ",
-                    this.withTyping("Dict"),
+                    this.pyOptions.features.builtinGenerics ? "dict" : "Dict",
                     "[str, ",
                     tvar,
                     "]",
@@ -620,7 +620,7 @@ export class JSONPythonRenderer extends PythonRenderer {
             (_stringType) => "str",
             (_arrayType) => this.pyOptions.features.builtinGenerics ? "list" : "List",
             (classType) => this.nameForNamedType(classType),
-            (_mapType) => "dict",
+            (_mapType) => this.pyOptions.features.builtinGenerics ? "dict" : "Dict",
             (enumType) => this.nameForNamedType(enumType),
             (_unionType) => undefined,
             (transformedStringType) => {
