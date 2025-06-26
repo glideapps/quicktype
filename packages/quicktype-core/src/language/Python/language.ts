@@ -29,9 +29,10 @@ export const pythonOptions = {
         "python-version",
         "Python version",
         {
-            "3.5": { typeHints: false, dataClasses: false },
-            "3.6": { typeHints: true, dataClasses: false },
-            "3.7": { typeHints: true, dataClasses: true },
+            "3.5": { typeHints: false, dataClasses: false, builtinGenerics: false },
+            "3.6": { typeHints: true, dataClasses: false, builtinGenerics: false },
+            "3.7": { typeHints: true, dataClasses: true, builtinGenerics: false },
+            "3.9": { typeHints: true, dataClasses: true, builtinGenerics: true },
         },
         "3.6",
     ),

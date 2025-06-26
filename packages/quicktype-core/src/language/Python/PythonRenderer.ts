@@ -162,14 +162,14 @@ export class PythonRenderer extends ConvenienceRenderer {
             (_doubletype) => "float",
             (_stringType) => "str",
             (arrayType) => [
-                this.withTyping("List"),
+                this.pyOptions.features.builtinGenerics ? "list" : this.withTyping("List"),
                 "[",
                 this.pythonType(arrayType.items),
                 "]",
             ],
             (classType) => this.namedType(classType),
             (mapType) => [
-                this.withTyping("Dict"),
+                this.pyOptions.features.builtinGenerics ? "dict" : this.withTyping("Dict"),
                 "[str, ",
                 this.pythonType(mapType.values),
                 "]",
@@ -196,6 +196,14 @@ export class PythonRenderer extends ConvenienceRenderer {
                     }
 
                     if (nonNulls.size > 1) {
+                        if (this.pyOptions.features.builtinGenerics) {
+                            return [
+                                arrayIntercalate(" | ", memberTypes),
+                                " | None",
+                                ...rest,
+                            ];
+                        }
+                            
                         this.withImport("typing", "Union");
                         return [
                             this.withTyping("Optional"),
@@ -206,12 +214,25 @@ export class PythonRenderer extends ConvenienceRenderer {
                         ];
                     }
 
+                    if (this.pyOptions.features.builtinGenerics) {
+                        return [
+                            defined(iterableFirst(memberTypes)),
+                            " | None",
+                            ...rest,
+                        ];
+                    }
                     return [
                         this.withTyping("Optional"),
                         "[",
                         defined(iterableFirst(memberTypes)),
                         "]",
                         ...rest,
+                    ];
+                }
+
+                if (this.pyOptions.features.builtinGenerics) {
+                    return [
+                        arrayIntercalate(" | ", memberTypes),
                     ];
                 }
 
