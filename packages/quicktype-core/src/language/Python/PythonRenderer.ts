@@ -144,13 +144,13 @@ export class PythonRenderer extends ConvenienceRenderer {
         return this.withImport("typing", name);
     }
 
-    protected namedType(t: Type): Sourcelike {
+    protected namedType(t: Type, _suppressQuotes: boolean = false): Sourcelike {
         const name = this.nameForNamedType(t);
-        if (this.declaredTypes.has(t)) return name;
+        if (_suppressQuotes || this.declaredTypes.has(t)) return name;
         return ["'", name, "'"];
     }
 
-    protected pythonType(t: Type, _isRootTypeDef = false): Sourcelike {
+    protected pythonType(t: Type, _isRootTypeDef = false, _suppressQuotes = false): Sourcelike {
         const actualType = followTargetType(t);
 
         return matchType<Sourcelike>(
@@ -167,19 +167,26 @@ export class PythonRenderer extends ConvenienceRenderer {
                 this.pythonType(arrayType.items),
                 "]",
             ],
-            (classType) => this.namedType(classType),
+            (classType) => this.namedType(classType, _suppressQuotes),
             (mapType) => [
                 this.pyOptions.features.builtinGenerics ? "dict" : this.withTyping("Dict"),
                 "[str, ",
                 this.pythonType(mapType.values),
                 "]",
             ],
-            (enumType) => this.namedType(enumType),
+            (enumType) => this.namedType(enumType, _suppressQuotes),
             (unionType) => {
                 const [hasNull, nonNulls] = removeNullFromUnion(unionType);
-                const memberTypes = Array.from(nonNulls).map((m) =>
-                    this.pythonType(m),
+                const hasClassOrEnumType = Array.from(nonNulls).some(
+                    t => t instanceof ClassType || t instanceof EnumType
                 );
+                const encapsulator = hasClassOrEnumType ? "'" : ""
+                
+                const memberTypes = Array.from(nonNulls).map((m) =>
+                    // Suppress quotes for namedType
+                    this.pythonType(m, false, true),
+                );
+
 
                 if (hasNull !== null) {
                     const rest: string[] = [];
@@ -198,9 +205,11 @@ export class PythonRenderer extends ConvenienceRenderer {
                     if (nonNulls.size > 1) {
                         if (this.pyOptions.features.builtinGenerics) {
                             return [
+                                encapsulator,
                                 arrayIntercalate(" | ", memberTypes),
                                 " | None",
                                 ...rest,
+                                encapsulator
                             ];
                         }
                             
@@ -216,9 +225,11 @@ export class PythonRenderer extends ConvenienceRenderer {
 
                     if (this.pyOptions.features.builtinGenerics) {
                         return [
+                            encapsulator,
                             defined(iterableFirst(memberTypes)),
                             " | None",
                             ...rest,
+                            encapsulator
                         ];
                     }
                     return [
@@ -232,7 +243,9 @@ export class PythonRenderer extends ConvenienceRenderer {
 
                 if (this.pyOptions.features.builtinGenerics) {
                     return [
+                        encapsulator,
                         arrayIntercalate(" | ", memberTypes),
+                        encapsulator
                     ];
                 }
 
