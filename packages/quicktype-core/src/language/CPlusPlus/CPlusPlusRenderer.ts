@@ -1987,7 +1987,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         onFirst = false;
                     });
                     this.emitLine(
-                        'else { throw std::runtime_error("Input JSON does not conform to schema!"); }',
+                        'else { throw std::runtime_error("Cannot deserialize to enumeration \\"',
+                         enumName,
+                         '\\""); }',
                     );
                 }
             },
