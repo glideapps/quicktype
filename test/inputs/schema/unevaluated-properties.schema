@@ -1,0 +1,46 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "unevaluated-properties.schema",
+    "title": "Test unevaluatedProperties support",
+    "type": "object",
+    "properties": {
+        "config": {
+            "$ref": "#/$defs/Config"
+        }
+    },
+    "$defs": {
+        "Config": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "settings": {
+                    "$ref": "#/$defs/Settings"
+                }
+            }
+        },
+        "Settings": {
+            "type": "object",
+            "properties": {},
+            "unevaluatedProperties": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/$defs/Item"
+                }
+            }
+        },
+        "Item": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            },
+            "required": ["key", "value"]
+        }
+    }
+}

@@ -1,0 +1,19 @@
+{
+    "config": {
+        "name": "multiple-versions",
+        "settings": {
+            "v1.0.0": [
+                {"key": "checksum1", "value": "abc123"},
+                {"key": "checksum2", "value": "def456"}
+            ],
+            "v1.1.0": [
+                {"key": "checksum1", "value": "ghi789"}
+            ],
+            "latest": [
+                {"key": "checksum1", "value": "jkl012"},
+                {"key": "checksum2", "value": "mno345"},
+                {"key": "checksum3", "value": "pqr678"}
+            ]
+        }
+    }
+}
