@@ -20,6 +20,12 @@ import { NewtonsoftCSharpRenderer } from "./NewtonSoftCSharpRenderer";
 import { SystemTextJsonCSharpRenderer } from "./SystemTextJsonCSharpRenderer";
 import { needTransformerForType } from "./utils";
 
+export enum Framework {
+    Newtonsoft = "Newtonsoft",
+    SystemTextJson = "SystemTextJson"
+}
+
+export type Version = 5 | 6 | 8;
 export interface OutputFeatures {
     attributes: boolean;
     helpers: boolean;
@@ -66,10 +72,11 @@ export const cSharpOptions = {
     version: new EnumOption(
         "csharp-version",
         "C# version",
-        {
-            "5": 5,
-            "6": 6,
-        } as const,
+        [
+            ["5", 5],
+            ["6", 6],
+            ["8", 8]
+        ],
         "6",
         "secondary",
     ),
