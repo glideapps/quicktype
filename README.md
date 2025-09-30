@@ -214,6 +214,10 @@ script/quicktype # rebuild (slow) and run (fast)
 #### Windows
 
 ```bash
+# Simple one-command build (recommended)
+npm run build:win
+
+# Or manual build
 npm install --ignore-scripts # Install dependencies
 npm install -g typescript # Install typescript globally
 tsc --project src/cli # Rebuild
