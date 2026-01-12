@@ -1,0 +1,9 @@
+query MyQuery($order: RepositoryOrder!) {
+  viewer {
+    repositories(first: 10, orderBy: $order) {
+      nodes {
+        name
+      }
+    }
+  }
+}

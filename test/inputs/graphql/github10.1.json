@@ -1,0 +1,19 @@
+{
+  "data": {
+    "viewer": {
+      "repositories": {
+        "nodes": [
+          {
+            "name": "quicktype"
+          }
+        ]
+      }
+    }
+  },
+  "variables": {
+    "order": {
+      "field": "CREATED_AT",
+      "direction": "ASC"
+    }
+  }
+}

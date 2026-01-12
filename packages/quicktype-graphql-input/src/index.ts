@@ -29,7 +29,7 @@ import {
     removeNullFromUnion,
 } from "quicktype-core";
 
-import { type GraphQLSchema, TypeKind } from "./GraphQLSchema";
+import { type GraphQLSchema, TypeKind, VariableKind } from "./GraphQLSchema";
 
 interface GQLType {
     description?: string;
@@ -278,8 +278,12 @@ class GQLQuery {
                 );
                 break;
             case TypeKind.INPUT_OBJECT:
-                // FIXME: Support input objects
-                return panic("Input objects not supported");
+                return this.makeIRTypeFromInputObject(
+                    builder,
+                    fieldType,
+                    fieldNode.name.value,
+                    containingTypeName,
+                );
             case TypeKind.LIST:
                 if (!fieldType.ofType) {
                     return panic("No type for list");
@@ -332,6 +336,125 @@ class GQLQuery {
         const fragment = this._fragments[name];
         if (!fragment) return panic(`Fragment ${name} is not defined.`);
         return fragment;
+    };
+
+    private _inputObjectDepth = 0;
+    private readonly makeIRTypeFromInputObject = (
+        builder: TypeBuilder,
+        gqlType: GQLType,
+        containingFieldName: string | null,
+        containingTypeName: string | null,
+        overrideName?: string,
+    ): TypeRef => {
+        if (this._inputObjectDepth > 3) {
+            // TODO: Support objects with depth > 3 and recursive references
+            return builder.getPrimitiveType("null");
+        }
+        this._inputObjectDepth++;
+        if (!gqlType.name) {
+            return panic("Input object type doesn't have a name.");
+        }
+        if (!gqlType.inputFields) {
+            return panic("Input object type doesn't have fields.");
+        }
+        const nameOrOverride = overrideName ?? gqlType.name;
+        const properties = new Map<string, ClassProperty>();
+        for (const field of gqlType.inputFields) {
+            const fieldType = this.makeIRTypeFromFieldNode(
+                builder,
+                {
+                    kind: "Field",
+                    name: {
+                        value: field.name,
+                        kind: "Name",
+                    },
+                } as FieldNode,
+                field.type,
+                nameOrOverride,
+            );
+            properties.set(
+                field.name,
+                builder.makeClassProperty(
+                    fieldType,
+                    !!field.defaultValue ||
+                        field.type.kind !== TypeKind.NON_NULL,
+                ),
+            );
+        }
+        this._inputObjectDepth--;
+        return builder.getClassType(
+            makeNames(nameOrOverride, containingFieldName, containingTypeName),
+            properties,
+        );
+    };
+
+    public readonly makeVariablesType = (
+        builder: TypeBuilder,
+        query: OperationDefinitionNode,
+        queryName: string,
+    ): TypeRef | undefined => {
+        const name = `${queryName}Variables`;
+        const defs = query.variableDefinitions;
+        if (defs === undefined || defs === null || defs.length === 0)
+            return undefined;
+
+        const properties = new Map<string, ClassProperty>();
+        for (const definition of defs) {
+            let variableType = definition.type;
+            let optional = true;
+            if (variableType.kind === VariableKind.NON_NULL) {
+                optional = false;
+                variableType = variableType.type;
+            }
+
+            // Build the type from the unwrapped variable type
+            let irType: TypeRef;
+            if (variableType.kind === VariableKind.LIST) {
+                const listItemType = variableType.type;
+                if (listItemType.kind !== VariableKind.NAMED) {
+                    return panic(
+                        `Named type not found for list variable "${definition.variable.name.value}"`,
+                    );
+                }
+                const gqlType = this._schema.types[listItemType.name.value];
+                const itemType = this.makeIRTypeFromFieldNode(
+                    builder,
+                    {
+                        kind: "Field",
+                        name: listItemType.name,
+                    } as FieldNode,
+                    gqlType,
+                    name,
+                );
+                irType = builder.getArrayType(emptyTypeAttributes, itemType);
+            } else if (variableType.kind === VariableKind.NAMED) {
+                const gqlType = this._schema.types[variableType.name.value];
+                irType = this.makeIRTypeFromFieldNode(
+                    builder,
+                    {
+                        kind: "Field",
+                        name: variableType.name,
+                    } as FieldNode,
+                    gqlType,
+                    name,
+                );
+            } else {
+                return panic(
+                    `Invalid variable type for "${definition.variable.name.value}"`,
+                );
+            }
+
+            // Remove null from the type if the variable is required
+            if (!optional) {
+                irType = removeNull(builder, irType);
+            }
+
+            properties.set(
+                definition.variable.name.value,
+                builder.makeClassProperty(irType, optional),
+            );
+        }
+        return builder.getClassType(makeNames(name, null, null), properties);
     };
 
     private readonly makeIRTypeFromSelectionSet = (
@@ -600,6 +723,7 @@ function makeGraphQLQueryTypes(
         }
 
         const dataType = query.makeType(builder, odn, queryName);
+        const variablesType = query.makeVariablesType(builder, odn, queryName);
         const dataOrNullType = builder.getUnionType(
             emptyTypeAttributes,
             new Set([dataType, builder.getPrimitiveType("null")]),
@@ -632,12 +756,19 @@ function makeGraphQLQueryTypes(
             ),
             errorType,
         );
+        const topLevelProperties: { [name: string]: ClassProperty } = {
+            data: builder.makeClassProperty(dataOrNullType, false),
+            errors: builder.makeClassProperty(errorArray, true),
+        };
+        if (variablesType !== undefined) {
+            topLevelProperties.variables = builder.makeClassProperty(
+                variablesType,
+                true,
+            );
+        }
         const t = builder.getClassType(
             makeNamesTypeAttributes(queryName, false),
-            mapFromObject({
-                data: builder.makeClassProperty(dataOrNullType, false),
-                errors: builder.makeClassProperty(errorArray, true),
-            }),
+            mapFromObject(topLevelProperties),
         );
         types.set(queryName, t);
     }
