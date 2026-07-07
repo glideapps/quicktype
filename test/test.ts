@@ -10,6 +10,7 @@ import { affectedFixtures, divideParallelJobs } from "./buildkite";
 import { checkCoreImportKeepsStdoutClean } from "./check-clean-import";
 import { checkJavaEnumAcronymCasing } from "./check-java-acronym-names";
 import { checkCoreHasNoNodePrefixedImports } from "./check-no-node-imports";
+import { checkRecursiveSchemaConverges } from "./check-recursive-schema";
 import { checkURLInput } from "./check-url-input";
 
 const exit = require("exit");
@@ -36,14 +37,26 @@ async function main(sources: string[]) {
     // can't catch this (mangled constants still compile and round-trip).
     await checkJavaEnumAcronymCasing();
 
-    // Regression check for issues #2613, #2678, #2821: URL inputs must work
-    // with the native (WHATWG) fetch on Node >= 18. The fixture harness only
-    // uses local files, so it can't catch this. Only run it in the cluster
-    // primary: forked workers re-execute main() too, and in a cluster worker
-    // `server.listen(0)` gives every worker the *same* shared port, with
-    // connections round-robined between them — concurrent workers cross-talk
-    // and hit each others' closing servers.
+    // Only run in the cluster primary: forked workers re-execute main() too,
+    // and these checks are relatively expensive (each generates from a schema
+    // or serves over HTTP), so there's no reason to repeat them per worker.
     if (cluster.isPrimary) {
+        // Regression check for issues #1376 (FHIR) and #2187 (OPDS 2.0):
+        // schemas with cyclic allOf/anyOf composition must not make the
+        // union-flattening fixpoint diverge ("Maximum call stack size
+        // exceeded"). The fixture harness can't catch this: a schema gnarly
+        // enough to trigger the non-convergence generates recursive
+        // maps/unions that not every target language compiles, and schema
+        // fixtures must compile everywhere. This check only asserts that
+        // quicktype generates, so it can use such a schema.
+        await checkRecursiveSchemaConverges();
+
+        // Regression check for issues #2613, #2678, #2821: URL inputs must
+        // work with the native (WHATWG) fetch on Node >= 18. The fixture
+        // harness only uses local files, so it can't catch this. (Also, in a
+        // cluster worker `server.listen(0)` gives every worker the *same*
+        // shared port, with connections round-robined between them —
+        // concurrent workers cross-talk and hit each others' closing servers.)
         await checkURLInput();
     }
 

@@ -1,0 +1,2051 @@
+{
+ "$schema": "http://json-schema.org/draft-07/schema#",
+ "$ref": "#/definitions/d0_feed",
+ "definitions": {
+  "d0_feed": {
+   "title": "OPDS Feed",
+   "type": "object",
+   "properties": {
+    "metadata": {
+     "description": "Contains feed-level metadata such as title or number of items",
+     "$ref": "#/definitions/d1_feed_metadata"
+    },
+    "links": {
+     "description": "Feed-level links such as search or pagination",
+     "type": "array",
+     "items": {
+      "$ref": "#/definitions/d2_link"
+     },
+     "uniqueItems": true,
+     "minItems": 1,
+     "contains": {
+      "properties": {
+       "rel": {
+        "anyOf": [
+         {
+          "type": "string",
+          "const": "self"
+         },
+         {
+          "type": "array",
+          "contains": {
+           "const": "self"
+          }
+         }
+        ]
+       }
+      },
+      "required": [
+       "rel"
+      ]
+     }
+    },
+    "publications": {
+     "description": "A list of publications that can be acquired",
+     "type": "array",
+     "items": {
+      "$ref": "#/definitions/d3_publication"
+     },
+     "uniqueItems": true,
+     "minItems": 1
+    },
+    "navigation": {
+     "description": "Navigation for the catalog using links",
+     "type": "array",
+     "items": {
+      "$ref": "#/definitions/d2_link"
+     },
+     "uniqueItems": true,
+     "minItems": 1,
+     "allOf": [
+      {
+       "description": "Each Link Object in a navigation collection must contain a title",
+       "items": {
+        "required": [
+         "title"
+        ]
+       }
+      }
+     ]
+    },
+    "facets": {
+     "description": "Facets are meant to re-order or obtain a subset for the current list of publications",
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "metadata": {
+        "$ref": "#/definitions/d1_feed_metadata"
+       },
+       "links": {
+        "type": "array",
+        "items": {
+         "$ref": "#/definitions/d2_link"
+        },
+        "uniqueItems": true,
+        "minItems": 1
+       }
+      }
+     },
+     "uniqueItems": true,
+     "minItems": 1
+    },
+    "groups": {
+     "description": "Groups provide a curated experience, grouping publications or navigation links together",
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "metadata": {
+        "$ref": "#/definitions/d1_feed_metadata"
+       },
+       "links": {
+        "type": "array",
+        "items": {
+         "$ref": "#/definitions/d2_link"
+        },
+        "uniqueItems": true,
+        "minItems": 1
+       },
+       "publications": {
+        "type": "array",
+        "items": {
+         "$ref": "#/definitions/d3_publication"
+        },
+        "uniqueItems": true,
+        "minItems": 1
+       },
+       "navigation": {
+        "type": "array",
+        "items": {
+         "$ref": "#/definitions/d2_link"
+        },
+        "uniqueItems": true,
+        "minItems": 1
+       }
+      },
+      "required": [
+       "metadata"
+      ]
+     }
+    }
+   },
+   "required": [
+    "metadata",
+    "links"
+   ],
+   "additionalProperties": {
+    "$ref": "#/definitions/d4_subcollection"
+   },
+   "anyOf": [
+    {
+     "required": [
+      "publications"
+     ]
+    },
+    {
+     "required": [
+      "navigation"
+     ]
+    },
+    {
+     "required": [
+      "groups"
+     ]
+    }
+   ]
+  },
+  "d4_subcollection": {
+   "title": "Core Collection Model",
+   "anyOf": [
+    {
+     "type": "object",
+     "properties": {
+      "metadata": {
+       "type": "object"
+      },
+      "links": {
+       "type": "array",
+       "items": {
+        "$ref": "#/definitions/d2_link"
+       }
+      },
+      "additionalProperties": {
+       "$ref": "#/definitions/d4_subcollection"
+      }
+     },
+     "required": [
+      "metadata",
+      "links"
+     ]
+    },
+    {
+     "type": "array",
+     "items": {
+      "anyOf": [
+       {
+        "$ref": "#/definitions/d2_link"
+       },
+       {
+        "type": "object",
+        "properties": {
+         "metadata": {
+          "type": "object"
+         },
+         "links": {
+          "type": "array",
+          "items": {
+           "$ref": "#/definitions/d2_link"
+          }
+         }
+        },
+        "additionalProperties": {
+         "$ref": "#/definitions/d4_subcollection"
+        }
+       }
+      ]
+     }
+    }
+   ]
+  },
+  "d2_link": {
+   "title": "Link Object for the Readium Web Publication Manifest",
+   "type": "object",
+   "properties": {
+    "href": {
+     "description": "URI or URI template of the linked resource",
+     "type": "string"
+    },
+    "type": {
+     "description": "MIME type of the linked resource",
+     "type": "string"
+    },
+    "templated": {
+     "description": "Indicates that a URI template is used in href",
+     "type": "boolean"
+    },
+    "title": {
+     "description": "Title of the linked resource",
+     "type": "string"
+    },
+    "rel": {
+     "description": "Relation between the linked resource and its containing collection",
+     "type": [
+      "string",
+      "array"
+     ],
+     "items": {
+      "type": "string"
+     }
+    },
+    "properties": {
+     "description": "Properties associated to the linked resource",
+     "type": "object",
+     "properties": {
+      "page": {
+       "description": "Indicates how the linked resource should be displayed in a reading environment that displays synthetic spreads.",
+       "type": "string",
+       "enum": [
+        "left",
+        "right",
+        "center"
+       ]
+      }
+     },
+     "allOf": [
+      {
+       "$ref": "#/definitions/d5_properties"
+      },
+      {
+       "$ref": "#/definitions/d6_properties"
+      },
+      {
+       "$ref": "#/definitions/d7_properties"
+      }
+     ]
+    },
+    "height": {
+     "description": "Height of the linked resource in pixels",
+     "type": "integer",
+     "exclusiveMinimum": 0
+    },
+    "width": {
+     "description": "Width of the linked resource in pixels",
+     "type": "integer",
+     "exclusiveMinimum": 0
+    },
+    "size": {
+     "description": "Original size of the resource in bytes, prior to any use of encryption or compression in an archive",
+     "type": "integer",
+     "exclusiveMinimum": 0
+    },
+    "bitrate": {
+     "description": "Bitrate of the linked resource in kbps",
+     "type": "number",
+     "exclusiveMinimum": 0
+    },
+    "duration": {
+     "description": "Length of the linked resource in seconds",
+     "type": "number",
+     "exclusiveMinimum": 0
+    },
+    "language": {
+     "description": "Expected language of the linked resource",
+     "type": [
+      "string",
+      "array"
+     ],
+     "items": {
+      "type": "string",
+      "pattern": "^((?<grandfathered>(en-GB-oed|i-ami|i-bnn|i-default|i-enochian|i-hak|i-klingon|i-lux|i-mingo|i-navajo|i-pwn|i-tao|i-tay|i-tsu|sgn-BE-FR|sgn-BE-NL|sgn-CH-DE)|(art-lojban|cel-gaulish|no-bok|no-nyn|zh-guoyu|zh-hakka|zh-min|zh-min-nan|zh-xiang))|((?<language>([A-Za-z]{2,3}(-(?<extlang>[A-Za-z]{3}(-[A-Za-z]{3}){0,2}))?)|[A-Za-z]{4}|[A-Za-z]{5,8})(-(?<script>[A-Za-z]{4}))?(-(?<region>[A-Za-z]{2}|[0-9]{3}))?(-(?<variant>[A-Za-z0-9]{5,8}|[0-9][A-Za-z0-9]{3}))*(-(?<extension>[0-9A-WY-Za-wy-z](-[A-Za-z0-9]{2,8})+))*(-(?<privateUse>x(-[A-Za-z0-9]{1,8})+))?)|(?<privateUse2>x(-[A-Za-z0-9]{1,8})+))$"
+     },
+     "pattern": "^((?<grandfathered>(en-GB-oed|i-ami|i-bnn|i-default|i-enochian|i-hak|i-klingon|i-lux|i-mingo|i-navajo|i-pwn|i-tao|i-tay|i-tsu|sgn-BE-FR|sgn-BE-NL|sgn-CH-DE)|(art-lojban|cel-gaulish|no-bok|no-nyn|zh-guoyu|zh-hakka|zh-min|zh-min-nan|zh-xiang))|((?<language>([A-Za-z]{2,3}(-(?<extlang>[A-Za-z]{3}(-[A-Za-z]{3}){0,2}))?)|[A-Za-z]{4}|[A-Za-z]{5,8})(-(?<script>[A-Za-z]{4}))?(-(?<region>[A-Za-z]{2}|[0-9]{3}))?(-(?<variant>[A-Za-z0-9]{5,8}|[0-9][A-Za-z0-9]{3}))*(-(?<extension>[0-9A-WY-Za-wy-z](-[A-Za-z0-9]{2,8})+))*(-(?<privateUse>x(-[A-Za-z0-9]{1,8})+))?)|(?<privateUse2>x(-[A-Za-z0-9]{1,8})+))$"
+    },
+    "alternate": {
+     "description": "Alternate resources for the linked resource",
+     "type": "array",
+     "items": {
+      "$ref": "#/definitions/d2_link"
+     }
+    },
+    "children": {
+     "description": "Resources that are children of the linked resource, in the context of a given collection role",
+     "type": "array",
+     "items": {
+      "$ref": "#/definitions/d2_link"
+     }
+    }
+   },
+   "required": [
+    "href"
+   ],
+   "if": {
+    "properties": {
+     "templated": {
+      "enum": [
+       false,
+       null
+      ]
+     }
+    }
+   },
+   "then": {
+    "properties": {
+     "href": {
+      "type": "string",
+      "format": "uri-reference"
+     }
+    }
+   },
+   "else": {
+    "properties": {
+     "href": {
+      "type": "string",
+      "format": "uri-template"
+     }
+    }
+   }
+  },
+  "d7_properties": {
+   "title": "OPDS Link Properties",
+   "type": "object",
+   "properties": {
+    "numberOfItems": {
+     "description": "Provide a hint about the expected number of items returned",
+     "type": "integer",
+     "minimum": 0
+    },
+    "price": {
+     "description": "The price of a publication is tied to its acquisition link",
+     "type": "object",
+     "properties": {
+      "value": {
+       "type": "number",
+       "minimum": 0
+      },
+      "currency": {
+       "type": "string",
+       "enum": [
+        "AED",
+        "AFN",
+        "ALL",
+        "AMD",
+        "ANG",
+        "AOA",
+        "ARS",
+        "AUD",
+        "AWG",
+        "AZN",
+        "BAM",
+        "BBD",
+        "BDT",
+        "BGN",
+        "BHD",
+        "BIF",
+        "BMD",
+        "BND",
+        "BOB",
+        "BOV",
+        "BRL",
+        "BSD",
+        "BTN",
+        "BWP",
+        "BYN",
+        "BZD",
+        "CAD",
+        "CDF",
+        "CHE",
+        "CHF",
+        "CHW",
+        "CLF",
+        "CLP",
+        "CNY",
+        "COP",
+        "COU",
+        "CRC",
+        "CUC",
+        "CUP",
+        "CVE",
+        "CZK",
+        "DJF",
+        "DKK",
+        "DOP",
+        "DZD",
+        "EGP",
+        "ERN",
+        "ETB",
+        "EUR",
+        "FJD",
+        "FKP",
+        "GBP",
+        "GEL",
+        "GHS",
+        "GIP",
+        "GMD",
+        "GNF",
+        "GTQ",
+        "GYD",
+        "HKD",
+        "HNL",
+        "HRK",
+        "HTG",
+        "HUF",
+        "IDR",
+        "ILS",
+        "INR",
+        "IQD",
+        "IRR",
+        "ISK",
+        "JMD",
+        "JOD",
+        "JPY",
+        "KES",
+        "KGS",
+        "KHR",
+        "KMF",
+        "KPW",
+        "KRW",
+        "KWD",
+        "KYD",
+        "KZT",
+        "LAK",
+        "LBP",
+        "LKR",
+        "LRD",
+        "LSL",
+        "LYD",
+        "MAD",
+        "MDL",
+        "MGA",
+        "MKD",
+        "MMK",
+        "MNT",
+        "MOP",
+        "MRU",
+        "MUR",
+        "MVR",
+        "MWK",
+        "MXN",
+        "MXV",
+        "MYR",
+        "MZN",
+        "NAD",
+        "NGN",
+        "NIO",
+        "NOK",
+        "NPR",
+        "NZD",
+        "OMR",
+        "PAB",
+        "PEN",
+        "PGK",
+        "PHP",
+        "PKR",
+        "PLN",
+        "PYG",
+        "QAR",
+        "RON",
+        "RSD",
+        "RUB",
+        "RWF",
+        "SAR",
+        "SBD",
+        "SCR",
+        "SDG",
+        "SEK",
+        "SGD",
+        "SHP",
+        "SLL",
+        "SOS",
+        "SRD",
+        "SSP",
+        "STN",
+        "SVC",
+        "SYP",
+        "SZL",
+        "THB",
+        "TJS",
+        "TMT",
+        "TND",
+        "TOP",
+        "TRY",
+        "TTD",
+        "TWD",
+        "TZS",
+        "UAH",
+        "UGX",
+        "USD",
+        "USN",
+        "UYI",
+        "UYU",
+        "UZS",
+        "VEF",
+        "VES",
+        "VND",
+        "VUV",
+        "WST",
+        "XAF",
+        "XAG",
+        "XAU",
+        "XBA",
+        "XBB",
+        "XBC",
+        "XBD",
+        "XCD",
+        "XDR",
+        "XOF",
+        "XPD",
+        "XPF",
+        "XPT",
+        "XSU",
+        "XTS",
+        "XUA",
+        "XXX",
+        "YER",
+        "ZAR",
+        "ZMW",
+        "ZWL"
+       ]
+      }
+     },
+     "required": [
+      "currency",
+      "value"
+     ]
+    },
+    "indirectAcquisition": {
+     "description": "Indirect acquisition provides a hint for the expected media type that will be acquired after additional steps",
+     "type": "array",
+     "items": {
+      "$ref": "#/definitions/d8_acquisition_object"
+     }
+    },
+    "holds": {
+     "description": "Library-specific feature for unavailable books that support a hold list",
+     "type": "object",
+     "properties": {
+      "total": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "position": {
+       "type": "integer",
+       "minimum": 0
+      }
+     }
+    },
+    "copies": {
+     "description": "Library-specific feature that contains information about the copies that a library has acquired",
+     "type": "object",
+     "properties": {
+      "total": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "available": {
+       "type": "integer",
+       "minimum": 0
+      }
+     }
+    },
+    "availability": {
+     "description": "Indicates the availability of a given resource",
+     "type": "object",
+     "properties": {
+      "state": {
+       "type": "string",
+       "enum": [
+        "available",
+        "unavailable",
+        "reserved",
+        "ready"
+       ]
+      },
+      "since": {
+       "description": "Timestamp for the previous state change",
+       "type": "string",
+       "anyOf": [
+        {
+         "format": "date"
+        },
+        {
+         "format": "date-time"
+        }
+       ]
+      },
+      "until": {
+       "description": "Timestamp for the next state change",
+       "type": "string",
+       "anyOf": [
+        {
+         "format": "date"
+        },
+        {
+         "format": "date-time"
+        }
+       ]
+      }
+     },
+     "required": [
+      "state"
+     ]
+    }
+   }
+  },
+  "d8_acquisition_object": {
+   "title": "OPDS Acquisition Object",
+   "type": "object",
+   "properties": {
+    "type": {
+     "type": "string"
+    },
+    "child": {
+     "type": "array",
+     "items": {
+      "$ref": "#/definitions/d8_acquisition_object"
+     }
+    }
+   },
+   "required": [
+    "type"
+   ]
+  },
+  "d6_properties": {
+   "title": "Encryption Module - Link Properties",
+   "type": "object",
+   "properties": {
+    "encrypted": {
+     "description": "Indicates that a resource is encrypted/obfuscated and provides relevant information for decryption",
+     "type": "object",
+     "properties": {
+      "algorithm": {
+       "description": "Identifies the algorithm used to encrypt the resource",
+       "type": "string",
+       "format": "uri"
+      },
+      "compression": {
+       "description": "Compression method used on the resource",
+       "type": "string"
+      },
+      "originalLength": {
+       "description": "Original length of the resource in bytes before compression and/or encryption",
+       "type": "integer"
+      },
+      "profile": {
+       "description": "Identifies the encryption profile used to encrypt the resource",
+       "type": "string",
+       "format": "uri"
+      },
+      "scheme": {
+       "description": "Identifies the encryption scheme used to encrypt the resource",
+       "type": "string",
+       "format": "uri"
+      }
+     },
+     "required": [
+      "algorithm"
+     ]
+    }
+   }
+  },
+  "d5_properties": {
+   "title": "EPUB Profile - Link Properties",
+   "type": "object",
+   "properties": {
+    "contains": {
+     "description": "Identifies content contained in the linked resource, that cannot be strictly identified using a media type.",
+     "type": "array",
+     "items": {
+      "type": "string",
+      "enum": [
+       "mathml",
+       "onix",
+       "remote-resources",
+       "js",
+       "svg",
+       "xmp"
+      ]
+     },
+     "uniqueItems": true
+    }
+   }
+  },
+  "d3_publication": {
+   "title": "OPDS Publication",
+   "type": "object",
+   "properties": {
+    "metadata": {
+     "$ref": "#/definitions/d9_metadata"
+    },
+    "links": {
+     "type": "array",
+     "items": {
+      "$ref": "#/definitions/d2_link"
+     },
+     "contains": {
+      "description": "A publication must contain at least one acquisition link.",
+      "properties": {
+       "rel": {
+        "anyOf": [
+         {
+          "$ref": "#/definitions/d3_publication/$defs/acquisition"
+         },
+         {
+          "type": "array",
+          "contains": {
+           "$ref": "#/definitions/d3_publication/$defs/acquisition"
+          }
+         }
+        ]
+       }
+      }
+     }
+    },
+    "images": {
+     "description": "Images are meant to be displayed to the user when browsing publications",
+     "type": "array",
+     "items": {
+      "$ref": "#/definitions/d2_link"
+     },
+     "minItems": 1,
+     "allOf": [
+      {
+       "description": "At least one image resource must use one of the following formats: image/jpeg, image/avif, image/png or image/gif.",
+       "contains": {
+        "properties": {
+         "type": {
+          "enum": [
+           "image/jpeg",
+           "image/webp",
+           "image/avif",
+           "image/png",
+           "image/jxl",
+           "image/gif"
+          ]
+         }
+        }
+       }
+      }
+     ]
+    }
+   },
+   "required": [
+    "metadata",
+    "links"
+   ],
+   "$defs": {
+    "acquisition": {
+     "type": "string",
+     "enum": [
+      "acquisition",
+      "borrow",
+      "buy",
+      "preview",
+      "subscribe",
+      "http://opds-spec.org/acquisition",
+      "http://opds-spec.org/acquisition/buy",
+      "http://opds-spec.org/acquisition/open-access",
+      "http://opds-spec.org/acquisition/borrow",
+      "http://opds-spec.org/acquisition/sample",
+      "http://opds-spec.org/acquisition/subscribe"
+     ]
+    }
+   }
+  },
+  "d9_metadata": {
+   "title": "Metadata",
+   "type": "object",
+   "properties": {
+    "@type": {
+     "type": "string",
+     "format": "uri"
+    },
+    "conformsTo": {
+     "type": [
+      "string",
+      "array"
+     ],
+     "format": "uri",
+     "items": {
+      "type": "string",
+      "format": "uri"
+     }
+    },
+    "title": {
+     "$ref": "#/definitions/d10_language_map"
+    },
+    "sortAs": {
+     "$ref": "#/definitions/d10_language_map"
+    },
+    "subtitle": {
+     "$ref": "#/definitions/d10_language_map"
+    },
+    "identifier": {
+     "type": "string",
+     "format": "uri"
+    },
+    "altIdentifier": {
+     "$ref": "#/definitions/d11_altIdentifier"
+    },
+    "accessibility": {
+     "$ref": "#/definitions/d12_a11y"
+    },
+    "modified": {
+     "type": "string",
+     "format": "date-time"
+    },
+    "published": {
+     "type": "string",
+     "anyOf": [
+      {
+       "format": "date"
+      },
+      {
+       "format": "date-time"
+      }
+     ]
+    },
+    "language": {
+     "description": "The language must be a valid BCP 47 tag.",
+     "type": [
+      "string",
+      "array"
+     ],
+     "items": {
+      "type": "string",
+      "pattern": "^((?<grandfathered>(en-GB-oed|i-ami|i-bnn|i-default|i-enochian|i-hak|i-klingon|i-lux|i-mingo|i-navajo|i-pwn|i-tao|i-tay|i-tsu|sgn-BE-FR|sgn-BE-NL|sgn-CH-DE)|(art-lojban|cel-gaulish|no-bok|no-nyn|zh-guoyu|zh-hakka|zh-min|zh-min-nan|zh-xiang))|((?<language>([A-Za-z]{2,3}(-(?<extlang>[A-Za-z]{3}(-[A-Za-z]{3}){0,2}))?)|[A-Za-z]{4}|[A-Za-z]{5,8})(-(?<script>[A-Za-z]{4}))?(-(?<region>[A-Za-z]{2}|[0-9]{3}))?(-(?<variant>[A-Za-z0-9]{5,8}|[0-9][A-Za-z0-9]{3}))*(-(?<extension>[0-9A-WY-Za-wy-z](-[A-Za-z0-9]{2,8})+))*(-(?<privateUse>x(-[A-Za-z0-9]{1,8})+))?)|(?<privateUse2>x(-[A-Za-z0-9]{1,8})+))$"
+     },
+     "pattern": "^((?<grandfathered>(en-GB-oed|i-ami|i-bnn|i-default|i-enochian|i-hak|i-klingon|i-lux|i-mingo|i-navajo|i-pwn|i-tao|i-tay|i-tsu|sgn-BE-FR|sgn-BE-NL|sgn-CH-DE)|(art-lojban|cel-gaulish|no-bok|no-nyn|zh-guoyu|zh-hakka|zh-min|zh-min-nan|zh-xiang))|((?<language>([A-Za-z]{2,3}(-(?<extlang>[A-Za-z]{3}(-[A-Za-z]{3}){0,2}))?)|[A-Za-z]{4}|[A-Za-z]{5,8})(-(?<script>[A-Za-z]{4}))?(-(?<region>[A-Za-z]{2}|[0-9]{3}))?(-(?<variant>[A-Za-z0-9]{5,8}|[0-9][A-Za-z0-9]{3}))*(-(?<extension>[0-9A-WY-Za-wy-z](-[A-Za-z0-9]{2,8})+))*(-(?<privateUse>x(-[A-Za-z0-9]{1,8})+))?)|(?<privateUse2>x(-[A-Za-z0-9]{1,8})+))$"
+    },
+    "author": {
+     "$ref": "#/definitions/d13_contributor"
+    },
+    "translator": {
+     "$ref": "#/definitions/d13_contributor"
+    },
+    "editor": {
+     "$ref": "#/definitions/d13_contributor"
+    },
+    "artist": {
+     "$ref": "#/definitions/d13_contributor"
+    },
+    "illustrator": {
+     "$ref": "#/definitions/d13_contributor"
+    },
+    "letterer": {
+     "$ref": "#/definitions/d13_contributor"
+    },
+    "penciler": {
+     "$ref": "#/definitions/d13_contributor"
+    },
+    "colorist": {
+     "$ref": "#/definitions/d13_contributor"
+    },
+    "inker": {
+     "$ref": "#/definitions/d13_contributor"
+    },
+    "narrator": {
+     "$ref": "#/definitions/d13_contributor"
+    },
+    "contributor": {
+     "$ref": "#/definitions/d13_contributor"
+    },
+    "publisher": {
+     "$ref": "#/definitions/d13_contributor"
+    },
+    "imprint": {
+     "$ref": "#/definitions/d13_contributor"
+    },
+    "subject": {
+     "$ref": "#/definitions/d14_subject"
+    },
+    "layout": {
+     "description": "Hints how the layout of the publication should be presented",
+     "type": "string",
+     "enum": [
+      "fixed",
+      "reflowable",
+      "scrolled"
+     ]
+    },
+    "readingProgression": {
+     "type": "string",
+     "enum": [
+      "rtl",
+      "ltr"
+     ],
+     "default": "ltr"
+    },
+    "description": {
+     "type": "string"
+    },
+    "duration": {
+     "type": "number",
+     "exclusiveMinimum": 0
+    },
+    "numberOfPages": {
+     "type": "integer",
+     "exclusiveMinimum": 0
+    },
+    "belongsTo": {
+     "type": "object",
+     "properties": {
+      "collection": {
+       "$ref": "#/definitions/d15_collection"
+      },
+      "journal": {
+       "$ref": "#/definitions/d16_periodical"
+      },
+      "magazine": {
+       "$ref": "#/definitions/d16_periodical"
+      },
+      "newspaper": {
+       "$ref": "#/definitions/d16_periodical"
+      },
+      "periodical": {
+       "$ref": "#/definitions/d16_periodical"
+      },
+      "season": {
+       "$ref": "#/definitions/d17_season"
+      },
+      "series": {
+       "$ref": "#/definitions/d18_series"
+      },
+      "storyArc": {
+       "$ref": "#/definitions/d19_storyArc"
+      },
+      "volume": {
+       "$ref": "#/definitions/d20_volume"
+      }
+     }
+    },
+    "contains": {
+     "type": "object",
+     "properties": {
+      "article": {
+       "$ref": "#/definitions/d21_article"
+      },
+      "chapter": {
+       "$ref": "#/definitions/d22_chapter"
+      },
+      "episode": {
+       "$ref": "#/definitions/d23_episode"
+      },
+      "issue": {
+       "$ref": "#/definitions/d24_issue"
+      },
+      "season": {
+       "$ref": "#/definitions/d17_season"
+      },
+      "series": {
+       "$ref": "#/definitions/d18_series"
+      },
+      "storyArc": {
+       "$ref": "#/definitions/d19_storyArc"
+      },
+      "volume": {
+       "$ref": "#/definitions/d20_volume"
+      }
+     }
+    },
+    "tdm": {
+     "type": "object",
+     "required": [
+      "reservation"
+     ],
+     "properties": {
+      "reservation": {
+       "type": "string",
+       "enum": [
+        "all",
+        "none"
+       ]
+      },
+      "policy": {
+       "type": "string",
+       "format": "uri"
+      }
+     }
+    }
+   },
+   "required": [
+    "title"
+   ],
+   "allOf": [
+    {
+     "$ref": "#/definitions/d25_metadata"
+    }
+   ]
+  },
+  "d25_metadata": {
+   "title": "EPUB Profile - Metadata",
+   "type": "object",
+   "properties": {
+    "mediaOverlay": {
+     "type": "object",
+     "properties": {
+      "activeClass": {
+       "description": "Author-defined CSS class name to apply to the currently-playing EPUB Content Document element.",
+       "type": "string"
+      },
+      "playbackActiveClass": {
+       "description": "Author-defined CSS class name to apply to the EPUB Content Document's document element when playback is active.",
+       "type": "string"
+      }
+     }
+    }
+   }
+  },
+  "d20_volume": {
+   "title": "Volume",
+   "anyOf": [
+    {
+     "type": "number"
+    },
+    {
+     "type": "array",
+     "items": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "$ref": "#/definitions/d20_volume/$defs/object"
+       }
+      ]
+     }
+    },
+    {
+     "$ref": "#/definitions/d20_volume/$defs/object"
+    }
+   ],
+   "$defs": {
+    "object": {
+     "type": "object",
+     "properties": {
+      "name": {
+       "$ref": "#/definitions/d10_language_map"
+      },
+      "identifier": {
+       "type": "string",
+       "format": "uri"
+      },
+      "altIdentifier": {
+       "$ref": "#/definitions/d11_altIdentifier"
+      },
+      "sortAs": {
+       "$ref": "#/definitions/d10_language_map"
+      },
+      "position": {
+       "type": "number"
+      },
+      "links": {
+       "type": "array",
+       "items": {
+        "$ref": "#/definitions/d2_link"
+       }
+      },
+      "chapter": {
+       "$ref": "#/definitions/d22_chapter"
+      },
+      "issue": {
+       "$ref": "#/definitions/d24_issue"
+      },
+      "storyArc": {
+       "$ref": "#/definitions/d19_storyArc"
+      }
+     },
+     "required": [
+      "position"
+     ]
+    }
+   }
+  },
+  "d19_storyArc": {
+   "title": "Story Arc",
+   "anyOf": [
+    {
+     "type": "number"
+    },
+    {
+     "type": "array",
+     "items": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "$ref": "#/definitions/d19_storyArc/$defs/object"
+       }
+      ]
+     }
+    },
+    {
+     "$ref": "#/definitions/d19_storyArc/$defs/object"
+    }
+   ],
+   "$defs": {
+    "object": {
+     "type": "object",
+     "properties": {
+      "name": {
+       "$ref": "#/definitions/d10_language_map"
+      },
+      "identifier": {
+       "type": "string",
+       "format": "uri"
+      },
+      "altIdentifier": {
+       "$ref": "#/definitions/d11_altIdentifier"
+      },
+      "sortAs": {
+       "$ref": "#/definitions/d10_language_map"
+      },
+      "position": {
+       "type": "number"
+      },
+      "links": {
+       "type": "array",
+       "items": {
+        "$ref": "#/definitions/d2_link"
+       }
+      },
+      "chapter": {
+       "$ref": "#/definitions/d22_chapter"
+      },
+      "episode": {
+       "$ref": "#/definitions/d23_episode"
+      },
+      "issue": {
+       "$ref": "#/definitions/d24_issue"
+      }
+     },
+     "required": [
+      "name"
+     ]
+    }
+   }
+  },
+  "d24_issue": {
+   "title": "Issue",
+   "anyOf": [
+    {
+     "type": "number"
+    },
+    {
+     "type": "array",
+     "items": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "$ref": "#/definitions/d24_issue/$defs/object"
+       }
+      ]
+     }
+    },
+    {
+     "$ref": "#/definitions/d24_issue/$defs/object"
+    }
+   ],
+   "$defs": {
+    "object": {
+     "type": "object",
+     "properties": {
+      "name": {
+       "$ref": "#/definitions/d10_language_map"
+      },
+      "identifier": {
+       "type": "string",
+       "format": "uri"
+      },
+      "altIdentifier": {
+       "$ref": "#/definitions/d11_altIdentifier"
+      },
+      "sortAs": {
+       "$ref": "#/definitions/d10_language_map"
+      },
+      "position": {
+       "type": "number"
+      },
+      "links": {
+       "type": "array",
+       "items": {
+        "$ref": "#/definitions/d2_link"
+       }
+      },
+      "article": {
+       "$ref": "#/definitions/d21_article"
+      },
+      "chapter": {
+       "$ref": "#/definitions/d22_chapter"
+      }
+     },
+     "required": [
+      "position"
+     ]
+    }
+   }
+  },
+  "d22_chapter": {
+   "title": "Chapter",
+   "anyOf": [
+    {
+     "type": "number"
+    },
+    {
+     "type": "array",
+     "items": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "$ref": "#/definitions/d22_chapter/$defs/object"
+       }
+      ]
+     }
+    },
+    {
+     "$ref": "#/definitions/d22_chapter/$defs/object"
+    }
+   ],
+   "$defs": {
+    "object": {
+     "type": "object",
+     "properties": {
+      "name": {
+       "$ref": "#/definitions/d10_language_map"
+      },
+      "identifier": {
+       "type": "string",
+       "format": "uri"
+      },
+      "altIdentifier": {
+       "$ref": "#/definitions/d11_altIdentifier"
+      },
+      "sortAs": {
+       "$ref": "#/definitions/d10_language_map"
+      },
+      "position": {
+       "type": "number"
+      },
+      "series": {
+       "$ref": "#/definitions/d18_series"
+      },
+      "links": {
+       "type": "array",
+       "items": {
+        "$ref": "#/definitions/d2_link"
+       }
+      }
+     },
+     "required": [
+      "position"
+     ]
+    }
+   }
+  },
+  "d18_series": {
+   "title": "Series",
+   "anyOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "array",
+     "items": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "$ref": "#/definitions/d18_series/$defs/object"
+       }
+      ]
+     }
+    },
+    {
+     "$ref": "#/definitions/d18_series/$defs/object"
+    }
+   ],
+   "$defs": {
+    "object": {
+     "type": "object",
+     "properties": {
+      "name": {
+       "$ref": "#/definitions/d10_language_map"
+      },
+      "identifier": {
+       "type": "string",
+       "format": "uri"
+      },
+      "altIdentifier": {
+       "$ref": "#/definitions/d11_altIdentifier"
+      },
+      "sortAs": {
+       "$ref": "#/definitions/d10_language_map"
+      },
+      "position": {
+       "type": "number"
+      },
+      "links": {
+       "type": "array",
+       "items": {
+        "$ref": "#/definitions/d2_link"
+       }
+      },
+      "chapter": {
+       "$ref": "#/definitions/d22_chapter"
+      },
+      "episode": {
+       "$ref": "#/definitions/d23_episode"
+      },
+      "issue": {
+       "$ref": "#/definitions/d24_issue"
+      },
+      "season": {
+       "$ref": "#/definitions/d17_season"
+      },
+      "storyArc": {
+       "$ref": "#/definitions/d19_storyArc"
+      },
+      "volume": {
+       "$ref": "#/definitions/d20_volume"
+      }
+     },
+     "required": [
+      "name"
+     ]
+    }
+   }
+  },
+  "d17_season": {
+   "title": "Season",
+   "anyOf": [
+    {
+     "type": "number"
+    },
+    {
+     "type": "array",
+     "items": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "$ref": "#/definitions/d17_season/$defs/object"
+       }
+      ]
+     }
+    },
+    {
+     "$ref": "#/definitions/d17_season/$defs/object"
+    }
+   ],
+   "$defs": {
+    "object": {
+     "type": "object",
+     "properties": {
+      "name": {
+       "$ref": "#/definitions/d10_language_map"
+      },
+      "identifier": {
+       "type": "string",
+       "format": "uri"
+      },
+      "altIdentifier": {
+       "$ref": "#/definitions/d11_altIdentifier"
+      },
+      "sortAs": {
+       "$ref": "#/definitions/d10_language_map"
+      },
+      "position": {
+       "type": "number"
+      },
+      "links": {
+       "type": "array",
+       "items": {
+        "$ref": "#/definitions/d2_link"
+       }
+      },
+      "episode": {
+       "$ref": "#/definitions/d23_episode"
+      }
+     },
+     "required": [
+      "position"
+     ]
+    }
+   }
+  },
+  "d23_episode": {
+   "title": "Episode",
+   "anyOf": [
+    {
+     "type": "number"
+    },
+    {
+     "type": "array",
+     "items": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "$ref": "#/definitions/d23_episode/$defs/object"
+       }
+      ]
+     }
+    },
+    {
+     "$ref": "#/definitions/d23_episode/$defs/object"
+    }
+   ],
+   "$defs": {
+    "object": {
+     "type": "object",
+     "properties": {
+      "name": {
+       "$ref": "#/definitions/d10_language_map"
+      },
+      "identifier": {
+       "type": "string",
+       "format": "uri"
+      },
+      "altIdentifier": {
+       "$ref": "#/definitions/d11_altIdentifier"
+      },
+      "sortAs": {
+       "$ref": "#/definitions/d10_language_map"
+      },
+      "position": {
+       "type": "number"
+      },
+      "links": {
+       "type": "array",
+       "items": {
+        "$ref": "#/definitions/d2_link"
+       }
+      }
+     },
+     "required": [
+      "position"
+     ]
+    }
+   }
+  },
+  "d10_language_map": {
+   "title": "Language Map",
+   "anyOf": [
+    {
+     "type": "string"
+    },
+    {
+     "description": "The language in a language map must be a valid BCP 47 tag.",
+     "type": "object",
+     "patternProperties": {
+      "^((?<grandfathered>(en-GB-oed|i-ami|i-bnn|i-default|i-enochian|i-hak|i-klingon|i-lux|i-mingo|i-navajo|i-pwn|i-tao|i-tay|i-tsu|sgn-BE-FR|sgn-BE-NL|sgn-CH-DE)|(art-lojban|cel-gaulish|no-bok|no-nyn|zh-guoyu|zh-hakka|zh-min|zh-min-nan|zh-xiang))|((?<language>([A-Za-z]{2,3}(-(?<extlang>[A-Za-z]{3}(-[A-Za-z]{3}){0,2}))?)|[A-Za-z]{4}|[A-Za-z]{5,8})(-(?<script>[A-Za-z]{4}))?(-(?<region>[A-Za-z]{2}|[0-9]{3}))?(-(?<variant>[A-Za-z0-9]{5,8}|[0-9][A-Za-z0-9]{3}))*(-(?<extension>[0-9A-WY-Za-wy-z](-[A-Za-z0-9]{2,8})+))*(-(?<privateUse>x(-[A-Za-z0-9]{1,8})+))?)|(?<privateUse2>x(-[A-Za-z0-9]{1,8})+))$": {
+       "type": "string"
+      }
+     },
+     "additionalProperties": false,
+     "minProperties": 1
+    }
+   ]
+  },
+  "d11_altIdentifier": {
+   "title": "Alternate Identifiers",
+   "type": "array",
+   "items": {
+    "anyOf": [
+     {
+      "type": "string",
+      "format": "uri"
+     },
+     {
+      "type": "object",
+      "properties": {
+       "value": {
+        "type": "string"
+       },
+       "scheme": {
+        "type": "string",
+        "format": "uri"
+       }
+      },
+      "required": [
+       "value"
+      ]
+     }
+    ]
+   },
+   "minItems": 1
+  },
+  "d21_article": {
+   "title": "Article",
+   "anyOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "array",
+     "items": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "$ref": "#/definitions/d21_article/$defs/object"
+       }
+      ]
+     }
+    },
+    {
+     "$ref": "#/definitions/d21_article/$defs/object"
+    }
+   ],
+   "$defs": {
+    "object": {
+     "type": "object",
+     "properties": {
+      "name": {
+       "$ref": "#/definitions/d10_language_map"
+      },
+      "identifier": {
+       "type": "string",
+       "format": "uri"
+      },
+      "altIdentifier": {
+       "$ref": "#/definitions/d11_altIdentifier"
+      },
+      "sortAs": {
+       "$ref": "#/definitions/d10_language_map"
+      },
+      "author": {
+       "$ref": "#/definitions/d13_contributor"
+      },
+      "translator": {
+       "$ref": "#/definitions/d13_contributor"
+      },
+      "editor": {
+       "$ref": "#/definitions/d13_contributor"
+      },
+      "artist": {
+       "$ref": "#/definitions/d13_contributor"
+      },
+      "illustrator": {
+       "$ref": "#/definitions/d13_contributor"
+      },
+      "contributor": {
+       "$ref": "#/definitions/d13_contributor"
+      },
+      "description": {
+       "type": "string"
+      },
+      "numberOfPages": {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      "position": {
+       "type": "number"
+      },
+      "links": {
+       "type": "array",
+       "items": {
+        "$ref": "#/definitions/d2_link"
+       }
+      }
+     },
+     "required": [
+      "name"
+     ]
+    }
+   }
+  },
+  "d13_contributor": {
+   "title": "Contributor",
+   "anyOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "array",
+     "items": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "$ref": "#/definitions/d13_contributor/$defs/object"
+       }
+      ]
+     }
+    },
+    {
+     "$ref": "#/definitions/d13_contributor/$defs/object"
+    }
+   ],
+   "$defs": {
+    "object": {
+     "type": "object",
+     "properties": {
+      "name": {
+       "$ref": "#/definitions/d10_language_map"
+      },
+      "identifier": {
+       "type": "string",
+       "format": "uri"
+      },
+      "altIdentifier": {
+       "$ref": "#/definitions/d11_altIdentifier"
+      },
+      "sortAs": {
+       "$ref": "#/definitions/d10_language_map"
+      },
+      "role": {
+       "type": [
+        "string",
+        "array"
+       ],
+       "items": {
+        "type": "string"
+       }
+      },
+      "links": {
+       "type": "array",
+       "items": {
+        "$ref": "#/definitions/d2_link"
+       }
+      }
+     },
+     "required": [
+      "name"
+     ]
+    }
+   }
+  },
+  "d16_periodical": {
+   "title": "Periodical",
+   "anyOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "array",
+     "items": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "$ref": "#/definitions/d16_periodical/$defs/object"
+       }
+      ]
+     }
+    },
+    {
+     "$ref": "#/definitions/d16_periodical/$defs/object"
+    }
+   ],
+   "$defs": {
+    "object": {
+     "type": "object",
+     "properties": {
+      "name": {
+       "$ref": "#/definitions/d10_language_map"
+      },
+      "identifier": {
+       "type": "string",
+       "format": "uri"
+      },
+      "altIdentifier": {
+       "$ref": "#/definitions/d11_altIdentifier"
+      },
+      "sortAs": {
+       "$ref": "#/definitions/d10_language_map"
+      },
+      "position": {
+       "type": "number"
+      },
+      "links": {
+       "type": "array",
+       "items": {
+        "$ref": "#/definitions/d2_link"
+       }
+      },
+      "issue": {
+       "$ref": "#/definitions/d24_issue"
+      },
+      "volume": {
+       "$ref": "#/definitions/d20_volume"
+      }
+     },
+     "required": [
+      "name"
+     ]
+    }
+   }
+  },
+  "d15_collection": {
+   "title": "Collection",
+   "anyOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "array",
+     "items": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "$ref": "#/definitions/d15_collection/$defs/object"
+       }
+      ]
+     }
+    },
+    {
+     "$ref": "#/definitions/d15_collection/$defs/object"
+    }
+   ],
+   "$defs": {
+    "object": {
+     "type": "object",
+     "properties": {
+      "name": {
+       "$ref": "#/definitions/d10_language_map"
+      },
+      "identifier": {
+       "type": "string",
+       "format": "uri"
+      },
+      "altIdentifier": {
+       "$ref": "#/definitions/d11_altIdentifier"
+      },
+      "sortAs": {
+       "$ref": "#/definitions/d10_language_map"
+      },
+      "position": {
+       "type": "number"
+      },
+      "links": {
+       "type": "array",
+       "items": {
+        "$ref": "#/definitions/d2_link"
+       }
+      }
+     },
+     "required": [
+      "name"
+     ]
+    }
+   }
+  },
+  "d14_subject": {
+   "title": "Subject",
+   "anyOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "array",
+     "items": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "$ref": "#/definitions/d14_subject/$defs/object"
+       }
+      ]
+     }
+    },
+    {
+     "$ref": "#/definitions/d14_subject/$defs/object"
+    }
+   ],
+   "$defs": {
+    "object": {
+     "type": "object",
+     "properties": {
+      "name": {
+       "$ref": "#/definitions/d10_language_map"
+      },
+      "sortAs": {
+       "$ref": "#/definitions/d10_language_map"
+      },
+      "code": {
+       "type": "string"
+      },
+      "scheme": {
+       "type": "string",
+       "format": "uri"
+      },
+      "links": {
+       "type": "array",
+       "items": {
+        "$ref": "#/definitions/d2_link"
+       }
+      }
+     },
+     "required": [
+      "name"
+     ]
+    }
+   }
+  },
+  "d12_a11y": {
+   "title": "Accessibility Object",
+   "type": "object",
+   "properties": {
+    "conformsTo": {
+     "type": [
+      "string",
+      "array"
+     ],
+     "format": "uri",
+     "items": {
+      "type": "string",
+      "format": "uri"
+     }
+    },
+    "exemption": {
+     "type": "string",
+     "enum": [
+      "eaa-disproportionate-burden",
+      "eaa-fundamental-alteration",
+      "eaa-microenterprise"
+     ]
+    },
+    "accessMode": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "enum": [
+       "auditory",
+       "chartOnVisual",
+       "chemOnVisual",
+       "colorDependent",
+       "diagramOnVisual",
+       "mathOnVisual",
+       "musicOnVisual",
+       "tactile",
+       "textOnVisual",
+       "textual",
+       "visual"
+      ]
+     }
+    },
+    "accessModeSufficient": {
+     "type": "array",
+     "items": {
+      "oneOf": [
+       {
+        "type": "string",
+        "enum": [
+         "auditory",
+         "tactile",
+         "textual",
+         "visual"
+        ]
+       },
+       {
+        "type": "array",
+        "items": {
+         "type": "string",
+         "enum": [
+          "auditory",
+          "tactile",
+          "textual",
+          "visual"
+         ]
+        }
+       }
+      ]
+     }
+    },
+    "feature": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "enum": [
+       "annotations",
+       "ARIA",
+       "bookmarks",
+       "index",
+       "pageBreakMarkers",
+       "printPageNumbers",
+       "pageNavigation",
+       "readingOrder",
+       "structuralNavigation",
+       "tableOfContents",
+       "taggedPDF",
+       "alternativeText",
+       "audioDescription",
+       "closedCaptions",
+       "captions",
+       "describedMath",
+       "longDescription",
+       "openCaptions",
+       "signLanguage",
+       "transcript",
+       "displayTransformability",
+       "synchronizedAudioText",
+       "timingControl",
+       "unlocked",
+       "ChemML",
+       "latex",
+       "latex-chemistry",
+       "MathML",
+       "MathML-chemistry",
+       "ttsMarkup",
+       "highContrastAudio",
+       "highContrastDisplay",
+       "largePrint",
+       "braille",
+       "tactileGraphic",
+       "tactileObject",
+       "fullRubyAnnotations",
+       "horizontalWriting",
+       "rubyAnnotations",
+       "verticalWriting",
+       "withAdditionalWordSegmentation",
+       "withoutAdditionalWordSegmentation",
+       "none",
+       "unknown"
+      ]
+     }
+    },
+    "hazard": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "enum": [
+       "flashing",
+       "motionSimulation",
+       "sound",
+       "none",
+       "noFlashingHazard",
+       "noMotionSimulationHazard",
+       "noSoundHazard",
+       "unknown",
+       "unknownFlashingHazard",
+       "unknownMotionSimulationHazard",
+       "unknownSoundHazard"
+      ]
+     }
+    },
+    "certification": {
+     "type": "object",
+     "properties": {
+      "certifiedBy": {
+       "type": "string"
+      },
+      "credential": {
+       "type": "string"
+      },
+      "report": {
+       "type": "string"
+      }
+     }
+    },
+    "summary": {
+     "type": "string"
+    }
+   }
+  },
+  "d1_feed_metadata": {
+   "title": "OPDS Metadata",
+   "type": "object",
+   "properties": {
+    "identifier": {
+     "type": "string",
+     "format": "uri"
+    },
+    "@type": {
+     "type": "string",
+     "format": "uri"
+    },
+    "title": {
+     "type": [
+      "string",
+      "array",
+      "object"
+     ]
+    },
+    "subtitle": {
+     "type": [
+      "string",
+      "array",
+      "object"
+     ]
+    },
+    "modified": {
+     "type": "string",
+     "format": "date-time"
+    },
+    "description": {
+     "type": "string"
+    },
+    "itemsPerPage": {
+     "type": "integer",
+     "exclusiveMinimum": 0
+    },
+    "currentPage": {
+     "type": "integer",
+     "exclusiveMinimum": 0
+    },
+    "numberOfItems": {
+     "type": "integer",
+     "minimum": 0
+    }
+   },
+   "required": [
+    "title"
+   ]
+  }
+ }
+}
