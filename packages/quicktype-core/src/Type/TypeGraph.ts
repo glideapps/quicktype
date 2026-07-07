@@ -387,6 +387,7 @@ export class TypeGraph {
         map: ReadonlyMap<Type, Type>,
         debugPrintRemapping: boolean,
         force = false,
+        lostTypeAttributes = false,
     ): TypeGraph {
         this.printRewrite(title);
 
@@ -407,6 +408,13 @@ export class TypeGraph {
             this.serial + 1,
             this._haveProvenanceAttributes,
         );
+        // Merging distinct-but-structurally-identical types orphans their
+        // sub-types, dropping those attributes; callers that do so set this so
+        // the provenance invariant check treats the loss as intentional.
+        if (lostTypeAttributes) {
+            builder.setLostTypeAttributes();
+        }
+
         const newGraph = builder.finish();
 
         this.checkLostTypeAttributes(builder, newGraph);

@@ -133,6 +133,93 @@ export function optionalToNullable(
     );
 }
 
+// The set of types that lie on a cycle, i.e. are reachable from themselves
+// through their (non-attribute) children. Computed with an iterative Tarjan
+// SCC pass — a type is recursive iff its strongly-connected component has more
+// than one member or it has an edge to itself. Iterative (not recursive) so it
+// can't itself stack-overflow on the deep graphs this module handles.
+function recursiveTypes(graph: TypeGraph): Set<Type> {
+    const result = new Set<Type>();
+    const index = new Map<Type, number>();
+    const lowlink = new Map<Type, number>();
+    const onStack = new Set<Type>();
+    const stack: Type[] = [];
+    let counter = 0;
+
+    for (const root of graph.allTypesUnordered()) {
+        if (index.has(root)) continue;
+        // Explicit work stack of (type, iterator over its children).
+        const work: Array<[Type, Iterator<Type>]> = [
+            [root, root.getNonAttributeChildren()[Symbol.iterator]()],
+        ];
+        index.set(root, counter);
+        lowlink.set(root, counter);
+        counter += 1;
+        stack.push(root);
+        onStack.add(root);
+
+        while (work.length > 0) {
+            const [t, it] = work[work.length - 1];
+            const next = it.next();
+            if (!next.done) {
+                const child = next.value;
+                if (t === child) result.add(t); // self-edge
+                if (!index.has(child)) {
+                    index.set(child, counter);
+                    lowlink.set(child, counter);
+                    counter += 1;
+                    stack.push(child);
+                    onStack.add(child);
+                    work.push([
+                        child,
+                        child.getNonAttributeChildren()[Symbol.iterator](),
+                    ]);
+                } else if (onStack.has(child)) {
+                    lowlink.set(
+                        t,
+                        Math.min(
+                            defined(lowlink.get(t)),
+                            defined(index.get(child)),
+                        ),
+                    );
+                }
+
+                continue;
+            }
+
+            // Done with t's children: pop it and propagate its lowlink up.
+            work.pop();
+            if (work.length > 0) {
+                const parent = work[work.length - 1][0];
+                lowlink.set(
+                    parent,
+                    Math.min(
+                        defined(lowlink.get(parent)),
+                        defined(lowlink.get(t)),
+                    ),
+                );
+            }
+
+            // t is an SCC root: pop its component. Any component with >1 member
+            // is a cycle, so all its members are recursive.
+            if (defined(lowlink.get(t)) === defined(index.get(t))) {
+                const component: Type[] = [];
+                let popped: Type;
+                do {
+                    popped = defined(stack.pop());
+                    onStack.delete(popped);
+                    component.push(popped);
+                } while (popped !== t);
+                if (component.length > 1) {
+                    for (const c of component) result.add(c);
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
 // Collapse types that are structurally identical to each other into a single
 // type. Unlike the identity-map deduplication in `TypeBuilder`, which can only
 // deduplicate a type at the moment it is created (and so misses *recursive*
@@ -178,9 +265,22 @@ export function combineIdenticalTypes(
         return t.kind;
     }
 
+    // Only merge types that participate in a cycle. `structurallyCompatible`
+    // ignores type attributes, so two structurally-identical types can still
+    // render differently — e.g. a plain `string` and an enum-bearing `string`
+    // both have kind `string`, so a `null | string` union is "compatible" with
+    // a `null | <enum>` union and merging the two would wrongly constrain the
+    // free-form field to the enum's cases (us-senators.json). The identity map
+    // in `TypeBuilder` already deduplicates attribute-equal *non-recursive*
+    // duplicates safely; the only duplicates it misses — and the only ones this
+    // pass exists to remove — are recursive ones, whose structure isn't known at
+    // creation time. Restricting to cycle members avoids the attribute-blind
+    // over-merge while still collapsing the recursive duplicates (#2187, #1376).
+    const recursive = recursiveTypes(graph);
     const buckets = new Map<string, Type[]>();
     for (const t of graph.allTypesUnordered()) {
         if (!dedupableKinds.has(t.kind)) continue;
+        if (!recursive.has(t)) continue;
         const sig = signature(t);
         let bucket = buckets.get(sig);
         if (bucket === undefined) {
@@ -209,12 +309,20 @@ export function combineIdenticalTypes(
         }
     }
 
+    // Merging two structurally-identical types orphans the (structurally
+    // identical but distinct) sub-types of the mapped-away type, so their
+    // attributes — including the provenance the invariant check tracks — are
+    // intentionally dropped. This is inherent to deduplicating recursive types,
+    // whose duplicate copies are entirely separate subtrees. Signal the loss so
+    // the provenance check doesn't flag it, as other knowingly-lossy rewrites do.
     return graph.remap(
         "combine identical types",
         stringTypeMapping,
         false,
         map,
         debugPrintRemapping,
+        false,
+        true,
     );
 }
 
