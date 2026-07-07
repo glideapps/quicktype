@@ -213,10 +213,13 @@ export class UnifyUnionBuilder extends UnionBuilder<
                     forwardingRef,
                 );
             } else {
-                assert(
-                    additionalProperties === undefined,
-                    "We have additional properties but want to make a class",
-                );
+                // A class can't represent additional properties. A *non-any*
+                // additionalProperties would have taken the map branch above,
+                // so anything reaching here is a permissive `any`
+                // additionalProperties (e.g. `additionalProperties: true`
+                // unified with a class). Drop it and make a class — consistent
+                // with how quicktype otherwise ignores permissive `any`
+                // additionals for languages without a full object type.
                 return this.typeBuilder.getUniqueClassType(
                     typeAttributes,
                     this._makeClassesFixed,

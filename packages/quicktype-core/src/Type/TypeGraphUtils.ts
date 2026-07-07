@@ -10,7 +10,13 @@ import { TypeNames, namesTypeAttributeKind } from "../attributes/TypeNames";
 import type { GraphRewriteBuilder } from "../GraphRewriting";
 import { assert, defined, panic } from "../support/Support";
 
-import { ClassType, IntersectionType, type Type, UnionType } from "./Type";
+import {
+    ClassType,
+    IntersectionType,
+    ObjectType,
+    type Type,
+    UnionType,
+} from "./Type";
 import type { StringTypeMapping } from "./TypeBuilderUtils";
 import type { TypeGraph } from "./TypeGraph";
 import type { TypeRef } from "./TypeRef";
@@ -124,6 +130,91 @@ export function optionalToNullable(
             const c = defined(iterableFirst(setOfClass));
             return rewriteClass(c, builder, forwardingRef);
         },
+    );
+}
+
+// Collapse types that are structurally identical to each other into a single
+// type. Unlike the identity-map deduplication in `TypeBuilder`, which can only
+// deduplicate a type at the moment it is created (and so misses *recursive*
+// types, whose structure isn't known until after they've been given a type
+// ref), this compares whole types — cycles and all — via
+// `structurallyCompatible`. It only ever merges types that are exactly
+// bisimilar, so it never over-generalizes; it just removes the duplicate
+// recursive types the flattening fixpoint leaves behind on schemas with cyclic
+// composition (issues #2187 and #1376).
+export function combineIdenticalTypes(
+    graph: TypeGraph,
+    stringTypeMapping: StringTypeMapping,
+    debugPrintRemapping: boolean,
+): TypeGraph {
+    // Only structural (composite) types can be duplicated in a way the identity
+    // map misses; primitives/enums/strings already deduplicate on creation.
+    const dedupableKinds = new Set([
+        "class",
+        "object",
+        "map",
+        "array",
+        "union",
+        "intersection",
+    ]);
+
+    // Bucket by a cheap structural signature so we only run the (relatively
+    // expensive) structural-equality check between plausible candidates.
+    function signature(t: Type): string {
+        if (t instanceof ClassType || t instanceof ObjectType) {
+            const props = Array.from(t.getProperties().keys()).sort().join(",");
+            const additional = t.getAdditionalProperties() !== undefined;
+            return `${t.kind}|${props}|${additional}`;
+        }
+
+        if (t instanceof UnionType || t instanceof IntersectionType) {
+            const memberKinds = Array.from(t.members)
+                .map((m) => m.kind)
+                .sort()
+                .join(",");
+            return `${t.kind}|${t.members.size}|${memberKinds}`;
+        }
+
+        return t.kind;
+    }
+
+    const buckets = new Map<string, Type[]>();
+    for (const t of graph.allTypesUnordered()) {
+        if (!dedupableKinds.has(t.kind)) continue;
+        const sig = signature(t);
+        let bucket = buckets.get(sig);
+        if (bucket === undefined) {
+            bucket = [];
+            buckets.set(sig, bucket);
+        }
+
+        bucket.push(t);
+    }
+
+    const map = new Map<Type, Type>();
+    for (const bucket of buckets.values()) {
+        if (bucket.length < 2) continue;
+        // Deterministic representative order: lowest index first.
+        bucket.sort((a, b) => a.index - b.index);
+        const representatives: Type[] = [];
+        for (const t of bucket) {
+            const rep = representatives.find((r) =>
+                r.structurallyCompatible(t, false),
+            );
+            if (rep === undefined) {
+                representatives.push(t);
+            } else {
+                map.set(t, rep);
+            }
+        }
+    }
+
+    return graph.remap(
+        "combine identical types",
+        stringTypeMapping,
+        false,
+        map,
+        debugPrintRemapping,
     );
 }
 

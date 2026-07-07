@@ -9,7 +9,11 @@ import type { StringTypeMapping } from "../Type/TypeBuilderUtils";
 import type { TypeGraph } from "../Type/TypeGraph";
 import { type TypeRef, derefTypeRef } from "../Type/TypeRef";
 import { makeGroupsToFlatten } from "../Type/TypeUtils";
-import { UnifyUnionBuilder, unifyTypes } from "../UnifyClasses";
+import {
+    UnifyUnionBuilder,
+    unifyTypes,
+    unionBuilderForUnification,
+} from "../UnifyClasses";
 
 export function flattenUnions(
     graph: TypeGraph,
@@ -20,7 +24,18 @@ export function flattenUnions(
 ): [TypeGraph, boolean] {
     let needsRepeat = false;
 
-    function replace(
+    // While intersections are still being resolved (the intersection/union
+    // resolution passes alternate), the graph can contain `intersection` types
+    // that the unification accumulator can't handle. In that phase we use the
+    // simple callback below. Once the graph is intersection-free we can unify
+    // recursively (see `replaceWithUnification`), which is what makes recursive
+    // schemas converge.
+    const graphHasIntersections = iterableSome(
+        graph.allTypesUnordered(),
+        (t) => t instanceof IntersectionType,
+    );
+
+    function replaceSimple(
         types: ReadonlySet<Type>,
         builder: GraphRewriteBuilder<Type>,
         forwardingRef: TypeRef,
@@ -57,6 +72,38 @@ export function flattenUnions(
             forwardingRef,
         );
     }
+
+    function replaceWithUnification(
+        types: ReadonlySet<Type>,
+        builder: GraphRewriteBuilder<Type>,
+        forwardingRef: TypeRef,
+    ): TypeRef {
+        // Unify recursively through `unifyTypes` (via `unionBuilderForUnification`)
+        // rather than building result unions with a raw `getUnionType` callback.
+        // The recursive path memoizes in-progress unifications (`registerUnion`),
+        // so a recursive reference back into the type currently being built ties
+        // the knot instead of being re-unified into a fresh copy. Without this the
+        // recursion unrolls one level per pass and the fixpoint never converges on
+        // schemas with cyclic composition (issue #2187, same class as #1376).
+        const unionBuilder = unionBuilderForUnification(
+            builder,
+            makeObjectTypes,
+            true,
+            conflateNumbers,
+        );
+        return unifyTypes(
+            types,
+            emptyTypeAttributes,
+            builder,
+            unionBuilder,
+            conflateNumbers,
+            forwardingRef,
+        );
+    }
+
+    const replace = graphHasIntersections
+        ? replaceSimple
+        : replaceWithUnification;
 
     const allUnions = setFilter(
         graph.allTypesUnordered(),

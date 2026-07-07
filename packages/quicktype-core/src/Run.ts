@@ -35,6 +35,7 @@ import { TypeBuilder } from "./Type/TypeBuilder";
 import type { StringTypeMapping } from "./Type/TypeBuilderUtils";
 import { TypeGraph } from "./Type/TypeGraph";
 import {
+    combineIdenticalTypes,
     noneToAny,
     optionalToNullable,
     removeIndirectionIntersections,
@@ -330,6 +331,22 @@ class Run implements RunContext {
                         );
                     });
                 }
+
+                // Merge structurally-identical types (including recursive ones)
+                // that the flattening fixpoint leaves behind, so recursive
+                // schemas don't produce piles of duplicate types (issue #2187).
+                this.time("combine identical types", () => {
+                    const combined = combineIdenticalTypes(
+                        graph,
+                        stringTypeMapping,
+                        debugPrintReconstitution,
+                    );
+                    if (combined !== graph) {
+                        graph = combined;
+                        // Merging may expose further flattening opportunities.
+                        unionsDone = false;
+                    }
+                });
 
                 if (graph === graphBeforeRewrites) {
                     assert(
