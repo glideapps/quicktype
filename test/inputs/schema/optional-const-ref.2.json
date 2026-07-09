@@ -1,0 +1,7 @@
+{
+  "requiredCoordinates": [
+    { "latitude": 48.5, "longitude": 16.25 }
+  ],
+  "requiredCount": 7,
+  "requiredLabel": "required"
+}

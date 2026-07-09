@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "amount": {
+      "type": "integer",
+      "const": 5
+    },
+    "ratio": {
+      "const": 3.5
+    },
+    "enabled": {
+      "const": true
+    },
+    "kind": {
+      "const": "widget"
+    }
+  },
+  "required": ["version", "amount", "ratio", "enabled", "kind"]
+}

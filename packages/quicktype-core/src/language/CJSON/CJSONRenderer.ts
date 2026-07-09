@@ -5704,6 +5704,10 @@ export class CJSONRenderer extends ConvenienceRenderer {
         );
     }
 
+    protected get commentLinesSpliceOnBackslash(): boolean {
+        return true;
+    }
+
     /**
      * Emit description block
      * @param lines: description block lines

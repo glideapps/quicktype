@@ -135,6 +135,10 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         return type;
     }
 
+    protected get commentLinesSpliceOnBackslash(): boolean {
+        return true;
+    }
+
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
         this.emitCommentLines(lines, { lineStart: "/// " });
     }

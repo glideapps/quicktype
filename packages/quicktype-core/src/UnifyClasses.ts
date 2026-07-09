@@ -191,6 +191,7 @@ export class UnifyUnionBuilder extends UnionBuilder<
             return this.typeBuilder.getMapType(
                 typeAttributes,
                 this._unifyTypes(Array.from(propertyTypes)),
+                forwardingRef,
             );
         } else {
             const [properties, additionalProperties, lostTypeAttributes] =

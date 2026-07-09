@@ -1,0 +1,14 @@
+{
+    "invoices": [
+        {
+            "name": "invoice-1",
+            "dueDate": "2023-01-15",
+            "createdAt": "2023-01-15T10:30:00Z"
+        },
+        {
+            "name": "invoice-2",
+            "dueDate": null,
+            "createdAt": null
+        }
+    ]
+}
