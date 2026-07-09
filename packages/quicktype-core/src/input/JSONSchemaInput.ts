@@ -1219,9 +1219,12 @@ async function addTypesInSchema(
             enumArray === undefined &&
             !isConst &&
             (typeSet === undefined || typeSet.has("array"));
+        const enumArrayHasString =
+            enumArray?.find((x) => typeof x === "string") !== undefined;
+        const constIsString = isConst && typeof schema.const === "string";
         const needStringEnum =
             includedTypes.has("string") &&
-            enumArray?.find((x) => typeof x === "string") !== undefined;
+            (enumArrayHasString || constIsString);
         const needUnion =
             typeSet !== undefined ||
             schema.properties !== undefined ||
@@ -1260,8 +1263,13 @@ async function addTypesInSchema(
                 combineProducedAttributes(({ forString }) => forString),
             );
 
-            if (needStringEnum || isConst) {
-                const cases = isConst
+            // FIXME: A non-string const never takes this path, so it
+            // degrades to its plain primitive type and the literal value is
+            // dropped, because enum case name generation only works with
+            // strings. To fix this, the cases below have to support all
+            // types.
+            if (needStringEnum) {
+                const cases = constIsString
                     ? [schema.const]
                     : (enumArray?.filter((x) => typeof x === "string") ?? []);
                 unionTypes.push(

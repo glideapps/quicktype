@@ -5,10 +5,10 @@
     "license": "Apache-2.0",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
-    "repository": "https://github.com/quicktype/quicktype",
+    "repository": "https://github.com/glideapps/quicktype",
     "scripts": {
         "clean": "rm -rf dist node_modules *~",
-        "build": "./env.sh && tsc"
+        "build": "tsc"
     },
     "dependencies": {
         "@glideapps/ts-necessities": "2.2.3",
@@ -48,6 +48,7 @@
     },
     "files": ["dist"],
     "browser": {
-        "fs": false
+        "fs": false,
+        "path": false
     }
 }

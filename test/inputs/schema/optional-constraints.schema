@@ -1,0 +1,30 @@
+{
+  "type": "object",
+  "properties": {
+    "reqZeroMin": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "optInt": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "optDouble": {
+      "type": "number",
+      "minimum": 0.5,
+      "maximum": 99.5
+    },
+    "optString": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 10
+    },
+    "optPattern": {
+      "type": "string",
+      "pattern": "^[a-z]+$"
+    }
+  },
+  "required": ["reqZeroMin"]
+}

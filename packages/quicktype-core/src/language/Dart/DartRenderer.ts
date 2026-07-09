@@ -469,7 +469,10 @@ export class DartRenderer extends ConvenienceRenderer {
                     defined(this._enumValues.get(enumType)),
                     ".map[",
                     dynamic,
-                    this._options.nullSafety ? "]!" : "]",
+                    this._options.nullSafety &&
+                    (!isNullable || this._options.requiredProperties)
+                        ? "]!"
+                        : "]",
                 ];
             },
             (unionType) => {
@@ -600,7 +603,8 @@ export class DartRenderer extends ConvenienceRenderer {
                             (transformedStringType.isNullable || isNullable)
                         ) {
                             return [
-                                '"${',
+                                dynamic,
+                                ' == null ? null : "${',
                                 dynamic,
                                 "!.year.toString().padLeft(4, '0')",
                                 "}-${",
@@ -836,7 +840,7 @@ export class DartRenderer extends ConvenienceRenderer {
         this.emitDescription(this.descriptionForType(c));
 
         this.emitLine("@freezed");
-        this.emitBlock(["class ", className, " with _$", className], () => {
+        this.emitBlock(["abstract class ", className, " with _$", className], () => {
             if (c.getProperties().size === 0) {
                 this.emitLine(
                     "const factory ",

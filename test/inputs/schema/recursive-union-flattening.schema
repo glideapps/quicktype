@@ -1,0 +1,17 @@
+{
+  "items": {
+    "anyOf": [
+      { "$ref": "#/definitions/a" },
+      { "additionalProperties": { "$ref": "#" } }
+    ]
+  },
+  "definitions": {
+    "a": {
+      "properties": {
+        "x": {
+          "items": { "$ref": "#/definitions/a" }
+        }
+      }
+    }
+  }
+}

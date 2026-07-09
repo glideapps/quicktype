@@ -286,6 +286,8 @@ export function messageError<Kind extends ErrorKinds>(
             valueString = value.message;
         } else if (typeof value !== "string") {
             valueString = JSON.stringify(value);
+        } else {
+            valueString = value;
         }
 
         userMessage = userMessage.replace("${" + name + "}", valueString);

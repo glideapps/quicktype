@@ -13,7 +13,7 @@ import {
 import { type Name, type Namer, funPrefixNamer } from "../../Naming";
 import type { RenderContext } from "../../Renderer";
 import type { OptionValues } from "../../RendererOptions";
-import { type Sourcelike, modifySource } from "../../Source";
+import type { Sourcelike } from "../../Source";
 import { stringEscape } from "../../support/Strings";
 import { defined, panic } from "../../support/Support";
 import type { TargetLanguage } from "../../TargetLanguage";
@@ -88,15 +88,8 @@ export class PythonRenderer extends ConvenienceRenderer {
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
         if (lines.length === 1) {
-            const docstring = modifySource((content) => {
-                if (content.endsWith('"')) {
-                    return content.slice(0, -1) + '\\"';
-                }
-
-                return content;
-            }, lines[0]);
             this.emitComments([
-                { customLines: [docstring], lineStart: '"""', lineEnd: '"""' },
+                { customLines: lines, lineStart: '"""', lineEnd: '"""' },
             ]);
         } else {
             this.emitCommentLines(lines, {
