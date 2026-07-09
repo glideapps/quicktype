@@ -1,0 +1,30 @@
+name: Publish npm packages
+on:
+    push:
+        branches:
+            - master
+
+jobs:
+    publish-npm:
+        runs-on: ubuntu-22.04
+        env:
+            # quicktype-core's build (packages/quicktype-core/env.sh) swaps in
+            # a CI-only fetch shim whenever $CI is set — which GitHub Actions
+            # always sets. PUBLISH=true makes it skip that swap so releases
+            # ship the real $fetch (issue #2874).
+            PUBLISH: "true"
+        permissions:
+            # Required for npm Trusted Publishing (OIDC): npm mints
+            # short-lived, per-run credentials from this token instead
+            # of a long-lived NPM_TOKEN, and attaches provenance.
+            id-token: write
+            contents: read
+        steps:
+            - uses: actions/checkout@v3
+            - uses: ./.github/workflows/setup
+            # Trusted Publishing requires npm >= 11.5.1; the pinned Node
+            # runtime ships an older npm, so upgrade it before publishing.
+            - run: npm install -g npm@latest
+            # Run via npm so node_modules/.bin is on PATH (patch-npm-version.ts
+            # is executed through its ts-node shebang).
+            - run: npm run pub:npm

@@ -4,7 +4,8 @@
         "strict": true,
         "alwaysStrict": true,
         "noUnusedLocals": true,
-        "noUnusedParameters": true
+        "noUnusedParameters": true,
+        "resolveJsonModule": true
     },
     "include": ["*.ts", "../dist/*.js", "../dist/*.d.ts"]
 }

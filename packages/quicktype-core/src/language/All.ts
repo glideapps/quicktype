@@ -1,70 +1,101 @@
-import { iterableFind } from "collection-utils";
+import type { TargetLanguage } from "../TargetLanguage";
 
-import { TargetLanguage } from "../TargetLanguage";
-
-import { CSharpTargetLanguage } from "./CSharp";
-import { GoTargetLanguage } from "./Golang";
 import { CJSONTargetLanguage } from "./CJSON";
 import { CPlusPlusTargetLanguage } from "./CPlusPlus";
-import { ObjectiveCTargetLanguage } from "./Objective-C";
+import { CrystalTargetLanguage } from "./Crystal";
+import { CSharpTargetLanguage } from "./CSharp";
+import { DartTargetLanguage } from "./Dart";
+import { ElixirTargetLanguage } from "./Elixir";
+import { ElmTargetLanguage } from "./Elm";
+import { GoTargetLanguage } from "./Golang";
+import { HaskellTargetLanguage } from "./Haskell";
 import { JavaTargetLanguage } from "./Java";
 import { JavaScriptTargetLanguage } from "./JavaScript";
 import { JavaScriptPropTypesTargetLanguage } from "./JavaScriptPropTypes";
-import { TypeScriptTargetLanguage, FlowTargetLanguage } from "./TypeScriptFlow";
-import { SwiftTargetLanguage } from "./Swift";
+import { JSONSchemaTargetLanguage } from "./JSONSchema";
 import { KotlinTargetLanguage } from "./Kotlin";
+import { ObjectiveCTargetLanguage } from "./Objective-C";
+import { PhpTargetLanguage } from "./Php";
+import { PikeTargetLanguage } from "./Pike";
+import { PythonTargetLanguage } from "./Python";
+import { RubyTargetLanguage } from "./Ruby";
+import { RustTargetLanguage } from "./Rust";
 import { Scala3TargetLanguage } from "./Scala3";
 import { SmithyTargetLanguage } from "./Smithy4s";
-import { ElmTargetLanguage } from "./Elm";
-import { JSONSchemaTargetLanguage } from "./JSONSchema";
-import { RustTargetLanguage } from "./Rust";
-import { CrystalTargetLanguage } from "./Crystal";
-import { RubyTargetLanguage } from "./ruby";
-import { DartTargetLanguage } from "./Dart";
-import { PythonTargetLanguage } from "./Python";
-import { PikeTargetLanguage } from "./Pike";
-import { HaskellTargetLanguage } from "./Haskell";
-import { TypeScriptZodTargetLanguage } from "./TypeScriptZod";
-import { PhpTargetLanguage } from "./Php";
+import { SwiftTargetLanguage } from "./Swift";
+import type {
+    LanguageDisplayName,
+    LanguageName,
+    LanguageNameMap,
+} from "./types";
 import { TypeScriptEffectSchemaTargetLanguage } from "./TypeScriptEffectSchema";
+import { FlowTargetLanguage, TypeScriptTargetLanguage } from "./TypeScriptFlow";
+import { TypeScriptZodTargetLanguage } from "./TypeScriptZod";
 
-export const all: TargetLanguage[] = [
-    new CSharpTargetLanguage(),
-    new GoTargetLanguage(),
-    new RustTargetLanguage(),
-    new CrystalTargetLanguage(),
+export const all = [
     new CJSONTargetLanguage(),
     new CPlusPlusTargetLanguage(),
-    new ObjectiveCTargetLanguage(),
+    new CrystalTargetLanguage(),
+    new CSharpTargetLanguage(),
+    new DartTargetLanguage(),
+    new ElixirTargetLanguage(),
+    new ElmTargetLanguage(),
+    new FlowTargetLanguage(),
+    new GoTargetLanguage(),
+    new HaskellTargetLanguage(),
     new JavaTargetLanguage(),
-    new TypeScriptTargetLanguage(),
     new JavaScriptTargetLanguage(),
     new JavaScriptPropTypesTargetLanguage(),
-    new FlowTargetLanguage(),
-    new SwiftTargetLanguage(),
+    new JSONSchemaTargetLanguage(),
+    new KotlinTargetLanguage(),
+    new ObjectiveCTargetLanguage(),
+    new PhpTargetLanguage(),
+    new PikeTargetLanguage(),
+    new PythonTargetLanguage(),
+    new RubyTargetLanguage(),
+    new RustTargetLanguage(),
     new Scala3TargetLanguage(),
     new SmithyTargetLanguage(),
-    new KotlinTargetLanguage(),
-    new ElmTargetLanguage(),
-    new JSONSchemaTargetLanguage(),
-    new RubyTargetLanguage(),
-    new DartTargetLanguage(),
-    new PythonTargetLanguage("Python", ["python", "py"], "py"),
-    new PikeTargetLanguage(),
-    new HaskellTargetLanguage(),
-    new TypeScriptZodTargetLanguage(),
+    new SwiftTargetLanguage(),
+    new TypeScriptTargetLanguage(),
     new TypeScriptEffectSchemaTargetLanguage(),
-    new PhpTargetLanguage()
-];
+    new TypeScriptZodTargetLanguage(),
+] as const;
 
-export function languageNamed(name: string, targetLanguages?: TargetLanguage[]): TargetLanguage | undefined {
-    if (targetLanguages === undefined) {
-        targetLanguages = all;
-    }
-    const maybeTargetLanguage = iterableFind(
-        targetLanguages,
-        l => l.names.indexOf(name) >= 0 || l.displayName === name
+all satisfies readonly TargetLanguage[];
+
+export function languageNamed<Name extends LanguageName>(
+    name: Name,
+    targetLanguages: readonly TargetLanguage[] = all,
+): LanguageNameMap[Name] {
+    const foundLanguage = targetLanguages.find((language) =>
+        language.names.includes(name),
     );
-    if (maybeTargetLanguage !== undefined) return maybeTargetLanguage;
-    return iterableFind(targetLanguages, l => l.extension === name);
+    if (!foundLanguage) {
+        throw new Error(`Unknown language name: ${name}`);
+    }
+
+    return foundLanguage as LanguageNameMap[Name];
+}
+
+export function isLanguageName(maybeName: string): maybeName is LanguageName {
+    if (
+        all.some((lang) =>
+            (lang.names as readonly string[]).includes(maybeName),
+        )
+    ) {
+        return true;
+    }
+
+    return false;
+}
+
+export function isLanguageDisplayName(
+    maybeName: string,
+): maybeName is LanguageDisplayName {
+    if (all.some((lang) => lang.displayName === maybeName)) {
+        return true;
+    }
+
+    return false;
 }

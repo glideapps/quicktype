@@ -1,19 +1,22 @@
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 
 import _ from "lodash";
 import * as shell from "shelljs";
 
-import { main as quicktype_, CLIOptions } from "../src";
-import { RendererOptions } from "quicktype-core";
-import * as languages from "./languages";
+import { main as quicktype_, type CLIOptions } from "../src";
+import type { RendererOptions } from "quicktype-core";
+import type * as languages from "./languages";
 import deepEquals from "./lib/deepEquals";
 
 import optionMap from "./lib/optionMap";
 
 import chalk from "chalk";
 import { Language } from "./languages";
-const strictDeepEquals: (x: any, y: any) => boolean = require("deep-equal");
+const strictDeepEquals: (
+    x: unknown,
+    y: unknown,
+) => boolean = require("deep-equal");
 
 const DEBUG = process.env.DEBUG !== undefined;
 const ASSUME_STRINGS_EQUAL = process.env.ASSUME_STRINGS_EQUAL !== undefined;
@@ -28,7 +31,7 @@ export function debug<T>(x: T): T {
     return x;
 }
 
-export function failWith(message: string, obj: { [key: string]: any }): never {
+export function failWith(message: string, obj: Record<string, unknown>): never {
     obj.cwd = process.cwd();
     console.error(chalk.red(message));
     console.error(chalk.red(JSON.stringify(obj, null, "  ")));
@@ -50,24 +53,25 @@ export function callAndExpectFailure<T>(message: string, f: () => T): void {
     } catch {
         return;
     }
-    return failWith(message, { result });
+
+    failWith(message, { result });
 }
 
 export function exec(
     s: string,
     env: NodeJS.ProcessEnv | undefined,
-    printFailure = true
+    printFailure = true,
 ): { stdout: string; code: number } {
     debug(s);
     if (env === undefined) {
         env = process.env;
     }
-    const result = shell.exec(s, { silent: !DEBUG, env }) as any;
+    const result = shell.exec(s, { silent: !DEBUG, env });
 
     if (result.code !== 0) {
         const failureObj = {
             command: s,
-            code: result.code
+            code: result.code,
         };
         if (!printFailure) {
             throw failureObj;
@@ -80,7 +84,10 @@ export function exec(
     return result;
 }
 
-export function execAsync(s: string, opts: { silent: boolean } = { silent: !DEBUG }) {
+export function execAsync(
+    s: string,
+    opts: { silent: boolean } = { silent: !DEBUG },
+) {
     return new Promise<{ stdout: string; code: number }>((resolve, reject) => {
         debug(s);
         shell.exec(s, opts, (code, stdout, stderr) => {
@@ -95,9 +102,9 @@ export function execAsync(s: string, opts: { silent: boolean } = { silent: !DEBU
 }
 
 async function time<T>(work: () => Promise<T>): Promise<[T, number]> {
-    let start = +new Date();
-    let result = await work();
-    let end = +new Date();
+    const start = +new Date();
+    const result = await work();
+    const end = +new Date();
     return [result, end - start];
 }
 
@@ -105,7 +112,9 @@ async function time<T>(work: () => Promise<T>): Promise<[T, number]> {
 export function mkdirs(dir: string): void {
     const components = dir.split(path.sep);
     if (components.length === 0) {
-        throw new Error("mkdirs must be called with at least one path component");
+        throw new Error(
+            "mkdirs must be called with at least one path component",
+        );
     }
     let soFar: string;
     if (components[0].length === 0) {
@@ -138,7 +147,7 @@ export async function quicktypeForLanguage(
     sourceLanguage: string,
     alphabetizeProperties: boolean,
     additionalRendererOptions: RendererOptions,
-    graphqlSchema?: string
+    graphqlSchema?: string,
 ) {
     try {
         await quicktype({
@@ -149,12 +158,16 @@ export async function quicktypeForLanguage(
             graphqlSchema,
             topLevel: language.topLevel,
             alphabetizeProperties,
-            rendererOptions: _.merge({}, language.rendererOptions, additionalRendererOptions),
+            rendererOptions: _.merge(
+                {},
+                language.rendererOptions,
+                additionalRendererOptions,
+            ),
             quiet: true,
             telemetry: "disable",
             // GraphQL input can leave unreachable types in the graph, which means
             // their provenance won't be propagated.  It does that for non-nullables.
-            debug: graphqlSchema === undefined ? "provenance" : undefined
+            debug: graphqlSchema === undefined ? "provenance" : undefined,
         });
     } catch (e) {
         failWith("quicktype threw an exception", {
@@ -163,13 +176,13 @@ export async function quicktypeForLanguage(
             sourceFile,
             sourceLanguage,
             graphqlSchema,
-            additionalRendererOptions
+            additionalRendererOptions,
         });
     }
 }
 
 export async function inDir(dir: string, work: () => Promise<void>) {
-    let origin = process.cwd();
+    const origin = process.cwd();
 
     debug(`cd ${dir}`);
     process.chdir(dir);
@@ -235,21 +248,22 @@ export function samplesFromSources(
     sources: string[],
     prioritySamples: string[],
     miscSamples: string[],
-    extension: string
+    extension: string,
 ): { priority: Sample[]; others: Sample[] } {
     if (sources.length === 0) {
         return {
             priority: samplesFromPaths(prioritySamples),
-            others: samplesFromPaths(miscSamples)
+            others: samplesFromPaths(miscSamples),
         };
-    } else if (sources.length === 1 && fs.lstatSync(sources[0]).isDirectory()) {
+    }
+    if (sources.length === 1 && fs.lstatSync(sources[0]).isDirectory()) {
         return {
             priority: samplesFromPaths(testsInDir(sources[0], extension)),
-            others: []
+            others: [],
         };
-    } else {
-        return { priority: samplesFromPaths(sources), others: [] };
     }
+
+    return { priority: samplesFromPaths(sources), others: [] };
 }
 
 export type ComparisonRelaxations = {
@@ -257,10 +271,12 @@ export type ComparisonRelaxations = {
     allowStringifiedIntegers?: boolean;
 };
 
-export type FileOrCommand = { file: string } | { command: string; env: NodeJS.ProcessEnv };
+export type FileOrCommand =
+    | { file: string }
+    | { command: string; env: NodeJS.ProcessEnv };
 
 function fileOrCommandIsFile(foc: FileOrCommand): foc is { file: string } {
-    return (foc as any).file !== undefined;
+    return "file" in foc && foc.file !== undefined;
 }
 
 export type ComparisonArgs = ComparisonRelaxations & {
@@ -276,24 +292,34 @@ export function compareJsonFileToJson(args: ComparisonArgs) {
     const { given } = args;
 
     const jsonString = fileOrCommandIsFile(given)
-        ? callAndReportFailure("Could not read JSON output file", () => fs.readFileSync(given.file, "utf8"))
-        : callAndReportFailure("Could not run command for JSON output", () => exec(given.command, given.env).stdout);
+        ? callAndReportFailure("Could not read JSON output file", () =>
+              fs.readFileSync(given.file, "utf8"),
+          )
+        : callAndReportFailure(
+              "Could not run command for JSON output",
+              () => exec(given.command, given.env).stdout,
+          );
 
-    const givenJSON = callAndReportFailure("Could not parse output JSON", () => JSON.parse(jsonString));
-    const expectedJSON = callAndReportFailure("Could not read or parse expected JSON file", () =>
-        JSON.parse(fs.readFileSync(expectedFile, "utf8"))
+    const givenJSON = callAndReportFailure("Could not parse output JSON", () =>
+        JSON.parse(jsonString),
+    );
+    const expectedJSON = callAndReportFailure(
+        "Could not read or parse expected JSON file",
+        () => JSON.parse(fs.readFileSync(expectedFile, "utf8")),
     );
 
-    let jsonAreEqual = strict
-        ? callAndReportFailure("Failed to strictly compare objects", () => strictDeepEquals(givenJSON, expectedJSON))
+    const jsonAreEqual = strict
+        ? callAndReportFailure("Failed to strictly compare objects", () =>
+              strictDeepEquals(givenJSON, expectedJSON),
+          )
         : callAndReportFailure("Failed to compare objects.", () =>
-              deepEquals(expectedJSON, givenJSON, ASSUME_STRINGS_EQUAL, args)
+              deepEquals(expectedJSON, givenJSON, ASSUME_STRINGS_EQUAL, args),
           );
 
     if (!jsonAreEqual) {
         failWith("Error: Output is not equivalent to input.", {
             expectedFile,
-            given
+            given,
         });
     }
 }

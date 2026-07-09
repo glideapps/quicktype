@@ -2,7 +2,5 @@
     "compilerOptions": {
         "target": "es6"
     },
-    "files": [
-        "*.ts"
-    ]
+    "files": ["*.ts"]
 }

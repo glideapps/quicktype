@@ -1,0 +1,11 @@
+{
+    "options": [
+        {
+            "name": "test"
+        },
+        {
+            "name": "test2",
+            "foo": "bar"
+        }
+    ]
+}

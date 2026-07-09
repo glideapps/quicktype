@@ -1,6 +1,6 @@
 import moment from "moment";
-import { Moment } from "moment";
-import { ComparisonRelaxations } from "../utils";
+import type { Moment } from "moment";
+import type { ComparisonRelaxations } from "../utils";
 
 function pathToString(path: string[]): string {
     return "." + path.join(".");
@@ -37,7 +37,7 @@ export default function deepEquals(
     y: any,
     assumeStringsEqual: boolean,
     relax: ComparisonRelaxations,
-    path: string[] = []
+    path: string[] = [],
 ): boolean {
     // remember that NaN === NaN returns false
     // and isNaN(undefined) returns true
@@ -64,23 +64,35 @@ export default function deepEquals(
         if (assumeStringsEqual || x === y) return true;
         const [xMoment, isTime] = tryParseMoment(x);
         const [yMoment] = tryParseMoment(y);
-        if (xMoment !== undefined && yMoment !== undefined && momentsEqual(xMoment, yMoment, isTime)) {
+        if (
+            xMoment !== undefined &&
+            yMoment !== undefined &&
+            momentsEqual(xMoment, yMoment, isTime)
+        ) {
             return true;
         }
         console.error(
-            `Strings not equal at path ${pathToString(path)}: ${JSON.stringify(x)} !== ${JSON.stringify(y)}.`
+            `Strings not equal at path ${pathToString(path)}: ${JSON.stringify(x)} !== ${JSON.stringify(y)}.`,
         );
         return false;
     }
-    if (!!relax.allowStringifiedIntegers && typeof x === "string" && typeof y === "number") {
+    if (
+        !!relax.allowStringifiedIntegers &&
+        typeof x === "string" &&
+        typeof y === "number"
+    ) {
         if (x === y.toString()) return true;
-        console.error(`String and number not equal at path ${pathToString(path)}.`);
+        console.error(
+            `String and number not equal at path ${pathToString(path)}.`,
+        );
         return false;
     }
 
     if (x instanceof String && y instanceof String) {
         if (x.toString() === y.toString()) return true;
-        console.error(`Number or string not equal at path ${pathToString(path)}.`);
+        console.error(
+            `Number or string not equal at path ${pathToString(path)}.`,
+        );
         return false;
     }
 
@@ -96,7 +108,7 @@ export default function deepEquals(
         console.error(
             `Not the same constructor at path ${pathToString(path)}: should be ${x.constructor} but is ${
                 y.constructor
-            }.`
+            }.`,
         );
         return false;
     }
@@ -108,7 +120,9 @@ export default function deepEquals(
 
     if (Array.isArray(x)) {
         if (x.length !== y.length) {
-            console.error(`Arrays don't have the same length at path ${pathToString(path)}.`);
+            console.error(
+                `Arrays don't have the same length at path ${pathToString(path)}.`,
+            );
             return false;
         }
         for (let i = 0; i < x.length; i++) {
@@ -131,7 +145,9 @@ export default function deepEquals(
         // so long as they're null.
         if (xKeys.indexOf(p) < 0) {
             if (y[p] !== null) {
-                console.error(`Non-null property ${p} is not expected at path ${pathToString(path)}.`);
+                console.error(
+                    `Non-null property ${p} is not expected at path ${pathToString(path)}.`,
+                );
                 return false;
             }
         }
@@ -142,7 +158,9 @@ export default function deepEquals(
             if (!!relax.allowMissingNull && x[p] === null) {
                 continue;
             }
-            console.error(`Expected property ${p} not found at path ${pathToString(path)}.`);
+            console.error(
+                `Expected property ${p} not found at path ${pathToString(path)}.`,
+            );
             return false;
         }
 

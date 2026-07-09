@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": ["ok"],
+      "description": "Nested enum block comment openers:\n{-\n/*\nThis text must remain inside the generated enum documentation comment."
+    }
+  },
+  "required": ["kind"],
+  "additionalProperties": false
+}

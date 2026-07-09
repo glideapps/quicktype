@@ -1,38 +1,46 @@
+import { setMap, setSortBy, setUnion } from "collection-utils";
 import * as pluralize from "pluralize";
-import { setUnion, setMap, setSortBy } from "collection-utils";
 
-import { TypeGraph } from "./TypeGraph";
-import { Type, ObjectType } from "./Type";
-import { matchCompoundType, nullableFromUnion } from "./TypeUtils";
-import { TypeNames, namesTypeAttributeKind, TooManyTypeNames, tooManyNamesThreshold } from "./attributes/TypeNames";
-import { defined, panic, assert } from "./support/Support";
+import {
+    TooManyTypeNames,
+    TypeNames,
+    namesTypeAttributeKind,
+    tooManyNamesThreshold,
+} from "./attributes/TypeNames";
+import { assert, defined, panic } from "./support/Support";
 import { transformationForType } from "./Transformers";
+import { ObjectType, type Type } from "./Type/Type";
+import type { TypeGraph } from "./Type/TypeGraph";
+import { matchCompoundType, nullableFromUnion } from "./Type/TypeUtils";
 
 class UniqueQueue<T> {
     private readonly _present = new Set<T>();
-    private _queue: (T | undefined)[] = [];
+
+    private _queue: Array<T | undefined> = [];
+
     private _front = 0;
 
-    get size(): number {
+    public get size(): number {
         return this._queue.length - this._front;
     }
 
-    get isEmpty(): boolean {
+    public get isEmpty(): boolean {
         return this.size <= 0;
     }
 
-    push(v: T): void {
+    public push(v: T): void {
         if (this._present.has(v)) return;
         this._queue.push(v);
         this._present.add(v);
     }
 
-    unshift(): T {
+    public unshift(): T {
         assert(!this.isEmpty, "Trying to unshift from an empty queue");
         const v = this._queue[this._front];
         if (v === undefined) {
             return panic("Value should have been present in queue");
         }
+
         this._queue[this._front] = undefined;
         this._front += 1;
         this._present.delete(v);
@@ -82,7 +90,11 @@ class UniqueQueue<T> {
 //    step 1, and its alternatives to a union of its direct and ancestor
 //    alternatives, gathered in steps 2 and 3.
 
-export function gatherNames(graph: TypeGraph, destructive: boolean, debugPrint: boolean): void {
+export function gatherNames(
+    graph: TypeGraph,
+    destructive: boolean,
+    debugPrint: boolean,
+): void {
     function setNames(t: Type, tn: TypeNames): void {
         graph.attributeStore.set(namesTypeAttributeKind, t, tn);
     }
@@ -99,7 +111,7 @@ export function gatherNames(graph: TypeGraph, destructive: boolean, debugPrint: 
     // null means there are too many
     const namesForType = new Map<Type, ReadonlySet<string> | null>();
 
-    function addNames(t: Type, names: ReadonlySet<string> | null) {
+    function addNames(t: Type, names: ReadonlySet<string> | null): void {
         // Always use the type's given names if it has some
         if (t.hasNames) {
             const originalNames = t.getNames();
@@ -123,6 +135,7 @@ export function gatherNames(graph: TypeGraph, destructive: boolean, debugPrint: 
         if (newNames !== null && newNames.size >= tooManyNamesThreshold) {
             newNames = null;
         }
+
         namesForType.set(t, newNames);
 
         const transformation = transformationForType(t);
@@ -157,23 +170,34 @@ export function gatherNames(graph: TypeGraph, destructive: boolean, debugPrint: 
 
             const values = t.getAdditionalProperties();
             if (values !== undefined) {
-                addNames(values, names === null ? null : setMap(names, pluralize.singular));
+                addNames(
+                    values,
+                    names === null ? null : setMap(names, pluralize.singular),
+                );
             }
         } else {
             matchCompoundType(
                 t,
-                arrayType => {
-                    addNames(arrayType.items, names === null ? null : setMap(names, pluralize.singular));
+                (arrayType) => {
+                    addNames(
+                        arrayType.items,
+                        names === null
+                            ? null
+                            : setMap(names, pluralize.singular),
+                    );
                 },
-                _classType => panic("We handled this above"),
-                _mapType => panic("We handled this above"),
-                _objectType => panic("We handled this above"),
-                unionType => {
-                    const members = setSortBy(unionType.members, member => member.kind);
+                (_classType) => panic("We handled this above"),
+                (_mapType) => panic("We handled this above"),
+                (_objectType) => panic("We handled this above"),
+                (unionType) => {
+                    const members = setSortBy(
+                        unionType.members,
+                        (member) => member.kind,
+                    );
                     for (const memberType of members) {
                         addNames(memberType, names);
                     }
-                }
+                },
             );
         }
     }
@@ -184,18 +208,26 @@ export function gatherNames(graph: TypeGraph, destructive: boolean, debugPrint: 
             if (names === undefined) return;
 
             const index = t.index;
-            console.log(`${index}: ${names === null ? "*** too many ***" : Array.from(names).join(" ")}`);
+            console.log(
+                `${index}: ${names === null ? "*** too many ***" : Array.from(names).join(" ")}`,
+            );
         }
     }
 
     // null means there are too many
-    const directAlternativesForType = new Map<Type, ReadonlySet<string> | null>();
-    const ancestorAlternativesForType = new Map<Type, ReadonlySet<string> | null>();
+    const directAlternativesForType = new Map<
+        Type,
+        ReadonlySet<string> | null
+    >();
+    const ancestorAlternativesForType = new Map<
+        Type,
+        ReadonlySet<string> | null
+    >();
     const pairsProcessed = new Map<Type | undefined, Set<Type>>();
 
     function addAlternatives(
         existing: ReadonlySet<string> | undefined,
-        alternatives: string[]
+        alternatives: string[],
     ): ReadonlySet<string> | undefined | null {
         if (alternatives.length === 0) {
             return existing;
@@ -204,14 +236,20 @@ export function gatherNames(graph: TypeGraph, destructive: boolean, debugPrint: 
         if (existing === undefined) {
             existing = new Set();
         }
+
         existing = setUnion(existing, alternatives);
         if (existing.size < tooManyNamesThreshold) {
             return existing;
         }
+
         return null;
     }
 
-    function processType(ancestor: Type | undefined, t: Type, alternativeSuffix: string | undefined) {
+    function processType(
+        ancestor: Type | undefined,
+        t: Type,
+        alternativeSuffix: string | undefined,
+    ): void {
         const names = defined(namesForType.get(t));
 
         let processedEntry = pairsProcessed.get(ancestor);
@@ -238,31 +276,49 @@ export function gatherNames(graph: TypeGraph, destructive: boolean, debugPrint: 
                 } else if (ancestorNames !== undefined) {
                     const alternatives: string[] = [];
                     for (const name of names) {
-                        alternatives.push(...Array.from(ancestorNames).map(an => `${an}_${name}`));
+                        alternatives.push(
+                            ...Array.from(ancestorNames).map(
+                                (an) => `${an}_${name}`,
+                            ),
+                        );
                         // FIXME: add alternatives with the suffix here, too?
 
-                        alternatives.push(...Array.from(ancestorNames).map(an => `${an}_${name}_${t.kind}`));
+                        alternatives.push(
+                            ...Array.from(ancestorNames).map(
+                                (an) => `${an}_${name}_${t.kind}`,
+                            ),
+                        );
                         // FIXME: add alternatives with the suffix here, too?
                     }
 
-                    ancestorAlternatives = addAlternatives(ancestorAlternatives, alternatives);
+                    ancestorAlternatives = addAlternatives(
+                        ancestorAlternatives,
+                        alternatives,
+                    );
                 }
             }
 
-            if (alternativeSuffix !== undefined && directAlternatives !== null) {
+            if (
+                alternativeSuffix !== undefined &&
+                directAlternatives !== null
+            ) {
                 const alternatives: string[] = [];
                 for (const name of names) {
                     // FIXME: we should only add these for names we couldn't singularize
                     alternatives.push(`${name}_${alternativeSuffix}`);
                 }
 
-                directAlternatives = addAlternatives(directAlternatives, alternatives);
+                directAlternatives = addAlternatives(
+                    directAlternatives,
+                    alternatives,
+                );
             }
         }
 
         if (ancestorAlternatives !== undefined) {
             ancestorAlternativesForType.set(t, ancestorAlternatives);
         }
+
         if (directAlternatives !== undefined) {
             directAlternativesForType.set(t, directAlternatives);
         }
@@ -275,26 +331,38 @@ export function gatherNames(graph: TypeGraph, destructive: boolean, debugPrint: 
 
             const values = t.getAdditionalProperties();
             if (values !== undefined) {
-                processType(properties.size === 0 ? ancestor : t, values, "value");
+                processType(
+                    properties.size === 0 ? ancestor : t,
+                    values,
+                    "value",
+                );
             }
         } else {
             matchCompoundType(
                 t,
-                arrayType => {
+                (arrayType) => {
                     processType(ancestor, arrayType.items, "element");
                 },
-                _classType => panic("We handled this above"),
-                _mapType => panic("We handled this above"),
-                _objectType => panic("We handled this above"),
-                unionType => {
-                    const members = setSortBy(unionType.members, member => member.kind);
-                    const unionHasGivenName = unionType.hasNames && !unionType.getNames().areInferred;
-                    const unionIsAncestor = unionHasGivenName || nullableFromUnion(unionType) === null;
-                    const ancestorForMembers = unionIsAncestor ? unionType : ancestor;
+                (_classType) => panic("We handled this above"),
+                (_mapType) => panic("We handled this above"),
+                (_objectType) => panic("We handled this above"),
+                (unionType) => {
+                    const members = setSortBy(
+                        unionType.members,
+                        (member) => member.kind,
+                    );
+                    const unionHasGivenName =
+                        unionType.hasNames && !unionType.getNames().areInferred;
+                    const unionIsAncestor =
+                        unionHasGivenName ||
+                        nullableFromUnion(unionType) === null;
+                    const ancestorForMembers = unionIsAncestor
+                        ? unionType
+                        : ancestor;
                     for (const memberType of members) {
                         processType(ancestorForMembers, memberType, undefined);
                     }
-                }
+                },
             );
         }
     }
@@ -310,6 +378,7 @@ export function gatherNames(graph: TypeGraph, destructive: boolean, debugPrint: 
             directAlternativesForType.set(t, null);
             continue;
         }
+
         let alternatives = directAlternativesForType.get(t);
         if (alternatives === null) continue;
         if (alternatives === undefined) {
@@ -318,7 +387,7 @@ export function gatherNames(graph: TypeGraph, destructive: boolean, debugPrint: 
 
         alternatives = setUnion(
             alternatives,
-            setMap(names, name => `${name}_${t.kind}`)
+            setMap(names, (name) => `${name}_${t.kind}`),
         );
         directAlternativesForType.set(t, alternatives);
     }
@@ -338,17 +407,28 @@ export function gatherNames(graph: TypeGraph, destructive: boolean, debugPrint: 
             if (ancestorAlternatives === null && directAlternatives === null) {
                 alternatives = undefined;
             } else {
-                if (directAlternatives !== null && directAlternatives !== undefined) {
+                if (
+                    directAlternatives !== null &&
+                    directAlternatives !== undefined
+                ) {
                     alternatives = directAlternatives;
                 } else {
                     alternatives = new Set();
                 }
-                if (ancestorAlternatives !== null && ancestorAlternatives !== undefined) {
+
+                if (
+                    ancestorAlternatives !== null &&
+                    ancestorAlternatives !== undefined
+                ) {
                     alternatives = setUnion(alternatives, ancestorAlternatives);
                 }
             }
 
-            typeNames = TypeNames.makeWithDistance(names, alternatives, destructive ? 1 : 10);
+            typeNames = TypeNames.makeWithDistance(
+                names,
+                alternatives,
+                destructive ? 1 : 10,
+            );
         }
 
         setNames(t, t.hasNames ? t.getNames().add([typeNames]) : typeNames);
