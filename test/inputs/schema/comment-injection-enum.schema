@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": ["ok"],
+      "description": "Comment delimiters:\n*/\n{-\n-}\n\"\"\"\n}\r}"
+    }
+  },
+  "required": ["kind"],
+  "additionalProperties": false
+}

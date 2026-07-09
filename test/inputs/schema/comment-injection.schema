@@ -1,0 +1,24 @@
+{
+  "type": "object",
+  "description": "Comment delimiters:\n*/\n/*\n{-\n-}\n\"\"\"\n</summary> & <br>\n}\r}\u0085}\u2028}\u2029}",
+  "properties": {
+    "value": {
+      "type": "string",
+      "description": "Property delimiters:\n*/\n/*\n{-\n-}\n\"\"\"\n</summary> & <br>\n}\r}\u0085}\u2028}\u2029}"
+    },
+    "trailingBackslash": {
+      "type": "string",
+      "description": "Ends with a backslash \\"
+    },
+    "trailingQuote": {
+      "type": "string",
+      "description": "Ends with a quote \""
+    },
+    "trailingTripleQuote": {
+      "type": "string",
+      "description": "Ends with a triple quote \"\"\""
+    }
+  },
+  "required": ["value"],
+  "additionalProperties": false
+}

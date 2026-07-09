@@ -20,7 +20,7 @@ jobs:
 
             matrix:
                 fixture:
-                    - typescript,typescript-zod,typescript-effect-schema
+                    - typescript,typescript-zod,schema-typescript-zod,typescript-effect-schema
                     - javascript,schema-javascript
                     - golang,schema-golang
                     - cjson,schema-cjson
@@ -29,7 +29,7 @@ jobs:
                     - java,schema-java
                     - python,schema-python
                     - haskell,schema-haskell
-                    - csharp,schema-csharp,schema-json-csharp,graphql-csharp,csharp-SystemTextJson
+                    - csharp,schema-csharp,schema-json-csharp,graphql-csharp,csharp-SystemTextJson,schema-csharp-SystemTextJson
                     - json-ts-csharp
                     - dart,schema-dart
                     # - swift,schema-swift # pgp issue
@@ -38,6 +38,7 @@ jobs:
                     - php
                     - scala3,schema-scala3
                     - elixir,schema-elixir,graphql-elixir
+                    - comment-injection-treesitter,comment-injection-typescript,comment-injection-typescript-zod,comment-injection-typescript-effect-schema
 
                     # Partially working
                     # - schema-typescript # TODO Unify with typescript once fixed
@@ -68,6 +69,9 @@ jobs:
 
                     # - fixture: objective-c # segfault on compiled test cmd
                     #   runs-on: macos-latest
+                    # comment-injection-objective-c also hits that runtime
+                    # segfault (the generated .m compiles but ./test crashes
+                    # with SIGSEGV), so it stays out of CI too.
 
         name: ${{ matrix.fixture }}
         steps:

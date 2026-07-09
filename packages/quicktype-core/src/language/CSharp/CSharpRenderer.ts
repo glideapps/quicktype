@@ -256,11 +256,19 @@ export class CSharpRenderer extends ConvenienceRenderer {
     }
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
+        // Doc comments are XML, so anything that could be mistaken
+        // for markup must be escaped.
+        const escapedLines = lines.map((line) =>
+            this.sourcelikeToString(line)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;"),
+        );
         const start = "/// <summary>";
         if (this._csOptions.dense) {
-            this.emitLine(start, lines.join("; "), "</summary>");
+            this.emitLine(start, escapedLines.join("; "), "</summary>");
         } else {
-            this.emitCommentLines(lines, {
+            this.emitCommentLines(escapedLines, {
                 lineStart: "/// ",
                 beforeComment: start,
                 afterComment: "/// </summary>",

@@ -228,6 +228,19 @@ export class PhpRenderer extends ConvenienceRenderer {
         });
     }
 
+    private emitDocBlockDescription(desc: string[] | undefined): void {
+        if (desc === undefined) {
+            this.emitLine("/**");
+            return;
+        }
+
+        this.emitCommentLines(desc, {
+            lineStart: " * ",
+            beforeComment: "/**",
+        });
+        this.emitLine(" *");
+    }
+
     public emitBlock(line: Sourcelike, f: () => void): void {
         this.emitLine(line, " {");
         this.indent(f);
@@ -278,10 +291,6 @@ export class PhpRenderer extends ConvenienceRenderer {
                     return "DateTime";
                 }
 
-                if (transformedStringType.kind === "uuid") {
-                    throw Error('transformedStringType.kind === "uuid"');
-                }
-
                 return "string";
             },
         );
@@ -319,6 +328,10 @@ export class PhpRenderer extends ConvenienceRenderer {
                     return "DateTime";
                 }
 
+                if (transformedStringType.kind === "uuid") {
+                    return "string";
+                }
+
                 throw Error('transformedStringType.kind === "unknown"');
             },
         );
@@ -347,6 +360,10 @@ export class PhpRenderer extends ConvenienceRenderer {
             },
             (transformedStringType) => {
                 if (transformedStringType.kind === "date-time") {
+                    return "string";
+                }
+
+                if (transformedStringType.kind === "uuid") {
                     return "string";
                 }
 
@@ -385,19 +402,16 @@ export class PhpRenderer extends ConvenienceRenderer {
             (_classType) =>
                 this.emitLine(...lhs, ...args, "->to(); ", "/*class*/"),
             (mapType) => {
-                this.emitBlock(["function to($my): stdClass"], () => {
-                    this.emitLine("$out = new stdClass();");
-                    this.emitBlock(["foreach ($my as $k => $v)"], () => {
-                        this.phpToObjConvert(
-                            className,
-                            mapType.values,
-                            ["$my->$k = "],
-                            ["$v"],
-                        );
-                    });
-                    this.emitLine("return $out;");
+                this.emitLine("$out = new stdClass();");
+                this.emitBlock(["foreach (", ...args, " as $k => $v)"], () => {
+                    this.phpToObjConvert(
+                        className,
+                        mapType.values,
+                        ["$out->$k = "],
+                        ["$v"],
+                    );
                 });
-                this.emitLine("return to(", ...args, ");");
+                this.emitLine("return $out;");
             },
             (enumType) =>
                 this.emitLine(
@@ -430,6 +444,11 @@ export class PhpRenderer extends ConvenienceRenderer {
                         ...args,
                         "->format(DateTimeInterface::ISO8601);",
                     );
+                    return;
+                }
+
+                if (transformedStringType.kind === "uuid") {
+                    this.emitLine(...lhs, ...args, "; /*uuid*/");
                     return;
                 }
 
@@ -494,19 +513,16 @@ export class PhpRenderer extends ConvenienceRenderer {
                     "/*class*/",
                 ),
             (mapType) => {
-                this.emitBlock(["function from($my): stdClass"], () => {
-                    this.emitLine("$out = new stdClass();");
-                    this.emitBlock(["foreach ($my as $k => $v)"], () => {
-                        this.phpFromObjConvert(
-                            className,
-                            mapType.values,
-                            ["$out->$k = "],
-                            ["$v"],
-                        );
-                    });
-                    this.emitLine("return $out;");
+                this.emitLine("$out = new stdClass();");
+                this.emitBlock(["foreach (", ...args, " as $k => $v)"], () => {
+                    this.phpFromObjConvert(
+                        className,
+                        mapType.values,
+                        ["$out->$k = "],
+                        ["$v"],
+                    );
                 });
-                this.emitLine("return from(", ...args, ");");
+                this.emitLine("return $out;");
             },
             (enumType) =>
                 this.emitLine(
@@ -542,6 +558,11 @@ export class PhpRenderer extends ConvenienceRenderer {
                     );
                     this.transformDateTime(className, "", ["$tmp"]);
                     this.emitLine("return $tmp;");
+                    return;
+                }
+
+                if (transformedStringType.kind === "uuid") {
+                    this.emitLine(...lhs, ...args, "; /*uuid*/");
                     return;
                 }
 
@@ -663,19 +684,16 @@ export class PhpRenderer extends ConvenienceRenderer {
                     "*/",
                 ),
             (mapType) => {
-                this.emitBlock(["function sample(): stdClass"], () => {
-                    this.emitLine("$out = new stdClass();");
-                    this.phpSampleConvert(
-                        className,
-                        mapType.values,
-                        ["$out->{'", className, "'} = "],
-                        args,
-                        idx,
-                        ";",
-                    );
-                    this.emitLine("return $out;");
-                });
-                this.emitLine("return sample();");
+                this.emitLine("$out = new stdClass();");
+                this.phpSampleConvert(
+                    className,
+                    mapType.values,
+                    ["$out->{'", className, "'} = "],
+                    args,
+                    idx,
+                    ";",
+                );
+                this.emitLine("return $out;");
             },
             (enumType) =>
                 this.emitLine(
@@ -712,6 +730,20 @@ export class PhpRenderer extends ConvenienceRenderer {
                         suffix,
                     );
                     // this.emitLine("return sample();");
+                    return;
+                }
+
+                if (transformedStringType.kind === "uuid") {
+                    this.emitLine(
+                        ...lhs,
+                        "'9277b8fb-2a65-4663-a36c-8d417e2d284b'",
+                        suffix,
+                        " /*",
+                        `${idx}`,
+                        ":",
+                        args,
+                        "*/",
+                    );
                     return;
                 }
 
@@ -810,6 +842,26 @@ export class PhpRenderer extends ConvenienceRenderer {
                     return;
                 }
 
+                if (transformedStringType.kind === "uuid") {
+                    is("is_string");
+                    this.emitBlock(
+                        [
+                            "if (!preg_match('/^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$/', ",
+                            scopeAttrName,
+                            "))",
+                        ],
+                        () =>
+                            this.emitLine(
+                                'throw new Exception("Attribute Error:',
+                                className,
+                                "::",
+                                attrName,
+                                '");',
+                            ),
+                    );
+                    return;
+                }
+
                 throw Error(
                     `transformedStringType.kind === ${transformedStringType.kind}`,
                 );
@@ -824,11 +876,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         _name: Name,
         desc?: string[],
     ): void {
-        this.emitLine("/**");
-        if (desc !== undefined) {
-            this.emitLine(" * ", desc);
-            this.emitLine(" *");
-        }
+        this.emitDocBlockDescription(desc);
 
         // this.emitLine(" * @param ", this.phpType(false, p.type, false, "", "|null"));
         this.emitLine(
@@ -867,11 +915,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         name: Name,
         desc?: string[],
     ): void {
-        this.emitLine("/**");
-        if (desc !== undefined) {
-            this.emitLine(" * ", desc);
-            this.emitLine(" *");
-        }
+        this.emitDocBlockDescription(desc);
 
         this.emitLine(" * @throws Exception");
         this.emitLine(" * @return ", this.phpConvertType(className, p.type));
@@ -921,11 +965,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         name: Name,
         desc?: string[],
     ): void {
-        this.emitLine("/**");
-        if (desc !== undefined) {
-            this.emitLine(" * ", desc);
-            this.emitLine(" *");
-        }
+        this.emitDocBlockDescription(desc);
 
         this.emitLine(
             " * @param ",
@@ -957,11 +997,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         desc?: string[],
     ): void {
         if (this._options.withGet) {
-            this.emitLine("/**");
-            if (desc !== undefined) {
-                this.emitLine(" * ", desc);
-                this.emitLine(" *");
-            }
+            this.emitDocBlockDescription(desc);
 
             if (!this._options.fastGet) {
                 this.emitLine(" * @throws Exception");
@@ -1013,11 +1049,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         desc?: string[],
     ): void {
         if (this._options.withSet) {
-            this.emitLine("/**");
-            if (desc !== undefined) {
-                this.emitLine(" * ", desc);
-                this.emitLine(" *");
-            }
+            this.emitDocBlockDescription(desc);
 
             this.emitLine(
                 " * @param ",
@@ -1054,11 +1086,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         idx: number,
     ): void {
         if (this._options.withGet) {
-            this.emitLine("/**");
-            if (desc !== undefined) {
-                this.emitLine(" * ", desc);
-                this.emitLine(" *");
-            }
+            this.emitDocBlockDescription(desc);
 
             const rendered = this.phpType(false, p.type);
             this.emitLine(" * @return ", rendered);

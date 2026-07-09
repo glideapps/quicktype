@@ -1,0 +1,23 @@
+name: Publish VS Code extension
+on:
+    push:
+        branches:
+            - master
+
+jobs:
+    publish-vscode:
+        runs-on: ubuntu-22.04
+        env:
+            # quicktype-core's build (packages/quicktype-core/env.sh) swaps in
+            # a CI-only fetch shim whenever $CI is set — which GitHub Actions
+            # always sets. PUBLISH=true makes it skip that swap so the bundled
+            # extension ships the real $fetch (issue #2874).
+            PUBLISH: "true"
+        steps:
+            - uses: actions/checkout@v3
+            - uses: ./.github/workflows/setup
+            # Run via npm so node_modules/.bin is on PATH (patch-npm-version.ts
+            # is executed through its ts-node shebang).
+            - run: npm run pub:vscode
+              env:
+                  VSCE_TOKEN: ${{ secrets.VSCE_TOKEN }}

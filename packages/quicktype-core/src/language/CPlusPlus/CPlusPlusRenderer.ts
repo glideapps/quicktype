@@ -586,6 +586,10 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         return kind === "class";
     }
 
+    protected get commentLinesSpliceOnBackslash(): boolean {
+        return true;
+    }
+
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
         this.emitCommentLines(lines, {
             lineStart: " * ",
@@ -1002,11 +1006,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     GlobalNames.CheckConstraint,
                 );
                 if (
-                    (property.type instanceof UnionType &&
-                        property.type.findMember("null") !== undefined) ||
-                    (property.isOptional &&
-                        property.type.kind !== "null" &&
-                        property.type.kind !== "any")
+                    property.type instanceof UnionType &&
+                    property.type.findMember("null") !== undefined
                 ) {
                     this.emitLine(
                         rendered,
@@ -1104,6 +1105,10 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             const { minMax, minMaxLength, pattern } = constraints;
 
             // TODO is there a better way to check if property.type is an integer or a number?
+            // We only generate this to classify the underlying type, so we
+            // always pass `false` for `isOptional` — otherwise `cppType`
+            // wraps the type in the optional<> container and the comparisons
+            // below never match.
             const cppType = this.cppType(
                 property.type,
                 {
@@ -1113,31 +1118,37 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 },
                 true,
                 false,
-                property.isOptional,
+                false,
             );
 
+            // Compare bounds against `undefined` explicitly, since 0 is a
+            // valid constraint value too.
             res.set(jsonName, [
                 this.constraintMember(jsonName),
                 "(",
-                minMax?.[0] && cppType === "int64_t"
+                minMax?.[0] !== undefined && cppType === "int64_t"
                     ? String(minMax[0])
                     : this._nulloptType,
                 ", ",
-                minMax?.[1] && cppType === "int64_t"
+                minMax?.[1] !== undefined && cppType === "int64_t"
                     ? String(minMax[1])
                     : this._nulloptType,
                 ", ",
-                minMax?.[0] && cppType === "double"
+                minMax?.[0] !== undefined && cppType === "double"
                     ? String(minMax[0])
                     : this._nulloptType,
                 ", ",
-                minMax?.[1] && cppType === "double"
+                minMax?.[1] !== undefined && cppType === "double"
                     ? String(minMax[1])
                     : this._nulloptType,
                 ", ",
-                minMaxLength?.[0] ? String(minMaxLength[0]) : this._nulloptType,
+                minMaxLength?.[0] !== undefined
+                    ? String(minMaxLength[0])
+                    : this._nulloptType,
                 ", ",
-                minMaxLength?.[1] ? String(minMaxLength[1]) : this._nulloptType,
+                minMaxLength?.[1] !== undefined
+                    ? String(minMaxLength[1])
+                    : this._nulloptType,
                 ", ",
                 pattern === undefined
                     ? this._nulloptType
@@ -1986,10 +1997,12 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         );
                         onFirst = false;
                     });
-                    this.emitLine(
-                        'else { throw std::runtime_error("Input JSON does not conform to schema!"); }',
-                    );
                 }
+                this.emitLine(
+                    'else { throw std::runtime_error("Cannot deserialize to enumeration \\"',
+                    enumName,
+                    '\\""); }',
+                );
             },
         );
         this.ensureBlankLine();
@@ -2307,6 +2320,29 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             },
         );
         this.ensureBlankLine();
+
+        this.emitBlock(
+            [
+                "inline void ",
+                checkConst,
+                "(",
+                this._stringType.getConstType(),
+                " name, ",
+                this.withConst(classConstraint),
+                " & c, const ",
+                this._optionalType,
+                "<",
+                cppType,
+                "> & value)",
+            ],
+            false,
+            () => {
+                this.emitBlock(["if (value)"], false, () => {
+                    this.emitLine(checkConst, "(name, c, *value);");
+                });
+            },
+        );
+        this.ensureBlankLine();
     }
 
     protected emitConstraintClasses(): void {
@@ -2584,6 +2620,29 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     },
                 );
                 this.ensureBlankLine();
+            },
+        );
+        this.ensureBlankLine();
+
+        this.emitBlock(
+            [
+                "inline void ",
+                checkConst,
+                "(",
+                this._stringType.getConstType(),
+                " name, ",
+                this.withConst(classConstraint),
+                " & c, const ",
+                this._optionalType,
+                "<",
+                this._stringType.getType(),
+                "> & value)",
+            ],
+            false,
+            () => {
+                this.emitBlock(["if (value)"], false, () => {
+                    this.emitLine(checkConst, "(name, c, *value);");
+                });
             },
         );
     }
