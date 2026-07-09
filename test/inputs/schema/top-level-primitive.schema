@@ -1,0 +1,6 @@
+{
+    "id": "http://json-schema.org/geo",
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "description": "Top level primitive",
+    "type": "number"
+}

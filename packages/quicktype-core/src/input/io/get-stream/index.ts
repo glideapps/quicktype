@@ -1,21 +1,23 @@
-import { Readable } from "readable-stream";
-import bufferStream from "./buffer-stream";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { Readable } from "readable-stream";
+
+import bufferStream, { type BufferedPassThrough } from "./buffer-stream";
 
 export interface Options {
-    maxBuffer?: number;
     array?: boolean;
     encoding?: string;
+    maxBuffer?: number;
 }
 
-export function getStream(inputStream: Readable, opts: Options = {}) {
+export async function getStream(inputStream: Readable, opts: Options = {}) {
     if (!inputStream) {
-        return Promise.reject(new Error("Expected a stream"));
+        return await Promise.reject(new Error("Expected a stream"));
     }
 
-    opts = Object.assign({ maxBuffer: Infinity }, opts);
+    opts = Object.assign({ maxBuffer: Number.POSITIVE_INFINITY }, opts);
 
-    const maxBuffer = opts.maxBuffer || Infinity;
-    let stream: any;
+    const maxBuffer = opts.maxBuffer ?? Number.POSITIVE_INFINITY;
+    let stream: BufferedPassThrough;
     let clean;
 
     const p = new Promise((resolve, reject) => {
@@ -48,15 +50,15 @@ export function getStream(inputStream: Readable, opts: Options = {}) {
         };
     });
 
-    p.then(clean, clean);
-
-    return p.then(() => stream.getBufferedValue());
+    return await p.then(clean, clean).then(() => stream.getBufferedValue());
 }
 
+// FIXME: should these be async ?
 export function buffer(stream: Readable, opts: Options = {}) {
-    getStream(stream, Object.assign({}, opts, { encoding: "buffer" }));
+    void getStream(stream, Object.assign({}, opts, { encoding: "buffer" }));
 }
 
+// FIXME: should these be async ?
 export function array(stream: Readable, opts: Options = {}) {
-    getStream(stream, Object.assign({}, opts, { array: true }));
+    void getStream(stream, Object.assign({}, opts, { array: true }));
 }
