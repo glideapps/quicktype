@@ -50,7 +50,9 @@ export function javaNameStyle(
         upperUnderscore || startWithUpper
             ? allUpperWordStyle
             : allLowerWordStyle,
-        acronymsStyle,
+        // For UPPER_UNDERSCORE style (Java enum constants), always use allUpperWordStyle for acronyms
+        // to maintain consistency with the naming convention (e.g., XXX_SPA_XXX)
+        upperUnderscore ? allUpperWordStyle : acronymsStyle,
         upperUnderscore ? "_" : "",
         isStartCharacter,
     );

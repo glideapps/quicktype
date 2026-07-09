@@ -1,0 +1,14 @@
+{
+  "coordinates": [
+    { "latitude": 34.5, "longitude": -12.25 },
+    { "latitude": -7.75, "longitude": 100.5 }
+  ],
+  "requiredCoordinates": [
+    { "latitude": 48.5, "longitude": 16.25 }
+  ],
+  "count": 42,
+  "requiredCount": 7,
+  "weight": 63.5,
+  "label": "optional",
+  "requiredLabel": "required"
+}

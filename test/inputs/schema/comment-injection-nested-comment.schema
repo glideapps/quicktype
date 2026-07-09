@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "description": "Nested block comment openers:\n{-\n/*\nThis text must remain inside the generated documentation comment.",
+  "properties": {
+    "value": {
+      "type": "string",
+      "description": "Nested property block comment openers:\n{-\n/*\nThis text must remain inside the generated property documentation comment."
+    }
+  },
+  "required": ["value"],
+  "additionalProperties": false
+}

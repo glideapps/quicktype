@@ -97,7 +97,13 @@ function splitDescription(
     descriptions: Iterable<string> | undefined,
 ): string[] | undefined {
     if (descriptions === undefined) return undefined;
-    const description = Array.from(descriptions).join("\n\n").trim();
+    // U+0085, U+2028 and U+2029 count as line terminators in some
+    // target languages (JavaScript, C#), so they must not survive
+    // into single-line comments.
+    const description = Array.from(descriptions)
+        .join("\n\n")
+        .replace(/\r\n?|[\u0085\u2028\u2029]/g, "\n")
+        .trim();
     if (description === "") return undefined;
     return wordWrap(description)
         .split("\n")
@@ -1166,6 +1172,14 @@ export abstract class ConvenienceRenderer extends Renderer {
             afterComment,
         }: CommentOptions = {},
     ): void {
+        const replacements = this.commentLineEscapes({
+            lineStart,
+            firstLineStart,
+            lineEnd,
+            beforeComment,
+            afterComment,
+        });
+
         if (beforeComment !== undefined) {
             this.emitLine(beforeComment);
         }
@@ -1174,15 +1188,20 @@ export abstract class ConvenienceRenderer extends Renderer {
         for (const line of lines) {
             let start = first ? firstLineStart : lineStart;
             first = false;
+            const escapedLine = this.escapeCommentLine(
+                line,
+                replacements,
+                lineEnd,
+            );
 
-            if (this.sourcelikeToString(line) === "") {
+            if (this.sourcelikeToString(escapedLine) === "") {
                 start = trimEnd(start);
             }
 
             if (lineEnd) {
-                this.emitLine(start, line, lineEnd);
+                this.emitLine(start, escapedLine, lineEnd);
             } else {
-                this.emitLine(start, line);
+                this.emitLine(start, escapedLine);
             }
         }
 
@@ -1195,6 +1214,77 @@ export abstract class ConvenienceRenderer extends Renderer {
         if (description === undefined) return;
         // FIXME: word-wrap
         this.emitDescriptionBlock(description);
+    }
+
+    private commentLineEscapes(
+        options: Required<Pick<CommentOptions, "lineStart" | "firstLineStart">> &
+            Pick<CommentOptions, "lineEnd" | "beforeComment" | "afterComment">,
+    ): ReadonlyArray<readonly [string, string]> {
+        const delimiters = [
+            options.lineStart,
+            options.firstLineStart,
+            options.lineEnd,
+            options.beforeComment,
+            options.afterComment,
+        ];
+        const containsDelimiter = (delimiter: string): boolean =>
+            delimiters.some((part) => part?.includes(delimiter) ?? false);
+
+        const replacements: Array<readonly [string, string]> = [];
+        if (containsDelimiter("/*") || containsDelimiter("*/")) {
+            // The opener must be escaped, too: some languages (Kotlin,
+            // Scala) nest block comments, so a lone `/*` would reopen a
+            // comment that the closing delimiter can't terminate.
+            replacements.push(["/*", "/ *"], ["*/", "* /"]);
+        }
+        if (containsDelimiter("{-") || containsDelimiter("-}")) {
+            replacements.push(["{-", "{ -"], ["-}", "- }"]);
+        }
+        if (containsDelimiter('"""')) {
+            // Triple-quoted comments (Python docstrings, Elixir
+            // moduledocs) are string literals, so backslashes are escape
+            // characters — in particular a trailing backslash would
+            // swallow the first quote of the closing delimiter.
+            replacements.push(["\\", "\\\\"], ['"""', '\\"\\"\\"']);
+        }
+        return replacements;
+    }
+
+    // C-family lexers splice a backslash-newline into one line even
+    // inside comments, which would pull the following line of
+    // generated code into an attacker-controlled comment.
+    protected get commentLinesSpliceOnBackslash(): boolean {
+        return false;
+    }
+
+    private escapeCommentLine(
+        line: Sourcelike,
+        replacements: ReadonlyArray<readonly [string, string]>,
+        lineEnd?: string,
+    ): Sourcelike {
+        if (replacements.length === 0 && !this.commentLinesSpliceOnBackslash) {
+            return line;
+        }
+
+        let escaped = replacements.reduce(
+            (result, [unsafe, safe]) => result.split(unsafe).join(safe),
+            this.sourcelikeToString(line),
+        );
+        // A quote at the end of the line would merge with a closing
+        // `"""` emitted right after it.  The quote needs escaping iff
+        // it's preceded by an even number of backslashes.
+        if (lineEnd !== undefined && lineEnd.startsWith('"')) {
+            const trailing = /(\\*)"$/.exec(escaped);
+            if (trailing !== null && trailing[1].length % 2 === 0) {
+                escaped = `${escaped.slice(0, -1)}\\"`;
+            }
+        }
+
+        if (this.commentLinesSpliceOnBackslash && escaped.endsWith("\\")) {
+            escaped = `${escaped}.`;
+        }
+
+        return escaped;
     }
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {

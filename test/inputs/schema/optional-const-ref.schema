@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema#",
+  "$ref": "#/definitions/TopLevel",
+  "definitions": {
+    "Coordinate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["latitude", "longitude"],
+      "properties": {
+        "latitude": {
+          "type": "number"
+        },
+        "longitude": {
+          "type": "number"
+        }
+      }
+    },
+    "TopLevel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requiredCoordinates", "requiredCount", "requiredLabel"],
+      "properties": {
+        "coordinates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Coordinate"
+          }
+        },
+        "requiredCoordinates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Coordinate"
+          }
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "requiredCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 99.5
+        },
+        "label": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 16
+        },
+        "requiredLabel": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 16
+        }
+      }
+    }
+  }
+}

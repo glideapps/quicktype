@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+# Publishes the npm packages (quicktype-core, quicktype-typescript-input,
+# quicktype-graphql-input, and the root quicktype CLI). The VS Code
+# extension is published separately by script/publish-vscode.sh — the two
+# are independent (the extension bundles its quicktype dependencies from
+# local source at build time), so they run as separate CI workflows.
+
 set -e
 
 ./script/patch-npm-version.ts
@@ -36,9 +42,3 @@ jq --arg version $VERSION \
     package.json > package.1.json
 mv package.1.json package.json
 npm publish
-
-
-# Publish vscode extension
-pushd packages/quicktype-vscode
-npm run pub
-popd
