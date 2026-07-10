@@ -131,16 +131,23 @@ $ npm install quicktype-core
 
 In general, first you create an `InputData` value with one or more JSON samples, JSON schemas, TypeScript sources, or other supported input types. Then you call `quicktype`, passing that `InputData` value and any options you want.
 
-```javascript
+The sample below is TypeScript; if you're calling quicktype from plain JavaScript, just leave out the type annotations. Note that the language parameters are typed as `LanguageName` — a union of all the language names quicktype supports — rather than `string`, so typos in language names are caught at compile time:
+
+```typescript
 import {
     quicktype,
     InputData,
     jsonInputForTargetLanguage,
     JSONSchemaInput,
-    FetchingJSONSchemaStore
+    FetchingJSONSchemaStore,
+    type LanguageName
 } from "quicktype-core";
 
-async function quicktypeJSON(targetLanguage, typeName, jsonString) {
+async function quicktypeJSON(
+    targetLanguage: LanguageName,
+    typeName: string,
+    jsonString: string
+) {
     const jsonInput = jsonInputForTargetLanguage(targetLanguage);
 
     // We could add multiple samples for the same desired
@@ -160,7 +167,11 @@ async function quicktypeJSON(targetLanguage, typeName, jsonString) {
     });
 }
 
-async function quicktypeJSONSchema(targetLanguage, typeName, jsonSchemaString) {
+async function quicktypeJSONSchema(
+    targetLanguage: LanguageName,
+    typeName: string,
+    jsonSchemaString: string
+) {
     const schemaInput = new JSONSchemaInput(new FetchingJSONSchemaStore());
 
     // We could add multiple schemas for multiple types,
@@ -177,15 +188,45 @@ async function quicktypeJSONSchema(targetLanguage, typeName, jsonSchemaString) {
 }
 
 async function main() {
+    const jsonString = `{ "name": "David", "age": 42 }`;
     const { lines: swiftPerson } = await quicktypeJSON("swift", "Person", jsonString);
     console.log(swiftPerson.join("\n"));
 
+    const jsonSchemaString = `{
+        "$schema": "http://json-schema.org/draft-06/schema#",
+        "type": "object",
+        "properties": {
+            "name": { "type": "string" },
+            "age": { "type": "integer" }
+        },
+        "required": ["name", "age"]
+    }`;
     const { lines: pythonPerson } = await quicktypeJSONSchema("python", "Person", jsonSchemaString);
     console.log(pythonPerson.join("\n"));
 }
 
 main();
 ```
+
+If the target language is only known at runtime — from a command-line argument or a config file, say — you have a `string`, which TypeScript won't accept as a `LanguageName`. Narrow it with the `isLanguageName` type guard, which accepts everything quicktype itself accepts: canonical names like `"csharp"`, display names like `"C#"`, and file extensions like `"cs"`:
+
+```typescript
+import { isLanguageName } from "quicktype-core";
+
+async function quicktypeDynamicJSON(
+    targetLanguage: string,
+    typeName: string,
+    jsonString: string
+) {
+    if (!isLanguageName(targetLanguage)) {
+        throw new Error(`Unknown target language: ${targetLanguage}`);
+    }
+
+    return await quicktypeJSON(targetLanguage, typeName, jsonString);
+}
+```
+
+Alternatively, `languageNamed(name)` looks up the `TargetLanguage` instance for a name (returning `undefined` if there is none), and an instance can be passed anywhere a language name is accepted.
 
 The argument to `quicktype` is a complex object with many optional properties. [Explore its definition](https://github.com/quicktype/quicktype/blob/master/packages/quicktype-core/src/Run.ts#L637) to understand what options are allowed.
 
