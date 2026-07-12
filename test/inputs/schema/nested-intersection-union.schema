@@ -1,0 +1,58 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "input": {
+            "type": "array",
+            "items": {
+                "oneOf": [
+                    { "$ref": "#/definitions/Message" },
+                    { "$ref": "#/definitions/Item" }
+                ]
+            }
+        }
+    },
+    "required": ["input"],
+    "definitions": {
+        "Message": {
+            "type": "object",
+            "properties": {
+                "content": { "type": "string" }
+            },
+            "required": ["content"]
+        },
+        "Item": {
+            "oneOf": [
+                { "$ref": "#/definitions/FunctionOutput" },
+                { "$ref": "#/definitions/ReasoningItem" }
+            ]
+        },
+        "FunctionOutput": {
+            "allOf": [
+                { "$ref": "#/definitions/BaseItem" },
+                {
+                    "type": "object",
+                    "properties": {
+                        "output": { "type": "string" }
+                    },
+                    "required": ["output"]
+                }
+            ]
+        },
+        "BaseItem": {
+            "type": "object",
+            "properties": {
+                "id": { "type": "string" }
+            },
+            "required": ["id"]
+        },
+        "ReasoningItem": {
+            "type": "object",
+            "properties": {
+                "summary": { "type": "string" }
+            },
+            "required": ["summary"]
+        }
+    }
+}
