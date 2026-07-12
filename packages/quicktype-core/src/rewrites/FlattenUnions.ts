@@ -59,6 +59,16 @@ export function flattenUnions(
             .join(",");
     }
 
+    function containsIntersection(t: Type, seen: Set<number>): boolean {
+        if (seen.has(t.index)) return false;
+        seen.add(t.index);
+
+        if (t instanceof IntersectionType) return true;
+        if (!(t instanceof UnionType)) return false;
+
+        return iterableSome(t.members, (m) => containsIntersection(m, seen));
+    }
+
     function replace(
         types: ReadonlySet<Type>,
         builder: GraphRewriteBuilder<Type>,
@@ -86,7 +96,9 @@ export function flattenUnions(
                 trefs.map((tref) => derefTypeRef(tref, graph)),
             );
             if (
-                iterableSome(typesToUnify, (t) => t instanceof IntersectionType)
+                iterableSome(typesToUnify, (t) =>
+                    containsIntersection(t, new Set()),
+                )
             ) {
                 trefs = trefs.map((tref) =>
                     builder.reconstituteType(derefTypeRef(tref, graph)),
