@@ -1,0 +1,20 @@
+{
+    "input": [
+        {
+            "content": "hello",
+            "id": "item-1",
+            "output": "42",
+            "summary": "all fields present"
+        },
+        {
+            "content": "just a message"
+        },
+        {
+            "id": "item-2",
+            "output": "function result"
+        },
+        {
+            "summary": "just reasoning"
+        }
+    ]
+}
