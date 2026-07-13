@@ -631,6 +631,8 @@ export const CPlusPlusLanguage: Language = {
     skipSchema: [
         // uses too much memory
         "keyword-unions.schema",
+        // The generated deserializer accepts non-object values when all class properties are optional.
+        "nested-intersection-union.schema",
         // Recursive top-level unions produce aliases that can refer to later aliases.
         "recursive-union-flattening.schema",
     ],
