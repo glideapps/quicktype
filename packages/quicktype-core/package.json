@@ -38,7 +38,7 @@
         "is-url": "^1.2.4",
         "js-base64": "^3.7.7",
         "lodash": "^4.18.1",
-        "pako": "^1.0.6",
+        "pako": "^3.0.1",
         "pluralize": "^8.0.0",
         "readable-stream": "4.5.2",
         "unicode-properties": "^1.4.1",
