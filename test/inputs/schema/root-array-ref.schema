@@ -1,0 +1,26 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$ref": "#/definitions/GetResp",
+    "definitions": {
+        "GetResp": {
+            "title": "GetResp",
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/SomeObject"
+            }
+        },
+        "SomeObject": {
+            "title": "SomeObject",
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name"
+            ]
+        }
+    }
+}
