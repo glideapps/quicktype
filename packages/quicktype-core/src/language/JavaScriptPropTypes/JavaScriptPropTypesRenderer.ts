@@ -20,6 +20,7 @@ import {
     type ArrayType,
     type ClassProperty,
     type ClassType,
+    type MapType,
     type ObjectType,
     PrimitiveType,
     type Type,
@@ -27,6 +28,7 @@ import {
 import {
     directlyReachableSingleNamedType,
     matchType,
+    removeNullFromType,
 } from "../../Type/TypeUtils.js";
 import { isES3IdentifierStart } from "../JavaScript/unicodeMaps.js";
 import { legalizeName } from "../JavaScript/utils.js";
@@ -92,9 +94,16 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         return super.makeNameForProperty(c, className, p, jsonName, undefined);
     }
 
-    private typeMapTypeFor(t: Type, required = true): Sourcelike {
+    private typeMapTypeFor(t: Type, required = false): Sourcelike {
         if (["class", "object", "enum"].includes(t.kind)) {
-            return ["_", this.nameForNamedType(t)];
+            const validator: Sourcelike = [
+                "_",
+                this.nameForNamedType(t),
+                required ? ".isRequired" : "",
+            ];
+            return t.kind === "enum"
+                ? validator
+                : ["(...args) => ", validator, "(...args)"];
         }
 
         const match = matchType<Sourcelike>(
@@ -129,14 +138,15 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         );
 
         if (required) {
-            return [match];
+            return [match, ".isRequired"];
         }
 
         return match;
     }
 
     private typeMapTypeForProperty(p: ClassProperty): Sourcelike {
-        return this.typeMapTypeFor(p.type);
+        const [nullType] = removeNullFromType(p.type);
+        return this.typeMapTypeFor(p.type, !p.isOptional && nullType === null);
     }
 
     private importStatement(
@@ -211,10 +221,10 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
             this.forEachEnumCase(
                 enumType,
                 "none",
-                (name: Name, _jsonName, _position) => {
-                    options.push("'");
-                    options.push(name);
-                    options.push("'");
+                (_name: Name, jsonName, _position) => {
+                    options.push('"');
+                    options.push(utf16StringEscape(jsonName));
+                    options.push('"');
                     options.push(", ");
                 },
             );
@@ -223,7 +233,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
             this.emitLine([
                 "const _",
                 enumName,
-                " = PropTypes.oneOfType([",
+                " = PropTypes.oneOf([",
                 ...options,
                 "]);",
             ]);
@@ -279,6 +289,13 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
                 this.emitExport(name, [
                     "PropTypes.arrayOf(",
                     this.typeMapTypeFor((type as ArrayType).items),
+                    ")",
+                ]);
+            } else if (type.kind === "map") {
+                this.ensureBlankLine();
+                this.emitExport(name, [
+                    "PropTypes.objectOf(",
+                    this.typeMapTypeFor((type as MapType).values),
                     ")",
                 ]);
             } else {
