@@ -80,6 +80,74 @@ function tryGetMapValueType(
     return typeArguments.length === 2 ? typeArguments[1] : undefined;
 }
 
+const referenceAnnotationKeys: ReadonlySet<string> = new Set([
+    "description",
+    "default",
+    "examples",
+    "title",
+]);
+
+// Object-literal type aliases are anonymous object types internally, so
+// typescript-json-schema inlines them at properties unless aliasRef is enabled.
+// That setting adds indirection definitions, so point those properties at the
+// named root definition directly instead.
+function patchGeneratorForTypeAliases(
+    generator: JsonSchemaGenerator,
+    program: ts.Program,
+): void {
+    // See the private API note in patchGeneratorForBuiltinTypes below.
+    const generatorInternals = generator as unknown as {
+        getTypeDefinition: (typ: ts.Type, ...rest: unknown[]) => Definition;
+        userSymbols: Record<string, ts.Symbol>;
+    };
+    const rootNamesBySymbol = new Map<ts.Symbol, string>();
+    for (const name of generator.getMainFileSymbols(program)) {
+        const symbol = generatorInternals.userSymbols[name];
+        if (symbol !== undefined) {
+            rootNamesBySymbol.set(symbol, name);
+        }
+    }
+
+    const originalGetTypeDefinition =
+        generatorInternals.getTypeDefinition.bind(generator);
+    generatorInternals.getTypeDefinition = (typ, ...rest) => {
+        const definition = originalGetTypeDefinition(typ, ...rest);
+        const property = rest[2];
+        const referencedType = rest[3] as ts.Symbol | undefined;
+        if (
+            property === undefined ||
+            referencedType === undefined ||
+            (referencedType.flags & ts.SymbolFlags.TypeAlias) === 0 ||
+            (typ.flags & ts.TypeFlags.Object) === 0 ||
+            ((typ as ts.ObjectType).objectFlags & ts.ObjectFlags.Anonymous) ===
+                0
+        ) {
+            return definition;
+        }
+
+        const isGeneric = (referencedType.getDeclarations() ?? []).some(
+            (declaration) =>
+                ts.isTypeAliasDeclaration(declaration) &&
+                declaration.typeParameters !== undefined &&
+                declaration.typeParameters.length > 0,
+        );
+        const rootName = rootNamesBySymbol.get(referencedType);
+        if (isGeneric || rootName === undefined) {
+            return definition;
+        }
+
+        const annotations = Object.fromEntries(
+            Object.entries(definition).filter(([key]) =>
+                referenceAnnotationKeys.has(key),
+            ),
+        );
+        return {
+            $ref: `#/definitions/${encodeURIComponent(rootName)}`,
+            ...annotations,
+        };
+    };
+}
+
 // typescript-json-schema maps `Date` to a date-time string out of the box,
 // but it has no support for `Map`, and it structurally expands other
 // standard-library generics into meaningless schemas. Wrap the generator's
@@ -149,6 +217,7 @@ export function schemaForTypeScriptSources(
     }
 
     patchGeneratorForBuiltinTypes(generator, program);
+    patchGeneratorForTypeAliases(generator, program);
 
     const schema = generateSchema(program, "*", settings, undefined, generator);
     const uris: string[] = [];

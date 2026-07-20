@@ -84,6 +84,57 @@ describe("schemaForTypeScriptSources", () => {
         expect(schema.definitions.Person.type).toBe("object");
     });
 
+    // https://github.com/glideapps/quicktype/issues/879
+    test("object type aliases are referenced instead of duplicated inline", () => {
+        const { schema } = schemaForSource(`
+            type AuthTokens = {
+                accessToken: string;
+                refreshToken: string;
+                idToken: string;
+            };
+
+            class UserInfo {
+                username: string;
+                password?: string;
+                tokens?: AuthTokens;
+            }
+        `);
+
+        expect(Object.keys(schema.definitions).sort()).toEqual([
+            "AuthTokens",
+            "UserInfo",
+        ]);
+        expect(schema.definitions.UserInfo.properties.tokens).toEqual({
+            $ref: "#/definitions/AuthTokens",
+            title: "tokens",
+        });
+    });
+
+    test("class property types continue to use references", () => {
+        const { schema } = schemaForSource(`
+            class AuthTokens {
+                accessToken: string;
+                refreshToken: string;
+                idToken: string;
+            }
+
+            class UserInfo {
+                username: string;
+                password?: string;
+                tokens?: AuthTokens;
+            }
+        `);
+
+        expect(Object.keys(schema.definitions).sort()).toEqual([
+            "AuthTokens",
+            "UserInfo",
+        ]);
+        expect(schema.definitions.UserInfo.properties.tokens).toEqual({
+            $ref: "#/definitions/AuthTokens",
+            title: "tokens",
+        });
+    });
+
     test("class property initializers become defaults", () => {
         const { schema } = schemaForSource(`
             export class Config {
