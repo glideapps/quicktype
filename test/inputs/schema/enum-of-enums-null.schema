@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ConstructResponse",
+  "type": "object",
+  "required": ["format"],
+  "properties": {
+    "format": {
+      "description": "The format of the data.",
+      "anyOf": [
+        { "$ref": "#/definitions/DataFormat" },
+        { "type": "null" }
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "DataFormat": {
+      "title": "DataFormat",
+      "description": "The format of the data.",
+      "oneOf": [
+        {
+          "title": "Turtle",
+          "description": "Turtle format",
+          "type": "string",
+          "enum": ["turtle"]
+        },
+        {
+          "title": "RDF XML",
+          "description": "RDF XML format",
+          "type": "string",
+          "enum": ["rdf_xml"]
+        },
+        {
+          "title": "N-Triples",
+          "description": "N-Triples format",
+          "type": "string",
+          "enum": ["n_triples"]
+        },
+        {
+          "title": "N-Quads",
+          "description": "N-Quads format",
+          "type": "string",
+          "enum": ["n_quads"]
+        }
+      ]
+    }
+  }
+}
