@@ -1,0 +1,6 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "/schemas/top-level",
+    "$ref": "/schemas/a",
+    "title": "TopLevel"
+}
