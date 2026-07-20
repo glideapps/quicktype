@@ -44,6 +44,10 @@ import {
     singularizeTypeNames,
 } from "../attributes/TypeNames.js";
 import { uriSchemaAttributesProducer } from "../attributes/URIAttributes.js";
+import {
+    unionIsExclusiveAttributes,
+    unionMemberDistinctAttributes,
+} from "../attributes/UnionMembers.js";
 import { messageAssert, messageError } from "../Messages.js";
 import type { RunContext } from "../Run.js";
 import {
@@ -1231,6 +1235,34 @@ async function addTypesInSchema(
                         }
                     },
                 );
+            }
+
+            // A set operation nested under allOf is part of an intersection,
+            // not a standalone union of alternatives.
+            const isStandaloneSetOperation =
+                !needUnion &&
+                !loc.canonicalRef.path.some(
+                    (element) => keyOrIndex(element) === "allOf",
+                ) &&
+                schema.$ref === undefined &&
+                schema.allOf === undefined &&
+                (kind === "oneOf"
+                    ? schema.anyOf === undefined
+                    : schema.oneOf === undefined);
+            if (isStandaloneSetOperation) {
+                for (const typeRef of typeRefs) {
+                    typeBuilder.addAttributes(
+                        typeRef,
+                        unionMemberDistinctAttributes,
+                    );
+                }
+                if (kind === "oneOf") {
+                    unionAttributes = combineTypeAttributes(
+                        "union",
+                        unionAttributes,
+                        unionIsExclusiveAttributes,
+                    );
+                }
             }
 
             const unionType = typeBuilder.getUniqueUnionType(

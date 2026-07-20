@@ -6,7 +6,6 @@ import {
     hashCodeOf,
     iterableEvery,
     iterableFind,
-    iterableSome,
     mapFilter,
     mapMap,
     mapSome,
@@ -20,6 +19,7 @@ import {
 } from "collection-utils";
 
 import type { TypeAttributes } from "../attributes/TypeAttributes.js";
+import { isUnionMemberDistinct } from "../attributes/UnionMembers.js";
 import {
     type TypeNames,
     namesTypeAttributeKind,
@@ -780,25 +780,45 @@ export function setOperationCasesEqual(
     const ma = toReadonlySet(typesA);
     const mb = toReadonlySet(typesB);
     if (ma.size !== mb.size) return false;
-    return iterableEvery(ma, (ta) => {
-        const tb = iterableFind(mb, (t) => t.kind === ta.kind);
-        if (tb !== undefined && membersEqual(ta, tb)) return true;
 
-        if (conflateNumbers) {
-            if (
-                ta.kind === "integer" &&
-                iterableSome(mb, (t) => t.kind === "double")
-            )
-                return true;
-            if (
-                ta.kind === "double" &&
-                iterableSome(mb, (t) => t.kind === "integer")
-            )
-                return true;
+    function kindForComparison(t: Type): TypeKind {
+        if (conflateNumbers && (t.kind === "integer" || t.kind === "double")) {
+            return "double";
         }
 
-        return false;
-    });
+        return t.kind;
+    }
+
+    function groupByKind(types: ReadonlySet<Type>): Map<TypeKind, Type[]> {
+        const groups = new Map<TypeKind, Type[]>();
+        for (const t of types) {
+            const kind = kindForComparison(t);
+            const group = groups.get(kind);
+            if (group === undefined) {
+                groups.set(kind, [t]);
+            } else {
+                group.push(t);
+            }
+        }
+
+        return groups;
+    }
+
+    const groupsA = groupByKind(ma);
+    const groupsB = groupByKind(mb);
+    if (groupsA.size !== groupsB.size) return false;
+    for (const [kind, groupA] of groupsA) {
+        const groupB = groupsB.get(kind);
+        if (groupB === undefined || groupA.length !== groupB.length) {
+            return false;
+        }
+
+        for (let i = 0; i < groupA.length; i++) {
+            if (!membersEqual(groupA[i], groupB[i])) return false;
+        }
+    }
+
+    return true;
 }
 
 export function setOperationTypeIdentity(
@@ -861,7 +881,6 @@ export abstract class SetOperationType extends Type {
     }
 
     public getNonAttributeChildren(): Set<Type> {
-        // FIXME: We're assuming no two members of the same kind.
         return setSortBy(this.members, (t) => t.kind);
     }
 
@@ -980,18 +999,30 @@ export class UnionType extends SetOperationType {
         const members = this.members;
         if (members.size <= 1) return false;
         const kinds = setMap(members, (t) => t.kind);
-        if (kinds.size < members.size) return false;
         if (kinds.has("union") || kinds.has("intersection")) return false;
         if (kinds.has("none") || kinds.has("any")) return false;
         if (kinds.has("string") && kinds.has("enum")) return false;
 
-        let numObjectTypes = 0;
-        if (kinds.has("class")) numObjectTypes += 1;
-        if (kinds.has("map")) numObjectTypes += 1;
-        if (kinds.has("object")) numObjectTypes += 1;
-        if (numObjectTypes > 1) return false;
+        const objectMembers = setFilter(
+            members,
+            (member) => member instanceof ObjectType,
+        );
+        const nonObjectMembers = setFilter(
+            members,
+            (member) => !(member instanceof ObjectType),
+        );
+        const nonObjectKinds = setMap(
+            nonObjectMembers,
+            (member) => member.kind,
+        );
+        if (nonObjectKinds.size < nonObjectMembers.size) return false;
 
-        return true;
+        return (
+            objectMembers.size <= 1 ||
+            iterableEvery(objectMembers, (member) =>
+                isUnionMemberDistinct(member.getAttributes()),
+            )
+        );
     }
 
     public reconstitute<T extends BaseGraphRewriteBuilder>(
