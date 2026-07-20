@@ -1,0 +1,6 @@
+{
+  "animal": {
+    "foo": "inherited property",
+    "bar": "inline property"
+  }
+}

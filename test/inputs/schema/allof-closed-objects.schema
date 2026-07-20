@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Container",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "animal": {
+      "oneOf": [
+        { "$ref": "#/definitions/dog" },
+        { "type": "null" }
+      ]
+    }
+  },
+  "definitions": {
+    "dog": {
+      "allOf": [
+        { "$ref": "#/definitions/animal" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "bar": { "type": ["null", "string"] }
+          }
+        }
+      ]
+    },
+    "animal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["discriminator"],
+      "properties": {
+        "foo": { "type": ["null", "string"] },
+        "discriminator": { "type": "string" }
+      }
+    }
+  }
+}

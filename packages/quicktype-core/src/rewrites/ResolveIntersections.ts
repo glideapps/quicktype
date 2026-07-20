@@ -20,7 +20,7 @@ import {
     makeTypeAttributesInferred,
 } from "../attributes/TypeAttributes.js";
 import type { GraphRewriteBuilder, TypeLookerUp } from "../GraphRewriting.js";
-import { assert, defined, mustNotHappen, panic } from "../support/Support.js";
+import { assert, defined, panic } from "../support/Support.js";
 import {
     ArrayType,
     GenericClassProperty,
@@ -183,6 +183,9 @@ class IntersectionAccumulator
             return;
         }
 
+        // Named properties from intersected objects are combined.  Whether
+        // additional properties are allowed only affects names not declared
+        // by any of those objects.
         const allPropertyNames = setUnionInto(
             new Set(this._objectProperties.keys()),
             maybeObject.getProperties().keys(),
@@ -206,12 +209,7 @@ class IntersectionAccumulator
                     existing.isOptional,
                 );
                 defined(this._objectProperties).set(name, cp);
-            } else if (existing !== undefined) {
-                defined(this._objectProperties).delete(name);
-            } else if (
-                newProperty !== undefined &&
-                this._additionalPropertyTypes !== undefined
-            ) {
+            } else if (newProperty !== undefined) {
                 // FIXME: This is potentially slow
                 const types = new Set(this._additionalPropertyTypes).add(
                     newProperty.type,
@@ -220,10 +218,6 @@ class IntersectionAccumulator
                     name,
                     new GenericClassProperty(types, newProperty.isOptional),
                 );
-            } else if (newProperty !== undefined) {
-                defined(this._objectProperties).delete(name);
-            } else {
-                mustNotHappen();
             }
         }
 
