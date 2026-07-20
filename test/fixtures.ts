@@ -896,6 +896,76 @@ class JSONSchemaFixture extends LanguageFixture {
     }
 }
 
+// Regression fixture for #2801.  It verifies schema-specific output that
+// cannot be observed by compiling and running code generated from a JSON Schema.
+class JSONSchemaToSchemaFixture extends Fixture {
+    readonly name = "schema-schema";
+
+    constructor() {
+        super(languages.TypeScriptLanguage);
+    }
+
+    getSamples(sources: string[]): { priority: Sample[]; others: Sample[] } {
+        return samplesFromSources(
+            sources,
+            ["test/inputs/schema/description-unification.schema"],
+            [],
+            "schema",
+        );
+    }
+
+    async runWithSample(
+        sample: Sample,
+        index: number,
+        total: number,
+    ): Promise<void> {
+        const cwd = this.getRunDirectory();
+        const message = this.runMessageStart(sample, index, total, cwd, false);
+        const output = path.join(cwd, "schema.json");
+        mkdirs(cwd);
+
+        await quicktype({
+            src: [sample.path],
+            srcLang: "schema",
+            lang: "schema",
+            topLevel: "DescriptionUnification",
+            out: output,
+            telemetry: "disable",
+        });
+
+        const schema = JSON.parse(fs.readFileSync(output, "utf8")) as {
+            definitions: Record<
+                string,
+                { properties: Record<string, { description?: unknown }> }
+            >;
+        };
+        const expectedDescriptions = [
+            ["Allow", "labels", "The labels to apply to the policy"],
+            [
+                "Metadata",
+                "annotations",
+                "Additional annotations for the generated resource",
+            ],
+        ] as const;
+
+        for (const [definition, property, expected] of expectedDescriptions) {
+            const actual =
+                schema.definitions[definition]?.properties[property]
+                    ?.description;
+            if (actual !== expected) {
+                failWith("Schema property has the wrong description", {
+                    definition,
+                    property,
+                    expected,
+                    actual,
+                });
+            }
+        }
+
+        this.runMessageEnd(message, expectedDescriptions.length);
+    }
+}
+
 type TreeSitterTarget = {
     displayName: string;
     language: languages.Language;
@@ -1664,6 +1734,7 @@ export const allFixtures: Fixture[] = [
     new JSONFixture(languages.ElixirLanguage),
     new JSONSchemaJSONFixture(languages.CSharpLanguage),
     new JSONTypeScriptFixture(languages.CSharpLanguage),
+    new JSONSchemaToSchemaFixture(),
     // new JSONSchemaFixture(languages.CrystalLanguage),
     new JSONSchemaFixture(languages.CSharpLanguage),
     new JSONSchemaFixture(

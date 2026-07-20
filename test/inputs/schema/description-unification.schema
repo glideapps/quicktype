@@ -1,0 +1,34 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "DescriptionUnification",
+    "type": "object",
+    "properties": {
+        "allow": {
+            "type": "object",
+            "properties": {
+                "labels": {
+                    "description": "The labels to apply to the policy",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                }
+            },
+            "required": ["labels"]
+        },
+        "metadata": {
+            "type": "object",
+            "properties": {
+                "annotations": {
+                    "description": "Additional annotations for the generated resource",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                }
+            },
+            "required": ["annotations"]
+        }
+    },
+    "required": ["allow", "metadata"]
+}
