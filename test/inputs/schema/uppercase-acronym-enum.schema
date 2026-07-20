@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "format": {
+      "$ref": "#/definitions/Format"
+    }
+  },
+  "required": ["format"],
+  "definitions": {
+    "Format": {
+      "type": "string",
+      "enum": ["HLS", "DASH", "MSS"]
+    }
+  }
+}

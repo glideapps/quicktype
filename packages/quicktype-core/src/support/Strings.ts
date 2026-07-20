@@ -488,7 +488,7 @@ export function splitIntoWords(s: string): WordInName[] {
     for (const [start, end, allUpper] of intervals) {
         const word = s.slice(start, end);
         const isAcronym =
-            (lastLowerCaseIndex !== undefined && allUpper) ||
+            allUpper ||
             knownAcronyms.has(word.toLowerCase() as (typeof acronyms)[number]);
         words.push({ word, isAcronym });
     }
