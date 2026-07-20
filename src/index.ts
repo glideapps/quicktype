@@ -99,6 +99,8 @@ export interface CLIOptions<Lang extends LanguageName = LanguageName> {
     srcUrls?: string;
     telemetry?: string;
     topLevel: string;
+    // Whether topLevel was set before defaults were inferred.
+    topLevelWasExplicitlySpecified?: boolean;
 
     version: boolean;
 }
@@ -371,6 +373,8 @@ function inferCLIOptions(
         httpHeader: opts.httpHeader,
         debug: opts.debug,
         telemetry: opts.telemetry,
+        topLevelWasExplicitlySpecified:
+            opts.topLevelWasExplicitlySpecified ?? opts.topLevel !== undefined,
     };
     for (const flagName of inferenceFlagNames) {
         const cliName = negatedInferenceFlagName(flagName);
@@ -873,12 +877,14 @@ async function getSources(options: CLIOptions): Promise<TypeSource[]> {
 
     const exists = options.src.filter(fs.existsSync);
     const directories = exists.filter((x) => fs.lstatSync(x).isDirectory());
+    const directorySources: TypeSource[] = [];
 
     for (const dataDir of directories) {
-        sources = sources.concat(
-            await samplesFromDirectory(dataDir, options.httpHeader),
+        directorySources.push(
+            ...(await samplesFromDirectory(dataDir, options.httpHeader)),
         );
     }
+    sources = sources.concat(directorySources);
 
     // Every src that's not a directory is assumed to be a file or URL
     const filesOrUrls = options.src.filter((x) => !_.includes(directories, x));
@@ -890,6 +896,14 @@ async function getSources(options: CLIOptions): Promise<TypeSource[]> {
                 options,
             )),
         );
+    }
+
+    if (
+        sources.length === 1 &&
+        directorySources.length === 1 &&
+        options.topLevelWasExplicitlySpecified
+    ) {
+        sources[0].name = options.topLevel;
     }
 
     return sources;
