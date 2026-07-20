@@ -1,4 +1,4 @@
-import { iterableSome, setFilter } from "collection-utils";
+import { iterableEvery, iterableSome, setFilter } from "collection-utils";
 
 import { emptyTypeAttributes } from "../attributes/TypeAttributes.js";
 import type { GraphRewriteBuilder } from "../GraphRewriting.js";
@@ -8,13 +8,17 @@ import { IntersectionType, type Type, UnionType } from "../Type/Type.js";
 import type { StringTypeMapping } from "../Type/TypeBuilderUtils.js";
 import type { TypeGraph } from "../Type/TypeGraph.js";
 import { type TypeRef, derefTypeRef, typeRefIndex } from "../Type/TypeRef.js";
-import { makeGroupsToFlatten } from "../Type/TypeUtils.js";
+import {
+    makeGroupsToFlatten,
+    setOperationMembersRecursively,
+} from "../Type/TypeUtils.js";
 import { UnifyUnionBuilder, unifyTypes } from "../UnifyClasses.js";
 
 export function flattenUnions(
     graph: TypeGraph,
     stringTypeMapping: StringTypeMapping,
     conflateNumbers: boolean,
+    supportsUnionsWithMultipleObjectTypes: boolean,
     makeObjectTypes: boolean,
     debugPrintReconstitution: boolean,
 ): [TypeGraph, boolean] {
@@ -157,8 +161,42 @@ export function flattenUnions(
         (t) => t instanceof UnionType,
     ) as Set<UnionType>;
     const nonCanonicalUnions = setFilter(allUnions, (u) => !u.isCanonical);
+    // IntersectionAccumulator can only represent one member of each kind, so
+    // object unions that participate in intersections still need flattening.
+    const unionsInIntersections = new Set<UnionType>();
+    if (supportsUnionsWithMultipleObjectTypes) {
+        for (const t of graph.allTypesUnordered()) {
+            if (!(t instanceof IntersectionType)) continue;
+            for (const member of setOperationMembersRecursively(
+                t,
+                undefined,
+            )[0]) {
+                if (member instanceof UnionType) {
+                    unionsInIntersections.add(member);
+                }
+            }
+        }
+    }
+
+    const unionsToFlatten = setFilter(nonCanonicalUnions, (u) => {
+        if (
+            !supportsUnionsWithMultipleObjectTypes ||
+            unionsInIntersections.has(u)
+        ) {
+            return true;
+        }
+
+        const members = setOperationMembersRecursively(u, undefined)[0];
+        return (
+            members.size <= 1 ||
+            !iterableEvery(
+                members,
+                (m) => m.kind === "class" || m.kind === "object",
+            )
+        );
+    });
     let foundIntersection = false;
-    const groups = makeGroupsToFlatten(nonCanonicalUnions, (members) => {
+    const groups = makeGroupsToFlatten(unionsToFlatten, (members) => {
         messageAssert(members.size > 0, "IRNoEmptyUnions", {});
         if (!iterableSome(members, (m) => m instanceof IntersectionType))
             return true;

@@ -1,0 +1,44 @@
+{
+  "$ref": "#/definitions/TestObject",
+  "definitions": {
+    "TestObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "firstProperty": {
+          "anyOf": [
+            { "$ref": "#/definitions/MyObjectA" },
+            { "$ref": "#/definitions/MyObjectB" }
+          ]
+        },
+        "secondProperty": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": { "$ref": "#/definitions/MyObjectA" }
+            },
+            { "$ref": "#/definitions/MyObjectB" }
+          ]
+        }
+      }
+    },
+    "MyObjectA": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "a": { "type": "string" },
+        "b": { "type": "number" },
+        "c": { "type": "boolean" }
+      }
+    },
+    "MyObjectB": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "d": { "type": "string" },
+        "e": { "type": "number" },
+        "f": { "type": "boolean" }
+      }
+    }
+  }
+}

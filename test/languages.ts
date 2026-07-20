@@ -58,6 +58,7 @@ const skipsMapValueValidation = [
 export type LanguageFeature =
     | "enum"
     | "union"
+    | "class-union"
     | "no-defaults"
     | "strict-optional"
     | "date-time"
@@ -1010,7 +1011,14 @@ export const TypeScriptLanguage: Language = {
         "e8b04.json",
     ],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults", "strict-optional", "date-time"],
+    features: [
+        "enum",
+        "union",
+        "class-union",
+        "no-defaults",
+        "strict-optional",
+        "date-time",
+    ],
     output: "TopLevel.ts",
     topLevel: "TopLevel",
     skipJSON: [],
