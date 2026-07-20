@@ -1,5 +1,6 @@
 import { iterableSome, setFilter } from "collection-utils";
 
+import { schemaSetOperationTypeAttributeKind } from "../attributes/Schema.js";
 import { emptyTypeAttributes } from "../attributes/TypeAttributes.js";
 import type { GraphRewriteBuilder } from "../GraphRewriting.js";
 import { messageAssert } from "../Messages.js";
@@ -136,11 +137,19 @@ export function flattenUnions(
             );
         };
 
+        const isSchemaSetOperation = iterableSome(
+            types,
+            (t) =>
+                schemaSetOperationTypeAttributeKind.tryGetInAttributes(
+                    t.getAttributes(),
+                ) !== undefined,
+        );
         unionBuilder = new UnifyUnionBuilder(
             builder,
             makeObjectTypes,
             true,
             unifyTypeRefs,
+            isSchemaSetOperation,
         );
         return unifyTypes(
             types,

@@ -1,0 +1,29 @@
+{
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "type": "object",
+    "properties": {
+        "anyof": {
+            "anyOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "name": { "type": "string" }
+                    },
+                    "required": ["name"],
+                    "additionalProperties": false
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "size": { "type": "string" }
+                    },
+                    "required": [],
+                    "minProperties": 1,
+                    "additionalProperties": false
+                }
+            ]
+        }
+    },
+    "required": ["anyof"],
+    "additionalProperties": false
+}

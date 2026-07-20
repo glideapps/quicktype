@@ -26,6 +26,7 @@ function getCliqueProperties(
     clique: ObjectType[],
     builder: TypeBuilder,
     makePropertyType: (types: ReadonlySet<Type>) => TypeRef,
+    preserveSchemaRequiredProperties: boolean,
 ): [ReadonlyMap<string, ClassProperty>, TypeRef | undefined, boolean] {
     const lostTypeAttributes = false;
     const propertyNames = new Set<string>();
@@ -53,7 +54,15 @@ function getCliqueProperties(
             let [name, types, isOptional] = property;
             const maybeProperty = o.getProperties().get(name);
             if (maybeProperty === undefined) {
-                isOptional = true;
+                // An open alternative can still contain this property as
+                // optional additional data.
+                if (
+                    !preserveSchemaRequiredProperties ||
+                    additional !== undefined
+                ) {
+                    isOptional = true;
+                }
+
                 if (additional !== undefined && additional.kind !== "any") {
                     types.add(additional);
                 }
@@ -126,6 +135,7 @@ export class UnifyUnionBuilder extends UnionBuilder<
         private readonly _makeObjectTypes: boolean,
         private readonly _makeClassesFixed: boolean,
         private readonly _unifyTypes: (typesToUnify: TypeRef[]) => TypeRef,
+        private readonly _preserveSchemaRequiredProperties = false,
     ) {
         super(typeBuilder);
     }
@@ -193,12 +203,17 @@ export class UnifyUnionBuilder extends UnionBuilder<
             );
         } else {
             const [properties, additionalProperties, lostTypeAttributes] =
-                getCliqueProperties(objectTypes, this.typeBuilder, (types) => {
-                    assert(types.size > 0, "Property has no type");
-                    return this._unifyTypes(
-                        Array.from(types).map((t) => t.typeRef),
-                    );
-                });
+                getCliqueProperties(
+                    objectTypes,
+                    this.typeBuilder,
+                    (types) => {
+                        assert(types.size > 0, "Property has no type");
+                        return this._unifyTypes(
+                            Array.from(types).map((t) => t.typeRef),
+                        );
+                    },
+                    this._preserveSchemaRequiredProperties,
+                );
             if (lostTypeAttributes) {
                 this.typeBuilder.setLostTypeAttributes();
             }
