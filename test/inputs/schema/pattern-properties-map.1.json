@@ -1,0 +1,9 @@
+{
+    "a1": {
+        "unrestricted": "value"
+    },
+    "a2": {
+        "environment": "production",
+        "team": "quicktype"
+    }
+}
