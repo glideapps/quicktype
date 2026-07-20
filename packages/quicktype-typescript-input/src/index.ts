@@ -203,7 +203,7 @@ export function schemaForTypeScriptSources(
                 description.slice(0, index) +
                 description.slice(index + matches[0].length);
 
-            uris.push(`#/definitions/${name}`);
+            uris.push(`#/definitions/${encodeURIComponent(name)}`);
 
             if (!topLevelName) {
                 if (typeof definition.title === "string") {
@@ -212,6 +212,14 @@ export function schemaForTypeScriptSources(
                     topLevelName = name;
                 }
             }
+        }
+    }
+
+    if (uris.length === 0) {
+        // Generated helper definitions must not compete with exported symbols
+        // for top-level type names.
+        for (const name of generator.getMainFileSymbols(program)) {
+            uris.push(`#/definitions/${encodeURIComponent(name)}`);
         }
     }
 

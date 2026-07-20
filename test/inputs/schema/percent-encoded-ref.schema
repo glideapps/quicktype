@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["foo", "woo"],
+  "properties": {
+    "foo": {
+      "$ref": "#/definitions/StateInfo%3Cxxx%3E"
+    },
+    "woo": {
+      "$ref": "#/definitions/StateInfo%3Cwww%3E"
+    }
+  },
+  "definitions": {
+    "StateInfo<xxx>": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "changeTime"],
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": ["xx", "yy"]
+        },
+        "changeTime": {
+          "type": "number"
+        }
+      }
+    },
+    "StateInfo<www>": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "changeTime"],
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": ["asd", "qwe", "zxc", "tyu"]
+        },
+        "changeTime": {
+          "type": "number"
+        }
+      }
+    }
+  }
+}
