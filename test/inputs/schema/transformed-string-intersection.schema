@@ -1,0 +1,33 @@
+{
+  "definitions": {
+    "committer": {
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["date"]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "committer": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/committer"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "date": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "required": ["committer"]
+}

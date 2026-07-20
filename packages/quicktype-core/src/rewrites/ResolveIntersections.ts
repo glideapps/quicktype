@@ -32,6 +32,7 @@ import {
     UnionType,
     isNumberTypeKind,
     isPrimitiveTypeKind,
+    transformedStringTypeKinds,
 } from "../Type/index.js";
 import type { TypeBuilder } from "../Type/TypeBuilder.js";
 import type { StringTypeMapping } from "../Type/TypeBuilderUtils.js";
@@ -125,6 +126,11 @@ class IntersectionAccumulator
             iterableFind(this._primitiveTypes, isNumberTypeKind) !==
                 undefined &&
             iterableFind(kinds, isNumberTypeKind) !== undefined;
+        const narrowedStringTypes = this._primitiveTypes.has("string")
+            ? setIntersect(kinds, transformedStringTypeKinds)
+            : kinds.has("string")
+              ? setIntersect(this._primitiveTypes, transformedStringTypeKinds)
+              : new Set<PrimitiveTypeKind>();
         this._primitiveTypes = setIntersect(this._primitiveTypes, kinds);
         if (
             haveNumber &&
@@ -133,6 +139,11 @@ class IntersectionAccumulator
             // One set has integer, the other has double.  The intersection
             // of that is integer.
             this._primitiveTypes = this._primitiveTypes.add("integer");
+        }
+
+        // A transformed string is a specialization of a plain string.
+        if (!this._primitiveTypes.has("string")) {
+            setUnionInto(this._primitiveTypes, narrowedStringTypes);
         }
     }
 
@@ -337,6 +348,21 @@ class IntersectionAccumulator
                     maybeDoubleAttributes,
                 );
             });
+        }
+
+        const maybeStringAttributes = this._primitiveAttributes.get("string");
+        if (maybeStringAttributes !== undefined && !kinds.has("string")) {
+            for (const kind of transformedStringTypeKinds) {
+                if (kinds.has(kind)) {
+                    mapUpdateInto(kinds, kind, (a) =>
+                        combineTypeAttributes(
+                            "intersect",
+                            defined(a),
+                            maybeStringAttributes,
+                        ),
+                    );
+                }
+            }
         }
 
         if (
