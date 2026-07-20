@@ -266,6 +266,13 @@ function identityAttributes(attributes: TypeAttributes): TypeAttributes {
     return mapFilter(attributes, (_, kind) => kind.inIdentity);
 }
 
+export function haveSameIdentityAttributes(a: Type, b: Type): boolean {
+    return areEqual(
+        identityAttributes(a.getAttributes()),
+        identityAttributes(b.getAttributes()),
+    );
+}
+
 export function primitiveTypeIdentity(
     kind: PrimitiveTypeKind,
     attributes: TypeAttributes,

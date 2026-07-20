@@ -15,6 +15,7 @@ import {
     type Input,
     type RunContext,
     StringTypes,
+    TypeAttributeKind,
     type TypeAttributes,
     type TypeBuilder,
     TypeNames,
@@ -76,6 +77,22 @@ function getField(t: GQLType, name: string): Field {
 
     return panic(`Required field ${name} not defined on type ${t.name}.`);
 }
+
+class GraphQLTypeNameTypeAttributeKind extends TypeAttributeKind<string> {
+    public constructor() {
+        super("graphqlTypeName");
+    }
+
+    public get inIdentity(): boolean {
+        return true;
+    }
+
+    public combine(names: string[]): string {
+        return names[0];
+    }
+}
+
+const graphQLTypeNameTypeAttributeKind = new GraphQLTypeNameTypeAttributeKind();
 
 function makeNames(
     name: string,
@@ -422,10 +439,11 @@ class GQLQuery {
             }
         }
 
-        return builder.getClassType(
+        const attributes = new Map(
             makeNames(nameOrOverride, containingFieldName, containingTypeName),
-            properties,
         );
+        attributes.set(graphQLTypeNameTypeAttributeKind, gqlType.name);
+        return builder.getClassType(attributes, properties);
     };
 
     public makeType(
