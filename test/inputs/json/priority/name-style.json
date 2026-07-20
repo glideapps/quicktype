@@ -5,5 +5,8 @@
   "isMNISTLetter": true,
   "ZSR_HH_DEMO3_DELMATNR": true,
   "should_know_that_id_is_an_initialism": "yup",
-  "   spaces are separators  too  ": true
+  "   spaces are separators  too  ": true,
+  "Acme": {
+    "HTMLParser": true
+  }
 }
