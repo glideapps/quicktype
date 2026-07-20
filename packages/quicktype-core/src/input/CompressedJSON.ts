@@ -363,6 +363,39 @@ export abstract class CompressedJSON<T> {
     }
 }
 
+// Replace decimal/exponent number literals with a non-integral marker.  Parsing
+// the marked JSON produces a tree with the same shape as the original, while
+// preserving the source distinction that JSON.parse normally discards.
+function markFloatLiterals(input: string): string {
+    const parts: string[] = [];
+    let copiedThrough = 0;
+    let offset = 0;
+
+    while (offset < input.length) {
+        const first = input[offset];
+        if (first === '"') {
+            offset += 1;
+            while (input[offset] !== '"') {
+                offset += input[offset] === "\\" ? 2 : 1;
+            }
+
+            offset += 1;
+        } else if (first === "-" || /[0-9]/.test(first)) {
+            const start = offset;
+            while (/[-0-9eE+.]/.test(input[offset] ?? "")) offset += 1;
+            if (/[.eE]/.test(input.slice(start, offset))) {
+                parts.push(input.slice(copiedThrough, start), "0.5");
+                copiedThrough = offset;
+            }
+        } else {
+            offset += 1;
+        }
+    }
+
+    parts.push(input.slice(copiedThrough));
+    return parts.join("");
+}
+
 export class CompressedJSONFromString extends CompressedJSON<string> {
     public async parse(input: string): Promise<Value> {
         return this.parseSync(input);
@@ -370,11 +403,14 @@ export class CompressedJSONFromString extends CompressedJSON<string> {
 
     public parseSync(input: string): Value {
         const json = JSON.parse(input);
-        this.process(json);
+        const markedInput = markFloatLiterals(input);
+        const numberKindMarkers =
+            markedInput === input ? json : JSON.parse(markedInput);
+        this.process(json, numberKindMarkers);
         return this.finish();
     }
 
-    private process(json: unknown): void {
+    private process(json: unknown, sourceNumberKinds: unknown): void {
         if (json === null) {
             this.commitNull();
         } else if (typeof json === "boolean") {
@@ -382,19 +418,26 @@ export class CompressedJSONFromString extends CompressedJSON<string> {
         } else if (typeof json === "string") {
             this.commitString(json);
         } else if (typeof json === "number") {
-            this.commitNumber(this.parsedNumberIsDouble(json));
+            const sourceIsDouble =
+                typeof sourceNumberKinds === "number" &&
+                sourceNumberKinds !== Math.floor(sourceNumberKinds);
+            this.commitNumber(
+                sourceIsDouble || this.parsedNumberIsDouble(json),
+            );
         } else if (Array.isArray(json)) {
             this.pushArrayContext();
-            for (const v of json) {
-                this.process(v);
+            const numberKinds = sourceNumberKinds as unknown[];
+            for (let index = 0; index < json.length; index++) {
+                this.process(json[index], numberKinds[index]);
             }
 
             this.finishArray();
         } else if (typeof json === "object") {
             this.pushObjectContext();
+            const numberKinds = sourceNumberKinds as Record<string, unknown>;
             for (const key of Object.getOwnPropertyNames(json)) {
                 this.setPropertyKey(key);
-                this.process(json[key as keyof typeof json]);
+                this.process(json[key as keyof typeof json], numberKinds[key]);
             }
 
             this.finishObject();
