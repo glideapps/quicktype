@@ -127,6 +127,20 @@ describe("schemaForTypeScriptSources", () => {
         });
     });
 
+    // https://github.com/glideapps/quicktype/issues/1953
+    test("integer typed-array properties become integer arrays", () => {
+        const { schema } = schemaForSource(`
+            export interface BinaryData {
+                bytes: Uint8Array;
+            }
+        `);
+
+        expect(schema.definitions.BinaryData.properties.bytes).toMatchObject({
+            type: "array",
+            items: { type: "integer" },
+        });
+    });
+
     // https://github.com/glideapps/quicktype/issues/1858
     test("Map properties become map schemas", () => {
         const { schema } = schemaForSource(`

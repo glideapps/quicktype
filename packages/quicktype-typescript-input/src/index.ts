@@ -53,6 +53,18 @@ const unsupportedBuiltins: ReadonlyMap<string, string> = new Map([
     ["Promise", "use the resolved type instead"],
 ]);
 
+const integerTypedArrays: ReadonlySet<string> = new Set([
+    "Int8Array",
+    "Uint8Array",
+    "Uint8ClampedArray",
+    "Int16Array",
+    "Uint16Array",
+    "Int32Array",
+    "Uint32Array",
+    "BigInt64Array",
+    "BigUint64Array",
+]);
+
 function isDeclaredInDefaultLib(
     program: ts.Program,
     symbol: ts.Symbol,
@@ -81,10 +93,10 @@ function tryGetMapValueType(
 }
 
 // typescript-json-schema maps `Date` to a date-time string out of the box,
-// but it has no support for `Map`, and it structurally expands other
-// standard-library generics into meaningless schemas. Wrap the generator's
-// type dispatcher to map `Map<K, V>` to a JSON Schema map and to report
-// unsupported built-in types with a helpful message.
+// but it has no support for `Map`, and it structurally expands typed arrays
+// and other standard-library generics. Wrap the generator's type dispatcher
+// to map `Map<K, V>` to a JSON Schema map, integer typed arrays to arrays of
+// integers, and to report unsupported built-in types with a helpful message.
 function patchGeneratorForBuiltinTypes(
     generator: JsonSchemaGenerator,
     program: ts.Program,
@@ -102,6 +114,13 @@ function patchGeneratorForBuiltinTypes(
         const symbol = typ.getSymbol();
         if (symbol !== undefined && isDeclaredInDefaultLib(program, symbol)) {
             const name = symbol.getName();
+            if (integerTypedArrays.has(name)) {
+                return {
+                    type: "array",
+                    items: { type: "integer" },
+                };
+            }
+
             if (name === "Map" || name === "ReadonlyMap") {
                 const valueType = tryGetMapValueType(checker, typ);
                 if (valueType !== undefined) {
