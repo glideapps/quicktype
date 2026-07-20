@@ -1,0 +1,9 @@
+{
+    "external_order_ref": "external-123",
+    "info": {
+        "first_name": "Ada",
+        "last_name": "Lovelace",
+        "email": "ada@example.com",
+        "order_number": "order-123"
+    }
+}

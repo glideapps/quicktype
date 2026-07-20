@@ -1,0 +1,15 @@
+{
+    "type": "object",
+    "title": "OrderCustomer",
+    "properties": {
+        "first_name": { "type": "string" },
+        "last_name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "post_code": { "type": "string" },
+        "country": { "type": "string" },
+        "newsletter": { "type": "string" },
+        "order_number": { "type": "string", "required": true },
+        "type": { "type": "string" }
+    }
+}

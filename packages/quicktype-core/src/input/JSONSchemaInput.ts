@@ -1255,15 +1255,47 @@ async function addTypesInSchema(
         const needStringEnum =
             includedTypes.has("string") &&
             (enumArrayHasString || constIsString);
+        let resolvedRef: [JSONSchema, Location] | undefined;
+        if (schema.$ref !== undefined) {
+            if (typeof schema.$ref !== "string") {
+                return messageError(
+                    "SchemaRefMustBeString",
+                    withRef(loc, { actual: typeof schema.$ref }),
+                );
+            }
+
+            resolvedRef = await resolver.resolveVirtualRef(
+                loc,
+                Ref.parse(schema.$ref),
+            );
+        }
+
+        const refTarget = resolvedRef?.[0];
+        // A matching type and draft-3 boolean `required` don't narrow the
+        // referenced schema, so preserve its type identity instead of
+        // rebuilding it through an intersection.
+        const isRefAlias =
+            resolvedRef !== undefined &&
+            Object.keys(schema).every(
+                (key) =>
+                    key === "$ref" ||
+                    key === "type" ||
+                    (key === "required" &&
+                        typeof schema.required === "boolean"),
+            ) &&
+            (schema.type === undefined ||
+                (typeof refTarget === "object" &&
+                    schema.type === refTarget.type));
         const needUnion =
-            typeSet !== undefined ||
-            schema.properties !== undefined ||
-            schema.additionalProperties !== undefined ||
-            schema.items !== undefined ||
-            schema.prefixItems !== undefined ||
-            schema.required !== undefined ||
-            enumArray !== undefined ||
-            isConst;
+            !isRefAlias &&
+            (typeSet !== undefined ||
+                schema.properties !== undefined ||
+                schema.additionalProperties !== undefined ||
+                schema.items !== undefined ||
+                schema.prefixItems !== undefined ||
+                schema.required !== undefined ||
+                enumArray !== undefined ||
+                isConst);
 
         const types: TypeRef[] = [];
 
@@ -1329,19 +1361,8 @@ async function addTypesInSchema(
             );
         }
 
-        if (schema.$ref !== undefined) {
-            if (typeof schema.$ref !== "string") {
-                return messageError(
-                    "SchemaRefMustBeString",
-                    withRef(loc, { actual: typeof schema.$ref }),
-                );
-            }
-
-            const virtualRef = Ref.parse(schema.$ref);
-            const [target, newLoc] = await resolver.resolveVirtualRef(
-                loc,
-                virtualRef,
-            );
+        if (resolvedRef !== undefined) {
+            const [target, newLoc] = resolvedRef;
             const attributes = modifyTypeNames(typeAttributes, (tn) => {
                 if (!defined(tn).areInferred) return tn;
                 return TypeNames.make(
