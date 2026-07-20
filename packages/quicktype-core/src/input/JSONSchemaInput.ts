@@ -39,6 +39,7 @@ import {
 } from "../attributes/TypeAttributes.js";
 import {
     TypeNames,
+    makeEnumTypeNameIdentityAttributes,
     makeNamesTypeAttributes,
     modifyTypeNames,
     singularizeTypeNames,
@@ -1288,11 +1289,18 @@ async function addTypesInSchema(
                 unionTypes.push(typeBuilder.getPrimitiveType(kind, attributes));
             }
 
-            const stringAttributes = combineTypeAttributes(
+            let stringAttributes = combineTypeAttributes(
                 "union",
                 inferredAttributes,
                 combineProducedAttributes(({ forString }) => forString),
             );
+            if (needStringEnum && includedTypes.size === 1) {
+                stringAttributes = combineTypeAttributes(
+                    "union",
+                    stringAttributes,
+                    makeEnumTypeNameIdentityAttributes(typeAttributes),
+                );
+            }
 
             // FIXME: A non-string const never takes this path, so it
             // degrades to its plain primitive type and the literal value is

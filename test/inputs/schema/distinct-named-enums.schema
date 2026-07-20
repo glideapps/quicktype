@@ -1,0 +1,17 @@
+{
+  "type": "object",
+  "properties": {
+    "first": { "$ref": "#/definitions/firstEnumeration" },
+    "second": { "$ref": "#/definitions/secondEnumeration" }
+  },
+  "definitions": {
+    "firstEnumeration": {
+      "type": "string",
+      "enum": ["a", "b", "c"]
+    },
+    "secondEnumeration": {
+      "type": "string",
+      "enum": ["a", "b", "c"]
+    }
+  }
+}
