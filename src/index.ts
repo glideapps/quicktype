@@ -126,7 +126,7 @@ function typeNameFromFilename(filename: string): string {
 
 async function samplesFromDirectory(
     dataDir: string,
-    httpHeaders?: string[],
+    options: CLIOptions,
 ): Promise<TypeSource[]> {
     async function readFilesOrURLsInDirectory(
         d: string,
@@ -152,13 +152,9 @@ async function samplesFromDirectory(
             }
 
             if (file.endsWith(".url") || file.endsWith(".json")) {
-                sourcesInDir.push({
-                    kind: "json",
-                    name,
-                    samples: [
-                        await readableFromFileOrURL(fileOrUrl, httpHeaders),
-                    ],
-                });
+                sourcesInDir.push(
+                    ...(await typeSourcesForURIs(name, [fileOrUrl], options)),
+                );
             } else if (file.endsWith(".schema")) {
                 sourcesInDir.push({
                     kind: "schema",
@@ -175,7 +171,7 @@ async function samplesFromDirectory(
                 );
                 graphQLSchema = await readableFromFileOrURL(
                     fileOrUrl,
-                    httpHeaders,
+                    options.httpHeader,
                 );
                 graphQLSchemaFileName = fileOrUrl;
             } else if (file.endsWith(".graphql")) {
@@ -184,7 +180,10 @@ async function samplesFromDirectory(
                     name,
                     schema: undefined,
                     query: await getStream(
-                        await readableFromFileOrURL(fileOrUrl, httpHeaders),
+                        await readableFromFileOrURL(
+                            fileOrUrl,
+                            options.httpHeader,
+                        ),
                     ),
                 });
             }
@@ -875,9 +874,7 @@ async function getSources(options: CLIOptions): Promise<TypeSource[]> {
     const directories = exists.filter((x) => fs.lstatSync(x).isDirectory());
 
     for (const dataDir of directories) {
-        sources = sources.concat(
-            await samplesFromDirectory(dataDir, options.httpHeader),
-        );
+        sources = sources.concat(await samplesFromDirectory(dataDir, options));
     }
 
     // Every src that's not a directory is assumed to be a file or URL
