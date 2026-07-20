@@ -56,6 +56,7 @@ const skipsMapValueValidation = [
 ];
 
 export type LanguageFeature =
+    | "defaults"
     | "enum"
     | "union"
     | "no-defaults"
@@ -272,6 +273,7 @@ export const PythonLanguage: Language = {
         "enum",
         "union",
         "no-defaults",
+        "defaults",
         "date-time",
         "integer-string",
         "bool-string",

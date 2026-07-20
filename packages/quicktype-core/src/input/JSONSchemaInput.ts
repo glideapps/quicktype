@@ -29,6 +29,7 @@ import {
     minMaxLengthAttributeProducer,
     patternAttributeProducer,
 } from "../attributes/Constraints.js";
+import { defaultValuesAttributeProducer } from "../attributes/DefaultValues.js";
 import { descriptionAttributeProducer } from "../attributes/Description.js";
 import { enumValuesAttributeProducer } from "../attributes/EnumValues.js";
 import { StringTypes } from "../attributes/StringTypes.js";
@@ -1559,6 +1560,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
     ) {
         this._attributeProducers = [
             descriptionAttributeProducer,
+            defaultValuesAttributeProducer,
             accessorNamesAttributeProducer,
             enumValuesAttributeProducer,
             uriSchemaAttributesProducer,
