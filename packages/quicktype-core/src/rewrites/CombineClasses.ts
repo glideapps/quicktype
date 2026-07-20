@@ -132,10 +132,16 @@ function findSimilarityCliques(
     onlyWithSameProperties: boolean,
     includeFixedClasses: boolean,
 ): ClassType[][] {
+    // Distinct named top-levels must not be heuristically combined.  Exactly
+    // identical top-levels can already have been deduplicated during inference.
+    const topLevels = new Set(graph.topLevels.values());
     const classCandidates = Array.from(
         graph.allNamedTypesSeparated().objects,
     ).filter(
-        (o) => o instanceof ClassType && (includeFixedClasses || !o.isFixed),
+        (o) =>
+            o instanceof ClassType &&
+            !topLevels.has(o) &&
+            (includeFixedClasses || !o.isFixed),
     ) as ClassType[];
     const cliques: Clique[] = [];
 
