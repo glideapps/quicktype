@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "product_type": { "type": "string", "enum": ["x", "y", "z"] }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "product_type": { "enum": ["x", "y"] } } },
+      "then": { "properties": { "foo": { "type": "string" } } }
+    },
+    {
+      "if": { "properties": { "product_type": { "enum": ["y", "z"] } } },
+      "then": { "properties": { "bar": { "type": "string" } } },
+      "else": { "properties": { "baz": { "type": "string" } } }
+    }
+  ]
+}
