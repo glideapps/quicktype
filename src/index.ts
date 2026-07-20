@@ -1197,10 +1197,12 @@ export function writeOutput(
         const output = lines.join("\n");
 
         if (cliOptions.out !== undefined) {
-            fs.writeFileSync(
-                path.join(path.dirname(cliOptions.out), filename),
-                output,
-            );
+            const outputPath =
+                resultsByFilename.size > 1
+                    ? path.join(cliOptions.out, filename)
+                    : cliOptions.out;
+            fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+            fs.writeFileSync(outputPath, output);
         } else {
             if (!onFirst) {
                 process.stdout.write("\n");
