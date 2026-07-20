@@ -265,6 +265,7 @@ class Run implements RunContext {
                     graphInputs.typeBuilder,
                     this._options.inferMaps,
                     this._options.inferEnums,
+                    this._options.combineClasses,
                     this._options.fixedTopLevels,
                 ),
         );
@@ -281,6 +282,7 @@ class Run implements RunContext {
                 graphInputs.typeBuilder,
                 this._options.inferMaps,
                 this._options.inferEnums,
+                this._options.combineClasses,
                 this._options.fixedTopLevels,
             ),
         );

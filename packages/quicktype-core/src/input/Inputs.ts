@@ -32,6 +32,7 @@ export interface Input<T> {
         typeBuilder: TypeBuilder,
         inferMaps: boolean,
         inferEnums: boolean,
+        combineClasses: boolean,
         fixedTopLevels: boolean,
     ) => Promise<void>;
 
@@ -40,6 +41,7 @@ export interface Input<T> {
         typeBuilder: TypeBuilder,
         inferMaps: boolean,
         inferEnums: boolean,
+        combineClasses: boolean,
         fixedTopLevels: boolean,
     ) => void;
     readonly kind: string;
@@ -160,6 +162,7 @@ export class JSONInput<T> implements Input<JSONSourceData<T>> {
         typeBuilder: TypeBuilder,
         inferMaps: boolean,
         inferEnums: boolean,
+        combineClasses: boolean,
         fixedTopLevels: boolean,
     ): Promise<void> {
         this.addTypesSync(
@@ -167,6 +170,7 @@ export class JSONInput<T> implements Input<JSONSourceData<T>> {
             typeBuilder,
             inferMaps,
             inferEnums,
+            combineClasses,
             fixedTopLevels,
         );
     }
@@ -176,6 +180,7 @@ export class JSONInput<T> implements Input<JSONSourceData<T>> {
         typeBuilder: TypeBuilder,
         inferMaps: boolean,
         inferEnums: boolean,
+        combineClasses: boolean,
         fixedTopLevels: boolean,
     ): void {
         const inference = new TypeInference(
@@ -183,6 +188,7 @@ export class JSONInput<T> implements Input<JSONSourceData<T>> {
             typeBuilder,
             inferMaps,
             inferEnums,
+            combineClasses,
         );
 
         for (const [name, { samples, description }] of this._topLevels) {
@@ -268,6 +274,7 @@ export class InputData {
         typeBuilder: TypeBuilder,
         inferMaps: boolean,
         inferEnums: boolean,
+        combineClasses: boolean,
         fixedTopLevels: boolean,
     ): Promise<void> {
         for (const input of this._inputs) {
@@ -276,6 +283,7 @@ export class InputData {
                 typeBuilder,
                 inferMaps,
                 inferEnums,
+                combineClasses,
                 fixedTopLevels,
             );
         }
@@ -286,6 +294,7 @@ export class InputData {
         typeBuilder: TypeBuilder,
         inferMaps: boolean,
         inferEnums: boolean,
+        combineClasses: boolean,
         fixedTopLevels: boolean,
     ): void {
         for (const input of this._inputs) {
@@ -294,6 +303,7 @@ export class InputData {
                 typeBuilder,
                 inferMaps,
                 inferEnums,
+                combineClasses,
                 fixedTopLevels,
             );
         }
