@@ -1,0 +1,33 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Container",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "op": {
+            "oneOf": [
+                { "$ref": "#/definitions/Foo" },
+                { "$ref": "#/definitions/Bar" }
+            ]
+        }
+    },
+    "required": ["op"],
+    "definitions": {
+        "Foo": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "foo": { "type": "string" }
+            },
+            "required": ["foo"]
+        },
+        "Bar": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "bar": { "type": "string" }
+            },
+            "required": ["bar"]
+        }
+    }
+}

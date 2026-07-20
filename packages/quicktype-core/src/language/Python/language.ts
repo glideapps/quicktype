@@ -123,6 +123,10 @@ export class PythonTargetLanguage extends TargetLanguage<
         return false;
     }
 
+    public get supportsUnionsWithMultipleObjectTypes(): boolean {
+        return true;
+    }
+
     public needsTransformerForType(t: Type): boolean {
         if (t instanceof UnionType) {
             return iterableSome(t.members, (m) =>

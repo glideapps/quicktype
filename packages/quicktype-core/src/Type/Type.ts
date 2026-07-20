@@ -14,7 +14,6 @@ import {
     mapSortToArray,
     setFilter,
     setMap,
-    setSortBy,
     setUnionInto,
     toReadonlySet,
 } from "collection-utils";
@@ -861,8 +860,12 @@ export abstract class SetOperationType extends Type {
     }
 
     public getNonAttributeChildren(): Set<Type> {
-        // FIXME: We're assuming no two members of the same kind.
-        return setSortBy(this.members, (t) => t.kind);
+        // Opted-in targets can retain same-kind union members.
+        const members = Array.from(this.members).sort((a, b) => {
+            const kindOrder = a.kind.localeCompare(b.kind);
+            return kindOrder !== 0 ? kindOrder : a.index - b.index;
+        });
+        return new Set(members);
     }
 
     public isPrimitive(): this is PrimitiveType {

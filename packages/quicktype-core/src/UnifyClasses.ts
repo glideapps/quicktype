@@ -1,5 +1,6 @@
 import { iterableFirst, setUnionInto } from "collection-utils";
 
+import { explicitUnionMemberTypeAttributeKind } from "./attributes/ExplicitUnionMember.js";
 import {
     type TypeAttributes,
     combineTypeAttributes,
@@ -125,6 +126,7 @@ export class UnifyUnionBuilder extends UnionBuilder<
         typeBuilder: BaseGraphRewriteBuilder,
         private readonly _makeObjectTypes: boolean,
         private readonly _makeClassesFixed: boolean,
+        private readonly _supportsUnionsWithMultipleObjectTypes: boolean,
         private readonly _unifyTypes: (typesToUnify: TypeRef[]) => TypeRef,
     ) {
         super(typeBuilder);
@@ -159,6 +161,20 @@ export class UnifyUnionBuilder extends UnionBuilder<
         const objectTypes = objectRefs.map((r) =>
             assertIsObject(derefTypeRef(r, this.typeBuilder)),
         );
+        if (
+            this._supportsUnionsWithMultipleObjectTypes &&
+            this.canKeepObjectTypesDistinct(objectTypes, typeAttributes)
+        ) {
+            const members = new Set(
+                objectRefs.map((r) => this.typeBuilder.reconstituteTypeRef(r)),
+            );
+            return this.typeBuilder.getUnionType(
+                typeAttributes,
+                members,
+                forwardingRef,
+            );
+        }
+
         const {
             hasProperties,
             hasAdditionalProperties,
@@ -225,6 +241,46 @@ export class UnifyUnionBuilder extends UnionBuilder<
         }
     }
 
+    private canKeepObjectTypesDistinct(
+        objectTypes: ObjectType[],
+        typeAttributes: TypeAttributes,
+    ): boolean {
+        if (
+            objectTypes.length < 2 ||
+            explicitUnionMemberTypeAttributeKind.tryGetInAttributes(
+                typeAttributes,
+            ) !== true
+        ) {
+            return false;
+        }
+
+        // The marker is only attached to direct schema-reference alternatives.
+        // Keep this conservative because ordinary inferred object unions are
+        // intentionally still unified.
+        const typeNames = new Set<string>();
+        const propertyNames = new Set<string>();
+        for (const objectType of objectTypes) {
+            if (
+                !objectType.hasNames ||
+                objectType.getProperties().size === 0 ||
+                objectType.getAdditionalProperties() !== undefined
+            ) {
+                return false;
+            }
+
+            const typeName = objectType.getCombinedName();
+            if (typeNames.has(typeName)) return false;
+            typeNames.add(typeName);
+
+            for (const propertyName of objectType.getProperties().keys()) {
+                if (propertyNames.has(propertyName)) return false;
+                propertyNames.add(propertyName);
+            }
+        }
+
+        return true;
+    }
+
     protected makeArray(
         arrays: TypeRef[],
         typeAttributes: TypeAttributes,
@@ -249,6 +305,7 @@ export function unionBuilderForUnification<T extends Type>(
         typeBuilder,
         makeObjectTypes,
         makeClassesFixed,
+        false,
         (trefs) =>
             unifyTypes(
                 new Set(trefs.map((tref) => derefTypeRef(tref, typeBuilder))),
