@@ -753,6 +753,16 @@ export const CPlusPlusLanguage: Language = {
     sourceFiles: ["src/language/CPlusPlus/index.ts"],
 };
 
+export const CPlusPlusUpperAcronymsLanguage: Language = {
+    ...CPlusPlusLanguage,
+    compileCommand:
+        "g++ -O0 -o quicktype -std=c++17 main.cpp acronym_names.cpp",
+    rendererOptions: {
+        "type-style": "pascal-case-upper-acronyms",
+        "member-style": "camel-case-upper-acronyms",
+    },
+};
+
 export const ElmLanguage: Language = {
     name: "elm",
     base: "test/fixtures/elm",

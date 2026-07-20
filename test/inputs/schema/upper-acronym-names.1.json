@@ -1,0 +1,13 @@
+[
+    {
+        "location": {
+            "latitude": 43.0,
+            "longitude": 16.0
+        },
+        "depth": 12.5,
+        "maneuver": "LEVEL",
+        "idCard": {
+            "value": "HTTP"
+        }
+    }
+]

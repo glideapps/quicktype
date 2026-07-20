@@ -823,6 +823,28 @@ class JSONSchemaFixture extends LanguageFixture {
     }
 }
 
+class CPlusPlusUpperAcronymsFixture extends JSONSchemaFixture {
+    constructor() {
+        super(
+            languages.CPlusPlusUpperAcronymsLanguage,
+            "schema-cplusplus-upper-acronyms",
+        );
+    }
+
+    runForName(name: string): boolean {
+        return this.name === name;
+    }
+
+    getSamples(sources: string[]): { priority: Sample[]; others: Sample[] } {
+        return samplesFromSources(
+            sources,
+            ["test/inputs/schema/upper-acronym-names.schema"],
+            [],
+            "schema",
+        );
+    }
+}
+
 type TreeSitterTarget = {
     displayName: string;
     language: languages.Language;
@@ -1604,6 +1626,7 @@ export const allFixtures: Fixture[] = [
     new JSONSchemaFixture(languages.GoLanguage),
     new JSONSchemaFixture(languages.CJSONLanguage),
     new JSONSchemaFixture(languages.CPlusPlusLanguage),
+    new CPlusPlusUpperAcronymsFixture(),
     new JSONSchemaFixture(languages.RustLanguage),
     new JSONSchemaFixture(languages.RubyLanguage),
     new JSONSchemaFixture(languages.PythonLanguage),

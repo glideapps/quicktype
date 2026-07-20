@@ -1,0 +1,32 @@
+{
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "description": "An array of SCUBA waypoints",
+    "type": "array",
+    "items": {
+        "title": "SCUBAWaypoint",
+        "type": "object",
+        "properties": {
+            "location": {
+                "title": "Point",
+                "type": "object",
+                "properties": {
+                    "latitude": { "type": "number" },
+                    "longitude": { "type": "number" }
+                }
+            },
+            "depth": { "type": "number" },
+            "maneuver": {
+                "title": "SCUBAManeuver",
+                "type": "string",
+                "enum": ["ASCENT", "DESCENT", "LEVEL"]
+            },
+            "idCard": {
+                "title": "IDCardHTTP",
+                "type": "object",
+                "properties": {
+                    "value": { "type": "string" }
+                }
+            }
+        }
+    }
+}
