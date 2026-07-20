@@ -1,0 +1,19 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "mz": { "$ref": "#/definitions/m~1z" },
+        "tilde": { "$ref": "#/definitions/a~0b" }
+    },
+    "required": ["mz", "tilde"],
+    "definitions": {
+        "m/z": {
+            "type": "object",
+            "properties": {
+                "value": { "type": "number" }
+            },
+            "required": ["value"]
+        },
+        "a~b": { "type": "string" }
+    }
+}
