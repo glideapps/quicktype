@@ -472,10 +472,7 @@ export const RubyLanguage: Language = {
         "nbl-stats.json",
         "kitchen-sink.json",
     ],
-    skipSchema: [
-        // We don't generate a convenience method for top-level enums
-        "top-level-enum.schema",
-    ],
+    skipSchema: [],
     skipMiscJSON: false,
     rendererOptions: {},
     quickTestRendererOptions: [["pokedex.json", { namespace: "QuickType" }]],
