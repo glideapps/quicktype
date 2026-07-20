@@ -1,0 +1,9 @@
+{
+    "data": { "id": "root" },
+    "children": [
+        {
+            "data": { "id": "child" },
+            "children": []
+        }
+    ]
+}

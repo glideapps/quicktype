@@ -810,6 +810,7 @@ export const ElmLanguage: Language = {
     skipSchema: [
         "union-list.schema", // recursion
         "list.schema", // recursion
+        "recursive-ref-to-id.schema", // recursion
         "ref-remote.schema", // recursion
         "mutually-recursive.schema", // recursion
         "postman-collection.schema", // recursion
@@ -1617,6 +1618,7 @@ export const DartLanguage: Language = {
         "mutually-recursive.schema",
         "postman-collection.schema",
         "list.schema",
+        "recursive-ref-to-id.schema",
         "simple-ref.schema",
         "keyword-unions.schema",
         "ref-remote.schema",

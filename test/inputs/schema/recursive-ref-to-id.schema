@@ -1,0 +1,17 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "T2",
+    "type": "object",
+    "properties": {
+        "data": {
+            "type": "object",
+            "properties": {
+                "id": { "type": "string" }
+            }
+        },
+        "children": {
+            "type": "array",
+            "items": { "$ref": "T2" }
+        }
+    }
+}

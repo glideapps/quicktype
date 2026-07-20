@@ -195,9 +195,11 @@ export class Ref {
 
     public addressURI: URI | undefined;
 
+    public readonly path: readonly PathElement[];
+
     public constructor(
         addressURI: URI | undefined,
-        public readonly path: readonly PathElement[],
+        path: readonly PathElement[],
     ) {
         if (addressURI !== undefined) {
             assert(
@@ -208,6 +210,13 @@ export class Ref {
         } else {
             this.addressURI = undefined;
         }
+
+        // An addressed document root must match an explicit `#/` reference so
+        // paths appended to either form remain canonical and comparable.
+        this.path =
+            addressURI !== undefined && path.length === 0
+                ? [{ kind: PathElementKind.Root }]
+                : path;
     }
 
     public get hasAddress(): boolean {
