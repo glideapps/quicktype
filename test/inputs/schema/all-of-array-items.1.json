@@ -1,0 +1,10 @@
+{
+  "PersonList": [
+    {
+      "AgedPerson": {
+        "age": 42
+      },
+      "name": "Alice"
+    }
+  ]
+}
