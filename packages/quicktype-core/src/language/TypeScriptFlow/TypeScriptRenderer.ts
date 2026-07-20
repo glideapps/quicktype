@@ -1,14 +1,23 @@
 import { minMaxItemsForType } from "../../attributes/Constraints.js";
+import { isUnionExclusive } from "../../attributes/UnionMembers.js";
 import type { Name } from "../../Naming.js";
 import {
     type MultiWord,
     type Sourcelike,
     modifySource,
+    multiWord,
     parenIfNeeded,
     singleWord,
 } from "../../Source.js";
 import { camelCase, utf16StringEscape } from "../../support/Strings.js";
-import type { ArrayType, ClassType, EnumType, Type } from "../../Type/index.js";
+import {
+    type ArrayType,
+    type ClassType,
+    type EnumType,
+    ObjectType,
+    type Type,
+    type UnionType,
+} from "../../Type/index.js";
 import { isNamedType } from "../../Type/TypeUtils.js";
 import type { JavaScriptTypeAnnotations } from "../JavaScript/index.js";
 
@@ -21,6 +30,57 @@ import { tsFlowTypeAnnotations } from "./utils.js";
 const maxSpelledOutMinItems = 16;
 
 export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
+    protected sourceForUnionMembers(unionType: UnionType): MultiWord {
+        if (!isUnionExclusive(unionType.getAttributes())) {
+            return super.sourceForUnionMembers(unionType);
+        }
+
+        const members = Array.from(unionType.members);
+        if (
+            members.length < 2 ||
+            !members.every((member) => member instanceof ObjectType)
+        ) {
+            return super.sourceForUnionMembers(unionType);
+        }
+
+        // TypeScript's excess-property checks allow an object literal to mix
+        // properties from different union members.  Exclude sibling keys so a
+        // oneOf remains exclusive in the generated type.
+        const propertyNames = new Set<string>();
+        for (const member of members as ObjectType[]) {
+            for (const name of member.getProperties().keys()) {
+                propertyNames.add(name);
+            }
+        }
+
+        const memberSources = (members as ObjectType[]).map((member) => {
+            const excludedProperties: Sourcelike[] = [];
+            for (const name of propertyNames) {
+                if (member.getProperties().has(name)) continue;
+                excludedProperties.push(
+                    `"${utf16StringEscape(name)}"?: never; `,
+                );
+            }
+
+            if (excludedProperties.length === 0) {
+                return singleWord(this.sourceFor(member).source);
+            }
+
+            return singleWord([
+                "(",
+                this.sourceFor(member).source,
+                " & { ",
+                excludedProperties,
+                "})",
+            ]);
+        });
+
+        return multiWord(
+            " | ",
+            ...memberSources.map((source) => source.source),
+        );
+    }
+
     protected anyType(): string {
         return this._tsFlowOptions.preferUnknown ? "unknown" : "any";
     }

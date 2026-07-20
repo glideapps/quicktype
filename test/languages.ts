@@ -58,6 +58,7 @@ const skipsMapValueValidation = [
 export type LanguageFeature =
     | "enum"
     | "union"
+    | "one-of"
     | "no-defaults"
     | "strict-optional"
     | "date-time"
@@ -1010,7 +1011,14 @@ export const TypeScriptLanguage: Language = {
         "e8b04.json",
     ],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults", "strict-optional", "date-time"],
+    features: [
+        "enum",
+        "union",
+        "one-of",
+        "no-defaults",
+        "strict-optional",
+        "date-time",
+    ],
     output: "TopLevel.ts",
     topLevel: "TopLevel",
     skipJSON: [],
@@ -1053,7 +1061,14 @@ export const JavaScriptLanguage: Language = {
     diffViaSchema: false,
     skipDiffViaSchema: [],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults", "strict-optional", "date-time"],
+    features: [
+        "enum",
+        "union",
+        "one-of",
+        "no-defaults",
+        "strict-optional",
+        "date-time",
+    ],
     output: "TopLevel.js",
     topLevel: "TopLevel",
     skipJSON: [],
@@ -1105,7 +1120,7 @@ export const FlowLanguage: Language = {
     diffViaSchema: false,
     skipDiffViaSchema: [],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults", "strict-optional"],
+    features: ["enum", "union", "one-of", "no-defaults", "strict-optional"],
     output: "TopLevel.js",
     topLevel: "TopLevel",
     skipJSON: [],

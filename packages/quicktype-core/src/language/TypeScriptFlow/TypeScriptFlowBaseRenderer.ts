@@ -64,6 +64,13 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
         return singleWord([parenIfNeeded(itemType), "[]"]);
     }
 
+    protected sourceForUnionMembers(unionType: UnionType): MultiWord {
+        const children = Array.from(unionType.getChildren()).map((child) =>
+            parenIfNeeded(this.sourceFor(child)),
+        );
+        return multiWord(" | ", ...children);
+    }
+
     protected sourceFor(t: Type): MultiWord {
         if (
             this._tsFlowOptions.preferConstValues &&
@@ -101,10 +108,7 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
                     !this._tsFlowOptions.declareUnions ||
                     nullableFromUnion(unionType) !== null
                 ) {
-                    const children = Array.from(unionType.getChildren()).map(
-                        (c) => parenIfNeeded(this.sourceFor(c)),
-                    );
-                    return multiWord(" | ", ...children);
+                    return this.sourceForUnionMembers(unionType);
                 }
 
                 return singleWord(this.nameForNamedType(unionType));
@@ -168,18 +172,17 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
     }
 
     protected emitUnion(u: UnionType, unionName: Name): void {
-        if (!this._tsFlowOptions.declareUnions) {
+        const isTopLevel = Array.from(this.topLevels.values()).includes(u);
+        if (
+            !this._tsFlowOptions.declareUnions &&
+            !(this._tsFlowOptions.justTypes && isTopLevel)
+        ) {
             return;
         }
 
         this.emitDescription(this.descriptionForType(u));
 
-        const children = multiWord(
-            " | ",
-            ...Array.from(u.getChildren()).map((c) =>
-                parenIfNeeded(this.sourceFor(c)),
-            ),
-        );
+        const children = this.sourceForUnionMembers(u);
         this.emitLine("export type ", unionName, " = ", children.source, ";");
     }
 

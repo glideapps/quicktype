@@ -503,6 +503,17 @@ export abstract class UnionBuilder<
         forwardingRef: TypeRef | undefined,
     ): TypeRef;
 
+    protected objectsAreDistinct(
+        _objects: TObjectData,
+        _attributes: TypeAttributes,
+    ): boolean {
+        return false;
+    }
+
+    protected makeDistinctObjects(_objects: TObjectData): TypeRef[] {
+        return panic("This union builder cannot make distinct object types");
+    }
+
     private makeTypeOfKind(
         typeProvider: UnionTypeProvider<TArrayData, TObjectData>,
         kind: TypeKind,
@@ -574,6 +585,28 @@ export abstract class UnionBuilder<
         // right now, it's just a very bad way of surfacing that error.
         if (kinds.size === 1) {
             const [[kind, memberAttributes]] = Array.from(kinds);
+            if (
+                kind === "object" &&
+                this.objectsAreDistinct(
+                    typeProvider.objectData,
+                    memberAttributes,
+                )
+            ) {
+                const objects = this.makeDistinctObjects(
+                    typeProvider.objectData,
+                );
+                const objectSet = new Set(objects);
+                assert(
+                    objectSet.size > 1,
+                    "Distinct object union must have multiple members",
+                );
+                return this.typeBuilder.getUnionType(
+                    typeAttributes,
+                    objectSet,
+                    forwardingRef,
+                );
+            }
+
             const allAttributes = combineTypeAttributes(
                 "union",
                 typeAttributes,
@@ -598,14 +631,26 @@ export abstract class UnionBuilder<
 
         const types: TypeRef[] = [];
         for (const [kind, memberAttributes] of kinds) {
-            types.push(
-                this.makeTypeOfKind(
-                    typeProvider,
-                    kind,
+            if (
+                kind === "object" &&
+                this.objectsAreDistinct(
+                    typeProvider.objectData,
                     memberAttributes,
-                    undefined,
-                ),
-            );
+                )
+            ) {
+                types.push(
+                    ...this.makeDistinctObjects(typeProvider.objectData),
+                );
+            } else {
+                types.push(
+                    this.makeTypeOfKind(
+                        typeProvider,
+                        kind,
+                        memberAttributes,
+                        undefined,
+                    ),
+                );
+            }
         }
 
         const typesSet = new Set(types);
