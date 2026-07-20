@@ -1,0 +1,21 @@
+{
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "materials": {
+            "type": "object",
+            "patternProperties": {
+                "^.*\\S.*$": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "roughness": { "type": "string" },
+                        "thickness": { "type": "number" }
+                    },
+                    "required": ["roughness", "thickness"]
+                }
+            }
+        }
+    },
+    "required": ["materials"]
+}

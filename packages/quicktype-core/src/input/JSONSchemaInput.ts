@@ -1129,14 +1129,18 @@ async function addTypesInSchema(
             }
 
             let additionalProperties = schema.additionalProperties;
-            // This is an incorrect hack to fix an issue with a Go->Schema generator:
-            // https://github.com/quicktype/quicktype/issues/976
             if (
                 additionalProperties === undefined &&
                 typeof schema.patternProperties === "object" &&
-                hasOwnProperty(schema.patternProperties, ".*")
+                schema.patternProperties !== null &&
+                !Array.isArray(schema.patternProperties)
             ) {
-                additionalProperties = schema.patternProperties[".*"];
+                const patternSchemas = Object.values(schema.patternProperties);
+                if (patternSchemas.length === 1) {
+                    additionalProperties = patternSchemas[0];
+                } else if (patternSchemas.length > 1) {
+                    additionalProperties = { anyOf: patternSchemas };
+                }
             }
 
             const objectAttributes = combineTypeAttributes(
