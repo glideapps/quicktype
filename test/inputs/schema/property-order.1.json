@@ -1,0 +1,12 @@
+{
+    "zebra": "stripes",
+    "mango": 1.5,
+    "apple": true,
+    "delta": "change",
+    "banana": 3,
+    "ordered": {
+        "mango": 2.5,
+        "zebra": "stripes",
+        "apple": false
+    }
+}
