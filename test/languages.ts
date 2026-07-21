@@ -2153,6 +2153,7 @@ export const ElixirLanguage: Language = {
         // Struct keys cannot be enforced at runtime in Elixir and their values will just be set to null.
         "strict-optional.schema",
         "required.schema",
+        "required-in-any-of.schema",
         "intersection.schema",
 
         // The test incorrectly succeeds due to the emitter being permissive for unions that contain only primitives. A future enhancement
