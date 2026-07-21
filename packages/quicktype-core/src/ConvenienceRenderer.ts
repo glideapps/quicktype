@@ -995,10 +995,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         f: (name: Name, jsonName: string, position: ForEachPosition) => void,
     ): void {
         const caseNames = defined(this._caseNamesStoreView).get(e);
-        const sortedCaseNames = mapSortBy(caseNames, (n) =>
-            defined(this.names.get(n)),
-        );
-        this.forEachWithBlankLines(sortedCaseNames, blankLocations, f);
+        this.forEachWithBlankLines(caseNames, blankLocations, f);
     }
 
     protected forEachTransformation(

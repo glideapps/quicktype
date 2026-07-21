@@ -375,8 +375,11 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
         this.emitLine("case JsonTokenType.", tokenType, ":");
     }
 
-    private emitThrow(message: Sourcelike): void {
-        this.emitLine("throw new Exception(", message, ");");
+    private emitThrow(
+        exceptionType: "JsonException" | "NotSupportedException",
+        message: Sourcelike,
+    ): void {
+        this.emitLine("throw new ", exceptionType, "(", message, ");");
     }
 
     private deserializeTypeCode(typeName: Sourcelike): Sourcelike {
@@ -413,7 +416,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
         this.emitType(
             undefined,
             AccessModifier.Public,
-            "static class",
+            "static partial class",
             "Serialize",
             undefined,
             () => {
@@ -484,7 +487,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
         this.emitType(
             undefined,
             AccessModifier.Internal,
-            "static class",
+            "static partial class",
             converterName,
             undefined,
             () => {
@@ -1242,7 +1245,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
                         (v) => this.emitLine("return ", v, ";"),
                     );
                     if (!allHandled) {
-                        this.emitThrow([
+                        this.emitThrow("JsonException", [
                             '"Cannot unmarshal type ',
                             csType,
                             '"',
@@ -1269,7 +1272,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
                             () => this.emitLine("return;"),
                         );
                         if (!allHandled) {
-                            this.emitThrow([
+                            this.emitThrow("NotSupportedException", [
                                 '"Cannot marshal type ',
                                 csType,
                                 '"',
