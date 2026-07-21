@@ -244,6 +244,11 @@ export const JavaLanguage: Language = {
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
         "keyword-unions.schema", // generates classes with names that are case-insensitively equal
+        // A top-level map deserializes via a raw `Map.class` reader
+        // (javaTypeWithoutGenerics drops the value type), so map value
+        // types are not validated on parse and the fail sample does not
+        // fail. Nested typed maps are still validated elsewhere.
+        "pattern-properties.schema",
     ],
     rendererOptions: {},
     // The default is array-type=list; this keeps the T[] code path
