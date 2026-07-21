@@ -28,9 +28,9 @@ describe("cJSON enum invalid value", () => {
         const output = await cJSONOutput();
 
         expect(output).toContain(`enum Subscription {
-    SUBSCRIPTION_CONFIG = 1,
+    SUBSCRIPTION_STATE = 1,
+    SUBSCRIPTION_CONFIG,
     SUBSCRIPTION_HEARTBEAT,
-    SUBSCRIPTION_STATE,
 };`);
         expect(output).toContain("enum Subscription x = 0;");
     });
