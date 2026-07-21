@@ -646,6 +646,7 @@ export const CJSONLanguage: Language = {
         /* Required properties absent are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
         "intersection.schema",
         "required.schema",
+        "description-ref.schema",
         /* Pure Any type not supported (for the current implementation, can be added later, should manage a callback to provide the final application a way to handle it at parsing and creation of cJSON) */
         "any.schema",
         "direct-union.schema",
@@ -967,6 +968,9 @@ export const SwiftLanguage: Language = {
         // This works on macOS, but on Linux one of the failure test cases doesn't fail
         ...skipsUntypedUnions,
         "required.schema",
+        // Same missing-required detection gap as required.schema: the
+        // no-defaults fail sample does not fail on Linux.
+        "description-ref.schema",
         "multi-type-enum.schema",
         "intersection.schema",
         ...skipsMapValueValidation,
@@ -1895,6 +1899,9 @@ export const HaskellLanguage: Language = {
         "keyword-unions.schema",
         "optional-any.schema",
         "required.schema",
+        // Same as required.schema: the Maybe-encoding driver prints "null"
+        // and exits 0, so this no-defaults fail sample can't be detected.
+        "description-ref.schema",
         "required-non-properties.schema",
     ],
     rendererOptions: {},
@@ -2065,6 +2072,8 @@ export const TypeScriptZodLanguage: Language = {
         "optional-any.schema",
         "recursive-union-flattening.schema",
         "required.schema",
+        // Same missing-required detection gap as required.schema.
+        "description-ref.schema",
         "required-non-properties.schema",
     ],
     rendererOptions: {},
@@ -2181,6 +2190,8 @@ export const TypeScriptEffectSchemaLanguage: Language = {
         "keyword-unions.schema",
         "optional-any.schema",
         "required.schema",
+        // Same missing-required detection gap as required.schema.
+        "description-ref.schema",
         "required-non-properties.schema",
     ],
     rendererOptions: {},
@@ -2239,6 +2250,7 @@ export const ElixirLanguage: Language = {
         // Struct keys cannot be enforced at runtime in Elixir and their values will just be set to null.
         "strict-optional.schema",
         "required.schema",
+        "description-ref.schema",
         "boolean-subschema.schema",
         "intersection.schema",
         "optional-any.schema",
