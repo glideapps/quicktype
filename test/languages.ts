@@ -2244,6 +2244,7 @@ export const ElixirLanguage: Language = {
         "required.schema",
         "boolean-subschema.schema",
         "intersection.schema",
+        "all-of-array-items.schema",
         "optional-any.schema",
 
         // The test incorrectly succeeds due to the emitter being permissive for unions that contain only primitives. A future enhancement
