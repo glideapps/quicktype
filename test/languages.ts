@@ -619,6 +619,9 @@ export const CJSONLanguage: Language = {
         "optional-any.schema",
         "recursive-union-flattening.schema",
         "required-non-properties.schema",
+        /* additionalProperties: true yields an any-valued map, which relies on
+         * the same unsupported pure Any type */
+        "pattern-properties-map.schema",
         /* Class elements with invalid type are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
         ...skipsUntypedUnions,
     ],
