@@ -307,7 +307,7 @@ export class Ref {
     public get definitionName(): string | undefined {
         const pe = arrayGetFromEnd(this.path, 2);
         if (pe === undefined) return undefined;
-        if (keyOrIndex(pe) === "definitions")
+        if (keyOrIndex(pe) === "definitions" || keyOrIndex(pe) === "$defs")
             return keyOrIndex(defined(arrayLast(this.path)));
         return undefined;
     }
@@ -785,7 +785,7 @@ class Resolver {
             return [schema, result[1]];
         }
 
-        return schemaFetchError(base, virtualRef.address);
+        return schemaFetchError(base, virtualRef.toString());
     }
 
     public async resolveTopLevelRef(ref: Ref): Promise<[JSONSchema, Location]> {
@@ -1084,14 +1084,17 @@ async function addTypesInSchema(
                     emptyTypeAttributes,
                     new Set(itemTypes),
                 );
-            } else if (typeof items === "object") {
+            } else if (
+                typeof items === "object" ||
+                typeof items === "boolean"
+            ) {
                 const itemsLoc = loc.push("items");
                 itemType = await toType(
                     checkJSONSchema(items, itemsLoc.canonicalRef),
                     itemsLoc,
                     singularAttributes,
                 );
-            } else if (items !== undefined && items !== true) {
+            } else if (items !== undefined) {
                 return messageError(
                     "SchemaArrayItemsMustBeStringOrArray",
                     withRef(loc, { actual: items }),
@@ -1396,14 +1399,7 @@ async function addTypesInSchema(
 
         let result: TypeRef;
         if (typeof schema === "boolean") {
-            // FIXME: Empty union.  We'd have to check that it's supported everywhere,
-            // in particular in union flattening.
-            messageAssert(
-                schema === true,
-                "SchemaFalseNotSupported",
-                withRef(loc),
-            );
-            result = typeBuilder.getPrimitiveType("any");
+            result = typeBuilder.getPrimitiveType(schema ? "any" : "none");
         } else {
             loc = loc.updateWithID(schema.$id);
             result = await convertToType(schema, loc, typeAttributes);
