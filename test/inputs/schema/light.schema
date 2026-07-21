@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "LightParams": {
+      "type": "object",
+      "properties": {
+        "outlet_id": { "type": "string" },
+        "app_id": { "type": "string" },
+        "rgba": { "type": "string" }
+      },
+      "additionalProperties": false,
+      "required": ["outlet_id", "app_id", "rgba"]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "LightParams": { "$ref": "#/$defs/LightParams" }
+  },
+  "additionalProperties": false,
+  "required": ["LightParams"]
+}
