@@ -2158,6 +2158,9 @@ export const ElixirLanguage: Language = {
     ],
     skipMiscJSON: false,
     skipSchema: [
+        // The renderer does not support a bare top-level map.
+        "empty-object.schema",
+
         // The error occurs because a guard clause that references TopLevel is compiled before TopLevel itself. To fix this, put
         // TopLevel before Bar, but this doesn't address the actual problem if for example a pattern match to Bar was in TopLevel.
         "mutually-recursive.schema",
