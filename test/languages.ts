@@ -587,6 +587,7 @@ export const CJSONLanguage: Language = {
         "optional-constraints.schema",
         "pattern.schema",
         /* Required properties absent are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
+        "all-of-array-items.schema",
         "intersection.schema",
         "required.schema",
         /* Pure Any type not supported (for the current implementation, can be added later, should manage a callback to provide the final application a way to handle it at parsing and creation of cJSON) */
