@@ -1867,6 +1867,7 @@ export const HaskellLanguage: Language = {
         "multi-type-enum.schema",
         "keyword-unions.schema",
         "optional-any.schema",
+        "property-order.schema",
         "required.schema",
         "required-non-properties.schema",
     ],
@@ -2212,6 +2213,7 @@ export const ElixirLanguage: Language = {
         "strict-optional.schema",
         "required.schema",
         "intersection.schema",
+        "property-order.schema",
 
         // The test incorrectly succeeds due to the emitter being permissive for unions that contain only primitives. A future enhancement
         // for the Elixir emitter could be a user-controlled 'strict' mode that pattern matches even on unions of only primitive types.
