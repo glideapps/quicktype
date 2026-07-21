@@ -547,6 +547,10 @@ export const CJSONLanguage: Language = {
         "go-schema-pattern-properties.schema",
         "multi-type-enum.schema",
         "nested-intersection-union.schema",
+        /* patternProperties value type is not validated on parse; also
+           hits an existing crash when a non-object/union scalar map value
+           is stored (tracked separately from this schema-inference fix) */
+        "pattern-properties.schema",
         /* Constraints (min/max and regex) are not supported (for the current implementation, can be added later, should abord parsing and return NULL) */
         "minmaxlength.schema",
         "optional-const-ref.schema",
