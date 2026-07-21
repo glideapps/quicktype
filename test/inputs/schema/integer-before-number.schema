@@ -1,0 +1,5 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema#",
+  "description": "An integer or non-integer number",
+  "type": ["integer", "number"]
+}

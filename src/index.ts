@@ -751,7 +751,6 @@ function parseOptions(
             { argv, partial },
         );
     } catch (e) {
-        assert(!partial, "Partial option parsing should not have failed");
         return messageError("DriverCLIOptionParsingFailed", {
             message: exceptionToString(e),
         });
