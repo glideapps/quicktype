@@ -1640,6 +1640,9 @@ export const TypeScriptZodLanguage: Language = {
         "multi-type-enum.schema",
         "keyword-unions.schema",
         "optional-any.schema",
+        // top-level map type produces no named schema export, so the zod
+        // driver can't find a TopLevelSchema to parse with
+        "pattern-properties.schema",
         "recursive-union-flattening.schema",
         "required.schema",
         "required-non-properties.schema",
