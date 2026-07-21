@@ -899,7 +899,7 @@ class JSONSchemaFixture extends LanguageFixture {
 // Regression fixture for #2801.  It verifies schema-specific output that
 // cannot be observed by compiling and running code generated from a JSON Schema.
 class JSONSchemaToSchemaFixture extends Fixture {
-    readonly name = "schema-schema";
+    readonly name = "schema-description-unification";
 
     constructor() {
         super(languages.TypeScriptLanguage);
