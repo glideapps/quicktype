@@ -25,6 +25,7 @@ import URI from "urijs";
 import { accessorNamesAttributeProducer } from "../attributes/AccessorNames.js";
 import {
     minMaxAttributeProducer,
+    minMaxItemsAttributeProducer,
     minMaxLengthAttributeProducer,
     patternAttributeProducer,
 } from "../attributes/Constraints.js";
@@ -309,7 +310,7 @@ export class Ref {
     public get definitionName(): string | undefined {
         const pe = arrayGetFromEnd(this.path, 2);
         if (pe === undefined) return undefined;
-        if (keyOrIndex(pe) === "definitions")
+        if (keyOrIndex(pe) === "definitions" || keyOrIndex(pe) === "$defs")
             return keyOrIndex(defined(arrayLast(this.path)));
         return undefined;
     }
@@ -652,6 +653,7 @@ const schemaTypes = Object.getOwnPropertyNames(
 ) as JSONSchemaType[];
 
 export interface JSONSchemaAttributes {
+    forArray?: TypeAttributes;
     forCases?: TypeAttributes[];
     forNumber?: TypeAttributes;
     forObject?: TypeAttributes;
@@ -786,7 +788,7 @@ class Resolver {
             return [schema, result[1]];
         }
 
-        return schemaFetchError(base, virtualRef.address);
+        return schemaFetchError(base, virtualRef.toString());
     }
 
     public async resolveTopLevelRef(ref: Ref): Promise<[JSONSchema, Location]> {
@@ -1097,7 +1099,9 @@ async function addTypesInSchema(
             return typeBuilder.getPrimitiveType(kind, attributes);
         }
 
-        async function makeArrayType(): Promise<TypeRef> {
+        async function makeArrayType(
+            arrayAttributes: TypeAttributes,
+        ): Promise<TypeRef> {
             const singularAttributes = singularizeTypeNames(typeAttributes);
             const items = schema.items;
             // JSON Schema 2020-12 renamed the array (tuple) form of `items` to
@@ -1146,14 +1150,17 @@ async function addTypesInSchema(
                     emptyTypeAttributes,
                     new Set(itemTypes),
                 );
-            } else if (typeof items === "object") {
+            } else if (
+                typeof items === "object" ||
+                typeof items === "boolean"
+            ) {
                 const itemsLoc = loc.push("items");
                 itemType = await toType(
                     checkJSONSchema(items, itemsLoc.canonicalRef),
                     itemsLoc,
                     singularAttributes,
                 );
-            } else if (items !== undefined && items !== true) {
+            } else if (items !== undefined) {
                 return messageError(
                     "SchemaArrayItemsMustBeStringOrArray",
                     withRef(loc, { actual: items }),
@@ -1163,7 +1170,7 @@ async function addTypesInSchema(
             }
 
             typeBuilder.addAttributes(itemType, singularAttributes);
-            return typeBuilder.getArrayType(emptyTypeAttributes, itemType);
+            return typeBuilder.getArrayType(arrayAttributes, itemType);
         }
 
         async function makeObjectType(): Promise<TypeRef> {
@@ -1203,6 +1210,14 @@ async function addTypesInSchema(
                 hasOwnProperty(schema.patternProperties, ".*")
             ) {
                 additionalProperties = schema.patternProperties[".*"];
+            }
+
+            // Handle unevaluatedProperties if additionalProperties is not defined
+            if (
+                additionalProperties === undefined &&
+                schema.unevaluatedProperties !== undefined
+            ) {
+                additionalProperties = schema.unevaluatedProperties;
             }
 
             const objectAttributes = combineTypeAttributes(
@@ -1380,7 +1395,10 @@ async function addTypesInSchema(
             }
 
             if (includeArray) {
-                unionTypes.push(await makeArrayType());
+                const arrayAttributes = combineProducedAttributes(
+                    ({ forArray }) => forArray,
+                );
+                unionTypes.push(await makeArrayType(arrayAttributes));
             }
 
             if (includeObject) {
@@ -1447,14 +1465,7 @@ async function addTypesInSchema(
 
         let result: TypeRef;
         if (typeof schema === "boolean") {
-            // FIXME: Empty union.  We'd have to check that it's supported everywhere,
-            // in particular in union flattening.
-            messageAssert(
-                schema === true,
-                "SchemaFalseNotSupported",
-                withRef(loc),
-            );
-            result = typeBuilder.getPrimitiveType("any");
+            result = typeBuilder.getPrimitiveType(schema ? "any" : "none");
         } else {
             loc = loc.updateWithID(schema.$id);
             result = await convertToType(schema, loc, typeAttributes);
@@ -1615,6 +1626,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
             uriSchemaAttributesProducer,
             minMaxAttributeProducer,
             minMaxLengthAttributeProducer,
+            minMaxItemsAttributeProducer,
             patternAttributeProducer,
         ].concat(additionalAttributeProducers);
     }
