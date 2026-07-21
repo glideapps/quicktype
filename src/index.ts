@@ -1228,14 +1228,12 @@ export function writeOutput(
             ? undefined
             : multipleFiles
               ? multiFileOutputDir(cliOptions.out)
-              : cliOptions.out;
+              : path.dirname(cliOptions.out);
     for (const [filename, { lines, annotations }] of resultsByFilename) {
         const output = lines.join("\n");
 
         if (outputBase !== undefined) {
-            const outputPath = multipleFiles
-                ? path.join(outputBase, filename)
-                : outputBase;
+            const outputPath = path.join(outputBase, filename);
             fs.mkdirSync(path.dirname(outputPath), { recursive: true });
             fs.writeFileSync(outputPath, output);
         } else {
