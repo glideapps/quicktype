@@ -1868,6 +1868,7 @@ export const HaskellLanguage: Language = {
         "keyword-unions.schema",
         "optional-any.schema",
         "required.schema",
+        "description-unification.schema",
         "required-non-properties.schema",
     ],
     rendererOptions: {},
