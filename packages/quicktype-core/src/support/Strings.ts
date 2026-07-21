@@ -487,9 +487,16 @@ export function splitIntoWords(s: string): WordInName[] {
     const words: WordInName[] = [];
     for (const [start, end, allUpper] of intervals) {
         const word = s.slice(start, end);
+        // A word written in mixed case (e.g. "Foobar", "Acme") carries an
+        // explicit capitalization we must respect, so it is never treated as an
+        // acronym even when it collides with the known-acronym dictionary (see
+        // issue #2328).  A uniformly cased word ("foobar", "FOOBAR") has no such
+        // signal, so a dictionary match still makes it an acronym.
+        const isMixedCase =
+            word !== word.toLowerCase() && word !== word.toUpperCase();
         const isAcronym =
-            allUpper &&
-            (lastLowerCaseIndex !== undefined ||
+            (lastLowerCaseIndex !== undefined && allUpper) ||
+            (!isMixedCase &&
                 knownAcronyms.has(
                     word.toLowerCase() as (typeof acronyms)[number],
                 ));

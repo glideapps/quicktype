@@ -30,9 +30,15 @@ async function renderTopLevel(topLevel: string): Promise<string> {
 }
 
 describe("top-level acronym capitalization", () => {
+    // A name written in mixed case carries an explicit capitalization that must
+    // be respected even when it collides with the known-acronym dictionary
+    // ("Acme" stays "Acme").  A uniformly cased name has no such signal, so a
+    // dictionary match still styles it as an acronym ("acme" -> "ACME"), which
+    // keeps names like a "json" property rendering as the acronym "JSON" and
+    // avoids regressing library-collision fixtures (e.g. Klaxon's @Json).
     test.each([
         ["Acme", "Acme"],
-        ["acme", "Acme"],
+        ["acme", "ACME"],
         ["ACME", "ACME"],
         ["HTMLParser", "HTMLParser"],
     ])("renders %s as %s", async (topLevel, expected) => {
