@@ -10,7 +10,10 @@ import {
     type TypeKind,
     UnionType,
 } from "../../Type/index.js";
-import { removeNullFromUnion } from "../../Type/TypeUtils.js";
+import {
+    nullableFromUnion,
+    removeNullFromUnion,
+} from "../../Type/TypeUtils.js";
 
 import { JavaRenderer } from "./JavaRenderer.js";
 import { stringEscape } from "./utils.js";
@@ -58,7 +61,12 @@ export class JacksonRenderer extends JavaRenderer {
             `@JsonProperty("${stringEscape(jsonName)}")`,
         ];
 
-        switch (p.type.kind) {
+        const propertyType =
+            p.type instanceof UnionType
+                ? (nullableFromUnion(p.type) ?? p.type)
+                : p.type;
+
+        switch (propertyType.kind) {
             case "date-time":
                 this._dateTimeProvider.dateTimeJacksonAnnotations.forEach(
                     (annotation) => {

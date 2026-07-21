@@ -1,0 +1,8 @@
+{
+    "config": {
+        "name": "test-config",
+        "settings": {
+            "option1": "not-an-item-list"
+        }
+    }
+}
