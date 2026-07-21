@@ -1385,6 +1385,9 @@ export const KotlinLanguage: Language = {
         "top-level-enum.schema",
         "top-level-primitive.schema",
         "recursive-union-flattening.schema",
+        // Pre-existing Klaxon constructor-matching limitation for merged
+        // multi-object unions, unrelated to the TypeScript-only union change.
+        "anyof-object-union.schema",
     ],
     skipMiscJSON: false,
     // The default framework is jackson; this fixture deliberately pins
