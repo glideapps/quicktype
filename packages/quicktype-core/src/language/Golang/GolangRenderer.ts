@@ -12,7 +12,7 @@ import { assert, defined } from "../../support/Support.js";
 import type { TargetLanguage } from "../../TargetLanguage.js";
 import {
     type ClassProperty,
-    type ClassType,
+    ClassType,
     type EnumType,
     type Type,
     type TypeKind,
@@ -194,28 +194,37 @@ export class GoRenderer extends ConvenienceRenderer {
         if (
             this._options.multiFileOutput &&
             this._options.justTypes === false &&
-            this._options.justTypesAndPackage === false &&
-            this.leadingComments === undefined
+            this._options.justTypesAndPackage === false
         ) {
-            this.emitLineOnce(
-                "// Code generated from JSON Schema using quicktype. DO NOT EDIT.",
-            );
-            this.emitLineOnce(
-                "// To parse and unparse this JSON data, add this code to your project and do:",
-            );
-            this.emitLineOnce("//");
-            const ref = modifySource(camelCase, name);
-            this.emitLineOnce(
-                "//    ",
-                ref,
-                ", err := ",
-                defined(this._topLevelUnmarshalNames.get(name)),
-                "(bytes)",
-            );
-            this.emitLineOnce("//    bytes, err = ", ref, ".Marshal()");
+            if (this.leadingComments !== undefined) {
+                this.emitComments(this.leadingComments);
+            } else {
+                this.emitLineOnce(
+                    "// Code generated from JSON Schema using quicktype. DO NOT EDIT.",
+                );
+                this.emitLineOnce(
+                    "// To parse and unparse this JSON data, add this code to your project and do:",
+                );
+                this.emitLineOnce("//");
+                const ref = modifySource(camelCase, name);
+                this.emitLineOnce(
+                    "//    ",
+                    ref,
+                    ", err := ",
+                    defined(this._topLevelUnmarshalNames.get(name)),
+                    "(bytes)",
+                );
+                this.emitLineOnce("//    bytes, err = ", ref, ".Marshal()");
+            }
         }
 
-        this.emitPackageDefinitons(true);
+        const imports =
+            t instanceof ClassType
+                ? this.collectClassImports(t)
+                : t instanceof UnionType
+                  ? this.collectUnionImports(t)
+                  : undefined;
+        this.emitPackageDefinitons(true, imports);
 
         const unmarshalName = defined(this._topLevelUnmarshalNames.get(name));
         if (this.namedTypeToNameForTopLevel(t) === undefined) {
@@ -305,7 +314,7 @@ export class GoRenderer extends ConvenienceRenderer {
 
     private emitUnion(u: UnionType, unionName: Name): void {
         this.startFile(unionName);
-        this.emitPackageDefinitons(false);
+        this.emitPackageDefinitons(false, this.collectUnionImports(u));
         const [hasNull, nonNulls] = removeNullFromUnion(u);
         const isNullableArg = hasNull !== null ? "true" : "false";
 
@@ -610,10 +619,13 @@ func marshalUnion(pi *int64, pf *float64, pb *bool, ps *string, haveArray bool, 
         if (
             this._options.multiFileOutput === false &&
             this._options.justTypes === false &&
-            this._options.justTypesAndPackage === false &&
-            this.leadingComments === undefined
+            this._options.justTypesAndPackage === false
         ) {
-            this.emitSingleFileHeaderComments();
+            if (this.leadingComments !== undefined) {
+                this.emitComments(this.leadingComments);
+            } else {
+                this.emitSingleFileHeaderComments();
+            }
             this.emitPackageDefinitons(false, this.collectAllImports());
         }
 
