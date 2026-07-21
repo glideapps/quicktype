@@ -1899,6 +1899,7 @@ export const HaskellLanguage: Language = {
         "optional-any.schema",
         "required.schema",
         "required-non-properties.schema",
+        "all-of-array-items.schema",
     ],
     rendererOptions: {},
     // The default is array-type=list; this keeps the Vector code path
