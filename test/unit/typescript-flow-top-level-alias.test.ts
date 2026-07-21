@@ -44,36 +44,36 @@ describe("TypeScript/Flow unnamed top-level aliases", () => {
         );
     });
 
-    test.each(["typescript", "flow"] as const)(
-        "%s emits a top-level array alias",
-        async (lang) => {
-            const output = await renderSchema(lang, "Values", {
-                type: "array",
-                items: { type: "number" },
-            });
+    test.each([
+        "typescript",
+        "flow",
+    ] as const)("%s emits a top-level array alias", async (lang) => {
+        const output = await renderSchema(lang, "Values", {
+            type: "array",
+            items: { type: "number" },
+        });
 
-            expect(output).toContain("export type Values = number[];");
-        },
-    );
+        expect(output).toContain("export type Values = number[];");
+    });
 
-    test.each(["typescript", "flow"] as const)(
-        "%s does not alias a map whose value type claims the top-level name",
-        async (lang) => {
-            const output = await renderSchema(lang, "TopLevel", {
+    test.each([
+        "typescript",
+        "flow",
+    ] as const)("%s does not alias a map whose value type claims the top-level name", async (lang) => {
+        const output = await renderSchema(lang, "TopLevel", {
+            type: "object",
+            additionalProperties: {
                 type: "object",
-                additionalProperties: {
-                    type: "object",
-                    properties: {
-                        one: { type: "integer" },
-                        two: { type: "boolean" },
-                    },
-                    required: ["one", "two"],
+                properties: {
+                    one: { type: "integer" },
+                    two: { type: "boolean" },
                 },
-            });
-            const declarations =
-                output.match(/export (?:type|interface) TopLevel\b/g) ?? [];
+                required: ["one", "two"],
+            },
+        });
+        const declarations =
+            output.match(/export (?:type|interface) TopLevel\b/g) ?? [];
 
-            expect(declarations).toHaveLength(1);
-        },
-    );
+        expect(declarations).toHaveLength(1);
+    });
 });
