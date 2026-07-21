@@ -34,11 +34,13 @@ async function generateTypeScript(
 }
 
 describe("JSON Schema object unions (issue #1266)", () => {
-    test.each([
-        "oneOf",
-        "anyOf",
-    ] as const)("%s preserves object alternatives", async (operation) => {
-        const output = await generateTypeScript(operation);
+    // The oneOf case is covered by the one-of-objects.schema fixture (with its
+    // one-of-objects.2.fail.one-of.json expected-failure sample) running for
+    // TypeScript/JavaScript/Flow in CI. No fixture exercises anyOf, so this
+    // unit test guards that anyOf alternatives are preserved as a union rather
+    // than merged into a single interface.
+    test("anyOf preserves object alternatives", async () => {
+        const output = await generateTypeScript("anyOf");
 
         expect(output).toContain("export type AssetIDEither =");
         expect(output).toContain(" | ");
