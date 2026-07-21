@@ -1,0 +1,57 @@
+{
+  "type": "object",
+  "properties": {
+    "small_positive": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "small_negative": {
+      "type": "integer",
+      "minimum": -100,
+      "maximum": 0
+    },
+    "i32_range": {
+      "type": "integer",
+      "minimum": -2147483648,
+      "maximum": 2147483647
+    },
+    "above_i32_max": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483648
+    },
+    "below_i32_min": {
+      "type": "integer",
+      "minimum": -2147483649,
+      "maximum": 0
+    },
+    "only_minimum": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "only_maximum": {
+      "type": "integer",
+      "maximum": 0
+    },
+    "unbounded": {
+      "type": "integer"
+    },
+    "large_bounds": {
+      "type": "integer",
+      "minimum": -9007199254740991,
+      "maximum": 9007199254740991
+    }
+  },
+  "required": [
+    "small_positive",
+    "small_negative",
+    "i32_range",
+    "above_i32_max",
+    "below_i32_min",
+    "only_minimum",
+    "only_maximum",
+    "unbounded",
+    "large_bounds"
+  ]
+}

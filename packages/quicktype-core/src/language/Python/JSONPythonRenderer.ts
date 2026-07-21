@@ -22,7 +22,7 @@ import {
     UnionMemberMatchTransformer,
     transformationForType,
 } from "../../Transformers.js";
-import type { ClassType, Type } from "../../Type/index.js";
+import type { ClassType, Type, UnionType } from "../../Type/index.js";
 import { matchType } from "../../Type/TypeUtils.js";
 
 import { PythonRenderer } from "./PythonRenderer.js";
@@ -40,6 +40,8 @@ export type ConverterFunction =
     | "to-class"
     | "dict"
     | "union"
+    | "from-date"
+    | "from-time"
     | "from-datetime"
     | "from-stringified-bool"
     | "is-type";
@@ -334,12 +336,20 @@ export class JSONPythonRenderer extends PythonRenderer {
         );
     }
 
+    protected typingTypeHint(tvar: Sourcelike): Sourcelike {
+        if (!this.pyOptions.features.typingType) {
+            return [];
+        }
+
+        return this.typeHint(": ", this.withTyping("Type"), "[", tvar, "]");
+    }
+
     protected emitToEnumConverter(): void {
         const tvar = this.enumTypeVar();
         this.emitBlock(
             [
                 "def to_enum(c",
-                this.typeHint(": ", this.withTyping("Type"), "[", tvar, "]"),
+                this.typingTypeHint(tvar),
                 ", ",
                 this.typingDecl("x", "Any"),
                 ")",
@@ -393,7 +403,7 @@ export class JSONPythonRenderer extends PythonRenderer {
         this.emitBlock(
             [
                 "def to_class(c",
-                this.typeHint(": ", this.withTyping("Type"), "[", tvar, "]"),
+                this.typingTypeHint(tvar),
                 ", ",
                 this.typingDecl("x", "Any"),
                 ")",
@@ -458,13 +468,64 @@ export class JSONPythonRenderer extends PythonRenderer {
     assert False`);
     }
 
+    protected emitFromDateConverter(): void {
+        this.emitBlock(
+            [
+                "def from_date(",
+                this.typingDecl("x", "Any"),
+                ")",
+                this.typeHint(" -> ", [
+                    this.withModuleImport("datetime"),
+                    ".date",
+                ]),
+                ":",
+            ],
+            () => {
+                this._haveDateutil = true;
+                this.emitLine(
+                    "assert isinstance(x, str) and ",
+                    this.withModuleImport("re"),
+                    '.match(r"^\\d{4}-\\d{2}-\\d{2}$", x)',
+                );
+                this.emitLine("return dateutil.parser.parse(x).date()");
+            },
+        );
+    }
+
+    protected emitFromTimeConverter(): void {
+        this.emitBlock(
+            [
+                "def from_time(",
+                this.typingDecl("x", "Any"),
+                ")",
+                this.typeHint(" -> ", [
+                    this.withModuleImport("datetime"),
+                    ".time",
+                ]),
+                ":",
+            ],
+            () => {
+                this._haveDateutil = true;
+                this.emitLine(
+                    "assert isinstance(x, str) and ",
+                    this.withModuleImport("re"),
+                    '.match(r"^\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})?$", x)',
+                );
+                this.emitLine("return dateutil.parser.parse(x).time()");
+            },
+        );
+    }
+
     protected emitFromDatetimeConverter(): void {
         this.emitBlock(
             [
                 "def from_datetime(",
                 this.typingDecl("x", "Any"),
                 ")",
-                this.typeHint(" -> ", this.withImport("datetime", "datetime")),
+                this.typeHint(" -> ", [
+                    this.withModuleImport("datetime"),
+                    ".datetime",
+                ]),
                 ":",
             ],
             () => {
@@ -500,7 +561,7 @@ export class JSONPythonRenderer extends PythonRenderer {
         this.emitBlock(
             [
                 "def is_type(t",
-                this.typeHint(": ", this.withTyping("Type"), "[", tvar, "]"),
+                this.typingTypeHint(tvar),
                 ", ",
                 this.typingDecl("x", "Any"),
                 ")",
@@ -571,6 +632,16 @@ export class JSONPythonRenderer extends PythonRenderer {
                 return;
             }
 
+            case "from-date": {
+                this.emitFromDateConverter();
+                return;
+            }
+
+            case "from-time": {
+                this.emitFromTimeConverter();
+                return;
+            }
+
             case "from-datetime": {
                 this.emitFromDatetimeConverter();
                 return;
@@ -628,8 +699,16 @@ export class JSONPythonRenderer extends PythonRenderer {
             (enumType) => this.nameForNamedType(enumType),
             (_unionType) => undefined,
             (transformedStringType) => {
+                if (transformedStringType.kind === "date") {
+                    return [this.withModuleImport("datetime"), ".date"];
+                }
+
+                if (transformedStringType.kind === "time") {
+                    return [this.withModuleImport("datetime"), ".time"];
+                }
+
                 if (transformedStringType.kind === "date-time") {
-                    return this.withImport("datetime", "datetime");
+                    return [this.withModuleImport("datetime"), ".datetime"];
                 }
 
                 if (transformedStringType.kind === "uuid") {
@@ -731,6 +810,12 @@ export class JSONPythonRenderer extends PythonRenderer {
                         immediateTargetType,
                     );
                     break;
+                case "date":
+                    vol = this.convFn("from-date", inputTransformer);
+                    break;
+                case "time":
+                    vol = this.convFn("from-time", inputTransformer);
+                    break;
                 case "date-time":
                     vol = this.convFn("from-datetime", inputTransformer);
                     break;
@@ -767,6 +852,8 @@ export class JSONPythonRenderer extends PythonRenderer {
                 case "enum":
                     vol = this.serializer(inputTransformer, xfer.sourceType);
                     break;
+                case "date":
+                case "time":
                 case "date-time":
                     vol = compose(inputTransformer, (v) => [v, ".isoformat()"]);
                     break;
@@ -783,6 +870,21 @@ export class JSONPythonRenderer extends PythonRenderer {
         }
 
         return panic(`Transformer ${xfer.kind} is not supported`);
+    }
+
+    private unionMembers(unionType: UnionType): Type[] {
+        // from_float also accepts integers, so from_int must be tried first.
+        const members = Array.from(unionType.members);
+        const integerIndex = members.findIndex((m) => m.kind === "integer");
+        const doubleIndex = members.findIndex((m) => m.kind === "double");
+
+        if (doubleIndex >= 0 && integerIndex > doubleIndex) {
+            const integerType = defined(members[integerIndex]);
+            members.splice(integerIndex, 1);
+            members.splice(doubleIndex, 0, integerType);
+        }
+
+        return members;
     }
 
     // Returns the code to deserialize `value` as type `t`.  If `t` has
@@ -837,7 +939,7 @@ export class JSONPythonRenderer extends PythonRenderer {
                 }),
             (unionType) => {
                 // FIXME: handle via transformers
-                const deserializers = Array.from(unionType.members).map(
+                const deserializers = this.unionMembers(unionType).map(
                     (m) => makeLambda(this.deserializer(identity, m)).source,
                 );
                 return compose(value, (v) => [
@@ -851,6 +953,14 @@ export class JSONPythonRenderer extends PythonRenderer {
             },
             (transformedStringType) => {
                 // FIXME: handle via transformers
+                if (transformedStringType.kind === "date") {
+                    return this.convFn("from-date", value);
+                }
+
+                if (transformedStringType.kind === "time") {
+                    return this.convFn("from-time", value);
+                }
+
                 if (transformedStringType.kind === "date-time") {
                     return this.convFn("from-datetime", value);
                 }
@@ -929,7 +1039,7 @@ export class JSONPythonRenderer extends PythonRenderer {
                     ")",
                 ]),
             (unionType) => {
-                const serializers = Array.from(unionType.members).map(
+                const serializers = this.unionMembers(unionType).map(
                     (m) => makeLambda(this.serializer(identity, m)).source,
                 );
                 return compose(value, (v) => [
@@ -942,7 +1052,11 @@ export class JSONPythonRenderer extends PythonRenderer {
                 ]);
             },
             (transformedStringType) => {
-                if (transformedStringType.kind === "date-time") {
+                if (
+                    transformedStringType.kind === "date" ||
+                    transformedStringType.kind === "time" ||
+                    transformedStringType.kind === "date-time"
+                ) {
                     return compose(value, (v) => [v, ".isoformat()"]);
                 }
 

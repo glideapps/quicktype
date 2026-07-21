@@ -1,0 +1,16 @@
+{
+  "type": "object",
+  "properties": {
+    "minMaxLength": {
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 5
+    },
+    "percent": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    }
+  },
+  "required": ["minMaxLength", "percent"]
+}
