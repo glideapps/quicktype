@@ -479,11 +479,14 @@ export class TypeBuilder {
         this.registerType(type);
     }
 
-    public getUniqueArrayType(forwardingRef?: TypeRef): TypeRef {
+    public getUniqueArrayType(
+        attributes?: TypeAttributes,
+        forwardingRef?: TypeRef,
+    ): TypeRef {
         return this.addType(
             forwardingRef,
             (tr) => new ArrayType(tr, this.typeGraph, undefined),
-            undefined,
+            attributes,
         );
     }
 
