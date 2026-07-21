@@ -785,13 +785,7 @@ class JSONSchemaFixture extends LanguageFixture {
     }
 
     getSamples(sources: string[]): { priority: Sample[]; others: Sample[] } {
-        const prioritySamples = testsInDir(
-            "test/inputs/schema/",
-            "schema",
-        ).concat([
-            // A directory is one sample whose schemas are separate sources.
-            "test/inputs/schema/multi-source-1543",
-        ]);
+        const prioritySamples = testsInDir("test/inputs/schema/", "schema");
         const samples = samplesFromSources(
             sources,
             prioritySamples,

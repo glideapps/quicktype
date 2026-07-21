@@ -1,10 +1,14 @@
 // Regression test for issue #1543: when one top-level JSON Schema source
 // references another, both sources must resolve to the same generated type.
 //
-// The fixture in test/inputs/schema/multi-source-1543 covers the multi-file
-// directory input end to end.  A round-trip fixture cannot detect duplicate
-// structurally identical TypeScript interfaces, so this test also verifies
-// that the redundant interface is not generated.
+// This lives as a unit test rather than a round-trip schema fixture because
+// the bug is a *duplicate* structurally identical interface: both the buggy
+// and the fixed output round-trip the sample JSON identically, so the fixture
+// harness cannot observe the difference.  A directory (multi-source) fixture
+// also can't run through that harness, since it yields multiple top-level
+// types whose per-type entry points don't match the shared drivers' single
+// `fromJsonString`/top-level assumption.  The schemas in
+// test/inputs/schema/multi-source-1543 are the input for this test.
 
 import * as path from "node:path";
 
