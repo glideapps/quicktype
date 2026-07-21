@@ -22,7 +22,7 @@ import {
     UnionMemberMatchTransformer,
     transformationForType,
 } from "../../Transformers.js";
-import type { ClassType, Type } from "../../Type/index.js";
+import type { ClassType, Type, UnionType } from "../../Type/index.js";
 import { matchType } from "../../Type/TypeUtils.js";
 
 import { PythonRenderer } from "./PythonRenderer.js";
@@ -785,6 +785,21 @@ export class JSONPythonRenderer extends PythonRenderer {
         return panic(`Transformer ${xfer.kind} is not supported`);
     }
 
+    private unionMembers(unionType: UnionType): Type[] {
+        // from_float also accepts integers, so from_int must be tried first.
+        const members = Array.from(unionType.members);
+        const integerIndex = members.findIndex((m) => m.kind === "integer");
+        const doubleIndex = members.findIndex((m) => m.kind === "double");
+
+        if (doubleIndex >= 0 && integerIndex > doubleIndex) {
+            const integerType = defined(members[integerIndex]);
+            members.splice(integerIndex, 1);
+            members.splice(doubleIndex, 0, integerType);
+        }
+
+        return members;
+    }
+
     // Returns the code to deserialize `value` as type `t`.  If `t` has
     // an associated transformer, the code for that transformer is
     // returned.
@@ -837,7 +852,7 @@ export class JSONPythonRenderer extends PythonRenderer {
                 }),
             (unionType) => {
                 // FIXME: handle via transformers
-                const deserializers = Array.from(unionType.members).map(
+                const deserializers = this.unionMembers(unionType).map(
                     (m) => makeLambda(this.deserializer(identity, m)).source,
                 );
                 return compose(value, (v) => [
@@ -929,7 +944,7 @@ export class JSONPythonRenderer extends PythonRenderer {
                     ")",
                 ]),
             (unionType) => {
-                const serializers = Array.from(unionType.members).map(
+                const serializers = this.unionMembers(unionType).map(
                     (m) => makeLambda(this.serializer(identity, m)).source,
                 );
                 return compose(value, (v) => [
