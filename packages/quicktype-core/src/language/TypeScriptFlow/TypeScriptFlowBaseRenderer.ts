@@ -54,6 +54,23 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
         return multiWord(" | ", ...children);
     }
 
+    // Flow (pinned at flow-bin 0.66 in CI) has no tuple-rest syntax, so
+    // the base implementation always renders plain array types; the
+    // TypeScript renderer overrides this to spell out `minItems`
+    // guarantees as a tuple.
+    protected sourceForArrayType(arrayType: ArrayType): MultiWord {
+        const itemType = this.sourceFor(arrayType.items);
+        if (
+            (arrayType.items instanceof UnionType &&
+                !this._tsFlowOptions.declareUnions) ||
+            arrayType.items instanceof ArrayType
+        ) {
+            return singleWord(["Array<", itemType.source, ">"]);
+        }
+
+        return singleWord([parenIfNeeded(itemType), "[]"]);
+    }
+
     protected sourceFor(t: Type): MultiWord {
         if (
             this._tsFlowOptions.preferConstValues &&
@@ -77,18 +94,7 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
             (_integerType) => singleWord("number"),
             (_doubleType) => singleWord("number"),
             (_stringType) => singleWord("string"),
-            (arrayType) => {
-                const itemType = this.sourceFor(arrayType.items);
-                if (
-                    (arrayType.items instanceof UnionType &&
-                        !this._tsFlowOptions.declareUnions) ||
-                    arrayType.items instanceof ArrayType
-                ) {
-                    return singleWord(["Array<", itemType.source, ">"]);
-                }
-
-                return singleWord([parenIfNeeded(itemType), "[]"]);
-            },
+            (arrayType) => this.sourceForArrayType(arrayType),
             (_classType) => panic("We handled this above"),
             (mapType) =>
                 singleWord([
