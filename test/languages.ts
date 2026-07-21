@@ -648,6 +648,9 @@ export const CJSONLanguage: Language = {
         /* Required properties absent are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
         "intersection.schema",
         "required.schema",
+        /* Root-level array of a required-property object: the missing
+         * required property in the fail sample is likewise not rejected. */
+        "root-array-ref.schema",
         /* Pure Any type not supported (for the current implementation, can be added later, should manage a callback to provide the final application a way to handle it at parsing and creation of cJSON) */
         "any.schema",
         "direct-union.schema",
@@ -969,6 +972,9 @@ export const SwiftLanguage: Language = {
         // This works on macOS, but on Linux one of the failure test cases doesn't fail
         ...skipsUntypedUnions,
         "required.schema",
+        // Same Linux-only issue: the missing-required-property fail sample
+        // for the root-level array is not rejected.
+        "root-array-ref.schema",
         "multi-type-enum.schema",
         "intersection.schema",
         ...skipsMapValueValidation,
@@ -1898,6 +1904,9 @@ export const HaskellLanguage: Language = {
         "keyword-unions.schema",
         "optional-any.schema",
         "required.schema",
+        // The driver encodes the Maybe result, so the missing-required-property
+        // fail sample for the root-level array decodes to null and exits 0.
+        "root-array-ref.schema",
         "required-non-properties.schema",
     ],
     rendererOptions: {},
@@ -2248,6 +2257,9 @@ export const ElixirLanguage: Language = {
         // Struct keys cannot be enforced at runtime in Elixir and their values will just be set to null.
         "strict-optional.schema",
         "required.schema",
+        // Same reason: the missing-required-property fail sample for the
+        // root-level array is not rejected.
+        "root-array-ref.schema",
         "boolean-subschema.schema",
         "intersection.schema",
         "optional-any.schema",
