@@ -25,6 +25,7 @@ const skipsEnumValueValidation = [
     "enum-large.schema",
     "optional-enum.schema",
     "const-non-string.schema",
+    "nullable-optional-one-of.schema",
     "all-of-additional-properties-false.schema",
 ];
 
@@ -551,9 +552,10 @@ export const GoLanguage: Language = {
     rendererOptions: {},
     quickTestRendererOptions: [
         // Runs against the expected-output file
-        // `omit-empty.out.omit-empty.json`, which asserts that `omitempty`
-        // actually drops the null field.
+        // `omit-empty.out.omit-empty.json`, which asserts that nullable
+        // fields preserve null instead of being omitted.
         ["omit-empty.json", { "omit-empty": "true" }],
+        ["nullable-optional-one-of.schema", { "omit-empty": "true" }],
     ],
     sourceFiles: ["src/language/Golang/index.ts"],
 };
