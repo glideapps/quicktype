@@ -577,6 +577,7 @@ export const CJSONLanguage: Language = {
         /* Union, Map and Arrays with invalid types are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
         "class-with-additional.schema",
         "go-schema-pattern-properties.schema",
+        "pattern-properties-value.schema",
         "multi-type-enum.schema",
         "nested-intersection-union.schema",
         "prefix-items.schema",
