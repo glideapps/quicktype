@@ -471,6 +471,15 @@ export function resolveIntersections(
             return t;
         }
 
+        const noneType = iterableFind(members, (t) => t.kind === "none");
+        if (noneType !== undefined) {
+            return builder.reconstituteType(
+                noneType,
+                intersectionAttributes,
+                forwardingRef,
+            );
+        }
+
         if (members.size === 1) {
             return builder.reconstituteType(
                 defined(iterableFirst(members)),
