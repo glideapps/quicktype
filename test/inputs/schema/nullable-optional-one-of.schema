@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "bar": {
+      "type": ["string", "null"]
+    },
+    "one": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "one"
+        },
+        "b": {
+          "$ref": "#/definitions/bar"
+        }
+      },
+      "required": ["kind", "b"]
+    },
+    "two": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "two"
+        },
+        "b": {
+          "$ref": "#/definitions/bar"
+        }
+      },
+      "required": ["kind"]
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/definitions/one"
+    },
+    {
+      "$ref": "#/definitions/two"
+    }
+  ]
+}
