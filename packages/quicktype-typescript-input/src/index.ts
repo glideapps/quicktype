@@ -20,6 +20,7 @@ const settings: PartialArgs = {
     titles: true,
     topRef: true,
     noExtraProps: true,
+    propOrder: true,
 };
 
 const compilerOptions: ts.CompilerOptions = {
@@ -125,6 +126,30 @@ function patchGeneratorForBuiltinTypes(
     };
 }
 
+// typescript-json-schema copies JSDoc `@type {string}` annotations into the
+// generated schema verbatim. Strip the JSDoc braces so the value is a valid
+// JSON Schema type.
+function sanitizeTypeAnnotations(value: unknown): void {
+    if (Array.isArray(value)) {
+        value.forEach(sanitizeTypeAnnotations);
+        return;
+    }
+
+    if (value === null || typeof value !== "object") {
+        return;
+    }
+
+    const schema = value as Record<string, unknown>;
+    if (typeof schema.type === "string") {
+        const match = /^\{([^{}]+)\}$/.exec(schema.type);
+        if (match !== null) {
+            schema.type = match[1];
+        }
+    }
+
+    Object.values(schema).forEach(sanitizeTypeAnnotations);
+}
+
 // FIXME: We're stringifying and then parsing this schema again. Just pass around
 // the schema directly.
 export function schemaForTypeScriptSources(
@@ -151,6 +176,8 @@ export function schemaForTypeScriptSources(
     patchGeneratorForBuiltinTypes(generator, program);
 
     const schema = generateSchema(program, "*", settings, undefined, generator);
+    sanitizeTypeAnnotations(schema);
+
     const uris: string[] = [];
     let topLevelName = "";
 
@@ -186,9 +213,17 @@ export function schemaForTypeScriptSources(
             if (
                 definition === null ||
                 Array.isArray(definition) ||
-                typeof definition !== "object" ||
-                typeof definition.description !== "string"
+                typeof definition !== "object"
             ) {
+                continue;
+            }
+
+            if (Array.isArray(definition.propertyOrder)) {
+                (definition as Record<string, unknown>).quicktypePropertyOrder =
+                    definition.propertyOrder;
+            }
+
+            if (typeof definition.description !== "string") {
                 continue;
             }
 

@@ -503,21 +503,13 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 "",
             ]);
 
-            if (this._options.typeSourceStyle) {
-                this.forEachTopLevel("none", (_, topLevelName) => {
-                    this.emitLine(
-                        "//     ",
-                        topLevelName,
-                        " data = nlohmann::json::parse(jsonString);",
-                    );
-                });
-            } else {
+            this.forEachTopLevel("none", (_, topLevelName) => {
                 this.emitLine(
                     "//     ",
-                    basename,
+                    topLevelName,
                     " data = nlohmann::json::parse(jsonString);",
                 );
-            }
+            });
 
             if (this._options.wstring) {
                 this.emitLine("//");
@@ -1373,6 +1365,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             ],
             false,
             () => {
+                if (c.getProperties().size === 0) {
+                    this.emitLine("(void)j;");
+                    this.emitLine("(void)x;");
+                }
+
                 this.forEachClassProperty(c, "none", (name, json, p) => {
                     const [, , setterName] = defined(
                         this._gettersAndSettersForPropertyName.get(name),
@@ -1562,6 +1559,10 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             false,
             () => {
                 this.emitLine("j = json::object();");
+                if (c.getProperties().size === 0) {
+                    this.emitLine("(void)x;");
+                }
+
                 this.forEachClassProperty(c, "none", (name, json, p) => {
                     const propType = p.type;
                     cppType = this.cppType(
@@ -1596,6 +1597,12 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         getter = [name];
                     }
 
+                    const value = this._stringType.wrapEncodingChange(
+                        [ourQualifier],
+                        cppType,
+                        toType,
+                        ["x.", getter],
+                    );
                     const assignment: Sourcelike[] = [
                         "j[",
                         this._stringType.wrapEncodingChange(
@@ -1607,31 +1614,17 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             ]),
                         ),
                         "] = ",
-                        this._stringType.wrapEncodingChange(
-                            [ourQualifier],
-                            cppType,
-                            toType,
-                            ["x.", getter],
-                        ),
+                        value,
                         ";",
                     ];
                     if (p.isOptional && this._options.hideNullOptional) {
-                        this.emitBlock(
-                            [
-                                "if (",
-                                this._stringType.wrapEncodingChange(
-                                    [ourQualifier],
-                                    cppType,
-                                    toType,
-                                    ["x.", getter],
-                                ),
-                                ")",
-                            ],
-                            false,
-                            () => {
-                                this.emitLine(assignment);
-                            },
-                        );
+                        const condition =
+                            propType.kind === "null" || propType.kind === "any"
+                                ? ["!", value, ".is_null()"]
+                                : value;
+                        this.emitBlock(["if (", condition, ")"], false, () => {
+                            this.emitLine(assignment);
+                        });
                     } else {
                         this.emitLine(assignment);
                     }
@@ -3187,6 +3180,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.emitHelper();
 
             this.startFile("Generators.hpp", true);
+            this._generatedFiles.add("Generators.hpp");
 
             this._allTypeNames.forEach((t) => {
                 this.emitInclude(false, [t, ".hpp"]);
@@ -3402,6 +3396,28 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     },
                 );
                 this.superThis.ensureBlankLine();
+
+                if (this.superThis.haveOptionalProperties) {
+                    this.superThis.emitLine(
+                        "template<typename TF, typename TT>",
+                    );
+                    this.superThis.emitBlock(
+                        [
+                            "static toType convert(tag<",
+                            this.superThis._optionalType,
+                            "<TF> >, tag<",
+                            this.superThis._optionalType,
+                            "<TT> >, fromType opt)",
+                        ],
+                        false,
+                        () => {
+                            this.superThis.emitLine(
+                                "if (!opt) return toType(); else return toType(Utf16_Utf8<TF,TT>::convert(*opt));",
+                            );
+                        },
+                    );
+                    this.superThis.ensureBlankLine();
+                }
 
                 this.superThis.emitLine("template<typename TF, typename TT>");
                 this.superThis.emitBlock(

@@ -1,0 +1,7 @@
+{
+  "value": "root",
+  "next": {
+    "value": "leaf",
+    "next": "done"
+  }
+}
