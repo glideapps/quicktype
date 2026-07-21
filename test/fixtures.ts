@@ -1641,6 +1641,10 @@ export const allFixtures: Fixture[] = [
     new JSONFixture(languages.CJSONMultiHeaderLanguage, "cjson-multi-header"),
     new JSONFixture(languages.CJSONMultiSplitLanguage, "cjson-multi-split"),
     new JSONFixture(languages.CPlusPlusLanguage),
+    new JSONFixture(
+        languages.CPlusPlusMultiSourceLanguage,
+        "cplusplus-multi-source",
+    ),
     new JSONFixture(languages.PHPLanguage),
     new JSONFixture(languages.RustLanguage),
     new JSONFixture(languages.RubyLanguage),
@@ -1665,6 +1669,7 @@ export const allFixtures: Fixture[] = [
     new JSONSchemaJSONFixture(languages.CSharpLanguage),
     new JSONTypeScriptFixture(languages.CSharpLanguage),
     // new JSONSchemaFixture(languages.CrystalLanguage),
+    new JSONSchemaFixture(languages.JSONSchemaLanguage),
     new JSONSchemaFixture(languages.CSharpLanguage),
     new JSONSchemaFixture(
         languages.CSharpLanguageSystemTextJson,
