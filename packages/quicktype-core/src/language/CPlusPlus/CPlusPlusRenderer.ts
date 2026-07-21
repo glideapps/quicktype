@@ -1597,6 +1597,12 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         getter = [name];
                     }
 
+                    const value = this._stringType.wrapEncodingChange(
+                        [ourQualifier],
+                        cppType,
+                        toType,
+                        ["x.", getter],
+                    );
                     const assignment: Sourcelike[] = [
                         "j[",
                         this._stringType.wrapEncodingChange(
@@ -1608,31 +1614,17 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             ]),
                         ),
                         "] = ",
-                        this._stringType.wrapEncodingChange(
-                            [ourQualifier],
-                            cppType,
-                            toType,
-                            ["x.", getter],
-                        ),
+                        value,
                         ";",
                     ];
                     if (p.isOptional && this._options.hideNullOptional) {
-                        this.emitBlock(
-                            [
-                                "if (",
-                                this._stringType.wrapEncodingChange(
-                                    [ourQualifier],
-                                    cppType,
-                                    toType,
-                                    ["x.", getter],
-                                ),
-                                ")",
-                            ],
-                            false,
-                            () => {
-                                this.emitLine(assignment);
-                            },
-                        );
+                        const condition =
+                            propType.kind === "null" || propType.kind === "any"
+                                ? ["!", value, ".is_null()"]
+                                : value;
+                        this.emitBlock(["if (", condition, ")"], false, () => {
+                            this.emitLine(assignment);
+                        });
                     } else {
                         this.emitLine(assignment);
                     }
