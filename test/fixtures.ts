@@ -25,7 +25,16 @@ import {
     callAndExpectFailure,
 } from "./utils";
 import * as languages from "./languages";
-import type { LanguageName, Option, RendererOptions } from "quicktype-core";
+import {
+    FetchingJSONSchemaStore,
+    InputData,
+    JSONSchemaInput,
+    type LanguageName,
+    type Option,
+    type RendererOptions,
+    quicktype as quicktypeCore,
+    quicktypeMultiFile,
+} from "quicktype-core";
 import {
     mustNotHappen,
     defined,
@@ -896,6 +905,83 @@ class JSONSchemaFixture extends LanguageFixture {
     }
 }
 
+// `leadingComments` is a quicktype-core API option, so the CLI fixture path
+// cannot exercise it.
+class LeadingCommentsGoFixture extends JSONSchemaFixture {
+    constructor() {
+        super(languages.GoLanguage, "schema-golang-leading-comments");
+    }
+
+    getSamples(sources: string[]): { priority: Sample[]; others: Sample[] } {
+        return samplesFromSources(
+            sources,
+            ["test/inputs/schema/date-time.schema"],
+            [],
+            "schema",
+        );
+    }
+
+    private async inputData(filename: string): Promise<InputData> {
+        const schemaInput = new JSONSchemaInput(new FetchingJSONSchemaStore());
+        await schemaInput.addSource({
+            name: this.language.topLevel,
+            schema: fs.readFileSync(filename, "utf8"),
+        });
+        const inputData = new InputData();
+        inputData.addInput(schemaInput);
+        return inputData;
+    }
+
+    async runQuicktype(
+        filename: string,
+        additionalRendererOptions: RendererOptions,
+    ): Promise<void> {
+        const rendererOptions = _.merge(
+            {},
+            this.language.rendererOptions,
+            additionalRendererOptions,
+        );
+        const result = await quicktypeCore({
+            inputData: await this.inputData(filename),
+            lang: this.language.name,
+            leadingComments: [],
+            rendererOptions,
+        });
+        fs.writeFileSync(this.language.output, result.lines.join("\n"));
+
+        const multiFileResult = await quicktypeMultiFile({
+            inputData: await this.inputData(filename),
+            lang: this.language.name,
+            leadingComments: [],
+            rendererOptions: {
+                ...rendererOptions,
+                "multi-file-output": true,
+            },
+        });
+        mkdirs("multi");
+        for (const [outputFilename, output] of multiFileResult) {
+            fs.writeFileSync(
+                path.join("multi", outputFilename),
+                output.lines.join("\n"),
+            );
+        }
+    }
+
+    async test(
+        filename: string,
+        additionalRendererOptions: RendererOptions,
+        additionalFiles: string[],
+    ): Promise<number> {
+        const numFiles = await super.test(
+            filename,
+            additionalRendererOptions,
+            additionalFiles,
+        );
+        await execAsync("go test multi/*.go");
+        return numFiles + testsInDir("multi", "go").length;
+    }
+}
+
 type TreeSitterTarget = {
     displayName: string;
     language: languages.Language;
@@ -1641,12 +1727,20 @@ export const allFixtures: Fixture[] = [
     new JSONFixture(languages.CJSONMultiHeaderLanguage, "cjson-multi-header"),
     new JSONFixture(languages.CJSONMultiSplitLanguage, "cjson-multi-split"),
     new JSONFixture(languages.CPlusPlusLanguage),
+    new JSONFixture(
+        languages.CPlusPlusMultiSourceLanguage,
+        "cplusplus-multi-source",
+    ),
     new JSONFixture(languages.PHPLanguage),
     new JSONFixture(languages.RustLanguage),
     new JSONFixture(languages.RubyLanguage),
     new JSONFixture(languages.PythonLanguage),
     new JSONFixture(languages.ElmLanguage),
     new JSONFixture(languages.SwiftLanguage),
+    new JSONFixture(
+        languages.SwiftSendableObjectiveCSupportLanguage,
+        "swift-sendable-objective-c",
+    ),
     new JSONFixture(languages.ObjectiveCLanguage),
     new JSONFixture(languages.TypeScriptLanguage),
     new JSONFixture(languages.TypeScriptZodLanguage),
@@ -1665,6 +1759,7 @@ export const allFixtures: Fixture[] = [
     new JSONSchemaJSONFixture(languages.CSharpLanguage),
     new JSONTypeScriptFixture(languages.CSharpLanguage),
     // new JSONSchemaFixture(languages.CrystalLanguage),
+    new JSONSchemaFixture(languages.JSONSchemaLanguage),
     new JSONSchemaFixture(languages.CSharpLanguage),
     new JSONSchemaFixture(
         languages.CSharpLanguageSystemTextJson,
@@ -1680,6 +1775,7 @@ export const allFixtures: Fixture[] = [
         "schema-java-lombok",
     ),
     new JSONSchemaFixture(languages.GoLanguage),
+    new LeadingCommentsGoFixture(),
     new JSONSchemaFixture(languages.CJSONLanguage),
     new JSONSchemaFixture(languages.CPlusPlusLanguage),
     new JSONSchemaFixture(languages.RustLanguage),
