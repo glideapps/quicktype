@@ -54,6 +54,10 @@ const skipsUntypedUnions = [
 const skipsMapValueValidation = [
     "go-schema-pattern-properties.schema",
     "unevaluated-properties.schema",
+    // These languages deserialize a map without validating the value type
+    // (unchecked generic casts, raw map readers, or no runtime type checks),
+    // so the `{"enabled": {}}` fail sample round-trips instead of failing.
+    "pattern-properties.schema",
 ];
 
 export type LanguageFeature =
@@ -640,10 +644,6 @@ export const CJSONLanguage: Language = {
         ...skipsMapValueValidation,
         "multi-type-enum.schema",
         "nested-intersection-union.schema",
-        /* patternProperties value type is not validated on parse; also
-           hits an existing crash when a non-object/union scalar map value
-           is stored (tracked separately from this schema-inference fix) */
-        "pattern-properties.schema",
         "prefix-items.schema",
         /* Constraints (min/max and regex) are not supported (for the current implementation, can be added later, should abord parsing and return NULL) */
         "minmaxlength.schema",
@@ -1960,6 +1960,9 @@ export const PHPLanguage: Language = {
         "top-level-enum.schema",
         // The driver does not support top-level arrays.
         "union.schema",
+        // PHP has no type aliases, so a top-level map produces no named
+        // TopLevel class and the driver's TopLevel::from() call fails.
+        "pattern-properties.schema",
     ],
     rendererOptions: {},
     quickTestRendererOptions: [],
@@ -2072,9 +2075,6 @@ export const TypeScriptZodLanguage: Language = {
         "multi-type-enum.schema",
         "keyword-unions.schema",
         "optional-any.schema",
-        // top-level map type produces no named schema export, so the zod
-        // driver can't find a TopLevelSchema to parse with
-        "pattern-properties.schema",
         "recursive-union-flattening.schema",
         "required.schema",
         "required-non-properties.schema",
