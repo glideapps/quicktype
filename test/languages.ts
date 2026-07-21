@@ -652,6 +652,9 @@ export const CJSONLanguage: Language = {
         /* Required properties absent are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
         "intersection.schema",
         "required.schema",
+        /* Multi-top-level directory input whose only negative case is a missing
+         * required property, which this renderer does not enforce (see above). */
+        "issue-1833",
         /* Pure Any type not supported (for the current implementation, can be added later, should manage a callback to provide the final application a way to handle it at parsing and creation of cJSON) */
         "any.schema",
         "direct-union.schema",
@@ -984,6 +987,9 @@ export const SwiftLanguage: Language = {
         "class-with-additional.schema",
         "vega-lite.schema",
         "top-level-primitive.schema",
+        // Multi-top-level directory input whose only negative case is a missing
+        // required property, which the Swift driver does not treat as a failure.
+        "issue-1833",
     ],
     rendererOptions: { "support-linux": "true" },
     quickTestRendererOptions: [
@@ -2084,6 +2090,9 @@ export const TypeScriptZodLanguage: Language = {
         "recursive-union-flattening.schema",
         "required.schema",
         "required-non-properties.schema",
+        // Multi-top-level directory input whose only negative case is a missing
+        // required property, which this fixture does not treat as a failure.
+        "issue-1833",
     ],
     rendererOptions: {},
     quickTestRendererOptions: [],
@@ -2200,6 +2209,9 @@ export const TypeScriptEffectSchemaLanguage: Language = {
         "optional-any.schema",
         "required.schema",
         "required-non-properties.schema",
+        // Multi-top-level directory input whose only negative case is a missing
+        // required property, which this fixture does not treat as a failure.
+        "issue-1833",
     ],
     rendererOptions: {},
     quickTestRendererOptions: [],
@@ -2267,6 +2279,9 @@ export const ElixirLanguage: Language = {
 
         // The generated top-level type is not emitted as a TopLevel module the fixture can call.
         "recursive-union-flattening.schema",
+        // Multi-top-level directory input whose only negative case is a missing
+        // required property, which Elixir cannot enforce at runtime (see above).
+        "issue-1833",
     ],
     rendererOptions: {},
     quickTestRendererOptions: [],
