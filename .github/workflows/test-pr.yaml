@@ -40,7 +40,7 @@ jobs:
                     - golang,schema-golang
                     - cjson,schema-cjson
                     - cjson-default,cjson-multi-header,cjson-multi-split
-                    - cplusplus,schema-cplusplus
+                    - cplusplus,schema-cplusplus,schema-cplusplus-upper-acronyms
                     - flow,schema-flow
                     - java,schema-java
                     - python,schema-python

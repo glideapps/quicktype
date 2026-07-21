@@ -1,4 +1,4 @@
-#include "TopLevel.hpp"
+#include "quicktype.hpp"
 
 void use_upper_acronym_names(
     quicktype::SCUBAWaypoint *,
