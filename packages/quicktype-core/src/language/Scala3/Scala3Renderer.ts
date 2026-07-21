@@ -30,9 +30,10 @@ import {
 import { keywords } from "./constants.js";
 import type { scala3Options } from "./language.js";
 import {
+    backtickedName,
+    enumCaseNameStyle,
     lowerNamingFunction,
     scalaNameStyle,
-    shouldAddBacktick,
     upperNamingFunction,
     wrapOption,
 } from "./utils.js";
@@ -61,7 +62,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
         _: EnumType,
         _enumName: Name,
     ): ForbiddenWordsInfo {
-        return { names: [], includeGlobalForbidden: true };
+        return { names: ["_"], includeGlobalForbidden: true };
     }
 
     protected forbiddenForUnionMembers(
@@ -91,7 +92,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return funPrefixNamer("upper", (s) => s.replace(" ", "")); // TODO - add backticks where appropriate
+        return funPrefixNamer("upper", enumCaseNameStyle);
     }
 
     protected emitDescriptionBlock(lines: Sourcelike[]): void {
@@ -262,14 +263,9 @@ export class Scala3Renderer extends ConvenienceRenderer {
                     emit();
                 }
 
-                const nameNeedsBackticks =
-                    jsonName.endsWith("_") || shouldAddBacktick(jsonName);
-                const nameWithBackticks = nameNeedsBackticks
-                    ? `\`${jsonName}\``
-                    : jsonName;
                 this.emitLine(
                     "val ",
-                    nameWithBackticks,
+                    backtickedName(jsonName),
                     " : ",
                     scalaType(p),
                     p.isOptional
@@ -301,32 +297,8 @@ export class Scala3Renderer extends ConvenienceRenderer {
         this.emitBlock(
             ["enum ", enumName, " : "],
             () => {
-                let count = e.cases.size;
-                if (count > 0) {
-                    this.emitItem("\t case ");
-                }
-
-                this.forEachEnumCase(e, "none", (name, jsonName) => {
-                    if (!(jsonName === "")) {
-                        const backticks =
-                            shouldAddBacktick(jsonName) ||
-                            jsonName.includes(" ") ||
-                            !Number.isNaN(
-                                Number.parseInt(jsonName.charAt(0), 10),
-                            );
-                        if (backticks) {
-                            this.emitItem("`");
-                        }
-
-                        this.emitItemOnce([name]);
-                        if (backticks) {
-                            this.emitItem("`");
-                        }
-
-                        if (--count > 0) this.emitItem([","]);
-                    } else {
-                        --count;
-                    }
+                this.forEachEnumCase(e, "none", (name) => {
+                    this.emitLine("case ", name);
                 });
             },
             "none",
@@ -361,12 +333,14 @@ export class Scala3Renderer extends ConvenienceRenderer {
     protected emitSourceStructure(): void {
         this.emitHeader();
 
-        // Top-level arrays, maps
+        // Top-level arrays, maps, and primitives
         this.forEachTopLevel("leading", (t, name) => {
             if (t instanceof ArrayType) {
                 this.emitTopLevelArray(t, name);
             } else if (t instanceof MapType) {
                 this.emitTopLevelMap(t, name);
+            } else if (t.isPrimitive()) {
+                this.emitLine(["type ", name, " = ", this.scalaType(t)]);
             }
         });
 

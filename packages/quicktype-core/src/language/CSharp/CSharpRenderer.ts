@@ -15,11 +15,11 @@ import { type Sourcelike, maybeAnnotated } from "../../Source.js";
 import { assert } from "../../support/Support.js";
 import type { TargetLanguage } from "../../TargetLanguage.js";
 import { followTargetType } from "../../Transformers.js";
-import type {
-    ClassProperty,
-    ClassType,
-    EnumType,
-    Type,
+import {
+    type ClassProperty,
+    type ClassType,
+    type EnumType,
+    type Type,
     UnionType,
 } from "../../Type/index.js";
 import {
@@ -187,8 +187,20 @@ export class CSharpRenderer extends ConvenienceRenderer {
         withIssues = false,
     ): Sourcelike {
         t = followTargetType(t);
+        // A nullable union already renders with its own "?" through
+        // csType's union case; unwrap it so the annotation is applied
+        // exactly once.  Without this, an optional property whose type
+        // is e.g. `string | null` would render as `string??` at C# 8
+        // (and a nullable value-type union as `long??` at any version).
+        if (t instanceof UnionType) {
+            const nullable = nullableFromUnion(t);
+            if (nullable !== null) {
+                t = followTargetType(nullable);
+            }
+        }
+
         const csType = this.csType(t, follow, withIssues);
-        if (isValueType(t)) {
+        if (isValueType(t) || this._csOptions.version >= 8) {
             return [csType, "?"];
         } else {
             return csType;

@@ -22,7 +22,7 @@ export const javaOptions = {
         "array-type",
         "Use T[] or List<T>",
         { array: false, list: true } as const,
-        "array",
+        "list",
     ),
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     dateTimeProvider: new EnumOption(

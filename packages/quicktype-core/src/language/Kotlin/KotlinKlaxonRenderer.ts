@@ -17,7 +17,7 @@ import {
 import { matchType, nullableFromUnion } from "../../Type/TypeUtils.js";
 
 import { KotlinRenderer } from "./KotlinRenderer.js";
-import { stringEscape } from "./utils.js";
+import { stringEscape, unionMemberMatchPriority } from "./utils.js";
 
 export class KotlinKlaxonRenderer extends KotlinRenderer {
     private unionMemberFromJsonValue(t: Type, e: Sourcelike): Sourcelike {
@@ -54,6 +54,21 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
                 ".fromValue(it) }",
             ],
             (_unionType) => mustNotHappen(),
+            (transformedStringType) => {
+                if (transformedStringType.kind === "date-time") {
+                    return [e, ".string?.let { OffsetDateTime.parse(it) }"];
+                }
+
+                if (transformedStringType.kind === "date") {
+                    return [e, ".string?.let { LocalDate.parse(it) }"];
+                }
+
+                if (transformedStringType.kind === "time") {
+                    return [e, ".string?.let { OffsetTime.parse(it) }"];
+                }
+
+                return [e, ".string"];
+            },
         );
     }
 
@@ -75,6 +90,7 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
             // and enums in the same union
             (_enumType) => "is String",
             (_unionType) => mustNotHappen(),
+            (_transformedStringType) => "is String",
         );
     }
 
@@ -150,7 +166,17 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
             this.typeGraph.allNamedTypes(),
             (c) => c instanceof ClassType && c.getProperties().size === 0,
         );
-        if (hasUnions || this.haveEnums || hasEmptyObjects) {
+        const usesDateTime = this.haveTransformedStringType("date-time");
+        const usesDate = this.haveTransformedStringType("date");
+        const usesTime = this.haveTransformedStringType("time");
+        if (
+            hasUnions ||
+            this.haveEnums ||
+            hasEmptyObjects ||
+            usesDateTime ||
+            usesDate ||
+            usesTime
+        ) {
             this.emitGenericConverter();
         }
 
@@ -160,6 +186,36 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
         }
 
         const converters: Sourcelike[][] = [];
+        if (usesDateTime) {
+            converters.push([
+                [".convert(OffsetDateTime::class,"],
+                [" { OffsetDateTime.parse(it.string!!) },"],
+                [
+                    ' { "\\"${java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(it)}\\"" })',
+                ],
+            ]);
+        }
+
+        if (usesDate) {
+            converters.push([
+                [".convert(LocalDate::class,"],
+                [" { LocalDate.parse(it.string!!) },"],
+                [
+                    ' { "\\"${java.time.format.DateTimeFormatter.ISO_LOCAL_DATE.format(it)}\\"" })',
+                ],
+            ]);
+        }
+
+        if (usesTime) {
+            converters.push([
+                [".convert(OffsetTime::class,"],
+                [" { OffsetTime.parse(it.string!!) },"],
+                [
+                    ' { "\\"${java.time.format.DateTimeFormatter.ISO_OFFSET_TIME.format(it)}\\"" })',
+                ],
+            ]);
+        }
+
         if (hasEmptyObjects) {
             converters.push([
                 [".convert(JsonObject::class,"],
@@ -455,25 +511,60 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
                 " = when (jv.inside) {",
             );
             this.indent(() => {
-                const table: Sourcelike[][] = [];
+                // Members whose JSON representations share a value type
+                // (several transformed string types, or a transformed string
+                // type and an enum, are all strings) must share a single
+                // guard and be tried in sequence, most specific parse first.
+                const groups: Array<{
+                    guard: string;
+                    members: Array<{ name: Name; t: Type }>;
+                }> = [];
                 this.forEachUnionMember(
                     u,
                     nonNulls,
                     "none",
                     null,
                     (name, t) => {
-                        table.push([
-                            [this.unionMemberJsonValueGuard(t, "jv.inside")],
-                            [
-                                " -> ",
-                                name,
-                                "(",
-                                this.unionMemberFromJsonValue(t, "jv"),
-                                "!!)",
-                            ],
-                        ]);
+                        const guard = this.sourcelikeToString(
+                            this.unionMemberJsonValueGuard(t, "jv.inside"),
+                        );
+                        const group = groups.find((g) => g.guard === guard);
+                        if (group === undefined) {
+                            groups.push({ guard, members: [{ name, t }] });
+                        } else {
+                            group.members.push({ name, t });
+                        }
                     },
                 );
+                const table: Sourcelike[][] = [];
+                for (const { guard, members } of groups) {
+                    const ordered = [...members].sort(
+                        (a, b) =>
+                            unionMemberMatchPriority(a.t) -
+                            unionMemberMatchPriority(b.t),
+                    );
+                    const last = ordered[ordered.length - 1];
+                    let expr: Sourcelike = [
+                        last.name,
+                        "(",
+                        this.unionMemberFromJsonValue(last.t, "jv"),
+                        "!!)",
+                    ];
+                    for (let i = ordered.length - 2; i >= 0; i--) {
+                        expr = [
+                            "try { ",
+                            ordered[i].name,
+                            "(",
+                            this.unionMemberFromJsonValue(ordered[i].t, "jv"),
+                            "!!) } catch (e: Exception) { ",
+                            expr,
+                            " }",
+                        ];
+                    }
+
+                    table.push([[guard], [" -> ", expr]]);
+                }
+
                 if (maybeNull !== null) {
                     const name = this.nameForUnionMember(u, maybeNull);
                     table.push([

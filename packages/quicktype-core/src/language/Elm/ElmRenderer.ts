@@ -19,7 +19,7 @@ import {
     parenIfNeeded,
     singleWord,
 } from "../../Source.js";
-import { decapitalize, stringEscape } from "../../support/Strings.js";
+import { decapitalize } from "../../support/Strings.js";
 import { defined } from "../../support/Support.js";
 import type { TargetLanguage } from "../../TargetLanguage.js";
 import type {
@@ -34,6 +34,7 @@ import { matchType, nullableFromUnion } from "../../Type/TypeUtils.js";
 import { forbiddenNames } from "./constants.js";
 import type { elmOptions } from "./language.js";
 import {
+    elmStringEscape,
     lowerNamingFunction,
     requiredOrOptional,
     upperNamingFunction,
@@ -301,14 +302,15 @@ export class ElmRenderer extends ConvenienceRenderer {
             (arrayType) =>
                 multiWord(
                     " ",
-                    ["make", this.arrayType, "Encoder"],
+                    ["Jenc.", decapitalize(this.arrayType)],
                     parenIfNeeded(this.encoderNameForType(arrayType.items)),
                 ),
             (classType) => singleWord(this.encoderNameForNamedType(classType)),
             (mapType) =>
                 multiWord(
                     " ",
-                    "makeDictEncoder",
+                    "Jenc.dict",
+                    "identity",
                     parenIfNeeded(this.encoderNameForType(mapType.values)),
                 ),
             (enumType) => singleWord(this.encoderNameForNamedType(enumType)),
@@ -456,7 +458,7 @@ export class ElmRenderer extends ConvenienceRenderer {
         this.emitLine(decoderName, " : Jdec.Decoder ", className);
         this.emitLine(decoderName, " =");
         this.indent(() => {
-            this.emitLine("Jpipe.decode ", className);
+            this.emitLine("Jdec.succeed ", className);
             this.indent(() => {
                 this.forEachClassProperty(c, "none", (_, jsonName, p) => {
                     const propDecoder = parenIfNeeded(
@@ -467,7 +469,7 @@ export class ElmRenderer extends ConvenienceRenderer {
                         "|> ",
                         reqOrOpt,
                         ' "',
-                        stringEscape(jsonName),
+                        elmStringEscape(jsonName),
                         '" ',
                         propDecoder,
                         fallback,
@@ -490,7 +492,7 @@ export class ElmRenderer extends ConvenienceRenderer {
                     this.emitLine(
                         bracketOrComma,
                         ' ("',
-                        stringEscape(jsonName),
+                        elmStringEscape(jsonName),
                         '", ',
                         propEncoder,
                         " x.",
@@ -522,7 +524,7 @@ export class ElmRenderer extends ConvenienceRenderer {
                         this.forEachEnumCase(e, "none", (name, jsonName) => {
                             this.emitLine(
                                 '"',
-                                stringEscape(jsonName),
+                                elmStringEscape(jsonName),
                                 '" -> Jdec.succeed ',
                                 name,
                             );
@@ -547,7 +549,7 @@ export class ElmRenderer extends ConvenienceRenderer {
                 this.emitLine(
                     name,
                     ' -> Jenc.string "',
-                    stringEscape(jsonName),
+                    elmStringEscape(jsonName),
                     '"',
                 );
             });
@@ -652,11 +654,11 @@ export class ElmRenderer extends ConvenienceRenderer {
             this.emitCommentLines([
                 "To decode the JSON data, add this file to your project, run",
                 "",
-                "    elm-package install NoRedInk/elm-decode-pipeline",
+                "    elm install NoRedInk/elm-json-decode-pipeline",
                 "",
                 "add these imports",
                 "",
-                "    import Json.Decode exposing (decodeString)`);",
+                "    import Json.Decode exposing (decodeString)",
             ]);
             this.emitLine(
                 "--     import ",
@@ -695,11 +697,9 @@ export class ElmRenderer extends ConvenienceRenderer {
             this.emitMultiline(`import Json.Decode as Jdec
 import Json.Decode.Pipeline as Jpipe
 import Json.Encode as Jenc
-import Dict exposing (Dict, map, toList)`);
-            if (this._options.useList) {
-                this.emitLine("import List exposing (map)");
-            } else {
-                this.emitLine("import Array exposing (Array, map)");
+import Dict exposing (Dict)`);
+            if (!this._options.useList) {
+                this.emitLine("import Array exposing (Array)");
             }
         }
 
@@ -741,29 +741,7 @@ import Dict exposing (Dict, map, toList)`);
 
         this.emitLine("--- encoder helpers");
         this.ensureBlankLine();
-        this.emitLine(
-            "make",
-            this.arrayType,
-            "Encoder : (a -> Jenc.Value) -> ",
-            this.arrayType,
-            " a -> Jenc.Value",
-        );
-        this.emitLine("make", this.arrayType, "Encoder f arr =");
-        this.indent(() => {
-            this.emitLine(
-                "Jenc.",
-                decapitalize(this.arrayType),
-                " (",
-                this.arrayType,
-                ".map f arr)",
-            );
-        });
-        this.ensureBlankLine();
-        this.emitMultiline(`makeDictEncoder : (a -> Jenc.Value) -> Dict String a -> Jenc.Value
-makeDictEncoder f dict =
-	Jenc.object (toList (Dict.map (\\k -> f) dict))
-
-makeNullableEncoder : (a -> Jenc.Value) -> Maybe a -> Jenc.Value
+        this.emitMultiline(`makeNullableEncoder : (a -> Jenc.Value) -> Maybe a -> Jenc.Value
 makeNullableEncoder f m =
 	case m of
 	Just x -> f x

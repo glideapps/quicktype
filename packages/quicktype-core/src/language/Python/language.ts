@@ -21,8 +21,14 @@ import { JSONPythonRenderer } from "./JSONPythonRenderer.js";
 import { PythonRenderer } from "./PythonRenderer.js";
 
 export interface PythonFeatures {
+    /** PEP 585 builtin generics (`list[str]`, `dict[str, int]`), Python 3.9+ */
+    builtinGenerics: boolean;
     dataClasses: boolean;
     typeHints: boolean;
+    /** `typing.Type`, unavailable in Python 3.6.0 */
+    typingType: boolean;
+    /** PEP 604 union operators (`str | None`), Python 3.10+ */
+    unionOperators: boolean;
 }
 
 export const pythonOptions = {
@@ -30,11 +36,43 @@ export const pythonOptions = {
         "python-version",
         "Python version",
         {
-            "3.5": { typeHints: false, dataClasses: false },
-            "3.6": { typeHints: true, dataClasses: false },
-            "3.7": { typeHints: true, dataClasses: true },
-        },
-        "3.6",
+            "3.5": {
+                typeHints: false,
+                typingType: false,
+                dataClasses: false,
+                builtinGenerics: false,
+                unionOperators: false,
+            },
+            "3.6": {
+                typeHints: true,
+                typingType: false,
+                dataClasses: false,
+                builtinGenerics: false,
+                unionOperators: false,
+            },
+            "3.7": {
+                typeHints: true,
+                typingType: true,
+                dataClasses: true,
+                builtinGenerics: false,
+                unionOperators: false,
+            },
+            "3.9": {
+                typeHints: true,
+                typingType: true,
+                dataClasses: true,
+                builtinGenerics: true,
+                unionOperators: false,
+            },
+            "3.10": {
+                typeHints: true,
+                typingType: true,
+                dataClasses: true,
+                builtinGenerics: true,
+                unionOperators: true,
+            },
+        } satisfies Record<string, PythonFeatures>,
+        "3.10",
     ),
     justTypes: new BooleanOption("just-types", "Classes only", false),
     nicePropertyNames: new BooleanOption(
@@ -74,10 +112,9 @@ export class PythonTargetLanguage extends TargetLanguage<
     public get stringTypeMapping(): StringTypeMapping {
         const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> =
             new Map();
-        const dateTimeType = "date-time";
-        mapping.set("date", dateTimeType);
-        mapping.set("time", dateTimeType);
-        mapping.set("date-time", dateTimeType);
+        mapping.set("date", "date");
+        mapping.set("time", "time");
+        mapping.set("date-time", "date-time");
         mapping.set("uuid", "uuid");
         mapping.set("integer-string", "integer-string");
         mapping.set("bool-string", "bool-string");

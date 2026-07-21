@@ -104,7 +104,7 @@ export const cPlusPlusOptions = {
     boost: new BooleanOption(
         "boost",
         "Require a dependency on boost. Without boost, C++17 is required",
-        true,
+        false,
     ),
     hideNullOptional: new BooleanOption(
         "hide-null-optional",

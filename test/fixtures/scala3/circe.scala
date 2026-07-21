@@ -1,30 +1,23 @@
-//> using scala "3.2.1"
-//> using lib "io.circe::circe-core:0.15.0-M1"
-//> using lib "io.circe::circe-parser:0.15.0-M1"
+//> using scala "3.2.2"
+//> using dep "io.circe::circe-core:0.14.5"
+//> using dep "io.circe::circe-parser:0.14.5"
 //> using options "-Xmax-inlines", "3000"
+
 package quicktype
 
 import io.circe._
 import io.circe.parser._
 import io.circe.syntax._
-/* 
 
-case class TopLevel (
-    val data : Long,
-    val next : Option[TopLevel] = None 
-) derives Encoder.AsObject, Decoder */
-
-
-@main def main =	
-	val json =  scala.io.Source.fromFile("sample.json").getLines.mkString	
-	
-	parse(json).map(x => 
-		val arg = x.as[TopLevel]
-		arg match {
-			case Right(y) => 
-				val jsonString = y.asJson
-				val arr : Array[Byte] = jsonString.toString.getBytes("UTF-8")
-				System.out.write(arr, 0, arr.length)
-			case Left(y) => println(y); println("-----");println(y.getMessage)
-		} 			
-	)
+@main def main = {
+  val json = scala.io.Source.fromFile("sample.json").getLines.mkString
+  // `scala.` in case the generated code has types named Right/Left.
+  parse(json).flatMap(_.as[TopLevel]) match {
+    case scala.Right(y) =>
+      val arr: Array[Byte] = y.asJson.toString.getBytes("UTF-8")
+      System.out.write(arr, 0, arr.length)
+    case scala.Left(err) =>
+      System.err.println(err)
+      sys.exit(1)
+  }
+}

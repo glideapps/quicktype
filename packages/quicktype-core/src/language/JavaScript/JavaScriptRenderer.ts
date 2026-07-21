@@ -239,6 +239,16 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
         };
     }
 
+    /** The expression a deserializer returns when runtime typechecks
+     * are disabled.  Subclasses can wrap it in a cast to the target
+     * type if `parsedJson`'s type isn't assignable to it. */
+    protected uncheckedParsedJson(
+        _t: Type,
+        parsedJson: Sourcelike,
+    ): Sourcelike {
+        return parsedJson;
+    }
+
     protected emitConvertModuleBody(): void {
         const converter = (t: Type, name: Name): void => {
             const typeMap = this.typeMapTypeFor(t);
@@ -251,7 +261,11 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
                             ? "JSON.parse(json)"
                             : "json";
                     if (!this._jsOptions.runtimeTypecheck) {
-                        this.emitLine("return ", parsedJson, ";");
+                        this.emitLine(
+                            "return ",
+                            this.uncheckedParsedJson(t, parsedJson),
+                            ";",
+                        );
                     } else {
                         this.emitLine(
                             "return cast(",
@@ -459,7 +473,8 @@ function o(props${anyArrayAnnotation}, additional${anyAnnotation}) {
 }
 
 function m(additional${anyAnnotation}) {
-    return { props: [], additional };
+    const props${anyArrayAnnotation} = [];
+    return { props, additional };
 }
 
 function r(name${stringAnnotation}) {
@@ -493,15 +508,27 @@ function r(name${stringAnnotation}) {
 
     protected emitTypes(): void {}
 
-    protected emitUsageImportComment(): void {
-        this.emitLine('//   const Convert = require("./file");');
+    protected usageModuleName(givenOutputFilename: string): string {
+        return givenOutputFilename === "stdout"
+            ? "file"
+            : givenOutputFilename
+                  .replace(/^.*[/\\]/, "")
+                  .replace(/\.[^.]+$/, "");
     }
 
-    protected emitUsageComments(): void {
+    protected emitUsageImportComment(givenOutputFilename: string): void {
+        this.emitLine(
+            '//   const Convert = require("./',
+            this.usageModuleName(givenOutputFilename),
+            '");',
+        );
+    }
+
+    protected emitUsageComments(givenOutputFilename: string): void {
         this.emitMultiline(`// To parse this data:
 //`);
 
-        this.emitUsageImportComment();
+        this.emitUsageImportComment(givenOutputFilename);
         this.emitLine("//");
         this.forEachTopLevel("none", (_t, name) => {
             const camelCaseName = modifySource(camelCase, name);
@@ -537,11 +564,11 @@ function r(name${stringAnnotation}) {
         });
     }
 
-    protected emitSourceStructure(): void {
+    protected emitSourceStructure(givenOutputFilename: string): void {
         if (this.leadingComments !== undefined) {
             this.emitComments(this.leadingComments);
         } else {
-            this.emitUsageComments();
+            this.emitUsageComments(givenOutputFilename);
         }
 
         this.emitTypes();

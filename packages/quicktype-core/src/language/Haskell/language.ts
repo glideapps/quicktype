@@ -19,7 +19,7 @@ export const haskellOptions = {
             array: false,
             list: true,
         } as const,
-        "array",
+        "list",
     ),
     moduleName: new StringOption(
         "module",

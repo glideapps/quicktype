@@ -1,3 +1,5 @@
+import { iterableSome } from "collection-utils";
+
 import {
     anyTypeIssueAnnotation,
     nullTypeIssueAnnotation,
@@ -19,7 +21,7 @@ import {
     type EnumType,
     MapType,
     type ObjectType,
-    type PrimitiveType,
+    PrimitiveType,
     type Type,
     type UnionType,
 } from "../../Type/index.js";
@@ -31,7 +33,7 @@ import {
 
 import { keywords } from "./constants.js";
 import type { kotlinOptions } from "./language.js";
-import { kotlinNameStyle } from "./utils.js";
+import { kotlinNameStyle, stringEscape } from "./utils.js";
 
 export class KotlinRenderer extends ConvenienceRenderer {
     public constructor(
@@ -158,6 +160,15 @@ export class KotlinRenderer extends ConvenienceRenderer {
         ];
     }
 
+    protected haveTransformedStringType(
+        kind: "date-time" | "date" | "time",
+    ): boolean {
+        return iterableSome(
+            this.typeGraph.allTypesUnordered(),
+            (t) => t instanceof PrimitiveType && t.kind === kind,
+        );
+    }
+
     protected kotlinType(
         t: Type,
         withIssues = false,
@@ -194,10 +205,31 @@ export class KotlinRenderer extends ConvenienceRenderer {
                     return [this.kotlinType(nullable, withIssues), optional];
                 return this.nameForNamedType(unionType);
             },
+            (transformedStringType) => {
+                if (transformedStringType.kind === "date-time") {
+                    return "OffsetDateTime";
+                }
+
+                if (transformedStringType.kind === "date") {
+                    return "LocalDate";
+                }
+
+                if (transformedStringType.kind === "time") {
+                    return "OffsetTime";
+                }
+
+                return "String";
+            },
         );
     }
 
     protected emitUsageHeader(): void {
+        // To be overridden
+    }
+
+    // Emitted between the usage header and the package declaration —
+    // the only place Kotlin allows `@file:`-targeted annotations.
+    protected emitFileAnnotations(): void {
         // To be overridden
     }
 
@@ -209,8 +241,30 @@ export class KotlinRenderer extends ConvenienceRenderer {
         }
 
         this.ensureBlankLine();
+        this.emitFileAnnotations();
         this.emitLine("package ", this._kotlinOptions.packageName);
         this.ensureBlankLine();
+
+        // Check if we need to import java.time classes
+        const usesDateTime = this.haveTransformedStringType("date-time");
+        const usesDate = this.haveTransformedStringType("date");
+        const usesTime = this.haveTransformedStringType("time");
+
+        if (usesDateTime) {
+            this.emitLine("import java.time.OffsetDateTime");
+        }
+
+        if (usesDate) {
+            this.emitLine("import java.time.LocalDate");
+        }
+
+        if (usesTime) {
+            this.emitLine("import java.time.OffsetTime");
+        }
+
+        if (usesDateTime || usesDate || usesTime) {
+            this.ensureBlankLine();
+        }
     }
 
     protected emitTopLevelPrimitive(t: PrimitiveType, name: Name): void {
@@ -337,10 +391,38 @@ export class KotlinRenderer extends ConvenienceRenderer {
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
 
-        this.emitBlock(["enum class ", enumName], () => {
+        this.emitBlock(["enum class ", enumName, "(val value: String)"], () => {
             let count = e.cases.size;
-            this.forEachEnumCase(e, "none", (name) => {
-                this.emitLine(name, --count === 0 ? "" : ",");
+            this.forEachEnumCase(e, "none", (name, json) => {
+                this.emitLine(
+                    name,
+                    `("${stringEscape(json)}")`,
+                    --count === 0 ? ";" : ",",
+                );
+            });
+            this.ensureBlankLine();
+            this.emitBlock("companion object", () => {
+                this.emitBlock(
+                    [
+                        "fun fromValue(value: String): ",
+                        enumName,
+                        " = when (value)",
+                    ],
+                    () => {
+                        const table: Sourcelike[][] = [];
+                        this.forEachEnumCase(e, "none", (name, json) => {
+                            table.push([
+                                [`"${stringEscape(json)}"`],
+                                [" -> ", name],
+                            ]);
+                        });
+                        table.push([
+                            ["else"],
+                            [" -> throw IllegalArgumentException()"],
+                        ]);
+                        this.emitTable(table);
+                    },
+                );
             });
         });
     }

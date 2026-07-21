@@ -32,7 +32,7 @@ export const tsFlowOptions = {
     preferUnions: new BooleanOption(
         "prefer-unions",
         "Use union type instead of enum",
-        false,
+        true,
     ),
     preferTypes: new BooleanOption(
         "prefer-types",
@@ -45,6 +45,11 @@ export const tsFlowOptions = {
         false,
     ),
     readonly: new BooleanOption("readonly", "Use readonly type members", false),
+    preferUnknown: new BooleanOption(
+        "prefer-unknown",
+        "Use unknown (TypeScript) or mixed (Flow) instead of any",
+        true,
+    ),
 };
 
 export const typeScriptLanguageConfig = {

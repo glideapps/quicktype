@@ -1,9 +1,9 @@
-const Elm = require("./elm.js");
+const { Elm } = require("./elm.js");
 const fs = require("fs");
 
-const ports = Elm.Main.worker().ports;
+const app = Elm.Main.init();
 
-ports.toJS.subscribe((result) => {
+app.ports.toJS.subscribe((result) => {
     if (result.startsWith("Error: ")) {
         process.stderr.write(result + "\n", () => {
             process.exit(1);
@@ -15,4 +15,4 @@ ports.toJS.subscribe((result) => {
     }
 });
 
-ports.fromJS.send(fs.readFileSync(process.argv[2], "utf8"));
+app.ports.fromJS.send(fs.readFileSync(process.argv[2], "utf8"));

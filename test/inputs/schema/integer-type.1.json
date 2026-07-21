@@ -1,0 +1,11 @@
+{
+  "small_positive": 50,
+  "small_negative": -50,
+  "i32_range": 2147483647,
+  "above_i32_max": 2147483648,
+  "below_i32_min": -2147483649,
+  "only_minimum": 3000000000,
+  "only_maximum": -3000000000,
+  "unbounded": 9007199254740991,
+  "large_bounds": -9007199254740991
+}

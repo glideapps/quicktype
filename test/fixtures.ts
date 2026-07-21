@@ -5,6 +5,8 @@ import { randomBytes } from "node:crypto";
 import * as shell from "shelljs";
 
 const Ajv = require("ajv");
+const addFormats = require("ajv-formats");
+const draft06MetaSchema = require("ajv/dist/refs/json-schema-draft-06.json");
 
 import {
     compareJsonFileToJson,
@@ -23,7 +25,16 @@ import {
     callAndExpectFailure,
 } from "./utils";
 import * as languages from "./languages";
-import type { LanguageName, Option, RendererOptions } from "quicktype-core";
+import {
+    FetchingJSONSchemaStore,
+    InputData,
+    JSONSchemaInput,
+    type LanguageName,
+    type Option,
+    type RendererOptions,
+    quicktype as quicktypeCore,
+    quicktypeMultiFile,
+} from "quicktype-core";
 import {
     mustNotHappen,
     defined,
@@ -357,14 +368,39 @@ class JSONFixture extends LanguageFixture {
             return 0;
         }
 
-        compareJsonFileToJson(
-            comparisonArgs(
+        // The analog of the JSON Schema fixture's `.out.<feature>.json`
+        // convention: a JSON input `foo.json` can come with an expected-output
+        // file `foo.out.<key>.json`, which applies when `<key>` is one of the
+        // language's `features`, or the name of a renderer option this
+        // particular run sets (via `quickTestRendererOptions`).  When it
+        // applies, the output must match it exactly, without the usual
+        // round-trip leniency for null properties.  This is how output that
+        // legitimately differs from the input — e.g. Go's `omitempty`
+        // dropping null fields — gets asserted.
+        let expectedFilename = filename;
+        let strict = false;
+        const expectedOutputKeys = [
+            ...this.language.features,
+            ...Object.keys(additionalRendererOptions),
+        ];
+        for (const key of expectedOutputKeys) {
+            const outFilename = filename.replace(/\.json$/, `.out.${key}.json`);
+            if (fs.existsSync(outFilename)) {
+                expectedFilename = outFilename;
+                strict = true;
+                break;
+            }
+        }
+
+        compareJsonFileToJson({
+            ...comparisonArgs(
                 this.language,
                 filename,
-                filename,
+                expectedFilename,
                 additionalRendererOptions,
             ),
-        );
+            strict,
+        });
 
         if (
             this.language.diffViaSchema &&
@@ -459,6 +495,11 @@ class JSONFixture extends LanguageFixture {
                 .flatMap((qt) => {
                     if (Array.isArray(qt)) {
                         const [filename, ro] = qt;
+                        if (filename.endsWith(".schema")) {
+                            // Runs in the JSON Schema fixture instead.
+                            return [];
+                        }
+
                         const input = _.find(
                             ([] as string[]).concat(
                                 prioritySamples,
@@ -600,17 +641,26 @@ class JSONSchemaJSONFixture extends JSONToXToYFixture {
             fs.readFileSync(this.language.output, "utf8"),
         );
 
-        const ajv = new Ajv({
-            format: "full",
-            unknownFormats: ["integer", "boolean"],
-        });
+        const ajv = new Ajv();
+        // We generate draft-06 schemas, which Ajv 8 doesn't support out of
+        // the box anymore.
+        ajv.addMetaSchema(draft06MetaSchema);
+        // Ajv 8 moved the format validators into the ajv-formats package;
+        // its default mode is "full", like the old `format: "full"` option.
+        addFormats(ajv);
+        // Our custom schema keywords, which strict mode would reject.
+        ajv.addVocabulary(["qt-uri-protocols", "qt-uri-extensions"]);
         // Make Ajv's date-time compatible with what we recognize.  All non-standard
         // JSON formats that we use for transformed type kinds must be registered here
-        // with a validation function.
+        // with a validation function.  Formats registered with `true` are
+        // accepted without validating the string.  This replaces the old
+        // `unknownFormats: ["integer", "boolean"]` option.
         // FIXME: Unify this with what's in StringTypes.ts.
         ajv.addFormat("date-time", (s: string) =>
             dateTimeRecognizer.isDateTime(s),
         );
+        ajv.addFormat("integer", true);
+        ajv.addFormat("boolean", true);
         const valid = ajv.validate(schema, input);
         if (!valid) {
             failWith("Generated schema does not validate input JSON.", {
@@ -736,7 +786,50 @@ class JSONSchemaFixture extends LanguageFixture {
 
     getSamples(sources: string[]): { priority: Sample[]; others: Sample[] } {
         const prioritySamples = testsInDir("test/inputs/schema/", "schema");
-        return samplesFromSources(sources, prioritySamples, [], "schema");
+        const samples = samplesFromSources(
+            sources,
+            prioritySamples,
+            [],
+            "schema",
+        );
+
+        if (sources.length === 0 && !ONLY_OUTPUT) {
+            // Pinned-input quick-test entries that name a `.schema` file
+            // run in this fixture with their renderer options.  Plain
+            // renderer-option combinations and `.json` entries run in
+            // the JSON fixture.
+            const quickTestSamples = _.chain(
+                this.language.quickTestRendererOptions,
+            )
+                .flatMap((qt) => {
+                    if (!Array.isArray(qt)) return [];
+
+                    const [filename, ro] = qt;
+                    if (!filename.endsWith(".schema")) return [];
+
+                    const input = _.find(prioritySamples, (p) =>
+                        p.endsWith(`/${filename}`),
+                    );
+                    if (input === undefined) {
+                        return failWith(
+                            `quick-test schema ${filename} not found`,
+                            { qt },
+                        );
+                    }
+
+                    return [
+                        {
+                            path: input,
+                            additionalRendererOptions: ro,
+                            saveOutput: false,
+                        },
+                    ];
+                })
+                .value();
+            samples.priority = quickTestSamples.concat(samples.priority);
+        }
+
+        return samples;
     }
 
     shouldSkipTest(sample: Sample): boolean {
@@ -809,6 +902,83 @@ class JSONSchemaFixture extends LanguageFixture {
             }
         }
         return additionalFiles.length;
+    }
+}
+
+// `leadingComments` is a quicktype-core API option, so the CLI fixture path
+// cannot exercise it.
+class LeadingCommentsGoFixture extends JSONSchemaFixture {
+    constructor() {
+        super(languages.GoLanguage, "schema-golang-leading-comments");
+    }
+
+    getSamples(sources: string[]): { priority: Sample[]; others: Sample[] } {
+        return samplesFromSources(
+            sources,
+            ["test/inputs/schema/date-time.schema"],
+            [],
+            "schema",
+        );
+    }
+
+    private async inputData(filename: string): Promise<InputData> {
+        const schemaInput = new JSONSchemaInput(new FetchingJSONSchemaStore());
+        await schemaInput.addSource({
+            name: this.language.topLevel,
+            schema: fs.readFileSync(filename, "utf8"),
+        });
+        const inputData = new InputData();
+        inputData.addInput(schemaInput);
+        return inputData;
+    }
+
+    async runQuicktype(
+        filename: string,
+        additionalRendererOptions: RendererOptions,
+    ): Promise<void> {
+        const rendererOptions = _.merge(
+            {},
+            this.language.rendererOptions,
+            additionalRendererOptions,
+        );
+        const result = await quicktypeCore({
+            inputData: await this.inputData(filename),
+            lang: this.language.name,
+            leadingComments: [],
+            rendererOptions,
+        });
+        fs.writeFileSync(this.language.output, result.lines.join("\n"));
+
+        const multiFileResult = await quicktypeMultiFile({
+            inputData: await this.inputData(filename),
+            lang: this.language.name,
+            leadingComments: [],
+            rendererOptions: {
+                ...rendererOptions,
+                "multi-file-output": true,
+            },
+        });
+        mkdirs("multi");
+        for (const [outputFilename, output] of multiFileResult) {
+            fs.writeFileSync(
+                path.join("multi", outputFilename),
+                output.lines.join("\n"),
+            );
+        }
+    }
+
+    async test(
+        filename: string,
+        additionalRendererOptions: RendererOptions,
+        additionalFiles: string[],
+    ): Promise<number> {
+        const numFiles = await super.test(
+            filename,
+            additionalRendererOptions,
+            additionalFiles,
+        );
+        await execAsync("go test multi/*.go");
+        return numFiles + testsInDir("multi", "go").length;
     }
 }
 
@@ -942,7 +1112,9 @@ const commentInjectionTreeSitterTargets: TreeSitterTarget[] = [
     {
         displayName: "cjson",
         language: languages.CJSONLanguage,
-        output: "TopLevel.c",
+        // CJSONLanguage renders with header-only=false, so this produces
+        // both TopLevel.h and TopLevel.c; both are collected and parsed.
+        output: "TopLevel.h",
         wasmModule: "tree-sitter-c/tree-sitter-c.wasm",
         extensions: [".c", ".h"],
         schema: commentInjectionSchema,
@@ -1495,6 +1667,11 @@ class CommandSuccessfulLanguageFixture extends LanguageFixture {
                 .flatMap((qt) => {
                     if (Array.isArray(qt)) {
                         const [filename, ro] = qt;
+                        if (filename.endsWith(".schema")) {
+                            // Runs in the JSON Schema fixture instead.
+                            return [];
+                        }
+
                         const input = _.find(
                             ([] as string[]).concat(
                                 prioritySamples,
@@ -1546,13 +1723,24 @@ export const allFixtures: Fixture[] = [
     new JSONFixture(languages.JavaLanguageWithLombok, "java-lombok"),
     new JSONFixture(languages.GoLanguage),
     new JSONFixture(languages.CJSONLanguage),
+    new JSONFixture(languages.CJSONDefaultLanguage, "cjson-default"),
+    new JSONFixture(languages.CJSONMultiHeaderLanguage, "cjson-multi-header"),
+    new JSONFixture(languages.CJSONMultiSplitLanguage, "cjson-multi-split"),
     new JSONFixture(languages.CPlusPlusLanguage),
+    new JSONFixture(
+        languages.CPlusPlusMultiSourceLanguage,
+        "cplusplus-multi-source",
+    ),
     new JSONFixture(languages.PHPLanguage),
     new JSONFixture(languages.RustLanguage),
     new JSONFixture(languages.RubyLanguage),
     new JSONFixture(languages.PythonLanguage),
     new JSONFixture(languages.ElmLanguage),
     new JSONFixture(languages.SwiftLanguage),
+    new JSONFixture(
+        languages.SwiftSendableObjectiveCSupportLanguage,
+        "swift-sendable-objective-c",
+    ),
     new JSONFixture(languages.ObjectiveCLanguage),
     new JSONFixture(languages.TypeScriptLanguage),
     new JSONFixture(languages.TypeScriptZodLanguage),
@@ -1561,7 +1749,9 @@ export const allFixtures: Fixture[] = [
     new JSONFixture(languages.JavaScriptLanguage),
     new JSONFixture(languages.KotlinLanguage),
     new JSONFixture(languages.Scala3Language),
+    new JSONFixture(languages.Scala3UpickleLanguage, "scala3-upickle"),
     new JSONFixture(languages.KotlinJacksonLanguage, "kotlin-jackson"),
+    new JSONFixture(languages.KotlinXLanguage, "kotlinx"),
     new JSONFixture(languages.DartLanguage),
     new JSONFixture(languages.PikeLanguage),
     new JSONFixture(languages.HaskellLanguage),
@@ -1569,6 +1759,7 @@ export const allFixtures: Fixture[] = [
     new JSONSchemaJSONFixture(languages.CSharpLanguage),
     new JSONTypeScriptFixture(languages.CSharpLanguage),
     // new JSONSchemaFixture(languages.CrystalLanguage),
+    new JSONSchemaFixture(languages.JSONSchemaLanguage),
     new JSONSchemaFixture(languages.CSharpLanguage),
     new JSONSchemaFixture(
         languages.CSharpLanguageSystemTextJson,
@@ -1584,6 +1775,7 @@ export const allFixtures: Fixture[] = [
         "schema-java-lombok",
     ),
     new JSONSchemaFixture(languages.GoLanguage),
+    new LeadingCommentsGoFixture(),
     new JSONSchemaFixture(languages.CJSONLanguage),
     new JSONSchemaFixture(languages.CPlusPlusLanguage),
     new JSONSchemaFixture(languages.RustLanguage),
@@ -1601,7 +1793,12 @@ export const allFixtures: Fixture[] = [
         languages.KotlinJacksonLanguage,
         "schema-kotlin-jackson",
     ),
+    new JSONSchemaFixture(languages.KotlinXLanguage, "schema-kotlinx"),
     new JSONSchemaFixture(languages.Scala3Language),
+    new JSONSchemaFixture(
+        languages.Scala3UpickleLanguage,
+        "schema-scala3-upickle",
+    ),
     new JSONSchemaFixture(languages.DartLanguage),
     new JSONSchemaFixture(languages.PikeLanguage),
     new JSONSchemaFixture(languages.HaskellLanguage),

@@ -23,6 +23,7 @@
 
 import type { RenderContext } from "../../Renderer.js";
 import {
+    BooleanOption,
     EnumOption,
     StringOption,
     getOptionValues,
@@ -116,6 +117,12 @@ export const cJSONOptions = {
         "Naming style for enumerators",
         namingStyles,
         "upper-underscore-case",
+    ),
+    headerOnly: new BooleanOption(
+        "header-only",
+        "Generate headers only",
+        true,
+        "secondary",
     ),
 };
 

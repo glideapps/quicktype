@@ -1,5 +1,5 @@
 import type { Readable } from "readable-stream";
-import { Parser } from "stream-json";
+import { parser } from "stream-json";
 
 import { CompressedJSON, type Value } from "quicktype-core";
 
@@ -25,7 +25,7 @@ export class CompressedJSONFromStream extends CompressedJSON<Readable> {
     private _currentIntegerString = "";
 
     public async parse(readStream: Readable): Promise<Value> {
-        const combo = new Parser({ packKeys: true, packStrings: true });
+        const combo = parser.asStream({ packKeys: true, packStrings: true });
         combo.on(
             "data",
             (item: { name: string; value: string | undefined }) => {

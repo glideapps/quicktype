@@ -14,8 +14,10 @@ import type {
     UnionType,
 } from "../../Type/index.js";
 
+import { stringEscape } from "../../support/Strings.js";
+
 import { Scala3Renderer } from "./Scala3Renderer.js";
-import { wrapOption } from "./utils.js";
+import { unionMemberSortOrder, wrapOption } from "./utils.js";
 
 export class CirceRenderer extends Scala3Renderer {
     private readonly seenUnionTypes: string[] = [];
@@ -55,7 +57,13 @@ export class CirceRenderer extends Scala3Renderer {
                 paramName,
                 ")",
             ],
-            (_) => ["Encoder.encodeString(", paramName, ")"],
+            (enumType) => [
+                "summon[Encoder[",
+                this.scalaType(enumType),
+                "]].apply(",
+                paramName,
+                ")",
+            ],
             (unionType) => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
@@ -103,44 +111,70 @@ export class CirceRenderer extends Scala3Renderer {
 
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
-
         this.ensureBlankLine();
-        this.emitItem(["type ", enumName, " = "]);
-        let count = e.cases.size;
-        this.forEachEnumCase(e, "none", (_, jsonName) => {
-            // if (!(jsonName == "")) {
-            /*                 const backticks = 
-															shouldAddBacktick(jsonName) || 
-															jsonName.includes(" ") || 
-															!isNaN(parseInt(jsonName.charAt(0)))
-													if (backticks) {this.emitItem("`")} else  */
-            this.emitItem(['"', jsonName, '"']);
-            //                if (backticks) {this.emitItem("`")}
-            if (--count > 0) this.emitItem([" | "]);
-            // } else {
-            // --count
-            // }
+
+        // Enum cases are styled Scala identifiers; the codecs below map
+        // them back to the original JSON strings, which can be anything
+        // (keywords, `"_"`, `""`, …).
+        this.emitLine(["enum ", enumName, " : "]);
+        this.indent(() => {
+            this.forEachEnumCase(e, "none", (name) => {
+                this.emitLine("case ", name);
+            });
         });
+        this.ensureBlankLine();
+
+        this.emitLine([
+            "given Decoder[",
+            enumName,
+            "] = Decoder.decodeString.emap {",
+        ]);
+        this.indent(() => {
+            // `scala.` in case a generated type is named Right/Left.
+            this.forEachEnumCase(e, "none", (name, jsonName) => {
+                this.emitLine([
+                    `case "${stringEscape(jsonName)}" => scala.Right(`,
+                    enumName,
+                    ".",
+                    name,
+                    ")",
+                ]);
+            });
+            this.emitLine([
+                'case other => scala.Left("invalid ',
+                enumName,
+                ': " + other)',
+            ]);
+        });
+        this.emitLine("}");
+        this.emitLine([
+            "given Encoder[",
+            enumName,
+            "] = Encoder.encodeString.contramap {",
+        ]);
+        this.indent(() => {
+            this.forEachEnumCase(e, "none", (name, jsonName) => {
+                this.emitLine([
+                    "case ",
+                    enumName,
+                    ".",
+                    name,
+                    ` => "${stringEscape(jsonName)}"`,
+                ]);
+            });
+        });
+        this.emitLine("}");
         this.ensureBlankLine();
     }
 
     protected emitHeader(): void {
         super.emitHeader();
 
-        this.emitLine("import scala.util.Try");
         this.emitLine("import io.circe.syntax._");
         this.emitLine("import io.circe._");
         this.emitLine("import cats.syntax.functor._");
         this.ensureBlankLine();
 
-        this.emitLine("// For serialising string unions");
-        this.emitLine(
-            "given [A <: Singleton](using A <:< String): Decoder[A] = Decoder.decodeString.emapTry(x => Try(x.asInstanceOf[A])) ",
-        );
-        this.emitLine(
-            "given [A <: Singleton](using ev: A <:< String): Encoder[A] = Encoder.encodeString.contramap(ev) ",
-        );
-        this.ensureBlankLine();
         this.emitLine(
             "// If a union has a null in, then we'll need this too... ",
         );
@@ -153,9 +187,9 @@ export class CirceRenderer extends Scala3Renderer {
         this.emitLine([
             "given (using ev : ",
             elementType,
-            "): Encoder[Map[String,",
+            "): Encoder[Seq[",
             elementType,
-            "]] = Encoder.encodeMap[String, ",
+            "]] = Encoder.encodeSeq[",
             elementType,
             "]",
         ]);
@@ -177,15 +211,9 @@ export class CirceRenderer extends Scala3Renderer {
     }
 
     protected emitUnionDefinition(u: UnionType, unionName: Name): void {
-        function sortBy(t: Type): string {
-            const kind = t.kind;
-            if (kind === "class") return kind;
-            return `_${kind}`;
-        }
-
         this.emitDescription(this.descriptionForType(u));
 
-        const [maybeNull, nonNulls] = removeNullFromUnion(u, sortBy);
+        const [maybeNull, nonNulls] = removeNullFromUnion(u, false);
         const theTypes: Sourcelike[] = [];
         this.forEachUnionMember(u, nonNulls, "none", null, (_, t) => {
             theTypes.push(this.scalaType(t));
@@ -205,10 +233,20 @@ export class CirceRenderer extends Scala3Renderer {
         this.ensureBlankLine();
         if (!this.seenUnionTypes.some((y) => y === thisUnionType)) {
             this.seenUnionTypes.push(thisUnionType);
+            // The decoders are tried in order, most discriminating
+            // first (see `unionMemberSortOrder`): circe's numeric
+            // decoders accept strings like "5", so the string decoder
+            // has to get a shot before them.
             const sourceLikeTypes: Array<[Sourcelike, Type]> = [];
-            this.forEachUnionMember(u, nonNulls, "none", null, (_, t) => {
-                sourceLikeTypes.push([this.scalaType(t), t]);
-            });
+            this.forEachUnionMember(
+                u,
+                nonNulls,
+                "none",
+                unionMemberSortOrder,
+                (_, t) => {
+                    sourceLikeTypes.push([this.scalaType(t), t]);
+                },
+            );
             if (maybeNull !== null) {
                 sourceLikeTypes.push([
                     this.nameForUnionMember(u, maybeNull),

@@ -6,11 +6,51 @@ import type { ArrayType, EnumType, MapType, Type } from "../../Type/index.js";
 import { KotlinRenderer } from "./KotlinRenderer.js";
 import { stringEscape } from "./utils.js";
 
+// kotlinx.serialization has no built-in serializers for java.time, so we
+// emit our own and register them file-wide with `@file:UseSerializers`.
+// Like the Jackson converters, they parse with `.parse` and format with the
+// ISO formatters so values round-trip faithfully.
+const dateTimeSerializers = [
+    {
+        kind: "date-time",
+        name: "OffsetDateTimeSerializer",
+        type: "OffsetDateTime",
+        formatter: "ISO_OFFSET_DATE_TIME",
+    },
+    {
+        kind: "date",
+        name: "LocalDateSerializer",
+        type: "LocalDate",
+        formatter: "ISO_LOCAL_DATE",
+    },
+    {
+        kind: "time",
+        name: "OffsetTimeSerializer",
+        type: "OffsetTime",
+        formatter: "ISO_OFFSET_TIME",
+    },
+] as const;
+
 /**
  * Currently supports simple classes, enums, and TS string unions (which are also enums).
  * TODO: Union, Any, Top Level Array, Top Level Map
  */
 export class KotlinXRenderer extends KotlinRenderer {
+    protected forbiddenNamesForGlobalNamespace(): readonly string[] {
+        return [
+            ...super.forbiddenNamesForGlobalNamespace(),
+            ...dateTimeSerializers.map((s) => s.name),
+        ];
+    }
+
+    private usedDateTimeSerializers(): Array<
+        (typeof dateTimeSerializers)[number]
+    > {
+        return dateTimeSerializers.filter((s) =>
+            this.haveTransformedStringType(s.kind),
+        );
+    }
+
     protected anySourceType(optional: string): Sourcelike {
         return ["JsonElement", optional];
     }
@@ -78,6 +118,18 @@ export class KotlinXRenderer extends KotlinRenderer {
         this.emitTable(table);
     }
 
+    protected emitFileAnnotations(): void {
+        const serializers = this.usedDateTimeSerializers();
+        if (serializers.length === 0) return;
+
+        this.emitLine(
+            "@file:UseSerializers(",
+            serializers.map((s) => `${s.name}::class`).join(", "),
+            ")",
+        );
+        this.ensureBlankLine();
+    }
+
     protected emitHeader(): void {
         super.emitHeader();
 
@@ -85,6 +137,21 @@ export class KotlinXRenderer extends KotlinRenderer {
         this.emitLine("import kotlinx.serialization.json.*");
         this.emitLine("import kotlinx.serialization.descriptors.*");
         this.emitLine("import kotlinx.serialization.encoding.*");
+    }
+
+    protected emitSourceStructure(): void {
+        super.emitSourceStructure();
+
+        for (const serializer of this.usedDateTimeSerializers()) {
+            this.ensureBlankLine();
+            this.emitMultiline(`object ${serializer.name} : KSerializer<${serializer.type}> {
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("${serializer.type}", PrimitiveKind.STRING)
+    override fun deserialize(decoder: Decoder): ${serializer.type} = ${serializer.type}.parse(decoder.decodeString())
+    override fun serialize(encoder: Encoder, value: ${serializer.type}) {
+        encoder.encodeString(java.time.format.DateTimeFormatter.${serializer.formatter}.format(value))
+    }
+}`);
+        }
     }
 
     protected emitClassAnnotations(_c: Type, _className: Name): void {

@@ -6,6 +6,7 @@
 // producing generated code whose strict date parsers (Go, Swift, java.time,
 // ...) could not read the very samples the types were inferred from.
 import { DefaultDateTimeRecognizer } from "quicktype-core/dist/DateTime.js";
+import { KotlinDateTimeRecognizer } from "quicktype-core/dist/language/Kotlin/utils.js";
 import { describe, expect, test } from "vitest";
 
 const recognizer = new DefaultDateTimeRecognizer();
@@ -81,5 +82,72 @@ describe("isTime", () => {
         expect(recognizer.isTime("24:00:00Z")).toBe(false);
         expect(recognizer.isTime("02:60:00Z")).toBe(false);
         expect(recognizer.isTime("02:45:60Z")).toBe(false);
+    });
+});
+
+// The Kotlin recognizer additionally requires that java.time's ISO
+// formatters (which the generated Kotlin code round-trips through)
+// reproduce the string byte-identically. All rules below were verified
+// against java.time's actual parse/format behavior.
+describe("KotlinDateTimeRecognizer", () => {
+    const kotlin = new KotlinDateTimeRecognizer();
+
+    test("accepts date-times java.time round-trips identically", () => {
+        expect(kotlin.isDateTime("2018-08-14T02:45:50Z")).toBe(true);
+        expect(kotlin.isDateTime("2010-12-01T00:00:00Z")).toBe(true);
+        expect(kotlin.isDateTime("2018-08-14T02:45:50+05:30")).toBe(true);
+        expect(kotlin.isDateTime("2015-04-24T01:46:50.342496Z")).toBe(true);
+        expect(kotlin.isDateTime("2018-08-14T02:45:50.5Z")).toBe(true);
+        expect(kotlin.isDateTime("2018-08-14T02:45:50.123456789Z")).toBe(true);
+        expect(kotlin.isDateTime("2016-02-29T00:00:00Z")).toBe(true);
+    });
+
+    test("rejects fractional seconds with trailing zeros", () => {
+        // java.time formats the shortest fraction: ".000" disappears,
+        // ".500" becomes ".5", ".828000" becomes ".828".
+        expect(kotlin.isDateTime("2010-01-12T00:00:00.000Z")).toBe(false);
+        expect(kotlin.isDateTime("2018-08-14T02:45:50.50Z")).toBe(false);
+        expect(kotlin.isDateTime("2008-09-10T13:21:30.828000Z")).toBe(false);
+        expect(kotlin.isDateTime("2015-04-24T02:04:02.997570Z")).toBe(false);
+    });
+
+    test("rejects fractions beyond nanosecond precision", () => {
+        // java.time refuses to parse more than 9 fractional digits.
+        expect(kotlin.isDateTime("2018-08-14T02:45:50.1234567891Z")).toBe(
+            false,
+        );
+    });
+
+    test("rejects zero offsets, which format back as Z", () => {
+        expect(kotlin.isDateTime("2018-08-14T02:45:50+00:00")).toBe(false);
+        expect(kotlin.isDateTime("2018-08-14T02:45:50-00:00")).toBe(false);
+        expect(kotlin.isTime("10:30:00+00:00")).toBe(false);
+    });
+
+    test("rejects offsets outside java.time's ±18:00 range", () => {
+        expect(kotlin.isDateTime("2018-08-14T02:45:50+18:00")).toBe(true);
+        expect(kotlin.isDateTime("2018-08-14T02:45:50-18:00")).toBe(true);
+        expect(kotlin.isDateTime("2018-08-14T02:45:50+18:01")).toBe(false);
+        expect(kotlin.isDateTime("2018-08-14T02:45:50+19:00")).toBe(false);
+    });
+
+    test("rejects lowercase t and z, which format back in uppercase", () => {
+        expect(kotlin.isDateTime("2018-08-14t02:45:50Z")).toBe(false);
+        expect(kotlin.isDateTime("2018-08-14T02:45:50z")).toBe(false);
+        expect(kotlin.isTime("02:45:50z")).toBe(false);
+    });
+
+    test("rejects Feb 29 outside leap years, which java.time cannot parse", () => {
+        expect(kotlin.isDate("2016-02-29")).toBe(true);
+        expect(kotlin.isDate("2000-02-29")).toBe(true);
+        expect(kotlin.isDate("2015-02-29")).toBe(false);
+        expect(kotlin.isDate("1900-02-29")).toBe(false);
+        expect(kotlin.isDateTime("2015-02-29T00:00:00Z")).toBe(false);
+    });
+
+    test("accepts times java.time round-trips identically", () => {
+        expect(kotlin.isTime("02:45:50Z")).toBe(true);
+        expect(kotlin.isTime("23:20:50.52Z")).toBe(true);
+        expect(kotlin.isTime("23:20:50.520Z")).toBe(false);
     });
 });

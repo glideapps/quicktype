@@ -10,7 +10,10 @@ import {
     type TypeKind,
     UnionType,
 } from "../../Type/index.js";
-import { removeNullFromUnion } from "../../Type/TypeUtils.js";
+import {
+    nullableFromUnion,
+    removeNullFromUnion,
+} from "../../Type/TypeUtils.js";
 
 import { JavaRenderer } from "./JavaRenderer.js";
 import { stringEscape } from "./utils.js";
@@ -58,7 +61,12 @@ export class JacksonRenderer extends JavaRenderer {
             `@JsonProperty("${stringEscape(jsonName)}")`,
         ];
 
-        switch (p.type.kind) {
+        const propertyType =
+            p.type instanceof UnionType
+                ? (nullableFromUnion(p.type) ?? p.type)
+                : p.type;
+
+        switch (propertyType.kind) {
             case "date-time":
                 this._dateTimeProvider.dateTimeJacksonAnnotations.forEach(
                     (annotation) => {
@@ -206,11 +214,16 @@ export class JacksonRenderer extends JavaRenderer {
             const { fieldName } = this.unionField(u, t);
             const rendered = this.javaTypeWithoutGenerics(true, t);
             if (this._options.useList && t instanceof ArrayType) {
+                // The TypeReference must carry the full generic type:
+                // a raw `TypeReference<List>` would make Jackson accept
+                // any element type, so schema-invalid inputs (which the
+                // expected-failure fixtures rely on rejecting) would
+                // deserialize successfully.
                 this.emitLine(
                     "value.",
                     fieldName,
                     " = jsonParser.readValueAs(new TypeReference<",
-                    rendered,
+                    this.javaType(true, t),
                     ">() {});",
                 );
             } else if (

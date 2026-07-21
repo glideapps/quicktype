@@ -1,6 +1,7 @@
 import {
     arrayIntercalate,
     iterableFirst,
+    iterableSome,
     mapSortBy,
     mapUpdateInto,
     setUnionInto,
@@ -19,17 +20,15 @@ import { defined, panic } from "../../support/Support.js";
 import type { TargetLanguage } from "../../TargetLanguage.js";
 import { followTargetType } from "../../Transformers.js";
 import {
+    ArrayType,
     type ClassProperty,
     ClassType,
     EnumType,
+    MapType,
     type Type,
     UnionType,
 } from "../../Type/index.js";
-import {
-    matchType,
-    nullableFromUnion,
-    removeNullFromUnion,
-} from "../../Type/TypeUtils.js";
+import { matchType, removeNullFromUnion } from "../../Type/TypeUtils.js";
 
 import { forbiddenPropertyNames, forbiddenTypeNames } from "./constants.js";
 import type { pythonOptions } from "./language.js";
@@ -37,6 +36,8 @@ import { classNameStyle, snakeNameStyle } from "./utils.js";
 
 export class PythonRenderer extends ConvenienceRenderer {
     private readonly imports: Map<string, Set<string>> = new Map();
+
+    private readonly moduleImports: Set<string> = new Set();
 
     private readonly declaredTypes: Set<Type> = new Set();
 
@@ -133,60 +134,169 @@ export class PythonRenderer extends ConvenienceRenderer {
         return name;
     }
 
+    protected withModuleImport(module: string): Sourcelike {
+        this.moduleImports.add(module);
+        return module;
+    }
+
     protected withTyping(name: string): Sourcelike {
         return this.withImport("typing", name);
     }
 
-    protected namedType(t: Type): Sourcelike {
+    protected namedType(t: Type, suppressQuotes = false): Sourcelike {
         const name = this.nameForNamedType(t);
-        if (this.declaredTypes.has(t)) return name;
+        if (suppressQuotes || this.declaredTypes.has(t)) return name;
         return ["'", name, "'"];
     }
 
-    protected pythonType(t: Type, _isRootTypeDef = false): Sourcelike {
+    // Would rendering `t` as a type annotation right now require a forward
+    // reference, i.e. does it mention a named type that hasn't been declared
+    // yet?
+    private typeContainsForwardRef(t: Type): boolean {
+        const actualType = followTargetType(t);
+        if (actualType instanceof ClassType || actualType instanceof EnumType) {
+            return !this.declaredTypes.has(actualType);
+        }
+
+        if (actualType instanceof ArrayType) {
+            return this.typeContainsForwardRef(actualType.items);
+        }
+
+        if (actualType instanceof MapType) {
+            return this.typeContainsForwardRef(actualType.values);
+        }
+
+        if (actualType instanceof UnionType) {
+            return iterableSome(actualType.members, (m) =>
+                this.typeContainsForwardRef(m),
+            );
+        }
+
+        return false;
+    }
+
+    // Renders a union with PEP 604 syntax: `A | B | None`.  A quoted forward
+    // reference is not allowed as an operand of `|` (`'A' | None` is a runtime
+    // `TypeError`), so if any member needs a forward reference we quote the
+    // whole union expression instead, suppressing the quotes on the individual
+    // names.  A `" = None"` default, if required, must go outside the closing
+    // quote: `foo: 'Foo | None' = None`.
+    private pep604UnionType(
+        unionType: UnionType,
+        isRootTypeDef: boolean,
+        suppressQuotes: boolean,
+    ): Sourcelike {
+        const [hasNull, nonNulls] = removeNullFromUnion(unionType);
+        const needsQuotes =
+            !suppressQuotes &&
+            iterableSome(nonNulls, (m) => this.typeContainsForwardRef(m));
+        const quote = needsQuotes ? "'" : "";
+        const memberTypes = Array.from(nonNulls).map((m) =>
+            this.pythonType(m, false, true),
+        );
+
+        const union: Sourcelike[] = [
+            quote,
+            arrayIntercalate(" | ", memberTypes),
+        ];
+        if (hasNull !== null) {
+            union.push(" | None");
+        }
+
+        union.push(quote);
+
+        if (hasNull !== null) {
+            union.push(...this.noneDefault(isRootTypeDef));
+        }
+
+        return union;
+    }
+
+    // A `" = None"` default for a class property whose value can be `None`.
+    // Only emitted for root level type defs, otherwise we may get type defs
+    // like `List[Optional[int] = None]`, which are invalid.  Every property
+    // that gets a default must sort after all properties that don't — see
+    // `sortClassProperties`.
+    private noneDefault(isRootTypeDef: boolean): string[] {
+        if (
+            isRootTypeDef &&
+            !this.getAlphabetizeProperties() &&
+            (this.pyOptions.features.dataClasses ||
+                this.pyOptions.pydanticBaseModel)
+        ) {
+            return [" = None"];
+        }
+
+        return [];
+    }
+
+    // Does `pythonType(p.type, true)` end in a `" = None"` default?  This
+    // must mirror the `noneDefault` calls in `pythonType` exactly: nullable
+    // unions, plus `Any` and `None` typed properties — an optional `Any`
+    // stays `Any` (`null` is absorbed by it), and an optional `null`
+    // collapses to just `null`, so those also default to `None`.
+    private classPropertyHasNoneDefault(p: ClassProperty): boolean {
+        const actualType = followTargetType(p.type);
+        if (actualType instanceof UnionType) {
+            const [hasNull] = removeNullFromUnion(actualType);
+            return hasNull !== null;
+        }
+
+        return actualType.kind === "any" || actualType.kind === "null";
+    }
+
+    protected pythonType(
+        t: Type,
+        _isRootTypeDef = false,
+        suppressQuotes = false,
+    ): Sourcelike {
         const actualType = followTargetType(t);
 
         return matchType<Sourcelike>(
             actualType,
-            (_anyType) => this.withTyping("Any"),
-            (_nullType) => "None",
+            (_anyType) => [
+                this.withTyping("Any"),
+                ...this.noneDefault(_isRootTypeDef),
+            ],
+            (_nullType) => ["None", ...this.noneDefault(_isRootTypeDef)],
             (_boolType) => "bool",
             (_integerType) => "int",
             (_doubletype) => "float",
             (_stringType) => "str",
             (arrayType) => [
-                this.withTyping("List"),
+                this.pyOptions.features.builtinGenerics
+                    ? "list"
+                    : this.withTyping("List"),
                 "[",
-                this.pythonType(arrayType.items),
+                this.pythonType(arrayType.items, false, suppressQuotes),
                 "]",
             ],
-            (classType) => this.namedType(classType),
+            (classType) => this.namedType(classType, suppressQuotes),
             (mapType) => [
-                this.withTyping("Dict"),
+                this.pyOptions.features.builtinGenerics
+                    ? "dict"
+                    : this.withTyping("Dict"),
                 "[str, ",
-                this.pythonType(mapType.values),
+                this.pythonType(mapType.values, false, suppressQuotes),
                 "]",
             ],
-            (enumType) => this.namedType(enumType),
+            (enumType) => this.namedType(enumType, suppressQuotes),
             (unionType) => {
+                if (this.pyOptions.features.unionOperators) {
+                    return this.pep604UnionType(
+                        unionType,
+                        _isRootTypeDef,
+                        suppressQuotes,
+                    );
+                }
+
                 const [hasNull, nonNulls] = removeNullFromUnion(unionType);
                 const memberTypes = Array.from(nonNulls).map((m) =>
-                    this.pythonType(m),
+                    this.pythonType(m, false, suppressQuotes),
                 );
 
                 if (hasNull !== null) {
-                    const rest: string[] = [];
-                    if (
-                        !this.getAlphabetizeProperties() &&
-                        (this.pyOptions.features.dataClasses ||
-                            this.pyOptions.pydanticBaseModel) &&
-                        _isRootTypeDef
-                    ) {
-                        // Only push "= None" if this is a root level type def
-                        //   otherwise we may get type defs like List[Optional[int] = None]
-                        //   which are invalid
-                        rest.push(" = None");
-                    }
+                    const rest = this.noneDefault(_isRootTypeDef);
 
                     if (nonNulls.size > 1) {
                         this.withImport("typing", "Union");
@@ -216,8 +326,16 @@ export class PythonRenderer extends ConvenienceRenderer {
                 ];
             },
             (transformedStringType) => {
+                if (transformedStringType.kind === "date") {
+                    return [this.withModuleImport("datetime"), ".date"];
+                }
+
+                if (transformedStringType.kind === "time") {
+                    return [this.withModuleImport("datetime"), ".time"];
+                }
+
                 if (transformedStringType.kind === "date-time") {
-                    return this.withImport("datetime", "datetime");
+                    return [this.withModuleImport("datetime"), ".datetime"];
                 }
 
                 if (transformedStringType.kind === "uuid") {
@@ -321,13 +439,11 @@ export class PythonRenderer extends ConvenienceRenderer {
             this.pyOptions.features.dataClasses ||
             this.pyOptions.pydanticBaseModel
         ) {
-            return mapSortBy(properties, (p: ClassProperty) => {
-                return (p.type instanceof UnionType &&
-                    nullableFromUnion(p.type) !== null) ||
-                    p.isOptional
-                    ? 1
-                    : 0;
-            });
+            // Properties that get a `" = None"` default must come after all
+            // properties that don't, or the generated dataclass is invalid.
+            return mapSortBy(properties, (p: ClassProperty) =>
+                this.classPropertyHasNoneDefault(p) ? 1 : 0,
+            );
         }
 
         return super.sortClassProperties(properties, propertyNames);
@@ -380,6 +496,9 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected emitImports(): void {
+        this.moduleImports.forEach((module) => {
+            this.emitLine("import ", module);
+        });
         this.imports.forEach((names, module) => {
             this.emitLine(
                 "from ",

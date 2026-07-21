@@ -15,7 +15,6 @@ import type { LanguageName, RendererOptions } from "../../types.js";
 import { DartRenderer } from "./DartRenderer.js";
 
 export const dartOptions = {
-    nullSafety: new BooleanOption("null-safety", "Null Safety", true),
     justTypes: new BooleanOption("just-types", "Types only", false),
     codersInClass: new BooleanOption(
         "coders-in-class",
@@ -36,7 +35,7 @@ export const dartOptions = {
     finalProperties: new BooleanOption(
         "final-props",
         "Make all properties final",
-        false,
+        true,
     ),
     generateCopyWith: new BooleanOption(
         "copy-with",

@@ -23,7 +23,7 @@ export const elmOptions = {
             array: false,
             list: true,
         } as const,
-        "array",
+        "list",
     ),
     // FIXME: Do this via a configurable named eventually.
     moduleName: new StringOption(

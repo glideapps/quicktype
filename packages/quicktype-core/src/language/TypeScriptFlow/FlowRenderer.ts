@@ -1,15 +1,40 @@
 import type { Name } from "../../Naming.js";
+import type { Sourcelike } from "../../Source.js";
 import { utf16StringEscape } from "../../support/Strings.js";
 import { defined } from "../../support/Support.js";
-import type { ClassType, EnumType } from "../../Type/index.js";
+import type { ClassType, EnumType, Type } from "../../Type/index.js";
 import type { JavaScriptTypeAnnotations } from "../JavaScript/index.js";
 
 import { TypeScriptFlowBaseRenderer } from "./TypeScriptFlowBaseRenderer.js";
 import { tsFlowTypeAnnotations } from "./utils.js";
 
 export class FlowRenderer extends TypeScriptFlowBaseRenderer {
+    protected anyType(): string {
+        return this._tsFlowOptions.preferUnknown ? "mixed" : "any";
+    }
+
     protected forbiddenNamesForGlobalNamespace(): string[] {
         return ["Class", "Date", "Object", "String", "Array", "JSON", "Error"];
+    }
+
+    protected uncheckedParsedJson(t: Type, parsedJson: Sourcelike): Sourcelike {
+        // With `raw-type any` and `prefer-unknown` the deserializer's
+        // parameter is `mixed`, which can't be returned as the target
+        // type without a cast.
+        if (
+            this._tsFlowOptions.rawType !== "json" &&
+            this._tsFlowOptions.preferUnknown
+        ) {
+            return [
+                "((",
+                parsedJson,
+                ": any): ",
+                this.sourceFor(t).source,
+                ")",
+            ];
+        }
+
+        return parsedJson;
     }
 
     protected get typeAnnotations(): JavaScriptTypeAnnotations {
@@ -39,9 +64,9 @@ export class FlowRenderer extends TypeScriptFlowBaseRenderer {
         });
     }
 
-    protected emitSourceStructure(): void {
+    protected emitSourceStructure(givenOutputFilename: string): void {
         this.emitLine("// @flow");
         this.ensureBlankLine();
-        super.emitSourceStructure();
+        super.emitSourceStructure(givenOutputFilename);
     }
 }

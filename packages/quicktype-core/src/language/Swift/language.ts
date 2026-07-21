@@ -72,7 +72,7 @@ export const swiftOptions = {
             dense: true,
             normal: false,
         } as const,
-        "dense",
+        "normal",
         "secondary",
     ),
     linux: new BooleanOption(
@@ -89,11 +89,6 @@ export const swiftOptions = {
     optionalEnums: new BooleanOption(
         "optional-enums",
         "If no matching case is found enum value is set to null",
-        false,
-    ),
-    swift5Support: new BooleanOption(
-        "swift-5-support",
-        "Renders output in a Swift 5 compatible mode",
         false,
     ),
     sendable: new BooleanOption(

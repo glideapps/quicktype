@@ -47,6 +47,23 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
         return super.namerForObjectProperty();
     }
 
+    // Flow (pinned at flow-bin 0.66 in CI) has no tuple-rest syntax, so
+    // the base implementation always renders plain array types; the
+    // TypeScript renderer overrides this to spell out `minItems`
+    // guarantees as a tuple.
+    protected sourceForArrayType(arrayType: ArrayType): MultiWord {
+        const itemType = this.sourceFor(arrayType.items);
+        if (
+            (arrayType.items instanceof UnionType &&
+                !this._tsFlowOptions.declareUnions) ||
+            arrayType.items instanceof ArrayType
+        ) {
+            return singleWord(["Array<", itemType.source, ">"]);
+        }
+
+        return singleWord([parenIfNeeded(itemType), "[]"]);
+    }
+
     protected sourceFor(t: Type): MultiWord {
         if (
             this._tsFlowOptions.preferConstValues &&
@@ -64,24 +81,13 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
 
         return matchType<MultiWord>(
             t,
-            (_anyType) => singleWord("any"),
+            (_anyType) => singleWord(this.anyType()),
             (_nullType) => singleWord("null"),
             (_boolType) => singleWord("boolean"),
             (_integerType) => singleWord("number"),
             (_doubleType) => singleWord("number"),
             (_stringType) => singleWord("string"),
-            (arrayType) => {
-                const itemType = this.sourceFor(arrayType.items);
-                if (
-                    (arrayType.items instanceof UnionType &&
-                        !this._tsFlowOptions.declareUnions) ||
-                    arrayType.items instanceof ArrayType
-                ) {
-                    return singleWord(["Array<", itemType.source, ">"]);
-                }
-
-                return singleWord([parenIfNeeded(itemType), "[]"]);
-            },
+            (arrayType) => this.sourceForArrayType(arrayType),
             (_classType) => panic("We handled this above"),
             (mapType) =>
                 singleWord([
@@ -112,6 +118,12 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
             },
         );
     }
+
+    /** The type emitted for `any`-typed values in type declarations
+     * and converter signatures: the language's type-safe top type
+     * (`unknown` for TypeScript, `mixed` for Flow) with the
+     * `prefer-unknown` option, plain `any` without it. */
+    protected abstract anyType(): string;
 
     protected abstract emitEnum(e: EnumType, enumName: Name): void;
 
@@ -191,14 +203,14 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
         );
     }
 
-    protected emitUsageComments(): void {
+    protected emitUsageComments(givenOutputFilename: string): void {
         if (this._tsFlowOptions.justTypes) return;
-        super.emitUsageComments();
+        super.emitUsageComments(givenOutputFilename);
     }
 
     protected deserializerFunctionLine(t: Type, name: Name): Sourcelike {
         const jsonType =
-            this._tsFlowOptions.rawType === "json" ? "string" : "any";
+            this._tsFlowOptions.rawType === "json" ? "string" : this.anyType();
         return [
             "function to",
             name,
@@ -212,7 +224,7 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
     protected serializerFunctionLine(t: Type, name: Name): Sourcelike {
         const camelCaseName = modifySource(camelCase, name);
         const returnType =
-            this._tsFlowOptions.rawType === "json" ? "string" : "any";
+            this._tsFlowOptions.rawType === "json" ? "string" : this.anyType();
         return [
             "function ",
             camelCaseName,
@@ -227,6 +239,10 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
         return undefined;
     }
 
+    // The runtime typecheck helpers are deliberately dynamic, so they
+    // stay on `any` even with `prefer-unknown`.  Only the public API
+    // surface (type declarations and converter signatures) uses
+    // `anyType()`.
     protected get castFunctionLines(): [string, string] {
         return [
             "function cast<T>(val: any, typ: any): T",
