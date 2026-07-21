@@ -15,6 +15,9 @@ JSON to the input.
   `.N.json` samples and `.N.fail.<feature>.json` expected-failure samples. A
   fail sample must make the generated program exit nonzero; which fail
   samples run is controlled by the language's `features` list.
+- Every schema fixture test must have at least one positive (`.N.json`) and
+  one negative (`.N.fail.<feature>.json`) test case, unless there is a very
+  good reason not to.
 - Per-language configuration — which inputs run (`skipJSON`, `includeJSON`,
   `skipSchema`), renderer options, and `features` — lives in
   `test/languages.ts`; fixtures are registered in `test/fixtures.ts`.
@@ -25,7 +28,29 @@ Any change that affects generated output MUST be covered by a JSON or JSON
 Schema fixture test — by enabling existing inputs for the language or adding
 new ones. Unit tests in `test/unit/` are a complement for what fixtures cannot
 express (asserting that some code is *not* generated, API-level behavior, fast
-local iteration) — never a substitute.
+local iteration) — never a substitute. Do not add a unit test when a fixture
+test will do the job: if a fixture input already exercises the behavior, a
+unit test duplicating that coverage is superfluous and should not be added.
+
+## Known CI flakiness
+
+Three fixture-CI failure modes are infrastructure flakes, not test or PR bugs:
+
+- **scala3-upickle**: the Bloop compiler server sometimes times out after 30
+  seconds at startup, and `maven-nightlies` artifact downloads sometimes fail.
+- **elm**: the fixture setup (`rm -rf elm-stuff && elm make Warmup.elm`) can
+  race the compiler, deadlocking on `elm-stuff/*.dat` file locks.
+- **cjson**: `cJSON.c` is downloaded from raw.githubusercontent.com at test
+  time and can hit transient SSL/connection failures.
+
+Two things amplify them: the fixture matrix runs with `fail-fast: true`, so
+one flaky job cancels all sibling language jobs, and the `test-complete`
+check only mirrors the matrix — it is never an independent failure.
+
+For the time being we accept these flakes; when one happens, retry the failed
+jobs (`gh run rerun <run-id> --failed`). A failure in one of these areas only
+counts as real if it reproduces across retries or the PR actually touches
+that area.
 
 ## Releasing / version bumps
 

@@ -1,0 +1,14 @@
+{
+    "config": {
+        "name": "test-config",
+        "settings": {
+            "option1": [
+                {"key": "foo", "value": "bar"},
+                {"key": "baz", "value": "qux"}
+            ],
+            "option2": [
+                {"key": "hello", "value": "world"}
+            ]
+        }
+    }
+}
