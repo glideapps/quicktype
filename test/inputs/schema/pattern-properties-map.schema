@@ -20,6 +20,15 @@
                     "type": "string"
                 }
             }
+        },
+        "a3": {
+            "type": "object",
+            "additionalProperties": false,
+            "patternProperties": {
+                "^.+$": {
+                    "type": "integer"
+                }
+            }
         }
     }
 }

@@ -4,6 +4,10 @@
     },
     "a2": {
         "environment": "production",
-        "team": 42
+        "team": "quicktype"
+    },
+    "a3": {
+        "min": 1,
+        "max": "ten"
     }
 }
