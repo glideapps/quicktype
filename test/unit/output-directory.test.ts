@@ -49,6 +49,57 @@ describe("CLI output paths", () => {
         }
     });
 
+    test("writes multiple files next to a representative file-path --out", () => {
+        // Languages such as Java pass a representative file path as `--out`
+        // (e.g. `src/main/java/io/quicktype/TopLevel.java`) but emit several
+        // files.  The files must land in that path's parent directory, not in
+        // a directory named after the file.
+        const temporaryDirectory = fs.mkdtempSync(
+            path.join(os.tmpdir(), "quicktype-output-"),
+        );
+        const parentDirectory = path.join(temporaryDirectory, "dist");
+        fs.mkdirSync(parentDirectory);
+        const outputPath = path.join(parentDirectory, "TopLevel.java");
+
+        try {
+            writeOutput(options(outputPath), multipleResults);
+
+            expect(fs.readdirSync(parentDirectory).sort()).toEqual([
+                "Address.java",
+                "Person.java",
+            ]);
+            // The file-path --out must not have become a directory.
+            expect(fs.existsSync(outputPath)).toBe(false);
+        } finally {
+            fs.rmSync(temporaryDirectory, { recursive: true, force: true });
+        }
+    });
+
+    test("creates the parent directory for a file-path --out with multiple files", () => {
+        const temporaryDirectory = fs.mkdtempSync(
+            path.join(os.tmpdir(), "quicktype-output-"),
+        );
+        const outputPath = path.join(
+            temporaryDirectory,
+            "src",
+            "main",
+            "java",
+            "TopLevel.java",
+        );
+
+        try {
+            writeOutput(options(outputPath), multipleResults);
+
+            const parentDirectory = path.dirname(outputPath);
+            expect(fs.readdirSync(parentDirectory).sort()).toEqual([
+                "Address.java",
+                "Person.java",
+            ]);
+        } finally {
+            fs.rmSync(temporaryDirectory, { recursive: true, force: true });
+        }
+    });
+
     test("creates a missing output directory for multiple files", () => {
         const temporaryDirectory = fs.mkdtempSync(
             path.join(os.tmpdir(), "quicktype-output-"),

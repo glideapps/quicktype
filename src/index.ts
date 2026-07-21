@@ -1188,19 +1188,54 @@ export async function makeQuicktypeOptions(
     return quicktypeOptions;
 }
 
+// Decides whether `out` names the directory that multi-file output should be
+// written into, or a representative file path whose parent directory is used.
+function multiFileOutputDir(out: string): string {
+    let isDirectory =
+        out.endsWith(path.sep) || out.endsWith("/") || out.endsWith("\\");
+    if (!isDirectory) {
+        try {
+            isDirectory = fs.statSync(out).isDirectory();
+        } catch {
+            // The path does not exist yet; fall back to the extension check.
+        }
+    }
+
+    // A path without a file extension (e.g. `./dist` or `./dist/newsub/lib`) is
+    // treated as a directory, so its files are written inside it rather than
+    // scattered into its parent.
+    if (!isDirectory && path.extname(out) === "") {
+        isDirectory = true;
+    }
+
+    return isDirectory ? out : path.dirname(out);
+}
+
 export function writeOutput(
     cliOptions: CLIOptions,
     resultsByFilename: ReadonlyMap<string, SerializedRenderResult>,
 ): void {
     let onFirst = true;
+    const multipleFiles = resultsByFilename.size > 1;
+    // When quicktype produces multiple files, resolve the directory the
+    // per-file names are written into.  `--out` names that directory directly
+    // when it refers to a directory (an existing directory, a path with a
+    // trailing separator, or an extension-less path); otherwise `--out` is a
+    // representative file path and the files are written alongside it, i.e.
+    // into its parent directory.
+    const outputBase =
+        cliOptions.out === undefined
+            ? undefined
+            : multipleFiles
+              ? multiFileOutputDir(cliOptions.out)
+              : cliOptions.out;
     for (const [filename, { lines, annotations }] of resultsByFilename) {
         const output = lines.join("\n");
 
-        if (cliOptions.out !== undefined) {
-            const outputPath =
-                resultsByFilename.size > 1
-                    ? path.join(cliOptions.out, filename)
-                    : cliOptions.out;
+        if (outputBase !== undefined) {
+            const outputPath = multipleFiles
+                ? path.join(outputBase, filename)
+                : outputBase;
             fs.mkdirSync(path.dirname(outputPath), { recursive: true });
             fs.writeFileSync(outputPath, output);
         } else {
