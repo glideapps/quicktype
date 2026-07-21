@@ -25,6 +25,9 @@ const skipsEnumValueValidation = [
     "enum-large.schema",
     "optional-enum.schema",
     "const-non-string.schema",
+    // Its only negative sample rejects an out-of-range enum value, which
+    // languages that don't validate enum values can't fail.
+    "percent-encoded-ref.schema",
 ];
 
 // The language makes no int/double distinction in unions (e.g. an integer is

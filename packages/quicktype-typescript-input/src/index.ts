@@ -218,8 +218,17 @@ export function schemaForTypeScriptSources(
     if (uris.length === 0) {
         // Generated helper definitions must not compete with exported symbols
         // for top-level type names.
-        for (const name of generator.getMainFileSymbols(program)) {
+        const mainFileSymbols = generator.getMainFileSymbols(program);
+        for (const name of mainFileSymbols) {
             uris.push(`#/definitions/${encodeURIComponent(name)}`);
+        }
+
+        // When there is exactly one exported symbol it is the single top-level
+        // type; name it explicitly so it doesn't fall back to a synthesized
+        // "Empty" name (the source `name` is otherwise the empty string here,
+        // which the schema input would use verbatim for a single source).
+        if (!topLevelName && mainFileSymbols.length === 1) {
+            topLevelName = mainFileSymbols[0];
         }
     }
 
