@@ -1,5 +1,8 @@
 {
-    "in": [
-        { "name": "first" }
-    ]
+    "a": {
+        "name": "root-a",
+        "in": [
+            { "name": "first" }
+        ]
+    }
 }

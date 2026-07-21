@@ -1,6 +1,11 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "$id": "/schemas/top-level",
-    "$ref": "/schemas/a",
-    "title": "TopLevel"
+    "type": "object",
+    "title": "TopLevel",
+    "properties": {
+        "a": { "$ref": "/schemas/a" },
+        "b": { "$ref": "/schemas/b" }
+    },
+    "required": ["a", "b"]
 }

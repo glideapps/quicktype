@@ -1,7 +1,15 @@
 {
-    "name": "root",
-    "in": [
-        { "name": "first" },
-        { "name": "second" }
-    ]
+    "a": {
+        "name": "root-a",
+        "in": [
+            { "name": "first" },
+            { "name": "second" }
+        ]
+    },
+    "b": {
+        "name": "root-b",
+        "out": [
+            { "name": "third" }
+        ]
+    }
 }
