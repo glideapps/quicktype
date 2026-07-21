@@ -1688,6 +1688,7 @@ export const KotlinXLanguage: Language = {
         // Top-level array: `typealias TopLevel = JsonArray<T>` doesn't
         // compile (documented TODO in KotlinXRenderer.ts).
         "union.schema",
+        "root-array-ref.schema",
     ],
     skipMiscJSON: false,
     rendererOptions: { framework: "kotlinx" },
@@ -1953,6 +1954,7 @@ export const PHPLanguage: Language = {
         "top-level-enum.schema",
         // The driver does not support top-level arrays.
         "union.schema",
+        "root-array-ref.schema",
     ],
     rendererOptions: {},
     quickTestRendererOptions: [],
@@ -2068,6 +2070,11 @@ export const TypeScriptZodLanguage: Language = {
         "recursive-union-flattening.schema",
         "required.schema",
         "required-non-properties.schema",
+        // Top-level array whose item type has its own title: the zod
+        // renderer emits only the item schema (SomeObjectSchema) and no
+        // TopLevelElementSchema, so the driver can't locate a top-level
+        // schema to parse the array against.
+        "root-array-ref.schema",
     ],
     rendererOptions: {},
     quickTestRendererOptions: [],
