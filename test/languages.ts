@@ -25,6 +25,7 @@ const skipsEnumValueValidation = [
     "enum-large.schema",
     "optional-enum.schema",
     "const-non-string.schema",
+    "nullable-optional-one-of.schema",
     "all-of-additional-properties-false.schema",
 ];
 
@@ -551,9 +552,10 @@ export const GoLanguage: Language = {
     rendererOptions: {},
     quickTestRendererOptions: [
         // Runs against the expected-output file
-        // `omit-empty.out.omit-empty.json`, which asserts that `omitempty`
-        // actually drops the null field.
+        // `omit-empty.out.omit-empty.json`, which asserts that nullable
+        // fields preserve null instead of being omitted.
         ["omit-empty.json", { "omit-empty": "true" }],
+        ["nullable-optional-one-of.schema", { "omit-empty": "true" }],
     ],
     sourceFiles: ["src/language/Golang/index.ts"],
 };
@@ -630,6 +632,7 @@ export const CJSONLanguage: Language = {
         /* Enum with invalid values are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
         ...skipsEnumValueValidation,
         /* Union, Map and Arrays with invalid types are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
+        "boolean-subschema.schema",
         "class-with-additional.schema",
         ...skipsMapValueValidation,
         "multi-type-enum.schema",
@@ -652,6 +655,11 @@ export const CJSONLanguage: Language = {
         "direct-union.schema",
         "optional-any.schema",
         "recursive-union-flattening.schema",
+        /* Self-referential union member (a union whose member recursively
+         * refers back to the enclosing object) is not supported by the
+         * multi-source renderer; generation aborts. Pre-existing cJSON
+         * limitation, unrelated to the Rust fixture this schema targets. */
+        "rust-cycle-breaker-union.schema",
         "required-non-properties.schema",
         /* Class elements with invalid type are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
         ...skipsUntypedUnions,
@@ -812,6 +820,7 @@ export const CPlusPlusLanguage: Language = {
         // boost and std optional/variant code paths differ.
         ["unions.json", { boost: "true" }],
         ["pokedex.json", { boost: "true" }],
+        ["optional-any.schema", { "hide-null-optional": "true" }],
     ],
     sourceFiles: ["src/language/CPlusPlus/index.ts"],
 };
@@ -891,6 +900,7 @@ export const ElmLanguage: Language = {
         "vega-lite.schema", // recursion
         "simple-ref.schema", // recursion
         "recursive-union-flattening.schema", // recursion
+        "rust-cycle-breaker-union.schema", // recursion
         // elm/json's field decoder uses the JS `in` operator, which finds
         // inherited Object.prototype members, so an absent "constructor"
         // property decodes to the object's constructor function.
@@ -990,6 +1000,24 @@ export const SwiftLanguage: Language = {
         ["simple-object.json", { protocol: "hashable" }],
     ],
     sourceFiles: ["src/language/Swift/index.ts"],
+};
+
+export const SwiftSendableObjectiveCSupportLanguage: Language = {
+    ...SwiftLanguage,
+    compileCommand: "node verify-sendable.cjs",
+    diffViaSchema: false,
+    includeJSON: ["pokedex.json"],
+    rendererOptions: {
+        ...SwiftLanguage.rendererOptions,
+        sendable: "true",
+        "struct-or-class": "class",
+        "objective-c-support": "true",
+    },
+    quickTestRendererOptions: [
+        ["pokedex.json", { "struct-or-class": "struct" }],
+    ],
+    runCommand: undefined,
+    skipMiscJSON: true,
 };
 
 export const ObjectiveCLanguage: Language = {
@@ -1657,6 +1685,7 @@ export const KotlinXLanguage: Language = {
         "mutually-recursive.schema",
         "prefix-items.schema",
         "recursive-union-flattening.schema",
+        "rust-cycle-breaker-union.schema",
         "tuple.schema",
         "union-int-double.schema",
         "union-list.schema",
@@ -1866,6 +1895,9 @@ export const HaskellLanguage: Language = {
         // driver encodes the Maybe result, so a failed decode prints "null" and
         // exits 0 — expected-failure samples cannot be detected.
         "named-class-union.schema",
+        // The test driver encodes the Maybe result, so a failed decode prints
+        // "null" and exits 0 — expected-failure samples cannot be detected.
+        "boolean-subschema.schema",
         "nested-intersection-union.schema",
         "prefix-items.schema",
         "direct-union.schema",
@@ -1915,6 +1947,7 @@ export const PHPLanguage: Language = {
         // The motivating repro for non-nullable union support: a
         // heterogeneous array under a PHP-reserved-word property name.
         "php-mixed-union.json",
+        "php-validation.json",
     ],
     skipMiscJSON: true,
     skipSchema: [
@@ -2219,7 +2252,9 @@ export const ElixirLanguage: Language = {
         // Struct keys cannot be enforced at runtime in Elixir and their values will just be set to null.
         "strict-optional.schema",
         "required.schema",
+        "boolean-subschema.schema",
         "intersection.schema",
+        "optional-any.schema",
 
         // The test incorrectly succeeds due to the emitter being permissive for unions that contain only primitives. A future enhancement
         // for the Elixir emitter could be a user-controlled 'strict' mode that pattern matches even on unions of only primitive types.
