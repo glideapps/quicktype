@@ -97,7 +97,7 @@ export class MinMaxConstraintTypeAttributeKind extends TypeAttributeKind<MinMaxC
         t: Type,
         attr: MinMaxConstraint,
     ): void {
-        if (this._typeKinds.has(t.kind)) return;
+        if (!this._typeKinds.has(t.kind)) return;
 
         const [min, max] = attr;
         if (min !== undefined) {
