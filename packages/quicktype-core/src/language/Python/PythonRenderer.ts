@@ -504,8 +504,10 @@ export class PythonRenderer extends ConvenienceRenderer {
         properties: ReadonlyMap<string, ClassProperty>,
         propertyNames: ReadonlyMap<string, Name>,
     ): ReadonlyMap<string, ClassProperty> {
-        const hasSchemaDefaults = iterableSome(properties.entries(), ([name]) =>
-            this.defaultValueForClassProperty(o, name) !== undefined,
+        const hasSchemaDefaults = iterableSome(
+            properties.entries(),
+            ([name]) =>
+                this.defaultValueForClassProperty(o, name) !== undefined,
         );
         if (
             hasSchemaDefaults ||
@@ -514,13 +516,16 @@ export class PythonRenderer extends ConvenienceRenderer {
         ) {
             // Properties that get a default must come after all properties
             // that don't, or the generated class is invalid.
-            return mapSortBy(properties, (p: ClassProperty, jsonName: string) =>
-                this.defaultValueForClassProperty(o, jsonName) !== undefined ||
-                ((this.pyOptions.features.dataClasses ||
-                    this.pyOptions.pydanticBaseModel) &&
-                    this.classPropertyHasNoneDefault(p))
-                    ? 1
-                    : 0,
+            return mapSortBy(
+                properties,
+                (p: ClassProperty, jsonName: string) =>
+                    this.defaultValueForClassProperty(o, jsonName) !==
+                        undefined ||
+                    ((this.pyOptions.features.dataClasses ||
+                        this.pyOptions.pydanticBaseModel) &&
+                        this.classPropertyHasNoneDefault(p))
+                        ? 1
+                        : 0,
             );
         }
 

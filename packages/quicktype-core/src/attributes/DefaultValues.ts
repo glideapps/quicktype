@@ -66,7 +66,7 @@ export function defaultValuesAttributeProducer(
             typeof propertySchema === "object" &&
             propertySchema !== null &&
             !Array.isArray(propertySchema) &&
-            Object.prototype.hasOwnProperty.call(propertySchema, "default")
+            Object.hasOwn(propertySchema, "default")
         ) {
             defaults.set(
                 name,

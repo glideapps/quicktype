@@ -976,8 +976,10 @@ export class JSONPythonRenderer extends PythonRenderer {
                 const args: Sourcelike[] = [];
                 this.emitLine("assert isinstance(obj, dict)");
                 this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
-                    const defaultValue =
-                        this.defaultValueForClassProperty(t, jsonName);
+                    const defaultValue = this.defaultValueForClassProperty(
+                        t,
+                        jsonName,
+                    );
                     const property = {
                         value:
                             defaultValue === undefined
