@@ -19,6 +19,7 @@ import * as path from "node:path";
 
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 
+import { readFromFileOrURL } from "../../packages/quicktype-core/src/input/io/NodeIO.js";
 import { main as quicktype } from "../../src";
 
 const files: Record<string, string> = {
@@ -74,6 +75,12 @@ async function generateTypeScript(
 
 beforeAll(async () => {
     server = http.createServer((request, response) => {
+        if (path.basename(request.url ?? "") === "unauthorized.json") {
+            response.writeHead(401, { "Content-Type": "application/json" });
+            response.end('{"message":"Bad credentials"}');
+            return;
+        }
+
         const content = files[path.basename(request.url ?? "")];
         if (content === undefined) {
             response.writeHead(404);
@@ -103,6 +110,12 @@ describe("native fetch URL inputs", () => {
     test("generates types from a JSON URL", async () => {
         const output = await generateTypeScript("json", "sample.json");
         expect(output).toContain("veryUniquePropertyName");
+    });
+
+    test("rejects an HTTP error response", async () => {
+        await expect(
+            readFromFileOrURL(`${baseURL}/unauthorized.json`),
+        ).rejects.toThrow("HTTP 401 Unauthorized");
     });
 
     test("resolves a relative remote JSON Schema reference", async () => {
