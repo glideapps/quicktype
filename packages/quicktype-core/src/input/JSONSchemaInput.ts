@@ -1438,9 +1438,7 @@ function removeExtension(fn: string): string {
 function nameFromURI(uri: URI): string | undefined {
     const fragment = uri.fragment();
     if (fragment !== "") {
-        const components = fragment
-            .split("/")
-            .map(unescapeJSONPointerSegment);
+        const components = fragment.split("/").map(unescapeJSONPointerSegment);
         const len = components.length;
         if (components[len - 1] !== "") {
             return removeExtension(components[len - 1]);
