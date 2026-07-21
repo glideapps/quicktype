@@ -1587,6 +1587,11 @@ export const KotlinXLanguage: Language = {
         // deserialization fails at runtime (documented TODO in
         // KotlinXRenderer.ts).
         "accessors.schema",
+        // secondProperty is an array|object union, which the kotlinx
+        // renderer emits as a sealed class without serializer wiring, so it
+        // fails to deserialize at runtime (documented TODO in
+        // KotlinXRenderer.ts).
+        "anyof-object-union.schema",
         "bool-string.schema",
         "class-map-union.schema",
         "class-with-additional.schema",
