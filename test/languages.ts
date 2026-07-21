@@ -1703,6 +1703,7 @@ export const KotlinXLanguage: Language = {
         // Top-level array: `typealias TopLevel = JsonArray<T>` doesn't
         // compile (documented TODO in KotlinXRenderer.ts).
         "union.schema",
+        "one-of-objects.schema",
     ],
     skipMiscJSON: false,
     rendererOptions: { framework: "kotlinx" },
@@ -1968,6 +1969,7 @@ export const PHPLanguage: Language = {
         "top-level-enum.schema",
         // The driver does not support top-level arrays.
         "union.schema",
+        "one-of-objects.schema",
     ],
     rendererOptions: {},
     quickTestRendererOptions: [],
