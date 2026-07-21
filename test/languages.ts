@@ -245,6 +245,10 @@ export const JavaLanguage: Language = {
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
         "keyword-unions.schema", // generates classes with names that are case-insensitively equal
+        // Multi-top-level directory input; the Java driver deserializes via the
+        // generic `Converter.fromJsonString`, which is only emitted for a single
+        // top-level (multi-top-level emits per-type `<Name>FromJsonString`).
+        "issue-1833",
     ],
     rendererOptions: {},
     // The default is array-type=list; this keeps the T[] code path
