@@ -3,7 +3,9 @@
     "children": [
         {
             "data": { "id": "child" },
-            "children": []
+            "children": [
+                { "data": { "id": "grandchild" } }
+            ]
         }
     ]
 }

@@ -580,6 +580,7 @@ export const CJSONLanguage: Language = {
         "multi-type-enum.schema",
         "nested-intersection-union.schema",
         "prefix-items.schema",
+        "recursive-ref-to-id.schema",
         /* Constraints (min/max and regex) are not supported (for the current implementation, can be added later, should abord parsing and return NULL) */
         "minmaxlength.schema",
         "optional-const-ref.schema",
