@@ -2239,6 +2239,7 @@ export const ElixirLanguage: Language = {
         "mutually-recursive.schema",
 
         // Struct keys cannot be enforced at runtime in Elixir and their values will just be set to null.
+        "default-values.schema",
         "strict-optional.schema",
         "required.schema",
         "boolean-subschema.schema",
