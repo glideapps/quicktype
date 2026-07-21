@@ -1,0 +1,8 @@
+{
+    "required-date": "2024-01-02",
+    "required-time": "12:34:56Z",
+    "required-date-time": "2024-01-02T12:34:56Z",
+    "optional-date": "2024-01-02",
+    "optional-time": "12:34:56Z",
+    "optional-date-time": "2024-01-02T12:34:56Z"
+}
