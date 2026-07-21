@@ -905,6 +905,9 @@ export const ElmLanguage: Language = {
         // The generated decoder accepts invalid union members because all
         // class properties decode via `Jpipe.optional`.
         "nested-intersection-union.schema",
+        // Multi-top-level directory input; the Elm driver decodes a single
+        // top-level named `QuickType`, which this fixture does not produce.
+        "issue-1833",
     ],
     rendererOptions: {},
     // `list` is the default now; keep the `Array` code path covered.
@@ -1047,7 +1050,13 @@ export const ObjectiveCLanguage: Language = {
         "combinations4.json",
     ],
     skipMiscJSON: false,
-    skipSchema: ["integer-before-number.schema"], // Python-specific union-order regression.
+    skipSchema: [
+        "integer-before-number.schema", // Python-specific union-order regression.
+        // Multi-top-level directory input; the Objective-C driver decodes a
+        // single top-level named `QTTopLevel`, which this fixture does not
+        // produce.
+        "issue-1833",
+    ],
     rendererOptions: { functions: "true" },
     quickTestRendererOptions: [],
     sourceFiles: ["src/language/Objective-C/index.ts"],
@@ -1898,6 +1907,9 @@ export const HaskellLanguage: Language = {
         "optional-any.schema",
         "required.schema",
         "required-non-properties.schema",
+        // Multi-top-level directory input; the Haskell driver decodes a single
+        // top-level named `QuickType`, which this fixture does not produce.
+        "issue-1833",
     ],
     rendererOptions: {},
     // The default is array-type=list; this keeps the Vector code path
