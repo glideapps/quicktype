@@ -66,7 +66,8 @@ export function defaultValuesAttributeProducer(
             typeof propertySchema === "object" &&
             propertySchema !== null &&
             !Array.isArray(propertySchema) &&
-            Object.hasOwn(propertySchema, "default")
+            // biome-ignore lint/suspicious/noPrototypeBuiltins: Object.hasOwn is not in quicktype-core's es6 lib
+            Object.prototype.hasOwnProperty.call(propertySchema, "default")
         ) {
             defaults.set(
                 name,
