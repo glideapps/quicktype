@@ -20,7 +20,7 @@ import {
     makeTypeAttributesInferred,
 } from "../attributes/TypeAttributes.js";
 import type { GraphRewriteBuilder, TypeLookerUp } from "../GraphRewriting.js";
-import { assert, defined, panic } from "../support/Support.js";
+import { assert, defined, mustNotHappen, panic } from "../support/Support.js";
 import {
     ArrayType,
     GenericClassProperty,
@@ -194,6 +194,9 @@ class IntersectionAccumulator
             const existing = defined(this._objectProperties).get(name);
             const newProperty = maybeObject.getProperties().get(name);
 
+            // A property declared by any intersection member is known on
+            // the merged object.  A member that doesn't allow additional
+            // properties must not discard properties declared by others.
             if (existing !== undefined && newProperty !== undefined) {
                 const cp = new GenericClassProperty(
                     existing.typeData.add(newProperty.type),
@@ -210,14 +213,18 @@ class IntersectionAccumulator
                 );
                 defined(this._objectProperties).set(name, cp);
             } else if (newProperty !== undefined) {
-                // FIXME: This is potentially slow
-                const types = new Set(this._additionalPropertyTypes).add(
-                    newProperty.type,
-                );
+                const types =
+                    this._additionalPropertyTypes === undefined
+                        ? new Set([newProperty.type])
+                        : new Set(this._additionalPropertyTypes).add(
+                              newProperty.type,
+                          );
                 defined(this._objectProperties).set(
                     name,
                     new GenericClassProperty(types, newProperty.isOptional),
                 );
+            } else if (existing === undefined) {
+                mustNotHappen();
             }
         }
 
@@ -465,6 +472,15 @@ export function resolveIntersections(
                 forwardingRef,
             );
             return t;
+        }
+
+        const noneType = iterableFind(members, (t) => t.kind === "none");
+        if (noneType !== undefined) {
+            return builder.reconstituteType(
+                noneType,
+                intersectionAttributes,
+                forwardingRef,
+            );
         }
 
         if (members.size === 1) {

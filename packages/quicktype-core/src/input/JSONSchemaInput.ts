@@ -1084,14 +1084,17 @@ async function addTypesInSchema(
                     emptyTypeAttributes,
                     new Set(itemTypes),
                 );
-            } else if (typeof items === "object") {
+            } else if (
+                typeof items === "object" ||
+                typeof items === "boolean"
+            ) {
                 const itemsLoc = loc.push("items");
                 itemType = await toType(
                     checkJSONSchema(items, itemsLoc.canonicalRef),
                     itemsLoc,
                     singularAttributes,
                 );
-            } else if (items !== undefined && items !== true) {
+            } else if (items !== undefined) {
                 return messageError(
                     "SchemaArrayItemsMustBeStringOrArray",
                     withRef(loc, { actual: items }),
@@ -1396,14 +1399,7 @@ async function addTypesInSchema(
 
         let result: TypeRef;
         if (typeof schema === "boolean") {
-            // FIXME: Empty union.  We'd have to check that it's supported everywhere,
-            // in particular in union flattening.
-            messageAssert(
-                schema === true,
-                "SchemaFalseNotSupported",
-                withRef(loc),
-            );
-            result = typeBuilder.getPrimitiveType("any");
+            result = typeBuilder.getPrimitiveType(schema ? "any" : "none");
         } else {
             loc = loc.updateWithID(schema.$id);
             result = await convertToType(schema, loc, typeAttributes);
