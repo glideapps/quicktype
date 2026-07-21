@@ -85,5 +85,5 @@ async function main(sources: string[]) {
 // skip 2 `node` args
 main(process.argv.slice(2)).catch((reason) => {
     console.error(reason);
-    process.process.exit(1);
+    process.exit(1);
 });

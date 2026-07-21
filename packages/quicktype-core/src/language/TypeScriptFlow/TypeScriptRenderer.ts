@@ -1,5 +1,12 @@
+import { minMaxItemsForType } from "../../attributes/Constraints.js";
 import type { Name } from "../../Naming.js";
-import { type Sourcelike, modifySource } from "../../Source.js";
+import {
+    type MultiWord,
+    type Sourcelike,
+    modifySource,
+    parenIfNeeded,
+    singleWord,
+} from "../../Source.js";
 import { camelCase, utf16StringEscape } from "../../support/Strings.js";
 import {
     ArrayType,
@@ -12,6 +19,11 @@ import type { JavaScriptTypeAnnotations } from "../JavaScript/index.js";
 
 import { TypeScriptFlowBaseRenderer } from "./TypeScriptFlowBaseRenderer.js";
 import { tsFlowTypeAnnotations } from "./utils.js";
+
+// An array type with a huge `minItems` would otherwise expand into an
+// equally huge tuple type, so beyond this limit we fall back to a plain
+// array type.
+const maxSpelledOutMinItems = 16;
 
 export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
     protected anyType(): string {
@@ -28,6 +40,31 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
         }
 
         return super.namedTypeToNameForTopLevel(type);
+    }
+
+    // An array with `minItems` >= 1 becomes a tuple that spells out the
+    // guaranteed elements, followed by a rest element: `minItems: 2`
+    // renders as `[T, T, ...T[]]`.  Only `minItems` shapes the type;
+    // `maxItems` is enforced by none of the generated code, and spelling
+    // it out would enumerate every allowed arity as its own tuple.
+    protected sourceForArrayType(arrayType: ArrayType): MultiWord {
+        const minItems = minMaxItemsForType(arrayType)?.[0];
+        if (
+            minItems === undefined ||
+            minItems < 1 ||
+            minItems > maxSpelledOutMinItems
+        ) {
+            return super.sourceForArrayType(arrayType);
+        }
+
+        const itemType = this.sourceFor(arrayType.items);
+        const source: Sourcelike[] = ["["];
+        for (let i = 0; i < minItems; i++) {
+            source.push(itemType.source, ", ");
+        }
+
+        source.push("...", parenIfNeeded(itemType), "[]]");
+        return singleWord(source);
     }
 
     protected uncheckedParsedJson(t: Type, parsedJson: Sourcelike): Sourcelike {
