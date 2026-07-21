@@ -646,6 +646,7 @@ export const CJSONLanguage: Language = {
         /* Required properties absent are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
         "intersection.schema",
         "required.schema",
+        "allof-closed-objects.schema",
         /* Pure Any type not supported (for the current implementation, can be added later, should manage a callback to provide the final application a way to handle it at parsing and creation of cJSON) */
         "any.schema",
         "direct-union.schema",
@@ -967,6 +968,8 @@ export const SwiftLanguage: Language = {
         // This works on macOS, but on Linux one of the failure test cases doesn't fail
         ...skipsUntypedUnions,
         "required.schema",
+        // Same Linux-only missing-required behavior as required.schema.
+        "allof-closed-objects.schema",
         "multi-type-enum.schema",
         "intersection.schema",
         ...skipsMapValueValidation,
@@ -1895,6 +1898,9 @@ export const HaskellLanguage: Language = {
         "keyword-unions.schema",
         "optional-any.schema",
         "required.schema",
+        // Same undetectable expected-failure limitation as required.schema:
+        // a failed decode prints "null" and exits 0.
+        "allof-closed-objects.schema",
         "required-non-properties.schema",
     ],
     rendererOptions: {},
@@ -2239,6 +2245,7 @@ export const ElixirLanguage: Language = {
         // Struct keys cannot be enforced at runtime in Elixir and their values will just be set to null.
         "strict-optional.schema",
         "required.schema",
+        "allof-closed-objects.schema",
         "boolean-subschema.schema",
         "intersection.schema",
         "optional-any.schema",
