@@ -1977,10 +1977,6 @@ export const PHPLanguage: Language = {
         "top-level-enum.schema",
         // The driver does not support top-level arrays.
         "union.schema",
-        // Top-level array schema; the driver does not support top-level
-        // arrays (same reason as union.schema). The oneOf-of-objects
-        // behavior this fixture targets is only enabled for TS/JS/Flow.
-        "one-of-objects.schema",
     ],
     rendererOptions: {},
     quickTestRendererOptions: [],

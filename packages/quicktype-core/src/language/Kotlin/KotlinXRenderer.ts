@@ -93,13 +93,8 @@ export class KotlinXRenderer extends KotlinRenderer {
     }
 
     protected emitTopLevelArray(t: ArrayType, name: Name): void {
-        const elementType = this.kotlinType(t.items, false, true);
-        const elementName = this.sourcelikeToString(elementType);
-        if (elementName === "JsonObject" || elementName === "JsonElement") {
-            this.emitLine(["typealias ", name, " = JsonArray"]);
-        } else {
-            this.emitLine(["typealias ", name, " = List<", elementType, ">"]);
-        }
+        const elementType = this.kotlinType(t.items);
+        this.emitLine(["typealias ", name, " = JsonArray<", elementType, ">"]);
     }
 
     protected emitUsageHeader(): void {

@@ -1,1 +1,1 @@
-[{ "aa": "aa", "bb": "bb" }, { "cc": "cc", "dd": "dd" }]
+{ "items": [{ "aa": "aa", "bb": "bb" }, { "cc": "cc", "dd": "dd" }] }
