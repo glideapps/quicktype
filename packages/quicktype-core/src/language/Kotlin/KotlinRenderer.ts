@@ -33,7 +33,7 @@ import {
 
 import { keywords } from "./constants.js";
 import type { kotlinOptions } from "./language.js";
-import { kotlinNameStyle } from "./utils.js";
+import { kotlinNameStyle, stringEscape } from "./utils.js";
 
 export class KotlinRenderer extends ConvenienceRenderer {
     public constructor(
@@ -57,9 +57,9 @@ export class KotlinRenderer extends ConvenienceRenderer {
 
     protected forbiddenForEnumCases(
         _e: EnumType,
-        _enumName: Name,
+        enumName: Name,
     ): ForbiddenWordsInfo {
-        return { names: [], includeGlobalForbidden: true };
+        return { names: [enumName], includeGlobalForbidden: true };
     }
 
     protected forbiddenForUnionMembers(
@@ -391,10 +391,38 @@ export class KotlinRenderer extends ConvenienceRenderer {
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
 
-        this.emitBlock(["enum class ", enumName], () => {
+        this.emitBlock(["enum class ", enumName, "(val value: String)"], () => {
             let count = e.cases.size;
-            this.forEachEnumCase(e, "none", (name) => {
-                this.emitLine(name, --count === 0 ? "" : ",");
+            this.forEachEnumCase(e, "none", (name, json) => {
+                this.emitLine(
+                    name,
+                    `("${stringEscape(json)}")`,
+                    --count === 0 ? ";" : ",",
+                );
+            });
+            this.ensureBlankLine();
+            this.emitBlock("companion object", () => {
+                this.emitBlock(
+                    [
+                        "fun fromValue(value: String): ",
+                        enumName,
+                        " = when (value)",
+                    ],
+                    () => {
+                        const table: Sourcelike[][] = [];
+                        this.forEachEnumCase(e, "none", (name, json) => {
+                            table.push([
+                                [`"${stringEscape(json)}"`],
+                                [" -> ", name],
+                            ]);
+                        });
+                        table.push([
+                            ["else"],
+                            [" -> throw IllegalArgumentException()"],
+                        ]);
+                        this.emitTable(table);
+                    },
+                );
             });
         });
     }
