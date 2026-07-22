@@ -37,6 +37,8 @@ import { classNameStyle, snakeNameStyle } from "./utils.js";
 export class PythonRenderer extends ConvenienceRenderer {
     private readonly imports: Map<string, Set<string>> = new Map();
 
+    private readonly moduleImports: Set<string> = new Set();
+
     private readonly declaredTypes: Set<Type> = new Set();
 
     public constructor(
@@ -130,6 +132,11 @@ export class PythonRenderer extends ConvenienceRenderer {
         }
 
         return name;
+    }
+
+    protected withModuleImport(module: string): Sourcelike {
+        this.moduleImports.add(module);
+        return module;
     }
 
     protected withTyping(name: string): Sourcelike {
@@ -319,8 +326,16 @@ export class PythonRenderer extends ConvenienceRenderer {
                 ];
             },
             (transformedStringType) => {
+                if (transformedStringType.kind === "date") {
+                    return [this.withModuleImport("datetime"), ".date"];
+                }
+
+                if (transformedStringType.kind === "time") {
+                    return [this.withModuleImport("datetime"), ".time"];
+                }
+
                 if (transformedStringType.kind === "date-time") {
-                    return this.withImport("datetime", "datetime");
+                    return [this.withModuleImport("datetime"), ".datetime"];
                 }
 
                 if (transformedStringType.kind === "uuid") {
@@ -481,6 +496,9 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected emitImports(): void {
+        this.moduleImports.forEach((module) => {
+            this.emitLine("import ", module);
+        });
         this.imports.forEach((names, module) => {
             this.emitLine(
                 "from ",
