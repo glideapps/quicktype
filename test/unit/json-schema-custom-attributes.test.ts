@@ -34,16 +34,12 @@ class DeprecatedTypeAttributeKind extends TypeAttributeKind<boolean> {
 const deprecatedTypeAttributeKind = new DeprecatedTypeAttributeKind();
 
 function deprecatedAttributeProducer(schema: JSONSchema) {
-    if (
-        typeof schema !== "object" ||
-        schema === null ||
-        schema.deprecated !== true
-    ) {
-        return undefined;
-    }
+    if (typeof schema !== "object" || schema === null) return undefined;
 
     return {
-        forType: deprecatedTypeAttributeKind.makeAttributes(true),
+        forType: deprecatedTypeAttributeKind.makeAttributes(
+            schema.deprecated === true,
+        ),
     };
 }
 

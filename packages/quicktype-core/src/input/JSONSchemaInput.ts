@@ -669,9 +669,9 @@ export type JSONSchemaAttributeProducer = (
     unionCases: JSONSchema[] | undefined,
 ) => JSONSchemaAttributes | undefined;
 
-// `forType` attributes belong to one schema occurrence.  Keep primitive types
-// carrying them out of the intern pool so the attributes cannot leak to other
-// occurrences of the same primitive kind.
+// `forType` attributes from custom producers belong to one schema occurrence.
+// Keep primitive types carrying them out of the intern pool so the attributes
+// cannot leak to other occurrences of the same primitive kind.
 class ForTypeIdentityTypeAttributeKind extends TypeAttributeKind<true> {
     public constructor() {
         super("forTypeIdentity");
@@ -701,6 +701,19 @@ function makeForTypeAttributesUnique(
         attributes,
         forTypeIdentityTypeAttributeKind.makeAttributes(true),
     );
+}
+
+function makeCustomAttributeProducer(
+    producer: JSONSchemaAttributeProducer,
+): JSONSchemaAttributeProducer {
+    return (schema, canonicalRef, types, unionCases) => {
+        const attributes = producer(schema, canonicalRef, types, unionCases);
+        if (attributes?.forType === undefined) return attributes;
+        return {
+            ...attributes,
+            forType: makeForTypeAttributesUnique(attributes.forType),
+        };
+    };
 }
 
 function typeKindForJSONSchemaFormat(
@@ -1027,9 +1040,7 @@ async function addTypesInSchema(
                                     forCases === undefined,
                                 "We can't have attributes for unions and cases if we don't have a union",
                             );
-                            return forType === undefined
-                                ? undefined
-                                : makeForTypeAttributesUnique(forType);
+                            return forType;
                         },
                     ),
                 );
@@ -1260,7 +1271,7 @@ async function addTypesInSchema(
                         if (forType !== undefined) {
                             typeBuilder.addAttributes(
                                 intersectionType,
-                                makeForTypeAttributesUnique(forType),
+                                forType,
                             );
                         }
 
@@ -1613,7 +1624,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
             minMaxLengthAttributeProducer,
             minMaxItemsAttributeProducer,
             patternAttributeProducer,
-        ].concat(additionalAttributeProducers);
+        ].concat(additionalAttributeProducers.map(makeCustomAttributeProducer));
     }
 
     public get needIR(): boolean {
