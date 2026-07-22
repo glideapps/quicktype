@@ -35,16 +35,26 @@ jobs:
             - name: Validate metadata and result
               id: metadata
               env:
+                  DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+                  EVENT_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+                  EVENT_HEAD_REPOSITORY: ${{ github.event.workflow_run.head_repository.full_name }}
+                  EVENT_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
                   EVENT_PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+                  GH_TOKEN: ${{ github.token }}
                   REPOSITORY: ${{ github.repository }}
               run: |
+                  PR_NUMBER=$(node -e 'const m = require("./comparison/metadata.json"); if (!Number.isSafeInteger(m.prNumber) || m.prNumber <= 0) process.exit(1); process.stdout.write(String(m.prNumber))')
+                  gh api "repos/$REPOSITORY/pulls/$PR_NUMBER" > /tmp/pull-request.json
                   node - <<'NODE'
                   const fs = require("node:fs");
                   const metadata = JSON.parse(fs.readFileSync("comparison/metadata.json", "utf8"));
                   const result = JSON.parse(fs.readFileSync("comparison/result.json", "utf8"));
+                  const pullRequest = JSON.parse(fs.readFileSync("/tmp/pull-request.json", "utf8"));
                   const sha = /^[0-9a-f]{40,64}$/;
                   if (!Number.isSafeInteger(metadata.prNumber) || metadata.prNumber <= 0) throw new Error("Invalid PR number");
-                  if (String(metadata.prNumber) !== process.env.EVENT_PR_NUMBER) throw new Error("Artifact PR does not match workflow event");
+                  if (process.env.EVENT_PR_NUMBER !== "" && String(metadata.prNumber) !== process.env.EVENT_PR_NUMBER) throw new Error("Artifact PR does not match workflow event");
+                  if (metadata.headSha !== process.env.EVENT_HEAD_SHA) throw new Error("Artifact head does not match workflow event");
+                  if (pullRequest.number !== metadata.prNumber || pullRequest.base.repo.full_name.toLowerCase() !== process.env.REPOSITORY.toLowerCase() || pullRequest.base.ref !== process.env.DEFAULT_BRANCH || pullRequest.head.repo.full_name.toLowerCase() !== process.env.EVENT_HEAD_REPOSITORY.toLowerCase() || pullRequest.head.ref !== process.env.EVENT_HEAD_BRANCH) throw new Error("Artifact PR does not match workflow source");
                   for (const key of ["baseSha", "prSha", "headSha"]) {
                       if (!sha.test(metadata[key])) throw new Error(`Invalid ${key}`);
                   }
@@ -165,7 +175,7 @@ jobs:
                   $MARKER
                   ### No generated-output differences
 
-                  ✅ Generated outputs are unchanged between the PR base and head revisions.
+                  ✅ This PR does not change generated outputs.
                   EOF
                       )
                   fi
