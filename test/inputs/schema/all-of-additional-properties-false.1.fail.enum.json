@@ -1,0 +1,6 @@
+{
+  "amount": 1250,
+  "frequency": "NotAValidFrequency",
+  "type": "GrossSalaryAmount",
+  "description": "Base salary"
+}

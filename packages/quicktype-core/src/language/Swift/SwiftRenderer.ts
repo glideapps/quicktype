@@ -386,8 +386,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
 
         if (
             this._options.sendable &&
-            (!this._options.mutableProperties || !isClass) &&
-            !this._options.objcSupport
+            (!this._options.mutableProperties || !isClass)
         ) {
             protocols.push("Sendable");
         }
@@ -501,7 +500,11 @@ export class SwiftRenderer extends ConvenienceRenderer {
         const isClass = this._options.useClasses || this.isCycleBreakerType(c);
         const structOrClass = isClass ? "class" : "struct";
         const finalPrefix =
-            isClass && this._options.finalClasses ? "final " : "";
+            isClass &&
+            (this._options.finalClasses ||
+                (this._options.sendable && !this._options.mutableProperties))
+                ? "final "
+                : "";
 
         if (isClass && this._options.objcSupport) {
             // [Michael Fey (@MrRooni), 2019-4-24] Swift 5 or greater, must come before the access declaration for the class.
@@ -1184,13 +1187,8 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
 
             if (this._options.objcSupport === false) {
                 this.ensureBlankLine();
-                this.emitMultiline(`    public var hashValue: Int {
-		return 0
-	}`);
-
-                this.ensureBlankLine();
                 this.emitMultiline(`    public func hash(into hasher: inout Hasher) {
-		// No-op
+		hasher.combine(0)
 	}`);
             }
 

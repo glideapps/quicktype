@@ -189,8 +189,14 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
     }
 
     public getUniqueArrayType(): void {
-        this.registerAndAddAttributes(
-            this.builderForNewType().getUniqueArrayType(this._forwardingRef),
+        // The attributes must be passed at creation, not added
+        // afterwards with `addAttributes`, which would assert on
+        // identity attributes such as minItems/maxItems.
+        this.register(
+            this.builderForNewType().getUniqueArrayType(
+                this._typeAttributes,
+                this._forwardingRef,
+            ),
         );
     }
 
