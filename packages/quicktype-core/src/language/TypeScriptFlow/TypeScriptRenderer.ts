@@ -81,6 +81,10 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
         );
     }
 
+    protected get emptyObjectType(): string {
+        return "object";
+    }
+
     protected anyType(): string {
         return this._tsFlowOptions.preferUnknown ? "unknown" : "any";
     }
