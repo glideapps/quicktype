@@ -1,2 +1,2 @@
-export { JSONSchemaTargetLanguage } from "./language";
-export { JSONSchemaRenderer } from "./JSONSchemaRenderer";
+export { JSONSchemaTargetLanguage } from "./language.js";
+export { JSONSchemaRenderer } from "./JSONSchemaRenderer.js";

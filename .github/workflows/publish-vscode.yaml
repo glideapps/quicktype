@@ -1,23 +1,35 @@
 name: Publish VS Code extension
 on:
-    push:
-        branches:
-            - master
+    release:
+        types: [published]
+
+concurrency:
+    group: vscode-release-${{ github.event.release.tag_name }}
+    cancel-in-progress: false
 
 jobs:
     publish-vscode:
+        # The Marketplace does not accept SemVer prerelease suffixes. npm
+        # prereleases still publish from -preN tags; the extension waits for
+        # the corresponding stable release.
+        if: ${{ !contains(github.event.release.tag_name, '-pre') }}
         runs-on: ubuntu-22.04
-        env:
-            # quicktype-core's build (packages/quicktype-core/env.sh) swaps in
-            # a CI-only fetch shim whenever $CI is set — which GitHub Actions
-            # always sets. PUBLISH=true makes it skip that swap so the bundled
-            # extension ships the real $fetch (issue #2874).
-            PUBLISH: "true"
+        permissions:
+            contents: read
         steps:
             - uses: actions/checkout@v3
             - uses: ./.github/workflows/setup
-            # Run via npm so node_modules/.bin is on PATH (patch-npm-version.ts
-            # is executed through its ts-node shebang).
+            - name: Validate release version
+              env:
+                  GITHUB_RELEASE_ID: ${{ github.event.release.id }}
+                  GITHUB_REPOSITORY: ${{ github.repository }}
+                  GITHUB_TOKEN: ${{ github.token }}
+                  RELEASE_TAG: ${{ github.event.release.tag_name }}
+              run: |
+                  RELEASE_VERSION=$(./node_modules/.bin/tsx script/release-version.ts validate "$RELEASE_TAG")
+                  echo "RELEASE_VERSION=$RELEASE_VERSION" >> "$GITHUB_ENV"
+            # Run via npm so node_modules/.bin is on PATH for the release
+            # helper's tsx shebang.
             - run: npm run pub:vscode
               env:
                   VSCE_TOKEN: ${{ secrets.VSCE_TOKEN }}

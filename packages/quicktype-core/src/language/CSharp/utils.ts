@@ -3,28 +3,28 @@ import unicode from "unicode-properties";
 import {
     minMaxLengthForType,
     minMaxValueForType,
-} from "../../attributes/Constraints";
-import { funPrefixNamer } from "../../Naming";
-import type { Sourcelike } from "../../Source";
+} from "../../attributes/Constraints.js";
+import { funPrefixNamer } from "../../Naming.js";
+import type { Sourcelike } from "../../Source.js";
 import {
     type WordInName,
     combineWords,
     firstUpperWordStyle,
     splitIntoWords,
     utf16LegalizeCharacters,
-} from "../../support/Strings";
-import { panic } from "../../support/Support";
-import type { Transformation } from "../../Transformers";
+} from "../../support/Strings.js";
+import { panic } from "../../support/Support.js";
+import type { Transformation } from "../../Transformers.js";
 import {
     ArrayType,
     EnumType,
     type PrimitiveType,
     type Type,
     UnionType,
-} from "../../Type";
-import { nullableFromUnion } from "../../Type/TypeUtils";
+} from "../../Type/index.js";
+import { nullableFromUnion } from "../../Type/TypeUtils.js";
 
-import { keywords } from "./constants";
+import { keywords } from "./constants.js";
 
 export enum AccessModifier {
     None = "None",

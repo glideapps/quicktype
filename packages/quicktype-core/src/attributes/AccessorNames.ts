@@ -11,23 +11,18 @@ import type {
     JSONSchemaAttributes,
     JSONSchemaType,
     Ref,
-} from "../input/JSONSchemaInput";
-import type { JSONSchema } from "../input/JSONSchemaStore";
-import { messageAssert } from "../Messages";
+} from "../input/JSONSchemaInput.js";
+import type { JSONSchema } from "../input/JSONSchemaStore.js";
+import { messageAssert } from "../Messages.js";
 import {
     checkArray,
     checkStringMap,
     defined,
     isStringMap,
-} from "../support/Support";
-import type {
-    EnumType,
-    ObjectType,
-    Type,
-    UnionType,
-} from "../Type/Type";
+} from "../support/Support.js";
+import type { EnumType, ObjectType, Type, UnionType } from "../Type/Type.js";
 
-import { TypeAttributeKind, type TypeAttributes } from "./TypeAttributes";
+import { TypeAttributeKind, type TypeAttributes } from "./TypeAttributes.js";
 
 export type AccessorEntry = string | Map<string, string>;
 

@@ -4,42 +4,42 @@ import {
     type TypeAttributeKind,
     type TypeAttributes,
     emptyTypeAttributes,
-} from "../attributes/TypeAttributes";
-import { Graph } from "../Graph";
+} from "../attributes/TypeAttributes.js";
+import { Graph } from "../Graph.js";
 import {
     type BaseGraphRewriteBuilder,
     GraphRemapBuilder,
     GraphRewriteBuilder,
-} from "../GraphRewriting";
-import { messageError } from "../Messages";
-import { assert, defined, mustNotHappen } from "../support/Support";
+} from "../GraphRewriting.js";
+import { messageError } from "../Messages.js";
+import { assert, defined, mustNotHappen } from "../support/Support.js";
 
-import { provenanceTypeAttributeKind } from "./ProvenanceTypeAttributeKind";
-import type { Type } from "./Type";
-import type { TypeBuilder } from "./TypeBuilder";
+import { provenanceTypeAttributeKind } from "./ProvenanceTypeAttributeKind.js";
+import type { Type } from "./Type.js";
+import type { TypeBuilder } from "./TypeBuilder.js";
 import {
     type StringTypeMapping,
     getNoStringTypeMapping,
-} from "./TypeBuilderUtils";
-import { removeIndirectionIntersections } from "./TypeGraphUtils";
+} from "./TypeBuilderUtils.js";
+import { removeIndirectionIntersections } from "./TypeGraphUtils.js";
 import {
     type TypeRef,
     assertTypeRefGraph,
     derefTypeRef,
     typeRefIndex,
-} from "./TypeRef";
+} from "./TypeRef.js";
 import {
     type SeparatedNamedTypes,
     isNamedType,
     separateNamedTypes,
-} from "./TypeUtils";
+} from "./TypeUtils.js";
 
 export class TypeAttributeStore {
     private readonly _topLevelValues: Map<string, TypeAttributes> = new Map();
 
     public constructor(
         private readonly _typeGraph: TypeGraph,
-        private _values: Array<TypeAttributes | undefined>,
+        private readonly _values: Array<TypeAttributes | undefined>,
     ) {}
 
     private getTypeIndex(t: Type): number {

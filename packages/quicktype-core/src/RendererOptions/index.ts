@@ -1,10 +1,10 @@
-import { messageError } from "../Messages";
-import { assert } from "../support/Support";
-import type { LanguageName, RendererOptions } from "../types";
+import { messageError } from "../Messages.js";
+import { assert } from "../support/Support.js";
+import type { LanguageName, RendererOptions } from "../types.js";
 
-import type { OptionDefinition, OptionKind, OptionValues } from "./types";
+import type { OptionDefinition, OptionKind, OptionValues } from "./types.js";
 
-export * from "./types";
+export * from "./types.js";
 
 /**
  * The superclass for target language options.  You probably want to use one of its
@@ -87,14 +87,16 @@ export class BooleanOption<Name extends string> extends Option<Name, boolean> {
         actual: Array<OptionDefinition<Name, boolean>>;
         display: Array<OptionDefinition<Name, boolean>>;
     } {
-        const negated = Object.assign({}, this.definition, {
+        const negated = {
+            ...this.definition,
             name: `no-${this.name}`,
             defaultValue: !this.definition.defaultValue,
-        });
-        const display = Object.assign({}, this.definition, {
+        } as OptionDefinition<Name, boolean>;
+        const display = {
+            ...this.definition,
             name: `[no-]${this.name}`,
             description: `${this.definition.description} (${this.definition.defaultValue ? "on" : "off"} by default)`,
-        });
+        } as OptionDefinition<Name, boolean>;
         return {
             display: [display],
             actual: [this.definition, negated],

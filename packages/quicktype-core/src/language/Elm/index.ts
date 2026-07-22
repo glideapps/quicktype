@@ -1,2 +1,2 @@
-export { ElmTargetLanguage, elmOptions } from "./language";
-export { ElmRenderer } from "./ElmRenderer";
+export { ElmTargetLanguage, elmOptions } from "./language.js";
+export { ElmRenderer } from "./ElmRenderer.js";

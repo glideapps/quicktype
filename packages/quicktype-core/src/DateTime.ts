@@ -1,5 +1,12 @@
 /* eslint-disable */
+// Adapted from ajv:
 // https://github.com/epoberezkin/ajv/blob/4d76c6fb813b136b6ec4fe74990bc97233d75dea/lib/compile/formats.js
+//
+// We deviate from ajv in that we recognize only strict RFC 3339 date-times:
+// the date/time separator must be "T" (or "t"), not a space, and times must
+// carry a timezone offset ("Z"/"z" or "+hh:mm"/"-hh:mm").  ajv accepted the
+// lenient forms, which meant we inferred "date-time" for strings like
+// "2013-06-15 21:10:28" that most target languages' date parsers reject.
 
 /*
 The MIT License (MIT)
@@ -27,7 +34,8 @@ SOFTWARE.
 
 const DATE = /^(\d\d\d\d)-(\d\d)-(\d\d)$/;
 const DAYS = [0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-const TIME = /^(\d\d):(\d\d):(\d\d)(\.\d+)?(z|[+-]\d\d:\d\d)?$/i;
+// RFC 3339 full-time: the timezone offset is mandatory.
+const TIME = /^(\d\d):(\d\d):(\d\d)(\.\d+)?(z|[+-]\d\d:\d\d)$/i;
 
 export interface DateTimeRecognizer {
     isDate: (s: string) => boolean;
@@ -35,7 +43,8 @@ export interface DateTimeRecognizer {
     isTime: (s: string) => boolean;
 }
 
-const DATE_TIME_SEPARATOR = /t|\s/i;
+// RFC 3339 date-time: the separator must be "T" or "t", never a space.
+const DATE_TIME_SEPARATOR = /t/i;
 
 export class DefaultDateTimeRecognizer implements DateTimeRecognizer {
     isDate(str: string) {

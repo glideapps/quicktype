@@ -1,6 +1,5 @@
 import { exceptionToString } from "@glideapps/ts-necessities";
-import fetch from "cross-fetch";
-import { introspectionQuery } from "graphql";
+import { getIntrospectionQuery } from "graphql";
 
 import { panic } from "quicktype-core";
 
@@ -11,6 +10,11 @@ const defaultHeaders: { [name: string]: string } = {
 };
 
 const headerRegExp = /^([^:]+):\s*(.*)$/;
+
+interface IntrospectionResult {
+    errors?: unknown;
+    data?: unknown;
+}
 
 export async function introspectServer(
     url: string,
@@ -32,15 +36,15 @@ export async function introspectServer(
         headers[matches[1]] = matches[2];
     }
 
-    let result;
+    let result: IntrospectionResult;
     try {
-        const response = await fetch(url, {
+        const response = await globalThis.fetch(url, {
             method,
-            headers: headers,
-            body: JSON.stringify({ query: introspectionQuery }),
+            headers,
+            body: JSON.stringify({ query: getIntrospectionQuery() }),
         });
 
-        result = await response.json();
+        result = (await response.json()) as IntrospectionResult;
     } catch (error) {
         return panic(
             `Error while fetching introspection query result: ${exceptionToString(error)}`,

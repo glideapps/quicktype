@@ -1,14 +1,14 @@
-import type { RenderContext } from "../../Renderer";
+import type { RenderContext } from "../../Renderer.js";
 import {
     BooleanOption,
     EnumOption,
     StringOption,
     getOptionValues,
-} from "../../RendererOptions";
-import { TargetLanguage } from "../../TargetLanguage";
-import type { LanguageName, RendererOptions } from "../../types";
+} from "../../RendererOptions/index.js";
+import { TargetLanguage } from "../../TargetLanguage.js";
+import type { LanguageName, RendererOptions } from "../../types.js";
 
-import { HaskellRenderer } from "./HaskellRenderer";
+import { HaskellRenderer } from "./HaskellRenderer.js";
 
 export const haskellOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
@@ -19,7 +19,7 @@ export const haskellOptions = {
             array: false,
             list: true,
         } as const,
-        "array",
+        "list",
     ),
     moduleName: new StringOption(
         "module",

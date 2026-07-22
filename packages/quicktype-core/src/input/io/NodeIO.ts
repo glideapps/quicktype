@@ -6,12 +6,11 @@ import { isNode } from "browser-or-node";
 import isURL from "is-url";
 import { Readable } from "readable-stream";
 
-import { messageError } from "../../Messages";
-import { panic } from "../../support/Support";
+import { messageError } from "../../Messages.js";
+import { panic } from "../../support/Support.js";
+import { filePathFromFileURI } from "../../support/WindowsPaths.js";
 
-import { getStream } from "./get-stream";
-
-import { fetch } from "./$fetch";
+import { getStream } from "./get-stream/index.js";
 
 interface HttpHeaders {
     [key: string]: string;
@@ -73,10 +72,8 @@ const ReadableWithFrom = Readable as unknown as {
 };
 
 function readableFromResponseBody(body: unknown): Readable {
-    // Native fetch (Node >= 18, browsers) returns a WHATWG ReadableStream,
-    // which lacks the Node stream API that our consumers rely on, so we have
-    // to wrap it.  The cross-fetch fallback (node-fetch) already returns a
-    // Node stream, which we pass through unchanged.
+    // Native fetch returns a WHATWG ReadableStream, which lacks the Node
+    // stream API that our consumers rely on, so we have to wrap it.
     if (typeof (body as WebReadableStream).getReader === "function") {
         return ReadableWithFrom.from(
             webStreamChunks(body as WebReadableStream),
@@ -104,10 +101,17 @@ export async function readableFromFileOrURL(
     httpHeaders?: string[],
 ): Promise<Readable> {
     try {
-        if (isURL(fileOrURL)) {
-            const response = await fetch(fileOrURL, {
+        if (fileOrURL.startsWith("file://")) {
+            fileOrURL = filePathFromFileURI(fileOrURL);
+        } else if (isURL(fileOrURL)) {
+            const response = await globalThis.fetch(fileOrURL, {
                 headers: parseHeaders(httpHeaders),
             });
+            if (!response.ok) {
+                throw new Error(
+                    `HTTP ${response.status} ${response.statusText}`,
+                );
+            }
 
             return readableFromResponseBody(defined(response.body));
         }

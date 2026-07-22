@@ -1,5 +1,5 @@
-export { KotlinTargetLanguage, kotlinOptions } from "./language";
-export { KotlinRenderer } from "./KotlinRenderer";
-export { KotlinJacksonRenderer } from "./KotlinJacksonRenderer";
-export { KotlinKlaxonRenderer } from "./KotlinKlaxonRenderer";
-export { KotlinXRenderer } from "./KotlinXRenderer";
+export { KotlinTargetLanguage, kotlinOptions } from "./language.js";
+export { KotlinRenderer } from "./KotlinRenderer.js";
+export { KotlinJacksonRenderer } from "./KotlinJacksonRenderer.js";
+export { KotlinKlaxonRenderer } from "./KotlinKlaxonRenderer.js";
+export { KotlinXRenderer } from "./KotlinXRenderer.js";

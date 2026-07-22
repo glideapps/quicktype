@@ -1,4 +1,4 @@
-import { EnumOption } from "../RendererOptions";
+import { EnumOption } from "../RendererOptions/index.js";
 
 export enum ConvertersOptions {
     AllObjects = "all-objects",

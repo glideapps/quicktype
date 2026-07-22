@@ -1,5 +1,5 @@
 export {
     JavaScriptPropTypesTargetLanguage,
     javaScriptPropTypesOptions,
-} from "./language";
-export { JavaScriptPropTypesRenderer } from "./JavaScriptPropTypesRenderer";
+} from "./language.js";
+export { JavaScriptPropTypesRenderer } from "./JavaScriptPropTypesRenderer.js";

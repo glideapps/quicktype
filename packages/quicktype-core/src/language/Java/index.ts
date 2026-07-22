@@ -1,3 +1,3 @@
-export { JavaTargetLanguage, javaOptions } from "./language";
-export { JavaRenderer } from "./JavaRenderer";
-export { JacksonRenderer } from "./JavaJacksonRenderer";
+export { JavaTargetLanguage, javaOptions } from "./language.js";
+export { JavaRenderer } from "./JavaRenderer.js";
+export { JacksonRenderer } from "./JavaJacksonRenderer.js";

@@ -1,18 +1,15 @@
 name: Publish npm packages
 on:
-    push:
-        branches:
-            - master
+    release:
+        types: [published]
+
+concurrency:
+    group: npm-release-${{ github.event.release.tag_name }}
+    cancel-in-progress: false
 
 jobs:
     publish-npm:
         runs-on: ubuntu-22.04
-        env:
-            # quicktype-core's build (packages/quicktype-core/env.sh) swaps in
-            # a CI-only fetch shim whenever $CI is set — which GitHub Actions
-            # always sets. PUBLISH=true makes it skip that swap so releases
-            # ship the real $fetch (issue #2874).
-            PUBLISH: "true"
         permissions:
             # Required for npm Trusted Publishing (OIDC): npm mints
             # short-lived, per-run credentials from this token instead
@@ -24,7 +21,19 @@ jobs:
             - uses: ./.github/workflows/setup
             # Trusted Publishing requires npm >= 11.5.1; the pinned Node
             # runtime ships an older npm, so upgrade it before publishing.
-            - run: npm install -g npm@latest
-            # Run via npm so node_modules/.bin is on PATH (patch-npm-version.ts
-            # is executed through its ts-node shebang).
+            # Pinned to major 11: npm@latest moved to 12.0.0, which requires
+            # Node ^22.22.2 || ^24.15.0 || >=26 and EBADENGINEs on our pinned
+            # Node (.nvmrc), breaking every publish.
+            - run: npm install -g npm@11
+            - name: Validate release version
+              env:
+                  GITHUB_RELEASE_ID: ${{ github.event.release.id }}
+                  GITHUB_REPOSITORY: ${{ github.repository }}
+                  GITHUB_TOKEN: ${{ github.token }}
+                  RELEASE_TAG: ${{ github.event.release.tag_name }}
+              run: |
+                  RELEASE_VERSION=$(./node_modules/.bin/tsx script/release-version.ts validate "$RELEASE_TAG")
+                  echo "RELEASE_VERSION=$RELEASE_VERSION" >> "$GITHUB_ENV"
+            # Run via npm so node_modules/.bin is on PATH for the release
+            # helper's tsx shebang.
             - run: npm run pub:npm

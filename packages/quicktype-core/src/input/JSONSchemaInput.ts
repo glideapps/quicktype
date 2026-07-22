@@ -5,7 +5,7 @@ import {
     arrayLast,
     arrayMapSync,
     definedMap,
-    // biome-ignore lint/suspicious/noShadowRestrictedNames: <explanation>
+    // biome-ignore lint/suspicious/noShadowRestrictedNames: collection-utils exports this name
     hasOwnProperty,
     hashCodeOf,
     hashString,
@@ -22,50 +22,53 @@ import {
 } from "collection-utils";
 import URI from "urijs";
 
-import { accessorNamesAttributeProducer } from "../attributes/AccessorNames";
+import { accessorNamesAttributeProducer } from "../attributes/AccessorNames.js";
 import {
     minMaxAttributeProducer,
+    minMaxItemsAttributeProducer,
     minMaxLengthAttributeProducer,
     patternAttributeProducer,
-} from "../attributes/Constraints";
-import { descriptionAttributeProducer } from "../attributes/Description";
-import { enumValuesAttributeProducer } from "../attributes/EnumValues";
-import { StringTypes } from "../attributes/StringTypes";
+} from "../attributes/Constraints.js";
+import { defaultValueAttributeProducer } from "../attributes/DefaultValue.js";
+import { descriptionAttributeProducer } from "../attributes/Description.js";
+import { enumValuesAttributeProducer } from "../attributes/EnumValues.js";
+import { StringTypes } from "../attributes/StringTypes.js";
 import {
     type TypeAttributes,
     combineTypeAttributes,
     emptyTypeAttributes,
     makeTypeAttributesInferred,
-} from "../attributes/TypeAttributes";
+} from "../attributes/TypeAttributes.js";
 import {
     TypeNames,
     makeNamesTypeAttributes,
     modifyTypeNames,
     singularizeTypeNames,
-} from "../attributes/TypeNames";
-import { uriSchemaAttributesProducer } from "../attributes/URIAttributes";
-import { messageAssert, messageError } from "../Messages";
-import type { RunContext } from "../Run";
+} from "../attributes/TypeNames.js";
+import { uriSchemaAttributesProducer } from "../attributes/URIAttributes.js";
+import { messageAssert, messageError } from "../Messages.js";
+import type { RunContext } from "../Run.js";
 import {
     type StringMap,
     assert,
     assertNever,
     defined,
     panic,
-    parseJSON,
-} from "../support/Support";
+} from "../support/Support.js";
+import { parseJSON } from "../support/ParseJSON.js";
+import { fixWindowsPath } from "../support/WindowsPaths.js";
 import {
     type PrimitiveTypeKind,
     type TransformedStringTypeKind,
     isNumberTypeKind,
     transformedStringTypeTargetTypeKindsMap,
-} from "../Type";
-import type { TypeBuilder } from "../Type/TypeBuilder";
-import type { TypeRef } from "../Type/TypeRef";
+} from "../Type/index.js";
+import type { TypeBuilder } from "../Type/TypeBuilder.js";
+import type { TypeRef } from "../Type/TypeRef.js";
 
-import type { Input } from "./Inputs";
-import { type JSONSchema, JSONSchemaStore } from "./JSONSchemaStore";
-import { type PathElement, PathElementKind } from "./PathElement";
+import type { Input } from "./Inputs.js";
+import { type JSONSchema, JSONSchemaStore } from "./JSONSchemaStore.js";
+import { type PathElement, PathElementKind } from "./PathElement.js";
 
 function keyOrIndex(pe: PathElement): string | undefined {
     if (pe.kind !== PathElementKind.KeyOrIndex) return undefined;
@@ -104,7 +107,7 @@ function withRef<T extends object>(
             : refOrLoc instanceof Ref
               ? refOrLoc
               : refOrLoc.canonicalRef;
-    return Object.assign({ ref }, props ?? {});
+    return { ref, ...(props ?? {}) };
 }
 
 function checkJSONSchemaObject(
@@ -143,7 +146,7 @@ function normalizeURI(uri: string | URI): URI {
     // JSONSchemaStore should take a URI, not a string, and if it reads from
     // a file it can decode by itself.
     if (typeof uri === "string") {
-        uri = new URI(uri);
+        uri = new URI(fixWindowsPath(uri));
     }
 
     return new URI(URI.decode(uri.clone().normalize().toString()));
@@ -151,7 +154,7 @@ function normalizeURI(uri: string | URI): URI {
 
 export class Ref {
     public static root(address: string | undefined): Ref {
-        const uri = definedMap(address, (a) => new URI(a));
+        const uri = definedMap(address, (a) => new URI(fixWindowsPath(a)));
         return new Ref(uri, []);
     }
 
@@ -165,9 +168,9 @@ export class Ref {
 
         if (path !== "") {
             const parts = path.split("/");
-            parts.forEach((part) =>
-                elements.push({ kind: PathElementKind.KeyOrIndex, key: part }),
-            );
+            parts.forEach((part) => {
+                elements.push({ kind: PathElementKind.KeyOrIndex, key: part });
+            });
         }
 
         return elements;
@@ -189,7 +192,7 @@ export class Ref {
     }
 
     public static parse(ref: string): Ref {
-        return Ref.parseURI(new URI(ref), true);
+        return Ref.parseURI(new URI(fixWindowsPath(ref)), true);
     }
 
     public addressURI: URI | undefined;
@@ -305,7 +308,7 @@ export class Ref {
     public get definitionName(): string | undefined {
         const pe = arrayGetFromEnd(this.path, 2);
         if (pe === undefined) return undefined;
-        if (keyOrIndex(pe) === "definitions")
+        if (keyOrIndex(pe) === "definitions" || keyOrIndex(pe) === "$defs")
             return keyOrIndex(defined(arrayLast(this.path)));
         return undefined;
     }
@@ -346,7 +349,7 @@ export class Ref {
         switch (first.kind) {
             case PathElementKind.Root:
                 return this.lookup(root, rest, root);
-            case PathElementKind.KeyOrIndex:
+            case PathElementKind.KeyOrIndex: {
                 const key = first.key;
                 if (Array.isArray(local)) {
                     if (!/^\d+$/.test(key)) {
@@ -379,6 +382,7 @@ export class Ref {
                     rest,
                     root,
                 );
+            }
 
             case PathElementKind.Type:
                 return panic('Cannot look up path that indexes "type"');
@@ -397,13 +401,11 @@ export class Ref {
         if (!(other instanceof Ref)) return false;
         if (this.addressURI !== undefined && other.addressURI !== undefined) {
             if (!this.addressURI.equals(other.addressURI)) return false;
-        } else {
-            if (
-                (this.addressURI === undefined) !==
-                (other.addressURI === undefined)
-            )
-                return false;
-        }
+        } else if (
+            (this.addressURI === undefined) !==
+            (other.addressURI === undefined)
+        )
+            return false;
 
         const l = this.path.length;
         if (l !== other.path.length) return false;
@@ -649,7 +651,10 @@ const schemaTypes = Object.getOwnPropertyNames(
 ) as JSONSchemaType[];
 
 export interface JSONSchemaAttributes {
+    forArray?: TypeAttributes;
+    forBoolean?: TypeAttributes;
     forCases?: TypeAttributes[];
+    forNull?: TypeAttributes;
     forNumber?: TypeAttributes;
     forObject?: TypeAttributes;
     forString?: TypeAttributes;
@@ -783,7 +788,7 @@ class Resolver {
             return [schema, result[1]];
         }
 
-        return schemaFetchError(base, virtualRef.address);
+        return schemaFetchError(base, virtualRef.toString());
     }
 
     public async resolveTopLevelRef(ref: Ref): Promise<[JSONSchema, Location]> {
@@ -924,8 +929,7 @@ async function addTypesInSchema(
         }
 
         const includedTypes = setFilter(schemaTypes, isTypeIncluded);
-        let producedAttributesForNoCases: JSONSchemaAttributes[] | undefined =
-            undefined;
+        let producedAttributesForNoCases: JSONSchemaAttributes[] | undefined;
 
         function forEachProducedAttribute(
             cases: JSONSchema[] | undefined,
@@ -1032,32 +1036,68 @@ async function addTypesInSchema(
             return typeBuilder.getPrimitiveType(kind, attributes);
         }
 
-        async function makeArrayType(): Promise<TypeRef> {
+        async function makeArrayType(
+            arrayAttributes: TypeAttributes,
+        ): Promise<TypeRef> {
             const singularAttributes = singularizeTypeNames(typeAttributes);
             const items = schema.items;
+            // JSON Schema 2020-12 renamed the array (tuple) form of `items` to
+            // `prefixItems`; treat it the same as a draft-07 array-valued
+            // `items` so tuple schemas produced by e.g. Pydantic v2 and
+            // schemars are not silently dropped.
+            const prefixItems = schema.prefixItems;
+            const tupleItems = Array.isArray(prefixItems) ? prefixItems : items;
+            const tupleKey = Array.isArray(prefixItems)
+                ? "prefixItems"
+                : "items";
             let itemType: TypeRef;
-            if (Array.isArray(items)) {
-                const itemsLoc = loc.push("items");
-                const itemTypes = await arrayMapSync(items, async (item, i) => {
-                    const itemLoc = itemsLoc.push(i.toString());
-                    return await toType(
-                        checkJSONSchema(item, itemLoc.canonicalRef),
-                        itemLoc,
-                        singularAttributes,
+            if (Array.isArray(tupleItems)) {
+                const itemsLoc = loc.push(tupleKey);
+                const itemTypes = await arrayMapSync(
+                    tupleItems,
+                    async (item, i) => {
+                        const itemLoc = itemsLoc.push(i.toString());
+                        return await toType(
+                            checkJSONSchema(item, itemLoc.canonicalRef),
+                            itemLoc,
+                            singularAttributes,
+                        );
+                    },
+                );
+                // In 2020-12 an object-form `items` next to `prefixItems`
+                // describes the rest elements of an open tuple.  quicktype
+                // models tuples as arrays of a union of the member types, so
+                // the rest type joins that union.  A boolean `items` (`false`
+                // closes the tuple, `true` allows anything) is ignored.
+                if (
+                    tupleKey === "prefixItems" &&
+                    typeof items === "object" &&
+                    !Array.isArray(items)
+                ) {
+                    const restItemsLoc = loc.push("items");
+                    itemTypes.push(
+                        await toType(
+                            checkJSONSchema(items, restItemsLoc.canonicalRef),
+                            restItemsLoc,
+                            singularAttributes,
+                        ),
                     );
-                });
+                }
                 itemType = typeBuilder.getUnionType(
                     emptyTypeAttributes,
                     new Set(itemTypes),
                 );
-            } else if (typeof items === "object") {
+            } else if (
+                typeof items === "object" ||
+                typeof items === "boolean"
+            ) {
                 const itemsLoc = loc.push("items");
                 itemType = await toType(
                     checkJSONSchema(items, itemsLoc.canonicalRef),
                     itemsLoc,
                     singularAttributes,
                 );
-            } else if (items !== undefined && items !== true) {
+            } else if (items !== undefined) {
                 return messageError(
                     "SchemaArrayItemsMustBeStringOrArray",
                     withRef(loc, { actual: items }),
@@ -1067,7 +1107,7 @@ async function addTypesInSchema(
             }
 
             typeBuilder.addAttributes(itemType, singularAttributes);
-            return typeBuilder.getArrayType(emptyTypeAttributes, itemType);
+            return typeBuilder.getArrayType(arrayAttributes, itemType);
         }
 
         async function makeObjectType(): Promise<TypeRef> {
@@ -1107,6 +1147,14 @@ async function addTypesInSchema(
                 hasOwnProperty(schema.patternProperties, ".*")
             ) {
                 additionalProperties = schema.patternProperties[".*"];
+            }
+
+            // Handle unevaluatedProperties if additionalProperties is not defined
+            if (
+                additionalProperties === undefined &&
+                schema.unevaluatedProperties !== undefined
+            ) {
+                additionalProperties = schema.unevaluatedProperties;
             }
 
             const objectAttributes = combineTypeAttributes(
@@ -1230,6 +1278,7 @@ async function addTypesInSchema(
             schema.properties !== undefined ||
             schema.additionalProperties !== undefined ||
             schema.items !== undefined ||
+            schema.prefixItems !== undefined ||
             schema.required !== undefined ||
             enumArray !== undefined ||
             isConst;
@@ -1242,6 +1291,12 @@ async function addTypesInSchema(
             const numberAttributes = combineProducedAttributes(
                 ({ forNumber }) => forNumber,
             );
+            const booleanAttributes = combineProducedAttributes(
+                ({ forBoolean }) => forBoolean,
+            );
+            const nullAttributes = combineProducedAttributes(
+                ({ forNull }) => forNull,
+            );
 
             for (const [name, kind] of [
                 ["null", "null"],
@@ -1253,7 +1308,11 @@ async function addTypesInSchema(
 
                 const attributes = isNumberTypeKind(kind)
                     ? numberAttributes
-                    : undefined;
+                    : kind === "bool"
+                      ? booleanAttributes
+                      : kind === "null"
+                        ? nullAttributes
+                        : undefined;
                 unionTypes.push(typeBuilder.getPrimitiveType(kind, attributes));
             }
 
@@ -1283,7 +1342,10 @@ async function addTypesInSchema(
             }
 
             if (includeArray) {
-                unionTypes.push(await makeArrayType());
+                const arrayAttributes = combineProducedAttributes(
+                    ({ forArray }) => forArray,
+                );
+                unionTypes.push(await makeArrayType(arrayAttributes));
             }
 
             if (includeObject) {
@@ -1350,14 +1412,7 @@ async function addTypesInSchema(
 
         let result: TypeRef;
         if (typeof schema === "boolean") {
-            // FIXME: Empty union.  We'd have to check that it's supported everywhere,
-            // in particular in union flattening.
-            messageAssert(
-                schema === true,
-                "SchemaFalseNotSupported",
-                withRef(loc),
-            );
-            result = typeBuilder.getPrimitiveType("any");
+            result = typeBuilder.getPrimitiveType(schema ? "any" : "none");
         } else {
             loc = loc.updateWithID(schema.$id);
             result = await convertToType(schema, loc, typeAttributes);
@@ -1442,7 +1497,7 @@ async function refsInSchemaForURI(
             });
         }
 
-        return mapMap(mapFromObject(schema), (_, name) => ref.push(name));
+        return mapMap(mapFromObject(schema), (_, key) => ref.push(key));
     }
 
     let name: string;
@@ -1459,6 +1514,7 @@ async function refsInSchemaForURI(
 class InputJSONSchemaStore extends JSONSchemaStore {
     public constructor(
         private readonly _inputs: Map<string, string>,
+        private readonly _ctx: RunContext,
         private readonly _delegate?: JSONSchemaStore,
     ) {
         super();
@@ -1467,9 +1523,11 @@ class InputJSONSchemaStore extends JSONSchemaStore {
     public async fetch(address: string): Promise<JSONSchema | undefined> {
         const maybeInput = this._inputs.get(address);
         if (maybeInput !== undefined) {
-            return checkJSONSchema(
-                parseJSON(maybeInput, "JSON Schema", address),
-                () => Ref.root(address),
+            return this._ctx.time("parse JSON Schema", () =>
+                checkJSONSchema(
+                    parseJSON(maybeInput, "JSON Schema", address),
+                    () => Ref.root(address),
+                ),
             );
         }
 
@@ -1497,7 +1555,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
 
     private readonly _schemaInputs: Map<string, string> = new Map();
 
-    private _schemaSources: Array<[URI, JSONSchemaSourceData]> = [];
+    private readonly _schemaSources: Array<[URI, JSONSchemaSourceData]> = [];
 
     private readonly _topLevels: Map<string, Ref> = new Map();
 
@@ -1511,10 +1569,12 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
         this._attributeProducers = [
             descriptionAttributeProducer,
             accessorNamesAttributeProducer,
+            defaultValueAttributeProducer,
             enumValuesAttributeProducer,
             uriSchemaAttributesProducer,
             minMaxAttributeProducer,
             minMaxLengthAttributeProducer,
+            minMaxItemsAttributeProducer,
             patternAttributeProducer,
         ].concat(additionalAttributeProducers);
     }
@@ -1539,10 +1599,12 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
                 return panic("Must have a schema store to process JSON Schema");
             }
         } else {
-            maybeSchemaStore = this._schemaStore = new InputJSONSchemaStore(
+            this._schemaStore = new InputJSONSchemaStore(
                 this._schemaInputs,
+                ctx,
                 maybeSchemaStore,
             );
+            maybeSchemaStore = this._schemaStore;
         }
 
         const schemaStore = maybeSchemaStore;

@@ -5,13 +5,13 @@ import {
     setMap,
     setUnionInto,
 } from "collection-utils";
-import * as pluralize from "pluralize";
+import pluralize from "pluralize";
 
-import { Chance } from "../support/Chance";
-import { splitIntoWords } from "../support/Strings";
-import { assert, defined, panic } from "../support/Support";
+import { Chance } from "../support/Chance.js";
+import { splitIntoWords } from "../support/Strings.js";
+import { assert, defined, panic } from "../support/Support.js";
 
-import { TypeAttributeKind, type TypeAttributes } from "./TypeAttributes";
+import { TypeAttributeKind, type TypeAttributes } from "./TypeAttributes.js";
 
 let chance: Chance;
 let usedRandomNames: Set<string>;

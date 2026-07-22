@@ -1,15 +1,30 @@
-name: Test PR
+name: Test
 on:
-    pull_request:
+    push:
         branches:
             - master
-            - "release/**"
+    pull_request:
 jobs:
     build:
+        name: Build and unit tests (Node ${{ matrix.node-version }})
         runs-on: ubuntu-22.04
+        strategy:
+            fail-fast: false
+            matrix:
+                node-version: ["20", "22", "24"]
         steps:
             - uses: actions/checkout@v3
             - uses: ./.github/workflows/setup
+              with:
+                  node-version: ${{ matrix.node-version }}
+            - name: Check formatting (Biome)
+              if: ${{ matrix.node-version == '24' }}
+              run: npm run lint
+            - run: npm run test:unit
+            - run: node dist/index.js --version
+            - name: Run representative fixtures on the minimum Node version
+              if: ${{ matrix.node-version == '20' }}
+              run: CPUs=2 QUICKTEST=true FIXTURE=javascript,typescript npm run test:fixtures -- test/inputs/json/samples/pokedex.json
 
     test:
         needs: [build]
@@ -24,6 +39,7 @@ jobs:
                     - javascript,schema-javascript
                     - golang,schema-golang
                     - cjson,schema-cjson
+                    - cjson-default,cjson-multi-header,cjson-multi-split
                     - cplusplus,schema-cplusplus
                     - flow,schema-flow
                     - java,schema-java
@@ -35,16 +51,15 @@ jobs:
                     # - swift,schema-swift # pgp issue
                     - javascript-prop-types
                     - ruby
-                    - php
+                    - php,schema-php
                     - scala3,schema-scala3
+                    - scala3-upickle,schema-scala3-upickle
                     - elixir,schema-elixir,graphql-elixir
+                    - elm,schema-elm
                     - comment-injection-treesitter,comment-injection-typescript,comment-injection-typescript-zod,comment-injection-typescript-effect-schema
 
                     # Partially working
                     # - schema-typescript # TODO Unify with typescript once fixed
-
-                    # Implementation is too outdated to test in GitHub Actions
-                    # - elm,schema-elm
 
                     # Language is too niche / obscure to test easily on ubuntu-22.04
                     # - pike,schema-pike
@@ -65,6 +80,8 @@ jobs:
                       runs-on: ubuntu-latest-16-cores
                     # Kotlin is also slow
                     - fixture: kotlin,schema-kotlin,kotlin-jackson,schema-kotlin-jackson
+                      runs-on: ubuntu-latest-16-cores
+                    - fixture: kotlinx,schema-kotlinx
                       runs-on: ubuntu-latest-16-cores
 
                     # - fixture: objective-c # segfault on compiled test cmd
@@ -106,7 +123,7 @@ jobs:
               if: ${{ contains(matrix.fixture, 'csharp') }}
               uses: actions/setup-dotnet@v3
               with:
-                  dotnet-version: 6
+                  dotnet-version: 8
 
             - name: Install Rust
               if: ${{ contains(matrix.fixture, 'rust') }}
@@ -117,7 +134,7 @@ jobs:
             - name: Install Elm
               if: ${{ contains(matrix.fixture, 'elm') }}
               run: |
-                  curl -L -o elm.gz https://github.com/elm/compiler/releases/download/0.19.1/binary-for-linux-64-bit.gz
+                  curl -L -o elm.gz https://github.com/elm/compiler/releases/download/0.19.2/elm-0.19.2-linux-x64.gz
                   gunzip elm.gz
                   chmod +x elm
                   sudo mv elm /usr/local/bin/
@@ -127,16 +144,16 @@ jobs:
                   if ! command -v stack > /dev/null 2>&1; then
                     curl -sL "https://get.haskellstack.org/" | sh
                   fi
-            - name: Install Python 3.7
+            - name: Install Python 3.12
               if: ${{ contains(matrix.fixture, 'python') }}
               uses: actions/setup-python@v4
               with:
-                  python-version: 3.7
+                  python-version: "3.12"
 
             - name: Install Python Dependencies
               if: ${{ contains(matrix.fixture, 'python') }}
               run: |
-                  pip3.7 install mypy python-dateutil types-python-dateutil
+                  pip3.12 install mypy python-dateutil types-python-dateutil
             - name: Install flow
               if: ${{ contains(matrix.fixture, 'flow') }}
               run: |
@@ -189,7 +206,7 @@ jobs:
                   elixir-version: "1.15.7"
                   otp-version: "26.0"
 
-            - run: QUICKTEST=true FIXTURE=${{ matrix.fixture }} npm test
+            - run: QUICKTEST=true FIXTURE=${{ matrix.fixture }} npm run test:fixtures
 
     test-complete:
         if: ${{ cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}

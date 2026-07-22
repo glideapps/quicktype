@@ -1,28 +1,19 @@
-import type { ConvenienceRenderer } from "../../ConvenienceRenderer";
-import type { RenderContext } from "../../Renderer";
+import type { ConvenienceRenderer } from "../../ConvenienceRenderer.js";
+import type { RenderContext } from "../../Renderer.js";
 import {
-    EnumOption,
+    BooleanOption,
     StringOption,
     getOptionValues,
-} from "../../RendererOptions";
-import { assertNever } from "../../support/Support";
-import { TargetLanguage } from "../../TargetLanguage";
-import type { LanguageName, RendererOptions } from "../../types";
+} from "../../RendererOptions/index.js";
+import { TargetLanguage } from "../../TargetLanguage.js";
+import type { LanguageName, RendererOptions } from "../../types.js";
 
-import { Smithy4sRenderer } from "./Smithy4sRenderer";
-
-export enum Framework {
-    None = "None",
-}
+import { Smithy4sRenderer } from "./Smithy4sRenderer.js";
 
 export const smithyOptions = {
-    // FIXME: why does this exist
-    framework: new EnumOption(
-        "framework",
-        "Serialization framework",
-        { "just-types": Framework.None } as const,
-        "just-types",
-    ),
+    // Plain types is the only mode Smithy supports; the flag is accepted
+    // for consistency with the other languages.
+    justTypes: new BooleanOption("just-types", "Plain types only", false),
     packageName: new StringOption("package", "Package", "PACKAGE", "quicktype"),
 };
 
@@ -55,13 +46,10 @@ export class SmithyTargetLanguage extends TargetLanguage<
         renderContext: RenderContext,
         untypedOptionValues: RendererOptions<Lang>,
     ): ConvenienceRenderer {
-        const options = getOptionValues(smithyOptions, untypedOptionValues);
-
-        switch (options.framework) {
-            case Framework.None:
-                return new Smithy4sRenderer(this, renderContext, options);
-            default:
-                return assertNever(options.framework);
-        }
+        return new Smithy4sRenderer(
+            this,
+            renderContext,
+            getOptionValues(smithyOptions, untypedOptionValues),
+        );
     }
 }

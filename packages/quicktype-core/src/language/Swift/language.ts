@@ -1,22 +1,22 @@
-import type { DateTimeRecognizer } from "../../DateTime";
-import type { RenderContext } from "../../Renderer";
+import type { DateTimeRecognizer } from "../../DateTime.js";
+import type { RenderContext } from "../../Renderer.js";
 import {
     BooleanOption,
     EnumOption,
     StringOption,
     getOptionValues,
-} from "../../RendererOptions";
-import { AcronymStyleOptions, acronymOption } from "../../support/Acronyms";
-import { TargetLanguage } from "../../TargetLanguage";
+} from "../../RendererOptions/index.js";
+import { AcronymStyleOptions, acronymOption } from "../../support/Acronyms.js";
+import { TargetLanguage } from "../../TargetLanguage.js";
 import type {
     PrimitiveStringTypeKind,
     TransformedStringTypeKind,
-} from "../../Type";
-import type { StringTypeMapping } from "../../Type/TypeBuilderUtils";
-import type { LanguageName, RendererOptions } from "../../types";
+} from "../../Type/index.js";
+import type { StringTypeMapping } from "../../Type/TypeBuilderUtils.js";
+import type { LanguageName, RendererOptions } from "../../types.js";
 
-import { SwiftRenderer } from "./SwiftRenderer";
-import { SwiftDateTimeRecognizer } from "./utils";
+import { SwiftRenderer } from "./SwiftRenderer.js";
+import { SwiftDateTimeRecognizer } from "./utils.js";
 
 export const swiftOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
@@ -54,6 +54,11 @@ export const swiftOptions = {
         } as const,
         "struct",
     ),
+    finalClasses: new BooleanOption(
+        "final-classes",
+        "Mark classes as final",
+        false,
+    ),
     mutableProperties: new BooleanOption(
         "mutable-properties",
         "Use var instead of let for object properties",
@@ -67,7 +72,7 @@ export const swiftOptions = {
             dense: true,
             normal: false,
         } as const,
-        "dense",
+        "normal",
         "secondary",
     ),
     linux: new BooleanOption(
@@ -84,11 +89,6 @@ export const swiftOptions = {
     optionalEnums: new BooleanOption(
         "optional-enums",
         "If no matching case is found enum value is set to null",
-        false,
-    ),
-    swift5Support: new BooleanOption(
-        "swift-5-support",
-        "Renders output in a Swift 5 compatible mode",
         false,
     ),
     sendable: new BooleanOption(

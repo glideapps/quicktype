@@ -1,0 +1,8 @@
+{
+    "input": [
+        {
+            "content": "valid item"
+        },
+        ["this array is not a valid item"]
+    ]
+}

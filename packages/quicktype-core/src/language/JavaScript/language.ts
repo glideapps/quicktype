@@ -1,20 +1,24 @@
-import type { RenderContext } from "../../Renderer";
+import type { RenderContext } from "../../Renderer.js";
 import {
     BooleanOption,
     EnumOption,
     getOptionValues,
-} from "../../RendererOptions";
-import { AcronymStyleOptions, acronymOption } from "../../support/Acronyms";
-import { convertersOption } from "../../support/Converters";
-import { TargetLanguage } from "../../TargetLanguage";
+} from "../../RendererOptions/index.js";
+import { AcronymStyleOptions, acronymOption } from "../../support/Acronyms.js";
+import { convertersOption } from "../../support/Converters.js";
+import {
+    JS_SAFE_INTEGER_RANGE,
+    type IntegerRange,
+} from "../../support/IntegerRange.js";
+import { TargetLanguage } from "../../TargetLanguage.js";
 import type {
     PrimitiveStringTypeKind,
     TransformedStringTypeKind,
-} from "../../Type";
-import type { StringTypeMapping } from "../../Type/TypeBuilderUtils";
-import type { LanguageName, RendererOptions } from "../../types";
+} from "../../Type/index.js";
+import type { StringTypeMapping } from "../../Type/TypeBuilderUtils.js";
+import type { LanguageName, RendererOptions } from "../../types.js";
 
-import { JavaScriptRenderer } from "./JavaScriptRenderer";
+import { JavaScriptRenderer } from "./JavaScriptRenderer.js";
 
 export const javaScriptOptions = {
     acronymStyle: acronymOption(AcronymStyleOptions.Pascal),
@@ -51,6 +55,10 @@ export const javaScriptLanguageConfig = {
 export class JavaScriptTargetLanguage extends TargetLanguage<
     typeof javaScriptLanguageConfig
 > {
+    public getSupportedIntegerRange(): IntegerRange | null {
+        return JS_SAFE_INTEGER_RANGE;
+    }
+
     public constructor() {
         super(javaScriptLanguageConfig);
     }

@@ -1,12 +1,13 @@
 import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
-} from "../../ConvenienceRenderer";
-import { type Name, Namer } from "../../Naming";
-import type { RenderContext } from "../../Renderer";
-import type { OptionValues } from "../../RendererOptions";
-import type { Sourcelike } from "../../Source";
-import type { TargetLanguage } from "../../TargetLanguage";
+} from "../../ConvenienceRenderer.js";
+import { type Name, Namer } from "../../Naming.js";
+import type { RenderContext } from "../../Renderer.js";
+import type { OptionValues } from "../../RendererOptions/index.js";
+import type { Sourcelike } from "../../Source.js";
+import type { TargetLanguage } from "../../TargetLanguage.js";
+import { matchType, nullableFromUnion } from "../../Type/TypeUtils.js";
 import {
     ArrayType,
     ClassType,
@@ -15,11 +16,10 @@ import {
     PrimitiveType,
     type Type,
     UnionType,
-} from "../../Type";
-import { matchType, nullableFromUnion } from "../../Type/TypeUtils";
+} from "../../Type/index.js";
 
-import { forbiddenModuleNames, reservedWords } from "./constants";
-import type { elixirOptions } from "./language";
+import { forbiddenModuleNames, reservedWords } from "./constants.js";
+import type { elixirOptions } from "./language.js";
 import {
     capitalizeFirstLetter,
     escapeDoubleQuotes,
@@ -27,7 +27,7 @@ import {
     memberNameStyle,
     simpleNameStyle,
     stringEscape,
-} from "./utils";
+} from "./utils.js";
 
 export class ElixirRenderer extends ConvenienceRenderer {
     public constructor(
@@ -47,7 +47,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
     }
 
     protected canBeForwardDeclared(t: Type): boolean {
-        return "class" === t.kind;
+        return t.kind === "class";
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
@@ -798,7 +798,10 @@ export class ElixirRenderer extends ConvenienceRenderer {
                         ]);
                     }
                 });
-                if (structDescription.length || attributeDescriptions.length) {
+                if (
+                    structDescription.length > 0 ||
+                    attributeDescriptions.length > 0
+                ) {
                     this.emitDescription([
                         ...structDescription,
                         ...attributeDescriptions,
@@ -816,7 +819,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                         }
                     }
                 });
-                if (requiredAttributes.length) {
+                if (requiredAttributes.length > 0) {
                     this.emitLine(["@enforce_keys [", requiredAttributes, "]"]);
                 }
 
@@ -942,7 +945,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 this.forEachClassProperty(c, "none", (_name, _jsonName, _p) => {
                     propCount++;
                 });
-                const isEmpty = propCount ? false : true;
+                const isEmpty = !propCount;
                 this.ensureBlankLine();
                 this.emitBlock(
                     [`def from_map(${isEmpty ? "_" : ""}m) do`],
@@ -1108,9 +1111,7 @@ end`);
         );
     }
 
-    protected emitUnion(_u: UnionType, _unionName: Name): void {
-        return;
-    }
+    protected emitUnion(_u: UnionType, _unionName: Name): void {}
 
     protected emitSourceStructure(): void {
         if (this.leadingComments !== undefined) {
@@ -1147,14 +1148,14 @@ end`);
             this.forEachTopLevel(
                 "leading-and-interposing",
                 (topLevel, name) => {
-                    const isTopLevelArray = "array" === topLevel.kind;
+                    const isTopLevelArray = topLevel.kind === "array";
 
                     this.emitBlock(
                         ["defmodule ", this.nameWithNamespace(name), " do"],
                         () => {
                             const description =
                                 this.descriptionForType(topLevel) ?? [];
-                            if (description.length) {
+                            if (description.length > 0) {
                                 this.emitDescription([...description]);
                                 this.ensureBlankLine();
                             }

@@ -15,18 +15,18 @@ import {
     getAccessorName,
     objectPropertyNames,
     unionMemberName,
-} from "./attributes/AccessorNames";
+} from "./attributes/AccessorNames.js";
 import {
     descriptionTypeAttributeKind,
     propertyDescriptionsTypeAttributeKind,
-} from "./attributes/Description";
-import { TypeAttributeKind } from "./attributes/TypeAttributes";
+} from "./attributes/Description.js";
+import { TypeAttributeKind } from "./attributes/TypeAttributes.js";
 import {
     type Declaration,
     type DeclarationIR,
     cycleBreakerTypesForGraph,
     declarationsForGraph,
-} from "./DeclarationIR";
+} from "./DeclarationIR.js";
 import {
     DependencyName,
     FixedName,
@@ -35,31 +35,29 @@ import {
     Namespace,
     SimpleName,
     keywordNamespace,
-} from "./Naming";
+} from "./Naming.js";
 import {
     type BlankLineConfig,
     type ForEachPosition,
-    type RenderContext,
     Renderer,
-} from "./Renderer";
+} from "./Renderer.js";
 import {
     type Sourcelike,
     serializeRenderResult,
     sourcelikeToSource,
-} from "./Source";
+} from "./Source.js";
 import {
     type Comment,
     type CommentOptions,
     isStringComment,
-} from "./support/Comments";
-import { trimEnd } from "./support/Strings";
-import { assert, defined, nonNull, panic } from "./support/Support";
-import type { TargetLanguage } from "./TargetLanguage";
+} from "./support/Comments.js";
+import { trimEnd } from "./support/Strings.js";
+import { assert, defined, nonNull, panic } from "./support/Support.js";
 import {
     type Transformation,
     followTargetType,
     transformationForType,
-} from "./Transformers";
+} from "./Transformers.js";
 import {
     type ClassProperty,
     ClassType,
@@ -69,14 +67,14 @@ import {
     type Type,
     type TypeKind,
     UnionType,
-} from "./Type";
-import { TypeAttributeStoreView } from "./Type/TypeGraph";
+} from "./Type/index.js";
+import { TypeAttributeStoreView } from "./Type/TypeGraph.js";
 import {
     isNamedType,
     matchTypeExhaustive,
     nullableFromUnion,
     separateNamedTypes,
-} from "./Type/TypeUtils";
+} from "./Type/TypeUtils.js";
 
 const wordWrap: (s: string) => string = _wordwrap(90);
 
@@ -176,13 +174,6 @@ export abstract class ConvenienceRenderer extends Renderer {
     private _cycleBreakerTypes?: Set<Type> | undefined;
 
     private _alphabetizeProperties = false;
-
-    public constructor(
-        targetLanguage: TargetLanguage,
-        renderContext: RenderContext,
-    ) {
-        super(targetLanguage, renderContext);
-    }
 
     public get topLevels(): ReadonlyMap<string, Type> {
         return this.typeGraph.topLevels;
@@ -834,9 +825,9 @@ export abstract class ConvenienceRenderer extends Renderer {
                 (_doubleType) => "double",
                 (_stringType) => "string",
                 (arrayType) =>
-                    typeNameForUnionMember(arrayType.items) + "_array",
+                    `${typeNameForUnionMember(arrayType.items)}_array`,
                 (classType) => lookup(this.nameForNamedType(classType)),
-                (mapType) => typeNameForUnionMember(mapType.values) + "_map",
+                (mapType) => `${typeNameForUnionMember(mapType.values)}_map`,
                 (objectType) => {
                     assert(
                         this.targetLanguage.supportsFullObjectType,
@@ -1004,10 +995,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         f: (name: Name, jsonName: string, position: ForEachPosition) => void,
     ): void {
         const caseNames = defined(this._caseNamesStoreView).get(e);
-        const sortedCaseNames = mapSortBy(caseNames, (n) =>
-            defined(this.names.get(n)),
-        );
-        this.forEachWithBlankLines(sortedCaseNames, blankLocations, f);
+        this.forEachWithBlankLines(caseNames, blankLocations, f);
     }
 
     protected forEachTransformation(
@@ -1217,7 +1205,9 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     private commentLineEscapes(
-        options: Required<Pick<CommentOptions, "lineStart" | "firstLineStart">> &
+        options: Required<
+            Pick<CommentOptions, "lineStart" | "firstLineStart">
+        > &
             Pick<CommentOptions, "lineEnd" | "beforeComment" | "afterComment">,
     ): ReadonlyArray<readonly [string, string]> {
         const delimiters = [
@@ -1273,7 +1263,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         // A quote at the end of the line would merge with a closing
         // `"""` emitted right after it.  The quote needs escaping iff
         // it's preceded by an even number of backslashes.
-        if (lineEnd !== undefined && lineEnd.startsWith('"')) {
+        if (lineEnd?.startsWith('"')) {
             const trailing = /(\\*)"$/.exec(escaped);
             if (trailing !== null && trailing[1].length % 2 === 0) {
                 escaped = `${escaped.slice(0, -1)}\\"`;

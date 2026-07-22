@@ -45,14 +45,14 @@ class MersenneTwister {
 
     private readonly LOWER_MASK: number;
 
-    private mt: number[];
+    private readonly mt: number[];
 
     private mti: number;
 
     public constructor(seed: number) {
         if (seed === undefined) {
             // kept random number same size as time used previously to ensure no unexpected results downstream
-            seed = Math.floor(Math.random() * Math.pow(10, 13));
+            seed = Math.floor(Math.random() * 10 ** 13);
         }
 
         /* Period parameters */
@@ -88,13 +88,13 @@ class MersenneTwister {
 
     /* generates a random number on [0,0xffffffff]-interval */
     private genrand_int32() {
-        let y;
+        let y: number;
         const mag01 = [0x0, this.MATRIX_A];
         /* mag01[x] = x * MATRIX_A  for x=0,1 */
 
         if (this.mti >= this.N) {
             /* generate N words at one time */
-            let kk;
+            let kk: number;
 
             if (this.mti === this.N + 1) {
                 /* if init_genrand() has not been called, */

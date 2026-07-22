@@ -1,2 +1,2 @@
-export { SwiftTargetLanguage, swiftOptions } from "./language";
-export { SwiftRenderer } from "./SwiftRenderer";
+export { SwiftTargetLanguage, swiftOptions } from "./language.js";
+export { SwiftRenderer } from "./SwiftRenderer.js";

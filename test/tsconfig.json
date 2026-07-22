@@ -1,5 +1,5 @@
 {
-    "extends": "@tsconfig/node18/tsconfig.json",
+    "extends": "@tsconfig/node20/tsconfig.json",
     "compilerOptions": {
         "strict": true,
         "alwaysStrict": true,
@@ -7,5 +7,5 @@
         "noUnusedParameters": true,
         "resolveJsonModule": true
     },
-    "include": ["*.ts", "../dist/*.js", "../dist/*.d.ts"]
+    "include": ["*.ts", "unit/**/*.ts", "../dist/*.js", "../dist/*.d.ts"]
 }

@@ -1,18 +1,18 @@
-import type { RenderContext } from "../../Renderer";
+import type { RenderContext } from "../../Renderer.js";
 import {
     BooleanOption,
     StringOption,
     getOptionValues,
-} from "../../RendererOptions";
-import { TargetLanguage } from "../../TargetLanguage";
+} from "../../RendererOptions/index.js";
+import { TargetLanguage } from "../../TargetLanguage.js";
+import type { StringTypeMapping } from "../../Type/TypeBuilderUtils.js";
 import type {
     PrimitiveStringTypeKind,
     TransformedStringTypeKind,
-} from "../../Type";
-import type { StringTypeMapping } from "../../Type/TypeBuilderUtils";
-import type { LanguageName, RendererOptions } from "../../types";
+} from "../../Type/index.js";
+import type { LanguageName, RendererOptions } from "../../types.js";
 
-import { GoRenderer } from "./GolangRenderer";
+import { GoRenderer } from "./GolangRenderer.js";
 
 export const goOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),

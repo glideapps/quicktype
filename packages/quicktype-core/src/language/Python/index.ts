@@ -1,3 +1,3 @@
-export { PythonTargetLanguage, pythonOptions } from "./language";
-export { PythonRenderer } from "./PythonRenderer";
-export { JSONPythonRenderer } from "./JSONPythonRenderer";
+export { PythonTargetLanguage, pythonOptions } from "./language.js";
+export { PythonRenderer } from "./PythonRenderer.js";
+export { JSONPythonRenderer } from "./JSONPythonRenderer.js";

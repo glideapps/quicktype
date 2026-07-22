@@ -9,15 +9,15 @@ import {
     setUnion,
 } from "collection-utils";
 
-import { StringTypes } from "../attributes/StringTypes";
-import { emptyTypeAttributes } from "../attributes/TypeAttributes";
-import type { GraphRewriteBuilder } from "../GraphRewriting";
-import type { RunContext } from "../Run";
-import { assert, defined } from "../support/Support";
-import type { PrimitiveType } from "../Type/Type";
-import type { TypeGraph } from "../Type/TypeGraph";
-import type { TypeRef } from "../Type/TypeRef";
-import { stringTypesForType } from "../Type/TypeUtils";
+import { StringTypes } from "../attributes/StringTypes.js";
+import { emptyTypeAttributes } from "../attributes/TypeAttributes.js";
+import type { GraphRewriteBuilder } from "../GraphRewriting.js";
+import type { RunContext } from "../Run.js";
+import { assert, defined } from "../support/Support.js";
+import type { PrimitiveType } from "../Type/Type.js";
+import type { TypeGraph } from "../Type/TypeGraph.js";
+import type { TypeRef } from "../Type/TypeRef.js";
+import { stringTypesForType } from "../Type/TypeUtils.js";
 
 const MIN_LENGTH_FOR_ENUM = 10;
 

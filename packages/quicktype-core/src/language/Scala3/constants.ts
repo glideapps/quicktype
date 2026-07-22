@@ -1,5 +1,6 @@
 // Use backticks for param names with symbols
 export const invalidSymbols = [
+    "?",
     ":",
     "-",
     "+",

@@ -1,2 +1,2 @@
-export { PhpTargetLanguage, phpOptions } from "./language";
-export { PhpRenderer } from "./PhpRenderer";
+export { PhpTargetLanguage, phpOptions } from "./language.js";
+export { PhpRenderer } from "./PhpRenderer.js";

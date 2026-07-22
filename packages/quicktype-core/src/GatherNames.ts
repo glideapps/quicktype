@@ -1,17 +1,17 @@
 import { setMap, setSortBy, setUnion } from "collection-utils";
-import * as pluralize from "pluralize";
+import pluralize from "pluralize";
 
 import {
     TooManyTypeNames,
     TypeNames,
     namesTypeAttributeKind,
     tooManyNamesThreshold,
-} from "./attributes/TypeNames";
-import { assert, defined, panic } from "./support/Support";
-import { transformationForType } from "./Transformers";
-import { ObjectType, type Type } from "./Type/Type";
-import type { TypeGraph } from "./Type/TypeGraph";
-import { matchCompoundType, nullableFromUnion } from "./Type/TypeUtils";
+} from "./attributes/TypeNames.js";
+import { assert, defined, panic } from "./support/Support.js";
+import { transformationForType } from "./Transformers.js";
+import { ObjectType, type Type } from "./Type/Type.js";
+import type { TypeGraph } from "./Type/TypeGraph.js";
+import { matchCompoundType, nullableFromUnion } from "./Type/TypeUtils.js";
 
 class UniqueQueue<T> {
     private readonly _present = new Set<T>();
