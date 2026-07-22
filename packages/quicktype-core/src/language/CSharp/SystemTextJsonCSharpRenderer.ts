@@ -61,6 +61,13 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
 
     private readonly _needNamespaces: boolean;
 
+    private get needConverterClass(): boolean {
+        return (
+            this._needHelpers ||
+            (this._needAttributes && (this.haveNamedUnions || this.haveEnums))
+        );
+    }
+
     public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
@@ -165,9 +172,12 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
         for (const ns of [
             "System.Text.Json",
             "System.Text.Json.Serialization",
-            "System.Globalization",
         ]) {
             this.emitUsing(ns);
+        }
+
+        if (this.needConverterClass) {
+            this.emitUsing("System.Globalization");
         }
 
         if (this._options.dense) {
@@ -1302,10 +1312,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
             this.emitSerializeClass();
         }
 
-        if (
-            this._needHelpers ||
-            (this._needAttributes && (this.haveNamedUnions || this.haveEnums))
-        ) {
+        if (this.needConverterClass) {
             this.ensureBlankLine();
             this.emitConverterClass();
             this.forEachTransformation("leading-and-interposing", (n, t) =>
