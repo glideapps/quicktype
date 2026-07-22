@@ -34,6 +34,7 @@ const compilerOptions: ts.CompilerOptions = {
     // target we used previously, so keep them for compatibility.
     lib: [
         "lib.es2015.d.ts",
+        "lib.es2020.bigint.d.ts",
         "lib.dom.d.ts",
         "lib.webworker.importscripts.d.ts",
         "lib.scripthost.d.ts",
