@@ -1,0 +1,222 @@
+name: Generated output diff
+
+on:
+    push:
+        branches:
+            - master
+    pull_request:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: output-diff-${{ github.event.pull_request.number || github.sha }}
+    cancel-in-progress: true
+
+env:
+    OUTPUT_SNAPSHOT_CACHE_PREFIX: quicktype-output-snapshot-v1
+
+jobs:
+    cache-master-snapshot:
+        name: Cache master output snapshot
+        if: github.event_name == 'push'
+        runs-on: ubuntu-22.04
+        steps:
+            - uses: actions/checkout@v4
+            - name: Restore exact snapshot
+              id: snapshot-cache
+              uses: actions/cache/restore@v4
+              with:
+                  path: .output-diffs/base
+                  key: ${{ env.OUTPUT_SNAPSHOT_CACHE_PREFIX }}-${{ runner.os }}-${{ github.sha }}
+            - uses: ./.github/workflows/setup
+              if: steps.snapshot-cache.outputs.cache-hit != 'true'
+            - name: Generate snapshot
+              if: steps.snapshot-cache.outputs.cache-hit != 'true'
+              env:
+                  ALL_FIXTURES: "1"
+                  CPUs: "4"
+                  ONLY_OUTPUT: "1"
+                  OUTPUT_SNAPSHOT_DIR: ${{ github.workspace }}/.output-diffs/base
+              run: npm run test:output-snapshot
+            - name: Save exact snapshot
+              if: steps.snapshot-cache.outputs.cache-hit != 'true'
+              uses: actions/cache/save@v4
+              with:
+                  path: .output-diffs/base
+                  key: ${{ env.OUTPUT_SNAPSHOT_CACHE_PREFIX }}-${{ runner.os }}-${{ github.sha }}
+
+    compare-pull-request:
+        name: Compare generated output
+        if: github.event_name == 'pull_request'
+        runs-on: ubuntu-22.04
+        permissions:
+            contents: read
+            pull-requests: write
+        steps:
+            - name: Restore exact base snapshot
+              id: base-cache
+              uses: actions/cache/restore@v4
+              with:
+                  path: .output-diffs/base
+                  key: ${{ env.OUTPUT_SNAPSHOT_CACHE_PREFIX }}-${{ runner.os }}-${{ github.event.pull_request.base.sha }}
+
+            - name: Check out PR head
+              uses: actions/checkout@v4
+              with:
+                  repository: ${{ github.event.pull_request.head.repo.full_name }}
+                  ref: ${{ github.event.pull_request.head.sha }}
+                  path: head-source
+
+            - name: Check out base after a cache miss
+              if: steps.base-cache.outputs.cache-hit != 'true'
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ github.event.pull_request.base.sha }}
+                  path: base-source
+
+            - name: Check snapshot compatibility
+              id: compatibility
+              shell: bash
+              run: |
+                  if [[ "${{ steps.base-cache.outputs.cache-hit }}" == "true" ]]; then
+                      echo "supported=true" >> "$GITHUB_OUTPUT"
+                  elif node -e 'const p=require("./base-source/package.json"); process.exit(p.scripts?.["test:output-snapshot"] ? 0 : 1)'; then
+                      echo "supported=true" >> "$GITHUB_OUTPUT"
+                  else
+                      echo "supported=false" >> "$GITHUB_OUTPUT"
+                      echo "The base commit predates generated-output snapshot support; this bootstrap comparison is skipped." >> "$GITHUB_STEP_SUMMARY"
+                  fi
+
+            - name: Set up Node
+              if: steps.compatibility.outputs.supported == 'true'
+              uses: actions/setup-node@v4
+              with:
+                  node-version-file: head-source/.nvmrc
+                  cache: npm
+                  cache-dependency-path: head-source/package-lock.json
+
+            - name: Build base after a cache miss
+              if: steps.compatibility.outputs.supported == 'true' && steps.base-cache.outputs.cache-hit != 'true'
+              working-directory: base-source
+              run: npm ci && npm run build
+
+            - name: Generate base snapshot after a cache miss
+              if: steps.compatibility.outputs.supported == 'true' && steps.base-cache.outputs.cache-hit != 'true'
+              working-directory: base-source
+              env:
+                  ALL_FIXTURES: "1"
+                  CPUs: "4"
+                  ONLY_OUTPUT: "1"
+                  OUTPUT_SNAPSHOT_DIR: ${{ github.workspace }}/.output-diffs/base
+              run: npm run test:output-snapshot
+
+            - name: Save PR-scoped base snapshot after a cache miss
+              if: steps.compatibility.outputs.supported == 'true' && steps.base-cache.outputs.cache-hit != 'true'
+              uses: actions/cache/save@v4
+              with:
+                  path: .output-diffs/base
+                  key: ${{ env.OUTPUT_SNAPSHOT_CACHE_PREFIX }}-${{ runner.os }}-${{ github.event.pull_request.base.sha }}
+
+            - name: Build PR head
+              if: steps.compatibility.outputs.supported == 'true'
+              working-directory: head-source
+              run: npm ci && npm run build
+
+            - name: Generate PR head snapshot
+              if: steps.compatibility.outputs.supported == 'true'
+              working-directory: head-source
+              env:
+                  ALL_FIXTURES: "1"
+                  CPUs: "4"
+                  ONLY_OUTPUT: "1"
+                  OUTPUT_SNAPSHOT_DIR: ${{ github.workspace }}/.output-diffs/head
+              run: npm run test:output-snapshot
+
+            - name: Compare snapshots
+              if: steps.compatibility.outputs.supported == 'true'
+              run: |
+                  mkdir -p .output-diffs/result
+                  head-source/node_modules/.bin/tsx head-source/script/output-diff.ts compare \
+                      .output-diffs/base .output-diffs/head \
+                      .output-diffs/result/result.json .output-diffs/result/output.diff
+
+            - name: Write bootstrap result
+              if: steps.compatibility.outputs.supported != 'true'
+              run: |
+                  mkdir -p .output-diffs/result
+                  printf '%s\n' '{"version":1,"hasDifferences":false,"files":[],"summary":{"added":0,"changedLines":0,"deleted":0,"deletions":0,"files":0,"insertions":0,"modified":0}}' > .output-diffs/result/result.json
+                  : > .output-diffs/result/output.diff
+
+            - name: Write comparison metadata
+              env:
+                  BASE_SHA: ${{ github.event.pull_request.base.sha }}
+                  HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+                  PR_NUMBER: ${{ github.event.pull_request.number }}
+                  PR_SHA: ${{ github.sha }}
+                  PR_URL: ${{ github.event.pull_request.html_url }}
+                  SUPPORTED: ${{ steps.compatibility.outputs.supported }}
+              run: |
+                  node - <<'NODE'
+                  const fs = require("node:fs");
+                  const metadata = {
+                      baseSha: process.env.BASE_SHA,
+                      headSha: process.env.HEAD_SHA,
+                      prNumber: Number(process.env.PR_NUMBER),
+                      prSha: process.env.PR_SHA,
+                      prUrl: process.env.PR_URL,
+                      supported: process.env.SUPPORTED === "true",
+                  };
+                  fs.writeFileSync(".output-diffs/result/metadata.json", `${JSON.stringify(metadata, null, 2)}\n`);
+                  NODE
+
+            - name: Summarize comparison
+              run: |
+                  node - <<'NODE'
+                  const fs = require("node:fs");
+                  const result = JSON.parse(fs.readFileSync(".output-diffs/result/result.json", "utf8"));
+                  const s = result.summary;
+                  fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+                      result.hasDifferences
+                          ? `Generated output differs in **${s.files} files** (${s.modified} modified, ${s.added} new, ${s.deleted} deleted), with **${s.changedLines} changed lines** (+${s.insertions}/-${s.deletions}).\n`
+                          : "Generated output is unchanged.\n");
+                  NODE
+
+            - name: Upload comparison data
+              uses: actions/upload-artifact@v4
+              with:
+                  name: generated-output-diff
+                  path: .output-diffs/result
+                  if-no-files-found: error
+                  retention-days: 14
+
+            # A workflow_run workflow always uses its definition from the
+            # default branch.  Keep this same-repository path while #3074
+            # demonstrates the publisher fix before it reaches master.
+            - name: Preview output-diff comment on same-repository PRs
+              if: github.event.pull_request.head.repo.full_name == github.repository
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  PR_NUMBER: ${{ github.event.pull_request.number }}
+                  REPORT_URL: https://hostr.flingit.run/s/quicktype/output-diffs/pr-${{ github.event.pull_request.number }}/${{ github.sha }}/${{ github.event.pull_request.head.sha }}/index.html
+              run: |
+                  COMMENT_ID=$(gh api --paginate "repos/${{ github.repository }}/issues/$PR_NUMBER/comments" \
+                      --jq '.[] | select(.body | contains("<!-- quicktype-generated-output-diff -->") or contains("<!-- quicktype-generated-output-diff-preview -->")) | .id' | sed -n '1p')
+                  node - <<'NODE' > /tmp/output-diff-comment
+                  const fs = require("node:fs");
+                  const result = JSON.parse(fs.readFileSync(".output-diffs/result/result.json", "utf8"));
+                  if (result.hasDifferences) {
+                      const s = result.summary;
+                      process.stdout.write(`<!-- quicktype-generated-output-diff -->\n### Generated-output differences\n\n**${s.files} files differ** — ${s.modified} modified, ${s.added} new, ${s.deleted} deleted  \n**${s.changedLines} changed lines** — +${s.insertions} / −${s.deletions}\n\n[Open the generated-output report →](${process.env.REPORT_URL})\n`);
+                  } else {
+                      // The preview marker keeps the default-branch version of
+                      // the publisher from deleting this comment before the
+                      // clean-comment behavior in this PR is merged.
+                      process.stdout.write("<!-- quicktype-generated-output-diff-preview -->\n### No generated-output differences\n\n✅ Generated outputs are unchanged between the PR base and head revisions.\n");
+                  }
+                  NODE
+                  if [[ -n "$COMMENT_ID" ]]; then
+                      gh api --method PATCH "repos/${{ github.repository }}/issues/comments/$COMMENT_ID" -F body=@/tmp/output-diff-comment >/dev/null
+                  else
+                      gh api --method POST "repos/${{ github.repository }}/issues/$PR_NUMBER/comments" -F body=@/tmp/output-diff-comment >/dev/null
+                  fi
