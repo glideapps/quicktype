@@ -1140,7 +1140,8 @@ async function addTypesInSchema(
 
             let additionalProperties = schema.additionalProperties;
             if (
-                additionalProperties === undefined &&
+                (additionalProperties === undefined ||
+                    additionalProperties === false) &&
                 typeof schema.patternProperties === "object" &&
                 schema.patternProperties !== null &&
                 !Array.isArray(schema.patternProperties)
