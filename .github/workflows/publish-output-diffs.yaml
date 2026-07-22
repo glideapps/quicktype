@@ -1,0 +1,178 @@
+name: Publish generated output diff
+
+on:
+    workflow_run:
+        workflows:
+            - Generated output diff
+        types:
+            - completed
+
+permissions:
+    actions: read
+    contents: read
+    pull-requests: write
+
+jobs:
+    publish:
+        name: Publish report and update PR comment
+        if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'
+        runs-on: ubuntu-22.04
+        steps:
+            - name: Download comparison data
+              uses: actions/download-artifact@v4
+              with:
+                  name: generated-output-diff
+                  path: comparison
+                  run-id: ${{ github.event.workflow_run.id }}
+                  github-token: ${{ github.token }}
+
+            - name: Check out trusted report renderer
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ github.event.repository.default_branch }}
+                  path: trusted-source
+
+            - name: Validate metadata and result
+              id: metadata
+              env:
+                  EVENT_PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+                  REPOSITORY: ${{ github.repository }}
+              run: |
+                  node - <<'NODE'
+                  const fs = require("node:fs");
+                  const metadata = JSON.parse(fs.readFileSync("comparison/metadata.json", "utf8"));
+                  const result = JSON.parse(fs.readFileSync("comparison/result.json", "utf8"));
+                  const sha = /^[0-9a-f]{40,64}$/;
+                  if (!Number.isSafeInteger(metadata.prNumber) || metadata.prNumber <= 0) throw new Error("Invalid PR number");
+                  if (String(metadata.prNumber) !== process.env.EVENT_PR_NUMBER) throw new Error("Artifact PR does not match workflow event");
+                  for (const key of ["baseSha", "prSha", "headSha"]) {
+                      if (!sha.test(metadata[key])) throw new Error(`Invalid ${key}`);
+                  }
+                  if (typeof metadata.supported !== "boolean" || typeof result.hasDifferences !== "boolean") throw new Error("Invalid comparison state");
+                  const summary = result.summary;
+                  for (const key of ["files", "modified", "added", "deleted", "changedLines", "insertions", "deletions"]) {
+                      if (!Number.isSafeInteger(summary[key]) || summary[key] < 0) throw new Error(`Invalid summary field ${key}`);
+                  }
+                  const prUrl = `https://github.com/${process.env.REPOSITORY}/pull/${metadata.prNumber}`;
+                  const values = {
+                      base_sha: metadata.baseSha,
+                      changed_lines: summary.changedLines,
+                      deleted: summary.deleted,
+                      deletions: summary.deletions,
+                      files: summary.files,
+                      has_differences: result.hasDifferences,
+                      head_sha: metadata.headSha,
+                      insertions: summary.insertions,
+                      modified: summary.modified,
+                      new_files: summary.added,
+                      pr_number: metadata.prNumber,
+                      pr_sha: metadata.prSha,
+                      pr_url: prUrl,
+                      supported: metadata.supported,
+                  };
+                  const output = Object.entries(values).map(([key, value]) => `${key}=${value}`).join("\n") + "\n";
+                  fs.appendFileSync(process.env.GITHUB_OUTPUT, output);
+                  NODE
+
+            - name: Set up Node
+              if: steps.metadata.outputs.supported == 'true' && steps.metadata.outputs.has_differences == 'true'
+              uses: actions/setup-node@v4
+              with:
+                  node-version-file: trusted-source/.nvmrc
+                  cache: npm
+                  cache-dependency-path: trusted-source/package-lock.json
+
+            - name: Install trusted report dependencies
+              if: steps.metadata.outputs.supported == 'true' && steps.metadata.outputs.has_differences == 'true'
+              working-directory: trusted-source
+              run: npm ci --ignore-scripts
+
+            - name: Render report
+              if: steps.metadata.outputs.supported == 'true' && steps.metadata.outputs.has_differences == 'true'
+              run: |
+                  mkdir -p report
+                  trusted-source/node_modules/.bin/tsx trusted-source/script/output-diff.ts render \
+                      comparison/result.json comparison/output.diff report/index.html \
+                      '${{ steps.metadata.outputs.pr_url }}' \
+                      '${{ steps.metadata.outputs.base_sha }}' \
+                      '${{ steps.metadata.outputs.pr_sha }}' \
+                      '${{ steps.metadata.outputs.head_sha }}'
+                  cp comparison/output.diff report/output.diff
+
+            - name: Publish immutable report to hostr
+              if: steps.metadata.outputs.supported == 'true' && steps.metadata.outputs.has_differences == 'true'
+              env:
+                  HOSTR_TOKEN: ${{ secrets.HOSTR_TOKEN }}
+                  REPORT_PATH: quicktype/output-diffs/pr-${{ steps.metadata.outputs.pr_number }}/${{ steps.metadata.outputs.pr_sha }}/${{ steps.metadata.outputs.head_sha }}
+              run: |
+                  test -n "$HOSTR_TOKEN"
+                  upload_immutable() {
+                      local file=$1 content_type=$2 url=$3 status
+                      status=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' "$url")
+                      case "$status" in
+                          200) echo "Already published: $url" ;;
+                          404)
+                              curl --fail-with-body --retry 3 -X POST \
+                                  -H "Authorization: Bearer $HOSTR_TOKEN" \
+                                  -H "Content-Type: $content_type" \
+                                  --data-binary "@$file" "$url"
+                              ;;
+                          *) echo "Unexpected hostr response $status for $url" >&2; return 1 ;;
+                      esac
+                  }
+                  upload_immutable report/index.html 'text/html; charset=utf-8' \
+                      "https://hostr.flingit.run/s/$REPORT_PATH/index.html"
+                  upload_immutable report/output.diff 'text/x-diff; charset=utf-8' \
+                      "https://hostr.flingit.run/s/$REPORT_PATH/output.diff"
+
+            - name: Check whether this is still the current PR head
+              if: steps.metadata.outputs.supported == 'true'
+              id: current
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  PR_NUMBER: ${{ steps.metadata.outputs.pr_number }}
+              run: |
+                  CURRENT_HEAD=$(gh api "repos/${{ github.repository }}/pulls/$PR_NUMBER" --jq .head.sha)
+                  if [[ "$CURRENT_HEAD" == "${{ steps.metadata.outputs.head_sha }}" ]]; then
+                      echo "is_current=true" >> "$GITHUB_OUTPUT"
+                  else
+                      echo "is_current=false" >> "$GITHUB_OUTPUT"
+                      echo "The PR advanced to $CURRENT_HEAD; leaving its current output-diff comment untouched." >> "$GITHUB_STEP_SUMMARY"
+                  fi
+
+            - name: Create or update output-diff comment
+              if: steps.metadata.outputs.supported == 'true' && steps.current.outputs.is_current == 'true'
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  HAS_DIFFERENCES: ${{ steps.metadata.outputs.has_differences }}
+                  PR_NUMBER: ${{ steps.metadata.outputs.pr_number }}
+                  REPORT_URL: https://hostr.flingit.run/s/quicktype/output-diffs/pr-${{ steps.metadata.outputs.pr_number }}/${{ steps.metadata.outputs.pr_sha }}/${{ steps.metadata.outputs.head_sha }}/index.html
+              run: |
+                  MARKER='<!-- quicktype-generated-output-diff -->'
+                  if [[ "$HAS_DIFFERENCES" == true ]]; then
+                      BODY=$(cat <<EOF
+                  $MARKER
+                  ### Generated-output differences
+
+                  **${{ steps.metadata.outputs.files }} files differ** — ${{ steps.metadata.outputs.modified }} modified, ${{ steps.metadata.outputs.new_files }} new, ${{ steps.metadata.outputs.deleted }} deleted  
+                  **${{ steps.metadata.outputs.changed_lines }} changed lines** — +${{ steps.metadata.outputs.insertions }} / −${{ steps.metadata.outputs.deletions }}
+
+                  [Open the generated-output report →]($REPORT_URL)
+                  EOF
+                      )
+                  else
+                      BODY=$(cat <<EOF
+                  $MARKER
+                  ### No generated-output differences
+
+                  ✅ Generated outputs are unchanged between the PR base and head revisions.
+                  EOF
+                      )
+                  fi
+                  COMMENT_ID=$(gh api --paginate "repos/${{ github.repository }}/issues/$PR_NUMBER/comments" \
+                      --jq '.[] | select(.body | contains("<!-- quicktype-generated-output-diff -->")) | .id' | sed -n '1p')
+                  if [[ -n "$COMMENT_ID" ]]; then
+                      gh api --method PATCH "repos/${{ github.repository }}/issues/comments/$COMMENT_ID" -f body="$BODY" >/dev/null
+                  else
+                      gh api --method POST "repos/${{ github.repository }}/issues/$PR_NUMBER/comments" -f body="$BODY" >/dev/null
+                  fi
