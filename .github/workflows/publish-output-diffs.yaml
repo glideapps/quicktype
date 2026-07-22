@@ -158,8 +158,8 @@ jobs:
                   [Open the generated-output report →]($REPORT_URL)
                   EOF
                   )
-                  COMMENT_ID=$(gh api --paginate --slurp "repos/${{ github.repository }}/issues/$PR_NUMBER/comments" \
-                      --jq 'map(.[]) | map(select(.body | contains("<!-- quicktype-generated-output-diff -->"))) | .[0].id // empty')
+                  COMMENT_ID=$(gh api --paginate "repos/${{ github.repository }}/issues/$PR_NUMBER/comments" \
+                      --jq '.[] | select(.body | contains("<!-- quicktype-generated-output-diff -->")) | .id' | sed -n '1p')
                   if [[ -n "$COMMENT_ID" ]]; then
                       gh api --method PATCH "repos/${{ github.repository }}/issues/comments/$COMMENT_ID" -f body="$BODY" >/dev/null
                   else
