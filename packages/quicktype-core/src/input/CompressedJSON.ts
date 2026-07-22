@@ -1,4 +1,6 @@
 import { addHashCode, hashCodeInit, hashString } from "collection-utils";
+import { type Many, getManyValues, isMany, none } from "stream-chain/core";
+import * as StreamJSONParser from "stream-json/core/parser.js";
 
 import { inferTransformedStringTypeKindForString } from "../attributes/StringTypes.js";
 import type { DateTimeRecognizer } from "../DateTime.js";
@@ -56,6 +58,27 @@ interface Context {
     currentObject: Value[] | undefined;
 }
 
+type JSONToken =
+    | { name: "startObject" }
+    | { name: "endObject" }
+    | { name: "startArray" }
+    | { name: "endArray" }
+    | { name: "startKey" }
+    | { name: "endKey" }
+    | { name: "startString" }
+    | { name: "endString" }
+    | { name: "startNumber" }
+    | { name: "endNumber" }
+    | { name: "keyValue"; value: string }
+    | { name: "stringChunk"; value: string }
+    | { name: "stringValue"; value: string }
+    | { name: "numberChunk"; value: string }
+    | { name: "numberValue"; value: string }
+    | { name: "nullValue"; value: null }
+    | { name: "trueValue"; value: true }
+    | { name: "falseValue"; value: false }
+    | { name: "whitespace"; value: string };
+
 export abstract class CompressedJSON<T> {
     private _rootValue: Value | undefined;
 
@@ -70,6 +93,9 @@ export abstract class CompressedJSON<T> {
     private readonly _objects: Value[][] = [];
 
     private readonly _arrays: Value[][] = [];
+
+    // Numbers cannot nest, so a single literal accumulator suffices.
+    private _currentIntegerString = "";
 
     /**
      * `supportedIntegerRange` is the range of whole numbers in the input
@@ -96,23 +122,6 @@ export abstract class CompressedJSON<T> {
         const range = this.supportedIntegerRange;
         if (range === null) return true;
         return integerStringInRange(integerString, range);
-    }
-
-    /**
-     * Whether a number that `JSON.parse` produced should be inferred as
-     * `double`.  The original literal is gone at this point, but for whole
-     * numbers below 1e21, `toFixed(0)` gives the exact decimal value of the
-     * double, and it errs on the right side at range boundaries: a literal
-     * like 9223372036854775807 (INT64_MAX) parses to the double
-     * 9223372036854775808, which is correctly outside the int64 range.  At
-     * 1e21 doubles are far beyond any fixed-size integer type and `toFixed`
-     * switches to exponential notation, so those are doubles outright.
-     */
-    protected parsedNumberIsDouble(n: number): boolean {
-        if (n !== Math.floor(n)) return true;
-        if (this.supportedIntegerRange === null) return false;
-        if (Math.abs(n) >= 1e21) return true;
-        return !this.integerStringFits(n.toFixed(0));
     }
 
     public parseSync(_input: T): Value {
@@ -224,6 +233,58 @@ export abstract class CompressedJSON<T> {
     protected commitNumber(isDouble: boolean): void {
         const numberTag = isDouble ? Tag.Double : Tag.Integer;
         this.commitValue(makeValue(numberTag, 0));
+    }
+
+    protected processToken(token: JSONToken): void {
+        switch (token.name) {
+            case "startObject":
+                this.pushObjectContext();
+                break;
+            case "endObject":
+                this.finishObject();
+                break;
+            case "startArray":
+                this.pushArrayContext();
+                break;
+            case "endArray":
+                this.finishArray();
+                break;
+            case "startNumber":
+                this.pushContext();
+                this.context.currentNumberIsDouble = false;
+                this._currentIntegerString = "";
+                break;
+            case "numberChunk":
+                if (/[.e]/i.test(token.value)) {
+                    this.context.currentNumberIsDouble = true;
+                } else if (!this.context.currentNumberIsDouble) {
+                    this._currentIntegerString += token.value;
+                }
+                break;
+            case "endNumber": {
+                const isDouble =
+                    this.context.currentNumberIsDouble ||
+                    !this.integerStringFits(this._currentIntegerString);
+                this.popContext();
+                this.commitNumber(isDouble);
+                break;
+            }
+            case "keyValue":
+                this.setPropertyKey(token.value);
+                break;
+            case "stringValue":
+                this.commitString(token.value);
+                break;
+            case "nullValue":
+                this.commitNull();
+                break;
+            case "trueValue":
+                this.commitBoolean(true);
+                break;
+            case "falseValue":
+                this.commitBoolean(false);
+                break;
+        }
     }
 
     protected commitString(s: string): void {
@@ -363,38 +424,16 @@ export abstract class CompressedJSON<T> {
     }
 }
 
-// Replace decimal/exponent number literals with a non-integral marker.  Parsing
-// the marked JSON produces a tree with the same shape as the original, while
-// preserving the source distinction that JSON.parse normally discards.
-function markFloatLiterals(input: string): string {
-    const parts: string[] = [];
-    let copiedThrough = 0;
-    let offset = 0;
-
-    while (offset < input.length) {
-        const first = input[offset];
-        if (first === '"') {
-            offset += 1;
-            while (input[offset] !== '"') {
-                offset += input[offset] === "\\" ? 2 : 1;
-            }
-
-            offset += 1;
-        } else if (first === "-" || /[0-9]/.test(first)) {
-            const start = offset;
-            while (/[-0-9eE+.]/.test(input[offset] ?? "")) offset += 1;
-            if (/[.eE]/.test(input.slice(start, offset))) {
-                parts.push(input.slice(copiedThrough, start), "0.5");
-                copiedThrough = offset;
-            }
-        } else {
-            offset += 1;
-        }
+// stream-json exposes its synchronous tokenizer at runtime, but its type
+// declarations currently only describe the asynchronous parser wrapper.
+const jsonParser = (
+    StreamJSONParser as unknown as {
+        jsonParser: (options: {
+            packKeys: boolean;
+            packStrings: boolean;
+        }) => unknown;
     }
-
-    parts.push(input.slice(copiedThrough));
-    return parts.join("");
-}
+).jsonParser;
 
 export class CompressedJSONFromString extends CompressedJSON<string> {
     public async parse(input: string): Promise<Value> {
@@ -402,47 +441,20 @@ export class CompressedJSONFromString extends CompressedJSON<string> {
     }
 
     public parseSync(input: string): Value {
-        const json = JSON.parse(input);
-        const markedInput = markFloatLiterals(input);
-        const numberKindMarkers =
-            markedInput === input ? json : JSON.parse(markedInput);
-        this.process(json, numberKindMarkers);
+        type ParserResult = Many<JSONToken> | typeof none;
+        const parseChunk = jsonParser({
+            packKeys: true,
+            packStrings: true,
+        }) as (chunk: string | typeof none) => ParserResult;
+        const processTokens = (result: ParserResult): void => {
+            if (!isMany(result)) return;
+            for (const token of getManyValues(result)) {
+                this.processToken(token);
+            }
+        };
+
+        processTokens(parseChunk(input));
+        processTokens(parseChunk(none));
         return this.finish();
-    }
-
-    private process(json: unknown, sourceNumberKinds: unknown): void {
-        if (json === null) {
-            this.commitNull();
-        } else if (typeof json === "boolean") {
-            this.commitBoolean(json);
-        } else if (typeof json === "string") {
-            this.commitString(json);
-        } else if (typeof json === "number") {
-            const sourceIsDouble =
-                typeof sourceNumberKinds === "number" &&
-                sourceNumberKinds !== Math.floor(sourceNumberKinds);
-            this.commitNumber(
-                sourceIsDouble || this.parsedNumberIsDouble(json),
-            );
-        } else if (Array.isArray(json)) {
-            this.pushArrayContext();
-            const numberKinds = sourceNumberKinds as unknown[];
-            for (let index = 0; index < json.length; index++) {
-                this.process(json[index], numberKinds[index]);
-            }
-
-            this.finishArray();
-        } else if (typeof json === "object") {
-            this.pushObjectContext();
-            const numberKinds = sourceNumberKinds as Record<string, unknown>;
-            for (const key of Object.getOwnPropertyNames(json)) {
-                this.setPropertyKey(key);
-                this.process(json[key as keyof typeof json], numberKinds[key]);
-            }
-
-            this.finishObject();
-        } else {
-            return panic("Invalid JSON object");
-        }
     }
 }

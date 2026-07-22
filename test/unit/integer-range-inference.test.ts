@@ -211,7 +211,7 @@ describe("streaming inference of numbers at the integer-range boundary", () => {
     });
 });
 
-describe("core (JSON.parse-based) inference at the integer-range boundary", () => {
+describe("core string-input inference at the integer-range boundary", () => {
     async function coreLinesForJSON(
         lang: LanguageName,
         json: string,
