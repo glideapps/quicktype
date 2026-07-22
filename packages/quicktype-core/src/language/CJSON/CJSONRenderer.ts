@@ -428,6 +428,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                 const combinedName = allUpperWordStyle(
                     this.sourcelikeToString(enumName),
                 );
+                let isFirst = true;
                 this.forEachEnumCase(enumType, "none", (name, jsonName) => {
                     if (enumValues !== undefined) {
                         const [enumValue] = getAccessorName(
@@ -444,11 +445,22 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                 ",",
                             );
                         } else {
-                            this.emitLine(combinedName, "_", name, ",");
+                            this.emitLine(
+                                combinedName,
+                                "_",
+                                name,
+                                isFirst ? " = 1," : ",",
+                            );
                         }
                     } else {
-                        this.emitLine(combinedName, "_", name, ",");
+                        this.emitLine(
+                            combinedName,
+                            "_",
+                            name,
+                            isFirst ? " = 1," : ",",
+                        );
                     }
+                    isFirst = false;
                 });
             },
             "",

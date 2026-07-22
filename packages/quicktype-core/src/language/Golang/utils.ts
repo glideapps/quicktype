@@ -51,7 +51,8 @@ export function canOmitEmpty(
     omitEmptyOption: boolean,
 ): boolean {
     if (!cp.isOptional) return false;
-    if (omitEmptyOption) return true;
+    if (omitEmptyOption)
+        return !["union", "null", "any"].includes(cp.type.kind);
     const t = cp.type;
     return !["union", "null", "any"].includes(t.kind);
 }
