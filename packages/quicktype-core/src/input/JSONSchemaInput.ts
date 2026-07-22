@@ -29,6 +29,7 @@ import {
     minMaxLengthAttributeProducer,
     patternAttributeProducer,
 } from "../attributes/Constraints.js";
+import { defaultValueAttributeProducer } from "../attributes/DefaultValue.js";
 import { descriptionAttributeProducer } from "../attributes/Description.js";
 import { enumValuesAttributeProducer } from "../attributes/EnumValues.js";
 import { StringTypes } from "../attributes/StringTypes.js";
@@ -655,7 +656,9 @@ const schemaTypes = Object.getOwnPropertyNames(
 
 export interface JSONSchemaAttributes {
     forArray?: TypeAttributes;
+    forBoolean?: TypeAttributes;
     forCases?: TypeAttributes[];
+    forNull?: TypeAttributes;
     forNumber?: TypeAttributes;
     forObject?: TypeAttributes;
     forString?: TypeAttributes;
@@ -1088,14 +1091,17 @@ async function addTypesInSchema(
                     emptyTypeAttributes,
                     new Set(itemTypes),
                 );
-            } else if (typeof items === "object") {
+            } else if (
+                typeof items === "object" ||
+                typeof items === "boolean"
+            ) {
                 const itemsLoc = loc.push("items");
                 itemType = await toType(
                     checkJSONSchema(items, itemsLoc.canonicalRef),
                     itemsLoc,
                     singularAttributes,
                 );
-            } else if (items !== undefined && items !== true) {
+            } else if (items !== undefined) {
                 return messageError(
                     "SchemaArrayItemsMustBeStringOrArray",
                     withRef(loc, { actual: items }),
@@ -1317,6 +1323,12 @@ async function addTypesInSchema(
             const numberAttributes = combineProducedAttributes(
                 ({ forNumber }) => forNumber,
             );
+            const booleanAttributes = combineProducedAttributes(
+                ({ forBoolean }) => forBoolean,
+            );
+            const nullAttributes = combineProducedAttributes(
+                ({ forNull }) => forNull,
+            );
 
             for (const [name, kind] of [
                 ["null", "null"],
@@ -1328,7 +1340,11 @@ async function addTypesInSchema(
 
                 const attributes = isNumberTypeKind(kind)
                     ? numberAttributes
-                    : undefined;
+                    : kind === "bool"
+                      ? booleanAttributes
+                      : kind === "null"
+                        ? nullAttributes
+                        : undefined;
                 unionTypes.push(typeBuilder.getPrimitiveType(kind, attributes));
             }
 
@@ -1428,14 +1444,7 @@ async function addTypesInSchema(
 
         let result: TypeRef;
         if (typeof schema === "boolean") {
-            // FIXME: Empty union.  We'd have to check that it's supported everywhere,
-            // in particular in union flattening.
-            messageAssert(
-                schema === true,
-                "SchemaFalseNotSupported",
-                withRef(loc),
-            );
-            result = typeBuilder.getPrimitiveType("any");
+            result = typeBuilder.getPrimitiveType(schema ? "any" : "none");
         } else {
             loc = loc.updateWithID(schema.$id);
             result = await convertToType(schema, loc, typeAttributes);
@@ -1592,6 +1601,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
         this._attributeProducers = [
             descriptionAttributeProducer,
             accessorNamesAttributeProducer,
+            defaultValueAttributeProducer,
             enumValuesAttributeProducer,
             uriSchemaAttributesProducer,
             minMaxAttributeProducer,

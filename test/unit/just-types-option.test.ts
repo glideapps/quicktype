@@ -3,15 +3,20 @@
 // `features=just-types` / `features=just-types-and-namespace` and Kotlin's,
 // Scala 3's, and Smithy4s's `framework=just-types` are gone; the boolean
 // wins over a conflicting explicit enum value.
+import * as fs from "node:fs";
+import * as path from "node:path";
+
 import { describe, expect, test } from "vitest";
 
 import {
     InputData,
+    JSONSchemaInput,
     type LanguageName,
     type RendererOptions,
     jsonInputForTargetLanguage,
     quicktype,
 } from "quicktype-core";
+import { schemaForTypeScriptSources } from "quicktype-typescript-input";
 
 async function linesFor(
     lang: LanguageName,
@@ -28,6 +33,29 @@ async function linesFor(
     return result.lines.join("\n");
 }
 
+async function kotlinLinesForTypeScript(source: string): Promise<string> {
+    const temporaryDirectory = fs.mkdtempSync(
+        path.join(process.cwd(), ".tmp-kotlin-just-types-test-"),
+    );
+    const fileName = path.join(temporaryDirectory, "input.ts");
+
+    try {
+        fs.writeFileSync(fileName, source);
+        const schemaInput = new JSONSchemaInput(undefined);
+        await schemaInput.addSource(schemaForTypeScriptSources([fileName]));
+        const inputData = new InputData();
+        inputData.addInput(schemaInput);
+        const result = await quicktype({
+            inputData,
+            lang: "kotlin",
+            rendererOptions: { "just-types": true },
+        });
+        return result.lines.join("\n");
+    } finally {
+        fs.rmSync(temporaryDirectory, { recursive: true, force: true });
+    }
+}
+
 describe("just-types generates plain types in every language", () => {
     test("C#: no attributes, no helpers, but a namespace", async () => {
         const output = await linesFor("csharp", { "just-types": true });
@@ -41,6 +69,31 @@ describe("just-types generates plain types in every language", () => {
         const output = await linesFor("kotlin", { "just-types": true });
         expect(output).toContain("data class Person");
         expect(output).not.toContain("Klaxon");
+    });
+
+    test("Kotlin: enum cases retain their TypeScript string values", async () => {
+        const output = await kotlinLinesForTypeScript(`
+            export enum CanvasAction {
+                ADD = "add",
+                BRING_TO_FRONT = "bringtofront",
+                DELETE = "delete",
+                FLIP = "flip",
+                INVERT = "invert",
+                UNDO = "undo",
+                REDO = "redo",
+            }
+
+            export interface Canvas {
+                action: CanvasAction;
+            }
+        `);
+
+        expect(output).toContain("enum class CanvasAction(val value: String)");
+        expect(output).toContain('Add("add")');
+        expect(output).toContain('BringToFront("bringtofront")');
+        expect(output).toContain(
+            "fun fromValue(value: String): CanvasAction = when (value)",
+        );
     });
 
     test("Scala 3: plain case classes, no circe", async () => {
