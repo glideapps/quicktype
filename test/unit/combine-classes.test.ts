@@ -1,6 +1,7 @@
 import { expect, test } from "vitest";
 
 import {
+    type Input,
     InputData,
     jsonInputForTargetLanguage,
     quicktype,
@@ -28,4 +29,41 @@ test("does not merge structurally identical inferred classes when combineClasses
 
     expect(output).toContain("public partial class Amount");
     expect(output).toContain("public partial class Rate");
+});
+
+test("preserves the fixedTopLevels argument position for custom inputs", async () => {
+    let receivedFixedTopLevels: boolean | undefined;
+    const input: Input<unknown> = {
+        kind: "custom",
+        needIR: false,
+        needSchemaProcessing: false,
+        addSource: async () => {},
+        addSourceSync: () => {},
+        addTypes: async (
+            _ctx,
+            typeBuilder,
+            _inferMaps,
+            _inferEnums,
+            fixedTopLevels,
+        ) => {
+            receivedFixedTopLevels = fixedTopLevels;
+            typeBuilder.addTopLevel(
+                "Value",
+                typeBuilder.getPrimitiveType("integer"),
+            );
+        },
+        addTypesSync: () => {},
+        singleStringSchemaSource: () => undefined,
+    };
+    const inputData = new InputData();
+    inputData.addInput(input);
+
+    await quicktype({
+        inputData,
+        lang: "typescript",
+        combineClasses: false,
+        fixedTopLevels: true,
+    });
+
+    expect(receivedFixedTopLevels).toBe(true);
 });
