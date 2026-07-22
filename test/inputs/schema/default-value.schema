@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "An object with a scalar default",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "integer",
+      "default": 0
+    }
+  },
+  "required": ["id"],
+  "additionalProperties": false
+}
