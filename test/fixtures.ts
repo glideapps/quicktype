@@ -558,6 +558,19 @@ class JSONFixture extends LanguageFixture {
     }
 }
 
+class NoCombineClassesJSONFixture extends JSONFixture {
+    constructor() {
+        super(
+            languages.CSharpNoCombineClassesLanguage,
+            "csharp-no-combine-classes",
+        );
+    }
+
+    runForName(name: string): boolean {
+        return name === "csharp" || super.runForName(name);
+    }
+}
+
 // This fixture tests generating code for language X from JSON,
 // then generating code for Y from the code for X, making sure
 // that the resulting code for Y accepts the JSON by running it
@@ -1735,6 +1748,7 @@ class CommandSuccessfulLanguageFixture extends LanguageFixture {
 export const allFixtures: Fixture[] = [
     // new JSONFixture(languages.CrystalLanguage),
     new JSONFixture(languages.CSharpLanguage),
+    new NoCombineClassesJSONFixture(),
     new JSONFixture(
         languages.CSharpLanguageSystemTextJson,
         "csharp-SystemTextJson",
