@@ -80,8 +80,7 @@ function makeEnumTransformer(
     stringType: TypeRef,
     continuation?: Transformer,
 ): Transformer {
-    const sortedCases = Array.from(enumType.cases).sort();
-    const caseTransformers = sortedCases.map(
+    const caseTransformers = Array.from(enumType.cases).map(
         (c) =>
             new StringMatchTransformer(
                 graph,

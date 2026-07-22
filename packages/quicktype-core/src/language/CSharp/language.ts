@@ -133,7 +133,15 @@ export const cSharpOptions = {
 
 export const newtonsoftCSharpOptions = { ...cSharpOptions };
 
-export const systemTextJsonCSharpOptions = { ...cSharpOptions };
+export const systemTextJsonCSharpOptions = {
+    ...cSharpOptions,
+    dateTimeOnlyConverters: new BooleanOption(
+        "dateonly-timeonly-converters",
+        "Emit DateOnly/TimeOnly converters (requires .NET 6 or later)",
+        true,
+        "secondary",
+    ),
+};
 
 export const cSharpLanguageConfig = {
     displayName: "C#",
@@ -148,8 +156,8 @@ export class CSharpTargetLanguage extends TargetLanguage<
         super(cSharpLanguageConfig);
     }
 
-    public getOptions(): typeof cSharpOptions {
-        return cSharpOptions;
+    public getOptions(): typeof systemTextJsonCSharpOptions {
+        return systemTextJsonCSharpOptions;
     }
 
     public get stringTypeMapping(): StringTypeMapping {

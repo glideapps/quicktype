@@ -1,0 +1,41 @@
+{
+  "type": "object",
+  "properties": {
+    "minOnly": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 2
+    },
+    "maxOnly": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      },
+      "maxItems": 3
+    },
+    "minAndMax": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 1,
+      "maxItems": 4
+    },
+    "plain": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "unionItems": {
+      "type": "array",
+      "items": {
+        "type": ["integer", "string"]
+      },
+      "minItems": 2
+    }
+  },
+  "required": ["minOnly", "maxOnly", "minAndMax", "plain", "unionItems"]
+}
