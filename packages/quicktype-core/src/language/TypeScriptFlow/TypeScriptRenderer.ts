@@ -30,6 +30,10 @@ import { tsFlowTypeAnnotations } from "./utils.js";
 const maxSpelledOutMinItems = 16;
 
 export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
+    protected get emptyObjectType(): string {
+        return "object";
+    }
+
     protected sourceForUnionMembers(unionType: UnionType): MultiWord {
         if (!isUnionExclusive(unionType.getAttributes())) {
             return super.sourceForUnionMembers(unionType);
@@ -38,14 +42,20 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
         const members = Array.from(unionType.members);
         if (
             members.length < 2 ||
-            !members.every((member) => member instanceof ObjectType)
+            !members.every(
+                (member) =>
+                    member instanceof ObjectType &&
+                    member.getAdditionalProperties() === undefined,
+            )
         ) {
             return super.sourceForUnionMembers(unionType);
         }
 
         // TypeScript's excess-property checks allow an object literal to mix
-        // properties from different union members.  Exclude sibling keys so a
-        // oneOf remains exclusive in the generated type.
+        // properties from different closed union members.  Exclude sibling
+        // keys so a oneOf remains exclusive in the generated type.  Open
+        // members must not use these guards because sibling keys can be valid
+        // additional properties without satisfying the sibling schema.
         const propertyNames = new Set<string>();
         for (const member of members as ObjectType[]) {
             for (const name of member.getProperties().keys()) {
