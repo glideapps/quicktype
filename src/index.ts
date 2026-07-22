@@ -751,7 +751,6 @@ function parseOptions(
             { argv, partial },
         );
     } catch (e) {
-        assert(!partial, "Partial option parsing should not have failed");
         return messageError("DriverCLIOptionParsingFailed", {
             message: exceptionToString(e),
         });
@@ -1272,6 +1271,17 @@ export async function main(
 }
 
 if (require.main === module) {
+    const exitOnEPIPE = (error: NodeJS.ErrnoException): void => {
+        if (error.code === "EPIPE") {
+            process.exit(0);
+        }
+
+        throw error;
+    };
+
+    process.stdout.on("error", exitOnEPIPE);
+    process.stderr.on("error", exitOnEPIPE);
+
     main(process.argv.slice(2)).catch((e) => {
         if (e instanceof Error) {
             console.error(`Error: ${e.message}.`);

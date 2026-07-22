@@ -186,7 +186,11 @@ export async function inDir(dir: string, work: () => Promise<void>) {
 }
 
 export function testsInDir(dir: string, extension: string): string[] {
-    return shell.ls(`${dir}/*.${extension}`);
+    // Expected-output files (`foo.out.<key>.json`) accompany test inputs;
+    // they are never test inputs themselves.
+    return shell
+        .ls(`${dir}/*.${extension}`)
+        .filter((fn) => !/\.out\.[^./]+\.[^./]+$/.test(fn));
 }
 
 export interface Sample {
