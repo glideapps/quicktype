@@ -1,3 +1,5 @@
+import { mapContains } from "collection-utils";
+
 import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
@@ -571,7 +573,7 @@ export class RubyRenderer extends ConvenienceRenderer {
             });
             this.emitTable(table);
 
-            if (this._options.justTypes) {
+            if (this._options.justTypes || !mapContains(this.topLevels, e)) {
                 return;
             }
 
