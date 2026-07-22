@@ -936,6 +936,7 @@ class JavaScriptPropTypesJSONSchemaFixture extends JSONSchemaFixture {
         return super.getSamples(
             sources.length === 0
                 ? [
+                      "test/inputs/schema/javascript-prop-types/javascript-prop-types-map.schema",
                       "test/inputs/schema/javascript-prop-types/javascript-prop-types-required.schema",
                   ]
                 : sources,
