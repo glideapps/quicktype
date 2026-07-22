@@ -21,6 +21,10 @@ import { tsFlowTypeAnnotations } from "./utils.js";
 const maxSpelledOutMinItems = 16;
 
 export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
+    protected get emptyObjectType(): string {
+        return "object";
+    }
+
     protected anyType(): string {
         return this._tsFlowOptions.preferUnknown ? "unknown" : "any";
     }
