@@ -90,7 +90,7 @@ describe("just-types generates plain types in every language", () => {
 
         expect(output).toContain("enum class CanvasAction(val value: String)");
         expect(output).toContain('Add("add")');
-        expect(output).toContain('Bringtofront("bringtofront")');
+        expect(output).toContain('BringToFront("bringtofront")');
         expect(output).toContain(
             "fun fromValue(value: String): CanvasAction = when (value)",
         );
