@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Node",
+  "type": "object",
+  "properties": {
+    "value": { "type": "string" },
+    "next": {
+      "anyOf": [
+        { "$ref": "#" },
+        { "type": "string" },
+        { "type": "null" }
+      ]
+    }
+  },
+  "required": ["value"]
+}

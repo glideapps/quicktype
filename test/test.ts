@@ -16,7 +16,10 @@ const CPUs = Number.parseInt(process.env.CPUs || "0", 10) || os.cpus().length;
 export type WorkItem = { sample: Sample; fixtureName: string };
 
 async function main(sources: string[]) {
-    let fixtures = affectedFixtures();
+    let fixtures =
+        process.env.ALL_FIXTURES === undefined
+            ? affectedFixtures()
+            : allFixtures;
     const fixturesFromCmdline = process.env.FIXTURE;
     if (fixturesFromCmdline) {
         const fixtureNames = fixturesFromCmdline.split(",");
@@ -85,5 +88,5 @@ async function main(sources: string[]) {
 // skip 2 `node` args
 main(process.argv.slice(2)).catch((reason) => {
     console.error(reason);
-    process.process.exit(1);
+    process.exit(1);
 });
