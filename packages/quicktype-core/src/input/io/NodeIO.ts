@@ -107,6 +107,11 @@ export async function readableFromFileOrURL(
             const response = await globalThis.fetch(fileOrURL, {
                 headers: parseHeaders(httpHeaders),
             });
+            if (!response.ok) {
+                throw new Error(
+                    `HTTP ${response.status} ${response.statusText}`,
+                );
+            }
 
             return readableFromResponseBody(defined(response.body));
         }

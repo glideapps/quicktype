@@ -69,7 +69,7 @@ export function swiftNameStyle(
         legalizeName,
         isUpper ? firstUpperWordStyle : allLowerWordStyle,
         firstUpperWordStyle,
-        isUpper ? allUpperWordStyle : allLowerWordStyle,
+        isUpper ? acronymsStyle : allLowerWordStyle,
         acronymsStyle,
         "",
         isStartCharacter,
