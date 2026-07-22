@@ -174,6 +174,7 @@ describe("generated-output comparison", () => {
         });
 
         expect(html).toContain("Back to the pull request");
+        expect(html).toContain("base and tested PR merge revisions");
         expect(html).toContain(
             "https://github.com/glideapps/quicktype/pull/123",
         );
