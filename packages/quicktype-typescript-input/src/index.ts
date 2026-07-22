@@ -20,6 +20,7 @@ const settings: PartialArgs = {
     titles: true,
     topRef: true,
     noExtraProps: true,
+    propOrder: true,
 };
 
 const compilerOptions: ts.CompilerOptions = {
@@ -125,6 +126,79 @@ function patchGeneratorForBuiltinTypes(
     };
 }
 
+function addEnumAccessorNames(schema: Definition, program: ts.Program): void {
+    const definitions = schema.definitions;
+    if (definitions === undefined) return;
+
+    const checker = program.getTypeChecker();
+    const visit = (node: ts.Node): void => {
+        if (ts.isEnumDeclaration(node)) {
+            const symbol = checker.getSymbolAtLocation(node.name);
+            if (
+                symbol !== undefined &&
+                !isDeclaredInDefaultLib(program, symbol)
+            ) {
+                const accessorNames: Record<string, string> =
+                    Object.create(null);
+                for (const member of node.members) {
+                    const value = checker.getConstantValue(member);
+                    const name = member.name;
+                    if (
+                        typeof value !== "string" ||
+                        (!ts.isIdentifier(name) &&
+                            !ts.isStringLiteral(name) &&
+                            !ts.isNumericLiteral(name))
+                    ) {
+                        return;
+                    }
+
+                    accessorNames[value] = name.text;
+                }
+
+                const definitionName = checker
+                    .getFullyQualifiedName(symbol)
+                    .replace(/(\bimport\(".*?"\)|".*?")\.| /g, "");
+                const definition = definitions[definitionName];
+                if (typeof definition === "object") {
+                    (definition as unknown as Record<string, unknown>)[
+                        "qt-accessors"
+                    ] = accessorNames;
+                }
+            }
+        }
+
+        ts.forEachChild(node, visit);
+    };
+
+    for (const sourceFile of program.getSourceFiles()) {
+        visit(sourceFile);
+    }
+}
+
+// typescript-json-schema copies JSDoc `@type {string}` annotations into the
+// generated schema verbatim. Strip the JSDoc braces so the value is a valid
+// JSON Schema type.
+function sanitizeTypeAnnotations(value: unknown): void {
+    if (Array.isArray(value)) {
+        value.forEach(sanitizeTypeAnnotations);
+        return;
+    }
+
+    if (value === null || typeof value !== "object") {
+        return;
+    }
+
+    const schema = value as Record<string, unknown>;
+    if (typeof schema.type === "string") {
+        const match = /^\{([^{}]+)\}$/.exec(schema.type);
+        if (match !== null) {
+            schema.type = match[1];
+        }
+    }
+
+    Object.values(schema).forEach(sanitizeTypeAnnotations);
+}
+
 // FIXME: We're stringifying and then parsing this schema again. Just pass around
 // the schema directly.
 export function schemaForTypeScriptSources(
@@ -151,6 +225,12 @@ export function schemaForTypeScriptSources(
     patchGeneratorForBuiltinTypes(generator, program);
 
     const schema = generateSchema(program, "*", settings, undefined, generator);
+    if (schema !== null) {
+        addEnumAccessorNames(schema, program);
+    }
+
+    sanitizeTypeAnnotations(schema);
+
     const uris: string[] = [];
     let topLevelName = "";
 
@@ -186,9 +266,17 @@ export function schemaForTypeScriptSources(
             if (
                 definition === null ||
                 Array.isArray(definition) ||
-                typeof definition !== "object" ||
-                typeof definition.description !== "string"
+                typeof definition !== "object"
             ) {
+                continue;
+            }
+
+            if (Array.isArray(definition.propertyOrder)) {
+                (definition as Record<string, unknown>).quicktypePropertyOrder =
+                    definition.propertyOrder;
+            }
+
+            if (typeof definition.description !== "string") {
                 continue;
             }
 

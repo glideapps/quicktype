@@ -1,0 +1,7 @@
+{
+  "minOnly": ["one", "two"],
+  "maxOnly": [1, 2, 3],
+  "minAndMax": [1.25, 2.5],
+  "plain": [],
+  "unionItems": [1, "two", 3]
+}
