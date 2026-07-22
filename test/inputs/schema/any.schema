@@ -1,7 +1,11 @@
 {
   "type": "object",
   "properties": {
-    "foo": {}
+    "foo": {},
+    "values": {
+      "type": "object",
+      "additionalProperties": true
+    }
   },
-  "required": ["foo"]
+  "required": ["foo", "values"]
 }
