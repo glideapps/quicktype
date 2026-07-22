@@ -1,7 +1,7 @@
-// The fixture in test/inputs/json/priority/name-style.json exercises names
-// that collide with the acronym dictionary, but round-trip fixtures cannot
-// detect identifier casing because generated identifiers are self-consistent.
-// Assert on the emitted identifier here as a complement to that fixture.
+// The fixture harness always supplies each language's configured top-level
+// name, and round trips cannot detect identifier casing because generated
+// identifiers are self-consistent. Generate directly to assert the requested
+// top-level name.
 
 import { InputData, JSONSchemaInput, quicktype } from "quicktype-core";
 import { describe, expect, test } from "vitest";
@@ -30,17 +30,16 @@ async function renderTopLevel(topLevel: string): Promise<string> {
 }
 
 describe("top-level acronym capitalization", () => {
-    // A name written in mixed case carries an explicit capitalization that must
-    // be respected even when it collides with the known-acronym dictionary
-    // ("Acme" stays "Acme").  A uniformly cased name has no such signal, so a
-    // dictionary match still styles it as an acronym ("acme" -> "ACME"), which
-    // keeps names like a "json" property rendering as the acronym "JSON" and
-    // avoids regressing library-collision fixtures (e.g. Klaxon's @Json).
+    // A single mixed-case name carries explicit capitalization that must be
+    // respected even when it collides with the known-acronym dictionary
+    // ("Acme" stays "Acme").  Uniformly cased names and acronym words within
+    // compound names keep the existing acronym-style behavior.
     test.each([
         ["Acme", "Acme"],
         ["acme", "ACME"],
         ["ACME", "ACME"],
         ["HTMLParser", "HTMLParser"],
+        ["FaqCoordinate", "FAQCoordinate"],
     ])("renders %s as %s", async (topLevel, expected) => {
         const output = await renderTopLevel(topLevel);
 
