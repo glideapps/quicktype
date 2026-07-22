@@ -4,9 +4,8 @@
 
 ## Related Issue
 
-<!--- If suggesting a new feature or change, please discuss it in an issue first -->
-<!--- If fixing a bug, there should be an issue describing it with steps to reproduce -->
-<!--- Please link to the issue here: -->
+<!--- Feature requests should be submitted as pull requests, not issues. -->
+<!--- If fixing a reported bug, please link to the issue here: -->
 
 ## Motivation and Context
 

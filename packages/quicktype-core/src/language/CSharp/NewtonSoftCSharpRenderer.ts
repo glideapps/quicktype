@@ -62,6 +62,13 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
 
     private readonly _needNamespaces: boolean;
 
+    private get needConverterClass(): boolean {
+        return (
+            this._needHelpers ||
+            (this._needAttributes && (this.haveNamedUnions || this.haveEnums))
+        );
+    }
+
     public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
@@ -160,12 +167,14 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         super.emitUsings();
         this.ensureBlankLine();
 
-        for (const ns of [
-            "System.Globalization",
-            "Newtonsoft.Json",
-            "Newtonsoft.Json.Converters",
-        ]) {
-            this.emitUsing(ns);
+        if (this.needConverterClass) {
+            this.emitUsing("System.Globalization");
+        }
+
+        this.emitUsing("Newtonsoft.Json");
+
+        if (this.needConverterClass) {
+            this.emitUsing("Newtonsoft.Json.Converters");
         }
 
         if (this._options.dense) {
@@ -1177,10 +1186,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             this.emitSerializeClass();
         }
 
-        if (
-            this._needHelpers ||
-            (this._needAttributes && (this.haveNamedUnions || this.haveEnums))
-        ) {
+        if (this.needConverterClass) {
             this.ensureBlankLine();
             this.emitConverterClass();
             this.forEachTransformation("leading-and-interposing", (n, t) =>

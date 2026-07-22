@@ -25,6 +25,7 @@ const skipsEnumValueValidation = [
     "enum-large.schema",
     "optional-enum.schema",
     "const-non-string.schema",
+    "haskell-enum-forbidden.schema",
     "nullable-optional-one-of.schema",
     "all-of-additional-properties-false.schema",
 ];
@@ -648,6 +649,9 @@ export const CJSONLanguage: Language = {
         /* Required properties absent are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
         "intersection.schema",
         "required.schema",
+        // The default-value fail sample also relies on required-property
+        // enforcement, which cJSON does not do.
+        "default-value.schema",
         /* Pure Any type not supported (for the current implementation, can be added later, should manage a callback to provide the final application a way to handle it at parsing and creation of cJSON) */
         "any.schema",
         "direct-union.schema",
@@ -969,6 +973,8 @@ export const SwiftLanguage: Language = {
         // This works on macOS, but on Linux one of the failure test cases doesn't fail
         ...skipsUntypedUnions,
         "required.schema",
+        // The default-value fail sample also relies on required-property enforcement.
+        "default-value.schema",
         "multi-type-enum.schema",
         "intersection.schema",
         ...skipsMapValueValidation,
@@ -1138,6 +1144,7 @@ export const JavaScriptLanguage: Language = {
         { "runtime-typecheck": "false" },
         { "runtime-typecheck-ignore-unknown-properties": "true" },
         { converters: "top-level" },
+        ["nested-objects.json", { converters: "all-objects" }],
     ],
     sourceFiles: ["src/language/JavaScript/index.ts"],
 };
@@ -1584,6 +1591,7 @@ export const KotlinXLanguage: Language = {
         // Top-level arrays render as `typealias TopLevel = JsonArray<T>`,
         // which doesn't compile — kotlinx's JsonArray takes no type
         // arguments (documented TODO in KotlinXRenderer.ts).
+        "kotlin-enum-class-case-collision.json",
         "bug863.json",
         "github-events.json",
         "optional-union.json",
@@ -1882,7 +1890,6 @@ export const HaskellLanguage: Language = {
     skipMiscJSON: false,
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
-        "any.schema",
         ...skipsUntypedUnions,
         // The test driver encodes the Maybe result, so a failed decode prints
         // "null" and exits 0 — expected-failure samples cannot be detected.
@@ -1897,6 +1904,8 @@ export const HaskellLanguage: Language = {
         "keyword-unions.schema",
         "optional-any.schema",
         "required.schema",
+        // The default-value fail sample also relies on required-property enforcement.
+        "default-value.schema",
         "required-non-properties.schema",
     ],
     rendererOptions: {},
@@ -2067,6 +2076,8 @@ export const TypeScriptZodLanguage: Language = {
         "optional-any.schema",
         "recursive-union-flattening.schema",
         "required.schema",
+        // The default-value fail sample also relies on required-property enforcement.
+        "default-value.schema",
         "required-non-properties.schema",
     ],
     rendererOptions: {},
@@ -2183,6 +2194,8 @@ export const TypeScriptEffectSchemaLanguage: Language = {
         "keyword-unions.schema",
         "optional-any.schema",
         "required.schema",
+        // The default-value fail sample also relies on required-property enforcement.
+        "default-value.schema",
         "required-non-properties.schema",
     ],
     rendererOptions: {},
@@ -2241,6 +2254,8 @@ export const ElixirLanguage: Language = {
         // Struct keys cannot be enforced at runtime in Elixir and their values will just be set to null.
         "strict-optional.schema",
         "required.schema",
+        // The default-value fail sample also relies on required-property enforcement.
+        "default-value.schema",
         "boolean-subschema.schema",
         "intersection.schema",
         "optional-any.schema",
