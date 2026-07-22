@@ -1,0 +1,35 @@
+{
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "required-date": {
+            "type": "string",
+            "format": "date"
+        },
+        "required-time": {
+            "type": "string",
+            "format": "time"
+        },
+        "required-date-time": {
+            "type": "string",
+            "format": "date-time"
+        },
+        "optional-date": {
+            "type": "string",
+            "format": "date"
+        },
+        "optional-time": {
+            "type": "string",
+            "format": "time"
+        },
+        "optional-date-time": {
+            "type": "string",
+            "format": "date-time"
+        }
+    },
+    "required": [
+        "required-date",
+        "required-time",
+        "required-date-time"
+    ]
+}
