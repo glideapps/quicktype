@@ -1,7 +1,9 @@
 {
     "compilerOptions": {
         "target": "es6",
-        "noEmit": true
+        "noEmit": true,
+        "noImplicitAny": true,
+        "strictNullChecks": false
     },
     "files": ["main.ts"]
 }
