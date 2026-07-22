@@ -1,0 +1,14 @@
+{
+  "anything": {
+    "accepted": true
+  },
+  "disabled": false,
+  "options": {
+    "label": "shown"
+  },
+  "tags": [
+    "one",
+    "two"
+  ],
+  "kind": "primary choice"
+}

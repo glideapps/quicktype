@@ -1,0 +1,11 @@
+{
+  "anything": {
+    "accepted": true
+  },
+  "disabled": false,
+  "tags": [
+    "one",
+    "two"
+  ],
+  "kind": "primary choice"
+}

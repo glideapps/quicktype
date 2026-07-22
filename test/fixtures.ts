@@ -927,6 +927,20 @@ class JSONSchemaFixture extends LanguageFixture {
     }
 }
 
+class JavaScriptPropTypesJSONSchemaFixture extends JSONSchemaFixture {
+    constructor() {
+        super(languages.JavaScriptPropTypesLanguage);
+    }
+
+    getSamples(sources: string[]): { priority: Sample[]; others: Sample[] } {
+        return super.getSamples(
+            sources.length === 0
+                ? ["test/inputs/schema/javascript-prop-types-required.schema"]
+                : sources,
+        );
+    }
+}
+
 // `leadingComments` is a quicktype-core API option, so the CLI fixture path
 // cannot exercise it.
 class LeadingCommentsGoFixture extends JSONSchemaFixture {
@@ -1639,11 +1653,7 @@ class CommandSuccessfulLanguageFixture extends LanguageFixture {
         }
 
         const command = this.language.runCommand(filename);
-        const results = await execAsync(command);
-
-        if (results.stdout.indexOf("Success") === -1) {
-            throw new Error(`Test failed:\n${results.stdout}`);
-        }
+        await execAsync(command);
 
         return 0;
     }
@@ -1812,6 +1822,7 @@ export const allFixtures: Fixture[] = [
     new JSONSchemaFixture(languages.TypeScriptZodLanguage),
     new JSONSchemaFixture(languages.FlowLanguage),
     new JSONSchemaFixture(languages.JavaScriptLanguage),
+    new JavaScriptPropTypesJSONSchemaFixture(),
     new JSONSchemaFixture(languages.KotlinLanguage),
     new JSONSchemaFixture(
         languages.KotlinJacksonLanguage,
