@@ -61,6 +61,13 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
 
     private readonly _needNamespaces: boolean;
 
+    private get needConverterClass(): boolean {
+        return (
+            this._needHelpers ||
+            (this._needAttributes && (this.haveNamedUnions || this.haveEnums))
+        );
+    }
+
     public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
@@ -165,9 +172,12 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
         for (const ns of [
             "System.Text.Json",
             "System.Text.Json.Serialization",
-            "System.Globalization",
         ]) {
             this.emitUsing(ns);
+        }
+
+        if (this.needConverterClass) {
+            this.emitUsing("System.Globalization");
         }
 
         if (this._options.dense) {
@@ -375,8 +385,11 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
         this.emitLine("case JsonTokenType.", tokenType, ":");
     }
 
-    private emitThrow(message: Sourcelike): void {
-        this.emitLine("throw new Exception(", message, ");");
+    private emitThrow(
+        exceptionType: "JsonException" | "NotSupportedException",
+        message: Sourcelike,
+    ): void {
+        this.emitLine("throw new ", exceptionType, "(", message, ");");
     }
 
     private deserializeTypeCode(typeName: Sourcelike): Sourcelike {
@@ -413,7 +426,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
         this.emitType(
             undefined,
             AccessModifier.Public,
-            "static class",
+            "static partial class",
             "Serialize",
             undefined,
             () => {
@@ -484,7 +497,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
         this.emitType(
             undefined,
             AccessModifier.Internal,
-            "static class",
+            "static partial class",
             converterName,
             undefined,
             () => {
@@ -1242,7 +1255,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
                         (v) => this.emitLine("return ", v, ";"),
                     );
                     if (!allHandled) {
-                        this.emitThrow([
+                        this.emitThrow("JsonException", [
                             '"Cannot unmarshal type ',
                             csType,
                             '"',
@@ -1269,7 +1282,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
                             () => this.emitLine("return;"),
                         );
                         if (!allHandled) {
-                            this.emitThrow([
+                            this.emitThrow("NotSupportedException", [
                                 '"Cannot marshal type ',
                                 csType,
                                 '"',
@@ -1299,10 +1312,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
             this.emitSerializeClass();
         }
 
-        if (
-            this._needHelpers ||
-            (this._needAttributes && (this.haveNamedUnions || this.haveEnums))
-        ) {
+        if (this.needConverterClass) {
             this.ensureBlankLine();
             this.emitConverterClass();
             this.forEachTransformation("leading-and-interposing", (n, t) =>

@@ -1016,6 +1016,7 @@ export class PhpRenderer extends ConvenienceRenderer {
         t: Type,
         attrName: Sourcelike,
         scopeAttrName: string,
+        skipPrimitiveTypeCheck = false,
     ): void {
         const is = (isfn: string, myT: Name = className): void => {
             this.emitBlock(["if (!", isfn, "(", scopeAttrName, "))"], () =>
@@ -1038,30 +1039,38 @@ export class PhpRenderer extends ConvenienceRenderer {
                 // non-string arguments.)
             },
             (_nullType) => is("is_null"),
-            (_boolType) => is("is_bool"),
-            (_integerType) => is("is_integer"),
-            (_doubleType) => {
-                // PHP integers are acceptable wherever floats are, and
-                // json_decode gives an int for a whole JSON number.
-                this.emitBlock(
-                    [
-                        "if (!is_float(",
-                        scopeAttrName,
-                        ") && !is_int(",
-                        scopeAttrName,
-                        "))",
-                    ],
-                    () =>
-                        this.emitLine(
-                            'throw new Exception("Attribute Error:',
-                            className,
-                            "::",
-                            attrName,
-                            '");',
-                        ),
-                );
+            (_boolType) => {
+                if (!skipPrimitiveTypeCheck) is("is_bool");
             },
-            (_stringType) => is("is_string"),
+            (_integerType) => {
+                if (!skipPrimitiveTypeCheck) is("is_integer");
+            },
+            (_doubleType) => {
+                if (!skipPrimitiveTypeCheck) {
+                    // PHP integers are acceptable wherever floats are, and
+                    // json_decode gives an int for a whole JSON number.
+                    this.emitBlock(
+                        [
+                            "if (!is_float(",
+                            scopeAttrName,
+                            ") && !is_int(",
+                            scopeAttrName,
+                            "))",
+                        ],
+                        () =>
+                            this.emitLine(
+                                'throw new Exception("Attribute Error:',
+                                className,
+                                "::",
+                                attrName,
+                                '");',
+                            ),
+                    );
+                }
+            },
+            (_stringType) => {
+                if (!skipPrimitiveTypeCheck) is("is_string");
+            },
             (arrayType) => {
                 is("is_array");
                 this.emitLine(
@@ -1110,6 +1119,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                                 nullable,
                                 attrName,
                                 scopeAttrName,
+                                skipPrimitiveTypeCheck,
                             );
                         },
                     );
@@ -1146,7 +1156,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                 }
 
                 if (transformedStringType.kind === "uuid") {
-                    is("is_string");
+                    if (!skipPrimitiveTypeCheck) is("is_string");
                     this.emitBlock(
                         [
                             "if (!preg_match('/^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$/', ",
@@ -1286,7 +1296,10 @@ export class PhpRenderer extends ConvenienceRenderer {
                 " $value): bool",
             ],
             () => {
-                this.phpValidate(className, p.type, name, "$value");
+                // PHP has already enforced scalar parameter type hints before
+                // entering this method.  Recursive collection and union
+                // validation still performs its own runtime checks.
+                this.phpValidate(className, p.type, name, "$value", true);
                 this.emitLine("return true;");
             },
         );
@@ -1811,6 +1824,7 @@ export class PhpRenderer extends ConvenienceRenderer {
 
     protected emitSourceStructure(givenFilename: string): void {
         this.emitLine("<?php");
+        this.emitLine("declare(strict_types=1);");
         this.forEachNamedType(
             "leading-and-interposing",
             (c: ClassType, n: Name) => this.emitClassDefinition(c, n),

@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "AmountAndFrequency": {
+      "type": "object",
+      "properties": {
+        "amount": { "type": "number" },
+        "frequency": {
+          "type": "string",
+          "enum": ["Weekly", "Monthly", "Annually"]
+        }
+      },
+      "additionalProperties": false,
+      "required": ["amount", "frequency"]
+    },
+    "Income": {
+      "allOf": [
+        { "$ref": "#/definitions/AmountAndFrequency" },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["GrossSalaryAmount", "Overtime"]
+            },
+            "description": { "type": "string" }
+          },
+          "additionalProperties": false,
+          "required": ["type"]
+        }
+      ]
+    }
+  },
+  "$ref": "#/definitions/Income"
+}
