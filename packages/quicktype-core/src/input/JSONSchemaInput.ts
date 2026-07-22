@@ -32,7 +32,7 @@ import {
 import { defaultValueAttributeProducer } from "../attributes/DefaultValue.js";
 import { descriptionAttributeProducer } from "../attributes/Description.js";
 import { enumValuesAttributeProducer } from "../attributes/EnumValues.js";
-import { explicitUnionMemberAttributes } from "../attributes/ExplicitUnionMember.js";
+import { makeExplicitUnionMemberAttributes } from "../attributes/ExplicitUnionMember.js";
 import { StringTypes } from "../attributes/StringTypes.js";
 import {
     type TypeAttributes,
@@ -1227,10 +1227,11 @@ async function addTypesInSchema(
                         typeof (c as { $ref?: unknown }).$ref === "string",
                 )
             ) {
+                const explicitUnionGroup = Symbol();
                 for (const typeRef of typeRefs) {
                     typeBuilder.addAttributes(
                         typeRef,
-                        explicitUnionMemberAttributes,
+                        makeExplicitUnionMemberAttributes(explicitUnionGroup),
                     );
                 }
             }

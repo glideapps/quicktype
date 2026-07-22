@@ -245,18 +245,24 @@ export class UnifyUnionBuilder extends UnionBuilder<
         objectTypes: ObjectType[],
         typeAttributes: TypeAttributes,
     ): boolean {
-        if (
-            objectTypes.length < 2 ||
+        if (objectTypes.length < 2) return false;
+
+        // Every member must come from the same explicit union of direct schema
+        // references.  Counting distinct members in each group prevents a marked
+        // type from changing an unrelated union in which that type is later reused.
+        const groups =
             explicitUnionMemberTypeAttributeKind.tryGetInAttributes(
                 typeAttributes,
-            ) !== true
+            );
+        if (
+            groups === undefined ||
+            !Array.from(groups.values()).some(
+                (members) => members.size === objectTypes.length,
+            )
         ) {
             return false;
         }
 
-        // The marker is only attached to direct schema-reference alternatives.
-        // Keep this conservative because ordinary inferred object unions are
-        // intentionally still unified.
         const typeNames = new Set<string>();
         const propertyNames = new Set<string>();
         for (const objectType of objectTypes) {

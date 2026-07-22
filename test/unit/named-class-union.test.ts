@@ -47,14 +47,34 @@ function schemaWithUnion(operation: "oneOf" | "anyOf"): object {
     };
 }
 
+function schemaWithReusedRef(): object {
+    const schema = schemaWithUnion("oneOf") as {
+        properties: Record<string, unknown>;
+    };
+    schema.properties.mixed = {
+        oneOf: [
+            { $ref: "#/definitions/Foo" },
+            {
+                title: "Baz",
+                type: "object",
+                additionalProperties: false,
+                properties: { baz: { type: "string" } },
+                required: ["baz"],
+            },
+        ],
+    };
+    return schema;
+}
+
 async function generate(
     lang: "python" | "typescript",
     operation: "oneOf" | "anyOf" = "oneOf",
+    schema: object = schemaWithUnion(operation),
 ): Promise<string> {
     const schemaInput = new JSONSchemaInput(new FetchingJSONSchemaStore());
     await schemaInput.addSource({
         name: "Container",
-        schema: JSON.stringify(schemaWithUnion(operation)),
+        schema: JSON.stringify(schema),
     });
     const inputData = new InputData();
     inputData.addInput(schemaInput);
@@ -83,6 +103,15 @@ describe("named class unions (issue #1646)", () => {
 
         expect(output).toContain("op: Union[Foo, Bar]");
         expect(output).not.toContain("class Op:");
+    });
+
+    test("the explicit-union marker does not leak through reused refs", async () => {
+        const output = await generate("python", "oneOf", schemaWithReusedRef());
+
+        expect(output).toContain("op: Union[Foo, Bar]");
+        expect(output).toContain("mixed: Optional[MixedClass] = None");
+        expect(output).toContain("foo: Optional[str] = None");
+        expect(output).toContain("baz: Optional[str] = None");
     });
 
     test("languages that do not opt in keep the existing behavior", async () => {
