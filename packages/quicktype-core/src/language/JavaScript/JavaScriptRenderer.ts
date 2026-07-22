@@ -108,7 +108,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
         });
     }
 
-    private typeMapTypeFor(t: Type): Sourcelike {
+    protected typeMapTypeFor(t: Type): Sourcelike {
         if (["class", "object", "enum"].includes(t.kind)) {
             return ['r("', this.nameForNamedType(t), '")'];
         }
@@ -160,11 +160,17 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
         this.emitLine("}", end);
     }
 
+    protected shouldEmitTypeMapEntry(_t: ObjectType): boolean {
+        return true;
+    }
+
     private emitTypeMap(): void {
         const { any: anyAnnotation } = this.typeAnnotations;
 
         this.emitBlock(`const typeMap${anyAnnotation} = `, ";", () => {
             this.forEachObject("none", (t: ObjectType, name: Name) => {
+                if (!this.shouldEmitTypeMapEntry(t)) return;
+
                 const additionalProperties = t.getAdditionalProperties();
                 const additional =
                     additionalProperties !== undefined

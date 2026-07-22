@@ -2,7 +2,7 @@
 
 ## Goals
 
-For every pull request, compare quicktype's generated source at the exact PR base commit with the generated source at the PR head commit across all registered JSON, JSON Schema, and GraphQL input/target fixture combinations.
+For every pull request, compare quicktype's generated source at the exact PR base commit with the generated source at GitHub's tested PR merge commit across all registered JSON, JSON Schema, and GraphQL input/target fixture combinations.
 
 Generated-output differences are informational: they must not fail CI. When differences exist, CI publishes a readable report and posts or updates one PR comment containing:
 
@@ -25,7 +25,7 @@ The fixture harness has a dedicated output-snapshot mode. It:
 
 A snapshot contains generated files only. Fixture drivers, copied inputs, tool output, timestamps, and absolute checkout paths are not included.
 
-Both revisions run with the same Node version, timezone, locale, and repository-relative inputs. CI compares the exact `pull_request.base.sha` and `pull_request.head.sha`, not the moving tip of `master`.
+Both revisions run with the same Node version, timezone, locale, and repository-relative inputs. CI compares the exact `pull_request.base.sha` with the exact tested merge at `github.sha`, not the contributor branch tip in isolation. This matches GitHub's PR diff semantics and prevents changes added to the base branch after the PR forked from appearing as deletions.
 
 ## Base snapshot cache
 
@@ -39,7 +39,7 @@ quicktype-output-snapshot-v1-<os>-<base-sha>
 
 Pull-request jobs restore only the exact key; there are no prefix restore keys. On a cache miss, the PR job generates the base snapshot and saves a PR-scoped cache, which at least benefits reruns of that PR. The push job is what makes the snapshot reusable by unrelated PRs, in accordance with GitHub Actions cache scoping.
 
-The head snapshot is always generated from the current PR head.
+The comparison snapshot is always generated from GitHub's current tested PR merge commit. The contributor branch's exact head SHA is still recorded for identity, stale-run protection, and immutable report URLs.
 
 ## Comparison data
 
@@ -61,12 +61,12 @@ A difference is a successful result. Snapshot-generation errors, malformed compa
 
 The report is static, self-contained HTML with:
 
-- summary cards and base/head commit metadata;
+- summary cards and base/merge/head commit metadata;
 - a prominent link back to the pull request;
-- filtering by file status and text search;
-- navigation grouped by fixture/target;
+- filtering by target, file status, and text search;
+- generated files grouped by input test case, with each target clearly labeled;
 - collapsible, GitHub-style unified diffs with old/new line numbers; and
-- per-file insertion/deletion totals.
+- per-test and per-file insertion/deletion totals.
 
 Generated source and paths are always HTML-escaped. The page has a restrictive content-security policy and makes no third-party network requests.
 

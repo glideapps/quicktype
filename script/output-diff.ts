@@ -303,28 +303,73 @@ export function renderOutputDiffReport(args: {
     if (sections.length !== result.files.length) {
         throw new Error("Patch and result file counts differ");
     }
-    const fixtures = Array.from(
-        new Set(result.files.map((file) => file.path.split(path.sep)[0])),
+    const renderedFiles = result.files.map((file, index) => {
+        const parts = file.path.split("/");
+        const target = parts[0] ?? file.path;
+        const optionsIndex = parts.findIndex(
+            (part, partIndex) =>
+                partIndex > 1 &&
+                (part === "default" || /--[0-9a-f]{12}$/.test(part)),
+        );
+        const test =
+            optionsIndex < 0
+                ? "Other generated output"
+                : parts.slice(1, optionsIndex).join("/");
+        const output =
+            optionsIndex < 0
+                ? file.path
+                : parts.slice(optionsIndex).join(" / ");
+        return { file, index, output, section: sections[index], target, test };
+    });
+    const targets = Array.from(
+        new Set(renderedFiles.map(({ target }) => target)),
     ).sort();
-    const fileHTML = result.files
-        .map((file, index) => {
-            const fixture = file.path.split(path.sep)[0];
-            const statusLetter =
-                file.status === "added"
-                    ? "A"
-                    : file.status === "deleted"
-                      ? "D"
-                      : "M";
-            return `<details class="file" data-path="${escapeHTML(file.path.toLowerCase())}" data-status="${file.status}" data-fixture="${escapeHTML(fixture)}" id="file-${index}" open>
-<summary><span class="status ${file.status}">${statusLetter}</span><span class="file-path">${escapeHTML(file.path)}</span><span class="counts"><b>+${formatNumber(file.additions)}</b> <i>−${formatNumber(file.deletions)}</i></span></summary>
-<div class="diff">${renderPatchLines(sections[index])}</div>
+    const groupedFiles = new Map<string, (typeof renderedFiles)[number][]>();
+    for (const renderedFile of renderedFiles) {
+        const files = groupedFiles.get(renderedFile.test) ?? [];
+        files.push(renderedFile);
+        groupedFiles.set(renderedFile.test, files);
+    }
+    const groups = Array.from(groupedFiles).sort(([left], [right]) =>
+        left.localeCompare(right),
+    );
+    const groupsHTML = groups
+        .map(([test, files]) => {
+            const additions = files.reduce(
+                (sum, { file }) => sum + file.additions,
+                0,
+            );
+            const deletions = files.reduce(
+                (sum, { file }) => sum + file.deletions,
+                0,
+            );
+            const fileHTML = files
+                .sort(({ file: left }, { file: right }) =>
+                    left.path.localeCompare(right.path),
+                )
+                .map(({ file, index, output, section, target }) => {
+                    const statusLetter =
+                        file.status === "added"
+                            ? "A"
+                            : file.status === "deleted"
+                              ? "D"
+                              : "M";
+                    return `<details class="file" data-path="${escapeHTML(file.path.toLowerCase())}" data-status="${file.status}" data-target="${escapeHTML(target)}" id="file-${index}" open>
+<summary title="${escapeHTML(file.path)}"><span class="status ${file.status}">${statusLetter}</span><span class="target">${escapeHTML(target)}</span><span class="file-path">${escapeHTML(output)}</span><span class="counts"><b>+${formatNumber(file.additions)}</b> <i>−${formatNumber(file.deletions)}</i></span></summary>
+<div class="diff">${renderPatchLines(section)}</div>
 </details>`;
+                })
+                .join("\n");
+            return `<section class="test-group" data-test="${escapeHTML(test.toLowerCase())}">
+<div class="test-header"><div><span class="test-label">Test case</span><h2>${escapeHTML(test)}</h2></div><span class="test-counts">${formatNumber(files.length)} generated ${files.length === 1 ? "file" : "files"} · <b>+${formatNumber(additions)}</b> <i>−${formatNumber(deletions)}</i></span></div>
+${fileHTML}
+</section>`;
         })
         .join("\n");
-    const fixtureOptions = fixtures
+    const targetOptions = targets
         .map(
-            (fixture) =>
-                `<option value="${escapeHTML(fixture)}">${escapeHTML(fixture)}</option>`,
+            (target) =>
+                `<option value="${escapeHTML(target)}">${escapeHTML(target)}</option>`,
         )
         .join("");
     const summary = result.summary;
@@ -373,11 +418,20 @@ input:focus, select:focus, button:focus { border-color: var(--blue); outline: 2p
 button { cursor: pointer }
 button:hover { background: var(--panel-hover) }
 input { flex: 1; min-width: 240px }
-.file { border: 1px solid var(--border); border-radius: 6px; background: var(--diff-bg); margin: 16px 0; overflow: hidden }
+.test-group { border: 1px solid var(--border); border-radius: 8px; margin: 20px 0; padding: 12px; background: var(--panel) }
+.test-group[hidden] { display: none }
+.test-header { display: flex; align-items: end; gap: 16px; justify-content: space-between; padding: 2px 4px 10px }
+.test-label { color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase }
+h2 { margin: 1px 0 0; font: 600 16px/1.4 ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; overflow-wrap: anywhere }
+.test-counts { color: var(--muted); white-space: nowrap; font: 12px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace }
+.test-counts b { color: var(--green) }
+.test-counts i { color: var(--red); font-style: normal }
+.file { border: 1px solid var(--border); border-radius: 6px; background: var(--diff-bg); margin: 8px 0 0; overflow: hidden }
 .file[hidden] { display: none }
-.file summary { cursor: pointer; display: flex; align-items: center; gap: 10px; min-height: 46px; padding: 8px 12px; background: var(--panel); font-weight: 600 }
+.file summary { cursor: pointer; display: flex; align-items: center; gap: 10px; min-height: 46px; padding: 8px 12px; background: var(--bg); font-weight: 600 }
 .file summary:hover { background: var(--panel-hover) }
 .file[open] summary { border-bottom: 1px solid var(--border) }
+.target { flex: 0 0 auto; border: 1px solid var(--border); border-radius: 2em; padding: 1px 8px; color: var(--muted); font: 600 11px/1.5 ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace }
 .file-path { font: 600 13px/1.5 ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; overflow-wrap: anywhere }
 .counts { margin-left: auto; white-space: nowrap; font: 12px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace }
 .counts b { color: var(--green) }
@@ -423,9 +477,10 @@ footer { padding: 30px 0 50px; color: var(--muted) }
 <body>
 <header>
 <h1>Generated-output differences</h1>
-<div class="subtitle">quicktype output changed between the PR base and head revisions.</div>
+<div class="subtitle">quicktype output changed between the PR base and tested PR merge revisions.</div>
 <a class="pr-link" href="${escapeHTML(prUrl)}">← Back to the pull request</a>
 <div class="cards">
+<div class="card"><strong>${formatNumber(groups.length)}</strong><span>test cases</span></div>
 <div class="card"><strong>${formatNumber(summary.files)}</strong><span>files differ</span></div>
 <div class="card"><strong>${formatNumber(summary.modified)}</strong><span>modified</span></div>
 <div class="card"><strong>${formatNumber(summary.added)}</strong><span>new</span></div>
@@ -438,17 +493,17 @@ footer { padding: 30px 0 50px; color: var(--muted) }
 <main>
 <div class="toolbar">
 <input id="search" type="search" placeholder="Filter generated files…" aria-label="Filter generated files">
-<select id="fixture"><option value="">All targets</option>${fixtureOptions}</select>
+<select id="target"><option value="">All targets</option>${targetOptions}</select>
 <select id="status"><option value="">All statuses</option><option value="modified">Modified</option><option value="added">New</option><option value="deleted">Deleted</option></select>
 <button id="expand" type="button">Expand all</button>
 <button id="collapse" type="button">Collapse all</button>
 </div>
-<div id="files">${fileHTML}</div>
+<div id="files">${groupsHTML}</div>
 <div class="empty" id="empty">No generated files match these filters.</div>
 <footer>Generated by quicktype CI. This report is immutable for the tested PR and head SHAs.</footer>
 </main>
 <script>
-const files=[...document.querySelectorAll('.file')],search=document.querySelector('#search'),fixture=document.querySelector('#fixture'),status=document.querySelector('#status'),empty=document.querySelector('#empty');function filter(){const q=search.value.trim().toLowerCase();let visible=0;for(const file of files){const show=(!q||file.dataset.path.includes(q))&&(!fixture.value||file.dataset.fixture===fixture.value)&&(!status.value||file.dataset.status===status.value);file.hidden=!show;if(show)visible++}empty.style.display=visible?'none':'block'}search.addEventListener('input',filter);fixture.addEventListener('change',filter);status.addEventListener('change',filter);document.querySelector('#expand').addEventListener('click',()=>files.forEach(file=>file.open=true));document.querySelector('#collapse').addEventListener('click',()=>files.forEach(file=>file.open=false));
+const files=[...document.querySelectorAll('.file')],groups=[...document.querySelectorAll('.test-group')],search=document.querySelector('#search'),target=document.querySelector('#target'),status=document.querySelector('#status'),empty=document.querySelector('#empty');function filter(){const q=search.value.trim().toLowerCase();let visible=0;for(const file of files){const show=(!q||file.dataset.path.includes(q))&&(!target.value||file.dataset.target===target.value)&&(!status.value||file.dataset.status===status.value);file.hidden=!show;if(show)visible++}for(const group of groups)group.hidden=![...group.querySelectorAll('.file')].some(file=>!file.hidden);empty.style.display=visible?'none':'block'}search.addEventListener('input',filter);target.addEventListener('change',filter);status.addEventListener('change',filter);document.querySelector('#expand').addEventListener('click',()=>files.forEach(file=>file.open=true));document.querySelector('#collapse').addEventListener('click',()=>files.forEach(file=>file.open=false));
 </script>
 </body>
 </html>`;
