@@ -423,7 +423,7 @@ footer { padding: 30px 0 50px; color: var(--muted) }
 <body>
 <header>
 <h1>Generated-output differences</h1>
-<div class="subtitle">quicktype output changed between the PR base and head revisions.</div>
+<div class="subtitle">quicktype output changed between the PR base and tested PR merge revisions.</div>
 <a class="pr-link" href="${escapeHTML(prUrl)}">← Back to the pull request</a>
 <div class="cards">
 <div class="card"><strong>${formatNumber(summary.files)}</strong><span>files differ</span></div>
