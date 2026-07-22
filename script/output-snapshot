@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+: "${OUTPUT_SNAPSHOT_DIR:?Set OUTPUT_SNAPSHOT_DIR to the snapshot destination}"
+
+export ALL_FIXTURES=1
+export ONLY_OUTPUT=1
+export FIXTURE="${FIXTURE:-json,schema,graphql,comment-injection}"
+
+exec "$(dirname "$0")/test" "$@"

@@ -57,9 +57,9 @@ export class KotlinRenderer extends ConvenienceRenderer {
 
     protected forbiddenForEnumCases(
         _e: EnumType,
-        _enumName: Name,
+        enumName: Name,
     ): ForbiddenWordsInfo {
-        return { names: [], includeGlobalForbidden: true };
+        return { names: [enumName], includeGlobalForbidden: true };
     }
 
     protected forbiddenForUnionMembers(
