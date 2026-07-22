@@ -139,9 +139,14 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
             ],
             (_enumType) => panic("Should already be handled."),
             (unionType) => {
-                const children = Array.from(unionType.getChildren()).map(
-                    (type: Type) => this.typeMapTypeFor(type, false),
-                );
+                const children = Array.from(unionType.getChildren())
+                    // Coercing schemas can accept null, so handle it first.
+                    .sort(
+                        (a, b) =>
+                            Number(b.kind === "null") -
+                            Number(a.kind === "null"),
+                    )
+                    .map((type: Type) => this.typeMapTypeFor(type, false));
                 return ["z.union([", ...arrayIntercalate(", ", children), "])"];
             },
             (_transformedStringType) => {
