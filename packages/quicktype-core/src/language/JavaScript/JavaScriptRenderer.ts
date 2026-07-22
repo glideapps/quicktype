@@ -473,7 +473,8 @@ function o(props${anyArrayAnnotation}, additional${anyAnnotation}) {
 }
 
 function m(additional${anyAnnotation}) {
-    return { props: [], additional };
+    const props${anyArrayAnnotation} = [];
+    return { props, additional };
 }
 
 function r(name${stringAnnotation}) {
@@ -554,12 +555,22 @@ function r(name${stringAnnotation}) {
         this.ensureBlankLine();
 
         this.emitBlock("module.exports = ", ";", () => {
-            this.forEachTopLevel("none", (_, name) => {
+            const exporter = (_: Type, name: Name): void => {
                 const serializer = this.serializerFunctionName(name);
                 const deserializer = this.deserializerFunctionName(name);
                 this.emitLine('"', serializer, '": ', serializer, ",");
                 this.emitLine('"', deserializer, '": ', deserializer, ",");
-            });
+            };
+
+            switch (this._jsOptions.converters) {
+                case ConvertersOptions.AllObjects:
+                    this.forEachObject("none", exporter);
+                    break;
+
+                default:
+                    this.forEachTopLevel("none", exporter);
+                    break;
+            }
         });
     }
 

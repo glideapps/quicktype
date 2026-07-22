@@ -5,6 +5,7 @@ import {
     anyTypeIssueAnnotation,
     nullTypeIssueAnnotation,
 } from "../../Annotation.js";
+import { minMaxValueForType } from "../../attributes/Constraints.js";
 import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
@@ -13,7 +14,6 @@ import type { Name, Namer } from "../../Naming.js";
 import type { RenderContext } from "../../Renderer.js";
 import type { OptionValues } from "../../RendererOptions/index.js";
 import { type Sourcelike, maybeAnnotated } from "../../Source.js";
-import { defined } from "../../support/Support.js";
 import type { TargetLanguage } from "../../TargetLanguage.js";
 import {
     type ClassType,
@@ -28,7 +28,7 @@ import {
 } from "../../Type/TypeUtils.js";
 
 import { keywords } from "./constants.js";
-import type { rustOptions } from "./language.js";
+import { IntegerType, type rustOptions } from "./language.js";
 import {
     Density,
     type NamingStyleKey,
@@ -96,6 +96,28 @@ export class RustRenderer extends ConvenienceRenderer {
         return "/// ";
     }
 
+    private getIntegerType(integerType: Type): string {
+        switch (this._options.integerType) {
+            case IntegerType.ForceI32:
+                return "i32";
+            case IntegerType.ForceI64:
+                return "i64";
+            default: {
+                // Conservative: use i32 only when the schema bounds the
+                // integer on *both* sides and both bounds fit in i32.  A
+                // one-sided bound (e.g. only `"minimum": 0`) leaves the
+                // other side unbounded, so it must stay i64.
+                const minMax = minMaxValueForType(integerType);
+                if (minMax === undefined) return "i64";
+                const [min, max] = minMax;
+                if (min === undefined || max === undefined) return "i64";
+                const i32Min = -2147483648;
+                const i32Max = 2147483647;
+                return min >= i32Min && max <= i32Max ? "i32" : "i64";
+            }
+        }
+    }
+
     private nullableRustType(t: Type, withIssues: boolean): Sourcelike {
         return ["Option<", this.breakCycle(t, withIssues), ">"];
     }
@@ -121,7 +143,7 @@ export class RustRenderer extends ConvenienceRenderer {
                     "Option<serde_json::Value>",
                 ),
             (_boolType) => "bool",
-            (_integerType) => "i64",
+            (integerType) => this.getIntegerType(integerType),
             (_doubleType) => "f64",
             (_stringType) => "String",
             (arrayType) => [
@@ -160,6 +182,13 @@ export class RustRenderer extends ConvenienceRenderer {
     private breakCycle(t: Type, withIssues: boolean): Sourcelike {
         const rustType = this.rustType(t, withIssues);
         const isCycleBreaker = this.isCycleBreakerType(t);
+
+        if (isCycleBreaker && t instanceof UnionType) {
+            const nullable = nullableFromUnion(t);
+            if (nullable === null || this.isCycleBreakerType(nullable)) {
+                return rustType;
+            }
+        }
 
         return isCycleBreaker ? ["Box<", rustType, ">"] : rustType;
     }
@@ -351,9 +380,10 @@ export class RustRenderer extends ConvenienceRenderer {
             return;
         }
 
-        const topLevelName = defined(
-            mapFirst(this.topLevels),
-        ).getCombinedName();
+        const topLevel = mapFirst(this.topLevels);
+        if (topLevel === undefined) return;
+
+        const topLevelName = topLevel.getCombinedName();
         this.emitMultiline(
             `// Example code that deserializes and serializes the model.
 // extern crate serde;
