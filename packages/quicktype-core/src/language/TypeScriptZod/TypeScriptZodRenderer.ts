@@ -1,5 +1,6 @@
 import { arrayIntercalate } from "collection-utils";
 
+import { minMaxItemsForType } from "../../attributes/Constraints.js";
 import { ConvenienceRenderer } from "../../ConvenienceRenderer.js";
 import { type Name, type Namer, funPrefixNamer } from "../../Naming.js";
 import type { RenderContext } from "../../Renderer.js";
@@ -111,11 +112,25 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
             (_integerType) => "z.number()",
             (_doubleType) => "z.number()",
             (_stringType) => "z.string()",
-            (arrayType) => [
-                "z.array(",
-                this.typeMapTypeFor(arrayType.items, false),
-                ")",
-            ],
+            (arrayType) => {
+                const [minItems, maxItems] =
+                    minMaxItemsForType(arrayType) ?? [];
+
+                const arraySource: Sourcelike[] = [
+                    "z.array(",
+                    this.typeMapTypeFor(arrayType.items, false),
+                    ")",
+                ];
+                if (minItems !== undefined && minItems > 0) {
+                    arraySource.push(".min(", minItems.toString(10), ")");
+                }
+
+                if (maxItems !== undefined) {
+                    arraySource.push(".max(", maxItems.toString(10), ")");
+                }
+
+                return arraySource;
+            },
             (_classType) => panic("Should already be handled."),
             (_mapType) => [
                 "z.record(z.string(), ",
@@ -124,9 +139,14 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
             ],
             (_enumType) => panic("Should already be handled."),
             (unionType) => {
-                const children = Array.from(unionType.getChildren()).map(
-                    (type: Type) => this.typeMapTypeFor(type, false),
-                );
+                const children = Array.from(unionType.getChildren())
+                    // Coercing schemas can accept null, so handle it first.
+                    .sort(
+                        (a, b) =>
+                            Number(b.kind === "null") -
+                            Number(a.kind === "null"),
+                    )
+                    .map((type: Type) => this.typeMapTypeFor(type, false));
                 return ["z.union([", ...arrayIntercalate(", ", children), "])"];
             },
             (_transformedStringType) => {
