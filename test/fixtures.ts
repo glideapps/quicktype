@@ -805,6 +805,8 @@ const skipTypeScriptTests = [
     "kotlin-enum-class-case-collision.json",
     "bug855-short.json",
     "bug863.json",
+    "issue2680-object-array.json",
+    "issue2680-scalar-array.json",
     "00c36.json",
     "010b1.json",
     "050b0.json",
@@ -1818,6 +1820,7 @@ class CommandSuccessfulLanguageFixture extends LanguageFixture {
 export const allFixtures: Fixture[] = [
     // new JSONFixture(languages.CrystalLanguage),
     new JSONFixture(languages.CSharpLanguage),
+    new JSONFixture(languages.CSharpLanguageRecords, "csharp-records"),
     new JSONFixture(
         languages.CSharpLanguageSystemTextJson,
         "csharp-SystemTextJson",
@@ -1869,6 +1872,10 @@ export const allFixtures: Fixture[] = [
     // new JSONSchemaFixture(languages.CrystalLanguage),
     new JSONSchemaFixture(languages.JSONSchemaLanguage),
     new JSONSchemaFixture(languages.CSharpLanguage),
+    new JSONSchemaFixture(
+        languages.CSharpLanguageRecords,
+        "schema-csharp-records",
+    ),
     new JSONSchemaFixture(
         languages.CSharpLanguageSystemTextJson,
         "schema-csharp-SystemTextJson",
