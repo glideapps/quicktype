@@ -35,7 +35,6 @@ jobs:
             - name: Validate metadata and result
               id: metadata
               env:
-                  DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
                   EVENT_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
                   EVENT_HEAD_REPOSITORY: ${{ github.event.workflow_run.head_repository.full_name }}
                   EVENT_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
@@ -45,16 +44,24 @@ jobs:
               run: |
                   PR_NUMBER=$(node -e 'const m = require("./comparison/metadata.json"); if (!Number.isSafeInteger(m.prNumber) || m.prNumber <= 0) process.exit(1); process.stdout.write(String(m.prNumber))')
                   gh api "repos/$REPOSITORY/pulls/$PR_NUMBER" > /tmp/pull-request.json
+                  if [[ -z "$EVENT_PR_NUMBER" ]]; then
+                      HEAD_OWNER=${EVENT_HEAD_REPOSITORY%%/*}
+                      gh api --method GET "repos/$REPOSITORY/pulls" -f state=open -f "head=$HEAD_OWNER:$EVENT_HEAD_BRANCH" > /tmp/source-pulls.json
+                  else
+                      printf '[]\n' > /tmp/source-pulls.json
+                  fi
                   node - <<'NODE'
                   const fs = require("node:fs");
                   const metadata = JSON.parse(fs.readFileSync("comparison/metadata.json", "utf8"));
                   const result = JSON.parse(fs.readFileSync("comparison/result.json", "utf8"));
                   const pullRequest = JSON.parse(fs.readFileSync("/tmp/pull-request.json", "utf8"));
+                  const sourcePulls = JSON.parse(fs.readFileSync("/tmp/source-pulls.json", "utf8"));
                   const sha = /^[0-9a-f]{40,64}$/;
                   if (!Number.isSafeInteger(metadata.prNumber) || metadata.prNumber <= 0) throw new Error("Invalid PR number");
                   if (process.env.EVENT_PR_NUMBER !== "" && String(metadata.prNumber) !== process.env.EVENT_PR_NUMBER) throw new Error("Artifact PR does not match workflow event");
+                  if (process.env.EVENT_PR_NUMBER === "" && (sourcePulls.length !== 1 || sourcePulls[0].number !== metadata.prNumber)) throw new Error("Could not uniquely associate fork workflow with artifact PR");
                   if (metadata.headSha !== process.env.EVENT_HEAD_SHA) throw new Error("Artifact head does not match workflow event");
-                  if (pullRequest.number !== metadata.prNumber || pullRequest.base.repo.full_name.toLowerCase() !== process.env.REPOSITORY.toLowerCase() || pullRequest.base.ref !== process.env.DEFAULT_BRANCH || pullRequest.head.repo.full_name.toLowerCase() !== process.env.EVENT_HEAD_REPOSITORY.toLowerCase() || pullRequest.head.ref !== process.env.EVENT_HEAD_BRANCH) throw new Error("Artifact PR does not match workflow source");
+                  if (pullRequest.number !== metadata.prNumber || pullRequest.base.repo.full_name.toLowerCase() !== process.env.REPOSITORY.toLowerCase() || pullRequest.head.repo.full_name.toLowerCase() !== process.env.EVENT_HEAD_REPOSITORY.toLowerCase() || pullRequest.head.ref !== process.env.EVENT_HEAD_BRANCH) throw new Error("Artifact PR does not match workflow source");
                   for (const key of ["baseSha", "prSha", "headSha"]) {
                       if (!sha.test(metadata[key])) throw new Error(`Invalid ${key}`);
                   }
@@ -147,10 +154,10 @@ jobs:
                       echo "is_current=true" >> "$GITHUB_OUTPUT"
                   else
                       echo "is_current=false" >> "$GITHUB_OUTPUT"
-                      echo "The PR advanced to $CURRENT_HEAD; leaving its current output-diff comment untouched." >> "$GITHUB_STEP_SUMMARY"
+                      echo "The PR advanced to $CURRENT_HEAD; not posting a comment for this stale comparison." >> "$GITHUB_STEP_SUMMARY"
                   fi
 
-            - name: Create or update output-diff comment
+            - name: Create output-diff comment
               if: steps.metadata.outputs.supported == 'true' && steps.current.outputs.is_current == 'true'
               env:
                   GH_TOKEN: ${{ github.token }}
@@ -179,10 +186,4 @@ jobs:
                   EOF
                       )
                   fi
-                  COMMENT_ID=$(gh api --paginate "repos/${{ github.repository }}/issues/$PR_NUMBER/comments" \
-                      --jq '.[] | select(.body | contains("<!-- quicktype-generated-output-diff -->")) | .id' | sed -n '1p')
-                  if [[ -n "$COMMENT_ID" ]]; then
-                      gh api --method PATCH "repos/${{ github.repository }}/issues/comments/$COMMENT_ID" -f body="$BODY" >/dev/null
-                  else
-                      gh api --method POST "repos/${{ github.repository }}/issues/$PR_NUMBER/comments" -f body="$BODY" >/dev/null
-                  fi
+                  gh api --method POST "repos/${{ github.repository }}/issues/$PR_NUMBER/comments" -f body="$BODY" >/dev/null
