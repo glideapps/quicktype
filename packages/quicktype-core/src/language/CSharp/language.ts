@@ -75,6 +75,11 @@ export const cSharpOptions = {
         "secondary",
     ),
     virtual: new BooleanOption("virtual", "Generate virtual properties", false),
+    useRecords: new BooleanOption(
+        "use-records",
+        "Generate records instead of classes (C# 9+)",
+        false,
+    ),
     typeForAny: new EnumOption(
         "any-type",
         'Type to use for "any"',
