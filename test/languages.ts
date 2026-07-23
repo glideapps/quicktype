@@ -56,6 +56,10 @@ const skipsUntypedUnions = [
 const skipsMapValueValidation = [
     "go-schema-pattern-properties.schema",
     "unevaluated-properties.schema",
+    // These languages deserialize a map without validating the value type
+    // (unchecked generic casts, raw map readers, or no runtime type checks),
+    // so the `{"enabled": {}}` fail sample round-trips instead of failing.
+    "pattern-properties.schema",
 ];
 
 // The generated deserializer for a top-level array of scalars uses a
@@ -263,6 +267,11 @@ export const JavaLanguage: Language = {
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
         "keyword-unions.schema", // generates classes with names that are case-insensitively equal
+        // A top-level map deserializes via a raw `Map.class` reader
+        // (javaTypeWithoutGenerics drops the value type), so map value
+        // types are not validated on parse and the fail sample does not
+        // fail. Nested typed maps are still validated elsewhere.
+        "pattern-properties.schema",
         // The generated converter deserializes a top-level array with a raw
         // `List`, so a mistyped element round-trips instead of failing.
         ...skipsArrayElementValidation,
@@ -1976,6 +1985,9 @@ export const PHPLanguage: Language = {
         "top-level-enum.schema",
         // The driver does not support top-level arrays.
         "union.schema",
+        // PHP has no type aliases, so a top-level map produces no named
+        // TopLevel class and the driver's TopLevel::from() call fails.
+        "pattern-properties.schema",
         "issue2680-top-level-array.schema",
     ],
     rendererOptions: {},
