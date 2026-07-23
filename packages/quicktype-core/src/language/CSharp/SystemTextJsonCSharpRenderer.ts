@@ -61,6 +61,13 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
 
     private readonly _needNamespaces: boolean;
 
+    private get needConverterClass(): boolean {
+        return (
+            this._needHelpers ||
+            (this._needAttributes && (this.haveNamedUnions || this.haveEnums))
+        );
+    }
+
     public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
@@ -165,9 +172,12 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
         for (const ns of [
             "System.Text.Json",
             "System.Text.Json.Serialization",
-            "System.Globalization",
         ]) {
             this.emitUsing(ns);
+        }
+
+        if (this.needConverterClass) {
+            this.emitUsing("System.Globalization");
         }
 
         if (this._options.dense) {
@@ -337,9 +347,14 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
         const definedType = this.namedTypeToNameForTopLevel(t);
         if (definedType !== undefined) {
             partial = "partial ";
-            typeKind = definedType instanceof ClassType ? "class" : "struct";
+            typeKind =
+                definedType instanceof ClassType
+                    ? this.objectTypeKind
+                    : "struct";
         } else {
             partial = "";
+            // Synthetic top-level wrapper (e.g. array/map roots); not a
+            // user-facing data type, so always a class even with records.
             typeKind = "class";
         }
 
@@ -1302,10 +1317,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
             this.emitSerializeClass();
         }
 
-        if (
-            this._needHelpers ||
-            (this._needAttributes && (this.haveNamedUnions || this.haveEnums))
-        ) {
+        if (this.needConverterClass) {
             this.ensureBlankLine();
             this.emitConverterClass();
             this.forEachTransformation("leading-and-interposing", (n, t) =>

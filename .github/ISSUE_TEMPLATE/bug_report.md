@@ -1,7 +1,7 @@
 ---
-name: New Bug Report
-about: Use this template for reporting new bugs.
-title: "[BUG]: bug description here"
+name: Bug report
+about: Report a reproducible problem with quicktype
+title: "[BUG]: "
 labels: bug
 ---
 
