@@ -70,6 +70,7 @@ const skipsArrayElementValidation = ["issue2680-top-level-array.schema"];
 export type LanguageFeature =
     | "enum"
     | "union"
+    | "one-of"
     | "no-defaults"
     | "strict-optional"
     | "date-time"
@@ -1115,7 +1116,14 @@ export const TypeScriptLanguage: Language = {
         "e8b04.json",
     ],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults", "strict-optional", "date-time"],
+    features: [
+        "enum",
+        "union",
+        "one-of",
+        "no-defaults",
+        "strict-optional",
+        "date-time",
+    ],
     output: "TopLevel.ts",
     topLevel: "TopLevel",
     skipJSON: [],
@@ -1159,7 +1167,14 @@ export const JavaScriptLanguage: Language = {
     diffViaSchema: false,
     skipDiffViaSchema: [],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults", "strict-optional", "date-time"],
+    features: [
+        "enum",
+        "union",
+        "one-of",
+        "no-defaults",
+        "strict-optional",
+        "date-time",
+    ],
     output: "TopLevel.js",
     topLevel: "TopLevel",
     skipJSON: [],
@@ -1215,7 +1230,7 @@ export const FlowLanguage: Language = {
     diffViaSchema: false,
     skipDiffViaSchema: [],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults", "strict-optional"],
+    features: ["enum", "union", "one-of", "no-defaults", "strict-optional"],
     output: "TopLevel.js",
     topLevel: "TopLevel",
     skipJSON: [],
@@ -1706,6 +1721,7 @@ export const KotlinXLanguage: Language = {
         // Top-level array: `typealias TopLevel = JsonArray<T>` doesn't
         // compile (documented TODO in KotlinXRenderer.ts).
         "union.schema",
+        "one-of-objects.schema",
         "issue2680-top-level-array.schema",
     ],
     skipMiscJSON: false,
@@ -1976,6 +1992,7 @@ export const PHPLanguage: Language = {
         "top-level-enum.schema",
         // The driver does not support top-level arrays.
         "union.schema",
+        "one-of-objects.schema",
         "issue2680-top-level-array.schema",
     ],
     rendererOptions: {},

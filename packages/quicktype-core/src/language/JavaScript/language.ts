@@ -84,6 +84,10 @@ export class JavaScriptTargetLanguage extends TargetLanguage<
         return true;
     }
 
+    public get supportsUnionsWithMultipleObjectTypes(): boolean {
+        return true;
+    }
+
     protected makeRenderer<Lang extends LanguageName = "javascript">(
         renderContext: RenderContext,
         untypedOptionValues: RendererOptions<Lang>,

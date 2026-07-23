@@ -5,6 +5,10 @@ import {
     combineTypeAttributes,
     emptyTypeAttributes,
 } from "./attributes/TypeAttributes.js";
+import {
+    isUnionMemberDistinct,
+    unionMemberDistinctAttributes,
+} from "./attributes/UnionMembers.js";
 import type {
     BaseGraphRewriteBuilder,
     GraphRewriteBuilder,
@@ -125,9 +129,43 @@ export class UnifyUnionBuilder extends UnionBuilder<
         typeBuilder: BaseGraphRewriteBuilder,
         private readonly _makeObjectTypes: boolean,
         private readonly _makeClassesFixed: boolean,
+        private readonly _preserveDistinctObjects: boolean,
         private readonly _unifyTypes: (typesToUnify: TypeRef[]) => TypeRef,
     ) {
         super(typeBuilder);
+    }
+
+    protected objectsAreDistinct(
+        objectRefs: TypeRef[],
+        attributes: TypeAttributes,
+    ): boolean {
+        return (
+            this._preserveDistinctObjects &&
+            objectRefs.length > 1 &&
+            isUnionMemberDistinct(attributes) &&
+            // Renderers cannot represent properties that are exceptions to a
+            // typed additionalProperties index signature.
+            objectRefs.every((ref) => {
+                const object = assertIsObject(
+                    derefTypeRef(ref, this.typeBuilder),
+                );
+                const additional = object.getAdditionalProperties();
+                return (
+                    object.getProperties().size === 0 ||
+                    additional === undefined ||
+                    additional.kind === "any"
+                );
+            })
+        );
+    }
+
+    protected makeDistinctObjects(objectRefs: TypeRef[]): TypeRef[] {
+        return objectRefs.map((ref) =>
+            this.typeBuilder.reconstituteTypeRef(
+                ref,
+                unionMemberDistinctAttributes,
+            ),
+        );
     }
 
     protected makeObject(
@@ -249,6 +287,7 @@ export function unionBuilderForUnification<T extends Type>(
         typeBuilder,
         makeObjectTypes,
         makeClassesFixed,
+        false,
         (trefs) =>
             unifyTypes(
                 new Set(trefs.map((tref) => derefTypeRef(tref, typeBuilder))),

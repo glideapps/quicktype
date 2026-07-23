@@ -48,6 +48,13 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
         return super.namerForObjectProperty();
     }
 
+    protected sourceForUnionMembers(unionType: UnionType): MultiWord {
+        const children = Array.from(unionType.getChildren()).map((child) =>
+            parenIfNeeded(this.sourceFor(child)),
+        );
+        return multiWord(" | ", ...children);
+    }
+
     protected get emptyObjectType(): string | undefined {
         return undefined;
     }
@@ -138,10 +145,7 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
                     !this._tsFlowOptions.declareUnions ||
                     nullableFromUnion(unionType) !== null
                 ) {
-                    const children = Array.from(unionType.getChildren()).map(
-                        (c) => parenIfNeeded(this.sourceFor(c)),
-                    );
-                    return multiWord(" | ", ...children);
+                    return this.sourceForUnionMembers(unionType);
                 }
 
                 return singleWord(this.nameForNamedType(unionType));
@@ -227,12 +231,7 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
 
         this.emitDescription(this.descriptionForType(u));
 
-        const children = multiWord(
-            " | ",
-            ...Array.from(u.getChildren()).map((c) =>
-                parenIfNeeded(this.sourceFor(c)),
-            ),
-        );
+        const children = this.sourceForUnionMembers(u);
         this.emitLine("export type ", unionName, " = ", children.source, ";");
     }
 

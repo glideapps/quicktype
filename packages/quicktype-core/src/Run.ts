@@ -342,6 +342,7 @@ class Run implements RunContext {
                             stringTypeMapping,
                             conflateNumbers,
                             true,
+                            targetLanguage.supportsUnionsWithMultipleObjectTypes,
                             debugPrintReconstitution,
                         );
                     });
@@ -372,6 +373,7 @@ class Run implements RunContext {
                     stringTypeMapping,
                     conflateNumbers,
                     false,
+                    targetLanguage.supportsUnionsWithMultipleObjectTypes,
                     debugPrintReconstitution,
                 );
             });
@@ -436,6 +438,7 @@ class Run implements RunContext {
                 stringTypeMapping,
                 conflateNumbers,
                 false,
+                targetLanguage.supportsUnionsWithMultipleObjectTypes,
                 debugPrintReconstitution,
             );
         });
@@ -485,6 +488,7 @@ class Run implements RunContext {
                 stringTypeMapping,
                 conflateNumbers,
                 false,
+                targetLanguage.supportsUnionsWithMultipleObjectTypes,
                 debugPrintReconstitution,
             );
         });
