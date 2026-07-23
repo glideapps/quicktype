@@ -1139,14 +1139,27 @@ async function addTypesInSchema(
             }
 
             let additionalProperties = schema.additionalProperties;
-            // This is an incorrect hack to fix an issue with a Go->Schema generator:
-            // https://github.com/quicktype/quicktype/issues/976
+            // quicktype cannot represent property-name patterns, so approximate
+            // their schemas as possible map value types.
             if (
-                additionalProperties === undefined &&
+                additionalProperties !== true &&
                 typeof schema.patternProperties === "object" &&
-                hasOwnProperty(schema.patternProperties, ".*")
+                schema.patternProperties !== null &&
+                !Array.isArray(schema.patternProperties)
             ) {
-                additionalProperties = schema.patternProperties[".*"];
+                const patternSchemas = Object.values(schema.patternProperties);
+                if (
+                    additionalProperties !== undefined &&
+                    additionalProperties !== false
+                ) {
+                    patternSchemas.push(additionalProperties);
+                }
+
+                if (patternSchemas.length === 1) {
+                    additionalProperties = patternSchemas[0];
+                } else if (patternSchemas.length > 1) {
+                    additionalProperties = { anyOf: patternSchemas };
+                }
             }
 
             // Handle unevaluatedProperties if additionalProperties is not defined
@@ -1277,6 +1290,7 @@ async function addTypesInSchema(
             typeSet !== undefined ||
             schema.properties !== undefined ||
             schema.additionalProperties !== undefined ||
+            schema.patternProperties !== undefined ||
             schema.items !== undefined ||
             schema.prefixItems !== undefined ||
             schema.required !== undefined ||

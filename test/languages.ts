@@ -55,6 +55,7 @@ const skipsUntypedUnions = [
 // schema whose fail sample relies on rejecting a mistyped map value.
 const skipsMapValueValidation = [
     "go-schema-pattern-properties.schema",
+    "pattern-properties-map.schema",
     "unevaluated-properties.schema",
 ];
 
@@ -692,6 +693,9 @@ export const CJSONLanguage: Language = {
          * limitation, unrelated to the Rust fixture this schema targets. */
         "rust-cycle-breaker-union.schema",
         "required-non-properties.schema",
+        /* additionalProperties: true yields an any-valued map, which relies on
+         * the same unsupported pure Any type */
+        "pattern-properties-map.schema",
         /* Class elements with invalid type are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
         ...skipsUntypedUnions,
     ],
