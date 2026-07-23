@@ -2,16 +2,16 @@
 
 ## Goals
 
-For every pull request, compare quicktype's generated source at the exact PR base commit with the generated source at the PR head commit across all registered JSON, JSON Schema, and GraphQL input/target fixture combinations.
+For every pull request, compare quicktype's generated source at the exact PR base commit with the generated source at GitHub's tested PR merge commit across all registered JSON, JSON Schema, and GraphQL input/target fixture combinations.
 
-Generated-output differences are informational: they must not fail CI. When differences exist, CI publishes a readable report and posts or updates one PR comment containing:
+Generated-output differences are informational: they must not fail CI. Each completed comparison for the PR's current head posts a new comment. When differences exist, CI publishes a readable report and the new comment contains:
 
 - the number of files that differ;
 - the modified, new, and deleted file counts;
 - the total changed lines, with insertion and deletion counts; and
 - a link to the report.
 
-When there are no differences, no report is published and the output-diff comment confirms that generated outputs are unchanged.
+When there are no differences, no report is published and a new output-diff comment confirms that generated outputs are unchanged.
 
 ## Deterministic snapshots
 
@@ -25,7 +25,7 @@ The fixture harness has a dedicated output-snapshot mode. It:
 
 A snapshot contains generated files only. Fixture drivers, copied inputs, tool output, timestamps, and absolute checkout paths are not included.
 
-Both revisions run with the same Node version, timezone, locale, and repository-relative inputs. CI compares the exact `pull_request.base.sha` and `pull_request.head.sha`, not the moving tip of `master`.
+Both revisions run with the same Node version, timezone, locale, and repository-relative inputs. CI compares the exact `pull_request.base.sha` with the exact tested merge at `github.sha`, not the contributor branch tip in isolation. This matches GitHub's PR diff semantics and prevents changes added to the base branch after the PR forked from appearing as deletions.
 
 ## Base snapshot cache
 
@@ -39,7 +39,7 @@ quicktype-output-snapshot-v1-<os>-<base-sha>
 
 Pull-request jobs restore only the exact key; there are no prefix restore keys. On a cache miss, the PR job generates the base snapshot and saves a PR-scoped cache, which at least benefits reruns of that PR. The push job is what makes the snapshot reusable by unrelated PRs, in accordance with GitHub Actions cache scoping.
 
-The head snapshot is always generated from the current PR head.
+The comparison snapshot is always generated from GitHub's current tested PR merge commit. The contributor branch's exact head SHA is still recorded for identity, stale-run protection, and immutable report URLs.
 
 ## Comparison data
 
@@ -61,12 +61,12 @@ A difference is a successful result. Snapshot-generation errors, malformed compa
 
 The report is static, self-contained HTML with:
 
-- summary cards and base/head commit metadata;
+- summary cards and base/merge/head commit metadata;
 - a prominent link back to the pull request;
-- filtering by file status and text search;
-- navigation grouped by fixture/target;
+- filtering by target, file status, and text search;
+- generated files grouped by input test case, with each target clearly labeled;
 - collapsible, GitHub-style unified diffs with old/new line numbers; and
-- per-file insertion/deletion totals.
+- per-test and per-file insertion/deletion totals.
 
 Generated source and paths are always HTML-escaped. The page has a restrictive content-security policy and makes no third-party network requests.
 
@@ -95,14 +95,14 @@ The workflow that executes PR code is unprivileged and never receives the hostr 
 A separate `workflow_run` workflow runs from the default branch. It:
 
 1. downloads the completed comparison artifact;
-2. validates the PR number and SHA fields;
+2. validates the PR number and SHA fields against the workflow event (or, for fork events that omit the PR number, a unique open PR with the same head repository and branch);
 3. renders the final HTML using trusted code from the default branch;
 4. publishes the HTML and patch using the `HOSTR_TOKEN` repository secret; and
-5. creates or updates one marker-tagged PR comment with either the summary and immutable link or a clean-comparison confirmation.
+5. creates a new marker-tagged PR comment with either the summary and immutable link or a clean-comparison confirmation.
 
-Before changing a comment, it verifies that the artifact's head SHA is still the PR's current head. A stale completed run may retain its immutable report, but it cannot replace the current PR comment.
+PRs may target the default branch or another branch, including stacked PRs. Before posting a comment, the publisher verifies that the artifact's head SHA is still the PR's current head. A stale completed run may retain its immutable report, but it cannot post a stale PR comment.
 
-For a current clean run, the publisher updates the marker-tagged comment to confirm that generated outputs are unchanged and publishes no report.
+For a current clean run, the publisher creates a new marker-tagged comment confirming that generated outputs are unchanged and publishes no report.
 
 ## Rollout and verification
 
