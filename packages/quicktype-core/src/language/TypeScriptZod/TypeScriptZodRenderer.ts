@@ -534,6 +534,29 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
                 }),
             );
         });
+
+        this.forEachTopLevel("none", (type, name) => {
+            // Named top levels were already emitted above with this name.
+            if (["class", "object", "enum"].includes(type.kind)) return;
+
+            this.ensureBlankLine();
+            this.emitLine(
+                "export const ",
+                name,
+                "Schema = ",
+                this.typeMapTypeFor(type),
+                ";",
+            );
+            if (!this._options.justSchema) {
+                this.emitLine(
+                    "export type ",
+                    name,
+                    " = z.infer<typeof ",
+                    name,
+                    "Schema>;",
+                );
+            }
+        });
     }
 
     protected emitSourceStructure(): void {
