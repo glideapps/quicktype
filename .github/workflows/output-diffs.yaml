@@ -50,9 +50,6 @@ jobs:
         name: Compare generated output
         if: github.event_name == 'pull_request'
         runs-on: ubuntu-22.04
-        permissions:
-            contents: read
-            pull-requests: write
         steps:
             - name: Restore exact base snapshot
               id: base-cache
@@ -61,11 +58,10 @@ jobs:
                   path: .output-diffs/base
                   key: ${{ env.OUTPUT_SNAPSHOT_CACHE_PREFIX }}-${{ runner.os }}-${{ github.event.pull_request.base.sha }}
 
-            - name: Check out PR head
+            - name: Check out tested PR merge
               uses: actions/checkout@v4
               with:
-                  repository: ${{ github.event.pull_request.head.repo.full_name }}
-                  ref: ${{ github.event.pull_request.head.sha }}
+                  ref: ${{ github.sha }}
                   path: head-source
 
             - name: Check out base after a cache miss
@@ -118,12 +114,12 @@ jobs:
                   path: .output-diffs/base
                   key: ${{ env.OUTPUT_SNAPSHOT_CACHE_PREFIX }}-${{ runner.os }}-${{ github.event.pull_request.base.sha }}
 
-            - name: Build PR head
+            - name: Build tested PR merge
               if: steps.compatibility.outputs.supported == 'true'
               working-directory: head-source
               run: npm ci && npm run build
 
-            - name: Generate PR head snapshot
+            - name: Generate tested PR merge snapshot
               if: steps.compatibility.outputs.supported == 'true'
               working-directory: head-source
               env:
@@ -189,34 +185,3 @@ jobs:
                   path: .output-diffs/result
                   if-no-files-found: error
                   retention-days: 14
-
-            # A workflow_run workflow always uses its definition from the
-            # default branch.  Keep this same-repository path while #3074
-            # demonstrates the publisher fix before it reaches master.
-            - name: Preview output-diff comment on same-repository PRs
-              if: github.event.pull_request.head.repo.full_name == github.repository
-              env:
-                  GH_TOKEN: ${{ github.token }}
-                  PR_NUMBER: ${{ github.event.pull_request.number }}
-                  REPORT_URL: https://hostr.flingit.run/s/quicktype/output-diffs/pr-${{ github.event.pull_request.number }}/${{ github.sha }}/${{ github.event.pull_request.head.sha }}/index.html
-              run: |
-                  COMMENT_ID=$(gh api --paginate "repos/${{ github.repository }}/issues/$PR_NUMBER/comments" \
-                      --jq '.[] | select(.body | contains("<!-- quicktype-generated-output-diff -->") or contains("<!-- quicktype-generated-output-diff-preview -->")) | .id' | sed -n '1p')
-                  node - <<'NODE' > /tmp/output-diff-comment
-                  const fs = require("node:fs");
-                  const result = JSON.parse(fs.readFileSync(".output-diffs/result/result.json", "utf8"));
-                  if (result.hasDifferences) {
-                      const s = result.summary;
-                      process.stdout.write(`<!-- quicktype-generated-output-diff -->\n### Generated-output differences\n\n**${s.files} files differ** — ${s.modified} modified, ${s.added} new, ${s.deleted} deleted  \n**${s.changedLines} changed lines** — +${s.insertions} / −${s.deletions}\n\n[Open the generated-output report →](${process.env.REPORT_URL})\n`);
-                  } else {
-                      // The preview marker keeps the default-branch version of
-                      // the publisher from deleting this comment before the
-                      // clean-comment behavior in this PR is merged.
-                      process.stdout.write("<!-- quicktype-generated-output-diff-preview -->\n### No generated-output differences\n\n✅ Generated outputs are unchanged between the PR base and head revisions.\n");
-                  }
-                  NODE
-                  if [[ -n "$COMMENT_ID" ]]; then
-                      gh api --method PATCH "repos/${{ github.repository }}/issues/comments/$COMMENT_ID" -F body=@/tmp/output-diff-comment >/dev/null
-                  else
-                      gh api --method POST "repos/${{ github.repository }}/issues/$PR_NUMBER/comments" -F body=@/tmp/output-diff-comment >/dev/null
-                  fi
