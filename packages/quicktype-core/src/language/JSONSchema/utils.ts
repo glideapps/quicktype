@@ -1,11 +1,11 @@
-import { funPrefixNamer } from "../../Naming";
+import { funPrefixNamer } from "../../Naming.js";
 import {
     allUpperWordStyle,
     combineWords,
     firstUpperWordStyle,
     legalizeCharacters,
     splitIntoWords,
-} from "../../support/Strings";
+} from "../../support/Strings.js";
 
 export const namingFunction = funPrefixNamer("namer", jsonNameStyle);
 

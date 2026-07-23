@@ -1,13 +1,14 @@
-import type { RenderContext } from "../../Renderer";
+import type { RenderContext } from "../../Renderer.js";
 import {
     BooleanOption,
     StringOption,
     getOptionValues,
-} from "../../RendererOptions";
-import { TargetLanguage } from "../../TargetLanguage";
-import type { LanguageName, RendererOptions } from "../../types";
+} from "../../RendererOptions/index.js";
+import type { IntegerRange } from "../../support/IntegerRange.js";
+import { TargetLanguage } from "../../TargetLanguage.js";
+import type { LanguageName, RendererOptions } from "../../types.js";
 
-import { ElixirRenderer } from "./ElixirRenderer";
+import { ElixirRenderer } from "./ElixirRenderer.js";
 
 export const elixirOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
@@ -28,6 +29,11 @@ export const elixirLanguageConfig = {
 export class ElixirTargetLanguage extends TargetLanguage<
     typeof elixirLanguageConfig
 > {
+    // Elixir's integers are arbitrary-precision.
+    public getSupportedIntegerRange(): IntegerRange | null {
+        return null;
+    }
+
     public constructor() {
         super(elixirLanguageConfig);
     }

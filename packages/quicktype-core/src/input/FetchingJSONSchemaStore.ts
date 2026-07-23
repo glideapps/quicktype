@@ -1,7 +1,7 @@
-import { parseJSON } from "../support/Support";
+import { parseJSON } from "../support/ParseJSON.js";
 
-import { readFromFileOrURL } from "./io/NodeIO";
-import { type JSONSchema, JSONSchemaStore } from "./JSONSchemaStore";
+import { readFromFileOrURL } from "./io/NodeIO.js";
+import { type JSONSchema, JSONSchemaStore } from "./JSONSchemaStore.js";
 
 export class FetchingJSONSchemaStore extends JSONSchemaStore {
     public constructor(private readonly _httpHeaders?: string[]) {

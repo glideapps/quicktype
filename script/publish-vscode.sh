@@ -9,12 +9,14 @@
 
 set -e
 
-# Derive the same release version the npm publish uses, so the extension
-# stays version-aligned with the npm packages, then stamp it onto the
-# extension package (only — no git tag, no other workspaces).
-./script/patch-npm-version.ts
-VERSION=$(jq -r '.version' package.json )
-npm version $VERSION --force --no-git-tag-version -w packages/quicktype-vscode
+: "${RELEASE_VERSION:?RELEASE_VERSION must be set from the GitHub release tag}"
+./script/release-version.ts stamp "$RELEASE_VERSION"
+
+ACTION=$(./script/release-version.ts marketplace-action "$RELEASE_VERSION")
+if [[ "$ACTION" == "skip" ]]; then
+    echo "* quicktype.quicktype@$RELEASE_VERSION is already published; skipping"
+    exit 0
+fi
 
 # Publish vscode extension
 pushd packages/quicktype-vscode

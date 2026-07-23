@@ -12,12 +12,12 @@ import type {
     JSONSchemaAttributes,
     JSONSchemaType,
     Ref,
-} from "../input/JSONSchemaInput";
-import type { JSONSchema } from "../input/JSONSchemaStore";
-import { type PathElement, PathElementKind } from "../input/PathElement";
-import type { Type } from "../Type/Type";
+} from "../input/JSONSchemaInput.js";
+import type { JSONSchema } from "../input/JSONSchemaStore.js";
+import { type PathElement, PathElementKind } from "../input/PathElement.js";
+import type { Type } from "../Type/Type.js";
 
-import { TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
+import { TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes.js";
 
 export function addDescriptionToSchema(
     schema: { [name: string]: unknown },

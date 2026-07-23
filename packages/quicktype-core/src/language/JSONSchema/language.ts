@@ -1,13 +1,14 @@
-import type { RenderContext } from "../../Renderer";
-import { BooleanOption, getOptionValues } from "../../RendererOptions";
-import { TargetLanguage } from "../../TargetLanguage";
+import type { RenderContext } from "../../Renderer.js";
+import { BooleanOption, getOptionValues } from "../../RendererOptions/index.js";
+import type { IntegerRange } from "../../support/IntegerRange.js";
+import { TargetLanguage } from "../../TargetLanguage.js";
 import {
     type StringTypeMapping,
     getNoStringTypeMapping,
-} from "../../Type/TypeBuilderUtils";
-import type { LanguageName, RendererOptions } from "../../types";
+} from "../../Type/TypeBuilderUtils.js";
+import type { LanguageName, RendererOptions } from "../../types.js";
 
-import { JSONSchemaRenderer } from "./JSONSchemaRenderer";
+import { JSONSchemaRenderer } from "./JSONSchemaRenderer.js";
 
 export const jsonSchemaOptions = {
     multiFileOutput: new BooleanOption(
@@ -26,6 +27,11 @@ export const JSONSchemaLanguageConfig = {
 export class JSONSchemaTargetLanguage extends TargetLanguage<
     typeof JSONSchemaLanguageConfig
 > {
+    // JSON Schema's `integer` type is unbounded.
+    public getSupportedIntegerRange(): IntegerRange | null {
+        return null;
+    }
+
     public constructor() {
         super(JSONSchemaLanguageConfig);
     }

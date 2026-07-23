@@ -3,15 +3,15 @@ import {
     minMaxLengthForType,
     minMaxValueForType,
     patternForType,
-} from "../../attributes/Constraints";
-import type { Name } from "../../Naming";
-import type { Sourcelike } from "../../Source";
+} from "../../attributes/Constraints.js";
+import type { Name } from "../../Naming.js";
+import type { Sourcelike } from "../../Source.js";
 import {
     isAscii,
     isLetterOrUnderscoreOrDigit,
     legalizeCharacters,
-} from "../../support/Strings";
-import type { Type, TypeKind } from "../../Type";
+} from "../../support/Strings.js";
+import type { Type, TypeKind } from "../../Type/index.js";
 
 export function constraintsForType(t: Type):
     | {
@@ -182,7 +182,7 @@ export class BaseString {
         smatch: string,
         regex: string,
         stringLiteralPrefix: string,
-        toString: WrappingCode,
+        toStringCode: WrappingCode,
         encodingClass: string,
         encodingFunction: string,
     ) {
@@ -191,7 +191,7 @@ export class BaseString {
         this._smatch = smatch;
         this._regex = regex;
         this._stringLiteralPrefix = stringLiteralPrefix;
-        this._toString = toString;
+        this._toString = toStringCode;
         this._encodingClass = encodingClass;
         this._encodingFunction = encodingFunction;
     }

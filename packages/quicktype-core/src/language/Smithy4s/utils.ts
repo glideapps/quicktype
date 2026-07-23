@@ -1,6 +1,6 @@
 import { isDigit } from "unicode-properties";
 
-import { funPrefixNamer } from "../../Naming";
+import { funPrefixNamer } from "../../Naming.js";
 import {
     allLowerWordStyle,
     allUpperWordStyle,
@@ -10,9 +10,9 @@ import {
     isNumeric,
     legalizeCharacters,
     splitIntoWords,
-} from "../../support/Strings";
+} from "../../support/Strings.js";
 
-import { invalidSymbols, keywords } from "./constants";
+import { invalidSymbols, keywords } from "./constants.js";
 
 /**
  * Check if given parameter name should be wrapped in a backtick
@@ -22,8 +22,8 @@ export const shouldAddBacktick = (paramName: string): boolean => {
     return (
         keywords.some((s) => paramName === s) ||
         invalidSymbols.some((s) => paramName.includes(s)) ||
-        !isNaN(Number.parseFloat(paramName)) ||
-        !isNaN(Number.parseInt(paramName.charAt(0)))
+        !Number.isNaN(Number.parseFloat(paramName)) ||
+        !Number.isNaN(Number.parseInt(paramName.charAt(0), 10))
     );
 };
 

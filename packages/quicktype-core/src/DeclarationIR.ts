@@ -6,11 +6,11 @@ import {
     setUnionInto,
 } from "collection-utils";
 
-import { Graph } from "./Graph";
-import { messageError } from "./Messages";
-import { assert, defined, panic } from "./support/Support";
-import type { Type } from "./Type/Type";
-import type { TypeGraph } from "./Type/TypeGraph";
+import { Graph } from "./Graph.js";
+import { messageError } from "./Messages.js";
+import { assert, defined, panic } from "./support/Support.js";
+import type { Type } from "./Type/Type.js";
+import type { TypeGraph } from "./Type/TypeGraph.js";
 
 export type DeclarationKind = "forward" | "define";
 
@@ -195,8 +195,6 @@ export function declarationsForGraph(
             for (const t of forwardDeclarable) {
                 declarations.push({ kind: "define", type: t });
             }
-
-            return;
         }
 
         /*

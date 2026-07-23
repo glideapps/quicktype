@@ -1,2 +1,2 @@
-export { DartTargetLanguage, dartOptions } from "./language";
-export { DartRenderer } from "./DartRenderer";
+export { DartTargetLanguage, dartOptions } from "./language.js";
+export { DartRenderer } from "./DartRenderer.js";

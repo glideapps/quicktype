@@ -13,19 +13,19 @@ import {
 import {
     StringTypes,
     stringTypesTypeAttributeKind,
-} from "../attributes/StringTypes";
+} from "../attributes/StringTypes.js";
 import {
     type TypeAttributes,
     combineTypeAttributes,
     emptyTypeAttributes,
-} from "../attributes/TypeAttributes";
-import { assert, defined, panic } from "../support/Support";
+} from "../attributes/TypeAttributes.js";
+import { assert, defined, panic } from "../support/Support.js";
 
-import { provenanceTypeAttributeKind } from "./ProvenanceTypeAttributeKind";
+import { provenanceTypeAttributeKind } from "./ProvenanceTypeAttributeKind.js";
 import {
     type PrimitiveTypeKind,
     isPrimitiveStringTypeKind,
-} from "./TransformedStringType";
+} from "./TransformedStringType.js";
 import {
     ArrayType,
     ClassProperty,
@@ -46,19 +46,19 @@ import {
     mapTypeIdentify,
     primitiveTypeIdentity,
     unionTypeIdentity,
-} from "./Type";
+} from "./Type.js";
 import {
     type StringTypeMapping,
     stringTypeMappingGet,
-} from "./TypeBuilderUtils";
-import type { TypeGraph } from "./TypeGraph";
+} from "./TypeBuilderUtils.js";
+import type { TypeGraph } from "./TypeGraph.js";
 import {
     type TypeRef,
     assertTypeRefGraph,
     derefTypeRef,
     makeTypeRef,
     typeRefIndex,
-} from "./TypeRef";
+} from "./TypeRef.js";
 
 export class TypeBuilder {
     // @ts-expect-error must manually set TypeGraph
@@ -129,7 +129,9 @@ export class TypeBuilder {
         trefs: ReadonlySet<TypeRef> | undefined,
     ): void {
         if (trefs === undefined) return;
-        trefs.forEach((tref) => this.assertTypeRefGraph(tref));
+        trefs.forEach((tref) => {
+            this.assertTypeRefGraph(tref);
+        });
     }
 
     private filterTypeAttributes(
@@ -477,11 +479,14 @@ export class TypeBuilder {
         this.registerType(type);
     }
 
-    public getUniqueArrayType(forwardingRef?: TypeRef): TypeRef {
+    public getUniqueArrayType(
+        attributes?: TypeAttributes,
+        forwardingRef?: TypeRef,
+    ): TypeRef {
         return this.addType(
             forwardingRef,
             (tr) => new ArrayType(tr, this.typeGraph, undefined),
-            undefined,
+            attributes,
         );
     }
 
@@ -515,7 +520,9 @@ export class TypeBuilder {
     public modifyPropertiesIfNecessary(
         properties: ReadonlyMap<string, ClassProperty>,
     ): ReadonlyMap<string, ClassProperty> {
-        properties.forEach((p) => this.assertTypeRefGraph(p.typeRef));
+        properties.forEach((p) => {
+            this.assertTypeRefGraph(p.typeRef);
+        });
 
         if (this.canonicalOrder) {
             properties = mapSortByKey(properties);
@@ -637,7 +644,5 @@ export class TypeBuilder {
         this.registerType(type);
     }
 
-    public setLostTypeAttributes(): void {
-        return;
-    }
+    public setLostTypeAttributes(): void {}
 }

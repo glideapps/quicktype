@@ -1,13 +1,13 @@
 import {
     StringTypes,
     inferTransformedStringTypeKindForString,
-} from "../attributes/StringTypes";
+} from "../attributes/StringTypes.js";
 import {
     type TypeAttributes,
     emptyTypeAttributes,
-} from "../attributes/TypeAttributes";
-import { messageError } from "../Messages";
-import { assert, assertNever, defined, panic } from "../support/Support";
+} from "../attributes/TypeAttributes.js";
+import { messageError } from "../Messages.js";
+import { assert, assertNever, defined, panic } from "../support/Support.js";
 import {
     ArrayType,
     type ClassProperty,
@@ -15,24 +15,24 @@ import {
     MapType,
     UnionType,
     transformedStringTypeTargetTypeKindsMap,
-} from "../Type";
-import type { TypeBuilder } from "../Type/TypeBuilder";
-import { type TypeRef, derefTypeRef } from "../Type/TypeRef";
-import { nullableFromUnion } from "../Type/TypeUtils";
-import { UnionAccumulator, UnionBuilder } from "../UnionBuilder";
+} from "../Type/index.js";
+import type { TypeBuilder } from "../Type/TypeBuilder.js";
+import { type TypeRef, derefTypeRef } from "../Type/TypeRef.js";
+import { nullableFromUnion } from "../Type/TypeUtils.js";
+import { UnionAccumulator, UnionBuilder } from "../UnionBuilder.js";
 
 import {
     type CompressedJSON,
     Tag,
     type Value,
     valueTag,
-} from "./CompressedJSON";
+} from "./CompressedJSON.js";
 
 // This should be the recursive type
 //   Value[] | NestedValueArray[]
 // but TypeScript doesn't support that.
 // FIXME: reactor this
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: TypeScript cannot express this recursive type
 export type NestedValueArray = any;
 
 function forEachArrayInNestedValueArray(
@@ -363,6 +363,7 @@ export class TypeInference {
                 const key = this._cjson.getStringForValue(arr[i]);
                 const value = arr[i + 1];
                 if (
+                    // biome-ignore lint/suspicious/noPrototypeBuiltins: Object.hasOwn is not in quicktype-core's es6 lib
                     !Object.prototype.hasOwnProperty.call(propertyValues, key)
                 ) {
                     propertyNames.push(key);

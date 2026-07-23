@@ -5,9 +5,9 @@ import {
     mapTranspose,
 } from "collection-utils";
 
-import type { BaseGraphRewriteBuilder } from "../GraphRewriting";
-import { assert, panic } from "../support/Support";
-import type { Type, TypeKind } from "../Type";
+import type { BaseGraphRewriteBuilder } from "../GraphRewriting.js";
+import { assert, panic } from "../support/Support.js";
+import type { Type, TypeKind } from "../Type/index.js";
 
 export class TypeAttributeKind<T> {
     public constructor(public readonly name: string) {}
@@ -36,9 +36,7 @@ export class TypeAttributeKind<T> {
         _schema: { [name: string]: unknown },
         _t: Type,
         _attrs: T,
-    ): void {
-        return;
-    }
+    ): void {}
 
     public children(_: T): ReadonlySet<Type> {
         return new Set();
@@ -118,7 +116,7 @@ export class TypeAttributeKind<T> {
 }
 
 // FIXME: strongly type this
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: heterogeneous by design; attribute values are typed by their kind
 export type TypeAttributes = ReadonlyMap<TypeAttributeKind<any>, any>;
 
 export const emptyTypeAttributes: TypeAttributes = new Map();
@@ -154,7 +152,7 @@ export function combineTypeAttributes(
     const attributesByKind = mapTranspose(attributeArray);
 
     // FIXME: strongly type this
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: heterogeneous by design; attribute values are typed by their kind
     function combine(attrs: any[], kind: TypeAttributeKind<any>): any {
         assert(attrs.length > 0, "Cannot combine zero type attributes");
         if (attrs.length === 1) return attrs[0];

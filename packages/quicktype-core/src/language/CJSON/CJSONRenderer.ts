@@ -2,34 +2,34 @@
 /* eslint-disable @typescript-eslint/no-shadow */
 /* eslint-disable @typescript-eslint/naming-convention */
 
-import { getAccessorName } from "../../attributes/AccessorNames";
-import { enumCaseValues } from "../../attributes/EnumValues";
+import { getAccessorName } from "../../attributes/AccessorNames.js";
+import { enumCaseValues } from "../../attributes/EnumValues.js";
 import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
-} from "../../ConvenienceRenderer";
+} from "../../ConvenienceRenderer.js";
 import {
     type Name,
     type NameStyle,
     type Namer,
     funPrefixNamer,
-} from "../../Naming";
-import type { RenderContext } from "../../Renderer";
-import type { OptionValues } from "../../RendererOptions";
-import type { Sourcelike } from "../../Source";
+} from "../../Naming.js";
+import type { RenderContext } from "../../Renderer.js";
+import type { OptionValues } from "../../RendererOptions/index.js";
+import type { Sourcelike } from "../../Source.js";
 import {
     type NamingStyle,
     allUpperWordStyle,
     makeNameStyle,
-} from "../../support/Strings";
+} from "../../support/Strings.js";
 import {
     assert,
     assertNever,
     defined,
     numberEnumValues,
     panic,
-} from "../../support/Support";
-import type { TargetLanguage } from "../../TargetLanguage";
+} from "../../support/Support.js";
+import type { TargetLanguage } from "../../TargetLanguage.js";
 import {
     ArrayType,
     ClassType,
@@ -37,15 +37,15 @@ import {
     MapType,
     type Type,
     UnionType,
-} from "../../Type";
+} from "../../Type/index.js";
 import {
     matchType,
     nullableFromUnion,
     removeNullFromUnion,
-} from "../../Type/TypeUtils";
+} from "../../Type/TypeUtils.js";
 
-import { keywords } from "./constants";
-import type { cJSONOptions } from "./language";
+import { keywords } from "./constants.js";
+import type { cJSONOptions } from "./language.js";
 import {
     GlobalNames,
     IncludeKind,
@@ -54,10 +54,16 @@ import {
     type TypeCJSON,
     type TypeRecord,
     legalizeName,
-} from "./utils";
+} from "./utils.js";
 
 export class CJSONRenderer extends ConvenienceRenderer {
-    private currentFilename: string | undefined; /* Current filename */
+    private currentHeaderFilename:
+        | string
+        | undefined; /* Current header filename */
+
+    private currentSourceFilename:
+        | string
+        | undefined; /* Current source filename */
 
     private readonly memberNameStyle: NameStyle; /* Member name style */
 
@@ -73,7 +79,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
 
     protected readonly enumeratorNamingStyle: NamingStyle; /* Enum naming style */
 
-    private includes: string[];
+    private readonly includes: string[];
 
     /**
      * Constructor
@@ -203,9 +209,9 @@ export class CJSONRenderer extends ConvenienceRenderer {
             fieldType,
             lookup,
         );
-        if ("bool" === fieldName) {
+        if (fieldName === "bool") {
             fieldName = "boolean";
-        } else if ("double" === fieldName) {
+        } else if (fieldName === "double") {
             fieldName = "number";
         }
 
@@ -231,8 +237,8 @@ export class CJSONRenderer extends ConvenienceRenderer {
     }
 
     /**
-     * Function called to create header file(s)
-     * @param proposedFilename: source filename provided from stdin
+     * Function called to create header and source file(s)
+     * @param proposedFilename: source filename provided from stdin (without extensions)
      */
     protected emitSourceStructure(proposedFilename: string): void {
         /* Depending of source style option, generate a unique header or multiple header files */
@@ -244,12 +250,12 @@ export class CJSONRenderer extends ConvenienceRenderer {
     }
 
     /**
-     * Function called to create a single header file with types and generators
+     * Function called to create a single pair of header/source files with types and generators
      * @param proposedFilename: source filename provided from stdin
      */
     protected emitSingleSourceStructure(proposedFilename: string): void {
-        /* Create file */
-        this.startFile(proposedFilename);
+        /* Create header file */
+        this.startHeaderFile(proposedFilename);
 
         /* Create types */
         this.forEachDeclaration("leading-and-interposing", (decl) => {
@@ -306,6 +312,14 @@ export class CJSONRenderer extends ConvenienceRenderer {
             (type) => this.namedTypeToNameForTopLevel(type) === undefined,
         );
 
+        if (!this._options.headerOnly) {
+            /* Close header file */
+            this.finishHeaderFile();
+
+            /* Create source file */
+            this.startSourceFile(proposedFilename);
+        }
+
         /* Create enum functions */
         this.forEachEnum(
             "leading-and-interposing",
@@ -333,8 +347,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
             (type) => this.namedTypeToNameForTopLevel(type) === undefined,
         );
 
-        /* Close file */
-        this.finishFile();
+        this.finishCurrentFile();
     }
 
     /**
@@ -371,12 +384,12 @@ export class CJSONRenderer extends ConvenienceRenderer {
     protected emitEnum(enumType: EnumType): void {
         /* Create file */
         const enumName = this.nameForNamedType(enumType);
-        const filename = this.sourcelikeToString(enumName).concat(".h");
-        this.includes.push(filename);
-        this.startFile(filename);
+        const headerFilename = this.sourcelikeToString(enumName).concat(".h");
+        this.includes.push(headerFilename);
+        this.startHeaderFile(headerFilename);
 
         /* Create includes */
-        this.emitIncludes(enumType, this.sourcelikeToString(filename));
+        this.emitIncludes(enumType, this.sourcelikeToString(headerFilename));
 
         /* Create types */
         this.emitEnumTypedef(enumType);
@@ -384,11 +397,18 @@ export class CJSONRenderer extends ConvenienceRenderer {
         /* Create prototypes */
         this.emitEnumPrototypes(enumType);
 
+        if (!this._options.headerOnly) {
+            /* Close header file */
+            this.finishHeaderFile();
+
+            /* Create source file */
+            this.startSourceFile(headerFilename);
+        }
+
         /* Create functions */
         this.emitEnumFunctions(enumType);
 
-        /* Close file */
-        this.finishFile();
+        this.finishCurrentFile();
     }
 
     /**
@@ -408,6 +428,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                 const combinedName = allUpperWordStyle(
                     this.sourcelikeToString(enumName),
                 );
+                let isFirst = true;
                 this.forEachEnumCase(enumType, "none", (name, jsonName) => {
                     if (enumValues !== undefined) {
                         const [enumValue] = getAccessorName(
@@ -424,11 +445,22 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                 ",",
                             );
                         } else {
-                            this.emitLine(combinedName, "_", name, ",");
+                            this.emitLine(
+                                combinedName,
+                                "_",
+                                name,
+                                isFirst ? " = 1," : ",",
+                            );
                         }
                     } else {
-                        this.emitLine(combinedName, "_", name, ",");
+                        this.emitLine(
+                            combinedName,
+                            "_",
+                            name,
+                            isFirst ? " = 1," : ",",
+                        );
                     }
+                    isFirst = false;
                 });
             },
             "",
@@ -548,12 +580,12 @@ export class CJSONRenderer extends ConvenienceRenderer {
     protected emitUnion(unionType: UnionType): void {
         /* Create file */
         const unionName = this.nameForNamedType(unionType);
-        const filename = this.sourcelikeToString(unionName).concat(".h");
-        this.includes.push(filename);
-        this.startFile(filename);
+        const headerFilename = this.sourcelikeToString(unionName).concat(".h");
+        this.includes.push(headerFilename);
+        this.startHeaderFile(headerFilename);
 
         /* Create includes */
-        this.emitIncludes(unionType, this.sourcelikeToString(filename));
+        this.emitIncludes(unionType, this.sourcelikeToString(headerFilename));
 
         /* Create types */
         this.emitUnionTypedef(unionType);
@@ -561,11 +593,18 @@ export class CJSONRenderer extends ConvenienceRenderer {
         /* Create prototypes */
         this.emitUnionPrototypes(unionType);
 
+        if (!this._options.headerOnly) {
+            /* Close header file */
+            this.finishHeaderFile();
+
+            /* Create source file */
+            this.startSourceFile(headerFilename);
+        }
+
         /* Create functions */
         this.emitUnionFunctions(unionType);
 
-        /* Close file */
-        this.finishFile();
+        this.finishCurrentFile();
     }
 
     /**
@@ -1716,39 +1755,35 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                             "cJSON_NULL"
                                                     ) {
                                                         /* Nothing to do */
-                                                    } else {
-                                                        if (
-                                                            cJSON.items
-                                                                ?.isNullable
-                                                        ) {
-                                                            this.emitBlock(
-                                                                [
-                                                                    "if ((void *)0xDEADBEEF != x",
-                                                                    child_level.toString(),
-                                                                    ")",
-                                                                ],
-                                                                () => {
-                                                                    this.emitLine(
-                                                                        // @ts-expect-error awaiting refactor
-                                                                        cJSON
-                                                                            .items
-                                                                            ?.deleteType,
-                                                                        "(x",
-                                                                        child_level.toString(),
-                                                                        ");",
-                                                                    );
-                                                                },
-                                                            );
-                                                        } else {
-                                                            this.emitLine(
-                                                                // @ts-expect-error awaiting refactor
-                                                                cJSON.items
-                                                                    ?.deleteType,
-                                                                "(x",
+                                                    } else if (
+                                                        cJSON.items?.isNullable
+                                                    ) {
+                                                        this.emitBlock(
+                                                            [
+                                                                "if ((void *)0xDEADBEEF != x",
                                                                 child_level.toString(),
-                                                                ");",
-                                                            );
-                                                        }
+                                                                ")",
+                                                            ],
+                                                            () => {
+                                                                this.emitLine(
+                                                                    // @ts-expect-error awaiting refactor
+                                                                    cJSON.items
+                                                                        ?.deleteType,
+                                                                    "(x",
+                                                                    child_level.toString(),
+                                                                    ");",
+                                                                );
+                                                            },
+                                                        );
+                                                    } else {
+                                                        this.emitLine(
+                                                            // @ts-expect-error awaiting refactor
+                                                            cJSON.items
+                                                                ?.deleteType,
+                                                            "(x",
+                                                            child_level.toString(),
+                                                            ");",
+                                                        );
                                                     }
 
                                                     this.emitLine(
@@ -1894,41 +1929,39 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                             "cJSON_NULL"
                                                                     ) {
                                                                         /* Nothing to do */
+                                                                    } else if (
+                                                                        cJSON
+                                                                            .items
+                                                                            ?.isNullable
+                                                                    ) {
+                                                                        this.emitBlock(
+                                                                            [
+                                                                                "if ((void *)0xDEADBEEF != x",
+                                                                                child_level.toString(),
+                                                                                ")",
+                                                                            ],
+                                                                            () => {
+                                                                                this.emitLine(
+                                                                                    // @ts-expect-error awaiting refactor
+                                                                                    cJSON
+                                                                                        .items
+                                                                                        ?.deleteType,
+                                                                                    "(x",
+                                                                                    child_level.toString(),
+                                                                                    ");",
+                                                                                );
+                                                                            },
+                                                                        );
                                                                     } else {
-                                                                        if (
+                                                                        this.emitLine(
+                                                                            // @ts-expect-error awaiting refactor
                                                                             cJSON
                                                                                 .items
-                                                                                ?.isNullable
-                                                                        ) {
-                                                                            this.emitBlock(
-                                                                                [
-                                                                                    "if ((void *)0xDEADBEEF != x",
-                                                                                    child_level.toString(),
-                                                                                    ")",
-                                                                                ],
-                                                                                () => {
-                                                                                    this.emitLine(
-                                                                                        // @ts-expect-error awaiting refactor
-                                                                                        cJSON
-                                                                                            .items
-                                                                                            ?.deleteType,
-                                                                                        "(x",
-                                                                                        child_level.toString(),
-                                                                                        ");",
-                                                                                    );
-                                                                                },
-                                                                            );
-                                                                        } else {
-                                                                            this.emitLine(
-                                                                                // @ts-expect-error awaiting refactor
-                                                                                cJSON
-                                                                                    .items
-                                                                                    ?.deleteType,
-                                                                                "(x",
-                                                                                child_level.toString(),
-                                                                                ");",
-                                                                            );
-                                                                        }
+                                                                                ?.deleteType,
+                                                                            "(x",
+                                                                            child_level.toString(),
+                                                                            ");",
+                                                                        );
                                                                     }
                                                                 },
                                                             );
@@ -1997,12 +2030,12 @@ export class CJSONRenderer extends ConvenienceRenderer {
     protected emitClass(classType: ClassType): void {
         /* Create file */
         const className = this.nameForNamedType(classType);
-        const filename = this.sourcelikeToString(className).concat(".h");
-        this.includes.push(filename);
-        this.startFile(filename);
+        const headerFilename = this.sourcelikeToString(className).concat(".h");
+        this.includes.push(headerFilename);
+        this.startHeaderFile(headerFilename);
 
         /* Create includes */
-        this.emitIncludes(classType, this.sourcelikeToString(filename));
+        this.emitIncludes(classType, this.sourcelikeToString(headerFilename));
 
         /* Create types */
         this.emitClassTypedef(classType);
@@ -2010,11 +2043,18 @@ export class CJSONRenderer extends ConvenienceRenderer {
         /* Create prototypes */
         this.emitClassPrototypes(classType);
 
+        if (!this._options.headerOnly) {
+            /* Close header file */
+            this.finishHeaderFile();
+
+            /* Create source file */
+            this.startSourceFile(headerFilename);
+        }
+
         /* Create functions */
         this.emitClassFunctions(classType);
 
-        /* Close file */
-        this.finishFile();
+        this.finishCurrentFile();
     }
 
     /**
@@ -2991,64 +3031,60 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                             jsonName,
                                                             '"));',
                                                         );
-                                                    } else {
-                                                        if (
-                                                            property.isOptional ||
-                                                            cJSON.isNullable
-                                                        ) {
-                                                            this.emitBlock(
-                                                                [
-                                                                    "if (NULL != (x",
-                                                                    level > 0
-                                                                        ? level.toString()
-                                                                        : "",
-                                                                    "->",
-                                                                    name,
-                                                                    " = cJSON_malloc(sizeof(",
-                                                                    cJSON.cType,
-                                                                    "))))",
-                                                                ],
-                                                                () => {
-                                                                    this.emitLine(
-                                                                        "*x",
-                                                                        level >
-                                                                            0
-                                                                            ? level.toString()
-                                                                            : "",
-                                                                        "->",
-                                                                        name,
-                                                                        " = ",
-                                                                        cJSON.getValue,
-                                                                        "(cJSON_GetObjectItemCaseSensitive(j",
-                                                                        level >
-                                                                            0
-                                                                            ? level.toString()
-                                                                            : "",
-                                                                        ', "',
-                                                                        jsonName,
-                                                                        '"));',
-                                                                    );
-                                                                },
-                                                            );
-                                                        } else {
-                                                            this.emitLine(
-                                                                "x",
+                                                    } else if (
+                                                        property.isOptional ||
+                                                        cJSON.isNullable
+                                                    ) {
+                                                        this.emitBlock(
+                                                            [
+                                                                "if (NULL != (x",
                                                                 level > 0
                                                                     ? level.toString()
                                                                     : "",
                                                                 "->",
                                                                 name,
-                                                                " = ",
-                                                                cJSON.getValue,
-                                                                "(cJSON_GetObjectItemCaseSensitive(j",
-                                                                level > 0
-                                                                    ? level.toString()
-                                                                    : "",
-                                                                ', "',
-                                                                jsonName,
-                                                                '"));',
-                                                            );
-                                                        }
+                                                                " = cJSON_malloc(sizeof(",
+                                                                cJSON.cType,
+                                                                "))))",
+                                                            ],
+                                                            () => {
+                                                                this.emitLine(
+                                                                    "*x",
+                                                                    level > 0
+                                                                        ? level.toString()
+                                                                        : "",
+                                                                    "->",
+                                                                    name,
+                                                                    " = ",
+                                                                    cJSON.getValue,
+                                                                    "(cJSON_GetObjectItemCaseSensitive(j",
+                                                                    level > 0
+                                                                        ? level.toString()
+                                                                        : "",
+                                                                    ', "',
+                                                                    jsonName,
+                                                                    '"));',
+                                                                );
+                                                            },
+                                                        );
+                                                    } else {
+                                                        this.emitLine(
+                                                            "x",
+                                                            level > 0
+                                                                ? level.toString()
+                                                                : "",
+                                                            "->",
+                                                            name,
+                                                            " = ",
+                                                            cJSON.getValue,
+                                                            "(cJSON_GetObjectItemCaseSensitive(j",
+                                                            level > 0
+                                                                ? level.toString()
+                                                                : "",
+                                                            ', "',
+                                                            jsonName,
+                                                            '"));',
+                                                        );
                                                     }
                                                 },
                                             );
@@ -4022,58 +4058,56 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                         "));",
                                                     );
                                                 }
-                                            } else {
-                                                if (
-                                                    property.isOptional ||
-                                                    cJSON.isNullable
-                                                ) {
-                                                    this.emitBlock(
-                                                        [
-                                                            "if (NULL != x",
-                                                            level > 0
-                                                                ? level.toString()
-                                                                : "",
-                                                            "->",
-                                                            name,
-                                                            ")",
-                                                        ],
-                                                        () => {
-                                                            this.emitLine(
-                                                                cJSON.addToObject,
-                                                                "(j",
-                                                                level > 0
-                                                                    ? level.toString()
-                                                                    : "",
-                                                                ', "',
-                                                                jsonName,
-                                                                '", *x',
-                                                                level > 0
-                                                                    ? level.toString()
-                                                                    : "",
-                                                                "->",
-                                                                name,
-                                                                ");",
-                                                            );
-                                                        },
-                                                    );
-                                                } else {
-                                                    this.emitLine(
-                                                        cJSON.addToObject,
-                                                        "(j",
-                                                        level > 0
-                                                            ? level.toString()
-                                                            : "",
-                                                        ', "',
-                                                        jsonName,
-                                                        '", x',
+                                            } else if (
+                                                property.isOptional ||
+                                                cJSON.isNullable
+                                            ) {
+                                                this.emitBlock(
+                                                    [
+                                                        "if (NULL != x",
                                                         level > 0
                                                             ? level.toString()
                                                             : "",
                                                         "->",
                                                         name,
-                                                        ");",
-                                                    );
-                                                }
+                                                        ")",
+                                                    ],
+                                                    () => {
+                                                        this.emitLine(
+                                                            cJSON.addToObject,
+                                                            "(j",
+                                                            level > 0
+                                                                ? level.toString()
+                                                                : "",
+                                                            ', "',
+                                                            jsonName,
+                                                            '", *x',
+                                                            level > 0
+                                                                ? level.toString()
+                                                                : "",
+                                                            "->",
+                                                            name,
+                                                            ");",
+                                                        );
+                                                    },
+                                                );
+                                            } else {
+                                                this.emitLine(
+                                                    cJSON.addToObject,
+                                                    "(j",
+                                                    level > 0
+                                                        ? level.toString()
+                                                        : "",
+                                                    ', "',
+                                                    jsonName,
+                                                    '", x',
+                                                    level > 0
+                                                        ? level.toString()
+                                                        : "",
+                                                    "->",
+                                                    name,
+                                                    ");",
+                                                );
                                             }
 
                                             if (cJSON.isNullable) {
@@ -4283,39 +4317,37 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                 "cJSON_NULL"
                                                         ) {
                                                             /* Nothing to do */
-                                                        } else {
-                                                            if (
-                                                                cJSON.items
-                                                                    ?.isNullable
-                                                            ) {
-                                                                this.emitBlock(
-                                                                    [
-                                                                        "if ((void *)0xDEADBEEF != x",
-                                                                        child_level.toString(),
-                                                                        ")",
-                                                                    ],
-                                                                    () => {
-                                                                        this.emitLine(
-                                                                            // @ts-expect-error awaiting refactor
-                                                                            cJSON
-                                                                                .items
-                                                                                ?.deleteType,
-                                                                            "(x",
-                                                                            child_level.toString(),
-                                                                            ");",
-                                                                        );
-                                                                    },
-                                                                );
-                                                            } else {
-                                                                this.emitLine(
-                                                                    // @ts-expect-error awaiting refactor
-                                                                    cJSON.items
-                                                                        ?.deleteType,
-                                                                    "(x",
+                                                        } else if (
+                                                            cJSON.items
+                                                                ?.isNullable
+                                                        ) {
+                                                            this.emitBlock(
+                                                                [
+                                                                    "if ((void *)0xDEADBEEF != x",
                                                                     child_level.toString(),
-                                                                    ");",
-                                                                );
-                                                            }
+                                                                    ")",
+                                                                ],
+                                                                () => {
+                                                                    this.emitLine(
+                                                                        // @ts-expect-error awaiting refactor
+                                                                        cJSON
+                                                                            .items
+                                                                            ?.deleteType,
+                                                                        "(x",
+                                                                        child_level.toString(),
+                                                                        ");",
+                                                                    );
+                                                                },
+                                                            );
+                                                        } else {
+                                                            this.emitLine(
+                                                                // @ts-expect-error awaiting refactor
+                                                                cJSON.items
+                                                                    ?.deleteType,
+                                                                "(x",
+                                                                child_level.toString(),
+                                                                ");",
+                                                            );
                                                         }
 
                                                         this.emitLine(
@@ -4469,41 +4501,39 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                                 "cJSON_NULL"
                                                                         ) {
                                                                             /* Nothing to do */
+                                                                        } else if (
+                                                                            cJSON
+                                                                                .items
+                                                                                ?.isNullable
+                                                                        ) {
+                                                                            this.emitBlock(
+                                                                                [
+                                                                                    "if ((void *)0xDEADBEEF != x",
+                                                                                    child_level.toString(),
+                                                                                    ")",
+                                                                                ],
+                                                                                () => {
+                                                                                    this.emitLine(
+                                                                                        // @ts-expect-error awaiting refactor
+                                                                                        cJSON
+                                                                                            .items
+                                                                                            ?.deleteType,
+                                                                                        "(x",
+                                                                                        child_level.toString(),
+                                                                                        ");",
+                                                                                    );
+                                                                                },
+                                                                            );
                                                                         } else {
-                                                                            if (
+                                                                            this.emitLine(
+                                                                                // @ts-expect-error awaiting refactor
                                                                                 cJSON
                                                                                     .items
-                                                                                    ?.isNullable
-                                                                            ) {
-                                                                                this.emitBlock(
-                                                                                    [
-                                                                                        "if ((void *)0xDEADBEEF != x",
-                                                                                        child_level.toString(),
-                                                                                        ")",
-                                                                                    ],
-                                                                                    () => {
-                                                                                        this.emitLine(
-                                                                                            // @ts-expect-error awaiting refactor
-                                                                                            cJSON
-                                                                                                .items
-                                                                                                ?.deleteType,
-                                                                                            "(x",
-                                                                                            child_level.toString(),
-                                                                                            ");",
-                                                                                        );
-                                                                                    },
-                                                                                );
-                                                                            } else {
-                                                                                this.emitLine(
-                                                                                    // @ts-expect-error awaiting refactor
-                                                                                    cJSON
-                                                                                        .items
-                                                                                        ?.deleteType,
-                                                                                    "(x",
-                                                                                    child_level.toString(),
-                                                                                    ");",
-                                                                                );
-                                                                            }
+                                                                                    ?.deleteType,
+                                                                                "(x",
+                                                                                child_level.toString(),
+                                                                                ");",
+                                                                            );
                                                                         }
                                                                     },
                                                                 );
@@ -4561,35 +4591,33 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                 );
                                             },
                                         );
-                                    } else {
-                                        if (
-                                            property.isOptional ||
-                                            cJSON.isNullable
-                                        ) {
-                                            this.emitBlock(
-                                                [
-                                                    "if (NULL != x",
+                                    } else if (
+                                        property.isOptional ||
+                                        cJSON.isNullable
+                                    ) {
+                                        this.emitBlock(
+                                            [
+                                                "if (NULL != x",
+                                                level > 0
+                                                    ? level.toString()
+                                                    : "",
+                                                "->",
+                                                name,
+                                                ")",
+                                            ],
+                                            () => {
+                                                this.emitLine(
+                                                    cJSON.deleteType,
+                                                    "(x",
                                                     level > 0
                                                         ? level.toString()
                                                         : "",
                                                     "->",
                                                     name,
-                                                    ")",
-                                                ],
-                                                () => {
-                                                    this.emitLine(
-                                                        cJSON.deleteType,
-                                                        "(x",
-                                                        level > 0
-                                                            ? level.toString()
-                                                            : "",
-                                                        "->",
-                                                        name,
-                                                        ");",
-                                                    );
-                                                },
-                                            );
-                                        }
+                                                    ");",
+                                                );
+                                            },
+                                        );
                                     }
                                 },
                             );
@@ -4616,8 +4644,8 @@ export class CJSONRenderer extends ConvenienceRenderer {
         includes: string[],
     ): void {
         /* Create file */
-        const filename = this.sourcelikeToString(className).concat(".h");
-        this.startFile(filename);
+        const headerFilename = this.sourcelikeToString(className).concat(".h");
+        this.startHeaderFile(headerFilename);
 
         /* Create includes - This create too much includes but this is safer because of specific corner cases */
         includes.forEach((name) => {
@@ -4631,11 +4659,18 @@ export class CJSONRenderer extends ConvenienceRenderer {
         /* Create prototypes */
         this.emitTopLevelPrototypes(type, className);
 
+        if (!this._options.headerOnly) {
+            /* Close header file */
+            this.finishHeaderFile();
+
+            /* Create source file */
+            this.startSourceFile(headerFilename);
+        }
+
         /* Create functions */
         this.emitTopLevelFunctions(type, className);
 
-        /* Close file */
-        this.finishFile();
+        this.finishCurrentFile();
     }
 
     /**
@@ -5553,24 +5588,25 @@ export class CJSONRenderer extends ConvenienceRenderer {
     }
 
     /**
-     * Function called to create a file
+     * Function called to create a header file
      * @param proposedFilename: source filename provided from stdin
      */
-    protected startFile(proposedFilename: Sourcelike): void {
-        /* Check if previous file is closed, create a new file */
+    protected startHeaderFile(proposedFilename: Sourcelike): void {
+        /* Check if previous header file is closed, create a new file */
         assert(
-            this.currentFilename === undefined,
-            "Previous file wasn't finished",
+            this.currentHeaderFilename === undefined,
+            "Previous header file wasn't finished",
         );
         if (proposedFilename !== undefined) {
-            this.currentFilename = this.sourcelikeToString(proposedFilename);
+            this.currentHeaderFilename =
+                this.sourcelikeToString(proposedFilename);
         }
 
-        /* Check if file has been created */
-        if (this.currentFilename !== undefined) {
+        /* Check if header file has been created */
+        if (this.currentHeaderFilename !== undefined) {
             /* Write header */
             this.emitDescriptionBlock([
-                this.currentFilename,
+                this.currentHeaderFilename,
                 "This file has been autogenerated using quicktype https://github.com/quicktype/quicktype - DO NOT EDIT",
                 "This file depends of https://github.com/DaveGamble/cJSON, https://github.com/joelguittet/c-list and https://github.com/joelguittet/c-hashtable",
                 "To parse json data from json string use the following: struct <type> * data = cJSON_Parse<type>(<string>);",
@@ -5585,7 +5621,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
             this.emitLine(
                 "#ifndef __",
                 allUpperWordStyle(
-                    this.currentFilename.replace(
+                    this.currentHeaderFilename.replace(
                         new RegExp(/[^a-zA-Z0-9]+/, "g"),
                         "_",
                     ),
@@ -5595,7 +5631,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
             this.emitLine(
                 "#define __",
                 allUpperWordStyle(
-                    this.currentFilename.replace(
+                    this.currentHeaderFilename.replace(
                         new RegExp(/[^a-zA-Z0-9]+/, "g"),
                         "_",
                     ),
@@ -5635,11 +5671,42 @@ export class CJSONRenderer extends ConvenienceRenderer {
     }
 
     /**
-     * Function called to close current file
+     * Function called to create a source file
+     * @param headerFilename: filename of the header file corresponding to this source file
      */
-    protected finishFile(): void {
-        /* Check if file has been created */
-        if (this.currentFilename !== undefined) {
+    protected startSourceFile(headerFilename: Sourcelike): void {
+        /* Check if previous source file is closed, create a new file */
+        assert(
+            this.currentSourceFilename === undefined,
+            "Previous source file wasn't finished",
+        );
+        if (headerFilename !== undefined) {
+            this.currentSourceFilename = this.getSourceNameFromHeaderName(
+                this.sourcelikeToString(headerFilename),
+            );
+        }
+
+        /* Check if source file has been created */
+        if (this.currentSourceFilename !== undefined) {
+            /* Write header */
+            this.emitDescriptionBlock([
+                this.currentSourceFilename,
+                "This file has been autogenerated using quicktype https://github.com/quicktype/quicktype - DO NOT EDIT",
+            ]);
+            this.ensureBlankLine();
+
+            /* Include corresponding header file */
+            this.emitIncludeLine(this.sourcelikeToString(headerFilename));
+            this.ensureBlankLine();
+        }
+    }
+
+    /**
+     * Function called to close current header file
+     */
+    protected finishHeaderFile(): void {
+        /* Check if header file has been created */
+        if (this.currentHeaderFilename !== undefined) {
             /* Write C++ guard */
             this.emitLine("#ifdef __cplusplus");
             this.emitLine("}");
@@ -5650,7 +5717,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
             this.emitLine(
                 "#endif /* __",
                 allUpperWordStyle(
-                    this.currentFilename.replace(
+                    this.currentHeaderFilename.replace(
                         new RegExp(/[^a-zA-Z0-9]+/, "g"),
                         "_",
                     ),
@@ -5659,9 +5726,37 @@ export class CJSONRenderer extends ConvenienceRenderer {
             );
             this.ensureBlankLine();
 
-            /* Close file */
-            super.finishFile(defined(this.currentFilename));
-            this.currentFilename = undefined;
+            /* Close header file */
+            super.finishFile(defined(this.currentHeaderFilename));
+            this.currentHeaderFilename = undefined;
+        }
+    }
+
+    /**
+     * Function called to close current source file
+     */
+    protected finishSourceFile(): void {
+        /* Check if source file has been created */
+        if (this.currentSourceFilename !== undefined) {
+            this.ensureBlankLine();
+
+            /* Close source file */
+            super.finishFile(defined(this.currentSourceFilename));
+            this.currentSourceFilename = undefined;
+        }
+    }
+
+    /**
+     * Function called to close the current file, either the header file when
+     * generating headers only, or the source file otherwise
+     */
+    protected finishCurrentFile(): void {
+        if (this._options.headerOnly) {
+            /* Close header file */
+            this.finishHeaderFile();
+        } else {
+            /* Close source file */
+            this.finishSourceFile();
         }
     }
 
@@ -5750,12 +5845,10 @@ export class CJSONRenderer extends ConvenienceRenderer {
             } else {
                 this.emitLine("};");
             }
+        } else if (withName !== "") {
+            this.emitLine("} ", withName);
         } else {
-            if (withName !== "") {
-                this.emitLine("} ", withName);
-            } else {
-                this.emitLine("}");
-            }
+            this.emitLine("}");
         }
     }
 
@@ -5783,7 +5876,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
         }
 
         /* Emit includes */
-        if (includes.size !== 0) {
+        if (includes.size > 0) {
             includes.forEach((_rec: IncludeRecord, name: string) => {
                 name = name.concat(".h");
                 if (name !== filename) {
@@ -5834,12 +5927,10 @@ export class CJSONRenderer extends ConvenienceRenderer {
                 if (maybeNull !== undefined) {
                     /* Houston this is a variant, include it */
                     propRecord.kind = IncludeKind.Include;
+                } else if (t.forceInclude) {
+                    propRecord.kind = IncludeKind.Include;
                 } else {
-                    if (t.forceInclude) {
-                        propRecord.kind = IncludeKind.Include;
-                    } else {
-                        propRecord.kind = IncludeKind.ForwardDeclare;
-                    }
+                    propRecord.kind = IncludeKind.ForwardDeclare;
                 }
             }
 
@@ -5930,5 +6021,14 @@ export class CJSONRenderer extends ConvenienceRenderer {
 
         recur(false, false, 0, type);
         return result;
+    }
+
+    /**
+     * Get the name of the source file corresponding to a header file
+     * @param headerName: header filename
+     * @return Source filename
+     */
+    protected getSourceNameFromHeaderName(headerName: string): string {
+        return headerName.replace(/\.h$/, ".c");
     }
 }

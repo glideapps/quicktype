@@ -1,16 +1,14 @@
-import cluster from "cluster";
-import process from "process";
+import cluster from "node:cluster";
+import process from "node:process";
 import * as _ from "lodash";
-
-const exit = require("exit");
 
 const WORKERS = ["👷🏻", "👷🏼", "👷🏽", "👷🏾", "👷🏿"];
 
 export interface ParallelArgs<Item, Result, Acc> {
     queue: Item[];
     workers: number;
-    setup(): Promise<Acc>;
-    map(item: Item, index: number): Promise<Result>;
+    setup: () => Promise<Acc>;
+    map: (item: Item, index: number) => Promise<Result>;
 }
 
 function randomPick<T>(arr: T[]): T {
@@ -52,7 +50,7 @@ export async function inParallel<Item, Result, Acc>(
                         w.kill();
                     }
                 }
-                exit(code);
+                process.exit(code);
             }
         });
 
@@ -63,13 +61,11 @@ export async function inParallel<Item, Result, Acc>(
                 await map(item, i);
             }
         } else {
-            _.range(workers).forEach((i) =>
+            _.range(workers).forEach((i) => {
                 cluster.fork({
                     worker: i,
-                    // https://github.com/TypeStrong/ts-node/issues/367
-                    TS_NODE_PROJECT: "test/tsconfig.json",
-                }),
-            );
+                });
+            });
         }
     } else {
         // Setup a worker

@@ -4,23 +4,23 @@ import {
     type TypeAttributes,
     combineTypeAttributes,
     emptyTypeAttributes,
-} from "./attributes/TypeAttributes";
+} from "./attributes/TypeAttributes.js";
 import type {
     BaseGraphRewriteBuilder,
     GraphRewriteBuilder,
     TypeLookerUp,
-} from "./GraphRewriting";
-import { assert, defined, panic } from "./support/Support";
+} from "./GraphRewriting.js";
+import { assert, defined, panic } from "./support/Support.js";
 import {
     type ClassProperty,
     type ObjectType,
     type Type,
     UnionType,
-} from "./Type/Type";
-import type { TypeBuilder } from "./Type/TypeBuilder";
-import { type TypeRef, derefTypeRef } from "./Type/TypeRef";
-import { assertIsObject } from "./Type/TypeUtils";
-import { TypeRefUnionAccumulator, UnionBuilder } from "./UnionBuilder";
+} from "./Type/Type.js";
+import type { TypeBuilder } from "./Type/TypeBuilder.js";
+import { type TypeRef, derefTypeRef } from "./Type/TypeRef.js";
+import { assertIsObject } from "./Type/TypeUtils.js";
+import { TypeRefUnionAccumulator, UnionBuilder } from "./UnionBuilder.js";
 
 function getCliqueProperties(
     clique: ObjectType[],
@@ -36,7 +36,7 @@ function getCliqueProperties(
     const properties = Array.from(propertyNames).map(
         (name) => [name, new Set(), false] as [string, Set<Type>, boolean],
     );
-    let additionalProperties: Set<Type> | undefined = undefined;
+    let additionalProperties: Set<Type> | undefined;
     for (const o of clique) {
         const additional = o.getAdditionalProperties();
         if (additional !== undefined) {
@@ -49,10 +49,8 @@ function getCliqueProperties(
             }
         }
 
-        // FIXME: refactor this
-        // eslint-disable-next-line @typescript-eslint/prefer-for-of
-        for (let i = 0; i < properties.length; i++) {
-            let [name, types, isOptional] = properties[i];
+        for (const property of properties) {
+            let [name, types, isOptional] = property;
             const maybeProperty = o.getProperties().get(name);
             if (maybeProperty === undefined) {
                 isOptional = true;
@@ -67,7 +65,7 @@ function getCliqueProperties(
                 types.add(maybeProperty.type);
             }
 
-            properties[i][2] = isOptional;
+            property[2] = isOptional;
         }
     }
 

@@ -1,2 +1,2 @@
-export { CrystalTargetLanguage } from "./language";
-export { CrystalRenderer } from "./CrystalRenderer";
+export { CrystalTargetLanguage } from "./language.js";
+export { CrystalRenderer } from "./CrystalRenderer.js";

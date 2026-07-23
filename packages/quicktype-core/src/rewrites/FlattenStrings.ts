@@ -1,16 +1,16 @@
 import { iterableFirst } from "collection-utils";
 
-import { combineTypeAttributes } from "../attributes/TypeAttributes";
-import type { GraphRewriteBuilder } from "../GraphRewriting";
-import { assert, defined } from "../support/Support";
-import type { PrimitiveType, Type, UnionType } from "../Type/Type";
-import type { StringTypeMapping } from "../Type/TypeBuilderUtils";
-import type { TypeGraph } from "../Type/TypeGraph";
-import type { TypeRef } from "../Type/TypeRef";
+import { combineTypeAttributes } from "../attributes/TypeAttributes.js";
+import type { GraphRewriteBuilder } from "../GraphRewriting.js";
+import { assert, defined } from "../support/Support.js";
+import type { PrimitiveType, Type, UnionType } from "../Type/Type.js";
+import type { StringTypeMapping } from "../Type/TypeBuilderUtils.js";
+import type { TypeGraph } from "../Type/TypeGraph.js";
+import type { TypeRef } from "../Type/TypeRef.js";
 import {
     combineTypeAttributesOfTypes,
     stringTypesForType,
-} from "../Type/TypeUtils";
+} from "../Type/TypeUtils.js";
 
 // A union needs replacing if it contains more than one string type, one of them being
 // a basic string type.

@@ -1,9 +1,9 @@
-import type { TypeAttributes } from "../attributes/TypeAttributes";
-import type { BaseGraphRewriteBuilder } from "../GraphRewriting";
-import { assert } from "../support/Support";
+import type { TypeAttributes } from "../attributes/TypeAttributes.js";
+import type { BaseGraphRewriteBuilder } from "../GraphRewriting.js";
+import { assert } from "../support/Support.js";
 
-import type { Type } from "./Type";
-import type { TypeGraph } from "./TypeGraph";
+import type { Type } from "./Type.js";
+import type { TypeGraph } from "./TypeGraph.js";
 
 const indexBits = 26;
 const indexMask = (1 << indexBits) - 1;

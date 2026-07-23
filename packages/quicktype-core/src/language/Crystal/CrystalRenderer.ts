@@ -1,42 +1,28 @@
 import {
     anyTypeIssueAnnotation,
     nullTypeIssueAnnotation,
-} from "../../Annotation";
+} from "../../Annotation.js";
 import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
-} from "../../ConvenienceRenderer";
-import type { Name, Namer } from "../../Naming";
-import type { RenderContext } from "../../Renderer";
-import { type Sourcelike, maybeAnnotated } from "../../Source";
-import type { TargetLanguage } from "../../TargetLanguage";
-import type {
-    ClassType,
-    EnumType,
-    Type,
-    UnionType,
-} from "../../Type";
+} from "../../ConvenienceRenderer.js";
+import type { Name, Namer } from "../../Naming.js";
+import { type Sourcelike, maybeAnnotated } from "../../Source.js";
 import {
     matchType,
     nullableFromUnion,
     removeNullFromUnion,
-} from "../../Type/TypeUtils";
+} from "../../Type/TypeUtils.js";
+import type { ClassType, EnumType, Type, UnionType } from "../../Type/index.js";
 
-import { keywords } from "./constants";
+import { keywords } from "./constants.js";
 import {
     camelNamingFunction,
     crystalStringEscape,
     snakeNamingFunction,
-} from "./utils";
+} from "./utils.js";
 
 export class CrystalRenderer extends ConvenienceRenderer {
-    public constructor(
-        targetLanguage: TargetLanguage,
-        renderContext: RenderContext,
-    ) {
-        super(targetLanguage, renderContext);
-    }
-
     protected makeNamedTypeNamer(): Namer {
         return camelNamingFunction;
     }
@@ -216,7 +202,6 @@ export class CrystalRenderer extends ConvenienceRenderer {
     protected emitLeadingComments(): void {
         if (this.leadingComments !== undefined) {
             this.emitComments(this.leadingComments);
-            return;
         }
     }
 

@@ -1,24 +1,24 @@
-import type { ConvenienceRenderer } from "../../ConvenienceRenderer";
-import type { RenderContext } from "../../Renderer";
+import type { ConvenienceRenderer } from "../../ConvenienceRenderer.js";
+import type { RenderContext } from "../../Renderer.js";
 import {
     BooleanOption,
     EnumOption,
     StringOption,
     getOptionValues,
-} from "../../RendererOptions";
-import { assertNever } from "../../support/Support";
-import { TargetLanguage } from "../../TargetLanguage";
+} from "../../RendererOptions/index.js";
+import { assertNever } from "../../support/Support.js";
+import { TargetLanguage } from "../../TargetLanguage.js";
 import type {
     PrimitiveStringTypeKind,
     TransformedStringTypeKind,
     Type,
-} from "../../Type";
-import type { StringTypeMapping } from "../../Type/TypeBuilderUtils";
-import type { LanguageName, RendererOptions } from "../../types";
+} from "../../Type/index.js";
+import type { StringTypeMapping } from "../../Type/TypeBuilderUtils.js";
+import type { LanguageName, RendererOptions } from "../../types.js";
 
-import { NewtonsoftCSharpRenderer } from "./NewtonSoftCSharpRenderer";
-import { SystemTextJsonCSharpRenderer } from "./SystemTextJsonCSharpRenderer";
-import { needTransformerForType } from "./utils";
+import { NewtonsoftCSharpRenderer } from "./NewtonSoftCSharpRenderer.js";
+import { SystemTextJsonCSharpRenderer } from "./SystemTextJsonCSharpRenderer.js";
+import { needTransformerForType } from "./utils.js";
 
 export interface OutputFeatures {
     attributes: boolean;
@@ -35,7 +35,7 @@ export const cSharpOptions = {
             NewtonSoft: "NewtonSoft",
             SystemTextJson: "SystemTextJson",
         } as const,
-        "NewtonSoft",
+        "SystemTextJson",
     ),
     useList: new EnumOption(
         "array-type",
@@ -69,11 +69,17 @@ export const cSharpOptions = {
         {
             "5": 5,
             "6": 6,
+            "8": 8,
         } as const,
-        "6",
+        "8",
         "secondary",
     ),
     virtual: new BooleanOption("virtual", "Generate virtual properties", false),
+    useRecords: new BooleanOption(
+        "use-records",
+        "Generate records instead of classes (C# 9+)",
+        false,
+    ),
     typeForAny: new EnumOption(
         "any-type",
         'Type to use for "any"',
@@ -104,19 +110,10 @@ export const cSharpOptions = {
                 helpers: false,
                 attributes: true,
             },
-            "just-types-and-namespace": {
-                namespaces: true,
-                helpers: false,
-                attributes: false,
-            },
-            "just-types": {
-                namespaces: true,
-                helpers: false,
-                attributes: false,
-            },
         } as const,
         "complete",
     ),
+    justTypes: new BooleanOption("just-types", "Plain types only", false),
     baseclass: new EnumOption(
         "base-class",
         "Base class",
@@ -139,9 +136,17 @@ export const cSharpOptions = {
     ),
 } as const;
 
-export const newtonsoftCSharpOptions = Object.assign({}, cSharpOptions, {});
+export const newtonsoftCSharpOptions = { ...cSharpOptions };
 
-export const systemTextJsonCSharpOptions = Object.assign({}, cSharpOptions, {});
+export const systemTextJsonCSharpOptions = {
+    ...cSharpOptions,
+    dateTimeOnlyConverters: new BooleanOption(
+        "dateonly-timeonly-converters",
+        "Emit DateOnly/TimeOnly converters (requires .NET 6 or later)",
+        true,
+        "secondary",
+    ),
+};
 
 export const cSharpLanguageConfig = {
     displayName: "C#",
@@ -156,8 +161,8 @@ export class CSharpTargetLanguage extends TargetLanguage<
         super(cSharpLanguageConfig);
     }
 
-    public getOptions(): typeof cSharpOptions {
-        return cSharpOptions;
+    public getOptions(): typeof systemTextJsonCSharpOptions {
+        return systemTextJsonCSharpOptions;
     }
 
     public get stringTypeMapping(): StringTypeMapping {

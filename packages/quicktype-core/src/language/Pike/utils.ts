@@ -1,9 +1,9 @@
-import { funPrefixNamer } from "../../Naming";
+import { funPrefixNamer } from "../../Naming.js";
 import {
     isLetterOrUnderscoreOrDigit,
     legalizeCharacters,
     makeNameStyle,
-} from "../../support/Strings";
+} from "../../support/Strings.js";
 
 const legalizeName = legalizeCharacters(isLetterOrUnderscoreOrDigit);
 export const enumNamingFunction = funPrefixNamer(

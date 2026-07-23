@@ -12,9 +12,9 @@ import {
     legalizeCharacters,
     splitIntoWords,
     utf32ConcatMap,
-} from "../../support/Strings";
+} from "../../support/Strings.js";
 
-import * as keywords from "./constants";
+import * as keywords from "./constants.js";
 
 export enum Strictness {
     Strict = "Strict::",
@@ -26,7 +26,7 @@ export const forbiddenForObjectProperties = Array.from(
     new Set([...keywords.keywords, ...keywords.reservedProperties]),
 );
 function unicodeEscape(codePoint: number): string {
-    return "\\u{" + intToHex(codePoint, 0) + "}";
+    return `\\u{${intToHex(codePoint, 0)}}`;
 }
 
 export const stringEscape = utf32ConcatMap(
@@ -47,7 +47,7 @@ const legalizeName = legalizeCharacters(isPartCharacter);
 
 export function simpleNameStyle(original: string, uppercase: boolean): string {
     if (/^[0-9]+$/.test(original)) {
-        original = original + "N";
+        original = `${original}N`;
     }
 
     const words = splitIntoWords(original);

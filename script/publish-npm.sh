@@ -8,37 +8,27 @@
 
 set -e
 
-./script/patch-npm-version.ts
+: "${RELEASE_VERSION:?RELEASE_VERSION must be set from the GitHub release tag}"
+./script/release-version.ts stamp "$RELEASE_VERSION"
+NPM_TAG=$(./script/release-version.ts npm-tag "$RELEASE_VERSION")
 
-VERSION=$(jq -r '.version' package.json )
-npm version $VERSION --workspaces --force
+publish_package() {
+    local directory=$1
+    local package=$2
+    local action
 
-# Publish core
-pushd packages/quicktype-core
-npm publish
-popd
+    action=$(./script/release-version.ts npm-action "$package" "$RELEASE_VERSION")
+    if [[ "$action" == "skip" ]]; then
+        echo "* $package@$RELEASE_VERSION is already published; skipping"
+        return
+    fi
 
-# Publish typescript input
-pushd packages/quicktype-typescript-input
-jq --arg version $VERSION \
-    '.dependencies."quicktype-core" = $version' \
-    package.json > package.1.json
-mv package.1.json package.json
-npm publish
-popd
+    pushd "$directory"
+    npm publish --tag "$NPM_TAG"
+    popd
+}
 
-# Publish graphql input
-pushd packages/quicktype-graphql-input
-jq --arg version $VERSION \
-    '.dependencies."quicktype-core" = $version' \
-    package.json > package.1.json
-mv package.1.json package.json
-npm publish
-popd
-
-# Publish quicktype
-jq --arg version $VERSION \
-    '.dependencies."quicktype-core" = $version | .dependencies."quicktype-graphql-input" = $version | .dependencies."quicktype-typescript-input" = $version' \
-    package.json > package.1.json
-mv package.1.json package.json
-npm publish
+publish_package packages/quicktype-core quicktype-core
+publish_package packages/quicktype-typescript-input quicktype-typescript-input
+publish_package packages/quicktype-graphql-input quicktype-graphql-input
+publish_package . quicktype

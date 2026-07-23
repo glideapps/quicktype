@@ -1,13 +1,18 @@
 import { addHashCode, hashCodeInit, hashString } from "collection-utils";
 
-import { inferTransformedStringTypeKindForString } from "../attributes/StringTypes";
-import type { DateTimeRecognizer } from "../DateTime";
-import { assert, defined, panic } from "../support/Support";
+import { inferTransformedStringTypeKindForString } from "../attributes/StringTypes.js";
+import type { DateTimeRecognizer } from "../DateTime.js";
+import {
+    INT64_RANGE,
+    type IntegerRange,
+    integerStringInRange,
+} from "../support/IntegerRange.js";
+import { assert, defined, panic } from "../support/Support.js";
 import {
     type TransformedStringTypeKind,
     isPrimitiveStringTypeKind,
     transformedStringTypeTargetTypeKindsMap,
-} from "../Type";
+} from "../Type/index.js";
 
 export enum Tag {
     Null = 1,
@@ -56,22 +61,59 @@ export abstract class CompressedJSON<T> {
 
     private _ctx: Context | undefined;
 
-    private _contextStack: Context[] = [];
+    private readonly _contextStack: Context[] = [];
 
-    private _strings: string[] = [];
+    private readonly _strings: string[] = [];
 
-    private _stringIndexes: { [str: string]: number } = {};
+    private readonly _stringIndexes: { [str: string]: number } = {};
 
-    private _objects: Value[][] = [];
+    private readonly _objects: Value[][] = [];
 
-    private _arrays: Value[][] = [];
+    private readonly _arrays: Value[][] = [];
 
+    /**
+     * `supportedIntegerRange` is the range of whole numbers in the input
+     * that get inferred as `integer`; whole numbers outside it are inferred
+     * as `double`, because the target language's integer type could not
+     * round-trip them.  `null` means the target's integers are
+     * arbitrary-precision.  See `TargetLanguage.getSupportedIntegerRange`.
+     */
     public constructor(
         public readonly dateTimeRecognizer: DateTimeRecognizer,
         public readonly handleRefs: boolean,
+        public readonly supportedIntegerRange: IntegerRange | null = INT64_RANGE,
     ) {}
 
     public abstract parse(input: T): Promise<Value>;
+
+    /**
+     * Whether a whole number in the input, given as the decimal string of
+     * its JSON literal, fits `supportedIntegerRange`.  Works on the digit
+     * string because such literals can exceed what a JavaScript number can
+     * represent exactly.
+     */
+    protected integerStringFits(integerString: string): boolean {
+        const range = this.supportedIntegerRange;
+        if (range === null) return true;
+        return integerStringInRange(integerString, range);
+    }
+
+    /**
+     * Whether a number that `JSON.parse` produced should be inferred as
+     * `double`.  The original literal is gone at this point, but for whole
+     * numbers below 1e21, `toFixed(0)` gives the exact decimal value of the
+     * double, and it errs on the right side at range boundaries: a literal
+     * like 9223372036854775807 (INT64_MAX) parses to the double
+     * 9223372036854775808, which is correctly outside the int64 range.  At
+     * 1e21 doubles are far beyond any fixed-size integer type and `toFixed`
+     * switches to exponential notation, so those are doubles outright.
+     */
+    protected parsedNumberIsDouble(n: number): boolean {
+        if (n !== Math.floor(n)) return true;
+        if (this.supportedIntegerRange === null) return false;
+        if (Math.abs(n) >= 1e21) return true;
+        return !this.integerStringFits(n.toFixed(0));
+    }
 
     public parseSync(_input: T): Value {
         return panic("parseSync not implemented in CompressedJSON");
@@ -105,6 +147,7 @@ export abstract class CompressedJSON<T> {
     }
 
     protected internString(s: string): number {
+        // biome-ignore lint/suspicious/noPrototypeBuiltins: Object.hasOwn is not in quicktype-core's es6 lib
         if (Object.prototype.hasOwnProperty.call(this._stringIndexes, s)) {
             return this._stringIndexes[s];
         }
@@ -184,7 +227,7 @@ export abstract class CompressedJSON<T> {
     }
 
     protected commitString(s: string): void {
-        let value: Value | undefined = undefined;
+        let value: Value | undefined;
         if (this.handleRefs && this.isExpectingRef) {
             value = this.makeString(s);
         } else {
@@ -339,11 +382,7 @@ export class CompressedJSONFromString extends CompressedJSON<string> {
         } else if (typeof json === "string") {
             this.commitString(json);
         } else if (typeof json === "number") {
-            const isDouble =
-                json !== Math.floor(json) ||
-                json < Number.MIN_SAFE_INTEGER ||
-                json > Number.MAX_SAFE_INTEGER;
-            this.commitNumber(isDouble);
+            this.commitNumber(this.parsedNumberIsDouble(json));
         } else if (Array.isArray(json)) {
             this.pushArrayContext();
             for (const v of json) {

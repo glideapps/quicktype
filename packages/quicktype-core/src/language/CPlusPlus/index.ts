@@ -1,2 +1,2 @@
-export { CPlusPlusTargetLanguage, cPlusPlusOptions } from "./language";
-export { CPlusPlusRenderer } from "./CPlusPlusRenderer";
+export { CPlusPlusTargetLanguage, cPlusPlusOptions } from "./language.js";
+export { CPlusPlusRenderer } from "./CPlusPlusRenderer.js";

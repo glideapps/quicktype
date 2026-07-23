@@ -10,15 +10,15 @@ import {
     setUnionInto,
 } from "collection-utils";
 
-import type { DateTimeRecognizer } from "../DateTime";
-import { assert, defined } from "../support/Support";
-import type { TransformedStringTypeKind } from "../Type/TransformedStringType";
+import type { DateTimeRecognizer } from "../DateTime.js";
+import { assert, defined } from "../support/Support.js";
+import type { TransformedStringTypeKind } from "../Type/TransformedStringType.js";
 import {
     type StringTypeMapping,
     stringTypeMappingGet,
-} from "../Type/TypeBuilderUtils";
+} from "../Type/TypeBuilderUtils.js";
 
-import { TypeAttributeKind } from "./TypeAttributes";
+import { TypeAttributeKind } from "./TypeAttributes.js";
 
 export class StringTypes {
     public static readonly unrestricted: StringTypes = new StringTypes(

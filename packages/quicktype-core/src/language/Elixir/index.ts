@@ -1,2 +1,2 @@
-export { ElixirTargetLanguage, elixirOptions } from "./language";
-export { ElixirRenderer } from "./ElixirRenderer";
+export { ElixirTargetLanguage, elixirOptions } from "./language.js";
+export { ElixirRenderer } from "./ElixirRenderer.js";

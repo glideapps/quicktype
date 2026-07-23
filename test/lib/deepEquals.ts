@@ -3,12 +3,7 @@ import type { Moment } from "moment";
 import type { ComparisonRelaxations } from "../utils";
 
 function pathToString(path: string[]): string {
-    return "." + path.join(".");
-}
-
-declare namespace Math {
-    // TypeScript cannot find this function
-    function fround(n: number): number;
+    return `.${path.join(".")}`;
 }
 
 function tryParseMoment(s: string): [Moment | undefined, boolean] {
@@ -33,7 +28,9 @@ function momentsEqual(x: Moment, y: Moment, isTime: boolean): boolean {
 
 // https://stackoverflow.com/questions/1068834/object-comparison-in-javascript
 export default function deepEquals(
+    // biome-ignore lint/suspicious/noExplicitAny: compares arbitrary parsed JSON values
     x: any,
+    // biome-ignore lint/suspicious/noExplicitAny: compares arbitrary parsed JSON values
     y: any,
     assumeStringsEqual: boolean,
     relax: ComparisonRelaxations,
@@ -42,7 +39,7 @@ export default function deepEquals(
     // remember that NaN === NaN returns false
     // and isNaN(undefined) returns true
     if (typeof x === "number" && typeof y === "number") {
-        if (isNaN(x) && isNaN(y)) {
+        if (Number.isNaN(x) && Number.isNaN(y)) {
             return true;
         }
         // because sometimes Newtonsoft.JSON is not exact
@@ -77,7 +74,7 @@ export default function deepEquals(
         return false;
     }
     if (
-        !!relax.allowStringifiedIntegers &&
+        relax.allowStringifiedIntegers &&
         typeof x === "string" &&
         typeof y === "number"
     ) {
@@ -143,19 +140,17 @@ export default function deepEquals(
     for (const p of yKeys) {
         // We allow properties in y that aren't present in x
         // so long as they're null.
-        if (xKeys.indexOf(p) < 0) {
-            if (y[p] !== null) {
-                console.error(
-                    `Non-null property ${p} is not expected at path ${pathToString(path)}.`,
-                );
-                return false;
-            }
+        if (xKeys.indexOf(p) < 0 && y[p] !== null) {
+            console.error(
+                `Non-null property ${p} is not expected at path ${pathToString(path)}.`,
+            );
+            return false;
         }
     }
 
     for (const p of xKeys) {
         if (yKeys.indexOf(p) < 0) {
-            if (!!relax.allowMissingNull && x[p] === null) {
+            if (relax.allowMissingNull && x[p] === null) {
                 continue;
             }
             console.error(

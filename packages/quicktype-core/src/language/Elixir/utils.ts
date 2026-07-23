@@ -12,7 +12,7 @@ import {
     legalizeCharacters,
     splitIntoWords,
     utf32ConcatMap,
-} from "../../support/Strings";
+} from "../../support/Strings.js";
 
 function unicodeEscape(codePoint: number): string {
     return `\\u{${intToHex(codePoint, 0)}}`;

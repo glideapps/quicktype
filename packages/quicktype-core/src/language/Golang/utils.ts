@@ -1,4 +1,4 @@
-import { funPrefixNamer } from "../../Naming";
+import { funPrefixNamer } from "../../Naming.js";
 import {
     allUpperWordStyle,
     combineWords,
@@ -7,8 +7,8 @@ import {
     isLetterOrUnderscoreOrDigit,
     legalizeCharacters,
     splitIntoWords,
-} from "../../support/Strings";
-import type { ClassProperty, Type, TypeKind } from "../../Type";
+} from "../../support/Strings.js";
+import type { ClassProperty, Type, TypeKind } from "../../Type/index.js";
 
 export const namingFunction = funPrefixNamer("namer", goNameStyle);
 
@@ -51,7 +51,8 @@ export function canOmitEmpty(
     omitEmptyOption: boolean,
 ): boolean {
     if (!cp.isOptional) return false;
-    if (omitEmptyOption) return true;
+    if (omitEmptyOption)
+        return !["union", "null", "any"].includes(cp.type.kind);
     const t = cp.type;
     return !["union", "null", "any"].includes(t.kind);
 }

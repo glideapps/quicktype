@@ -1,12 +1,9 @@
 import { arrayIntercalate, iterableSome } from "collection-utils";
 
-import type { Name } from "../../Naming";
-import type { RenderContext } from "../../Renderer";
-import type { OptionValues } from "../../RendererOptions";
-import { type Sourcelike, modifySource } from "../../Source";
-import { camelCase } from "../../support/Strings";
-import { mustNotHappen } from "../../support/Support";
-import type { TargetLanguage } from "../../TargetLanguage";
+import type { Name } from "../../Naming.js";
+import { type Sourcelike, modifySource } from "../../Source.js";
+import { camelCase } from "../../support/Strings.js";
+import { mustNotHappen } from "../../support/Support.js";
 import {
     type ArrayType,
     ClassType,
@@ -15,22 +12,13 @@ import {
     type PrimitiveType,
     type Type,
     UnionType,
-} from "../../Type";
-import { matchType, nullableFromUnion } from "../../Type/TypeUtils";
+} from "../../Type/index.js";
+import { matchType, nullableFromUnion } from "../../Type/TypeUtils.js";
 
-import { KotlinRenderer } from "./KotlinRenderer";
-import type { kotlinOptions } from "./language";
-import { stringEscape } from "./utils";
+import { KotlinRenderer } from "./KotlinRenderer.js";
+import { stringEscape, unionMemberMatchPriority } from "./utils.js";
 
 export class KotlinJacksonRenderer extends KotlinRenderer {
-    public constructor(
-        targetLanguage: TargetLanguage,
-        renderContext: RenderContext,
-        _kotlinOptions: OptionValues<typeof kotlinOptions>,
-    ) {
-        super(targetLanguage, renderContext, _kotlinOptions);
-    }
-
     private unionMemberJsonValueGuard(t: Type, _e: Sourcelike): Sourcelike {
         return matchType<Sourcelike>(
             t,
@@ -49,6 +37,7 @@ export class KotlinJacksonRenderer extends KotlinRenderer {
             // and enums in the same union
             (_enumType) => "is TextNode",
             (_unionType) => mustNotHappen(),
+            (_transformedStringType) => "is TextNode",
         );
     }
 
@@ -88,7 +77,17 @@ import com.fasterxml.jackson.module.kotlin.*`);
             this.typeGraph.allNamedTypes(),
             (c) => c instanceof ClassType && c.getProperties().size === 0,
         );
-        if (hasUnions || this.haveEnums || hasEmptyObjects) {
+        const usesDateTime = this.haveTransformedStringType("date-time");
+        const usesDate = this.haveTransformedStringType("date");
+        const usesTime = this.haveTransformedStringType("time");
+        if (
+            hasUnions ||
+            this.haveEnums ||
+            hasEmptyObjects ||
+            usesDateTime ||
+            usesDate ||
+            usesTime
+        ) {
             this.emitGenericConverter();
         }
 
@@ -96,6 +95,39 @@ import com.fasterxml.jackson.module.kotlin.*`);
         // if (hasEmptyObjects) {
         //     converters.push([["convert(JsonNode::class,"], [" { it },"], [" { writeValueAsString(it) })"]]);
         // }
+        // We don't use jackson-datatype-jsr310's JavaTimeModule because its
+        // serializers don't round-trip faithfully (e.g. OffsetTime pads
+        // "23:20:50.52Z" to "23:20:50.520Z"); the ISO formatters do.
+        if (usesDateTime) {
+            converters.push([
+                ["convert(OffsetDateTime::class,"],
+                [" { OffsetDateTime.parse(it.asText()) },"],
+                [
+                    ' { "\\"${java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(it)}\\"" })',
+                ],
+            ]);
+        }
+
+        if (usesDate) {
+            converters.push([
+                ["convert(LocalDate::class,"],
+                [" { LocalDate.parse(it.asText()) },"],
+                [
+                    ' { "\\"${java.time.format.DateTimeFormatter.ISO_LOCAL_DATE.format(it)}\\"" })',
+                ],
+            ]);
+        }
+
+        if (usesTime) {
+            converters.push([
+                ["convert(OffsetTime::class,"],
+                [" { OffsetTime.parse(it.asText()) },"],
+                [
+                    ' { "\\"${java.time.format.DateTimeFormatter.ISO_OFFSET_TIME.format(it)}\\"" })',
+                ],
+            ]);
+        }
+
         this.forEachEnum("none", (_, name) => {
             converters.push([
                 ["convert(", name, "::class,"],
@@ -346,19 +378,55 @@ private fun <T> ObjectMapper.convert(k: kotlin.reflect.KClass<*>, fromJson: (Jso
                 " = when (jn) {",
             );
             this.indent(() => {
-                const table: Sourcelike[][] = [];
+                // Members whose JSON representations share a node type
+                // (several transformed string types, or a transformed string
+                // type and an enum, are all TextNode) must share a single
+                // guard and be tried in sequence, most specific parse first.
+                const groups: Array<{
+                    guard: string;
+                    members: Array<{ name: Name; t: Type }>;
+                }> = [];
                 this.forEachUnionMember(
                     u,
                     nonNulls,
                     "none",
                     null,
                     (name, t) => {
-                        table.push([
-                            [this.unionMemberJsonValueGuard(t, "jn")],
-                            [" -> ", name, "(mapper.treeToValue(jn))"],
-                        ]);
+                        const guard = this.sourcelikeToString(
+                            this.unionMemberJsonValueGuard(t, "jn"),
+                        );
+                        const group = groups.find((g) => g.guard === guard);
+                        if (group === undefined) {
+                            groups.push({ guard, members: [{ name, t }] });
+                        } else {
+                            group.members.push({ name, t });
+                        }
                     },
                 );
+                const table: Sourcelike[][] = [];
+                for (const { guard, members } of groups) {
+                    const ordered = [...members].sort(
+                        (a, b) =>
+                            unionMemberMatchPriority(a.t) -
+                            unionMemberMatchPriority(b.t),
+                    );
+                    let expr: Sourcelike = [
+                        ordered[ordered.length - 1].name,
+                        "(mapper.treeToValue(jn))",
+                    ];
+                    for (let i = ordered.length - 2; i >= 0; i--) {
+                        expr = [
+                            "try { ",
+                            ordered[i].name,
+                            "(mapper.treeToValue(jn)) } catch (e: Exception) { ",
+                            expr,
+                            " }",
+                        ];
+                    }
+
+                    table.push([[guard], [" -> ", expr]]);
+                }
+
                 if (maybeNull !== null) {
                     const name = this.nameForUnionMember(u, maybeNull);
                     table.push([

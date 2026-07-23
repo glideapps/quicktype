@@ -1,27 +1,27 @@
 import { iterableFirst, mapFirst } from "collection-utils";
 
-import { addDescriptionToSchema } from "../../attributes/Description";
-import { ConvenienceRenderer } from "../../ConvenienceRenderer";
-import type { Name, Namer } from "../../Naming";
-import type { RenderContext } from "../../Renderer";
-import type { OptionValues } from "../../RendererOptions";
-import type { Sourcelike } from "../../Source";
-import { assert, defined, panic } from "../../support/Support";
-import type { TargetLanguage } from "../../TargetLanguage";
+import { addDescriptionToSchema } from "../../attributes/Description.js";
+import { ConvenienceRenderer } from "../../ConvenienceRenderer.js";
+import type { Name, Namer } from "../../Naming.js";
+import type { RenderContext } from "../../Renderer.js";
+import type { OptionValues } from "../../RendererOptions/index.js";
+import type { Sourcelike } from "../../Source.js";
+import { assert, defined, panic } from "../../support/Support.js";
+import type { TargetLanguage } from "../../TargetLanguage.js";
 import {
     type EnumType,
     type ObjectType,
     type Type,
     type UnionType,
     transformedStringTypeTargetTypeKindsMap,
-} from "../../Type";
-import { matchTypeExhaustive } from "../../Type/TypeUtils";
+} from "../../Type/index.js";
+import { matchTypeExhaustive } from "../../Type/TypeUtils.js";
 
-import type { jsonSchemaOptions } from "./language";
-import { namingFunction } from "./utils";
+import type { jsonSchemaOptions } from "./language.js";
+import { namingFunction } from "./utils.js";
 
 interface Schema {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: JSON Schema values are arbitrary JSON
     [name: string]: any;
 }
 
@@ -83,7 +83,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
     }
 
     private schemaForType(t: Type): Schema {
-        const schema = matchTypeExhaustive(
+        const schema = matchTypeExhaustive<Schema>(
             t,
             (_noneType) => {
                 return panic("none type should have been replaced");
@@ -157,6 +157,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
             }
 
             properties = props;
+            // biome-ignore lint/suspicious/useArraySortCompare: sorting strings; default UTF-16 order is intended
             required = req.sort();
         }
 
@@ -237,10 +238,10 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
             this.topLevels.size === 1
                 ? this.schemaForType(defined(mapFirst(this.topLevels)))
                 : {};
-        const schema = Object.assign(
-            { $schema: "http://json-schema.org/draft-06/schema#" },
-            topLevelType,
-        );
+        const schema: Schema = {
+            $schema: "http://json-schema.org/draft-06/schema#",
+            ...topLevelType,
+        };
         schema.definitions = definitions;
         this.startFile(title);
         this.emitMultiline(JSON.stringify(schema, undefined, "    "));
@@ -255,7 +256,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
 
         assert(
             this._currentFilename === undefined,
-            "Previous file wasn't finished: " + this._currentFilename,
+            `Previous file wasn't finished: ${this._currentFilename}`,
         );
         this._currentFilename = `${this.sourcelikeToString(basename)}.schema`;
         this.initializeEmitContextForFilename(this._currentFilename);

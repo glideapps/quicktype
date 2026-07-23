@@ -1,0 +1,16 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        // The ESM leg of the dual build. "nodenext" can't be used here: this
+        // package has no `"type": "module"`, so nodenext would classify the
+        // sources as CommonJS and emit CJS. Instead we emit plain ES modules
+        // and make Node treat `dist/esm` as ESM via the `{"type": "module"}`
+        // marker that script/write-esm-package-json.mjs drops into the output
+        // directory. Relative imports in src/ carry explicit ".js" extensions
+        // so the emitted files are resolvable by Node's ESM loader, which
+        // does no extension guessing.
+        "module": "esnext",
+        "moduleResolution": "bundler",
+        "outDir": "dist/esm"
+    }
+}

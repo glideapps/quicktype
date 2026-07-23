@@ -1,2 +1,2 @@
-export { GoTargetLanguage, goOptions } from "./language";
-export { GoRenderer } from "./GolangRenderer";
+export { GoTargetLanguage, goOptions } from "./language.js";
+export { GoRenderer } from "./GolangRenderer.js";
