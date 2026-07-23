@@ -17,6 +17,7 @@
         "test:unit": "vitest run",
         "test:unit:watch": "vitest",
         "test:fixtures": "script/test",
+        "test:output-snapshot": "script/output-snapshot",
         "test:release": "tsx test/release-version.ts",
         "benchmark:markov-chain": "npm run build --workspace quicktype-core && node --expose-gc script/benchmark-markov-chain.mjs",
         "benchmark:markov-chain:fidelity": "npm run build --workspace quicktype-core && node script/benchmark-markov-fidelity.mjs",

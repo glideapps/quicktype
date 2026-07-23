@@ -13,7 +13,7 @@ const schema = JSON.stringify({
     required: ["value"],
 });
 
-test("emits hash(into:) for JSONNull by default", async () => {
+test("emits modern Hashable implementation for JSONNull by default", async () => {
     const schemaInput = new JSONSchemaInput(undefined);
     await schemaInput.addSource({ name: "TopLevel", schema });
 
@@ -24,4 +24,6 @@ test("emits hash(into:) for JSONNull by default", async () => {
     const output = result.lines.join("\n");
 
     expect(output).toContain("public func hash(into hasher: inout Hasher)");
+    expect(output).toContain("hasher.combine(0)");
+    expect(output).not.toContain("public var hashValue: Int");
 });
