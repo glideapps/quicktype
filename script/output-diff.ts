@@ -74,7 +74,14 @@ function lineCounts(patchSection: string): {
     return { additions, deletions };
 }
 
-function generatePatch(baseDirectory: string, headDirectory: string): string {
+function generatePatch(
+    baseDirectory: string,
+    headDirectory: string,
+): {
+    baseArgument: string;
+    headArgument: string;
+    patch: string;
+} {
     const base = path.resolve(baseDirectory);
     const head = path.resolve(headDirectory);
     const sameParent = path.dirname(base) === path.dirname(head);
@@ -102,7 +109,33 @@ function generatePatch(baseDirectory: string, headDirectory: string): string {
             `git diff failed (${diff.status ?? "signal"}): ${diff.stderr}`,
         );
     }
-    return diff.stdout;
+    return { baseArgument, headArgument, patch: diff.stdout };
+}
+
+function patchSectionPath(
+    section: string,
+    baseArgument: string,
+    headArgument: string,
+): string {
+    const oldPath = /^--- (.+)$/m.exec(section)?.[1];
+    const newPath = /^\+\+\+ (.+)$/m.exec(section)?.[1];
+    if (oldPath === undefined || newPath === undefined) {
+        throw new Error("Patch section has no file headers");
+    }
+
+    const isDeleted = newPath === "/dev/null";
+    const patchPath = isDeleted ? oldPath : newPath;
+    const argument = isDeleted ? baseArgument : headArgument;
+    const side = isDeleted ? "a" : "b";
+    const normalizedArgument = argument
+        .split(path.sep)
+        .join("/")
+        .replace(/^\/+/, "");
+    const prefix = `${side}/${normalizedArgument}/`;
+    if (!patchPath.startsWith(prefix)) {
+        throw new Error(`Unexpected generated-output patch path: ${patchPath}`);
+    }
+    return patchPath.slice(prefix.length);
 }
 
 export function compareOutputSnapshots(
@@ -151,18 +184,34 @@ export function compareOutputSnapshots(
         ];
     });
 
-    const patch =
-        changed.length === 0 ? "" : generatePatch(baseDirectory, headDirectory);
+    const generated =
+        changed.length === 0
+            ? { baseArgument: "", headArgument: "", patch: "" }
+            : generatePatch(baseDirectory, headDirectory);
+    const { baseArgument, headArgument, patch } = generated;
     const sections = splitPatch(patch);
     if (sections.length !== changed.length) {
         throw new Error(
             `Expected ${changed.length} patch sections, found ${sections.length}`,
         );
     }
-    const files = changed.map((file, index) => ({
-        ...file,
-        ...lineCounts(sections[index]),
-    }));
+    const changedByPath = new Map(changed.map((file) => [file.path, file]));
+    const seen = new Set<string>();
+    const files = sections.map((section) => {
+        const relativePath = patchSectionPath(
+            section,
+            baseArgument,
+            headArgument,
+        );
+        const file = changedByPath.get(relativePath);
+        if (file === undefined || seen.has(relativePath)) {
+            throw new Error(
+                `Unexpected generated-output patch section: ${relativePath}`,
+            );
+        }
+        seen.add(relativePath);
+        return { ...file, ...lineCounts(section) };
+    });
     const insertions = files.reduce((sum, file) => sum + file.additions, 0);
     const deletions = files.reduce((sum, file) => sum + file.deletions, 0);
     const result: OutputDiffResult = {

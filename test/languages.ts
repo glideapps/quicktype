@@ -58,6 +58,15 @@ const skipsMapValueValidation = [
     "unevaluated-properties.schema",
 ];
 
+// The generated deserializer for a top-level array of scalars uses a
+// loosely-typed container (e.g. a raw `List`, an `ArrayList<Long>` whose
+// element type is erased at runtime, or an untyped decoder) that does not
+// enforce the declared element type, so a top-level array whose element has
+// the wrong scalar type (a string where an integer is expected) round-trips
+// instead of failing.  Add any new top-level-array schema whose fail sample
+// relies on rejecting a mistyped element.
+const skipsArrayElementValidation = ["issue2680-top-level-array.schema"];
+
 export type LanguageFeature =
     | "enum"
     | "union"
@@ -163,6 +172,14 @@ export const CSharpLanguage: Language = {
     sourceFiles: ["src/language/CSharp/index.ts"],
 };
 
+export const CSharpLanguageRecords: Language = {
+    ...CSharpLanguage,
+    rendererOptions: {
+        ...CSharpLanguage.rendererOptions,
+        "use-records": "true",
+    },
+};
+
 export const CSharpLanguageSystemTextJson: Language = {
     name: "csharp",
     base: "test/fixtures/csharp-SystemTextJson",
@@ -246,6 +263,9 @@ export const JavaLanguage: Language = {
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
         "keyword-unions.schema", // generates classes with names that are case-insensitively equal
+        // The generated converter deserializes a top-level array with a raw
+        // `List`, so a mistyped element round-trips instead of failing.
+        ...skipsArrayElementValidation,
     ],
     rendererOptions: {},
     // The default is array-type=list; this keeps the T[] code path
@@ -501,11 +521,15 @@ export const RubyLanguage: Language = {
         "php-mixed-union.json",
         "nbl-stats.json",
         "kitchen-sink.json",
+        // Top-level scalar arrays redefine Array#to_json recursively.
+        "issue2680-scalar-array.json",
     ],
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
         // We don't generate a convenience method for top-level enums
         "top-level-enum.schema",
+        // Top-level scalar arrays redefine Array#to_json recursively.
+        "issue2680-top-level-array.schema",
     ],
     skipMiscJSON: false,
     rendererOptions: {},
@@ -620,6 +644,8 @@ export const CJSONLanguage: Language = {
         "combinations2.json",
         /* Array in Array in Union is not supported (for the current implementation, can be added later, need recursivity) */
         "combinations4.json",
+        /* Top-level arrays of scalars store scalar values as pointers incorrectly. */
+        "issue2680-scalar-array.json",
     ],
     skipMiscJSON: false,
     skipSchema: [
@@ -636,6 +662,9 @@ export const CJSONLanguage: Language = {
         "boolean-subschema.schema",
         "class-with-additional.schema",
         ...skipsMapValueValidation,
+        /* Top-level array elements with invalid types (e.g. a string where
+         * an integer is expected) are not checked either. */
+        ...skipsArrayElementValidation,
         "multi-type-enum.schema",
         "nested-intersection-union.schema",
         "prefix-items.schema",
@@ -1218,6 +1247,9 @@ export const Scala3Language: Language = {
     diffViaSchema: true,
     skipDiffViaSchema: [
         "bug427.json",
+        // Property names generated from JSON and JSON Schema can differ when
+        // they collide with differently inferred class names.
+        "blns-object.json",
         // These round-trip fine; the code generated via JSON Schema
         // orders one property differently (a pre-existing
         // alphabetization quirk around renamed keyword properties).
@@ -1231,27 +1263,10 @@ export const Scala3Language: Language = {
     features: ["enum", "union", "no-defaults"],
     output: "TopLevel.scala",
     topLevel: "TopLevel",
-    skipJSON: [
-        // The renderer emits raw JSON property names as (backticked)
-        // Scala identifiers, so empty names, a bare "_", and names
-        // containing backticks or line separators cannot compile, and
-        // properties named "None"/"Option" generate case classes that
-        // shadow the Scala prelude.
-        "blns-object.json",
-        "identifiers.json",
-        "simple-identifiers.json",
-        "keywords.json",
-        "nst-test-suite.json",
-
-        // Scala3 has the same prelude-shadowing bug that this input
-        // guards against in Rust (issue #2521): a field named "options"
-        // generates `case class Option`, which shadows scala.Option.
-        "bug2521.json",
-    ],
+    skipJSON: [],
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
-        // Same raw-identifier limitation as in skipJSON: a property
-        // named "_" and classes shadowing None/Option don't compile.
+        // The generated case class exceeds the JVM's 254-parameter limit.
         "keyword-unions.schema",
     ],
     skipMiscJSON: false,
@@ -1269,6 +1284,9 @@ export const Scala3UpickleLanguage: Language = {
     diffViaSchema: true,
     skipDiffViaSchema: [
         "bug427.json",
+        // Property names generated from JSON and JSON Schema can differ when
+        // they collide with differently inferred class names.
+        "blns-object.json",
         // These round-trip fine; the code generated via JSON Schema
         // orders one property differently (a pre-existing
         // alphabetization quirk around renamed keyword properties).
@@ -1282,27 +1300,10 @@ export const Scala3UpickleLanguage: Language = {
     features: ["enum", "union", "no-defaults"],
     output: "TopLevel.scala",
     topLevel: "TopLevel",
-    skipJSON: [
-        // The renderer emits raw JSON property names as (backticked)
-        // Scala identifiers, so empty names, a bare "_", and names
-        // containing backticks or line separators cannot compile, and
-        // properties named "None"/"Option" generate case classes that
-        // shadow the Scala prelude.
-        "blns-object.json",
-        "identifiers.json",
-        "simple-identifiers.json",
-        "keywords.json",
-        "nst-test-suite.json",
-
-        // Scala3 has the same prelude-shadowing bug that this input
-        // guards against in Rust (issue #2521): a field named "options"
-        // generates `case class Option`, which shadows scala.Option.
-        "bug2521.json",
-    ],
+    skipJSON: [],
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
-        // Same raw-identifier limitation as in skipJSON: a property
-        // named "_" and classes shadowing None/Option don't compile.
+        // The generated case class exceeds the JVM's 254-parameter limit.
         "keyword-unions.schema",
     ],
     skipMiscJSON: false,
@@ -1351,7 +1352,7 @@ export const Smithy4sLanguage: Language = {
         "name-style.json",
 
         /*
-I havea no idea how to encode these tests correctly. 
+I havea no idea how to encode these tests correctly.
 */
         "kitchen-sink.json",
         "26c9c.json",
@@ -1462,6 +1463,9 @@ export const KotlinLanguage: Language = {
         "top-level-enum.schema",
         "top-level-primitive.schema",
         "recursive-union-flattening.schema",
+        // A top-level array is deserialized without enforcing its element
+        // type, so a mistyped element round-trips instead of failing.
+        ...skipsArrayElementValidation,
     ],
     skipMiscJSON: false,
     // The default framework is jackson; this fixture deliberately pins
@@ -1554,6 +1558,10 @@ export const KotlinJacksonLanguage: Language = {
         "top-level-enum.schema",
         "top-level-primitive.schema",
         "recursive-union-flattening.schema",
+        // A top-level array is deserialized into an `ArrayList<Long>` whose
+        // element type is erased at runtime, so a mistyped element
+        // round-trips instead of failing.
+        ...skipsArrayElementValidation,
     ],
     skipMiscJSON: false,
     rendererOptions: { framework: "jackson" },
@@ -1595,6 +1603,8 @@ export const KotlinXLanguage: Language = {
         "bug863.json",
         "github-events.json",
         "optional-union.json",
+        "issue2680-object-array.json",
+        "issue2680-scalar-array.json",
         "00c36.json",
         "010b1.json",
         "050b0.json",
@@ -1696,6 +1706,7 @@ export const KotlinXLanguage: Language = {
         // Top-level array: `typealias TopLevel = JsonArray<T>` doesn't
         // compile (documented TODO in KotlinXRenderer.ts).
         "union.schema",
+        "issue2680-top-level-array.schema",
     ],
     skipMiscJSON: false,
     rendererOptions: { framework: "kotlinx" },
@@ -1893,7 +1904,10 @@ export const HaskellLanguage: Language = {
         ...skipsUntypedUnions,
         // The test driver encodes the Maybe result, so a failed decode prints
         // "null" and exits 0 — expected-failure samples cannot be detected.
+        // (A top-level `[Int]` correctly fails to decode `[1, 2, "three"]`,
+        // but the driver still exits 0.)
         "boolean-subschema.schema",
+        "issue2680-top-level-array.schema",
         "nested-intersection-union.schema",
         "prefix-items.schema",
         "direct-union.schema",
@@ -1962,6 +1976,7 @@ export const PHPLanguage: Language = {
         "top-level-enum.schema",
         // The driver does not support top-level arrays.
         "union.schema",
+        "issue2680-top-level-array.schema",
     ],
     rendererOptions: {},
     quickTestRendererOptions: [],
@@ -2014,10 +2029,6 @@ export const TypeScriptZodLanguage: Language = {
         // input has none
         "github-events.json",
 
-        // Does not handle top level array
-        "bug863.json",
-
-        "no-classes.json",
         "00c36.json",
         "10be4.json",
         "050b0.json",
@@ -2138,8 +2149,9 @@ export const TypeScriptEffectSchemaLanguage: Language = {
         "list.json",
         "bug790.json",
 
-        // Does not handle top level array
+        // Does not handle top level arrays
         "bug863.json",
+        "issue2680-scalar-array.json",
 
         "no-classes.json",
         "00c36.json",
@@ -2197,6 +2209,7 @@ export const TypeScriptEffectSchemaLanguage: Language = {
         // The default-value fail sample also relies on required-property enforcement.
         "default-value.schema",
         "required-non-properties.schema",
+        "issue2680-top-level-array.schema",
     ],
     rendererOptions: {},
     quickTestRendererOptions: [],
@@ -2243,6 +2256,12 @@ export const ElixirLanguage: Language = {
     skipJSON: [
         // Some field names are too long to be expressed as atoms and some contain invalid characters.
         "blns-object.json",
+        // A top-level array of scalars generates a TopLevel that maps
+        // `TopLevelElement.from_map/1` over the elements, but no
+        // `TopLevelElement` module is emitted for a scalar element type, so
+        // the program raises UndefinedFunctionError at runtime. (A top-level
+        // array of objects works because that module is emitted.)
+        "issue2680-scalar-array.json",
     ],
     skipMiscJSON: false,
     skipSchema: [
@@ -2266,6 +2285,10 @@ export const ElixirLanguage: Language = {
 
         // The generated top-level type is not emitted as a TopLevel module the fixture can call.
         "recursive-union-flattening.schema",
+
+        // A top-level array is deserialized without enforcing its element
+        // type, so a mistyped element round-trips instead of failing.
+        ...skipsArrayElementValidation,
     ],
     rendererOptions: {},
     quickTestRendererOptions: [],

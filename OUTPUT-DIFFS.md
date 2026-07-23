@@ -4,14 +4,14 @@
 
 For every pull request, compare quicktype's generated source at the exact PR base commit with the generated source at GitHub's tested PR merge commit across all registered JSON, JSON Schema, and GraphQL input/target fixture combinations.
 
-Generated-output differences are informational: they must not fail CI. When differences exist, CI publishes a readable report and posts or updates one PR comment containing:
+Generated-output differences are informational: they must not fail CI. Each completed comparison for the PR's current head posts a new comment. When differences exist, CI publishes a readable report and the new comment contains:
 
 - the number of files that differ;
 - the modified, new, and deleted file counts;
 - the total changed lines, with insertion and deletion counts; and
 - a link to the report.
 
-When there are no differences, no report is published and the output-diff comment confirms that generated outputs are unchanged.
+When there are no differences, no report is published and a new output-diff comment confirms that generated outputs are unchanged.
 
 ## Deterministic snapshots
 
@@ -95,14 +95,14 @@ The workflow that executes PR code is unprivileged and never receives the hostr 
 A separate `workflow_run` workflow runs from the default branch. It:
 
 1. downloads the completed comparison artifact;
-2. validates the PR number and SHA fields;
+2. validates the PR number and SHA fields against the workflow event (or, for fork events that omit the PR number, a unique open PR with the same head repository and branch);
 3. renders the final HTML using trusted code from the default branch;
 4. publishes the HTML and patch using the `HOSTR_TOKEN` repository secret; and
-5. creates or updates one marker-tagged PR comment with either the summary and immutable link or a clean-comparison confirmation.
+5. creates a new marker-tagged PR comment with either the summary and immutable link or a clean-comparison confirmation.
 
-Before changing a comment, it verifies that the artifact's head SHA is still the PR's current head. A stale completed run may retain its immutable report, but it cannot replace the current PR comment.
+PRs may target the default branch or another branch, including stacked PRs. Before posting a comment, the publisher verifies that the artifact's head SHA is still the PR's current head. A stale completed run may retain its immutable report, but it cannot post a stale PR comment.
 
-For a current clean run, the publisher updates the marker-tagged comment to confirm that generated outputs are unchanged and publishes no report.
+For a current clean run, the publisher creates a new marker-tagged comment confirming that generated outputs are unchanged and publishes no report.
 
 ## Rollout and verification
 

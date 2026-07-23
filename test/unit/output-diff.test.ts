@@ -6,6 +6,7 @@ import { afterEach, describe, expect, test } from "vitest";
 import {
     compareOutputSnapshots,
     renderOutputDiffReport,
+    splitPatch,
 } from "../../script/output-diff";
 import {
     outputSnapshotCaseDirectory,
@@ -124,6 +125,35 @@ describe("generated-output comparison", () => {
             },
         ]);
         expect(patch).toContain("+three");
+    });
+
+    test("keeps patch sections aligned when one target name prefixes another", () => {
+        const root = temporaryDirectory();
+        const base = path.join(root, "base");
+        const head = path.join(root, "head");
+        const outputs = [
+            "typescript/test/inputs/json/priority/example.json/default/TopLevel.ts",
+            "typescript-effect-schema/test/inputs/json/priority/example.json/default/TopLevel.ts",
+            "typescript-zod/test/inputs/json/misc/0a91a.json/default/TopLevel.ts",
+        ];
+        for (const output of outputs) {
+            fs.mkdirSync(path.dirname(path.join(base, output)), {
+                recursive: true,
+            });
+            fs.mkdirSync(path.dirname(path.join(head, output)), {
+                recursive: true,
+            });
+            fs.writeFileSync(path.join(base, output), `old ${output}\n`);
+            fs.writeFileSync(path.join(head, output), `new ${output}\n`);
+        }
+
+        const { patch, result } = compareOutputSnapshots(base, head);
+        const sections = splitPatch(patch);
+
+        expect(result.files).toHaveLength(outputs.length);
+        result.files.forEach((file, index) => {
+            expect(sections[index]).toContain(`+new ${file.path}`);
+        });
     });
 
     test("a clean comparison has no patch or report", () => {
