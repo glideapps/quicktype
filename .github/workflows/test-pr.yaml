@@ -45,7 +45,7 @@ jobs:
                     - java,schema-java
                     - python,schema-python
                     - haskell,schema-haskell
-                    - csharp,schema-csharp,schema-json-csharp,graphql-csharp,csharp-SystemTextJson,schema-csharp-SystemTextJson
+                    - csharp,schema-csharp,csharp-records,schema-csharp-records,schema-json-csharp,graphql-csharp,csharp-SystemTextJson,schema-csharp-SystemTextJson
                     - json-ts-csharp
                     - dart,schema-dart
                     # - swift,schema-swift # pgp issue

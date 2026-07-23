@@ -12,7 +12,11 @@ import {
     splitIntoWords,
 } from "../../support/Strings.js";
 
-import { invalidSymbols, keywords } from "./constants.js";
+import {
+    forbiddenPropertyNames,
+    invalidSymbols,
+    keywords,
+} from "./constants.js";
 
 /**
  * Check if given parameter name should be wrapped in a backtick
@@ -34,6 +38,31 @@ export const backtickedName = (name: string): string => {
     return name.endsWith("_") || name.includes(" ") || shouldAddBacktick(name)
         ? `\`${name}\``
         : name;
+};
+
+export const propertyNameNeedsMapping = (jsonName: string): boolean => {
+    const isPlainIdentifier = /^[\p{L}_$][\p{L}\p{M}\p{N}_$]*$/u.test(jsonName);
+    const rendered = backtickedName(jsonName);
+    const canBeBackticked =
+        rendered.startsWith("`") &&
+        rendered.endsWith("`") &&
+        !Array.from(jsonName).some((character) => {
+            const codePoint = character.codePointAt(0) ?? 0;
+            return (
+                character === "`" ||
+                character === "\\" ||
+                codePoint <= 0x1f ||
+                (codePoint >= 0x7f && codePoint <= 0x9f) ||
+                codePoint === 0x2028 ||
+                codePoint === 0x2029
+            );
+        });
+
+    return (
+        jsonName === "_" ||
+        (!isPlainIdentifier && !canBeBackticked) ||
+        forbiddenPropertyNames.some((name) => name === jsonName)
+    );
 };
 
 export const wrapOption = (s: string, optional: boolean): string => {
@@ -108,6 +137,14 @@ export function enumCaseNameStyle(original: string): string {
 export const upperNamingFunction = funPrefixNamer("upper", (s) =>
     scalaNameStyle(true, s),
 );
-export const lowerNamingFunction = funPrefixNamer("lower", (s) =>
-    scalaNameStyle(false, s),
-);
+export const lowerNamingFunction = funPrefixNamer("lower", (s) => {
+    const styled = scalaNameStyle(false, s);
+    // uPickle's Scala 3 derivation can generate a synthetic accessor with
+    // the same name as fields that consist only of an underscore and digits.
+    if (styled === "") return "field";
+    if (/^_\d+$/.test(styled)) return `field${styled.slice(1)}`;
+    if (forbiddenPropertyNames.some((name) => name === styled)) {
+        return `${styled}Value`;
+    }
+    return styled;
+});
