@@ -1,0 +1,13 @@
+{
+    "type": "object",
+    "properties": {
+        "external_order_ref": {
+            "type": "string"
+        },
+        "info": {
+            "type": "object",
+            "$ref": "OrderCustomer.schema#",
+            "required": true
+        }
+    }
+}
