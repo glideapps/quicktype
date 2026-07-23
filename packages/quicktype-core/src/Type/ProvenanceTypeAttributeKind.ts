@@ -1,8 +1,8 @@
 import { setUnionManyInto } from "collection-utils";
 
-import { TypeAttributeKind } from "../attributes/TypeAttributes";
+import { TypeAttributeKind } from "../attributes/TypeAttributes.js";
 
-import type { TypeKind } from "./TransformedStringType";
+import type { TypeKind } from "./TransformedStringType.js";
 
 // FIXME: Don't infer provenance.  All original types should be present in
 // non-inferred form in the final graph.

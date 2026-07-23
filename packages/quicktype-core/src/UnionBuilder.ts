@@ -8,15 +8,15 @@ import {
 import {
     StringTypes,
     stringTypesTypeAttributeKind,
-} from "./attributes/StringTypes";
+} from "./attributes/StringTypes.js";
 import {
     type TypeAttributes,
     combineTypeAttributes,
     emptyTypeAttributes,
     increaseTypeAttributesDistance,
     makeTypeAttributesInferred,
-} from "./attributes/TypeAttributes";
-import { assert, assertNever, defined, panic } from "./support/Support";
+} from "./attributes/TypeAttributes.js";
+import { assert, assertNever, defined, panic } from "./support/Support.js";
 import {
     type PrimitiveStringTypeKind,
     type PrimitiveTypeKind,
@@ -24,10 +24,10 @@ import {
     type TypeKind,
     UnionType,
     isPrimitiveTypeKind,
-} from "./Type";
-import type { TypeBuilder } from "./Type/TypeBuilder";
-import type { TypeRef } from "./Type/TypeRef";
-import { matchTypeExhaustive } from "./Type/TypeUtils";
+} from "./Type/index.js";
+import type { TypeBuilder } from "./Type/TypeBuilder.js";
+import type { TypeRef } from "./Type/TypeRef.js";
+import { matchTypeExhaustive } from "./Type/TypeUtils.js";
 
 // FIXME: This interface is badly designed.  All the properties
 // should use immutable types, and getMemberKinds should be
@@ -78,6 +78,8 @@ function addAttributesToBuilder<T extends TypeKind>(
     if (arr === undefined) {
         arr = [];
         builder.set(kind, arr);
+    } else if (newAttributes.size === 0) {
+        return;
     }
 
     arr.push(newAttributes);
@@ -107,6 +109,8 @@ export class UnionAccumulator<TArray, TObject>
 
     private readonly _stringTypeAttributes: TypeAttributeMapBuilder<PrimitiveStringTypeKind> =
         new Map();
+
+    private readonly _stringCases = new Map<string, number>();
 
     public readonly arrayData: TArray[] = [];
 
@@ -153,7 +157,7 @@ export class UnionAccumulator<TArray, TObject>
         attributes: TypeAttributes,
         stringTypes: StringTypes | undefined,
     ): void {
-        let stringTypesAttributes: TypeAttributes | undefined = undefined;
+        let stringTypesAttributes: TypeAttributes | undefined;
         if (stringTypes === undefined) {
             stringTypes =
                 stringTypesTypeAttributeKind.tryGetInAttributes(attributes);
@@ -251,7 +255,14 @@ export class UnionAccumulator<TArray, TObject>
     }
 
     public addStringCases(cases: string[], attributes: TypeAttributes): void {
-        this.addFullStringType(attributes, StringTypes.fromCases(cases));
+        addAttributesToBuilder(
+            this._stringTypeAttributes,
+            "string",
+            attributes,
+        );
+        for (const s of new Set(cases)) {
+            this._stringCases.set(s, (this._stringCases.get(s) ?? 0) + 1);
+        }
     }
 
     public addStringCase(
@@ -259,7 +270,12 @@ export class UnionAccumulator<TArray, TObject>
         count: number,
         attributes: TypeAttributes,
     ): void {
-        this.addFullStringType(attributes, StringTypes.fromCase(s, count));
+        addAttributesToBuilder(
+            this._stringTypeAttributes,
+            "string",
+            attributes,
+        );
+        this._stringCases.set(s, (this._stringCases.get(s) ?? 0) + count);
     }
 
     public get enumCases(): ReadonlySet<string> {
@@ -272,9 +288,22 @@ export class UnionAccumulator<TArray, TObject>
             "We can't have both strings and enums in the same union",
         );
 
+        const stringTypeAttributes = buildTypeAttributeMap(
+            this._stringTypeAttributes,
+        );
+        if (this._stringCases.size > 0) {
+            setAttributes(
+                stringTypeAttributes,
+                "string",
+                stringTypesTypeAttributeKind.makeAttributes(
+                    new StringTypes(new Map(this._stringCases), new Set()),
+                ),
+            );
+        }
+
         const merged = mapMerge(
             buildTypeAttributeMap(this._nonStringTypeAttributes),
-            buildTypeAttributeMap(this._stringTypeAttributes),
+            stringTypeAttributes,
         );
 
         if (merged.size === 0) {

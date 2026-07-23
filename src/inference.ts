@@ -98,7 +98,7 @@ export function inferCLIOptions(
     const options: CLIOptions = {
         src: opts.src ?? [],
         srcUrls: opts.srcUrls,
-        srcLang: srcLang,
+        srcLang,
         lang: language.name as LanguageName,
         topLevel: opts.topLevel ?? inferTopLevel(opts),
         noRender: !!opts.noRender,

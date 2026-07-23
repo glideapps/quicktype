@@ -1,12 +1,13 @@
 export {
     type Options,
+    type QuicktypeTiming,
     getTargetLanguage,
     quicktypeMultiFile,
     quicktypeMultiFileSync,
     quicktype,
     combineRenderResults,
     type RunContext,
-} from "./Run";
+} from "./Run.js";
 export {
     inferenceFlags,
     inferenceFlagNames,
@@ -14,32 +15,44 @@ export {
     inferenceFlagsObject,
     type InferenceFlags,
     type InferenceFlagName,
-} from "./Inference";
-export { CompressedJSON, type Value } from "./input/CompressedJSON";
+} from "./Inference.js";
+export { CompressedJSON, type Value } from "./input/CompressedJSON.js";
+export {
+    INT8_RANGE,
+    INT16_RANGE,
+    INT32_RANGE,
+    INT64_RANGE,
+    type IntegerRange,
+    JS_SAFE_INTEGER_RANGE,
+    integerStringInRange,
+} from "./support/IntegerRange.js";
 export {
     type Input,
     InputData,
     JSONInput,
     type JSONSourceData,
     jsonInputForTargetLanguage,
-} from "./input/Inputs";
+} from "./input/Inputs.js";
 export {
     JSONSchemaInput,
     type JSONSchemaSourceData,
-} from "./input/JSONSchemaInput";
+} from "./input/JSONSchemaInput.js";
 export {
     Ref,
     type JSONSchemaType,
     type JSONSchemaAttributes,
-} from "./input/JSONSchemaInput";
-export type { RenderContext } from "./Renderer";
+} from "./input/JSONSchemaInput.js";
+export type { RenderContext } from "./Renderer.js";
 export {
     Option,
     type OptionDefinition,
     getOptionValues,
     type OptionValues,
-} from "./RendererOptions";
-export { TargetLanguage, type MultiFileRenderResult } from "./TargetLanguage";
+} from "./RendererOptions/index.js";
+export {
+    TargetLanguage,
+    type MultiFileRenderResult,
+} from "./TargetLanguage.js";
 
 export {
     type MultiWord,
@@ -49,19 +62,18 @@ export {
     modifySource,
     singleWord,
     parenIfNeeded,
-} from "./Source";
-export { Name, funPrefixNamer, Namer } from "./Naming";
-export { IssueAnnotationData } from "./Annotation";
+} from "./Source.js";
+export { Name, funPrefixNamer, Namer } from "./Naming.js";
+export { IssueAnnotationData } from "./Annotation.js";
 export {
     panic,
     assert,
     defined,
     assertNever,
-    parseJSON,
     checkStringMap,
     checkArray,
-    inflateBase64,
-} from "./support/Support";
+} from "./support/Support.js";
+export { parseJSON } from "./support/ParseJSON.js";
 export {
     splitIntoWords,
     capitalize,
@@ -70,9 +82,9 @@ export {
     allUpperWordStyle,
     legalizeCharacters,
     isLetterOrDigit,
-} from "./support/Strings";
-export { train as trainMarkovChain } from "./MarkovChain";
-export { QuickTypeError, messageError, messageAssert } from "./Messages";
+} from "./support/Strings.js";
+export { train as trainMarkovChain } from "./MarkovChain.js";
+export { QuickTypeError, messageError, messageAssert } from "./Messages.js";
 export {
     Type,
     PrimitiveType,
@@ -86,34 +98,34 @@ export {
     type TypeKind,
     type TransformedStringTypeKind,
     type PrimitiveStringTypeKind,
-} from "./Type";
-export { getStream } from "./input/io/get-stream";
+} from "./Type/index.js";
+export { getStream } from "./input/io/get-stream/index.js";
 
-export { readableFromFileOrURL, readFromFileOrURL } from "./input/io/NodeIO";
+export { readableFromFileOrURL, readFromFileOrURL } from "./input/io/NodeIO.js";
 
-export { FetchingJSONSchemaStore } from "./input/FetchingJSONSchemaStore";
-export { JSONSchemaStore, type JSONSchema } from "./input/JSONSchemaStore";
-export { sourcesFromPostmanCollection } from "./input/PostmanCollection";
-export { TypeBuilder } from "./Type/TypeBuilder";
-export type { StringTypeMapping } from "./Type/TypeBuilderUtils";
-export { type TypeRef, derefTypeRef } from "./Type/TypeRef";
+export { FetchingJSONSchemaStore } from "./input/FetchingJSONSchemaStore.js";
+export { JSONSchemaStore, type JSONSchema } from "./input/JSONSchemaStore.js";
+export { sourcesFromPostmanCollection } from "./input/PostmanCollection.js";
+export { TypeBuilder } from "./Type/TypeBuilder.js";
+export type { StringTypeMapping } from "./Type/TypeBuilderUtils.js";
+export { type TypeRef, derefTypeRef } from "./Type/TypeRef.js";
 export {
     TypeAttributeKind,
     type TypeAttributes,
     emptyTypeAttributes,
-} from "./attributes/TypeAttributes";
+} from "./attributes/TypeAttributes.js";
 export {
     TypeNames,
     makeNamesTypeAttributes,
     namesTypeAttributeKind,
-} from "./attributes/TypeNames";
-export { StringTypes } from "./attributes/StringTypes";
+} from "./attributes/TypeNames.js";
+export { StringTypes } from "./attributes/StringTypes.js";
 export {
     removeNullFromUnion,
     matchType,
     nullableFromUnion,
-} from "./Type/TypeUtils";
-export { ConvenienceRenderer } from "./ConvenienceRenderer";
-export { uriTypeAttributeKind } from "./attributes/URIAttributes";
+} from "./Type/TypeUtils.js";
+export { ConvenienceRenderer } from "./ConvenienceRenderer.js";
+export { uriTypeAttributeKind } from "./attributes/URIAttributes.js";
 
-export * from "./language";
+export * from "./language/index.js";

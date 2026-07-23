@@ -1,4 +1,4 @@
-import type { TransformedStringTypeKind } from "./Type";
+import type { TransformedStringTypeKind } from "./Type/index.js";
 
 export interface InferenceFlag {
     description: string;

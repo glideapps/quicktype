@@ -1,2 +1,2 @@
-export { HaskellTargetLanguage, haskellOptions } from "./language";
-export { HaskellRenderer } from "./HaskellRenderer";
+export { HaskellTargetLanguage, haskellOptions } from "./language.js";
+export { HaskellRenderer } from "./HaskellRenderer.js";

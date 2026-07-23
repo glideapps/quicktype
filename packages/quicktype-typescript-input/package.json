@@ -1,22 +1,27 @@
 {
     "name": "quicktype-typescript-input",
-    "version": "18.0.15",
+    "version": "24.0.0",
     "description": "Package for using TypeScript as an input language to quicktype",
     "license": "Apache-2.0",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "repository": "https://github.com/glideapps/quicktype",
+    "engines": {
+        "node": ">=20.0.0"
+    },
     "scripts": {
         "clean": "rm -rf dist node_modules *~",
-        "build": "tsc"
+        "build": "node ../../node_modules/typescript/bin/tsc"
     },
     "dependencies": {
         "quicktype-core": "file:../quicktype-core",
-        "typescript": "4.9.5",
-        "@mark.probst/typescript-json-schema": "0.55.0"
+        "typescript": "5.9.3",
+        "typescript-json-schema": "0.67.4"
     },
     "devDependencies": {
-        "@types/node": "~22.14.0"
+        "@types/node": "~20.19.0"
     },
-    "files": ["dist"]
+    "files": [
+        "dist"
+    ]
 }

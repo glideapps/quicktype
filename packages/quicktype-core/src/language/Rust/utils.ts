@@ -1,4 +1,4 @@
-import { funPrefixNamer } from "../../Naming";
+import { funPrefixNamer } from "../../Naming.js";
 import {
     allLowerWordStyle,
     combineWords,
@@ -12,7 +12,7 @@ import {
     legalizeCharacters,
     splitIntoWords,
     utf32ConcatMap,
-} from "../../support/Strings";
+} from "../../support/Strings.js";
 
 export enum Density {
     Normal = "Normal",
@@ -57,8 +57,8 @@ export const namingStyles = {
                 .map((p, i) =>
                     i === 0
                         ? p.toLowerCase()
-                        : p.substring(0, 1).toUpperCase() +
-                          p.substring(1).toLowerCase(),
+                        : p.slice(0, 1).toUpperCase() +
+                          p.slice(1).toLowerCase(),
                 )
                 .join(""),
     },
@@ -72,8 +72,7 @@ export const namingStyles = {
             parts
                 .map(
                     (p) =>
-                        p.substring(0, 1).toUpperCase() +
-                        p.substring(1).toLowerCase(),
+                        p.slice(0, 1).toUpperCase() + p.slice(1).toLowerCase(),
                 )
                 .join(""),
     },
@@ -103,6 +102,7 @@ export const namingStyles = {
     },
 } as const;
 
+// biome-ignore lint/suspicious/noUnusedExpressions: compile-time type check via satisfies
 namingStyles satisfies Record<string, NamingStyle>;
 
 export type NamingStyleKey = keyof typeof namingStyles;
@@ -154,9 +154,9 @@ export const camelNamingFunction = funPrefixNamer("camel", (original: string) =>
 
 const standardUnicodeRustEscape = (codePoint: number): string => {
     if (codePoint <= 0xffff) {
-        return "\\u{" + intToHex(codePoint, 4) + "}";
+        return `\\u{${intToHex(codePoint, 4)}}`;
     } else {
-        return "\\u{" + intToHex(codePoint, 6) + "}";
+        return `\\u{${intToHex(codePoint, 6)}}`;
     }
 };
 
@@ -171,7 +171,9 @@ export function getPreferredNamingStyle(
     const occurrences = Object.fromEntries(
         Object.keys(namingStyles).map((key) => [key, 0]),
     );
-    namingStyleOccurences.forEach((style) => ++occurrences[style]);
+    namingStyleOccurences.forEach((style) => {
+        ++occurrences[style];
+    });
     const max = Math.max(...Object.values(occurrences));
     const preferedStyles = Object.entries(occurrences).flatMap(
         ([style, num]) => (num === max ? [style] : []),

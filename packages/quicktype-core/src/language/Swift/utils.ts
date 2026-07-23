@@ -1,6 +1,6 @@
-import { DefaultDateTimeRecognizer } from "../../DateTime";
-import type { Name } from "../../Naming";
-import type { ForEachPosition } from "../../Renderer";
+import { DefaultDateTimeRecognizer } from "../../DateTime.js";
+import type { Name } from "../../Naming.js";
+import type { ForEachPosition } from "../../Renderer.js";
 import {
     addPrefixIfNecessary,
     allLowerWordStyle,
@@ -16,8 +16,8 @@ import {
     legalizeCharacters,
     splitIntoWords,
     utf32ConcatMap,
-} from "../../support/Strings";
-import type { ClassProperty } from "../../Type";
+} from "../../support/Strings.js";
+import type { ClassProperty } from "../../Type/index.js";
 
 export const MAX_SAMELINE_PROPERTIES = 4;
 
@@ -69,7 +69,7 @@ export function swiftNameStyle(
         legalizeName,
         isUpper ? firstUpperWordStyle : allLowerWordStyle,
         firstUpperWordStyle,
-        isUpper ? allUpperWordStyle : allLowerWordStyle,
+        isUpper ? acronymsStyle : allLowerWordStyle,
         acronymsStyle,
         "",
         isStartCharacter,
@@ -78,7 +78,7 @@ export function swiftNameStyle(
 }
 
 function unicodeEscape(codePoint: number): string {
-    return "\\u{" + intToHex(codePoint, 0) + "}";
+    return `\\u{${intToHex(codePoint, 0)}}`;
 }
 
 export const stringEscape = utf32ConcatMap(

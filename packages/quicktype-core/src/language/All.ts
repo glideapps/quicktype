@@ -1,36 +1,39 @@
-import type { TargetLanguage } from "../TargetLanguage";
+import type { TargetLanguage } from "../TargetLanguage.js";
 
-import { CJSONTargetLanguage } from "./CJSON";
-import { CPlusPlusTargetLanguage } from "./CPlusPlus";
-import { CrystalTargetLanguage } from "./Crystal";
-import { CSharpTargetLanguage } from "./CSharp";
-import { DartTargetLanguage } from "./Dart";
-import { ElixirTargetLanguage } from "./Elixir";
-import { ElmTargetLanguage } from "./Elm";
-import { GoTargetLanguage } from "./Golang";
-import { HaskellTargetLanguage } from "./Haskell";
-import { JavaTargetLanguage } from "./Java";
-import { JavaScriptTargetLanguage } from "./JavaScript";
-import { JavaScriptPropTypesTargetLanguage } from "./JavaScriptPropTypes";
-import { JSONSchemaTargetLanguage } from "./JSONSchema";
-import { KotlinTargetLanguage } from "./Kotlin";
-import { ObjectiveCTargetLanguage } from "./Objective-C";
-import { PhpTargetLanguage } from "./Php";
-import { PikeTargetLanguage } from "./Pike";
-import { PythonTargetLanguage } from "./Python";
-import { RubyTargetLanguage } from "./Ruby";
-import { RustTargetLanguage } from "./Rust";
-import { Scala3TargetLanguage } from "./Scala3";
-import { SmithyTargetLanguage } from "./Smithy4s";
-import { SwiftTargetLanguage } from "./Swift";
+import { CJSONTargetLanguage } from "./CJSON/index.js";
+import { CPlusPlusTargetLanguage } from "./CPlusPlus/index.js";
+import { CSharpTargetLanguage } from "./CSharp/index.js";
+import { CrystalTargetLanguage } from "./Crystal/index.js";
+import { DartTargetLanguage } from "./Dart/index.js";
+import { ElixirTargetLanguage } from "./Elixir/index.js";
+import { ElmTargetLanguage } from "./Elm/index.js";
+import { GoTargetLanguage } from "./Golang/index.js";
+import { HaskellTargetLanguage } from "./Haskell/index.js";
+import { JSONSchemaTargetLanguage } from "./JSONSchema/index.js";
+import { JavaTargetLanguage } from "./Java/index.js";
+import { JavaScriptTargetLanguage } from "./JavaScript/index.js";
+import { JavaScriptPropTypesTargetLanguage } from "./JavaScriptPropTypes/index.js";
+import { KotlinTargetLanguage } from "./Kotlin/index.js";
+import { ObjectiveCTargetLanguage } from "./Objective-C/index.js";
+import { PhpTargetLanguage } from "./Php/index.js";
+import { PikeTargetLanguage } from "./Pike/index.js";
+import { PythonTargetLanguage } from "./Python/index.js";
+import { RubyTargetLanguage } from "./Ruby/index.js";
+import { RustTargetLanguage } from "./Rust/index.js";
+import { Scala3TargetLanguage } from "./Scala3/index.js";
+import { SmithyTargetLanguage } from "./Smithy4s/index.js";
+import { SwiftTargetLanguage } from "./Swift/index.js";
+import { TypeScriptEffectSchemaTargetLanguage } from "./TypeScriptEffectSchema/index.js";
+import {
+    FlowTargetLanguage,
+    TypeScriptTargetLanguage,
+} from "./TypeScriptFlow/index.js";
+import { TypeScriptZodTargetLanguage } from "./TypeScriptZod/index.js";
 import type {
     LanguageDisplayName,
     LanguageName,
     LanguageNameMap,
-} from "./types";
-import { TypeScriptEffectSchemaTargetLanguage } from "./TypeScriptEffectSchema";
-import { FlowTargetLanguage, TypeScriptTargetLanguage } from "./TypeScriptFlow";
-import { TypeScriptZodTargetLanguage } from "./TypeScriptZod";
+} from "./types.js";
 
 export const all = [
     new CJSONTargetLanguage(),
@@ -62,8 +65,17 @@ export const all = [
     new TypeScriptZodTargetLanguage(),
 ] as const;
 
+// biome-ignore lint/suspicious/noUnusedExpressions: compile-time type check via satisfies
 all satisfies readonly TargetLanguage[];
 
+/**
+ * Returns the `TargetLanguage` registered under `name`.
+ *
+ * `name` must be one of the `LanguageName` literals, so plain strings from
+ * CLI arguments or configuration must first be narrowed with
+ * {@link isLanguageName}.  Throws if no language in `targetLanguages` is
+ * named `name`, which can only happen when passing a custom language list.
+ */
 export function languageNamed<Name extends LanguageName>(
     name: Name,
     targetLanguages: readonly TargetLanguage[] = all,
@@ -78,6 +90,21 @@ export function languageNamed<Name extends LanguageName>(
     return foundLanguage as LanguageNameMap[Name];
 }
 
+/**
+ * Type guard that narrows a runtime `string` to `LanguageName`.
+ *
+ * Use this to validate untrusted input — CLI arguments, configuration
+ * files, HTTP parameters — before passing it to `quicktype` or
+ * `jsonInputForTargetLanguage`, instead of casting with `as LanguageName`.
+ *
+ * @example
+ * const lang = process.argv[2];
+ * if (!isLanguageName(lang)) {
+ *     throw new Error(`Unknown language: ${lang}`);
+ * }
+ * // lang now has type LanguageName
+ * await quicktype({ inputData, lang });
+ */
 export function isLanguageName(maybeName: string): maybeName is LanguageName {
     if (
         all.some((lang) =>

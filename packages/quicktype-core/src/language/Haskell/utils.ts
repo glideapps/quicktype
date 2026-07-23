@@ -1,4 +1,4 @@
-import { funPrefixNamer } from "../../Naming";
+import { funPrefixNamer } from "../../Naming.js";
 import {
     allLowerWordStyle,
     allUpperWordStyle,
@@ -9,7 +9,7 @@ import {
     isLetterOrUnderscoreOrDigit,
     legalizeCharacters,
     splitIntoWords,
-} from "../../support/Strings";
+} from "../../support/Strings.js";
 
 const legalizeName = legalizeCharacters(
     (cp) => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp),

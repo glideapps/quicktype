@@ -20,6 +20,7 @@ export function jsonInputForTargetLanguage(
     _targetLanguage: string | TargetLanguage,
     languages?: TargetLanguage[],
     handleJSONRefs = false,
+    rendererOptions: Record<string, unknown> = {},
 ): JSONInput<Readable> {
     let targetLanguage: TargetLanguage;
     if (typeof _targetLanguage === "string") {
@@ -34,6 +35,7 @@ export function jsonInputForTargetLanguage(
     const compressedJSON = new CompressedJSONFromStream(
         targetLanguage.dateTimeRecognizer,
         handleJSONRefs,
+        targetLanguage.getSupportedIntegerRange(rendererOptions),
     );
     return new JSONInput(compressedJSON);
 }
@@ -43,6 +45,7 @@ export async function makeInputData(
     targetLanguage: TargetLanguage,
     additionalSchemaAddresses: readonly string[],
     handleJSONRefs: boolean,
+    rendererOptions: Record<string, unknown>,
     httpHeaders?: string[],
 ): Promise<InputData> {
     const inputData = new InputData();
@@ -62,6 +65,7 @@ export async function makeInputData(
                         targetLanguage,
                         undefined,
                         handleJSONRefs,
+                        rendererOptions,
                     ),
                 );
                 break;

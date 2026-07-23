@@ -1,5 +1,5 @@
 {
-    "extends": "@tsconfig/node18/tsconfig.json",
+    "extends": "@tsconfig/node20/tsconfig.json",
     "compilerOptions": {
         "lib": ["ES2022", "dom"],
         "allowJs": false,
@@ -10,7 +10,7 @@
         "noUnusedParameters": true,
         "noFallthroughCasesInSwitch": true,
         "outDir": "dist",
-        "baseUrl": "src",
+        "rootDir": "src",
         "resolveJsonModule": true
     },
     "include": ["src"]

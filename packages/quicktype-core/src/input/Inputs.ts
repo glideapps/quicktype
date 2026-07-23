@@ -7,22 +7,22 @@ import {
     withDefault,
 } from "collection-utils";
 
-import { descriptionTypeAttributeKind } from "../attributes/Description";
-import { makeNamesTypeAttributes } from "../attributes/TypeNames";
-import { languageNamed } from "../language/All";
-import { messageError } from "../Messages";
-import type { RunContext } from "../Run";
-import { defined, errorMessage, panic } from "../support/Support";
-import type { TargetLanguage } from "../TargetLanguage";
-import type { TypeBuilder } from "../Type/TypeBuilder";
-import type { LanguageName } from "../types";
+import { descriptionTypeAttributeKind } from "../attributes/Description.js";
+import { makeNamesTypeAttributes } from "../attributes/TypeNames.js";
+import { languageNamed } from "../language/All.js";
+import { messageError } from "../Messages.js";
+import type { RunContext } from "../Run.js";
+import { defined, errorMessage, panic } from "../support/Support.js";
+import type { TargetLanguage } from "../TargetLanguage.js";
+import type { TypeBuilder } from "../Type/TypeBuilder.js";
+import type { LanguageName } from "../types.js";
 
 import {
     type CompressedJSON,
     CompressedJSONFromString,
     type Value,
-} from "./CompressedJSON";
-import { TypeInference } from "./Inference";
+} from "./CompressedJSON.js";
+import { TypeInference } from "./Inference.js";
 
 export interface Input<T> {
     addSource: (source: T) => Promise<void>;
@@ -120,6 +120,10 @@ export class JSONInput<T> implements Input<JSONSourceData<T>> {
 
     public async addSource(source: JSONSourceData<T>): Promise<void> {
         const { name, samples, description } = source;
+        if (samples.length === 0) {
+            return messageError("DriverNoSamplesForTopLevel", { name });
+        }
+
         try {
             const values = await arrayMapSync(
                 samples,
@@ -133,6 +137,10 @@ export class JSONInput<T> implements Input<JSONSourceData<T>> {
 
     public addSourceSync(source: JSONSourceData<T>): void {
         const { name, samples, description } = source;
+        if (samples.length === 0) {
+            return messageError("DriverNoSamplesForTopLevel", { name });
+        }
+
         try {
             const values = samples.map((s) =>
                 this._compressedJSON.parseSync(s),
@@ -198,6 +206,7 @@ export function jsonInputForTargetLanguage(
     targetLanguage: LanguageName | TargetLanguage,
     languages?: TargetLanguage[],
     handleJSONRefs = false,
+    rendererOptions: Record<string, unknown> = {},
 ): JSONInput<string> {
     if (typeof targetLanguage === "string") {
         targetLanguage = defined(languageNamed(targetLanguage, languages));
@@ -206,13 +215,14 @@ export function jsonInputForTargetLanguage(
     const compressedJSON = new CompressedJSONFromString(
         targetLanguage.dateTimeRecognizer,
         handleJSONRefs,
+        targetLanguage.getSupportedIntegerRange(rendererOptions),
     );
     return new JSONInput(compressedJSON);
 }
 
 export class InputData {
     // FIXME: Make into a Map, indexed by kind.
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: heterogeneous by design
     private _inputs: Set<Input<any>> = new Set();
 
     public addInput<T>(input: Input<T>): void {

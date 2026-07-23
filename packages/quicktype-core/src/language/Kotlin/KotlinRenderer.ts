@@ -1,17 +1,19 @@
+import { iterableSome } from "collection-utils";
+
 import {
     anyTypeIssueAnnotation,
     nullTypeIssueAnnotation,
-} from "../../Annotation";
+} from "../../Annotation.js";
 import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
-} from "../../ConvenienceRenderer";
-import { type Name, type Namer, funPrefixNamer } from "../../Naming";
-import type { RenderContext } from "../../Renderer";
-import type { OptionValues } from "../../RendererOptions";
-import { type Sourcelike, maybeAnnotated } from "../../Source";
-import { acronymStyle } from "../../support/Acronyms";
-import type { TargetLanguage } from "../../TargetLanguage";
+} from "../../ConvenienceRenderer.js";
+import { type Name, type Namer, funPrefixNamer } from "../../Naming.js";
+import type { RenderContext } from "../../Renderer.js";
+import type { OptionValues } from "../../RendererOptions/index.js";
+import { type Sourcelike, maybeAnnotated } from "../../Source.js";
+import { acronymStyle } from "../../support/Acronyms.js";
+import type { TargetLanguage } from "../../TargetLanguage.js";
 import {
     ArrayType,
     type ClassProperty,
@@ -19,19 +21,19 @@ import {
     type EnumType,
     MapType,
     type ObjectType,
-    type PrimitiveType,
+    PrimitiveType,
     type Type,
     type UnionType,
-} from "../../Type";
+} from "../../Type/index.js";
 import {
     matchType,
     nullableFromUnion,
     removeNullFromUnion,
-} from "../../Type/TypeUtils";
+} from "../../Type/TypeUtils.js";
 
-import { keywords } from "./constants";
-import type { kotlinOptions } from "./language";
-import { kotlinNameStyle } from "./utils";
+import { keywords } from "./constants.js";
+import type { kotlinOptions } from "./language.js";
+import { kotlinNameStyle, stringEscape } from "./utils.js";
 
 export class KotlinRenderer extends ConvenienceRenderer {
     public constructor(
@@ -55,9 +57,9 @@ export class KotlinRenderer extends ConvenienceRenderer {
 
     protected forbiddenForEnumCases(
         _e: EnumType,
-        _enumName: Name,
+        enumName: Name,
     ): ForbiddenWordsInfo {
-        return { names: [], includeGlobalForbidden: true };
+        return { names: [enumName], includeGlobalForbidden: true };
     }
 
     protected forbiddenForUnionMembers(
@@ -158,6 +160,15 @@ export class KotlinRenderer extends ConvenienceRenderer {
         ];
     }
 
+    protected haveTransformedStringType(
+        kind: "date-time" | "date" | "time",
+    ): boolean {
+        return iterableSome(
+            this.typeGraph.allTypesUnordered(),
+            (t) => t instanceof PrimitiveType && t.kind === kind,
+        );
+    }
+
     protected kotlinType(
         t: Type,
         withIssues = false,
@@ -194,10 +205,31 @@ export class KotlinRenderer extends ConvenienceRenderer {
                     return [this.kotlinType(nullable, withIssues), optional];
                 return this.nameForNamedType(unionType);
             },
+            (transformedStringType) => {
+                if (transformedStringType.kind === "date-time") {
+                    return "OffsetDateTime";
+                }
+
+                if (transformedStringType.kind === "date") {
+                    return "LocalDate";
+                }
+
+                if (transformedStringType.kind === "time") {
+                    return "OffsetTime";
+                }
+
+                return "String";
+            },
         );
     }
 
     protected emitUsageHeader(): void {
+        // To be overridden
+    }
+
+    // Emitted between the usage header and the package declaration —
+    // the only place Kotlin allows `@file:`-targeted annotations.
+    protected emitFileAnnotations(): void {
         // To be overridden
     }
 
@@ -209,8 +241,30 @@ export class KotlinRenderer extends ConvenienceRenderer {
         }
 
         this.ensureBlankLine();
+        this.emitFileAnnotations();
         this.emitLine("package ", this._kotlinOptions.packageName);
         this.ensureBlankLine();
+
+        // Check if we need to import java.time classes
+        const usesDateTime = this.haveTransformedStringType("date-time");
+        const usesDate = this.haveTransformedStringType("date");
+        const usesTime = this.haveTransformedStringType("time");
+
+        if (usesDateTime) {
+            this.emitLine("import java.time.OffsetDateTime");
+        }
+
+        if (usesDate) {
+            this.emitLine("import java.time.LocalDate");
+        }
+
+        if (usesTime) {
+            this.emitLine("import java.time.OffsetTime");
+        }
+
+        if (usesDateTime || usesDate || usesTime) {
+            this.ensureBlankLine();
+        }
     }
 
     protected emitTopLevelPrimitive(t: PrimitiveType, name: Name): void {
@@ -277,7 +331,13 @@ export class KotlinRenderer extends ConvenienceRenderer {
                     meta.push(() => this.emitDescription(description));
                 }
 
-                this.renameAttribute(name, jsonName, !nullableOrOptional, meta);
+                this.renameAttribute(
+                    name,
+                    jsonName,
+                    !nullableOrOptional,
+                    meta,
+                    p,
+                );
 
                 if (meta.length > 0 && !first) {
                     this.ensureBlankLine();
@@ -323,6 +383,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
         _jsonName: string,
         _required: boolean,
         _meta: Array<() => void>,
+        _p: ClassProperty,
     ): void {
         // to be overridden
     }
@@ -330,10 +391,38 @@ export class KotlinRenderer extends ConvenienceRenderer {
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
 
-        this.emitBlock(["enum class ", enumName], () => {
+        this.emitBlock(["enum class ", enumName, "(val value: String)"], () => {
             let count = e.cases.size;
-            this.forEachEnumCase(e, "none", (name) => {
-                this.emitLine(name, --count === 0 ? "" : ",");
+            this.forEachEnumCase(e, "none", (name, json) => {
+                this.emitLine(
+                    name,
+                    `("${stringEscape(json)}")`,
+                    --count === 0 ? ";" : ",",
+                );
+            });
+            this.ensureBlankLine();
+            this.emitBlock("companion object", () => {
+                this.emitBlock(
+                    [
+                        "fun fromValue(value: String): ",
+                        enumName,
+                        " = when (value)",
+                    ],
+                    () => {
+                        const table: Sourcelike[][] = [];
+                        this.forEachEnumCase(e, "none", (name, json) => {
+                            table.push([
+                                [`"${stringEscape(json)}"`],
+                                [" -> ", name],
+                            ]);
+                        });
+                        table.push([
+                            ["else"],
+                            [" -> throw IllegalArgumentException()"],
+                        ]);
+                        this.emitTable(table);
+                    },
+                );
             });
         });
     }

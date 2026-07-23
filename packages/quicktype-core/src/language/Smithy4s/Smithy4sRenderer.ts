@@ -1,16 +1,22 @@
 import {
     anyTypeIssueAnnotation,
     nullTypeIssueAnnotation,
-} from "../../Annotation";
+} from "../../Annotation.js";
 import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
-} from "../../ConvenienceRenderer";
-import { type Name, type Namer, funPrefixNamer } from "../../Naming";
-import type { RenderContext } from "../../Renderer";
-import type { OptionValues } from "../../RendererOptions";
-import { type Sourcelike, maybeAnnotated } from "../../Source";
-import type { TargetLanguage } from "../../TargetLanguage";
+} from "../../ConvenienceRenderer.js";
+import { type Name, type Namer, funPrefixNamer } from "../../Naming.js";
+import type { RenderContext } from "../../Renderer.js";
+import type { OptionValues } from "../../RendererOptions/index.js";
+import { type Sourcelike, maybeAnnotated } from "../../Source.js";
+import type { TargetLanguage } from "../../TargetLanguage.js";
+import {
+    matchCompoundType,
+    matchType,
+    nullableFromUnion,
+    removeNullFromUnion,
+} from "../../Type/TypeUtils.js";
 import {
     ArrayType,
     type ClassProperty,
@@ -20,22 +26,16 @@ import {
     type ObjectType,
     type Type,
     type UnionType,
-} from "../../Type";
-import {
-    matchCompoundType,
-    matchType,
-    nullableFromUnion,
-    removeNullFromUnion,
-} from "../../Type/TypeUtils";
+} from "../../Type/index.js";
 
-import { keywords } from "./constants";
-import type { smithyOptions } from "./language";
+import { keywords } from "./constants.js";
+import type { smithyOptions } from "./language.js";
 import {
     lowerNamingFunction,
     scalaNameStyle,
     shouldAddBacktick,
     upperNamingFunction,
-} from "./utils";
+} from "./utils.js";
 
 export class Smithy4sRenderer extends ConvenienceRenderer {
     public constructor(
@@ -128,7 +128,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
     // because some renderers, such as kotlinx, can cope with `any`, while some get mad.
     protected arrayType(arrayType: ArrayType, _ = false): Sourcelike {
         // this.emitTopLevelArray(arrayType, new Name(arrayType.getCombinedName().toString() + "List"))
-        return arrayType.getCombinedName().toString() + "List";
+        return `${arrayType.getCombinedName().toString()}List`;
     }
 
     protected emitArrayType(_: ArrayType, smithyType: Sourcelike): void {
@@ -136,7 +136,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
     }
 
     protected mapType(mapType: MapType, _ = false): Sourcelike {
-        return mapType.getCombinedName().toString() + "Map";
+        return `${mapType.getCombinedName().toString()}Map`;
         // return [this.scalaType(mapType.values, withIssues), "Map"];
     }
 
@@ -278,7 +278,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
                 const nameNeedsBackticks =
                     jsonName.endsWith("_") || shouldAddBacktick(jsonName);
                 const nameWithBackticks = nameNeedsBackticks
-                    ? "`" + jsonName + "`"
+                    ? `\`${jsonName}\``
                     : jsonName;
                 this.emitLine(
                     p.isOptional ? "" : nullableOrOptional ? "" : "@required ",
@@ -302,9 +302,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
     protected emitClassDefinitionMethods(arrayTypes: ClassProperty[]): void {
         this.emitLine("}");
         arrayTypes.forEach((p) => {
-            function ignore<T extends Type>(_: T): void {
-                return;
-            }
+            function ignore<T extends Type>(_: T): void {}
 
             matchCompoundType(
                 p.type,
@@ -397,9 +395,7 @@ export class Smithy4sRenderer extends ConvenienceRenderer {
         this.ensureBlankLine();
 
         emitLater.forEach((p) => {
-            function ignore<T extends Type>(_: T): void {
-                return;
-            }
+            function ignore<T extends Type>(_: T): void {}
 
             matchCompoundType(
                 p,

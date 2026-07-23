@@ -6,15 +6,15 @@ import {
     setMap,
 } from "collection-utils";
 
-import { TypeNames, namesTypeAttributeKind } from "../attributes/TypeNames";
-import type { GraphRewriteBuilder } from "../GraphRewriting";
-import { assert, defined, panic } from "../support/Support";
+import { TypeNames, namesTypeAttributeKind } from "../attributes/TypeNames.js";
+import type { GraphRewriteBuilder } from "../GraphRewriting.js";
+import { assert, defined, panic } from "../support/Support.js";
 
-import { ClassType, IntersectionType, type Type, UnionType } from "./Type";
-import type { StringTypeMapping } from "./TypeBuilderUtils";
-import type { TypeGraph } from "./TypeGraph";
-import type { TypeRef } from "./TypeRef";
-import { combineTypeAttributesOfTypes } from "./TypeUtils";
+import { ClassType, IntersectionType, type Type, UnionType } from "./Type.js";
+import type { StringTypeMapping } from "./TypeBuilderUtils.js";
+import type { TypeGraph } from "./TypeGraph.js";
+import type { TypeRef } from "./TypeRef.js";
+import { combineTypeAttributesOfTypes } from "./TypeUtils.js";
 
 export function noneToAny(
     graph: TypeGraph,

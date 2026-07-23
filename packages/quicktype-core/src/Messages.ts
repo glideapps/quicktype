@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type { Ref } from "./input/JSONSchemaInput";
-import type { StringMap } from "./support/Support";
+import type { Ref } from "./input/JSONSchemaInput.js";
+import type { StringMap } from "./support/Support.js";
 
 export type ErrorProperties =
     | { kind: "InternalError"; properties: { message: string } }
@@ -14,7 +14,10 @@ export type ErrorProperties =
           kind: "MiscReadError";
           properties: { fileOrURL: string; message: string };
       }
-    | { kind: "MiscUnicodeHighSurrogateWithoutLowSurrogate"; properties: {} }
+    | {
+          kind: "MiscUnicodeHighSurrogateWithoutLowSurrogate";
+          properties: Record<string, never>;
+      }
     | {
           kind: "MiscInvalidMinMaxConstraint";
           properties: { max: number; min: number };
@@ -55,23 +58,23 @@ export type ErrorProperties =
       }
     | {
           kind: "SchemaRequiredMustBeStringOrStringArray";
-          properties: { actual: any; ref: Ref };
+          properties: { actual: unknown; ref: Ref };
       }
     | {
           kind: "SchemaRequiredElementMustBeString";
-          properties: { element: any; ref: Ref };
+          properties: { element: unknown; ref: Ref };
       }
     | {
           kind: "SchemaTypeMustBeStringOrStringArray";
-          properties: { actual: any };
+          properties: { actual: unknown };
       }
     | {
           kind: "SchemaTypeElementMustBeString";
-          properties: { element: any; ref: Ref };
+          properties: { element: unknown; ref: Ref };
       }
     | {
           kind: "SchemaArrayItemsMustBeStringOrArray";
-          properties: { actual: any; ref: Ref };
+          properties: { actual: unknown; ref: Ref };
       }
     | { kind: "SchemaIDMustHaveAddress"; properties: { id: string; ref: Ref } }
     | {
@@ -80,7 +83,7 @@ export type ErrorProperties =
       }
     | {
           kind: "SchemaSetOperationCasesIsNotArray";
-          properties: { cases: any; operation: string; ref: Ref };
+          properties: { cases: unknown; operation: string; ref: Ref };
       }
     | {
           kind: "SchemaMoreThanOneUnionMemberName";
@@ -98,38 +101,45 @@ export type ErrorProperties =
     | { kind: "SchemaFetchErrorAdditional"; properties: { address: string } }
 
     // GraphQL input
-    | { kind: "GraphQLNoQueriesDefined"; properties: {} }
+    | { kind: "GraphQLNoQueriesDefined"; properties: Record<string, never> }
 
     // Driver
     | { kind: "DriverUnknownSourceLanguage"; properties: { lang: string } }
     | { kind: "DriverUnknownOutputLanguage"; properties: { lang: string } }
     | { kind: "DriverMoreThanOneInputGiven"; properties: { topLevel: string } }
     | { kind: "DriverCannotInferNameForSchema"; properties: { uri: string } }
-    | { kind: "DriverNoGraphQLQueryGiven"; properties: {} }
+    | { kind: "DriverNoGraphQLQueryGiven"; properties: Record<string, never> }
     | { kind: "DriverNoGraphQLSchemaInDir"; properties: { dir: string } }
     | {
           kind: "DriverMoreThanOneGraphQLSchemaInDir";
           properties: { dir: string };
       }
-    | { kind: "DriverSourceLangMustBeGraphQL"; properties: {} }
-    | { kind: "DriverGraphQLSchemaNeeded"; properties: {} }
+    | {
+          kind: "DriverSourceLangMustBeGraphQL";
+          properties: Record<string, never>;
+      }
+    | { kind: "DriverGraphQLSchemaNeeded"; properties: Record<string, never> }
     | { kind: "DriverInputFileDoesNotExist"; properties: { filename: string } }
     | {
           kind: "DriverCannotMixJSONWithOtherSamples";
           properties: { dir: string };
       }
     | { kind: "DriverCannotMixNonJSONInputs"; properties: { dir: string } }
+    | { kind: "DriverNoSamplesForTopLevel"; properties: { name: string } }
     | { kind: "DriverUnknownDebugOption"; properties: { option: string } }
-    | { kind: "DriverNoLanguageOrExtension"; properties: {} }
+    | { kind: "DriverNoLanguageOrExtension"; properties: Record<string, never> }
     | { kind: "DriverCLIOptionParsingFailed"; properties: { message: string } }
 
     // IR
-    | { kind: "IRNoForwardDeclarableTypeInCycle"; properties: {} }
+    | {
+          kind: "IRNoForwardDeclarableTypeInCycle";
+          properties: Record<string, never>;
+      }
     | {
           kind: "IRTypeAttributesNotPropagated";
           properties: { count: number; indexes: number[] };
       }
-    | { kind: "IRNoEmptyUnions"; properties: {} }
+    | { kind: "IRNoEmptyUnions"; properties: Record<string, never> }
 
     // Rendering
     | {
@@ -230,6 +240,7 @@ const errorMessages: ErrorMessages = {
         "Cannot mix JSON samples with JSON Schems, GraphQL, or TypeScript in input subdirectory ${dir}",
     DriverCannotMixNonJSONInputs:
         "Cannot mix JSON Schema, GraphQL, and TypeScript in an input subdirectory ${dir}",
+    DriverNoSamplesForTopLevel: "No JSON samples given for top-level ${name}",
     DriverUnknownDebugOption: "Unknown debug option ${option}",
     DriverNoLanguageOrExtension:
         "Please specify a language (--lang) or an output file extension",
@@ -250,12 +261,10 @@ const errorMessages: ErrorMessages = {
     TypeScriptCompilerError: "TypeScript error: ${message}",
 };
 
-export type ErrorPropertiesForKind<K extends ErrorKinds = ErrorKinds> = Extract<
-    ErrorProperties,
-    { kind: K }
-> extends { properties: infer P }
-    ? P
-    : never;
+export type ErrorPropertiesForKind<K extends ErrorKinds = ErrorKinds> =
+    Extract<ErrorProperties, { kind: K }> extends { properties: infer P }
+        ? P
+        : never;
 
 export class QuickTypeError extends Error {
     public constructor(
@@ -290,7 +299,7 @@ export function messageError<Kind extends ErrorKinds>(
             valueString = value;
         }
 
-        userMessage = userMessage.replace("${" + name + "}", valueString);
+        userMessage = userMessage.replace(`\${${name}}`, valueString);
     }
 
     throw new QuickTypeError(

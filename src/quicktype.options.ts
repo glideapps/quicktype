@@ -64,11 +64,11 @@ export async function makeQuicktypeOptions(
     }
 
     let sources: TypeSource[] = [];
-    let leadingComments: string[] | undefined = undefined;
+    let leadingComments: string[] | undefined;
     let fixedTopLevels = false;
     switch (options.srcLang) {
         case "graphql": {
-            let schemaString: string | undefined = undefined;
+            let schemaString: string | undefined;
             let wroteSchemaToFile = false;
             if (options.graphqlIntrospect !== undefined) {
                 schemaString = await introspectServer(
@@ -101,7 +101,7 @@ export async function makeQuicktypeOptions(
 
             const gqlSources: GraphQLTypeSource[] = [];
             for (const queryFile of options.src) {
-                let schemaFileName: string | undefined = undefined;
+                let schemaFileName: string | undefined;
                 if (schemaString === undefined) {
                     schemaFileName = defined(options.graphqlSchema);
                     schemaString = fs.readFileSync(schemaFileName, "utf8");
@@ -141,12 +141,10 @@ export async function makeQuicktypeOptions(
                         collectionFile,
                     );
                 for (const src of postmanSources) {
-                    sources.push(
-                        Object.assign(
-                            { kind: "json" },
-                            stringSourceDataToStreamSourceData(src),
-                        ) as JSONTypeSource,
-                    );
+                    sources.push({
+                        kind: "json",
+                        ...stringSourceDataToStreamSourceData(src),
+                    } as JSONTypeSource);
                 }
 
                 if (postmanSources.length > 1) {
@@ -239,6 +237,7 @@ export async function makeQuicktypeOptions(
         lang,
         options.additionalSchema,
         quicktypeOptions.ignoreJsonRefs !== true,
+        options.rendererOptions,
         options.httpHeader,
     );
 

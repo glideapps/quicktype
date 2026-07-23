@@ -11,7 +11,7 @@ import {
     standardUnicodeHexEscape,
     utf16ConcatMap,
     utf16LegalizeCharacters,
-} from "../../support/Strings";
+} from "../../support/Strings.js";
 
 export const stringEscape = utf16ConcatMap(
     escapeNonPrintableMapper(isAscii, standardUnicodeHexEscape),

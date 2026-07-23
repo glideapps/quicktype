@@ -3,7 +3,7 @@ export {
     cSharpOptions,
     newtonsoftCSharpOptions,
     systemTextJsonCSharpOptions,
-} from "./language";
-export { CSharpRenderer } from "./CSharpRenderer";
-export { NewtonsoftCSharpRenderer } from "./NewtonSoftCSharpRenderer";
-export { SystemTextJsonCSharpRenderer } from "./SystemTextJsonCSharpRenderer";
+} from "./language.js";
+export { CSharpRenderer } from "./CSharpRenderer.js";
+export { NewtonsoftCSharpRenderer } from "./NewtonSoftCSharpRenderer.js";
+export { SystemTextJsonCSharpRenderer } from "./SystemTextJsonCSharpRenderer.js";

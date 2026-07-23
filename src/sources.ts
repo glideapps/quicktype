@@ -5,7 +5,6 @@ import * as path from "node:path";
 
 import * as _ from "lodash";
 import type { Readable } from "readable-stream";
-import _wordwrap from "wordwrap";
 
 import {
     assertNever,
@@ -56,8 +55,8 @@ async function samplesFromDirectory(
         // Each file is a (Name, JSON | URL)
         const sourcesInDir: TypeSource[] = [];
         const graphQLSources: GraphQLTypeSource[] = [];
-        let graphQLSchema: Readable | undefined = undefined;
-        let graphQLSchemaFileName: string | undefined = undefined;
+        let graphQLSchema: Readable | undefined;
+        let graphQLSchemaFileName: string | undefined;
         for (let file of files) {
             const name = typeNameFromFilename(file);
 
@@ -160,7 +159,7 @@ async function samplesFromDirectory(
             schemaSources.length + graphQLSources.length > 0
         ) {
             return messageError("DriverCannotMixJSONWithOtherSamples", {
-                dir: dir,
+                dir,
             });
         }
 
@@ -171,7 +170,7 @@ async function samplesFromDirectory(
             oneUnlessEmpty(schemaSources) + oneUnlessEmpty(graphQLSources) >
             1
         ) {
-            return messageError("DriverCannotMixNonJSONInputs", { dir: dir });
+            return messageError("DriverCannotMixNonJSONInputs", { dir });
         }
 
         if (jsonSamples.length > 0) {
@@ -273,8 +272,8 @@ export async function getSources(options: CLIOptions): Promise<TypeSource[]> {
 }
 
 export function makeTypeScriptSource(fileNames: string[]): SchemaTypeSource {
-    return Object.assign(
-        { kind: "schema" },
-        schemaForTypeScriptSources(fileNames),
-    ) as SchemaTypeSource;
+    return {
+        kind: "schema",
+        ...schemaForTypeScriptSources(fileNames),
+    } as SchemaTypeSource;
 }

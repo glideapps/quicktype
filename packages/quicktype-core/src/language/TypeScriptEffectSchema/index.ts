@@ -1,5 +1,5 @@
 export {
     TypeScriptEffectSchemaTargetLanguage,
     typeScriptEffectSchemaOptions,
-} from "./language";
-export { TypeScriptEffectSchemaRenderer } from "./TypeScriptEffectSchemaRenderer";
+} from "./language.js";
+export { TypeScriptEffectSchemaRenderer } from "./TypeScriptEffectSchemaRenderer.js";

@@ -19,7 +19,6 @@ export function makeOptionDefinitions(
             typeLabel: "FILE",
             description: "The output file. Determines --lang and --top-level.",
             kind: "cli",
-            defaultOption: true,
         },
         {
             name: "top-level",
@@ -60,6 +59,7 @@ export function makeOptionDefinitions(
             typeLabel: "FILE|URL|DIRECTORY",
             description: "The file, url, or data directory to type.",
             kind: "cli",
+            defaultOption: true,
         },
         {
             name: "src-urls",
@@ -74,8 +74,7 @@ export function makeOptionDefinitions(
             return {
                 name: dashedFromCamelCase(negatedInferenceFlagName(name)),
                 optionType: "boolean" as const,
-                // biome-ignore lint/style/useTemplate: <explanation>
-                description: flag.negationDescription + ".",
+                description: `${flag.negationDescription}.`,
                 kind: "cli" as const,
             };
         }).values(),

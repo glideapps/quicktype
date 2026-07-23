@@ -3,10 +3,10 @@ import * as path from "node:path";
 import * as _ from "lodash";
 import type { Readable } from "readable-stream";
 import stringToStream from "string-to-stream";
-import _wordwrap from "wordwrap";
 
 import {
     assert,
+    capitalize,
     splitIntoWords,
     type JSONSourceData,
     type TargetLanguage,
@@ -31,7 +31,7 @@ export function negatedInferenceFlagName(inputName: string): string {
         name = name.slice(prefix.length);
     }
 
-    return `no${_.capitalize(name)}`;
+    return `no${capitalize(name)}`;
 }
 
 export function dashedFromCamelCase(name: string): string {
@@ -42,7 +42,8 @@ export function dashedFromCamelCase(name: string): string {
 
 export function typeNameFromFilename(filename: string): string {
     const name = path.basename(filename);
-    return name.substring(0, name.lastIndexOf("."));
+    const extIndex = name.lastIndexOf(".");
+    return extIndex === -1 ? "" : name.slice(0, extIndex);
 }
 
 export function stringSourceDataToStreamSourceData(

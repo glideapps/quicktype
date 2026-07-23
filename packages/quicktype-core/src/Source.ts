@@ -1,9 +1,9 @@
 import { arrayIntercalate, iterableMax, withDefault } from "collection-utils";
 
-import type { AnnotationData } from "./Annotation";
-import { Name } from "./Naming";
-import { repeatString } from "./support/Strings";
-import { assert, assertNever, defined, panic } from "./support/Support";
+import type { AnnotationData } from "./Annotation.js";
+import { Name } from "./Naming.js";
+import { repeatString } from "./support/Strings.js";
+import { assert, assertNever, defined, panic } from "./support/Support.js";
 
 export type Source =
     | TextSource
@@ -66,7 +66,7 @@ export type Sourcelike = Source | string | Name | SourcelikeArray;
 export type SourcelikeArray = Sourcelike[];
 
 export function sourcelikeToSource(sl: Sourcelike): Source {
-    if (sl instanceof Array) {
+    if (Array.isArray(sl)) {
         return {
             kind: "sequence",
             sequence: sl.map(sourcelikeToSource),
@@ -224,7 +224,7 @@ export function serializeRenderResult(
                 }
 
                 break;
-            case "table":
+            case "table": {
                 const t = source.table;
                 const numRows = t.length;
                 if (numRows === 0) break;
@@ -270,7 +270,8 @@ export function serializeRenderResult(
                 }
 
                 break;
-            case "annotated":
+            }
+            case "annotated": {
                 const start = currentLocation();
                 serializeToStringArray(source.source);
                 const end = currentLocation();
@@ -279,12 +280,13 @@ export function serializeRenderResult(
                     span: { start, end },
                 });
                 break;
+            }
             case "name":
                 assert(names.has(source.named), "No name for Named");
                 indentIfNeeded();
                 currentLine.push(defined(names.get(source.named)));
                 break;
-            case "modified":
+            case "modified": {
                 indentIfNeeded();
                 const serialized = serializeRenderResult(
                     source.source,
@@ -297,6 +299,7 @@ export function serializeRenderResult(
                 );
                 currentLine.push(source.modifier(serialized[0]));
                 break;
+            }
             default:
                 return assertNever(source);
         }
@@ -304,7 +307,7 @@ export function serializeRenderResult(
 
     serializeToStringArray(rootSource);
     finishLine();
-    return { lines, annotations: annotations };
+    return { lines, annotations };
 }
 
 export interface MultiWord {

@@ -8,7 +8,7 @@ import {
     originalWord,
     splitIntoWords,
     utf16LegalizeCharacters,
-} from "../../support/Strings";
+} from "../../support/Strings.js";
 
 function isNormalizedStartCharacter3(utf16Unit: number): boolean {
     // FIXME: add Other_ID_Start - https://docs.python.org/3/reference/lexical_analysis.html#identifiers

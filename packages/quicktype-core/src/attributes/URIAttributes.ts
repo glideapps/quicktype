@@ -5,16 +5,16 @@ import type {
     JSONSchemaAttributes,
     JSONSchemaType,
     Ref,
-} from "../input/JSONSchemaInput";
-import type { JSONSchema } from "../input/JSONSchemaStore";
-import { checkArray, checkString } from "../support/Support";
-import type { Type } from "../Type/Type";
+} from "../input/JSONSchemaInput.js";
+import type { JSONSchema } from "../input/JSONSchemaStore.js";
+import { checkArray, checkString } from "../support/Support.js";
+import type { Type } from "../Type/Type.js";
 
 import {
     TypeAttributeKind,
     type TypeAttributes,
     emptyTypeAttributes,
-} from "./TypeAttributes";
+} from "./TypeAttributes.js";
 
 const protocolsSchemaProperty = "qt-uri-protocols";
 const extensionsSchemaProperty = "qt-uri-extensions";

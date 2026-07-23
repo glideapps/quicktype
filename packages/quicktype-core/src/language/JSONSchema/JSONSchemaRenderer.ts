@@ -1,22 +1,22 @@
 import { iterableFirst, mapFirst } from "collection-utils";
 
-import { addDescriptionToSchema } from "../../attributes/Description";
-import { ConvenienceRenderer } from "../../ConvenienceRenderer";
-import type { Name, Namer } from "../../Naming";
-import { defined, panic } from "../../support/Support";
+import { addDescriptionToSchema } from "../../attributes/Description.js";
+import { ConvenienceRenderer } from "../../ConvenienceRenderer.js";
+import type { Name, Namer } from "../../Naming.js";
+import { defined, panic } from "../../support/Support.js";
 import {
     type EnumType,
     type ObjectType,
     type Type,
     type UnionType,
     transformedStringTypeTargetTypeKindsMap,
-} from "../../Type";
-import { matchTypeExhaustive } from "../../Type/TypeUtils";
+} from "../../Type/index.js";
+import { matchTypeExhaustive } from "../../Type/TypeUtils.js";
 
-import { namingFunction } from "./utils";
+import { namingFunction } from "./utils.js";
 
 interface Schema {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: JSON Schema values are arbitrary JSON
     [name: string]: any;
 }
 
@@ -68,7 +68,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
     }
 
     private schemaForType(t: Type): Schema {
-        const schema = matchTypeExhaustive(
+        const schema = matchTypeExhaustive<Schema>(
             t,
             (_noneType) => {
                 return panic("none type should have been replaced");
@@ -142,6 +142,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
             }
 
             properties = props;
+            // biome-ignore lint/suspicious/useArraySortCompare: sorting strings; default UTF-16 order is intended
             required = req.sort();
         }
 
@@ -181,10 +182,10 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
             this.topLevels.size === 1
                 ? this.schemaForType(defined(mapFirst(this.topLevels)))
                 : {};
-        const schema = Object.assign(
-            { $schema: "http://json-schema.org/draft-06/schema#" },
-            topLevelType,
-        );
+        const schema: Schema = {
+            $schema: "http://json-schema.org/draft-06/schema#",
+            ...topLevelType,
+        };
         const definitions: { [name: string]: Schema } = {};
         this.forEachObject("none", (o: ObjectType, name: Name) => {
             const title = defined(this.names.get(name));

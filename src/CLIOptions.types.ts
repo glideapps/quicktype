@@ -2,7 +2,7 @@ import type { LanguageName, RendererOptions } from "quicktype-core";
 
 export interface CLIOptions<Lang extends LanguageName = LanguageName> {
     // We use this to access the inference flags
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: heterogeneous by design
     [option: string]: any;
     additionalSchema: string[];
     allPropertiesOptional: boolean;

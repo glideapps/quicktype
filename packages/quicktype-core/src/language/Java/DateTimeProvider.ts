@@ -1,6 +1,6 @@
-import type { Sourcelike } from "../../Source";
+import type { Sourcelike } from "../../Source.js";
 
-import type { JavaRenderer } from "./JavaRenderer";
+import type { JavaRenderer } from "./JavaRenderer.js";
 
 export abstract class JavaDateTimeProvider {
     public constructor(

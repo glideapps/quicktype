@@ -1,6 +1,6 @@
 import { exceptionToString } from "@glideapps/ts-necessities";
 import {
-    // biome-ignore lint/suspicious/noShadowRestrictedNames: <explanation>
+    // biome-ignore lint/suspicious/noShadowRestrictedNames: collection-utils exports this name
     hasOwnProperty,
 } from "collection-utils";
 import commandLineArgs from "command-line-args";
@@ -10,7 +10,6 @@ import {
     type OptionDefinition,
     type RendererOptions,
     type TargetLanguage,
-    assert,
     defaultTargetLanguages,
     getTargetLanguage,
     isLanguageName,
@@ -39,7 +38,6 @@ function parseOptions(
             { argv, partial },
         );
     } catch (e) {
-        assert(!partial, "Partial option parsing should not have failed");
         return messageError("DriverCLIOptionParsingFailed", {
             message: exceptionToString(e),
         });

@@ -1,16 +1,139 @@
 {
     "files": {
-        "ignore": [
-            "test/runs",
-            "test/inputs",
-            "dist",
-            "node_modules",
-            "packages/*/dist",
-            "packages/*/node_modules"
+        "includes": [
+            "**",
+            "!**/data",
+            "!**/test/runs",
+            "!**/test/inputs",
+            "!**/test/fixtures",
+            "!**/dist",
+            "!**/node_modules",
+            "!**/packages/**/*/dist",
+            "!**/packages/**/*/out",
+            "!**/packages/**/*/node_modules"
         ]
     },
     "formatter": {
         "indentStyle": "space",
         "indentWidth": 4
-    }
+    },
+    "linter": {
+        "enabled": true,
+        "rules": {
+            "preset": "recommended",
+            "correctness": {
+                "noUndeclaredDependencies": "on",
+                "noGlobalDirnameFilename": "on",
+                "noUnusedInstantiation": "on",
+                "useSingleJsDocAsterisk": "on",
+                "noConstructorReturn": "off",
+                "noVoidTypeReturn": "off"
+            },
+            "complexity": {
+                "noUselessReturn": "on",
+                "noDivRegex": "on",
+                "noUselessCatchBinding": "on",
+                "noUselessStringConcat": "on",
+                "useArrayFind": "on",
+                "useWhile": "on",
+                "noRedundantDefaultExport": "on",
+                "noExcessiveNestedTestSuites": "on"
+            },
+            "performance": {
+                "noDelete": "on"
+            },
+            "style": {
+                "noUselessElse": "off",
+                "useCollapsedElseIf": "on",
+                "useCollapsedIf": "on",
+                "useThrowNewError": "on",
+                "useConsistentBuiltinInstantiation": "on",
+                "useObjectSpread": "on",
+                "noYodaExpression": "on",
+                "noSubstr": "on",
+                "useExplicitLengthCheck": "on",
+                "noMultiAssign": "on",
+                "useConsistentObjectDefinitions": "on",
+                "useForOf": "on",
+                "noUnusedTemplateLiteral": "on",
+                "useShorthandAssign": "on",
+                "noInferrableTypes": "on",
+                "useDefaultParameterLast": "on",
+                "useConsistentMethodSignatures": "on",
+                "useUnifiedTypeSignatures": "on",
+                "noNamespace": "on",
+                "useNodeAssertStrict": "on",
+                "useReadonlyClassProperties": "on",
+                "useThrowOnlyError": "on",
+                "useTrimStartEnd": "on",
+                "useSymbolDescription": "on",
+                "useSpreadOverApply": "on",
+                "useNumberNamespace": "on",
+                "useGlobalThis": "on",
+                "useErrorCause": "on"
+            },
+            "suspicious": {
+                "noTemplateCurlyInString": "off",
+                "noEqualsToNull": "on",
+                "noUnusedExpressions": "on",
+                "useArraySortCompare": "on",
+                "noMisplacedAssertion": "on",
+                "noShadow": "on",
+                "noConstantBinaryExpressions": "on",
+                "noVar": "on",
+                "noFocusedTests": "on",
+                "noSkippedTests": "on",
+                "noReturnAssign": "on",
+                "noDuplicateTestHooks": "on",
+                "noDeprecatedImports": "on",
+                "noDuplicateDependencies": "on",
+                "useErrorMessage": "on",
+                "noEmptySource": "on"
+            }
+        }
+    },
+    "assist": { "actions": { "source": { "organizeImports": "off" } } },
+    "overrides": [
+        {
+            "includes": [
+                "packages/quicktype-core/src/language/CJSON/CJSONRenderer.ts"
+            ],
+            "linter": {
+                "rules": {
+                    "suspicious": {
+                        "noShadow": "off"
+                    }
+                }
+            }
+        },
+        {
+            "includes": ["test/release-version.ts"],
+            "linter": {
+                "rules": {
+                    "suspicious": {
+                        "noMisplacedAssertion": "off"
+                    }
+                }
+            }
+        },
+        {
+            "includes": ["packages/quicktype-core/src/**"],
+            "linter": {
+                "rules": {
+                    "style": {
+                        "useNodejsImportProtocol": "off"
+                    }
+                }
+            }
+        },
+        {
+            "includes": ["**/tsconfig.json", "**/tsconfig.*.json"],
+            "json": {
+                "parser": {
+                    "allowComments": true,
+                    "allowTrailingCommas": true
+                }
+            }
+        }
+    ]
 }

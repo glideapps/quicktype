@@ -1,24 +1,33 @@
 {
     "name": "quicktype",
-    "version": "23.3.0",
+    "version": "24.0.0",
     "license": "Apache-2.0",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "repository": "https://github.com/glideapps/quicktype",
     "engines": {
-        "node": ">=18.12.0"
+        "node": ">=20.19.0"
     },
     "scripts": {
         "pub": "script/publish-npm.sh && script/publish-vscode.sh",
         "pub:npm": "script/publish-npm.sh",
         "pub:vscode": "script/publish-vscode.sh",
-        "build": "npm run clean && npm run build --workspaces --if-present && tsc",
-        "test": "script/test",
+        "build": "npm run clean && npm run build --workspaces --if-present && node node_modules/typescript/bin/tsc",
+        "test": "npm run test:unit && npm run test:fixtures",
+        "test:unit": "vitest run",
+        "test:unit:watch": "vitest",
+        "test:fixtures": "script/test",
+        "test:output-snapshot": "script/output-snapshot",
+        "test:release": "tsx test/release-version.ts",
+        "benchmark:markov-chain": "npm run build --workspace quicktype-core && node --expose-gc script/benchmark-markov-chain.mjs",
+        "benchmark:markov-chain:fidelity": "npm run build --workspace quicktype-core && node script/benchmark-markov-fidelity.mjs",
+        "benchmark:pipeline": "npm run build --workspace quicktype-core && node script/benchmark-pipeline.mjs",
+        "benchmark:canonical": "npm run build --workspace quicktype-core && node --expose-gc --max-old-space-size=8192 script/benchmark-pipeline.mjs --canonical --iterations 3",
         "start": "script/watch",
         "clean": "rm -rf dist *~ packages/*/{dist,out}",
         "debug": "node --inspect-brk --max-old-space-size=4096 ./dist/index.js",
-        "lint": "eslint src/** packages/*/src/**",
-        "lint:fix": "eslint --fix src/** packages/*/src/**"
+        "lint": "biome check .",
+        "lint:fix": "biome check --write ."
     },
     "workspaces": [
         "./packages/quicktype-core",
@@ -28,43 +37,40 @@
     ],
     "dependencies": {
         "@glideapps/ts-necessities": "^2.2.3",
+        "@types/readable-stream": "4.0.10",
         "chalk": "^4.1.2",
         "collection-utils": "^1.0.1",
         "command-line-args": "^5.2.1",
         "command-line-usage": "^7.0.1",
-        "cross-fetch": "^4.0.0",
-        "graphql": "^0.11.7",
-        "lodash": "^4.17.21",
+        "graphql": "^16.11.0",
+        "lodash": "^4.18.1",
         "moment": "^2.30.1",
-        "quicktype-core": "20.0.12",
-        "quicktype-graphql-input": "20.0.2",
-        "quicktype-typescript-input": "20.0.2",
+        "quicktype-core": "24.0.0",
+        "quicktype-graphql-input": "24.0.0",
+        "quicktype-typescript-input": "24.0.0",
         "readable-stream": "^4.5.2",
-        "stream-json": "1.8.0",
+        "stream-json": "3.5.0",
         "string-to-stream": "^3.0.1",
-        "typescript": "~5.8.3"
+        "wordwrap": "^1.0.0"
     },
     "devDependencies": {
-        "@biomejs/biome": "^1.9.4",
-        "@tsconfig/node18": "^1.0.1",
+        "@biomejs/biome": "^2.5.3",
+        "@tsconfig/node20": "^20.1.6",
         "@types/command-line-args": "^5.2.0",
         "@types/command-line-usage": "^5.0.4",
-        "@types/graphql": "^0.11.7",
         "@types/lodash": "^4.17.0",
+        "@types/node": "~20.19.0",
         "@types/semver": "^7.5.0",
-        "@types/shelljs": "^0.8.15",
-        "@types/stream-json": "^1.7.3",
-        "@types/urijs": "^1.19.25",
+        "@types/shelljs": "^0.10.0",
+        "@types/urijs": "^1.19.26",
         "@types/wordwrap": "^1.0.3",
-        "@typescript-eslint/eslint-plugin": "^6.3.0",
-        "@typescript-eslint/parser": "^6.3.0",
-        "ajv": "^5.5.2",
+        "ajv": "^8.20.0",
+        "ajv-formats": "^3.0.1",
         "deep-equal": "^2.2.3",
-        "esbuild": "^0.20.2",
-        "exit": "^0.1.2",
+        "esbuild": "^0.28.1",
         "promise-timeout": "^1.3.0",
         "semver": "^7.5.4",
-        "shelljs": "^0.8.5",
+        "shelljs": "^0.10.0",
         "tree-sitter-c": "^0.24.1",
         "tree-sitter-c-sharp": "^0.23.5",
         "tree-sitter-cpp": "^0.23.4",
@@ -77,17 +83,14 @@
         "tree-sitter-rust": "^0.24.0",
         "tree-sitter-scala": "^0.24.0",
         "tree-sitter-typescript": "^0.23.2",
-        "ts-node": "^10.9.2",
+        "tsx": "^4.23.1",
+        "typescript": "~7.0.2",
+        "vitest": "^4.1.10",
         "watch": "^1.0.2",
         "web-tree-sitter": "^0.26.9"
     },
-    "overrides": {
-        "cross-fetch": {
-            "node-fetch": {
-                "whatwg-url": "^13.0.0"
-            }
-        }
-    },
-    "files": ["dist"],
+    "files": [
+        "dist"
+    ],
     "bin": "dist/index.js"
 }
