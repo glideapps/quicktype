@@ -678,6 +678,9 @@ export const CJSONLanguage: Language = {
         /* Required properties absent are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
         "intersection.schema",
         "required.schema",
+        /* Root-level array of a required-property object: the missing
+         * required property in the fail sample is likewise not rejected. */
+        "root-array-ref.schema",
         // The default-value fail sample also relies on required-property
         // enforcement, which cJSON does not do.
         "default-value.schema",
@@ -1002,6 +1005,9 @@ export const SwiftLanguage: Language = {
         // This works on macOS, but on Linux one of the failure test cases doesn't fail
         ...skipsUntypedUnions,
         "required.schema",
+        // Same Linux-only issue: the missing-required-property fail sample
+        // for the root-level array is not rejected.
+        "root-array-ref.schema",
         // The default-value fail sample also relies on required-property enforcement.
         "default-value.schema",
         "multi-type-enum.schema",
@@ -1706,6 +1712,7 @@ export const KotlinXLanguage: Language = {
         // Top-level array: `typealias TopLevel = JsonArray<T>` doesn't
         // compile (documented TODO in KotlinXRenderer.ts).
         "union.schema",
+        "root-array-ref.schema",
         "issue2680-top-level-array.schema",
     ],
     skipMiscJSON: false,
@@ -1918,6 +1925,9 @@ export const HaskellLanguage: Language = {
         "keyword-unions.schema",
         "optional-any.schema",
         "required.schema",
+        // The driver encodes the Maybe result, so the missing-required-property
+        // fail sample for the root-level array decodes to null and exits 0.
+        "root-array-ref.schema",
         // The default-value fail sample also relies on required-property enforcement.
         "default-value.schema",
         "required-non-properties.schema",
@@ -1976,6 +1986,7 @@ export const PHPLanguage: Language = {
         "top-level-enum.schema",
         // The driver does not support top-level arrays.
         "union.schema",
+        "root-array-ref.schema",
         "issue2680-top-level-array.schema",
     ],
     rendererOptions: {},
@@ -2090,6 +2101,11 @@ export const TypeScriptZodLanguage: Language = {
         // The default-value fail sample also relies on required-property enforcement.
         "default-value.schema",
         "required-non-properties.schema",
+        // Top-level array whose item type has its own title: the zod
+        // renderer emits only the item schema (SomeObjectSchema) and no
+        // TopLevelElementSchema, so the driver can't locate a top-level
+        // schema to parse the array against.
+        "root-array-ref.schema",
     ],
     rendererOptions: {},
     quickTestRendererOptions: [],
@@ -2273,6 +2289,9 @@ export const ElixirLanguage: Language = {
         // Struct keys cannot be enforced at runtime in Elixir and their values will just be set to null.
         "strict-optional.schema",
         "required.schema",
+        // Same reason: the missing-required-property fail sample for the
+        // root-level array is not rejected.
+        "root-array-ref.schema",
         // The default-value fail sample also relies on required-property enforcement.
         "default-value.schema",
         "boolean-subschema.schema",

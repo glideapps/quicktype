@@ -8,7 +8,12 @@ import {
     singleWord,
 } from "../../Source.js";
 import { camelCase, utf16StringEscape } from "../../support/Strings.js";
-import type { ArrayType, ClassType, EnumType, Type } from "../../Type/index.js";
+import {
+    ArrayType,
+    type ClassType,
+    type EnumType,
+    type Type,
+} from "../../Type/index.js";
 import { isNamedType } from "../../Type/TypeUtils.js";
 import type { JavaScriptTypeAnnotations } from "../JavaScript/index.js";
 
@@ -31,6 +36,14 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
         return ["Array", "Date"];
+    }
+
+    protected namedTypeToNameForTopLevel(type: Type): Type | undefined {
+        if (type instanceof ArrayType) {
+            return undefined;
+        }
+
+        return super.namedTypeToNameForTopLevel(type);
     }
 
     // An array with `minItems` >= 1 becomes a tuple that spells out the
@@ -81,7 +94,7 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
             "(json: ",
             jsonType,
             "): ",
-            this.sourceFor(t).source,
+            t instanceof ArrayType ? name : this.sourceFor(t).source,
         ];
     }
 
@@ -93,7 +106,7 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
             "public static ",
             camelCaseName,
             "ToJson(value: ",
-            this.sourceFor(t).source,
+            t instanceof ArrayType ? name : this.sourceFor(t).source,
             "): ",
             returnType,
         ];
@@ -116,7 +129,7 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
             (_t, name) => {
                 topLevelNames.push(", ", name);
             },
-            isNamedType,
+            (t) => isNamedType(t) || t instanceof ArrayType,
         );
         this.emitLine(
             "//   import { Convert",
@@ -125,6 +138,26 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
             this.usageModuleName(givenOutputFilename),
             '";',
         );
+    }
+
+    protected emitTypes(): void {
+        super.emitTypes();
+
+        this.forEachTopLevel("none", (t, name) => {
+            if (!(t instanceof ArrayType)) {
+                return;
+            }
+
+            this.ensureBlankLine();
+            this.emitDescription(this.descriptionForType(t));
+            this.emitLine(
+                "export type ",
+                name,
+                " = ",
+                this.sourceFor(t).source,
+                ";",
+            );
+        });
     }
 
     protected emitEnum(e: EnumType, enumName: Name): void {
