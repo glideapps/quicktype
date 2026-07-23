@@ -28,6 +28,19 @@ export const invalidSymbols = [
     ".",
 ] as const;
 
+export const forbiddenPropertyNames = [
+    "clone",
+    "equals",
+    "finalize",
+    "getClass",
+    "hashCode",
+    "notify",
+    "notifyAll",
+    "synchronized",
+    "toString",
+    "wait",
+] as const;
+
 export const keywords = [
     "abstract",
     "case",
@@ -85,4 +98,19 @@ export const keywords = [
     "List",
     "Map",
     "Enum",
+] as const;
+
+export const forbiddenTypeNames = [
+    "None",
+    "Null",
+    "Option",
+    "Seq",
+    "Json",
+    "Encoder",
+    "Decoder",
+    "Codec",
+    "NullValue",
+    "OptionPickler",
+    "JsonExt",
+    "Exception",
 ] as const;
