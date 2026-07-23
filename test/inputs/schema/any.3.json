@@ -1,1 +1,6 @@
-{ "foo": { "bar": "abc" } }
+{
+  "foo": { "bar": "abc" },
+  "values": {
+    "string": "text"
+  }
+}
