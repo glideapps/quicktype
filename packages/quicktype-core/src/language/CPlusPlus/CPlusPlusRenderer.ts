@@ -13,6 +13,7 @@ import {
     nullTypeIssueAnnotation,
 } from "../../Annotation.js";
 import { getAccessorName } from "../../attributes/AccessorNames.js";
+import { defaultValueForType } from "../../attributes/DefaultValue.js";
 import { enumCaseValues } from "../../attributes/EnumValues.js";
 import {
     ConvenienceRenderer,
@@ -917,8 +918,41 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         return this._memberNameStyle(`${jsonName}Constraint`);
     }
 
-    protected emitMember(cppType: Sourcelike, name: Sourcelike): void {
-        this.emitLine(cppType, " ", name, ";");
+    protected emitMember(
+        cppType: Sourcelike,
+        name: Sourcelike,
+        defaultValue?: Sourcelike,
+    ): void {
+        this.emitLine(
+            cppType,
+            " ",
+            name,
+            defaultValue === undefined ? [] : [" = ", defaultValue],
+            ";",
+        );
+    }
+
+    protected cppDefaultValue(t: Type): Sourcelike | undefined {
+        const defaultValue = defaultValueForType(t);
+        if (defaultValue === undefined) return undefined;
+
+        if (defaultValue === null) return "nullptr";
+        if (typeof defaultValue === "boolean") {
+            return defaultValue ? "true" : "false";
+        }
+
+        if (typeof defaultValue === "number") return String(defaultValue);
+        if (t instanceof EnumType && t.cases.has(defaultValue)) {
+            return [
+                this.nameForNamedType(t),
+                "::",
+                this.nameForEnumCase(t, defaultValue),
+            ];
+        }
+
+        return this._stringType.createStringLiteral([
+            stringEscape(defaultValue),
+        ]);
     }
 
     protected emitClassMembers(
@@ -942,6 +976,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         property.isOptional,
                     ),
                     name,
+                    this.cppDefaultValue(property.type),
                 );
                 if (constraints?.has(jsonName)) {
                     /** FIXME!!! NameStyle will/can collide with other Names */
@@ -972,6 +1007,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         property.isOptional,
                     ),
                     name,
+                    this.cppDefaultValue(property.type),
                 );
             } else {
                 const [getterName, mutableGetterName, setterName] = defined(
