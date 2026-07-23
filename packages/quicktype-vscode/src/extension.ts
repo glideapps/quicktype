@@ -1,6 +1,4 @@
-
-
-import * as path from "path";
+import * as path from "node:path";
 
 import {
     InputData,
@@ -17,7 +15,7 @@ import {
     quicktype,
 } from "quicktype-core";
 import { schemaForTypeScriptSources } from "quicktype-typescript-input";
-// eslint-disable-next-line import/no-unresolved
+// biome-ignore lint/correctness/noUndeclaredDependencies: the vscode module is provided by the VS Code host at runtime
 import * as vscode from "vscode";
 
 const configurationSection = "quicktype";
@@ -37,7 +35,7 @@ enum Command {
 function jsonIsValid(json: string): boolean {
     try {
         JSON.parse(json);
-    } catch (e) {
+    } catch {
         return false;
     }
 
@@ -54,7 +52,6 @@ async function promptTopLevelName(): Promise<{
 
     return {
         cancelled: topLevelName === undefined,
-        // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
         name: topLevelName || "TopLevel",
     };
 }
@@ -109,19 +106,12 @@ async function runQuicktype(
         vscode.workspace.getConfiguration(configurationSection);
     const justTypes = forceJustTypes || configuration.justTypes;
 
-    const rendererOptions: RendererOptions = {};
-    if (justTypes) {
-        // FIXME: The target language should have a property to return these options.
-        if (lang.name === "csharp") {
-            (rendererOptions as RendererOptions<"csharp">).features =
-                "just-types";
-        } else if (lang.name === "kotlin") {
-            (rendererOptions as RendererOptions<"kotlin">).framework =
-                "just-types";
-        } else if ("just-types" in rendererOptions) {
-            rendererOptions["just-types"] = "true";
-        }
-    }
+    // Not every language has a `just-types` option — JSON Schema, for
+    // example, has no serialization helpers to leave out.
+    const rendererOptions: RendererOptions =
+        justTypes && lang.optionDefinitions.some((o) => o.name === "just-types")
+            ? ({ "just-types": "true" } as RendererOptions)
+            : {};
 
     const inputData = new InputData();
     switch (kind) {
@@ -151,7 +141,7 @@ async function runQuicktype(
     }
 
     const options: Partial<Options> = {
-        lang: lang,
+        lang,
         inputData,
         rendererOptions,
         indentation,
@@ -190,7 +180,7 @@ async function pasteAsTypes(
     let content: string;
     try {
         content = await vscode.env.clipboard.readText();
-    } catch (e) {
+    } catch {
         return await vscode.window.showErrorMessage(
             "Could not get clipboard contents",
         );
@@ -314,7 +304,7 @@ class CodeProvider implements vscode.TextDocumentContentProvider {
     public get documentName(): string {
         const basename = path.basename(this.document.fileName);
         const extIndex = basename.lastIndexOf(".");
-        return extIndex === -1 ? basename : basename.substring(0, extIndex);
+        return extIndex === -1 ? basename : basename.slice(0, extIndex);
     }
 
     public setDocument(document: vscode.TextDocument): void {
@@ -374,7 +364,7 @@ class CodeProvider implements vscode.TextDocumentContentProvider {
             if (!this._isOpen) return;
 
             this._onDidChange.fire(this.uri);
-        } catch (e) {
+        } catch {
             // FIXME
         }
     }
@@ -415,12 +405,12 @@ function deduceTargetLanguage(): TargetLanguage {
 
 const lastTargetLanguageUsedKey = "lastTargetLanguageUsed";
 
-let extensionContext: vscode.ExtensionContext | undefined = undefined;
+let extensionContext: vscode.ExtensionContext | undefined;
 
 const codeProviders: Map<string, CodeProvider> = new Map();
 
-let lastCodeProvider: CodeProvider | undefined = undefined;
-let explicitlySetTargetLanguage: TargetLanguage | undefined = undefined;
+let lastCodeProvider: CodeProvider | undefined;
+let explicitlySetTargetLanguage: TargetLanguage | undefined;
 
 async function openQuicktype(
     inputKind: InputKind,
@@ -550,6 +540,4 @@ export async function activate(
     }
 }
 
-export function deactivate(): void {
-    return;
-}
+export function deactivate(): void {}

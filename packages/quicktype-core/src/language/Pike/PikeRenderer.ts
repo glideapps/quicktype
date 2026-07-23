@@ -1,16 +1,16 @@
 import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
-} from "../../ConvenienceRenderer";
-import type { Name, Namer } from "../../Naming";
+} from "../../ConvenienceRenderer.js";
+import type { Name, Namer } from "../../Naming.js";
 import {
     type MultiWord,
     type Sourcelike,
     multiWord,
     parenIfNeeded,
     singleWord,
-} from "../../Source";
-import { stringEscape } from "../../support/Strings";
+} from "../../Source.js";
+import { stringEscape } from "../../support/Strings.js";
 import {
     ArrayType,
     type ClassType,
@@ -19,19 +19,19 @@ import {
     PrimitiveType,
     type Type,
     type UnionType,
-} from "../../Type";
+} from "../../Type/index.js";
 import {
     matchType,
     nullableFromUnion,
     removeNullFromUnion,
-} from "../../Type/TypeUtils";
+} from "../../Type/TypeUtils.js";
 
-import { keywords } from "./constants";
+import { keywords } from "./constants.js";
 import {
     enumNamingFunction,
     namedTypeNamingFunction,
     namingFunction,
-} from "./utils";
+} from "./utils.js";
 
 export class PikeRenderer extends ConvenienceRenderer {
     protected emitSourceStructure(): void {

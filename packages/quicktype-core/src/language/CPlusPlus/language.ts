@@ -1,18 +1,19 @@
-import type { RenderContext } from "../../Renderer";
+import type { RenderContext } from "../../Renderer.js";
 import {
     BooleanOption,
     EnumOption,
     StringOption,
     getOptionValues,
-} from "../../RendererOptions";
-import { TargetLanguage } from "../../TargetLanguage";
-import type { LanguageName, RendererOptions } from "../../types";
+} from "../../RendererOptions/index.js";
+import { TargetLanguage } from "../../TargetLanguage.js";
+import type { LanguageName, RendererOptions } from "../../types.js";
 
-import { CPlusPlusRenderer } from "./CPlusPlusRenderer";
+import { CPlusPlusRenderer } from "./CPlusPlusRenderer.js";
 
 // FIXME: share with CJSON
 const namingStyles = {
     "pascal-case": "pascal",
+    "original-case": "original",
     "underscore-case": "underscore",
     "camel-case": "camel",
     "upper-underscore-case": "upper-underscore",
@@ -103,7 +104,7 @@ export const cPlusPlusOptions = {
     boost: new BooleanOption(
         "boost",
         "Require a dependency on boost. Without boost, C++17 is required",
-        true,
+        false,
     ),
     hideNullOptional: new BooleanOption(
         "hide-null-optional",

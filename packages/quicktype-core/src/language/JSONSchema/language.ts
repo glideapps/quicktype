@@ -1,12 +1,13 @@
-import type { RenderContext } from "../../Renderer";
-import { TargetLanguage } from "../../TargetLanguage";
+import type { RenderContext } from "../../Renderer.js";
+import type { IntegerRange } from "../../support/IntegerRange.js";
+import { TargetLanguage } from "../../TargetLanguage.js";
 import {
     type StringTypeMapping,
     getNoStringTypeMapping,
-} from "../../Type/TypeBuilderUtils";
-import type { LanguageName, RendererOptions } from "../../types";
+} from "../../Type/TypeBuilderUtils.js";
+import type { LanguageName, RendererOptions } from "../../types.js";
 
-import { JSONSchemaRenderer } from "./JSONSchemaRenderer";
+import { JSONSchemaRenderer } from "./JSONSchemaRenderer.js";
 
 export const JSONSchemaLanguageConfig = {
     displayName: "JSON Schema",
@@ -17,11 +18,16 @@ export const JSONSchemaLanguageConfig = {
 export class JSONSchemaTargetLanguage extends TargetLanguage<
     typeof JSONSchemaLanguageConfig
 > {
+    // JSON Schema's `integer` type is unbounded.
+    public getSupportedIntegerRange(): IntegerRange | null {
+        return null;
+    }
+
     public constructor() {
         super(JSONSchemaLanguageConfig);
     }
 
-    public getOptions(): {} {
+    public getOptions(): Record<string, never> {
         return {};
     }
 

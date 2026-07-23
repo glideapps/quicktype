@@ -1,6 +1,6 @@
-import type { OptionMap } from "../RendererOptions";
+import type { OptionMap } from "../RendererOptions/index.js";
 
-import type { LanguageName, LanguageNameMap } from "./types";
+import type { LanguageName, LanguageNameMap } from "./types.js";
 
 export type LanguageRawOptionMap = Readonly<{
     [Lang in keyof LanguageNameMap]: ReturnType<

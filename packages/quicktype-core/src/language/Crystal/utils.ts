@@ -1,4 +1,4 @@
-import { funPrefixNamer } from "../../Naming";
+import { funPrefixNamer } from "../../Naming.js";
 import {
     allLowerWordStyle,
     combineWords,
@@ -12,7 +12,7 @@ import {
     legalizeCharacters,
     splitIntoWords,
     utf32ConcatMap,
-} from "../../support/Strings";
+} from "../../support/Strings.js";
 
 function isAsciiLetterOrUnderscoreOrDigit(codePoint: number): boolean {
     if (!isAscii(codePoint)) {
@@ -61,9 +61,9 @@ export const camelNamingFunction = funPrefixNamer("camel", (original: string) =>
 
 function standardUnicodeCrystalEscape(codePoint: number): string {
     if (codePoint <= 0xffff) {
-        return "\\u{" + intToHex(codePoint, 4) + "}";
+        return `\\u{${intToHex(codePoint, 4)}}`;
     } else {
-        return "\\u{" + intToHex(codePoint, 6) + "}";
+        return `\\u{${intToHex(codePoint, 6)}}`;
     }
 }
 

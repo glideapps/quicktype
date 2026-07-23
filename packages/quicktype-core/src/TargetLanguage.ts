@@ -1,16 +1,23 @@
 import { mapMap } from "collection-utils";
 
-import { ConvenienceRenderer } from "./ConvenienceRenderer";
-import { type DateTimeRecognizer, DefaultDateTimeRecognizer } from "./DateTime";
-import type { RenderContext, Renderer } from "./Renderer";
-import type { Option, OptionDefinition } from "./RendererOptions";
-import { type SerializedRenderResult, serializeRenderResult } from "./Source";
-import type { Comment } from "./support/Comments";
-import { defined } from "./support/Support";
-import type { Type } from "./Type/Type";
-import type { StringTypeMapping } from "./Type/TypeBuilderUtils";
-import type { TypeGraph } from "./Type/TypeGraph";
-import type { LanguageName, RendererOptions } from "./types";
+import { ConvenienceRenderer } from "./ConvenienceRenderer.js";
+import {
+    type DateTimeRecognizer,
+    DefaultDateTimeRecognizer,
+} from "./DateTime.js";
+import type { RenderContext, Renderer } from "./Renderer.js";
+import type { Option, OptionDefinition } from "./RendererOptions/index.js";
+import {
+    type SerializedRenderResult,
+    serializeRenderResult,
+} from "./Source.js";
+import type { Type } from "./Type/Type.js";
+import type { StringTypeMapping } from "./Type/TypeBuilderUtils.js";
+import type { TypeGraph } from "./Type/TypeGraph.js";
+import type { Comment } from "./support/Comments.js";
+import { INT64_RANGE, type IntegerRange } from "./support/IntegerRange.js";
+import { defined } from "./support/Support.js";
+import type { LanguageName, RendererOptions } from "./types.js";
 
 export type MultiFileRenderResult = ReadonlyMap<string, SerializedRenderResult>;
 
@@ -114,5 +121,23 @@ export abstract class TargetLanguage<
 
     public get dateTimeRecognizer(): DateTimeRecognizer {
         return new DefaultDateTimeRecognizer();
+    }
+
+    /**
+     * The inclusive range of whole numbers in input JSON that quicktype
+     * infers as the language's integer type.  Whole numbers outside the
+     * range are inferred as `double` instead, because the integer type
+     * could not round-trip them (issue #2931).  `null` means the
+     * language's integers are arbitrary-precision.
+     *
+     * Languages whose integer width depends on a renderer option (like
+     * cJSON's `integer-size`) override this and inspect
+     * `rendererOptions`, which are the same untyped option values that
+     * `makeRenderer` receives.
+     */
+    public getSupportedIntegerRange(
+        _rendererOptions: Record<string, unknown> = {},
+    ): IntegerRange | null {
+        return INT64_RANGE;
     }
 }

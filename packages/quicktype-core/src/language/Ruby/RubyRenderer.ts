@@ -1,13 +1,13 @@
 import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
-} from "../../ConvenienceRenderer";
-import { type Name, Namer } from "../../Naming";
-import type { RenderContext } from "../../Renderer";
-import type { OptionValues } from "../../RendererOptions";
-import { type Sourcelike, modifySource } from "../../Source";
-import { snakeCase } from "../../support/Strings";
-import type { TargetLanguage } from "../../TargetLanguage";
+} from "../../ConvenienceRenderer.js";
+import { type Name, Namer } from "../../Naming.js";
+import type { RenderContext } from "../../Renderer.js";
+import type { OptionValues } from "../../RendererOptions/index.js";
+import { type Sourcelike, modifySource } from "../../Source.js";
+import { snakeCase } from "../../support/Strings.js";
+import type { TargetLanguage } from "../../TargetLanguage.js";
 import {
     ArrayType,
     type ClassProperty,
@@ -16,22 +16,22 @@ import {
     MapType,
     type Type,
     type UnionType,
-} from "../../Type";
+} from "../../Type/index.js";
 import {
     matchType,
     nullableFromUnion,
     removeNullFromUnion,
-} from "../../Type/TypeUtils";
+} from "../../Type/TypeUtils.js";
 
-import { globals } from "./constants";
-import type { rubyOptions } from "./language";
+import { globals } from "./constants.js";
+import type { rubyOptions } from "./language.js";
 import {
     Strictness,
     forbiddenForObjectProperties,
     memberNameStyle,
     simpleNameStyle,
     stringEscape,
-} from "./utils";
+} from "./utils.js";
 
 export class RubyRenderer extends ConvenienceRenderer {
     public constructor(
@@ -51,7 +51,7 @@ export class RubyRenderer extends ConvenienceRenderer {
     }
 
     protected canBeForwardDeclared(t: Type): boolean {
-        return "class" === t.kind;
+        return t.kind === "class";
     }
 
     protected forbiddenNamesForGlobalNamespace(): readonly string[] {
@@ -732,13 +732,11 @@ export class RubyRenderer extends ConvenienceRenderer {
                         ["Integer"],
                         [` = ${this._options.strictness}Integer`],
                     ]);
-                if (this._options.strictness === Strictness.Strict) {
-                    if (has.nil)
-                        declarations.push([
-                            ["Nil"],
-                            [` = ${this._options.strictness}Nil`],
-                        ]);
-                }
+                if (this._options.strictness === Strictness.Strict && has.nil)
+                    declarations.push([
+                        ["Nil"],
+                        [` = ${this._options.strictness}Nil`],
+                    ]);
 
                 if (has.bool)
                     declarations.push([
@@ -863,7 +861,7 @@ export class RubyRenderer extends ConvenienceRenderer {
 
                         // The json gem defines to_json on maps and primitives, so we only need to supply
                         // it for arrays.
-                        const needsToJsonDefined = "array" === topLevel.kind;
+                        const needsToJsonDefined = topLevel.kind === "array";
 
                         const classDeclaration = (): void => {
                             this.emitBlock(["class ", name], () => {

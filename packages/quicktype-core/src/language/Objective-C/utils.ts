@@ -8,9 +8,9 @@ import {
     firstUpperWordStyle,
     splitIntoWords,
     utf16LegalizeCharacters,
-} from "../../support/Strings";
+} from "../../support/Strings.js";
 
-import { booleanPrefixes, forbiddenPropertyNames } from "./constants";
+import { booleanPrefixes, forbiddenPropertyNames } from "./constants.js";
 
 export const DEFAULT_CLASS_PREFIX = "QT";
 

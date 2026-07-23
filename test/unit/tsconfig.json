@@ -1,0 +1,11 @@
+{
+    "extends": "@tsconfig/node20/tsconfig.json",
+    "compilerOptions": {
+        "lib": ["ES2022"],
+        "module": "esnext",
+        "moduleResolution": "bundler",
+        "strict": true,
+        "noEmit": true
+    },
+    "include": ["./**/*.test-d.ts"]
+}

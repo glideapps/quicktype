@@ -1,2 +1,2 @@
-export { PikeTargetLanguage, pikeOptions } from "./language";
-export { PikeRenderer } from "./PikeRenderer";
+export { PikeTargetLanguage, pikeOptions } from "./language.js";
+export { PikeRenderer } from "./PikeRenderer.js";

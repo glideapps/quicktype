@@ -1,37 +1,37 @@
 import {
     anyTypeIssueAnnotation,
     nullTypeIssueAnnotation,
-} from "../../Annotation";
-import { ConvenienceRenderer } from "../../ConvenienceRenderer";
-import { DependencyName, type Name, type Namer } from "../../Naming";
-import type { RenderContext } from "../../Renderer";
-import type { OptionValues } from "../../RendererOptions";
-import { type Sourcelike, maybeAnnotated, modifySource } from "../../Source";
-import { camelCase, stringEscape } from "../../support/Strings";
-import { assert, defined } from "../../support/Support";
-import type { TargetLanguage } from "../../TargetLanguage";
+} from "../../Annotation.js";
+import { ConvenienceRenderer } from "../../ConvenienceRenderer.js";
+import { DependencyName, type Name, type Namer } from "../../Naming.js";
+import type { RenderContext } from "../../Renderer.js";
+import type { OptionValues } from "../../RendererOptions/index.js";
+import { type Sourcelike, maybeAnnotated, modifySource } from "../../Source.js";
+import { camelCase, stringEscape } from "../../support/Strings.js";
+import { assert, defined } from "../../support/Support.js";
+import type { TargetLanguage } from "../../TargetLanguage.js";
 import {
     type ClassProperty,
-    type ClassType,
+    ClassType,
     type EnumType,
     type Type,
     type TypeKind,
     UnionType,
-} from "../../Type";
+} from "../../Type/index.js";
 import {
     matchType,
     nullableFromUnion,
     removeNullFromUnion,
-} from "../../Type/TypeUtils";
+} from "../../Type/TypeUtils.js";
 
-import type { goOptions } from "./language";
+import type { goOptions } from "./language.js";
 import {
     canOmitEmpty,
     compoundTypeKinds,
     isValueType,
     namingFunction,
     primitiveValueTypeKinds,
-} from "./utils";
+} from "./utils.js";
 
 export class GoRenderer extends ConvenienceRenderer {
     private readonly _topLevelUnmarshalNames = new Map<Name, Name>();
@@ -194,28 +194,37 @@ export class GoRenderer extends ConvenienceRenderer {
         if (
             this._options.multiFileOutput &&
             this._options.justTypes === false &&
-            this._options.justTypesAndPackage === false &&
-            this.leadingComments === undefined
+            this._options.justTypesAndPackage === false
         ) {
-            this.emitLineOnce(
-                "// Code generated from JSON Schema using quicktype. DO NOT EDIT.",
-            );
-            this.emitLineOnce(
-                "// To parse and unparse this JSON data, add this code to your project and do:",
-            );
-            this.emitLineOnce("//");
-            const ref = modifySource(camelCase, name);
-            this.emitLineOnce(
-                "//    ",
-                ref,
-                ", err := ",
-                defined(this._topLevelUnmarshalNames.get(name)),
-                "(bytes)",
-            );
-            this.emitLineOnce("//    bytes, err = ", ref, ".Marshal()");
+            if (this.leadingComments !== undefined) {
+                this.emitComments(this.leadingComments);
+            } else {
+                this.emitLineOnce(
+                    "// Code generated from JSON Schema using quicktype. DO NOT EDIT.",
+                );
+                this.emitLineOnce(
+                    "// To parse and unparse this JSON data, add this code to your project and do:",
+                );
+                this.emitLineOnce("//");
+                const ref = modifySource(camelCase, name);
+                this.emitLineOnce(
+                    "//    ",
+                    ref,
+                    ", err := ",
+                    defined(this._topLevelUnmarshalNames.get(name)),
+                    "(bytes)",
+                );
+                this.emitLineOnce("//    bytes, err = ", ref, ".Marshal()");
+            }
         }
 
-        this.emitPackageDefinitons(true);
+        const imports =
+            t instanceof ClassType
+                ? this.collectClassImports(t)
+                : t instanceof UnionType
+                  ? this.collectUnionImports(t)
+                  : undefined;
+        this.emitPackageDefinitons(true, imports);
 
         const unmarshalName = defined(this._topLevelUnmarshalNames.get(name));
         if (this.namedTypeToNameForTopLevel(t) === undefined) {
@@ -249,14 +258,16 @@ export class GoRenderer extends ConvenienceRenderer {
             const description = this.descriptionForClassProperty(c, jsonName);
             const docStrings =
                 description !== undefined && description.length > 0
-                    ? description.map((d) => "// " + d)
+                    ? description.map((d) => `// ${d}`)
                     : [];
             const goType = this.propertyGoType(p);
             const omitEmpty = canOmitEmpty(p, this._options.omitEmpty)
                 ? ",omitempty"
                 : [];
 
-            docStrings.forEach((doc) => columns.push([doc]));
+            docStrings.forEach((doc) => {
+                columns.push([doc]);
+            });
             const tags = this._options.fieldTags
                 .split(",")
                 .map((tag) => `${tag}:"${stringEscape(jsonName)}${omitEmpty}"`)
@@ -303,7 +314,7 @@ export class GoRenderer extends ConvenienceRenderer {
 
     private emitUnion(u: UnionType, unionName: Name): void {
         this.startFile(unionName);
-        this.emitPackageDefinitons(false);
+        this.emitPackageDefinitons(false, this.collectUnionImports(u));
         const [hasNull, nonNulls] = removeNullFromUnion(u);
         const isNullableArg = hasNull !== null ? "true" : "false";
 
@@ -608,10 +619,13 @@ func marshalUnion(pi *int64, pf *float64, pb *bool, ps *string, haveArray bool, 
         if (
             this._options.multiFileOutput === false &&
             this._options.justTypes === false &&
-            this._options.justTypesAndPackage === false &&
-            this.leadingComments === undefined
+            this._options.justTypesAndPackage === false
         ) {
-            this.emitSingleFileHeaderComments();
+            if (this.leadingComments !== undefined) {
+                this.emitComments(this.leadingComments);
+            } else {
+                this.emitSingleFileHeaderComments();
+            }
             this.emitPackageDefinitons(false, this.collectAllImports());
         }
 

@@ -6,7 +6,6 @@ import {
     type OptionDefinition,
     type RendererOptions,
     type TargetLanguage,
-    assert,
     defaultTargetLanguages,
     getTargetLanguage,
     isLanguageName,
@@ -35,7 +34,6 @@ export function parseOptions(
             partial,
         });
     } catch (e) {
-        assert(!partial, "Partial option parsing should not have failed");
         return messageError("DriverCLIOptionParsingFailed", {
             message: exceptionToString(e),
         });

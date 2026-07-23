@@ -3,11 +3,13 @@
 import chalk from "chalk";
 import getUsage from "command-line-usage";
 import * as _ from "lodash";
-import _wordwrap from "wordwrap";
 
 import type { OptionDefinition, TargetLanguage } from "quicktype-core";
 
-import { makeOptionDefinitions } from "./optionDefinitions";
+import {
+    makeOptionDefinitions,
+    transformDefinition,
+} from "./optionDefinitions";
 import { makeLangTypeLabel } from "./utils";
 
 interface ColumnDefinition {
@@ -67,7 +69,8 @@ function makeSectionsBeforeRenderers(
         },
         {
             header: "Options",
-            optionList: makeOptionDefinitions(targetLanguages),
+            optionList:
+                makeOptionDefinitions(targetLanguages).map(transformDefinition),
             hide: ["no-render", "build-markov-chain"],
             tableOptions: tableOptionsForOptions,
         },
@@ -112,7 +115,7 @@ export function displayUsage(targetLanguages: readonly TargetLanguage[]): void {
 
         rendererSections.push({
             header: `Options for ${language.displayName}`,
-            optionList: definitions,
+            optionList: definitions.map(transformDefinition),
             tableOptions: tableOptionsForOptions,
         });
     }

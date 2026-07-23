@@ -1,25 +1,25 @@
 import { iterableEvery, iterableFirst, setMap } from "collection-utils";
 
-import type { GraphRewriteBuilder } from "../GraphRewriting";
-import { type MarkovChain, evaluate, load } from "../MarkovChain";
-import { defined, panic } from "../support/Support";
+import type { GraphRewriteBuilder } from "../GraphRewriting.js";
+import { type MarkovChain, evaluate, load } from "../MarkovChain.js";
+import { defined, panic } from "../support/Support.js";
 import {
     type ClassProperty,
     ClassType,
     type Type,
     isPrimitiveStringTypeKind,
     setOperationCasesEqual,
-} from "../Type";
-import type { StringTypeMapping } from "../Type/TypeBuilderUtils";
-import type { TypeGraph } from "../Type/TypeGraph";
-import type { TypeRef } from "../Type/TypeRef";
-import { removeNullFromType } from "../Type/TypeUtils";
-import { unifyTypes, unionBuilderForUnification } from "../UnifyClasses";
+} from "../Type/index.js";
+import type { StringTypeMapping } from "../Type/TypeBuilderUtils.js";
+import type { TypeGraph } from "../Type/TypeGraph.js";
+import type { TypeRef } from "../Type/TypeRef.js";
+import { removeNullFromType } from "../Type/TypeUtils.js";
+import { unifyTypes, unionBuilderForUnification } from "../UnifyClasses.js";
 
 const mapSizeThreshold = 20;
 const stringMapSizeThreshold = 50;
 
-let markovChain: MarkovChain | undefined = undefined;
+let markovChain: MarkovChain | undefined;
 
 function nameProbability(name: string): number {
     if (markovChain === undefined) {
@@ -61,7 +61,7 @@ function shouldBeMap(
         const names = Array.from(properties.keys());
         const probabilities = names.map(nameProbability);
         const product = probabilities.reduce((a, b) => a * b, 1);
-        const probability = Math.pow(product, 1 / numProperties);
+        const probability = product ** (1 / numProperties);
         // The idea behind this is to have a probability around 0.0025 for
         // n=1, up to around 1.0 for n=20.  I.e. when we only have a few
         // properties, they need to look really weird to infer a map, but
@@ -76,10 +76,10 @@ function shouldBeMap(
         // we want maybe 0.004 and 5, or maybe something even more
         // trigger-happy.
         const exponent = 5;
-        const scale = Math.pow(22, exponent);
+        const scale = 22 ** exponent;
         const limit =
-            Math.pow(numProperties + 2, exponent) / scale +
-            (0.0025 - Math.pow(3, exponent) / scale);
+            (numProperties + 2) ** exponent / scale +
+            (0.0025 - 3 ** exponent / scale);
         if (probability > limit) return undefined;
     }
 
@@ -92,7 +92,7 @@ function shouldBeMap(
     // 1. All property types are null.
     // 2. Some property types are null or nullable.
     // 3. No property types are null or nullable.
-    let firstNonNullCases: ReadonlySet<Type> | undefined = undefined;
+    let firstNonNullCases: ReadonlySet<Type> | undefined;
     const allCases = new Set<Type>();
     let canBeMap = true;
     // Check that all the property types are the same, modulo nullability.

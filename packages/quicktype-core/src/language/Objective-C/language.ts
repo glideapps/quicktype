@@ -1,15 +1,15 @@
-import type { RenderContext } from "../../Renderer";
+import type { RenderContext } from "../../Renderer.js";
 import {
     BooleanOption,
     EnumOption,
     StringOption,
     getOptionValues,
-} from "../../RendererOptions";
-import { TargetLanguage } from "../../TargetLanguage";
-import type { LanguageName, RendererOptions } from "../../types";
+} from "../../RendererOptions/index.js";
+import { TargetLanguage } from "../../TargetLanguage.js";
+import type { LanguageName, RendererOptions } from "../../types.js";
 
-import { ObjectiveCRenderer } from "./ObjectiveCRenderer";
-import { DEFAULT_CLASS_PREFIX } from "./utils";
+import { ObjectiveCRenderer } from "./ObjectiveCRenderer.js";
+import { DEFAULT_CLASS_PREFIX } from "./utils.js";
 
 export const objectiveCOptions = {
     features: new EnumOption(

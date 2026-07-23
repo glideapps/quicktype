@@ -1,2 +1,2 @@
-export { RubyTargetLanguage, rubyOptions } from "./language";
-export { RubyRenderer } from "./RubyRenderer";
+export { RubyTargetLanguage, rubyOptions } from "./language.js";
+export { RubyRenderer } from "./RubyRenderer.js";

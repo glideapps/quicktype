@@ -1,14 +1,18 @@
-import type { RenderContext } from "../../Renderer";
+import type { RenderContext } from "../../Renderer.js";
 import {
     BooleanOption,
     EnumOption,
     StringOption,
     getOptionValues,
-} from "../../RendererOptions";
-import { TargetLanguage } from "../../TargetLanguage";
-import type { LanguageName, RendererOptions } from "../../types";
+} from "../../RendererOptions/index.js";
+import {
+    type IntegerRange,
+    JS_SAFE_INTEGER_RANGE,
+} from "../../support/IntegerRange.js";
+import { TargetLanguage } from "../../TargetLanguage.js";
+import type { LanguageName, RendererOptions } from "../../types.js";
 
-import { ElmRenderer } from "./ElmRenderer";
+import { ElmRenderer } from "./ElmRenderer.js";
 
 export const elmOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
@@ -19,7 +23,7 @@ export const elmOptions = {
             array: false,
             list: true,
         } as const,
-        "array",
+        "list",
     ),
     // FIXME: Do this via a configurable named eventually.
     moduleName: new StringOption(
@@ -53,6 +57,12 @@ export class ElmTargetLanguage extends TargetLanguage<
 
     public get supportsUnionsWithBothNumberTypes(): boolean {
         return true;
+    }
+
+    // Elm compiles to JavaScript, where `Int` is an IEEE-754 double at
+    // runtime, so integers are only exact within the JS safe range.
+    public getSupportedIntegerRange(): IntegerRange | null {
+        return JS_SAFE_INTEGER_RANGE;
     }
 
     protected makeRenderer<Lang extends LanguageName = "elm">(

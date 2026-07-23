@@ -1,13 +1,13 @@
 import {
-    // eslint-disable-next-line @typescript-eslint/no-redeclare
+    // biome-ignore lint/suspicious/noShadowRestrictedNames: collection-utils exports this name
     hasOwnProperty,
     mapFromObject,
 } from "collection-utils";
 
-import type { TypeAttributes } from "../attributes/TypeAttributes";
-import { uriInferenceAttributesProducer } from "../attributes/URIAttributes";
+import type { TypeAttributes } from "../attributes/TypeAttributes.js";
+import { uriInferenceAttributesProducer } from "../attributes/URIAttributes.js";
 
-import type { Type } from "./Type";
+import type { Type } from "./Type.js";
 
 /**
  * `jsonSchema` is the `format` to be used to represent this string type in

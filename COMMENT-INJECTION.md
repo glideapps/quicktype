@@ -19,7 +19,7 @@ The schema puts comment-closing text in both an object `description` and a prope
 Run:
 
 ```bash
-CPUs=1 QUICKTEST=true FIXTURE=schema-typescript npm test -- test/inputs/schema/comment-injection.schema
+CPUs=1 QUICKTEST=true FIXTURE=schema-typescript npm run test:fixtures -- test/inputs/schema/comment-injection.schema
 ```
 
 Expected result: the generated TypeScript validates `comment-injection.1.json` and prints equivalent JSON.

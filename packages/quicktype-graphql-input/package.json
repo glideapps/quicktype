@@ -1,24 +1,28 @@
 {
     "name": "quicktype-graphql-input",
-    "version": "18.0.15",
+    "version": "24.0.0",
     "package": "Package for using GraphQL as an input language to quicktype",
     "license": "Apache-2.0",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "repository": "https://github.com/glideapps/quicktype",
+    "engines": {
+        "node": ">=20.0.0"
+    },
     "scripts": {
         "clean": "rm -rf dist node_modules *~",
-        "build": "tsc"
+        "build": "node ../../node_modules/typescript/bin/tsc"
     },
     "dependencies": {
         "quicktype-core": "file:../quicktype-core",
         "collection-utils": "^1.0.1",
-        "graphql": "^0.11.7"
+        "graphql": "^16.11.0"
     },
     "devDependencies": {
-        "@types/node": "~22.14.0",
-        "@types/graphql": "^0.11.7",
-        "typescript": "~5.8.3"
+        "@types/node": "~20.19.0",
+        "typescript": "~7.0.2"
     },
-    "files": ["dist"]
+    "files": [
+        "dist"
+    ]
 }

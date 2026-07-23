@@ -1,24 +1,24 @@
 import {
     anyTypeIssueAnnotation,
     nullTypeIssueAnnotation,
-} from "../../Annotation";
+} from "../../Annotation.js";
 import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
-} from "../../ConvenienceRenderer";
+} from "../../ConvenienceRenderer.js";
 import {
     DependencyName,
     type Name,
     type Namer,
     funPrefixNamer,
-} from "../../Naming";
-import type { RenderContext } from "../../Renderer";
-import type { OptionValues } from "../../RendererOptions";
-import { type Sourcelike, maybeAnnotated } from "../../Source";
-import { acronymStyle } from "../../support/Acronyms";
-import { capitalize } from "../../support/Strings";
-import { assert, assertNever, defined } from "../../support/Support";
-import type { TargetLanguage } from "../../TargetLanguage";
+} from "../../Naming.js";
+import type { RenderContext } from "../../Renderer.js";
+import type { OptionValues } from "../../RendererOptions/index.js";
+import { type Sourcelike, maybeAnnotated } from "../../Source.js";
+import { acronymStyle } from "../../support/Acronyms.js";
+import { capitalize } from "../../support/Strings.js";
+import { assert, assertNever, defined } from "../../support/Support.js";
+import type { TargetLanguage } from "../../TargetLanguage.js";
 import {
     ArrayType,
     type ClassProperty,
@@ -27,22 +27,22 @@ import {
     MapType,
     type Type,
     UnionType,
-} from "../../Type";
+} from "../../Type/index.js";
 import {
     directlyReachableSingleNamedType,
     matchType,
     nullableFromUnion,
     removeNullFromUnion,
-} from "../../Type/TypeUtils";
+} from "../../Type/TypeUtils.js";
 
-import { javaKeywords } from "./constants";
+import { javaKeywords } from "./constants.js";
 import {
     Java8DateTimeProvider,
     type JavaDateTimeProvider,
     JavaLegacyDateTimeProvider,
-} from "./DateTimeProvider";
-import type { javaOptions } from "./language";
-import { javaNameStyle, stringEscape } from "./utils";
+} from "./DateTimeProvider.js";
+import type { javaOptions } from "./language.js";
+import { javaNameStyle, stringEscape } from "./utils.js";
 
 export class JavaRenderer extends ConvenienceRenderer {
     private _currentFilename: string | undefined;
@@ -74,7 +74,6 @@ export class JavaRenderer extends ConvenienceRenderer {
                     this._converterClassname,
                 );
                 break;
-            case "java8":
             default:
                 this._dateTimeProvider = new Java8DateTimeProvider(
                     this,
@@ -391,9 +390,11 @@ export class JavaRenderer extends ConvenienceRenderer {
             (_enumType) => [],
             (unionType) => {
                 const imports: string[] = [];
-                unionType.members.forEach((type) =>
-                    this.javaImport(type).forEach((imp) => imports.push(imp)),
-                );
+                unionType.members.forEach((type) => {
+                    this.javaImport(type).forEach((imp) => {
+                        imports.push(imp);
+                    });
+                });
                 return imports;
             },
             (transformedStringType) => {
@@ -475,8 +476,11 @@ export class JavaRenderer extends ConvenienceRenderer {
     protected importsForClass(c: ClassType): string[] {
         const imports: string[] = [];
         this.forEachClassProperty(c, "none", (_name, _jsonName, p) => {
-            this.javaImport(p.type).forEach((imp) => imports.push(imp));
+            this.javaImport(p.type).forEach((imp) => {
+                imports.push(imp);
+            });
         });
+        // biome-ignore lint/suspicious/useArraySortCompare: sorting strings; default UTF-16 order is intended
         imports.sort();
         return [...new Set(imports)];
     }
@@ -485,8 +489,11 @@ export class JavaRenderer extends ConvenienceRenderer {
         const imports: string[] = [];
         const [, nonNulls] = removeNullFromUnion(u);
         this.forEachUnionMember(u, nonNulls, "none", null, (_fieldName, t) => {
-            this.javaImport(t).forEach((imp) => imports.push(imp));
+            this.javaImport(t).forEach((imp) => {
+                imports.push(imp);
+            });
         });
+        // biome-ignore lint/suspicious/useArraySortCompare: sorting strings; default UTF-16 order is intended
         imports.sort();
         return [...new Set(imports)];
     }
@@ -519,13 +526,13 @@ export class JavaRenderer extends ConvenienceRenderer {
                         p,
                         true,
                     );
-                    if (getter.length !== 0) {
+                    if (getter.length > 0) {
                         this.emitLine(
                             `@lombok.Getter(onMethod_ = {${getter.join(", ")}})`,
                         );
                     }
 
-                    if (setter.length !== 0) {
+                    if (setter.length > 0) {
                         this.emitLine(
                             `@lombok.Setter(onMethod_ = {${setter.join(", ")}})`,
                         );
@@ -559,7 +566,9 @@ export class JavaRenderer extends ConvenienceRenderer {
                             jsonName,
                             p,
                             false,
-                        ).forEach((annotation) => this.emitLine(annotation));
+                        ).forEach((annotation) => {
+                            this.emitLine(annotation);
+                        });
                         this.emitLine(
                             "public ",
                             rendered,
@@ -576,7 +585,9 @@ export class JavaRenderer extends ConvenienceRenderer {
                             jsonName,
                             p,
                             true,
-                        ).forEach((annotation) => this.emitLine(annotation));
+                        ).forEach((annotation) => {
+                            this.emitLine(annotation);
+                        });
                         this.emitLine(
                             "public void ",
                             setterName,

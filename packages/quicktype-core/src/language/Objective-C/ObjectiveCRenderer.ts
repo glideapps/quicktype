@@ -9,19 +9,19 @@ import {
 import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
-} from "../../ConvenienceRenderer";
-import { type Name, Namer, funPrefixNamer } from "../../Naming";
-import type { RenderContext } from "../../Renderer";
-import type { OptionValues } from "../../RendererOptions";
-import { type Sourcelike, modifySource } from "../../Source";
+} from "../../ConvenienceRenderer.js";
+import { type Name, Namer, funPrefixNamer } from "../../Naming.js";
+import type { RenderContext } from "../../Renderer.js";
+import type { OptionValues } from "../../RendererOptions/index.js";
+import { type Sourcelike, modifySource } from "../../Source.js";
 import {
     camelCase,
     fastIsUpperCase,
     repeatString,
     stringEscape,
-} from "../../support/Strings";
-import { assert, defined } from "../../support/Support";
-import type { TargetLanguage } from "../../TargetLanguage";
+} from "../../support/Strings.js";
+import { assert, defined } from "../../support/Support.js";
+import type { TargetLanguage } from "../../TargetLanguage.js";
 import {
     ArrayType,
     type ClassProperty,
@@ -30,15 +30,15 @@ import {
     MapType,
     Type,
     UnionType,
-} from "../../Type";
+} from "../../Type/index.js";
 import {
     isAnyOrNull,
     matchType,
     nullableFromUnion,
-} from "../../Type/TypeUtils";
+} from "../../Type/TypeUtils.js";
 
-import { forbiddenPropertyNames, keywords } from "./constants";
-import type { objectiveCOptions } from "./language";
+import { forbiddenPropertyNames, keywords } from "./constants.js";
+import type { objectiveCOptions } from "./language.js";
 import {
     DEFAULT_CLASS_PREFIX,
     forbiddenForEnumCases,
@@ -46,7 +46,7 @@ import {
     splitExtension,
     staticEnumValuesIdentifier,
     typeNameStyle,
-} from "./utils";
+} from "./utils.js";
 
 type MemoryAttribute = "assign" | "strong" | "copy";
 
@@ -408,7 +408,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
     }
 
     protected implicitlyConvertsToJSON(t: Type): boolean {
-        return this.implicitlyConvertsFromJSON(t) && "bool" !== t.kind;
+        return this.implicitlyConvertsFromJSON(t) && t.kind !== "bool";
     }
 
     protected emitPropertyAssignment(

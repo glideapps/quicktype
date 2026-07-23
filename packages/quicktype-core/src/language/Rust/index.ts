@@ -1,2 +1,2 @@
-export { RustTargetLanguage, rustOptions } from "./language";
-export { RustRenderer } from "./RustRenderer";
+export { RustTargetLanguage, rustOptions } from "./language.js";
+export { RustRenderer } from "./RustRenderer.js";

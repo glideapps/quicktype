@@ -9,18 +9,18 @@ import {
     setUnionInto,
 } from "collection-utils";
 
-import { TypeAttributeKind } from "./attributes/TypeAttributes";
-import type { BaseGraphRewriteBuilder } from "./GraphRewriting";
-import { assert, indentationString, panic } from "./support/Support";
+import { TypeAttributeKind } from "./attributes/TypeAttributes.js";
+import type { BaseGraphRewriteBuilder } from "./GraphRewriting.js";
+import { assert, indentationString, panic } from "./support/Support.js";
 import {
     EnumType,
     PrimitiveType,
     type Type,
     type TypeKind,
     UnionType,
-} from "./Type";
-import type { TypeGraph } from "./Type/TypeGraph";
-import { type TypeRef, derefTypeRef } from "./Type/TypeRef";
+} from "./Type/index.js";
+import type { TypeGraph } from "./Type/TypeGraph.js";
+import { type TypeRef, derefTypeRef } from "./Type/TypeRef.js";
 
 function debugStringForType(t: Type): string {
     const target = followTargetType(t);
@@ -78,9 +78,7 @@ export abstract class Transformer {
         return `${debugStringForType(this.sourceType)} -> ${this.kind}`;
     }
 
-    protected debugPrintContinuations(_indent: number): void {
-        return;
-    }
+    protected debugPrintContinuations(_indent: number): void {}
 
     public debugPrint(indent: number): void {
         console.log(indentationString(indent) + this.debugDescription());

@@ -1,22 +1,21 @@
 name: Setup
 description: Setup common stuff for jobs
+inputs:
+    node-version:
+        description: Node.js version to install; defaults to .nvmrc
+        required: false
+        default: ""
 runs:
     using: "composite"
     steps:
         - name: Setup environment
           shell: bash
           run: |
-              NODE_VERSION=$(cat .nvmrc | xargs)
+              NODE_VERSION="${{ inputs.node-version }}"
+              if [[ -z "$NODE_VERSION" ]]; then
+                  NODE_VERSION=$(cat .nvmrc | xargs)
+              fi
               echo "node_version=$NODE_VERSION" >> $GITHUB_ENV
-
-              # Create keys to control caching
-              BASE_KEY="${{ runner.os }}"
-
-              NODE_MODULES_KEY="$BASE_KEY-${{ hashFiles('package-lock.json') }}"
-              echo "node_modules_key=$NODE_MODULES_KEY" >> $GITHUB_ENV
-
-              SOURCE_KEY="$NODE_MODULES_KEY-${{ hashFiles('src/**') }}"
-              echo "source_key=$SOURCE_KEY" >> $GITHUB_ENV
 
         - name: Setup node
           uses: actions/setup-node@v4

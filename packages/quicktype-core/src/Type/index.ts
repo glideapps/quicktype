@@ -1,7 +1,7 @@
-export * from "./Type";
-export * from "./TypeBuilder";
-export * from "./TypeGraph";
-export * from "./TypeUtils";
+export * from "./Type.js";
+export * from "./TypeBuilder.js";
+export * from "./TypeGraph.js";
+export * from "./TypeUtils.js";
 
 // TODO: update this to type * post TS upgrade
-export * from "./TransformedStringType";
+export * from "./TransformedStringType.js";

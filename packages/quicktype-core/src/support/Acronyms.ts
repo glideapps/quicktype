@@ -1,11 +1,11 @@
-import { EnumOption } from "../RendererOptions";
+import { EnumOption } from "../RendererOptions/index.js";
 
 import {
     allLowerWordStyle,
     allUpperWordStyle,
     firstUpperWordStyle,
     originalWord,
-} from "./Strings";
+} from "./Strings.js";
 
 export enum AcronymStyleOptions {
     Camel = "camel",
@@ -14,7 +14,8 @@ export enum AcronymStyleOptions {
     Pascal = "pascal",
 }
 
-export const acronymOption = (defaultOption: AcronymStyleOptions) => new EnumOption(
+export const acronymOption = (defaultOption: AcronymStyleOptions) =>
+    new EnumOption(
         "acronym-style",
         "Acronym naming style",
         {

@@ -2,7 +2,7 @@
     "name": "quicktype",
     "displayName": "Paste JSON as Code",
     "description": "Copy JSON, paste as Go, TypeScript, C#, C++ and more.",
-    "version": "23.0.122",
+    "version": "24.0.0",
     "publisher": "quicktype",
     "icon": "media/icon.png",
     "galleryBanner": {
@@ -24,8 +24,13 @@
     "engines": {
         "vscode": "^1.87.0"
     },
-    "categories": ["Other"],
-    "keywords": ["json", "converter"],
+    "categories": [
+        "Other"
+    ],
+    "keywords": [
+        "json",
+        "converter"
+    ],
     "markdown": "github",
     "main": "dist/extension.js",
     "vsce": {
@@ -129,8 +134,8 @@
     "scripts": {
         "pub": "vsce publish -p $VSCE_TOKEN",
         "package": "vsce package",
-        "build": "tsc -p ./",
-        "watch": "tsc -watch -p ./",
+        "build": "node ../../node_modules/typescript/bin/tsc -p ./",
+        "watch": "node ../../node_modules/typescript/bin/tsc -watch -p ./",
         "test": "npm run build && node ./node_modules/vscode/bin/test",
         "vscode:prepublish": "npm run esbuild-base -- --minify",
         "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
@@ -139,17 +144,14 @@
     },
     "devDependencies": {
         "@types/mocha": "^10.0.6",
-        "@types/node": "~22.14.0",
+        "@types/node": "~20.19.0",
         "@types/node-persist": "^3.1.8",
         "@types/readable-stream": "^4.0.10",
         "@types/vscode": "^1.87.0",
-        "@typescript-eslint/eslint-plugin": "^7.0.2",
-        "@typescript-eslint/parser": "^7.7.0",
         "@vscode/test-cli": "^0.0.6",
-        "@vscode/test-electron": "^2.3.9",
-        "@vscode/vsce": "^2.25.0",
-        "eslint": "^8.56.0",
-        "typescript": "~5.8.3",
+        "@vscode/test-electron": "^2.5.2",
+        "@vscode/vsce": "^3.9.2",
+        "typescript": "~7.0.2",
         "node-persist": "^4.0.1",
         "quicktype-core": "file:../quicktype-core",
         "quicktype-typescript-input": "file:../quicktype-typescript-input",

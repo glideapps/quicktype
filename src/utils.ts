@@ -3,7 +3,6 @@ import * as path from "node:path";
 import * as _ from "lodash";
 import type { Readable } from "readable-stream";
 import stringToStream from "string-to-stream";
-import _wordwrap from "wordwrap";
 
 import {
     assert,
@@ -45,7 +44,8 @@ export function dashedFromCamelCase(name: string): string {
 
 export function typeNameFromFilename(filename: string): string {
     const name = path.basename(filename);
-    return name.substring(0, name.lastIndexOf("."));
+    const extIndex = name.lastIndexOf(".");
+    return extIndex === -1 ? "" : name.slice(0, extIndex);
 }
 
 export function stringSourceDataToStreamSourceData(

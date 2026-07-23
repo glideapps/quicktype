@@ -1,44 +1,47 @@
 import { mapFirst } from "collection-utils";
 
-import { initTypeNames } from "./attributes/TypeNames";
-import { InputData } from "./input/Inputs";
-import * as targetLanguages from "./language/All";
-import type { RendererOptions } from "./language/options.types";
-import type { LanguageName } from "./language/types";
-import { combineClasses } from "./rewrites/CombineClasses";
-import { expandStrings } from "./rewrites/ExpandStrings";
-import { flattenStrings } from "./rewrites/FlattenStrings";
-import { flattenUnions } from "./rewrites/FlattenUnions";
-import { inferMaps } from "./rewrites/InferMaps";
-import { replaceObjectType } from "./rewrites/ReplaceObjectType";
-import { resolveIntersections } from "./rewrites/ResolveIntersections";
-import type { Comment } from "./support/Comments";
-import { assert } from "./support/Support";
+import { initTypeNames } from "./attributes/TypeNames.js";
+import { InputData } from "./input/Inputs.js";
+import * as targetLanguages from "./language/All.js";
+import type { RendererOptions } from "./language/options.types.js";
+import type { LanguageName } from "./language/types.js";
+import { combineClasses } from "./rewrites/CombineClasses.js";
+import { expandStrings } from "./rewrites/ExpandStrings.js";
+import { flattenStrings } from "./rewrites/FlattenStrings.js";
+import { flattenUnions } from "./rewrites/FlattenUnions.js";
+import { inferMaps } from "./rewrites/InferMaps.js";
+import { replaceObjectType } from "./rewrites/ReplaceObjectType.js";
+import { resolveIntersections } from "./rewrites/ResolveIntersections.js";
+import type { Comment } from "./support/Comments.js";
+import { assert } from "./support/Support.js";
 
-import { gatherNames } from "./GatherNames";
+import { gatherNames } from "./GatherNames.js";
 import {
     type InferenceFlags,
     defaultInferenceFlags,
     inferenceFlagNames,
     inferenceFlags,
-} from "./Inference";
-import { makeTransformations } from "./MakeTransformations";
-import { messageError } from "./Messages";
+} from "./Inference.js";
+import { makeTransformations } from "./MakeTransformations.js";
+import { messageError } from "./Messages.js";
 import type {
     Annotation,
     Location,
     SerializedRenderResult,
     Span,
-} from "./Source";
-import type { MultiFileRenderResult, TargetLanguage } from "./TargetLanguage";
-import { TypeBuilder } from "./Type/TypeBuilder";
-import type { StringTypeMapping } from "./Type/TypeBuilderUtils";
-import { TypeGraph } from "./Type/TypeGraph";
+} from "./Source.js";
+import type {
+    MultiFileRenderResult,
+    TargetLanguage,
+} from "./TargetLanguage.js";
+import { TypeBuilder } from "./Type/TypeBuilder.js";
+import type { StringTypeMapping } from "./Type/TypeBuilderUtils.js";
+import { TypeGraph } from "./Type/TypeGraph.js";
 import {
     noneToAny,
     optionalToNullable,
     removeIndirectionIntersections,
-} from "./Type/TypeGraphUtils";
+} from "./Type/TypeGraphUtils.js";
 
 export function getTargetLanguage(
     nameOrInstance: LanguageName | TargetLanguage,
@@ -105,15 +108,23 @@ export interface NonInferenceOptions<Lang extends LanguageName = LanguageName> {
     leadingComments?: Comment[];
     /** Don't render output.  This is mainly useful for benchmarking. */
     noRender: boolean;
+    /** Called after each measured pipeline pass.  This is mainly useful for benchmarking. */
+    onTiming?: (timing: QuicktypeTiming) => void;
     /** Name of the output file.  Note that quicktype will not write that file, but you'll get its name
      * back as a key in the resulting `Map`.
      */
     outputFilename: string;
     /** Options for the target language's renderer */
-    rendererOptions: RendererOptions<Lang>;
+    rendererOptions: Partial<RendererOptions<Lang>>;
 }
 
-export type Options = NonInferenceOptions & InferenceFlags;
+export interface QuicktypeTiming {
+    milliseconds: number;
+    name: string;
+}
+
+export type Options<Lang extends LanguageName = LanguageName> =
+    NonInferenceOptions<Lang> & InferenceFlags;
 
 const defaultOptions: NonInferenceOptions = {
     lang: "ts",
@@ -122,6 +133,7 @@ const defaultOptions: NonInferenceOptions = {
     allPropertiesOptional: false,
     fixedTopLevels: false,
     noRender: false,
+    onTiming: undefined,
     leadingComments: undefined,
     rendererOptions: {},
     indentation: undefined,
@@ -159,9 +171,9 @@ class Run implements RunContext {
         // We must not overwrite defaults with undefined values, which
         // we sometimes get.
         this._options = Object.fromEntries(
-            Object.entries(
-                Object.assign({}, defaultOptions, defaultInferenceFlags),
-            ).map(([k, v]) => [k, options[k as keyof typeof options] ?? v]),
+            Object.entries({ ...defaultOptions, ...defaultInferenceFlags }).map(
+                ([k, v]) => [k, options[k as keyof typeof options] ?? v],
+            ),
         ) as Required<typeof options>;
     }
 
@@ -191,23 +203,27 @@ class Run implements RunContext {
     }
 
     public async timeSync<T>(name: string, f: () => Promise<T>): Promise<T> {
-        const start = Date.now();
+        const start = performance.now();
         const result = await f();
-        const end = Date.now();
+        const milliseconds = performance.now() - start;
         if (this._options.debugPrintTimes) {
-            console.log(`${name} took ${end - start}ms`);
+            console.log(`${name} took ${milliseconds.toFixed(3)}ms`);
         }
+
+        this._options.onTiming?.({ name, milliseconds });
 
         return result;
     }
 
     public time<T>(name: string, f: () => T): T {
-        const start = Date.now();
+        const start = performance.now();
         const result = f();
-        const end = Date.now();
+        const milliseconds = performance.now() - start;
         if (this._options.debugPrintTimes) {
-            console.log(`${name} took ${end - start}ms`);
+            console.log(`${name} took ${milliseconds.toFixed(3)}ms`);
         }
+
+        this._options.onTiming?.({ name, milliseconds });
 
         return result;
     }
@@ -576,18 +592,20 @@ class Run implements RunContext {
         targetLanguage: TargetLanguage,
         graph: TypeGraph,
     ): MultiFileRenderResult {
-        if (this._options.noRender) {
-            return this.makeSimpleTextResult(["Done.", ""]);
-        }
+        return this.time("render", () => {
+            if (this._options.noRender) {
+                return this.makeSimpleTextResult(["Done.", ""]);
+            }
 
-        return targetLanguage.renderGraphAndSerialize(
-            graph,
-            this._options.outputFilename,
-            this._options.alphabetizeProperties,
-            this._options.leadingComments,
-            this._options.rendererOptions,
-            this._options.indentation,
-        );
+            return targetLanguage.renderGraphAndSerialize(
+                graph,
+                this._options.outputFilename,
+                this._options.alphabetizeProperties,
+                this._options.leadingComments,
+                this._options.rendererOptions,
+                this._options.indentation,
+            );
+        });
     }
 }
 
@@ -597,15 +615,15 @@ class Run implements RunContext {
  * @param options Partial options.  For options that are not defined, the
  * defaults will be used.
  */
-export async function quicktypeMultiFile(
-    options: Partial<Options>,
-): Promise<MultiFileRenderResult> {
+export async function quicktypeMultiFile<
+    Lang extends LanguageName = LanguageName,
+>(options: Partial<Options<Lang>>): Promise<MultiFileRenderResult> {
     return await new Run(options).run();
 }
 
-export function quicktypeMultiFileSync(
-    options: Partial<Options>,
-): MultiFileRenderResult {
+export function quicktypeMultiFileSync<
+    Lang extends LanguageName = LanguageName,
+>(options: Partial<Options<Lang>>): MultiFileRenderResult {
     return new Run(options).runSync();
 }
 
@@ -661,8 +679,8 @@ export function combineRenderResults(
  * @param options Partial options.  For options that are not defined, the
  * defaults will be used.
  */
-export async function quicktype(
-    options: Partial<Options>,
+export async function quicktype<Lang extends LanguageName = LanguageName>(
+    options: Partial<Options<Lang>>,
 ): Promise<SerializedRenderResult> {
     const result = await quicktypeMultiFile(options);
     return combineRenderResults(result);

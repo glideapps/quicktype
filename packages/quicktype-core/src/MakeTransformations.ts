@@ -10,17 +10,17 @@ import {
 import {
     minMaxLengthForType,
     minMaxValueForType,
-} from "./attributes/Constraints";
-import { StringTypes } from "./attributes/StringTypes";
+} from "./attributes/Constraints.js";
+import { StringTypes } from "./attributes/StringTypes.js";
 import {
     type TypeAttributes,
     combineTypeAttributes,
     emptyTypeAttributes,
-} from "./attributes/TypeAttributes";
-import type { GraphRewriteBuilder } from "./GraphRewriting";
-import type { RunContext } from "./Run";
-import { assert, defined, panic } from "./support/Support";
-import type { TargetLanguage } from "./TargetLanguage";
+} from "./attributes/TypeAttributes.js";
+import type { GraphRewriteBuilder } from "./GraphRewriting.js";
+import type { RunContext } from "./Run.js";
+import { assert, defined, panic } from "./support/Support.js";
+import type { TargetLanguage } from "./TargetLanguage.js";
 import {
     ArrayDecodingTransformer,
     ChoiceTransformer,
@@ -35,7 +35,7 @@ import {
     type Transformer,
     UnionInstantiationTransformer,
     transformationTypeAttributeKind,
-} from "./Transformers";
+} from "./Transformers.js";
 import {
     ArrayType,
     EnumType,
@@ -47,9 +47,9 @@ import {
     isNumberTypeKind,
     isPrimitiveStringTypeKind,
     targetTypeKindForTransformedStringTypeKind,
-} from "./Type";
-import type { TypeGraph } from "./Type/TypeGraph";
-import { type TypeRef, typeRefIndex } from "./Type/TypeRef";
+} from "./Type/index.js";
+import type { TypeGraph } from "./Type/TypeGraph.js";
+import { type TypeRef, typeRefIndex } from "./Type/TypeRef.js";
 
 function transformationAttributes(
     graph: TypeGraph,
@@ -80,8 +80,7 @@ function makeEnumTransformer(
     stringType: TypeRef,
     continuation?: Transformer,
 ): Transformer {
-    const sortedCases = Array.from(enumType.cases).sort();
-    const caseTransformers = sortedCases.map(
+    const caseTransformers = Array.from(enumType.cases).map(
         (c) =>
             new StringMatchTransformer(
                 graph,
@@ -175,7 +174,7 @@ function replaceUnion(
         );
     }
 
-    let maybeStringType: TypeRef | undefined = undefined;
+    let maybeStringType: TypeRef | undefined;
     function getStringType(): TypeRef {
         if (maybeStringType === undefined) {
             maybeStringType = builder.getStringType(

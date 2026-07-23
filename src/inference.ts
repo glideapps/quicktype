@@ -98,7 +98,7 @@ export function inferCLIOptions(
     const options: CLIOptions = {
         src: opts.src ?? [],
         srcUrls: opts.srcUrls,
-        srcLang: srcLang,
+        srcLang,
         lang: language.name as LanguageName,
         topLevel: opts.topLevel ?? inferTopLevel(opts),
         noRender: !!opts.noRender,
@@ -120,8 +120,14 @@ export function inferCLIOptions(
     };
     for (const flagName of inferenceFlagNames) {
         const cliName = negatedInferenceFlagName(flagName);
-        options[cliName] = !!opts[cliName];
-        options[flagName] = !opts[cliName];
+        const positiveValue = opts[flagName];
+        if (typeof positiveValue === "boolean") {
+            options[flagName] = positiveValue;
+            options[cliName] = !positiveValue;
+        } else {
+            options[cliName] = !!opts[cliName];
+            options[flagName] = !options[cliName];
+        }
     }
 
     return options;

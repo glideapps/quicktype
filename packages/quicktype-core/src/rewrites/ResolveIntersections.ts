@@ -18,9 +18,9 @@ import {
     combineTypeAttributes,
     emptyTypeAttributes,
     makeTypeAttributesInferred,
-} from "../attributes/TypeAttributes";
-import type { GraphRewriteBuilder, TypeLookerUp } from "../GraphRewriting";
-import { assert, defined, mustNotHappen, panic } from "../support/Support";
+} from "../attributes/TypeAttributes.js";
+import type { GraphRewriteBuilder, TypeLookerUp } from "../GraphRewriting.js";
+import { assert, defined, mustNotHappen, panic } from "../support/Support.js";
 import {
     ArrayType,
     GenericClassProperty,
@@ -32,21 +32,21 @@ import {
     UnionType,
     isNumberTypeKind,
     isPrimitiveTypeKind,
-} from "../Type";
-import type { TypeBuilder } from "../Type/TypeBuilder";
-import type { StringTypeMapping } from "../Type/TypeBuilderUtils";
-import type { TypeGraph } from "../Type/TypeGraph";
-import type { TypeRef } from "../Type/TypeRef";
+} from "../Type/index.js";
+import type { TypeBuilder } from "../Type/TypeBuilder.js";
+import type { StringTypeMapping } from "../Type/TypeBuilderUtils.js";
+import type { TypeGraph } from "../Type/TypeGraph.js";
+import type { TypeRef } from "../Type/TypeRef.js";
 import {
     makeGroupsToFlatten,
     matchTypeExhaustive,
     setOperationMembersRecursively,
-} from "../Type/TypeUtils";
+} from "../Type/TypeUtils.js";
 import {
     type TypeAttributeMap,
     UnionBuilder,
     type UnionTypeProvider,
-} from "../UnionBuilder";
+} from "../UnionBuilder.js";
 
 function canResolve(t: IntersectionType): boolean {
     const members = setOperationMembersRecursively(t, undefined)[0];
@@ -191,6 +191,9 @@ class IntersectionAccumulator
             const existing = defined(this._objectProperties).get(name);
             const newProperty = maybeObject.getProperties().get(name);
 
+            // A property declared by any intersection member is known on
+            // the merged object.  A member that doesn't allow additional
+            // properties must not discard properties declared by others.
             if (existing !== undefined && newProperty !== undefined) {
                 const cp = new GenericClassProperty(
                     existing.typeData.add(newProperty.type),
@@ -206,23 +209,18 @@ class IntersectionAccumulator
                     existing.isOptional,
                 );
                 defined(this._objectProperties).set(name, cp);
-            } else if (existing !== undefined) {
-                defined(this._objectProperties).delete(name);
-            } else if (
-                newProperty !== undefined &&
-                this._additionalPropertyTypes !== undefined
-            ) {
-                // FIXME: This is potentially slow
-                const types = new Set(this._additionalPropertyTypes).add(
-                    newProperty.type,
-                );
+            } else if (newProperty !== undefined) {
+                const types =
+                    this._additionalPropertyTypes === undefined
+                        ? new Set([newProperty.type])
+                        : new Set(this._additionalPropertyTypes).add(
+                              newProperty.type,
+                          );
                 defined(this._objectProperties).set(
                     name,
                     new GenericClassProperty(types, newProperty.isOptional),
                 );
-            } else if (newProperty !== undefined) {
-                defined(this._objectProperties).delete(name);
-            } else {
+            } else if (existing === undefined) {
                 mustNotHappen();
             }
         }
@@ -471,6 +469,15 @@ export function resolveIntersections(
                 forwardingRef,
             );
             return t;
+        }
+
+        const noneType = iterableFind(members, (t) => t.kind === "none");
+        if (noneType !== undefined) {
+            return builder.reconstituteType(
+                noneType,
+                intersectionAttributes,
+                forwardingRef,
+            );
         }
 
         if (members.size === 1) {

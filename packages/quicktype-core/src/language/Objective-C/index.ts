@@ -1,2 +1,2 @@
-export { ObjectiveCTargetLanguage, objectiveCOptions } from "./language";
-export { ObjectiveCRenderer } from "./ObjectiveCRenderer";
+export { ObjectiveCTargetLanguage, objectiveCOptions } from "./language.js";
+export { ObjectiveCRenderer } from "./ObjectiveCRenderer.js";

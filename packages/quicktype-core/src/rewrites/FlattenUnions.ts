@@ -1,15 +1,15 @@
 import { iterableSome, setFilter } from "collection-utils";
 
-import { emptyTypeAttributes } from "../attributes/TypeAttributes";
-import type { GraphRewriteBuilder } from "../GraphRewriting";
-import { messageAssert } from "../Messages";
-import { assert } from "../support/Support";
-import { IntersectionType, type Type, UnionType } from "../Type/Type";
-import type { StringTypeMapping } from "../Type/TypeBuilderUtils";
-import type { TypeGraph } from "../Type/TypeGraph";
-import { type TypeRef, derefTypeRef, typeRefIndex } from "../Type/TypeRef";
-import { makeGroupsToFlatten } from "../Type/TypeUtils";
-import { UnifyUnionBuilder, unifyTypes } from "../UnifyClasses";
+import { emptyTypeAttributes } from "../attributes/TypeAttributes.js";
+import type { GraphRewriteBuilder } from "../GraphRewriting.js";
+import { messageAssert } from "../Messages.js";
+import { assert } from "../support/Support.js";
+import { IntersectionType, type Type, UnionType } from "../Type/Type.js";
+import type { StringTypeMapping } from "../Type/TypeBuilderUtils.js";
+import type { TypeGraph } from "../Type/TypeGraph.js";
+import { type TypeRef, derefTypeRef, typeRefIndex } from "../Type/TypeRef.js";
+import { makeGroupsToFlatten } from "../Type/TypeUtils.js";
+import { UnifyUnionBuilder, unifyTypes } from "../UnifyClasses.js";
 
 export function flattenUnions(
     graph: TypeGraph,
@@ -59,6 +59,16 @@ export function flattenUnions(
             .join(",");
     }
 
+    function containsIntersection(t: Type, seen: Set<number>): boolean {
+        if (seen.has(t.index)) return false;
+        seen.add(t.index);
+
+        if (t instanceof IntersectionType) return true;
+        if (!(t instanceof UnionType)) return false;
+
+        return iterableSome(t.members, (m) => containsIntersection(m, seen));
+    }
+
     function replace(
         types: ReadonlySet<Type>,
         builder: GraphRewriteBuilder<Type>,
@@ -86,7 +96,9 @@ export function flattenUnions(
                 trefs.map((tref) => derefTypeRef(tref, graph)),
             );
             if (
-                iterableSome(typesToUnify, (t) => t instanceof IntersectionType)
+                iterableSome(typesToUnify, (t) =>
+                    containsIntersection(t, new Set()),
+                )
             ) {
                 trefs = trefs.map((tref) =>
                     builder.reconstituteType(derefTypeRef(tref, graph)),

@@ -1,6 +1,6 @@
 import { setMap } from "collection-utils";
 
-import { assert, defined, repeated, repeatedCall } from "./support/Support";
+import { assert, defined, repeated, repeatedCall } from "./support/Support.js";
 
 function countComponentGraphNodes(components: number[][]): number {
     if (components.length === 0) return 0;

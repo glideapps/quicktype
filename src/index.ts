@@ -15,6 +15,9 @@ import { parseCLIOptions } from "./cli.options";
 import { inferCLIOptions } from "./inference";
 import { makeQuicktypeOptions } from "./quicktype.options";
 import type { CLIOptions } from "./CLIOptions.types";
+export { parseCLIOptions } from "./cli.options";
+export { jsonInputForTargetLanguage } from "./input";
+export { makeQuicktypeOptions } from "./quicktype.options";
 export type { CLIOptions };
 
 export function writeOutput(
@@ -104,6 +107,17 @@ export async function main(
 }
 
 if (require.main === module) {
+    const exitOnEPIPE = (error: NodeJS.ErrnoException): void => {
+        if (error.code === "EPIPE") {
+            process.exit(0);
+        }
+
+        throw error;
+    };
+
+    process.stdout.on("error", exitOnEPIPE);
+    process.stderr.on("error", exitOnEPIPE);
+
     main(process.argv.slice(2)).catch((e) => {
         if (e instanceof Error) {
             console.error(`Error: ${e.message}.`);

@@ -2,7 +2,7 @@ import {
     type PrimitiveStringTypeKind,
     type TransformedStringTypeKind,
     transformedStringTypeKinds,
-} from "./TransformedStringType";
+} from "./TransformedStringType.js";
 
 export type StringTypeMapping = ReadonlyMap<
     TransformedStringTypeKind,

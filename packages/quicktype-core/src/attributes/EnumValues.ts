@@ -4,16 +4,16 @@ import type {
     JSONSchemaAttributes,
     JSONSchemaType,
     Ref,
-} from "../input/JSONSchemaInput";
-import type { JSONSchema } from "../input/JSONSchemaStore";
-import type { EnumType } from "../Type/Type";
+} from "../input/JSONSchemaInput.js";
+import type { JSONSchema } from "../input/JSONSchemaStore.js";
+import type { EnumType } from "../Type/Type.js";
 
 import {
     type AccessorNames,
     lookupKey,
     makeAccessorNames,
-} from "./AccessorNames";
-import { TypeAttributeKind } from "./TypeAttributes";
+} from "./AccessorNames.js";
+import { TypeAttributeKind } from "./TypeAttributes.js";
 
 class EnumValuesTypeAttributeKind extends TypeAttributeKind<AccessorNames> {
     public constructor() {
