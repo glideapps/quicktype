@@ -1199,7 +1199,11 @@ export const JavaScriptPropTypesLanguage: Language = {
         "spotify-album.json", // renderer does not support recursion
         "76ae1.json", // renderer does not support recursion
     ],
-    skipSchema: ["integer-before-number.schema"], // Python-specific union-order regression.
+    skipSchema: [
+        // The renderer does not support a bare top-level map.
+        "empty-object.schema",
+        "integer-before-number.schema", // Python-specific union-order regression.
+    ],
     skipMiscJSON: false,
     rendererOptions: { "module-system": "es6" },
     quickTestRendererOptions: [{ converters: "top-level" }],
@@ -1372,7 +1376,11 @@ I havea no idea how to encode these tests correctly.
         "php-mixed-union.json",
         "nst-test-suite.json",
     ],
-    skipSchema: ["integer-before-number.schema"], // Python-specific union-order regression.
+    skipSchema: [
+        // The renderer does not support a bare top-level map.
+        "empty-object.schema",
+        "integer-before-number.schema", // Python-specific union-order regression.
+    ],
     skipMiscJSON: false,
     rendererOptions: { "just-types": "true" },
     quickTestRendererOptions: [],
@@ -1907,6 +1915,7 @@ export const HaskellLanguage: Language = {
         // (A top-level `[Int]` correctly fails to decode `[1, 2, "three"]`,
         // but the driver still exits 0.)
         "boolean-subschema.schema",
+        "empty-object.schema",
         "issue2680-top-level-array.schema",
         "nested-intersection-union.schema",
         "prefix-items.schema",
@@ -1963,6 +1972,8 @@ export const PHPLanguage: Language = {
     ],
     skipMiscJSON: true,
     skipSchema: [
+        // The renderer does not support a bare top-level map.
+        "empty-object.schema",
         "integer-before-number.schema", // Python-specific union-order regression.
         // PHP class names are case-insensitive, but the namer dedups
         // case-sensitively, so this declares classes that collide (same
@@ -2070,6 +2081,8 @@ export const TypeScriptZodLanguage: Language = {
     ],
     skipMiscJSON: false,
     skipSchema: [
+        // The renderer does not support a bare top-level map.
+        "empty-object.schema",
         "integer-before-number.schema", // Python-specific union-order regression.
         "any.schema",
         ...skipsUntypedUnions,
@@ -2195,6 +2208,8 @@ export const TypeScriptEffectSchemaLanguage: Language = {
     ],
     skipMiscJSON: false,
     skipSchema: [
+        // The renderer does not support a bare top-level map.
+        "empty-object.schema",
         "integer-before-number.schema", // Python-specific union-order regression.
         "any.schema",
         ...skipsUntypedUnions,
@@ -2265,7 +2280,10 @@ export const ElixirLanguage: Language = {
     ],
     skipMiscJSON: false,
     skipSchema: [
+        // The renderer does not support a bare top-level map.
+        "empty-object.schema",
         "integer-before-number.schema", // Python-specific union-order regression.
+
         // The error occurs because a guard clause that references TopLevel is compiled before TopLevel itself. To fix this, put
         // TopLevel before Bar, but this doesn't address the actual problem if for example a pattern match to Bar was in TopLevel.
         "mutually-recursive.schema",
