@@ -347,9 +347,14 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
         const definedType = this.namedTypeToNameForTopLevel(t);
         if (definedType !== undefined) {
             partial = "partial ";
-            typeKind = definedType instanceof ClassType ? "class" : "struct";
+            typeKind =
+                definedType instanceof ClassType
+                    ? this.objectTypeKind
+                    : "struct";
         } else {
             partial = "";
+            // Synthetic top-level wrapper (e.g. array/map roots); not a
+            // user-facing data type, so always a class even with records.
             typeKind = "class";
         }
 
