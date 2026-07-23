@@ -6,6 +6,7 @@ import { afterEach, describe, expect, test } from "vitest";
 import {
     compareOutputSnapshots,
     renderOutputDiffReport,
+    splitPatch,
 } from "../../script/output-diff";
 import {
     outputSnapshotCaseDirectory,
@@ -126,6 +127,35 @@ describe("generated-output comparison", () => {
         expect(patch).toContain("+three");
     });
 
+    test("keeps patch sections aligned when one target name prefixes another", () => {
+        const root = temporaryDirectory();
+        const base = path.join(root, "base");
+        const head = path.join(root, "head");
+        const outputs = [
+            "typescript/test/inputs/json/priority/example.json/default/TopLevel.ts",
+            "typescript-effect-schema/test/inputs/json/priority/example.json/default/TopLevel.ts",
+            "typescript-zod/test/inputs/json/misc/0a91a.json/default/TopLevel.ts",
+        ];
+        for (const output of outputs) {
+            fs.mkdirSync(path.dirname(path.join(base, output)), {
+                recursive: true,
+            });
+            fs.mkdirSync(path.dirname(path.join(head, output)), {
+                recursive: true,
+            });
+            fs.writeFileSync(path.join(base, output), `old ${output}\n`);
+            fs.writeFileSync(path.join(head, output), `new ${output}\n`);
+        }
+
+        const { patch, result } = compareOutputSnapshots(base, head);
+        const sections = splitPatch(patch);
+
+        expect(result.files).toHaveLength(outputs.length);
+        result.files.forEach((file, index) => {
+            expect(sections[index]).toContain(`+new ${file.path}`);
+        });
+    });
+
     test("a clean comparison has no patch or report", () => {
         const root = temporaryDirectory();
         const base = path.join(root, "base");
@@ -157,9 +187,24 @@ describe("generated-output comparison", () => {
         const head = path.join(root, "head");
         fs.mkdirSync(base);
         fs.mkdirSync(head);
-        fs.writeFileSync(path.join(base, "unsafe.ts"), "safe\n");
+        const typescriptOutput =
+            "schema-typescript/test/inputs/schema/unsafe.schema/default/QuickType.ts";
+        const rustOutput =
+            "schema-rust/test/inputs/schema/unsafe.schema/default/quicktype.rs";
+        const otherOutput =
+            "schema-rust/test/inputs/schema/other.schema/default/quicktype.rs";
+        for (const output of [typescriptOutput, rustOutput, otherOutput]) {
+            fs.mkdirSync(path.dirname(path.join(base, output)), {
+                recursive: true,
+            });
+            fs.mkdirSync(path.dirname(path.join(head, output)), {
+                recursive: true,
+            });
+            fs.writeFileSync(path.join(base, output), "safe\n");
+            fs.writeFileSync(path.join(head, output), "changed\n");
+        }
         fs.writeFileSync(
-            path.join(head, "unsafe.ts"),
+            path.join(head, typescriptOutput),
             "<script>alert(1)</script>\n",
         );
         const { patch, result } = compareOutputSnapshots(base, head);
@@ -180,6 +225,12 @@ describe("generated-output comparison", () => {
         );
         expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
         expect(html).not.toContain("<script>alert(1)</script>");
+        expect(html.match(/class="test-group"/g)).toHaveLength(2);
+        expect(
+            html.match(/test\/inputs\/schema\/unsafe\.schema<\/h2>/g),
+        ).toHaveLength(1);
+        expect(html).toContain(">schema-rust</span>");
+        expect(html).toContain(">schema-typescript</span>");
         expect(html).toContain('class="diff-table"');
         expect(html).toContain(">Expand all</button>");
         expect(html).toContain(
