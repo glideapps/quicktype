@@ -919,6 +919,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected sortClassProperties(
+        _o: ObjectType,
         properties: ReadonlyMap<string, ClassProperty>,
         propertyNames: ReadonlyMap<string, Name>,
     ): ReadonlyMap<string, ClassProperty> {
@@ -947,6 +948,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     ): void {
         const propertyNames = defined(this._propertyNamesStoreView).get(o);
         const sortedProperties = this.sortClassProperties(
+            o,
             o.getProperties(),
             propertyNames,
         );

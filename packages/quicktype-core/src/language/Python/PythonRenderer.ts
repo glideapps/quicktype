@@ -7,6 +7,7 @@ import {
     setUnionInto,
 } from "collection-utils";
 
+import { propertyDefaultValuesTypeAttributeKind } from "../../attributes/DefaultValues.js";
 import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
@@ -16,7 +17,7 @@ import type { RenderContext } from "../../Renderer.js";
 import type { OptionValues } from "../../RendererOptions/index.js";
 import type { Sourcelike } from "../../Source.js";
 import { stringEscape } from "../../support/Strings.js";
-import { defined, panic } from "../../support/Support.js";
+import { defined, isStringMap, panic } from "../../support/Support.js";
 import type { TargetLanguage } from "../../TargetLanguage.js";
 import { followTargetType } from "../../Transformers.js";
 import {
@@ -25,6 +26,7 @@ import {
     ClassType,
     EnumType,
     MapType,
+    type ObjectType,
     type Type,
     UnionType,
 } from "../../Type/index.js";
@@ -118,6 +120,83 @@ export class PythonRenderer extends ConvenienceRenderer {
     protected string(s: string): Sourcelike {
         const openQuote = '"';
         return [openQuote, stringEscape(s), '"'];
+    }
+
+    protected pythonLiteral(value: unknown): Sourcelike {
+        if (value === null) return "None";
+
+        switch (typeof value) {
+            case "string":
+                return this.string(value);
+            case "number":
+                return value.toString();
+            case "boolean":
+                return value ? "True" : "False";
+            case "object":
+                if (Array.isArray(value)) {
+                    return [
+                        "[",
+                        arrayIntercalate(
+                            ", ",
+                            value.map((item) => this.pythonLiteral(item)),
+                        ),
+                        "]",
+                    ];
+                }
+
+                if (isStringMap(value)) {
+                    return [
+                        "{",
+                        arrayIntercalate(
+                            ", ",
+                            Object.entries(value).map<Sourcelike>(
+                                ([key, item]) => [
+                                    this.string(key),
+                                    ": ",
+                                    this.pythonLiteral(item),
+                                ],
+                            ),
+                        ),
+                        "}",
+                    ];
+                }
+        }
+
+        return panic("JSON Schema default is not a JSON value");
+    }
+
+    protected defaultValueForClassProperty(
+        o: ObjectType,
+        jsonName: string,
+    ): unknown | undefined {
+        return this.typeGraph.attributeStore
+            .tryGet(propertyDefaultValuesTypeAttributeKind, o)
+            ?.get(jsonName);
+    }
+
+    private classPropertyDefaultSource(
+        o: ObjectType,
+        jsonName: string,
+    ): Sourcelike {
+        const value = this.defaultValueForClassProperty(o, jsonName);
+        if (value === undefined) return [];
+
+        const literal = this.pythonLiteral(value);
+        if (
+            this.pyOptions.features.dataClasses &&
+            !this.pyOptions.pydanticBaseModel &&
+            (Array.isArray(value) || isStringMap(value))
+        ) {
+            return [
+                " = ",
+                this.withImport("dataclasses", "field"),
+                "(default_factory=lambda: ",
+                literal,
+                ")",
+            ];
+        }
+
+        return [" = ", literal];
     }
 
     protected withImport(module: string, name: string): Sourcelike {
@@ -392,8 +471,12 @@ export class PythonRenderer extends ConvenienceRenderer {
             return;
 
         const args: Sourcelike[] = [];
-        this.forEachClassProperty(t, "none", (name, _, cp) => {
-            args.push([name, this.typeHint(": ", this.pythonType(cp.type))]);
+        this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
+            args.push([
+                name,
+                this.typeHint(": ", this.pythonType(cp.type)),
+                this.classPropertyDefaultSource(t, jsonName),
+            ]);
         });
         this.emitBlock(
             [
@@ -432,21 +515,36 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected sortClassProperties(
+        o: ObjectType,
         properties: ReadonlyMap<string, ClassProperty>,
         propertyNames: ReadonlyMap<string, Name>,
     ): ReadonlyMap<string, ClassProperty> {
+        const hasSchemaDefaults = iterableSome(
+            properties.entries(),
+            ([name]) =>
+                this.defaultValueForClassProperty(o, name) !== undefined,
+        );
         if (
+            hasSchemaDefaults ||
             this.pyOptions.features.dataClasses ||
             this.pyOptions.pydanticBaseModel
         ) {
-            // Properties that get a `" = None"` default must come after all
-            // properties that don't, or the generated dataclass is invalid.
-            return mapSortBy(properties, (p: ClassProperty) =>
-                this.classPropertyHasNoneDefault(p) ? 1 : 0,
+            // Properties that get a default must come after all properties
+            // that don't, or the generated class is invalid.
+            return mapSortBy(
+                properties,
+                (p: ClassProperty, jsonName: string) =>
+                    this.defaultValueForClassProperty(o, jsonName) !==
+                        undefined ||
+                    ((this.pyOptions.features.dataClasses ||
+                        this.pyOptions.pydanticBaseModel) &&
+                        this.classPropertyHasNoneDefault(p))
+                        ? 1
+                        : 0,
             );
         }
 
-        return super.sortClassProperties(properties, propertyNames);
+        return super.sortClassProperties(o, properties, propertyNames);
     }
 
     protected emitClass(t: ClassType): void {
@@ -466,12 +564,18 @@ export class PythonRenderer extends ConvenienceRenderer {
                         t,
                         "none",
                         (name, jsonName, cp) => {
+                            const defaultValue =
+                                this.defaultValueForClassProperty(t, jsonName);
                             this.emitLine(
                                 name,
                                 this.typeHint(
                                     ": ",
-                                    this.pythonType(cp.type, true),
+                                    this.pythonType(
+                                        cp.type,
+                                        defaultValue === undefined,
+                                    ),
                                 ),
+                                this.classPropertyDefaultSource(t, jsonName),
                             );
                             this.emitDescription(
                                 this.descriptionForClassProperty(t, jsonName),

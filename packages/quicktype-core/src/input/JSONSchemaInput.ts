@@ -30,6 +30,7 @@ import {
     patternAttributeProducer,
 } from "../attributes/Constraints.js";
 import { defaultValueAttributeProducer } from "../attributes/DefaultValue.js";
+import { defaultValuesAttributeProducer } from "../attributes/DefaultValues.js";
 import { descriptionAttributeProducer } from "../attributes/Description.js";
 import { enumValuesAttributeProducer } from "../attributes/EnumValues.js";
 import { StringTypes } from "../attributes/StringTypes.js";
@@ -1568,6 +1569,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
     ) {
         this._attributeProducers = [
             descriptionAttributeProducer,
+            defaultValuesAttributeProducer,
             accessorNamesAttributeProducer,
             defaultValueAttributeProducer,
             enumValuesAttributeProducer,

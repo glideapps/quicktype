@@ -68,6 +68,7 @@ const skipsMapValueValidation = [
 const skipsArrayElementValidation = ["issue2680-top-level-array.schema"];
 
 export type LanguageFeature =
+    | "defaults"
     | "enum"
     | "union"
     | "no-defaults"
@@ -321,6 +322,7 @@ export const PythonLanguage: Language = {
         "enum",
         "union",
         "no-defaults",
+        "defaults",
         "date-time",
         "integer-string",
         "bool-string",
@@ -1904,9 +1906,10 @@ export const HaskellLanguage: Language = {
         ...skipsUntypedUnions,
         // The test driver encodes the Maybe result, so a failed decode prints
         // "null" and exits 0 — expected-failure samples cannot be detected.
+        "default-values.schema",
+        "boolean-subschema.schema",
         // (A top-level `[Int]` correctly fails to decode `[1, 2, "three"]`,
         // but the driver still exits 0.)
-        "boolean-subschema.schema",
         "issue2680-top-level-array.schema",
         "nested-intersection-union.schema",
         "prefix-items.schema",
@@ -2271,6 +2274,7 @@ export const ElixirLanguage: Language = {
         "mutually-recursive.schema",
 
         // Struct keys cannot be enforced at runtime in Elixir and their values will just be set to null.
+        "default-values.schema",
         "strict-optional.schema",
         "required.schema",
         // The default-value fail sample also relies on required-property enforcement.

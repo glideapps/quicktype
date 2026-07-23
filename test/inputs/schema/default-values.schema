@@ -1,0 +1,20 @@
+{
+  "definitions": {
+    "record:Metadata": {
+      "type": "object",
+      "required": ["Name"],
+      "additionalProperties": false,
+      "properties": {
+        "Name": {
+          "default": "Hello",
+          "type": "string"
+        },
+        "Greeting": {
+          "default": "World",
+          "type": "string"
+        }
+      }
+    }
+  },
+  "$ref": "#/definitions/record:Metadata"
+}
