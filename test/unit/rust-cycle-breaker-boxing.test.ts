@@ -36,13 +36,15 @@ describe("Rust cycle-breaker boxing", () => {
             anyOf: [...recursiveUnionMembers, { type: "null" }],
         });
 
-        expect(output).toContain("pub next: Option<Box<Next>>,");
-        expect(output).not.toContain("Box<Option<Box<Next>>>");
+        expect(output).toContain("Node(Box<Node>),");
+        expect(output).toContain("pub next: Option<Next>,");
+        expect(output).not.toContain("Box<Option<Next>>");
     });
 
     test("keeps a non-nullable cycle-breaking union boxed", async () => {
         const output = await renderRust({ anyOf: recursiveUnionMembers }, true);
 
-        expect(output).toContain("pub next: Box<Next>,");
+        expect(output).toContain("Node(Box<Node>),");
+        expect(output).toContain("pub next: Next,");
     });
 });

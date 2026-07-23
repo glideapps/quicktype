@@ -668,6 +668,7 @@ export const CJSONLanguage: Language = {
         "multi-type-enum.schema",
         "nested-intersection-union.schema",
         "prefix-items.schema",
+        "recursive-ref-to-id.schema",
         /* Constraints (min/max and regex) are not supported (for the current implementation, can be added later, should abord parsing and return NULL) */
         "minmaxlength.schema",
         "schema-constraints.schema",
@@ -923,6 +924,7 @@ export const ElmLanguage: Language = {
         "integer-before-number.schema", // Python-specific union-order regression.
         "union-list.schema", // recursion
         "list.schema", // recursion
+        "recursive-ref-to-id.schema", // recursion
         "ref-remote.schema", // recursion
         "mutually-recursive.schema", // recursion
         "postman-collection.schema", // recursion
@@ -1759,6 +1761,7 @@ export const DartLanguage: Language = {
         "mutually-recursive.schema",
         "postman-collection.schema",
         "list.schema",
+        "recursive-ref-to-id.schema",
         "simple-ref.schema",
         "keyword-unions.schema",
         "ref-remote.schema",
@@ -1911,6 +1914,7 @@ export const HaskellLanguage: Language = {
         "nested-intersection-union.schema",
         "prefix-items.schema",
         "direct-union.schema",
+        "recursive-ref-to-id.schema",
         ...skipsEnumValueValidation,
         ...skipsMapValueValidation,
         "intersection.schema",
