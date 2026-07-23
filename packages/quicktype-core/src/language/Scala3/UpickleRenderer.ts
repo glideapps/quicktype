@@ -2,16 +2,31 @@ import type { Name } from "../../Naming.js";
 import type { Sourcelike } from "../../Source.js";
 import { removeNullFromUnion } from "../../Type/TypeUtils.js";
 import type { ClassType, EnumType, Type, UnionType } from "../../Type/index.js";
-import { stringEscape } from "../../support/Strings.js";
+import { stringEscape, utf16StringEscape } from "../../support/Strings.js";
 
 import { Scala3Renderer } from "./Scala3Renderer.js";
-import { unionMemberSortOrder, wrapOption } from "./utils.js";
+import {
+    propertyNameNeedsMapping,
+    unionMemberSortOrder,
+    wrapOption,
+} from "./utils.js";
 
 export class UpickleRenderer extends Scala3Renderer {
     private readonly seenUnionTypes: string[] = [];
 
-    protected emitClassDefinitionMethods(): void {
+    protected emitClassDefinitionMethods(
+        _c: ClassType,
+        _className: Name,
+    ): void {
         this.emitLine(") derives OptionPickler.ReadWriter");
+    }
+
+    protected emitPropertyAnnotation(_name: Name, jsonName: string): void {
+        if (propertyNameNeedsMapping(jsonName)) {
+            this.emitLine(
+                `@upickle.implicits.key("${utf16StringEscape(jsonName)}")`,
+            );
+        }
     }
 
     protected anySourceType(optional: boolean): Sourcelike {
