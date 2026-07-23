@@ -1,0 +1,40 @@
+{
+  "$id": "person.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "person",
+  "type": "object",
+  "properties": {
+    "PersonList": {
+      "allOf": [
+        { "$ref": "#/definitions/persons" },
+        {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "definitions": {
+    "person": {
+      "type": "object",
+      "required": ["age"],
+      "properties": {
+        "age": { "type": "integer" }
+      }
+    },
+    "persons": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "AgedPerson": { "$ref": "#/definitions/person" }
+        }
+      }
+    }
+  }
+}

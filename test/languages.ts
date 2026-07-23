@@ -676,6 +676,7 @@ export const CJSONLanguage: Language = {
         "optional-constraints.schema",
         "pattern.schema",
         /* Required properties absent are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
+        "all-of-array-items.schema",
         "intersection.schema",
         "required.schema",
         // The default-value fail sample also relies on required-property
@@ -1921,6 +1922,7 @@ export const HaskellLanguage: Language = {
         // The default-value fail sample also relies on required-property enforcement.
         "default-value.schema",
         "required-non-properties.schema",
+        "all-of-array-items.schema",
     ],
     rendererOptions: {},
     // The default is array-type=list; this keeps the Vector code path
@@ -2277,6 +2279,7 @@ export const ElixirLanguage: Language = {
         "default-value.schema",
         "boolean-subschema.schema",
         "intersection.schema",
+        "all-of-array-items.schema",
         "optional-any.schema",
 
         // The test incorrectly succeeds due to the emitter being permissive for unions that contain only primitives. A future enhancement

@@ -153,7 +153,7 @@ class IntersectionAccumulator
         );
 
         if (this._arrayItemTypes === undefined) {
-            this._arrayItemTypes = new Set();
+            this._arrayItemTypes = new Set([maybeArray.items]);
         } else if (this._arrayItemTypes !== false) {
             this._arrayItemTypes.add(maybeArray.items);
         }
