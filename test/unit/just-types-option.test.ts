@@ -65,6 +65,17 @@ describe("just-types generates plain types in every language", () => {
         expect(output).not.toContain("JsonProperty");
     });
 
+    test("C#: just-types with use-records emits records without helpers", async () => {
+        const output = await linesFor("csharp", {
+            "just-types": true,
+            "use-records": true,
+        });
+        expect(output).toContain("namespace QuickType");
+        expect(output).toContain("public partial record Person");
+        expect(output).not.toContain("JsonConverter");
+        expect(output).not.toContain("FromJson");
+    });
+
     test("Kotlin: plain data classes, no Klaxon", async () => {
         const output = await linesFor("kotlin", { "just-types": true });
         expect(output).toContain("data class Person");
@@ -90,7 +101,7 @@ describe("just-types generates plain types in every language", () => {
 
         expect(output).toContain("enum class CanvasAction(val value: String)");
         expect(output).toContain('Add("add")');
-        expect(output).toContain('Bringtofront("bringtofront")');
+        expect(output).toContain('BringToFront("bringtofront")');
         expect(output).toContain(
             "fun fromValue(value: String): CanvasAction = when (value)",
         );
