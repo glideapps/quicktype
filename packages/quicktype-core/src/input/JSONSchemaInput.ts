@@ -1039,7 +1039,9 @@ async function addTypesInSchema(
         async function makeArrayType(
             arrayAttributes: TypeAttributes,
         ): Promise<TypeRef> {
-            const singularAttributes = singularizeTypeNames(typeAttributes);
+            const singularAttributes = makeTypeAttributesInferred(
+                singularizeTypeNames(typeAttributes),
+            );
             const items = schema.items;
             // JSON Schema 2020-12 renamed the array (tuple) form of `items` to
             // `prefixItems`; treat it the same as a draft-07 array-valued
@@ -1277,6 +1279,7 @@ async function addTypesInSchema(
             typeSet !== undefined ||
             schema.properties !== undefined ||
             schema.additionalProperties !== undefined ||
+            schema.unevaluatedProperties !== undefined ||
             schema.items !== undefined ||
             schema.prefixItems !== undefined ||
             schema.required !== undefined ||

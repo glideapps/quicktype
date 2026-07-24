@@ -676,6 +676,7 @@ export const CJSONLanguage: Language = {
         "optional-constraints.schema",
         "pattern.schema",
         /* Required properties absent are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
+        "ie-suffix-singularization.schema",
         "intersection.schema",
         "required.schema",
         // The default-value fail sample also relies on required-property
@@ -1199,7 +1200,11 @@ export const JavaScriptPropTypesLanguage: Language = {
         "spotify-album.json", // renderer does not support recursion
         "76ae1.json", // renderer does not support recursion
     ],
-    skipSchema: ["integer-before-number.schema"], // Python-specific union-order regression.
+    skipSchema: [
+        // The renderer does not support a bare top-level map.
+        "empty-object.schema",
+        "integer-before-number.schema", // Python-specific union-order regression.
+    ],
     skipMiscJSON: false,
     rendererOptions: { "module-system": "es6" },
     quickTestRendererOptions: [{ converters: "top-level" }],
@@ -1372,7 +1377,11 @@ I havea no idea how to encode these tests correctly.
         "php-mixed-union.json",
         "nst-test-suite.json",
     ],
-    skipSchema: ["integer-before-number.schema"], // Python-specific union-order regression.
+    skipSchema: [
+        // The renderer does not support a bare top-level map.
+        "empty-object.schema",
+        "integer-before-number.schema", // Python-specific union-order regression.
+    ],
     skipMiscJSON: false,
     rendererOptions: { "just-types": "true" },
     quickTestRendererOptions: [],
@@ -1558,6 +1567,10 @@ export const KotlinJacksonLanguage: Language = {
         "top-level-enum.schema",
         "top-level-primitive.schema",
         "recursive-union-flattening.schema",
+        // Jackson cannot deserialize the generated ArrayList subclass because
+        // it has no default constructor.
+        "top-level-array.schema",
+        "top-level-primitive-array.schema",
         // A top-level array is deserialized into an `ArrayList<Long>` whose
         // element type is erased at runtime, so a mistyped element
         // round-trips instead of failing.
@@ -1706,6 +1719,8 @@ export const KotlinXLanguage: Language = {
         // Top-level array: `typealias TopLevel = JsonArray<T>` doesn't
         // compile (documented TODO in KotlinXRenderer.ts).
         "union.schema",
+        "top-level-array.schema",
+        "top-level-primitive-array.schema",
         "issue2680-top-level-array.schema",
     ],
     skipMiscJSON: false,
@@ -1911,12 +1926,14 @@ export const HaskellLanguage: Language = {
         "nested-intersection-union.schema",
         "prefix-items.schema",
         "direct-union.schema",
+        "empty-object.schema",
         ...skipsEnumValueValidation,
         ...skipsMapValueValidation,
         "intersection.schema",
         "multi-type-enum.schema",
         "keyword-unions.schema",
         "optional-any.schema",
+        "ie-suffix-singularization.schema",
         "required.schema",
         // The default-value fail sample also relies on required-property enforcement.
         "default-value.schema",
@@ -1963,6 +1980,8 @@ export const PHPLanguage: Language = {
     ],
     skipMiscJSON: true,
     skipSchema: [
+        // The renderer does not support a bare top-level map.
+        "empty-object.schema",
         "integer-before-number.schema", // Python-specific union-order regression.
         // PHP class names are case-insensitive, but the namer dedups
         // case-sensitively, so this declares classes that collide (same
@@ -1976,6 +1995,8 @@ export const PHPLanguage: Language = {
         "top-level-enum.schema",
         // The driver does not support top-level arrays.
         "union.schema",
+        "top-level-array.schema",
+        "top-level-primitive-array.schema",
         "issue2680-top-level-array.schema",
     ],
     rendererOptions: {},
@@ -2070,6 +2091,8 @@ export const TypeScriptZodLanguage: Language = {
     ],
     skipMiscJSON: false,
     skipSchema: [
+        // The renderer does not support a bare top-level map.
+        "empty-object.schema",
         "integer-before-number.schema", // Python-specific union-order regression.
         "any.schema",
         ...skipsUntypedUnions,
@@ -2195,6 +2218,8 @@ export const TypeScriptEffectSchemaLanguage: Language = {
     ],
     skipMiscJSON: false,
     skipSchema: [
+        // The renderer does not support a bare top-level map.
+        "empty-object.schema",
         "integer-before-number.schema", // Python-specific union-order regression.
         "any.schema",
         ...skipsUntypedUnions,
@@ -2271,10 +2296,15 @@ export const ElixirLanguage: Language = {
         "mutually-recursive.schema",
 
         // Struct keys cannot be enforced at runtime in Elixir and their values will just be set to null.
+        "ie-suffix-singularization.schema",
         "strict-optional.schema",
         "required.schema",
         // The default-value fail sample also relies on required-property enforcement.
         "default-value.schema",
+        // The renderer references a nonexistent TopLevelElement module for
+        // top-level arrays.
+        "top-level-array.schema",
+        "top-level-primitive-array.schema",
         "boolean-subschema.schema",
         "intersection.schema",
         "optional-any.schema",
@@ -2282,6 +2312,12 @@ export const ElixirLanguage: Language = {
         // The test incorrectly succeeds due to the emitter being permissive for unions that contain only primitives. A future enhancement
         // for the Elixir emitter could be a user-controlled 'strict' mode that pattern matches even on unions of only primitive types.
         ...skipsMapValueValidation,
+
+        // A bare top-level map is emitted as a Jason.decode!/encode! pass-through
+        // with no shape validation, so the .fail.json case (a non-object) is not
+        // rejected and round-trips instead of exiting nonzero. Same permissiveness
+        // class as go-schema-pattern-properties above.
+        "empty-object.schema",
 
         // The generated top-level type is not emitted as a TopLevel module the fixture can call.
         "recursive-union-flattening.schema",

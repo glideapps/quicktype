@@ -86,6 +86,10 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
     }
 
     protected namedTypeToNameForTopLevel(type: Type): Type | undefined {
+        if (type.kind === "array") {
+            return undefined;
+        }
+
         return directlyReachableSingleNamedType(type);
     }
 

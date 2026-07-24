@@ -1,0 +1,6 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema#",
+  "title": "SomeInput",
+  "type": "array",
+  "items": { "type": "string" }
+}
