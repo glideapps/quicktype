@@ -581,6 +581,7 @@ export const GoLanguage: Language = {
         // fields preserve null instead of being omitted.
         ["omit-empty.json", { "omit-empty": "true" }],
         ["nullable-optional-one-of.schema", { "omit-empty": "true" }],
+        ["enum.schema", { "enum-type-name-suffix": "true" }],
     ],
     sourceFiles: ["src/language/Golang/index.ts"],
 };
