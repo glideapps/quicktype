@@ -222,8 +222,8 @@ export class GoRenderer extends ConvenienceRenderer {
             t instanceof ClassType
                 ? this.collectClassImports(t)
                 : t instanceof UnionType
-                  ? this.collectUnionImports(t)
-                  : undefined;
+                    ? this.collectUnionImports(t)
+                    : undefined;
         this.emitPackageDefinitons(true, imports);
 
         const unmarshalName = defined(this._topLevelUnmarshalNames.get(name));
@@ -303,7 +303,7 @@ export class GoRenderer extends ConvenienceRenderer {
         const columns: Sourcelike[][] = [];
         this.forEachEnumCase(e, "none", (name, jsonName) => {
             columns.push([
-                [name, " "],
+                this._options.enumTypeNameSuffix ? [name, enumName, " "] : [name, " "],
                 [enumName, ' = "', stringEscape(jsonName), '"'],
             ]);
         });
