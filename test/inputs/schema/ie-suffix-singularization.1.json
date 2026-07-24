@@ -1,0 +1,8 @@
+{
+    "cookies": [
+        {
+            "name": "session",
+            "value": "abc123"
+        }
+    ]
+}

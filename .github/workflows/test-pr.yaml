@@ -195,8 +195,8 @@ jobs:
 
             - name: Install scala
               if: ${{ contains(matrix.fixture, 'scala3') }}
-              uses: VirtusLab/scala-cli-setup@main
-            - run: echo '@main def hello() = println("We need this spam print statement for bloop to exit correctly...")' | scala-cli _
+              uses: VirtusLab/scala-cli-setup@v1.15.0
+            - run: echo '@main def hello() = println("Warm up the Scala compilation server")' | SCALA_CLI_EXTRA_TIMEOUT=2min scala-cli _
               if: ${{ contains(matrix.fixture, 'scala3') }}
 
             - name: Install Elixir
@@ -207,6 +207,8 @@ jobs:
                   otp-version: "26.0"
 
             - run: QUICKTEST=true FIXTURE=${{ matrix.fixture }} npm run test:fixtures
+              env:
+                  CPUs: ${{ contains(matrix.fixture, 'scala3') && '2' || '0' }}
 
     test-complete:
         if: ${{ cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
