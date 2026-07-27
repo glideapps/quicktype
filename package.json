@@ -58,7 +58,7 @@
         "@tsconfig/node20": "^20.1.6",
         "@types/command-line-args": "^5.2.0",
         "@types/command-line-usage": "^5.0.4",
-        "@types/lodash": "^4.17.0",
+        "@types/lodash": "^4.17.24",
         "@types/node": "~20.19.0",
         "@types/semver": "^7.5.0",
         "@types/shelljs": "^0.10.0",
