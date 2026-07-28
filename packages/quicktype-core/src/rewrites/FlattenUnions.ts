@@ -16,6 +16,7 @@ export function flattenUnions(
     stringTypeMapping: StringTypeMapping,
     conflateNumbers: boolean,
     makeObjectTypes: boolean,
+    supportsUnionsWithMultipleObjectTypes: boolean,
     debugPrintReconstitution: boolean,
 ): [TypeGraph, boolean] {
     let needsRepeat = false;
@@ -140,6 +141,7 @@ export function flattenUnions(
             builder,
             makeObjectTypes,
             true,
+            supportsUnionsWithMultipleObjectTypes,
             unifyTypeRefs,
         );
         return unifyTypes(

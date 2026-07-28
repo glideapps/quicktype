@@ -667,6 +667,8 @@ export const CJSONLanguage: Language = {
          * an integer is expected) are not checked either. */
         ...skipsArrayElementValidation,
         "multi-type-enum.schema",
+        /* Named object unions merge into an optional-properties class, and wrong-shaped values are not rejected. */
+        "named-class-union.schema",
         "nested-intersection-union.schema",
         "prefix-items.schema",
         /* Constraints (min/max and regex) are not supported (for the current implementation, can be added later, should abord parsing and return NULL) */
@@ -831,7 +833,9 @@ export const CPlusPlusLanguage: Language = {
         "integer-before-number.schema", // Python-specific union-order regression.
         // uses too much memory
         "keyword-unions.schema",
-        // The generated deserializer accepts non-object values when all class properties are optional.
+        // Named object unions merge into a class with all-optional properties,
+        // whose generated deserializer accepts non-object values.
+        "named-class-union.schema",
         "nested-intersection-union.schema",
     ],
     rendererOptions: {},
@@ -935,8 +939,9 @@ export const ElmLanguage: Language = {
         // property decodes to the object's constructor function.
         "constructor.schema",
         "keyword-unions.schema",
-        // The generated decoder accepts invalid union members because all
-        // class properties decode via `Jpipe.optional`.
+        // Named object unions merge into a class whose properties all decode
+        // via `Jpipe.optional`, which accepts invalid union members.
+        "named-class-union.schema",
         "nested-intersection-union.schema",
     ],
     rendererOptions: {},
@@ -1447,8 +1452,9 @@ export const KotlinLanguage: Language = {
         // which is not represented in the types (implicit-class-array-union);
         // class-map-union: KlaxonException: Couldn't find a suitable constructor for class UnionValue to initialize with {}
         ...skipsUntypedUnions,
-        // Deserializes an array where a union of two classes is expected
-        // instead of rejecting it.
+        // Named object unions merge into one optional-properties class, which
+        // deserializes an array instead of rejecting it.
+        "named-class-union.schema",
         "nested-intersection-union.schema",
         "class-with-additional.schema",
         ...skipsMapValueValidation,
@@ -1542,8 +1548,9 @@ export const KotlinJacksonLanguage: Language = {
         // which is not represented in the types (implicit-class-array-union);
         // class-map-union: KlaxonException: Couldn't find a suitable constructor for class UnionValue to initialize with {}
         ...skipsUntypedUnions,
-        // Deserializes an array where a union of two classes is expected
-        // instead of rejecting it.
+        // Named object unions merge into one optional-properties class, which
+        // deserializes an array instead of rejecting it.
+        "named-class-union.schema",
         "nested-intersection-union.schema",
         "class-with-additional.schema",
         ...skipsMapValueValidation,
@@ -1916,6 +1923,10 @@ export const HaskellLanguage: Language = {
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
         ...skipsUntypedUnions,
+        // Named object unions merge into an optional-properties class. The test
+        // driver encodes the Maybe result, so a failed decode prints "null" and
+        // exits 0 — expected-failure samples cannot be detected.
+        "named-class-union.schema",
         // The test driver encodes the Maybe result, so a failed decode prints
         // "null" and exits 0 — expected-failure samples cannot be detected.
         // (A top-level `[Int]` correctly fails to decode `[1, 2, "three"]`,

@@ -32,6 +32,7 @@ import {
 import { defaultValueAttributeProducer } from "../attributes/DefaultValue.js";
 import { descriptionAttributeProducer } from "../attributes/Description.js";
 import { enumValuesAttributeProducer } from "../attributes/EnumValues.js";
+import { makeExplicitUnionMemberAttributes } from "../attributes/ExplicitUnionMember.js";
 import { StringTypes } from "../attributes/StringTypes.js";
 import {
     type TypeAttributes,
@@ -1217,6 +1218,26 @@ async function addTypesInSchema(
             kind: string,
         ): Promise<TypeRef> {
             const typeRefs = await makeTypesFromCases(cases, kind);
+            if (
+                (kind === "oneOf" || kind === "anyOf") &&
+                cases.length >= 2 &&
+                cases.every(
+                    (c) =>
+                        c !== null &&
+                        typeof c === "object" &&
+                        !Array.isArray(c) &&
+                        typeof (c as { $ref?: unknown }).$ref === "string",
+                )
+            ) {
+                const explicitUnionGroup = Symbol();
+                for (const typeRef of typeRefs) {
+                    typeBuilder.addAttributes(
+                        typeRef,
+                        makeExplicitUnionMemberAttributes(explicitUnionGroup),
+                    );
+                }
+            }
+
             let unionAttributes = makeTypeAttributesInferred(typeAttributes);
             if (kind === "oneOf") {
                 forEachProducedAttribute(
