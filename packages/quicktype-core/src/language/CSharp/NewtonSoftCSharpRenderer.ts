@@ -202,7 +202,12 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
     }
 
     protected emitDefaultFollowingComments(): void {
-        if (!this._needHelpers || this._options.version < 8) return;
+        if (
+            !this._needHelpers ||
+            (this._options.version < 8 && !this._options.nullableReferenceTypes)
+        ) {
+            return;
+        }
 
         this.emitLine("#pragma warning restore CS8618");
         this.emitLine("#pragma warning restore CS8601");
@@ -247,7 +252,10 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             );
         });
 
-        if (this._options.version >= 8) {
+        if (
+            this._options.version >= 8 ||
+            this._options.nullableReferenceTypes
+        ) {
             this.emitLine("#nullable enable");
             this.emitLine("#pragma warning disable CS8618");
             this.emitLine("#pragma warning disable CS8601");
@@ -305,7 +313,10 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 ? [", NullValueHandling = ", nullValueHandlingClass, ".Ignore"]
                 : [];
         let required: Sourcelike;
-        if (!this._options.checkRequired || (isOptional && isNullable)) {
+        if (
+            !this._options.checkRequired ||
+            (isOptional && (isNullable || this._options.nullableReferenceTypes))
+        ) {
             required = [nullValueHandling];
         } else if (isOptional && !isNullable) {
             required = [
@@ -374,6 +385,9 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         }
 
         const csType = this.topLevelResultType(t);
+        const fromJsonType = this._options.nullableReferenceTypes
+            ? this.nullableCSType(t)
+            : csType;
         this.emitType(
             undefined,
             AccessModifier.Public,
@@ -383,7 +397,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             () => {
                 // FIXME: Make FromJson a Named
                 this.emitExpressionMember(
-                    ["public static ", csType, " FromJson(string json)"],
+                    ["public static ", fromJsonType, " FromJson(string json)"],
                     [
                         "JsonConvert.DeserializeObject<",
                         csType,

@@ -206,7 +206,11 @@ export class CSharpRenderer extends ConvenienceRenderer {
         }
 
         const csType = this.csType(t, follow, withIssues);
-        if (isValueType(t) || this._csOptions.version >= 8) {
+        if (
+            isValueType(t) ||
+            this._csOptions.version >= 8 ||
+            this._csOptions.nullableReferenceTypes
+        ) {
             return [csType, "?"];
         } else {
             return csType;

@@ -74,6 +74,12 @@ export const cSharpOptions = {
         "8",
         "secondary",
     ),
+    nullableReferenceTypes: new BooleanOption(
+        "nullable-reference-types",
+        "Use nullable reference types for optional properties (C# 8+)",
+        false,
+        "secondary",
+    ),
     virtual: new BooleanOption("virtual", "Generate virtual properties", false),
     useRecords: new BooleanOption(
         "use-records",
