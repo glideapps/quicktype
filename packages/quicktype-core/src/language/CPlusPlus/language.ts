@@ -111,6 +111,12 @@ export const cPlusPlusOptions = {
         "Hide null value for optional field",
         false,
     ),
+    leanHeader: new BooleanOption(
+        "lean-header",
+        "Generate a lightweight Fwd header and separate JSON implementation files",
+        false,
+        "secondary",
+    ),
 };
 
 export const cPlusPlusLanguageConfig = {
