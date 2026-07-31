@@ -165,6 +165,7 @@ export const CSharpLanguage: Language = {
         // language-version code paths covered.
         { "csharp-version": "5" },
         { "csharp-version": "6" },
+        { "csharp-version": "6", "nullable-reference-types": true },
         { density: "dense" },
         { "number-type": "decimal" },
         { "any-type": "dynamic" },

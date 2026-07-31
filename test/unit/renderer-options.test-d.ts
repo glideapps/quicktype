@@ -23,6 +23,7 @@ describe("rendererOptions typing", () => {
                 namespace: "Acme",
                 framework: "SystemTextJson",
                 "csharp-version": "6",
+                "nullable-reference-types": true,
             },
         });
     });
