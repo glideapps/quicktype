@@ -289,11 +289,18 @@ export class SwiftRenderer extends ConvenienceRenderer {
                         "(json)",
                     );
                 } else {
+                    const decoder =
+                        this._options.convenienceInitializers ||
+                        this._options.alamofire
+                            ? "newJSONDecoder()"
+                            : "JSONDecoder()";
                     this.emitLine(
                         "//   let ",
                         modifySource(camelCase, name),
                         " = ",
-                        "try? newJSONDecoder().decode(",
+                        "try? ",
+                        decoder,
+                        ".decode(",
                         name,
                         ".self, from: jsonData)",
                     );

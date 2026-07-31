@@ -53,4 +53,31 @@ describe("Swift JSON helper visibility", () => {
             "fileprivate func newJSONDecoder()",
         );
     });
+
+    test("uses JSONDecoder when multi-file output has no helpers", async () => {
+        const result = await quicktypeMultiFile({
+            inputData: await inputData(),
+            lang: "swift",
+            rendererOptions: {
+                "multi-file-output": true,
+                initializers: false,
+            },
+        });
+        const model = Array.from(result).find(
+            ([filename]) => filename === "TopLevel.swift",
+        );
+        const support = Array.from(result).find(
+            ([filename]) => filename === "JSONSchemaSupport.swift",
+        );
+
+        expect(model?.[1].lines.join("\n")).toContain(
+            "try? JSONDecoder().decode(TopLevel.self, from: jsonData)",
+        );
+        expect(model?.[1].lines.join("\n")).not.toContain(
+            "newJSONDecoder().decode",
+        );
+        expect(support?.[1].lines.join("\n")).not.toContain(
+            "func newJSONDecoder()",
+        );
+    });
 });
