@@ -1,0 +1,10 @@
+{
+  "anything": {
+    "accepted": true
+  },
+  "disabled": false,
+  "options": {
+    "label": "shown"
+  },
+  "kind": "primary choice"
+}

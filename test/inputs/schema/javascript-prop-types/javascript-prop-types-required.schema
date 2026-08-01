@@ -1,0 +1,24 @@
+{
+  "type": "object",
+  "required": ["anything", "disabled", "options", "tags", "kind"],
+  "properties": {
+    "anything": {},
+    "disabled": { "type": "boolean" },
+    "options": {
+      "type": "object",
+      "required": ["label"],
+      "properties": {
+        "label": { "type": "string" }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["primary choice", "secondary"]
+    },
+    "optional": { "type": "number" }
+  }
+}

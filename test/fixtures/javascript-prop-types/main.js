@@ -1,7 +1,6 @@
 import { readFileSync } from "node:fs";
 import { argv } from "node:process";
 import PropTypes from "prop-types";
-import { TopLevel } from "./toplevel.js";
 
 const sample = argv[2];
 const json = readFileSync(sample);
@@ -26,6 +25,7 @@ try {
     checkerWorks = errors.length > 0;
     errors.length = 0;
 
+    const { TopLevel } = await import("./toplevel.js");
     PropTypes.resetWarningCache();
     PropTypes.checkPropTypes({ obj: TopLevel }, { obj }, "prop", "MyComponent");
 } finally {
@@ -36,8 +36,10 @@ if (!checkerWorks) {
     console.log(
         "Failure: prop-types checks are disabled (NODE_ENV=production?)",
     );
+    process.exitCode = 1;
 } else if (errors.length > 0) {
     console.log("Failure:", errors.join("\n"));
+    process.exitCode = 1;
 } else {
-    console.log("Success");
+    console.log(JSON.stringify(obj));
 }
