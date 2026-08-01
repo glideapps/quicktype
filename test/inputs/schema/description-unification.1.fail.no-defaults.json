@@ -1,0 +1,7 @@
+{
+    "allow": {
+        "labels": {
+            "env": "production"
+        }
+    }
+}
