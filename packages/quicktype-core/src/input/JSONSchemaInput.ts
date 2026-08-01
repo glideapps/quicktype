@@ -30,7 +30,10 @@ import {
     patternAttributeProducer,
 } from "../attributes/Constraints.js";
 import { defaultValueAttributeProducer } from "../attributes/DefaultValue.js";
-import { descriptionAttributeProducer } from "../attributes/Description.js";
+import {
+    descriptionAttributeProducer,
+    propertyDescriptionsTypeAttributeKind,
+} from "../attributes/Description.js";
 import { enumValuesAttributeProducer } from "../attributes/EnumValues.js";
 import { StringTypes } from "../attributes/StringTypes.js";
 import {
@@ -819,6 +822,40 @@ async function addTypesInSchema(
         typeForCanonicalRef.set(loc.canonicalRef, t);
     }
 
+    async function descriptionForReferencedSchema(
+        schema: JSONSchema,
+        loc: Location,
+    ): Promise<string | undefined> {
+        if (
+            typeof schema !== "object" ||
+            typeof schema.description === "string"
+        ) {
+            return undefined;
+        }
+
+        const visited = new Set<string>();
+        for (;;) {
+            if (typeof schema !== "object" || typeof schema.$ref !== "string") {
+                return undefined;
+            }
+
+            const key = `${loc.canonicalRef.toString()}|${schema.$ref}`;
+            if (visited.has(key)) return undefined;
+            visited.add(key);
+
+            [schema, loc] = await resolver.resolveVirtualRef(
+                loc,
+                Ref.parse(schema.$ref),
+            );
+            if (
+                typeof schema === "object" &&
+                typeof schema.description === "string"
+            ) {
+                return schema.description;
+            }
+        }
+    }
+
     async function makeObject(
         loc: Location,
         attributes: TypeAttributes,
@@ -832,19 +869,48 @@ async function addTypesInSchema(
         const propertiesMap = mapSortBy(mapFromObject(properties), (_, k) =>
             sortKey(k),
         );
+        const referencedPropertyDescriptions = new Map<
+            string,
+            ReadonlySet<string>
+        >();
         const props = await mapMapSync(
             propertiesMap,
             async (propSchema, propName) => {
                 const propLoc = loc.push("properties", propName);
+                const checkedSchema = checkJSONSchema(
+                    propSchema,
+                    propLoc.canonicalRef,
+                );
                 const t = await toType(
-                    checkJSONSchema(propSchema, propLoc.canonicalRef),
+                    checkedSchema,
                     propLoc,
                     makeNamesTypeAttributes(propName, true),
                 );
+                const description = await descriptionForReferencedSchema(
+                    checkedSchema,
+                    propLoc,
+                );
+                if (description !== undefined) {
+                    referencedPropertyDescriptions.set(
+                        propName,
+                        new Set([description]),
+                    );
+                }
+
                 const isOptional = !required.has(propName);
                 return typeBuilder.makeClassProperty(t, isOptional);
             },
         );
+        if (referencedPropertyDescriptions.size > 0) {
+            attributes = combineTypeAttributes(
+                "union",
+                attributes,
+                propertyDescriptionsTypeAttributeKind.makeAttributes(
+                    referencedPropertyDescriptions,
+                ),
+            );
+        }
+
         let additionalPropertiesType: TypeRef | undefined;
         if (
             additionalProperties === undefined ||

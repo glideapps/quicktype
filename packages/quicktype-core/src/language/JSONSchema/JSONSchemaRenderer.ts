@@ -128,11 +128,12 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
             const req: string[] = [];
             for (const [name, p] of o.getProperties()) {
                 const prop = this.schemaForType(p.type);
-                if (prop.description === undefined) {
-                    addDescriptionToSchema(
-                        prop,
-                        this.descriptionForClassProperty(o, name),
-                    );
+                const propertyDescription = this.descriptionForClassProperty(
+                    o,
+                    name,
+                );
+                if (propertyDescription !== undefined) {
+                    addDescriptionToSchema(prop, propertyDescription);
                 }
 
                 props[name] = prop;

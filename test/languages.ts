@@ -680,6 +680,7 @@ export const CJSONLanguage: Language = {
         "ie-suffix-singularization.schema",
         "intersection.schema",
         "required.schema",
+        "description-ref.schema",
         // The default-value fail sample also relies on required-property
         // enforcement, which cJSON does not do.
         "default-value.schema",
@@ -1002,6 +1003,9 @@ export const SwiftLanguage: Language = {
         // This works on macOS, but on Linux one of the failure test cases doesn't fail
         ...skipsUntypedUnions,
         "required.schema",
+        // Same missing-required detection gap as required.schema: the
+        // no-defaults fail sample does not fail on Linux.
+        "description-ref.schema",
         // The default-value fail sample also relies on required-property enforcement.
         "default-value.schema",
         "multi-type-enum.schema",
@@ -1934,6 +1938,9 @@ export const HaskellLanguage: Language = {
         "optional-any.schema",
         "ie-suffix-singularization.schema",
         "required.schema",
+        // Same as required.schema: the Maybe-encoding driver prints "null"
+        // and exits 0, so this no-defaults fail sample can't be detected.
+        "description-ref.schema",
         // The default-value fail sample also relies on required-property enforcement.
         "default-value.schema",
         "required-non-properties.schema",
@@ -2109,6 +2116,8 @@ export const TypeScriptZodLanguage: Language = {
         "optional-any.schema",
         "recursive-union-flattening.schema",
         "required.schema",
+        // Same missing-required detection gap as required.schema.
+        "description-ref.schema",
         // The default-value fail sample also relies on required-property enforcement.
         "default-value.schema",
         "required-non-properties.schema",
@@ -2230,6 +2239,8 @@ export const TypeScriptEffectSchemaLanguage: Language = {
         "keyword-unions.schema",
         "optional-any.schema",
         "required.schema",
+        // Same missing-required detection gap as required.schema.
+        "description-ref.schema",
         // The default-value fail sample also relies on required-property enforcement.
         "default-value.schema",
         "required-non-properties.schema",
@@ -2298,6 +2309,7 @@ export const ElixirLanguage: Language = {
         "ie-suffix-singularization.schema",
         "strict-optional.schema",
         "required.schema",
+        "description-ref.schema",
         // The default-value fail sample also relies on required-property enforcement.
         "default-value.schema",
         // The renderer references a nonexistent TopLevelElement module for
