@@ -25,6 +25,7 @@ const skipsEnumValueValidation = [
     "enum-large.schema",
     "optional-enum.schema",
     "const-non-string.schema",
+    "upper-acronym-names.schema",
     "haskell-enum-forbidden.schema",
     "nullable-optional-one-of.schema",
     "all-of-additional-properties-false.schema",
@@ -852,6 +853,16 @@ export const CPlusPlusLanguage: Language = {
         ["optional-any.schema", { "hide-null-optional": "true" }],
     ],
     sourceFiles: ["src/language/CPlusPlus/index.ts"],
+};
+
+export const CPlusPlusUpperAcronymsLanguage: Language = {
+    ...CPlusPlusLanguage,
+    compileCommand:
+        "g++ -O0 -o quicktype -std=c++17 main.cpp acronym_names.cpp",
+    rendererOptions: {
+        "type-style": "pascal-case-upper-acronyms",
+        "member-style": "camel-case-upper-acronyms",
+    },
 };
 
 export const CPlusPlusMultiSourceLanguage: Language = {

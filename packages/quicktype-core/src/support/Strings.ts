@@ -619,9 +619,12 @@ export function makeNameStyle(
 
     switch (namingStyle) {
         case "pascal":
-        case "pascal-upper-acronyms":
             firstWordAcronymStyle = firstUpperWordStyle;
             firstWordStyle = firstWordAcronymStyle;
+            break;
+        case "pascal-upper-acronyms":
+            firstWordStyle = firstUpperWordStyle;
+            firstWordAcronymStyle = allUpperWordStyle;
             break;
         case "camel":
         case "camel-upper-acronyms":
