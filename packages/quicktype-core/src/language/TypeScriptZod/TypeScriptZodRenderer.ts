@@ -1,6 +1,9 @@
 import { arrayIntercalate } from "collection-utils";
 
-import { minMaxItemsForType } from "../../attributes/Constraints.js";
+import {
+    minMaxItemsForType,
+    minMaxValueForType,
+} from "../../attributes/Constraints.js";
 import { ConvenienceRenderer } from "../../ConvenienceRenderer.js";
 import { type Name, type Namer, funPrefixNamer } from "../../Naming.js";
 import type { RenderContext } from "../../Renderer.js";
@@ -99,6 +102,20 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         return p.isOptional ? [typeMap, ".optional()"] : typeMap;
     }
 
+    protected renderNumber(type: Type, base: Sourcelike): Sourcelike {
+        const constraints: Sourcelike[] = [base];
+        const [minimum, maximum] = minMaxValueForType(type) ?? [];
+
+        if (minimum !== undefined) {
+            constraints.push(".min(", minimum.toString(10), ")");
+        }
+        if (maximum !== undefined) {
+            constraints.push(".max(", maximum.toString(10), ")");
+        }
+
+        return constraints;
+    }
+
     protected typeMapTypeFor(t: Type, required = true): Sourcelike {
         if (["class", "object", "enum"].includes(t.kind)) {
             return [this.nameForNamedType(t), "Schema"];
@@ -109,8 +126,8 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
             (_anyType) => "z.any()",
             (_nullType) => "z.null()",
             (_boolType) => "z.boolean()",
-            (_integerType) => "z.number()",
-            (_doubleType) => "z.number()",
+            (integerType) => this.renderNumber(integerType, "z.number()"),
+            (doubleType) => this.renderNumber(doubleType, "z.number()"),
             (_stringType) => "z.string()",
             (arrayType) => {
                 const [minItems, maxItems] =
