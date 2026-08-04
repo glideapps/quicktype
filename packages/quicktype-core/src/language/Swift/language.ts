@@ -19,6 +19,11 @@ import { SwiftRenderer } from "./SwiftRenderer.js";
 import { SwiftDateTimeRecognizer } from "./utils.js";
 
 export const swiftOptions = {
+    nestTypes: new BooleanOption(
+        "nest-types",
+        "Nest child types inside their owning top-level type",
+        false,
+    ),
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     convenienceInitializers: new BooleanOption(
         "initializers",

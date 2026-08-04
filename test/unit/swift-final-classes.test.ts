@@ -110,4 +110,35 @@ describe("Swift class generation", () => {
             true,
         );
     });
+
+    test("can nest child types to avoid multi-source name collisions", async () => {
+        const first = new JSONSchemaInput(undefined);
+        await first.addSource({
+            name: "First",
+            schema: JSON.stringify(modelSchema),
+        });
+        const second = new JSONSchemaInput(undefined);
+        await second.addSource({
+            name: "Second",
+            schema: JSON.stringify(modelSchema),
+        });
+        const inputData = new InputData();
+        inputData.addInput(first);
+        inputData.addInput(second);
+
+        const result = await quicktype({
+            inputData,
+            lang: "swift",
+            rendererOptions: { "nest-types": true },
+        });
+        const output = result.lines.join("\n");
+
+        expect(output).toContain("struct First");
+        expect(output).toContain("struct Second");
+        expect(output).toContain("struct FirstChild");
+        expect(output).toContain("struct SecondChild");
+        expect(output).toContain("First.FirstChild");
+        expect(output).toContain("Second.SecondChild");
+        expect(output).not.toMatch(/^struct (?:FirstChild|SecondChild)/m);
+    });
 });

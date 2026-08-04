@@ -19,14 +19,15 @@ import type { TargetLanguage } from "../../TargetLanguage.js";
 import {
     ArrayType,
     type ClassProperty,
-    type ClassType,
+    ClassType,
     EnumType,
     MapType,
     type Type,
     type TypeKind,
-    type UnionType,
+    UnionType,
 } from "../../Type/index.js";
 import {
+    isNamedType,
     matchType,
     nullableFromUnion,
     removeNullFromUnion,
@@ -47,6 +48,8 @@ export class SwiftRenderer extends ConvenienceRenderer {
     private _needAny = false;
 
     private _needNull = false;
+
+    private readonly _nestedTypeParents = new Map<Type, ClassType>();
 
     public constructor(
         targetLanguage: TargetLanguage,
@@ -193,18 +196,18 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 this.swiftType(arrayType.items, withIssues),
                 "]",
             ],
-            (classType) => this.nameForNamedType(classType),
+            (classType) => this.swiftNameForNamedType(classType),
             (mapType) => [
                 "[String: ",
                 this.swiftType(mapType.values, withIssues),
                 "]",
             ],
-            (enumType) => this.nameForNamedType(enumType),
+            (enumType) => this.swiftNameForNamedType(enumType),
             (unionType) => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null)
                     return [this.swiftType(nullable, withIssues), optional];
-                return this.nameForNamedType(unionType);
+                return this.swiftNameForNamedType(unionType);
             },
             (transformedStringType) => {
                 if (transformedStringType.kind === "date-time") {
@@ -450,6 +453,40 @@ export class SwiftRenderer extends ConvenienceRenderer {
         return "";
     }
 
+    private swiftNameForNamedType(t: Type): Sourcelike {
+        const parent = this._nestedTypeParents.get(t);
+        if (parent === undefined) return this.nameForNamedType(t);
+        return [this.nameForNamedType(parent), ".", this.nameForNamedType(t)];
+    }
+
+    private setUpNestedTypes(): void {
+        if (!this._options.nestTypes) return;
+
+        const topLevels = new Set(this.topLevels.values());
+        const visited = new Set<Type>();
+        const visit = (t: Type, owner: ClassType): void => {
+            if (visited.has(t)) return;
+            visited.add(t);
+            for (const child of t.getChildren()) {
+                if (topLevels.has(child)) continue;
+                if (isNamedType(child) && !this._nestedTypeParents.has(child)) {
+                    this._nestedTypeParents.set(child, owner);
+                }
+                visit(child, owner);
+            }
+        };
+
+        for (const t of topLevels) {
+            if (t instanceof ClassType) visit(t, t);
+        }
+    }
+
+    private nestedTypesFor(owner: ClassType): Type[] {
+        return Array.from(this._nestedTypeParents.entries())
+            .filter(([, parent]) => parent === owner)
+            .map(([type]) => type);
+    }
+
     /// startFile takes a file name, appends ".swift" to it and sets it as the current filename.
     protected startFile(basename: Sourcelike): void {
         if (this._options.multiFileOutput === false) {
@@ -489,13 +526,17 @@ export class SwiftRenderer extends ConvenienceRenderer {
         ];
     }
 
-    private renderClassDefinition(c: ClassType, className: Name): void {
-        this.startFile(className);
+    private renderClassDefinition(
+        c: ClassType,
+        className: Name,
+        nested = false,
+    ): void {
+        if (!nested) this.startFile(className);
 
-        this.renderHeader(c, className);
+        if (!nested) this.renderHeader(c, className);
         this.emitDescription(this.descriptionForType(c));
 
-        this.emitMark(this.sourcelikeToString(className), true);
+        if (!nested) this.emitMark(this.sourcelikeToString(className), true);
 
         const isClass = this._options.useClasses || this.isCycleBreakerType(c);
         const structOrClass = isClass ? "class" : "struct";
@@ -687,11 +728,21 @@ export class SwiftRenderer extends ConvenienceRenderer {
                         );
                     }
                 }
+
+                if (this._options.nestTypes) {
+                    for (const nestedType of this.nestedTypesFor(c)) {
+                        this.ensureBlankLine();
+                        this.renderNestedType(nestedType);
+                    }
+                }
             },
         );
 
-        // FIXME: We emit only the MARK line for top-level-enum.schema
-        if (!this._options.justTypes && this._options.convenienceInitializers) {
+        if (
+            !nested &&
+            !this._options.justTypes &&
+            this._options.convenienceInitializers
+        ) {
             this.ensureBlankLine();
             this.emitMark(
                 this.sourcelikeToString(className) +
@@ -699,10 +750,19 @@ export class SwiftRenderer extends ConvenienceRenderer {
             );
             this.ensureBlankLine();
             this.emitConvenienceInitializersExtension(c, className);
+            for (const nestedType of this.nestedTypesFor(c)) {
+                if (nestedType instanceof ClassType) {
+                    this.ensureBlankLine();
+                    this.emitConvenienceInitializersExtension(
+                        nestedType,
+                        this.swiftNameForNamedType(nestedType),
+                    );
+                }
+            }
             this.ensureBlankLine();
         }
 
-        this.endFile();
+        if (!nested) this.endFile();
     }
 
     protected initializableProperties(c: ClassType): SwiftProperty[] {
@@ -780,7 +840,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
 
     private emitConvenienceInitializersExtension(
         c: ClassType,
-        className: Name,
+        className: Sourcelike,
     ): void {
         const isClass = this._options.useClasses || this.isCycleBreakerType(c);
         const convenience = isClass ? "convenience " : "";
@@ -867,11 +927,17 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         });
     }
 
-    private renderEnumDefinition(e: EnumType, enumName: Name): void {
-        this.startFile(enumName);
+    private renderEnumDefinition(
+        e: EnumType,
+        enumName: Name,
+        nested = false,
+    ): void {
+        if (!nested) this.startFile(enumName);
 
-        this.emitLineOnce("import Foundation");
-        this.ensureBlankLine();
+        if (!nested) {
+            this.emitLineOnce("import Foundation");
+            this.ensureBlankLine();
+        }
 
         this.emitDescription(this.descriptionForType(e));
         const protocolString = this.getProtocolString("enum", "String");
@@ -902,14 +968,20 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             );
         }
 
-        this.endFile();
+        if (!nested) this.endFile();
     }
 
-    private renderUnionDefinition(u: UnionType, unionName: Name): void {
-        this.startFile(unionName);
+    private renderUnionDefinition(
+        u: UnionType,
+        unionName: Name,
+        nested = false,
+    ): void {
+        if (!nested) this.startFile(unionName);
 
-        this.emitLineOnce("import Foundation");
-        this.ensureBlankLine();
+        if (!nested) {
+            this.emitLineOnce("import Foundation");
+            this.ensureBlankLine();
+        }
 
         function sortBy(t: Type): string {
             const kind = t.kind;
@@ -1042,7 +1114,18 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
                 }
             },
         );
-        this.endFile();
+        if (!nested) this.endFile();
+    }
+
+    private renderNestedType(t: Type): void {
+        const name = this.nameForNamedType(t);
+        if (t instanceof ClassType) {
+            this.renderClassDefinition(t, name, true);
+        } else if (t instanceof EnumType) {
+            this.renderEnumDefinition(t, name, true);
+        } else if (t instanceof UnionType) {
+            this.renderUnionDefinition(t, name, true);
+        }
     }
 
     private emitTopLevelMapAndArrayConvenienceInitializerExtensions(
@@ -1451,7 +1534,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         this.endFile();
     };
 
-    private emitConvenienceMutator(c: ClassType, className: Name): void {
+    private emitConvenienceMutator(c: ClassType, className: Sourcelike): void {
         this.emitLine("func with(");
         this.indent(() => {
             this.forEachClassProperty(c, "none", (name, _, p, position) => {
@@ -1493,18 +1576,28 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
     }
 
     protected emitSourceStructure(): void {
+        this.setUpNestedTypes();
         if (this._options.multiFileOutput === false) {
             this.renderSingleFileHeaderComments();
         }
 
         this.forEachNamedType(
             "leading-and-interposing",
-            (c: ClassType, className: Name) =>
-                this.renderClassDefinition(c, className),
-            (e: EnumType, enumName: Name) =>
-                this.renderEnumDefinition(e, enumName),
-            (u: UnionType, unionName: Name) =>
-                this.renderUnionDefinition(u, unionName),
+            (c: ClassType, className: Name) => {
+                if (!this._nestedTypeParents.has(c)) {
+                    this.renderClassDefinition(c, className);
+                }
+            },
+            (e: EnumType, enumName: Name) => {
+                if (!this._nestedTypeParents.has(e)) {
+                    this.renderEnumDefinition(e, enumName);
+                }
+            },
+            (u: UnionType, unionName: Name) => {
+                if (!this._nestedTypeParents.has(u)) {
+                    this.renderUnionDefinition(u, unionName);
+                }
+            },
         );
 
         if (!this._options.justTypes) {
