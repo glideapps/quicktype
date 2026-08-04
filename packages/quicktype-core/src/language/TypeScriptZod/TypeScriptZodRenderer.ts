@@ -33,6 +33,14 @@ import { legalizeName } from "../JavaScript/utils.js";
 
 import type { typeScriptZodOptions } from "./language.js";
 
+type TypeScriptZodRendererOptions = Omit<
+    OptionValues<typeof typeScriptZodOptions>,
+    "preferConstValues"
+> &
+    Partial<
+        Pick<OptionValues<typeof typeScriptZodOptions>, "preferConstValues">
+    >;
+
 export class TypeScriptZodRenderer extends ConvenienceRenderer {
     /** TypeRefs of object types that participate in a reference cycle.
      * These must be emitted as z.lazy() schemas with an explicit type
@@ -42,7 +50,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
     public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        protected readonly _options: OptionValues<typeof typeScriptZodOptions>,
+        protected readonly _options: TypeScriptZodRendererOptions,
     ) {
         super(targetLanguage, renderContext);
     }
@@ -315,13 +323,26 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
     protected emitEnum(e: EnumType, enumName: Name): void {
         this.ensureBlankLine();
         this.emitDescription(this.descriptionForType(e));
-        this.emitLine("\nexport const ", enumName, "Schema = ", "z.enum([");
-        this.indent(() =>
-            this.forEachEnumCase(e, "none", (_, jsonName) => {
-                this.emitLine('"', stringEscape(jsonName), '",');
-            }),
-        );
-        this.emitLine("]);");
+
+        if (this._options.preferConstValues && e.cases.size === 1) {
+            const value = e.cases.values().next().value;
+            if (value === undefined) panic("Single-value enum has no case.");
+            this.emitLine(
+                "\nexport const ",
+                enumName,
+                "Schema = z.literal(",
+                JSON.stringify(value),
+                ");",
+            );
+        } else {
+            this.emitLine("\nexport const ", enumName, "Schema = ", "z.enum([");
+            this.indent(() =>
+                this.forEachEnumCase(e, "none", (_, jsonName) => {
+                    this.emitLine('"', stringEscape(jsonName), '",');
+                }),
+            );
+            this.emitLine("]);");
+        }
         if (!this._options.justSchema) {
             this.emitLine(
                 "export type ",

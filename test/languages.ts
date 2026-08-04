@@ -2114,7 +2114,9 @@ export const TypeScriptZodLanguage: Language = {
         "required-non-properties.schema",
     ],
     rendererOptions: {},
-    quickTestRendererOptions: [],
+    quickTestRendererOptions: [
+        ["single-value-enum.schema", { "prefer-const-values": "true" }],
+    ],
     sourceFiles: ["src/language/TypeScriptZod/index.ts"],
 };
 
