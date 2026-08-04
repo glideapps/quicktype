@@ -19,7 +19,7 @@ export const typeScriptZodOptions = {
     preferUnknown: new BooleanOption(
         "prefer-unknown",
         "Use unknown instead of any",
-        true,
+        false,
     ),
 };
 

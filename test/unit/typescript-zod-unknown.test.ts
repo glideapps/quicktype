@@ -29,16 +29,16 @@ async function render(rendererOptions: RendererOptions = {}): Promise<string> {
     return result.lines.join("\n");
 }
 
-test("TypeScript Zod emits unknown for unconstrained JSON Schema values by default", async () => {
+test("TypeScript Zod emits any for unconstrained JSON Schema values by default", async () => {
     const output = await render();
-
-    expect(output).toContain("z.unknown()");
-    expect(output).not.toContain("z.any()");
-});
-
-test("TypeScript Zod emits any when prefer-unknown is disabled", async () => {
-    const output = await render({ "prefer-unknown": false });
 
     expect(output).toContain("z.any()");
     expect(output).not.toContain("z.unknown()");
+});
+
+test("TypeScript Zod emits unknown when prefer-unknown is enabled", async () => {
+    const output = await render({ "prefer-unknown": true });
+
+    expect(output).toContain("z.unknown()");
+    expect(output).not.toContain("z.any()");
 });
