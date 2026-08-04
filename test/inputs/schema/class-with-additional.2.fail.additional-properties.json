@@ -1,7 +1,0 @@
-{
-    "map": {
-        "foo": 3.1415,
-        "bar": true
-    },
-    "unexpected": true
-}
