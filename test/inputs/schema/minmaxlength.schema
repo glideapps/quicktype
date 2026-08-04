@@ -12,7 +12,12 @@
     "minmaxlength": {
       "type": "string",
       "minLength": 3,
-      "maxLength": 5
+      "maxLength": 5,
+      "pattern": "^[a-z]+$"
+    },
+    "emptyOnly": {
+      "type": "string",
+      "maxLength": 0
     },
     "union": {
       "oneOf": [
@@ -71,6 +76,7 @@
     "minlength",
     "maxlength",
     "minmaxlength",
+    "emptyOnly",
     "union",
     "inUnion",
     "minMaxUnion",

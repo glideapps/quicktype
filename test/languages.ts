@@ -2037,7 +2037,15 @@ export const TypeScriptZodLanguage: Language = {
         "e8b04.json",
     ],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults", "date-time", "minmaxitems"],
+    features: [
+        "enum",
+        "union",
+        "no-defaults",
+        "date-time",
+        "minmaxitems",
+        "minmaxlength",
+        "pattern",
+    ],
     output: "TopLevel.ts",
     topLevel: "TopLevel",
     skipJSON: [

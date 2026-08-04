@@ -1,7 +1,7 @@
 {
   "minlength": "aaaa",
   "maxlength": "bbb",
-  "minmaxlength": "cccc",
+  "minmaxlength": "1234",
   "emptyOnly": "",
   "union": "dddddd",
   "inUnion": "cccc",

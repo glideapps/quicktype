@@ -2,6 +2,6 @@
   "reqZeroMin": 0,
   "optInt": 0,
   "optDouble": 0.5,
-  "optString": "abc",
+  "optString": "abcdefghij",
   "optPattern": "abc"
 }

@@ -9,6 +9,10 @@
       "type": "string",
       "pattern": "b[.]*"
     },
+    "escaped": {
+      "type": "string",
+      "pattern": "^\\d+\\.[a-z]+$"
+    },
     "union": {
       "oneOf": [
         {
@@ -21,5 +25,5 @@
       ]
     }
   },
-  "required": ["pattern1", "pattern2", "union"]
+  "required": ["pattern1", "pattern2", "escaped", "union"]
 }
