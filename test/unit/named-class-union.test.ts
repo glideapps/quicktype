@@ -67,7 +67,7 @@ function schemaWithReusedRef(): object {
 }
 
 async function generate(
-    lang: "python" | "typescript",
+    lang: "python" | "typescript" | "typescript-zod",
     operation: "oneOf" | "anyOf" = "oneOf",
     schema: object = schemaWithUnion(operation),
 ): Promise<string> {
@@ -112,6 +112,14 @@ describe("named class unions (issue #1646)", () => {
         expect(output).toContain("mixed: Optional[MixedClass] = None");
         expect(output).toContain("foo: Optional[str] = None");
         expect(output).toContain("baz: Optional[str] = None");
+    });
+
+    test("TypeScript Zod preserves the named alternatives", async () => {
+        const output = await generate("typescript-zod");
+
+        expect(output).toContain("export const FooSchema = z.object({");
+        expect(output).toContain("export const BarSchema = z.object({");
+        expect(output).toContain('"op": z.union([FooSchema, BarSchema])');
     });
 
     test("languages that do not opt in keep the existing behavior", async () => {
