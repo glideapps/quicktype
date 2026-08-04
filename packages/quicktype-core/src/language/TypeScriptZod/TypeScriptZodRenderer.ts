@@ -106,7 +106,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
 
         const match = matchType<Sourcelike>(
             t,
-            (_anyType) => "z.any()",
+            (_anyType) => "z.unknown()",
             (_nullType) => "z.null()",
             (_boolType) => "z.boolean()",
             (_integerType) => "z.number()",
