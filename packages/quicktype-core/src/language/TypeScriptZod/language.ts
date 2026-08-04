@@ -51,6 +51,10 @@ export class TypeScriptZodTargetLanguage extends TargetLanguage<
         return true;
     }
 
+    public get supportsFullObjectType(): boolean {
+        return true;
+    }
+
     protected makeRenderer<Lang extends LanguageName = "typescript-zod">(
         renderContext: RenderContext,
         untypedOptionValues: RendererOptions<Lang>,

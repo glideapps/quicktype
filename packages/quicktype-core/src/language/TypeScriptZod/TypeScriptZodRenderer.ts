@@ -223,6 +223,22 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         return this._recursiveTypeRefs.has(t.typeRef);
     }
 
+    protected objectUnknownKeySuffix(t: ObjectType): Sourcelike {
+        const additionalProperties = t.getAdditionalProperties();
+        if (additionalProperties === undefined) {
+            return ".strict()";
+        }
+        if (additionalProperties.kind === "any") {
+            return ".passthrough()";
+        }
+
+        return [
+            ".catchall(",
+            this.typeMapTypeFor(additionalProperties, false),
+            ")",
+        ];
+    }
+
     protected emitObject(name: Name, t: ObjectType): void {
         if (this.isRecursive(t)) {
             this.emitLazyObject(name, t);
@@ -241,7 +257,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
                 );
             });
         });
-        this.emitLine("});");
+        this.emitLine("})", this.objectUnknownKeySuffix(t), ";");
         if (!this._options.justSchema) {
             this.emitLine(
                 "export type ",
@@ -307,7 +323,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
                     },
                 );
             });
-            this.emitLine("})");
+            this.emitLine("})", this.objectUnknownKeySuffix(t));
         });
         this.emitLine(");");
     }
@@ -383,8 +399,9 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
                 }
             }
 
-            // Finally return the reference to a class as that will need to be defined (where objects, maps, unions, intersections and arrays do not)
-            if (type instanceof ClassType) {
+            // Finally return references to named classes and full objects as those
+            // need to be defined. Maps, unions, intersections, and arrays do not.
+            if (type instanceof ClassType || type.kind === "object") {
                 typeRefs.push(type.typeRef);
             }
         }
