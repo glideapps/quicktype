@@ -141,4 +141,26 @@ describe("Swift class generation", () => {
         expect(output).toContain("Second.SecondChild");
         expect(output).not.toMatch(/^struct (?:FirstChild|SecondChild)/m);
     });
+
+    test("does not nest a child type named CodingKeys into an owner that synthesizes CodingKeys", async () => {
+        const schema = {
+            type: "object",
+            properties: {
+                "coding-keys": {
+                    type: "object",
+                    properties: { foo: { type: "string" } },
+                    required: ["foo"],
+                },
+            },
+            required: ["coding-keys"],
+        };
+
+        const output = await renderSwift(schema, { "nest-types": "true" });
+
+        // The owner emits a synthetic `enum CodingKeys`, so the child
+        // `struct CodingKeys` must stay at module scope instead of being
+        // nested, otherwise the two would be redeclared in the same scope.
+        expect(output).toMatch(/^struct CodingKeys: Codable/m);
+        expect(output).not.toMatch(/^ {4}struct CodingKeys: Codable/m);
+    });
 });

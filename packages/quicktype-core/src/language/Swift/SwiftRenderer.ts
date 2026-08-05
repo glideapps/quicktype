@@ -27,7 +27,6 @@ import {
     UnionType,
 } from "../../Type/index.js";
 import {
-    isNamedType,
     matchType,
     nullableFromUnion,
     removeNullFromUnion,
@@ -464,21 +463,55 @@ export class SwiftRenderer extends ConvenienceRenderer {
 
         const topLevels = new Set(this.topLevels.values());
         const visited = new Set<Type>();
-        const visit = (t: Type, owner: ClassType): void => {
+        const visit = (
+            t: Type,
+            owner: ClassType,
+            reserved: Set<string>,
+        ): void => {
             if (visited.has(t)) return;
             visited.add(t);
             for (const child of t.getChildren()) {
                 if (topLevels.has(child)) continue;
-                if (isNamedType(child) && !this._nestedTypeParents.has(child)) {
-                    this._nestedTypeParents.set(child, owner);
+                if (
+                    this.hasNameForType(child) &&
+                    !this._nestedTypeParents.has(child)
+                ) {
+                    const childName = this.sourcelikeToString(
+                        this.nameForNamedType(child),
+                    );
+                    if (!reserved.has(childName)) {
+                        this._nestedTypeParents.set(child, owner);
+                    }
                 }
-                visit(child, owner);
+                visit(child, owner, reserved);
             }
         };
 
         for (const t of topLevels) {
-            if (t instanceof ClassType) visit(t, t);
+            if (t instanceof ClassType) {
+                visit(t, t, this.reservedNestedNamesFor(t));
+            }
         }
+    }
+
+    /// Names that the owner class declares in its own body (e.g. the
+    /// synthesized `CodingKeys` enum) and that nested child types must not
+    /// reuse, otherwise the generated Swift would redeclare them.
+    private reservedNestedNamesFor(c: ClassType): Set<string> {
+        const reserved = new Set<string>();
+        if (this.classEmitsCodingKeys(c)) {
+            reserved.add("CodingKeys");
+        }
+        return reserved;
+    }
+
+    private classEmitsCodingKeys(c: ClassType): boolean {
+        if (this._options.justTypes) return false;
+        if (c.getProperties().size === 0) return false;
+        const groups = this.getEnumPropertyGroups(c);
+        return !groups.every((group) =>
+            group.every((p) => p.label === undefined),
+        );
     }
 
     private nestedTypesFor(owner: ClassType): Type[] {

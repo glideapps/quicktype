@@ -999,6 +999,8 @@ export const SwiftLanguage: Language = {
         { "access-level": "public" },
         { protocol: "equatable" },
         ["simple-object.json", { protocol: "hashable" }],
+        // Compile + round-trip coverage for the nested-types output.
+        { "nest-types": "true" },
     ],
     sourceFiles: ["src/language/Swift/index.ts"],
 };
