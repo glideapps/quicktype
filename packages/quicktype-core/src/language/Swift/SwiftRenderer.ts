@@ -463,11 +463,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
 
         const topLevels = new Set(this.topLevels.values());
         const visited = new Set<Type>();
-        const visit = (
-            t: Type,
-            owner: ClassType,
-            reserved: Set<string>,
-        ): void => {
+        const visit = (t: Type, owner: ClassType): void => {
             if (visited.has(t)) return;
             visited.add(t);
             for (const child of t.getChildren()) {
@@ -476,42 +472,15 @@ export class SwiftRenderer extends ConvenienceRenderer {
                     this.hasNameForType(child) &&
                     !this._nestedTypeParents.has(child)
                 ) {
-                    const childName = this.sourcelikeToString(
-                        this.nameForNamedType(child),
-                    );
-                    if (!reserved.has(childName)) {
-                        this._nestedTypeParents.set(child, owner);
-                    }
+                    this._nestedTypeParents.set(child, owner);
                 }
-                visit(child, owner, reserved);
+                visit(child, owner);
             }
         };
 
         for (const t of topLevels) {
-            if (t instanceof ClassType) {
-                visit(t, t, this.reservedNestedNamesFor(t));
-            }
+            if (t instanceof ClassType) visit(t, t);
         }
-    }
-
-    /// Names that the owner class declares in its own body (e.g. the
-    /// synthesized `CodingKeys` enum) and that nested child types must not
-    /// reuse, otherwise the generated Swift would redeclare them.
-    private reservedNestedNamesFor(c: ClassType): Set<string> {
-        const reserved = new Set<string>();
-        if (this.classEmitsCodingKeys(c)) {
-            reserved.add("CodingKeys");
-        }
-        return reserved;
-    }
-
-    private classEmitsCodingKeys(c: ClassType): boolean {
-        if (this._options.justTypes) return false;
-        if (c.getProperties().size === 0) return false;
-        const groups = this.getEnumPropertyGroups(c);
-        return !groups.every((group) =>
-            group.every((p) => p.label === undefined),
-        );
     }
 
     private nestedTypesFor(owner: ClassType): Type[] {

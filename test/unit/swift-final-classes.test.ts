@@ -142,7 +142,7 @@ describe("Swift class generation", () => {
         expect(output).not.toMatch(/^struct (?:FirstChild|SecondChild)/m);
     });
 
-    test("does not nest a child type named CodingKeys into an owner that synthesizes CodingKeys", async () => {
+    test("renames a child type named CodingKeys instead of shadowing the owner's synthesized enum", async () => {
         const schema = {
             type: "object",
             properties: {
@@ -157,10 +157,14 @@ describe("Swift class generation", () => {
 
         const output = await renderSwift(schema, { "nest-types": "true" });
 
-        // The owner emits a synthetic `enum CodingKeys`, so the child
-        // `struct CodingKeys` must stay at module scope instead of being
-        // nested, otherwise the two would be redeclared in the same scope.
-        expect(output).toMatch(/^struct CodingKeys: Codable/m);
-        expect(output).not.toMatch(/^ {4}struct CodingKeys: Codable/m);
+        // The owner emits a synthetic `enum CodingKeys`, so a child that
+        // would otherwise be named `CodingKeys` is renamed (e.g. to
+        // `CodingKeysClass`) and nested. Keeping the name `CodingKeys`
+        // would either redeclare the owner's enum (when nested) or shadow
+        // it during unqualified lookup (when left at module scope), both
+        // of which break `Codable` synthesis.
+        expect(output).not.toMatch(/\bstruct CodingKeys\b/);
+        expect(output).toMatch(/^ {4}struct CodingKeysClass: Codable/m);
+        expect(output).toMatch(/let codingKeys: \w*\.CodingKeysClass/);
     });
 });
