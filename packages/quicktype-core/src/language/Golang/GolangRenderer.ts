@@ -66,6 +66,30 @@ export class GoRenderer extends ConvenienceRenderer {
         return true;
     }
 
+    protected makeNameForEnumCase(
+        e: EnumType,
+        enumName: Name,
+        caseName: string,
+        assignedName: string | undefined,
+    ): Name {
+        const name = super.makeNameForEnumCase(
+            e,
+            enumName,
+            caseName,
+            assignedName,
+        );
+        if (!this._options.enumTypeNameSuffix) return name;
+
+        const proposedName = name.namingFunction.nameStyle(
+            name.firstProposedName(new Map()),
+        );
+        return new DependencyName(
+            name.namingFunction,
+            name.order,
+            (lookup) => `${proposedName}_${lookup(enumName)}`,
+        );
+    }
+
     protected makeTopLevelDependencyNames(
         _: Type,
         topLevelName: Name,

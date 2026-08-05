@@ -40,12 +40,17 @@ import {
     defined,
 } from "../packages/quicktype-core/dist/support/Support";
 import { DefaultDateTimeRecognizer } from "../packages/quicktype-core/dist/DateTime";
+import { saveOutputSnapshot, snapshotFileState } from "./outputSnapshot";
 
 import chalk from "chalk";
 const timeout = require("promise-timeout").timeout;
 
 const OUTPUT_DIR = process.env.OUTPUT_DIR;
-const ONLY_OUTPUT = process.env.ONLY_OUTPUT !== undefined;
+const OUTPUT_SNAPSHOT_DIR = process.env.OUTPUT_SNAPSHOT_DIR;
+const ONLY_OUTPUT =
+    process.env.ONLY_OUTPUT !== undefined || OUTPUT_SNAPSHOT_DIR !== undefined;
+const INCLUDE_RENDERER_OPTION_SAMPLES =
+    !ONLY_OUTPUT || OUTPUT_SNAPSHOT_DIR !== undefined;
 
 const MAX_TEST_RUNTIME_MS = 30 * 60 * 1000;
 
@@ -279,6 +284,11 @@ abstract class LanguageFixture extends Fixture {
             shell.cp(sampleFile, cwd);
         }
 
+        const beforeGeneration =
+            OUTPUT_SNAPSHOT_DIR === undefined
+                ? undefined
+                : snapshotFileState(cwd);
+
         let numFiles = -1;
         await inDir(cwd, async () => {
             await this.runQuicktype(
@@ -304,13 +314,24 @@ abstract class LanguageFixture extends Fixture {
             }
         });
 
-        // FIXME: This is an ugly hack to exclude Java, which has multiple
-        // output files.  We have to support that eventually.
-        if (
+        if (OUTPUT_SNAPSHOT_DIR !== undefined) {
+            saveOutputSnapshot({
+                before: defined(beforeGeneration),
+                fixtureName: this.name,
+                primaryOutput: this.language.output,
+                rendererOptions: sample.additionalRendererOptions,
+                runDirectory: cwd,
+                samplePath: sample.path,
+                snapshotRoot: OUTPUT_SNAPSHOT_DIR,
+            });
+        } else if (
             sample.saveOutput &&
             OUTPUT_DIR !== undefined &&
             this.language.output.indexOf("/") < 0
         ) {
+            // Keep the legacy single-file output path for callers of
+            // OUTPUT_DIR.  Snapshot mode above also handles nested and
+            // multi-file renderer output.
             const outputDir = path.join(
                 OUTPUT_DIR,
                 this.language.name,
@@ -488,7 +509,7 @@ class JSONFixture extends LanguageFixture {
                 { prioritySamples },
             );
         }
-        if (sources.length === 0 && !ONLY_OUTPUT) {
+        if (sources.length === 0 && INCLUDE_RENDERER_OPTION_SAMPLES) {
             const quickTestSamples = _.chain(
                 this.language.quickTestRendererOptions,
             )
@@ -701,6 +722,8 @@ const skipTypeScriptTests = [
     "kotlin-enum-class-case-collision.json",
     "bug855-short.json",
     "bug863.json",
+    "issue2680-object-array.json",
+    "issue2680-scalar-array.json",
     "00c36.json",
     "010b1.json",
     "050b0.json",
@@ -794,7 +817,7 @@ class JSONSchemaFixture extends LanguageFixture {
             "schema",
         );
 
-        if (sources.length === 0 && !ONLY_OUTPUT) {
+        if (sources.length === 0 && INCLUDE_RENDERER_OPTION_SAMPLES) {
             // Pinned-input quick-test entries that name a `.schema` file
             // run in this fixture with their renderer options.  Plain
             // renderer-option combinations and `.json` entries run in
@@ -1518,7 +1541,9 @@ class GraphQLFixture extends LanguageFixture {
 
     runForName(name: string): boolean {
         return (
-            this.name === name || (!this._onlyExactName && name === "graphql")
+            this.name === name ||
+            ((!this._onlyExactName || OUTPUT_SNAPSHOT_DIR !== undefined) &&
+                name === "graphql")
         );
     }
 
@@ -1661,7 +1686,7 @@ class CommandSuccessfulLanguageFixture extends LanguageFixture {
                 { prioritySamples },
             );
         }
-        if (sources.length === 0 && !ONLY_OUTPUT) {
+        if (sources.length === 0 && INCLUDE_RENDERER_OPTION_SAMPLES) {
             const quickTestSamples = _.chain(
                 this.language.quickTestRendererOptions,
             )
@@ -1712,6 +1737,7 @@ class CommandSuccessfulLanguageFixture extends LanguageFixture {
 export const allFixtures: Fixture[] = [
     // new JSONFixture(languages.CrystalLanguage),
     new JSONFixture(languages.CSharpLanguage),
+    new JSONFixture(languages.CSharpLanguageRecords, "csharp-records"),
     new JSONFixture(
         languages.CSharpLanguageSystemTextJson,
         "csharp-SystemTextJson",
@@ -1762,6 +1788,10 @@ export const allFixtures: Fixture[] = [
     // new JSONSchemaFixture(languages.CrystalLanguage),
     new JSONSchemaFixture(languages.JSONSchemaLanguage),
     new JSONSchemaFixture(languages.CSharpLanguage),
+    new JSONSchemaFixture(
+        languages.CSharpLanguageRecords,
+        "schema-csharp-records",
+    ),
     new JSONSchemaFixture(
         languages.CSharpLanguageSystemTextJson,
         "schema-csharp-SystemTextJson",

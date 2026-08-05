@@ -12,6 +12,9 @@
         "Config": {
             "type": "object",
             "properties": {
+                "closed": {
+                    "$ref": "#/$defs/Closed"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -19,6 +22,9 @@
                     "$ref": "#/$defs/Settings"
                 }
             }
+        },
+        "Closed": {
+            "unevaluatedProperties": false
         },
         "Settings": {
             "type": "object",
