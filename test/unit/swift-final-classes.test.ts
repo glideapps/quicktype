@@ -142,6 +142,34 @@ describe("Swift class generation", () => {
         expect(output).not.toMatch(/^struct (?:FirstChild|SecondChild)/m);
     });
 
+    test("scopes JSON helpers as static members when nesting", async () => {
+        const output = await renderSwift(modelSchema, {
+            "nest-types": "true",
+        });
+
+        // Helpers become static members of the top-level type ...
+        expect(output).toMatch(
+            /^ {4}static func newJSONDecoder\(\) -> JSONDecoder/m,
+        );
+        expect(output).toMatch(
+            /^ {4}static func newJSONEncoder\(\) -> JSONEncoder/m,
+        );
+        // ... and no module-level helper free functions are emitted.
+        expect(output).not.toMatch(/^func newJSONDecoder\(\)/m);
+        expect(output).not.toMatch(/^func newJSONEncoder\(\)/m);
+        // Convenience initializers qualify their helper calls with the owner.
+        expect(output).toContain("TopLevel.newJSONDecoder()");
+        expect(output).toContain("TopLevel.newJSONEncoder()");
+    });
+
+    test("keeps module-level helpers when nesting is disabled", async () => {
+        const output = await renderSwift(modelSchema);
+
+        expect(output).toMatch(/^func newJSONDecoder\(\) -> JSONDecoder/m);
+        expect(output).toMatch(/^func newJSONEncoder\(\) -> JSONEncoder/m);
+        expect(output).not.toMatch(/static func newJSONDecoder/);
+    });
+
     test("renames a child type named CodingKeys instead of shadowing the owner's synthesized enum", async () => {
         const schema = {
             type: "object",

@@ -458,6 +458,41 @@ export class SwiftRenderer extends ConvenienceRenderer {
         return [this.nameForNamedType(parent), ".", this.nameForNamedType(t)];
     }
 
+    // Returns the top-level type that owns `c` (itself when `c` is a top-level
+    // type, or its nested-type parent otherwise). Used to qualify JSON helper
+    // calls so each generated file is self-contained and multi-source outputs
+    // don't collide on module-level `newJSONDecoder`/`newJSONEncoder`.
+    private swiftHelperOwner(c: ClassType): ClassType {
+        return this._nestedTypeParents.get(c) ?? c;
+    }
+
+    private jsonDecoderCall(c: ClassType): Sourcelike {
+        if (this._options.nestTypes) {
+            return [
+                this.nameForNamedType(this.swiftHelperOwner(c)),
+                ".newJSONDecoder()",
+            ];
+        }
+        return "newJSONDecoder()";
+    }
+
+    private jsonEncoderCall(c: ClassType): Sourcelike {
+        if (this._options.nestTypes) {
+            return [
+                this.nameForNamedType(this.swiftHelperOwner(c)),
+                ".newJSONEncoder()",
+            ];
+        }
+        return "newJSONEncoder()";
+    }
+
+    private hasNonNamedTopLevels(): boolean {
+        for (const t of this.topLevels.values()) {
+            if (this.namedTypeToNameForTopLevel(t) === undefined) return true;
+        }
+        return false;
+    }
+
     private setUpNestedTypes(): void {
         if (!this._options.nestTypes) return;
 
@@ -737,6 +772,19 @@ export class SwiftRenderer extends ConvenienceRenderer {
                         this.renderNestedType(nestedType);
                     }
                 }
+
+                if (
+                    !nested &&
+                    this._options.nestTypes &&
+                    !this._options.justTypes &&
+                    this._options.convenienceInitializers
+                ) {
+                    this.ensureBlankLine();
+                    this.emitMark(
+                        "Helper functions for creating encoders and decoders",
+                    );
+                    this.emitNewEncoderDecoder("static ");
+                }
             },
         );
 
@@ -780,8 +828,8 @@ export class SwiftRenderer extends ConvenienceRenderer {
         return properties;
     }
 
-    private emitNewEncoderDecoder(): void {
-        this.emitBlock("func newJSONDecoder() -> JSONDecoder", () => {
+    private emitNewEncoderDecoder(prefix = ""): void {
+        this.emitBlock([prefix, "func newJSONDecoder() -> JSONDecoder"], () => {
             this.emitLine("let decoder = JSONDecoder()");
             if (!this._options.linux) {
                 this.emitBlock(
@@ -816,7 +864,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
             this.emitLine("return decoder");
         });
         this.ensureBlankLine();
-        this.emitBlock("func newJSONEncoder() -> JSONEncoder", () => {
+        this.emitBlock([prefix, "func newJSONEncoder() -> JSONEncoder"], () => {
             this.emitLine("let encoder = JSONEncoder()");
             if (!this._options.linux) {
                 this.emitBlock(
@@ -852,13 +900,17 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
                 this.emitBlock("convenience init(data: Data) throws", () => {
                     if (this.propertyCount(c) > 0) {
                         this.emitLine(
-                            "let me = try newJSONDecoder().decode(",
+                            "let me = try ",
+                            this.jsonDecoderCall(c),
+                            ".decode(",
                             this.swiftType(c),
                             ".self, from: data)",
                         );
                     } else {
                         this.emitLine(
-                            "let _ = try newJSONDecoder().decode(",
+                            "let _ = try ",
+                            this.jsonDecoderCall(c),
+                            ".decode(",
                             this.swiftType(c),
                             ".self, from: data)",
                         );
@@ -874,7 +926,9 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             } else {
                 this.emitBlock("init(data: Data) throws", () => {
                     this.emitLine(
-                        "self = try newJSONDecoder().decode(",
+                        "self = try ",
+                        this.jsonDecoderCall(c),
+                        ".decode(",
                         this.swiftType(c),
                         ".self, from: data)",
                     );
@@ -915,7 +969,11 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             // Convenience serializers
             this.ensureBlankLine();
             this.emitBlock("func jsonData() throws -> Data", () => {
-                this.emitLine("return try newJSONEncoder().encode(self)");
+                this.emitLine(
+                    "return try ",
+                    this.jsonEncoderCall(c),
+                    ".encode(self)",
+                );
             });
             this.ensureBlankLine();
             this.emitBlock(
@@ -1223,10 +1281,21 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             );
         }
 
+        // With --nest-types the JSON helpers are emitted as `static func`
+        // members of each top-level class, so module-level helpers are only
+        // needed for array/map top-levels (which can't host statics) or for
+        // Alamofire. When they are needed alongside nesting, scope them to
+        // `fileprivate` to keep multi-source standalone output collision-free.
+        const needFreeHelpers =
+            !this._options.nestTypes ||
+            this.hasNonNamedTopLevels() ||
+            this._options.alamofire;
+
         if (
-            (!this._options.justTypes &&
+            ((!this._options.justTypes &&
                 this._options.convenienceInitializers) ||
-            this._options.alamofire
+                this._options.alamofire) &&
+            needFreeHelpers
         ) {
             this.ensureBlankLine();
             this.emitMark(
@@ -1234,7 +1303,9 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
                 true,
             );
             this.ensureBlankLine();
-            this.emitNewEncoderDecoder();
+            this.emitNewEncoderDecoder(
+                this._options.nestTypes ? "fileprivate " : "",
+            );
         }
 
         if (this._options.alamofire) {
