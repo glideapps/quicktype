@@ -1,0 +1,14 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "/schemas/b",
+    "type": "object",
+    "title": "B",
+    "properties": {
+        "name": { "type": "string" },
+        "out": {
+            "type": "array",
+            "items": { "$ref": "/schemas/c" }
+        }
+    },
+    "required": ["name", "out"]
+}

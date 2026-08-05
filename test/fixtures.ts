@@ -809,7 +809,38 @@ class JSONSchemaFixture extends LanguageFixture {
     }
 
     getSamples(sources: string[]): { priority: Sample[]; others: Sample[] } {
-        const prioritySamples = testsInDir("test/inputs/schema/", "schema");
+        const schemaDirectory = "test/inputs/schema/";
+        const multiFileSamples = fs
+            .readdirSync(schemaDirectory)
+            .map((entry) => path.join(schemaDirectory, entry))
+            .filter(
+                (entry) =>
+                    fs.statSync(entry).isDirectory() &&
+                    fs
+                        .readdirSync(entry)
+                        .some((filename) => filename.endsWith(".schema")),
+            );
+        const prioritySamples = testsInDir(schemaDirectory, "schema").concat(
+            multiFileSamples,
+        );
+
+        if (
+            sources.length === 1 &&
+            fs.lstatSync(sources[0]).isDirectory() &&
+            path.resolve(sources[0]) !== path.resolve(schemaDirectory)
+        ) {
+            return {
+                priority: [
+                    {
+                        path: sources[0],
+                        additionalRendererOptions: {},
+                        saveOutput: true,
+                    },
+                ],
+                others: [],
+            };
+        }
+
         const samples = samplesFromSources(
             sources,
             prioritySamples,

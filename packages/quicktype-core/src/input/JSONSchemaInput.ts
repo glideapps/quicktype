@@ -544,7 +544,7 @@ class Canonizer {
 
         this.addIDs(
             schema,
-            new Location(Ref.root(address), Ref.root(undefined)),
+            new Location(Ref.parse(address), Ref.root(undefined)),
         );
         this._schemaAddressesAdded.add(address);
         return true;

@@ -1,0 +1,8 @@
+{
+    "a": {
+        "name": "root-a",
+        "in": [
+            { "name": "first" }
+        ]
+    }
+}

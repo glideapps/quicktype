@@ -263,6 +263,10 @@ export const JavaLanguage: Language = {
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
         "keyword-unions.schema", // generates classes with names that are case-insensitively equal
+        // Multi-top-level directory input; the Java driver deserializes via the
+        // generic `Converter.fromJsonString`, which is only emitted for a single
+        // top-level (multi-top-level emits per-type `<Name>FromJsonString`).
+        "issue-1833",
         // The generated converter deserializes a top-level array with a raw
         // `List`, so a mistyped element round-trips instead of failing.
         ...skipsArrayElementValidation,
@@ -680,6 +684,9 @@ export const CJSONLanguage: Language = {
         "ie-suffix-singularization.schema",
         "intersection.schema",
         "required.schema",
+        /* Multi-top-level directory input whose only negative case is a missing
+         * required property, which this renderer does not enforce (see above). */
+        "issue-1833",
         // The default-value fail sample also relies on required-property
         // enforcement, which cJSON does not do.
         "default-value.schema",
@@ -938,6 +945,9 @@ export const ElmLanguage: Language = {
         // The generated decoder accepts invalid union members because all
         // class properties decode via `Jpipe.optional`.
         "nested-intersection-union.schema",
+        // Multi-top-level directory input; the Elm driver decodes a single
+        // top-level named `QuickType`, which this fixture does not produce.
+        "issue-1833",
     ],
     rendererOptions: {},
     // `list` is the default now; keep the `Array` code path covered.
@@ -1012,6 +1022,9 @@ export const SwiftLanguage: Language = {
         "class-with-additional.schema",
         "vega-lite.schema",
         "top-level-primitive.schema",
+        // Multi-top-level directory input whose only negative case is a missing
+        // required property, which the Swift driver does not treat as a failure.
+        "issue-1833",
     ],
     rendererOptions: { "support-linux": "true" },
     quickTestRendererOptions: [
@@ -1082,7 +1095,13 @@ export const ObjectiveCLanguage: Language = {
         "combinations4.json",
     ],
     skipMiscJSON: false,
-    skipSchema: ["integer-before-number.schema"], // Python-specific union-order regression.
+    skipSchema: [
+        "integer-before-number.schema", // Python-specific union-order regression.
+        // Multi-top-level directory input; the Objective-C driver decodes a
+        // single top-level named `QTTopLevel`, which this fixture does not
+        // produce.
+        "issue-1833",
+    ],
     rendererOptions: { functions: "true" },
     quickTestRendererOptions: [],
     sourceFiles: ["src/language/Objective-C/index.ts"],
@@ -1937,6 +1956,9 @@ export const HaskellLanguage: Language = {
         // The default-value fail sample also relies on required-property enforcement.
         "default-value.schema",
         "required-non-properties.schema",
+        // Multi-top-level directory input; the Haskell driver decodes a single
+        // top-level named `QuickType`, which this fixture does not produce.
+        "issue-1833",
     ],
     rendererOptions: {},
     // The default is array-type=list; this keeps the Vector code path
@@ -2112,6 +2134,9 @@ export const TypeScriptZodLanguage: Language = {
         // The default-value fail sample also relies on required-property enforcement.
         "default-value.schema",
         "required-non-properties.schema",
+        // Multi-top-level directory input whose only negative case is a missing
+        // required property, which this fixture does not treat as a failure.
+        "issue-1833",
     ],
     rendererOptions: {},
     quickTestRendererOptions: [],
@@ -2233,6 +2258,9 @@ export const TypeScriptEffectSchemaLanguage: Language = {
         // The default-value fail sample also relies on required-property enforcement.
         "default-value.schema",
         "required-non-properties.schema",
+        // Multi-top-level directory input whose only negative case is a missing
+        // required property, which this fixture does not treat as a failure.
+        "issue-1833",
         "issue2680-top-level-array.schema",
     ],
     rendererOptions: {},
@@ -2320,6 +2348,9 @@ export const ElixirLanguage: Language = {
 
         // The generated top-level type is not emitted as a TopLevel module the fixture can call.
         "recursive-union-flattening.schema",
+        // Multi-top-level directory input whose only negative case is a missing
+        // required property, which Elixir cannot enforce at runtime (see above).
+        "issue-1833",
 
         // A top-level array is deserialized without enforcing its element
         // type, so a mistyped element round-trips instead of failing.
