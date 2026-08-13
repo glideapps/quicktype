@@ -64,10 +64,10 @@
       "decimal": { "decimal": 123 },
       "declare": { "declare": 123 },
       "decltype": { "decltype": 123 },
-      "decode_string": { "decode_string": 123 },
       "dummy": 123
     },
   "obj2": {
+      "decode_string": { "decode_string": 123 },
       "def": { "def": 123 },
       "default": { "default": 123 },
       "defer": { "defer": 123 },
@@ -131,11 +131,11 @@
       "inout": { "inout": 123 },
       "instanceof": { "instanceof": 123 },
       "int": { "int": 123 },
-      "interface": { "interface": 123 },
-      "internal": { "internal": 123 },
       "dummy": 123
     },
   "obj3": {
+      "interface": { "interface": 123 },
+      "internal": { "internal": 123 },
       "iterable": { "iterable": 123 },
       "is": { "is": 123 },
       "jdec": { "jdec": 123 },
@@ -198,12 +198,12 @@
       "printf": { "printf": 123 },
       "printMembers": { "printMembers": 123 },
       "private": { "private": 123 },
-      "protected": { "protected": 123 },
-      "Protocol": { "Protocol": 123 },
-      "protocol": { "protocol": 123 },
       "dummy": 123
     },
   "obj4": {
+      "protected": { "protected": 123 },
+      "Protocol": { "Protocol": 123 },
+      "protocol": { "protocol": 123 },
       "public": { "public": 123 },
       "quicktype": { "quicktype": 123 },
       "raise": { "raise": 123 },
@@ -265,12 +265,12 @@
       "typename": { "typename": 123 },
       "typeof": { "typeof": 123 },
       "uint": { "uint": 123 },
-      "ulong": { "ulong": 123 },
-      "unchecked": { "unchecked": 123 },
-      "undefined": { "undefined": 123 },
       "dummy": 123
     },
   "obj5": {
+      "ulong": { "ulong": 123 },
+      "unchecked": { "unchecked": 123 },
+      "undefined": { "undefined": 123 },
       "union": { "union": 123 },
       "unowned": { "unowned": 123 },
       "unsafe": { "unsafe": 123 },

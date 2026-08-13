@@ -302,6 +302,13 @@
             ],
             "title": "union_Class"
         },
+        "clone": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "clone" }
+            ],
+            "title": "union_clone"
+        },
         "co_await": {
             "oneOf": [
                 { "type": "number" },
@@ -553,6 +560,13 @@
                 { "type": "object", "additionalProperties": false, "title": "elif" }
             ],
             "title": "union_elif"
+        },
+        "equalityContract": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "equalityContract" }
+            ],
+            "title": "union_equalityContract"
         },
         "else": {
             "oneOf": [
@@ -1316,6 +1330,13 @@
                 { "type": "object", "additionalProperties": false, "title": "printf" }
             ],
             "title": "union_printf"
+        },
+        "printMembers": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "printMembers" }
+            ],
+            "title": "union_printMembers"
         },
         "private": {
             "oneOf": [

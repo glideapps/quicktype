@@ -41,6 +41,7 @@ char32_t
 checked
 class
 Class
+clone
 co_await
 co_return
 co_yield
@@ -77,6 +78,7 @@ double
 dynamic
 dynamic_cast
 elif
+equalityContract
 else
 encode_quick_type
 enum
@@ -186,6 +188,7 @@ precedence
 prefix
 print
 printf
+printMembers
 private
 protected
 Protocol
