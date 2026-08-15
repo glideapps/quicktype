@@ -13,7 +13,7 @@ import { JSONSchemaRenderer } from "./JSONSchemaRenderer.js";
 export const jsonSchemaOptions = {
     multiFileOutput: new BooleanOption(
         "multi-file-output",
-        "Renders each top-level object in its own JSON schema file",
+        "Renders each definition in its own JSON schema file",
         false,
     ),
 };
