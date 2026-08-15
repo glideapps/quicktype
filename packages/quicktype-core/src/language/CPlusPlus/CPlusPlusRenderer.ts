@@ -255,9 +255,58 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         return !this.isCycleBreakerType(t);
     }
 
+    private typeContainsUnion(t: Type, visited = new Set<Type>()): boolean {
+        if (t instanceof UnionType) return true;
+        if (visited.has(t)) return false;
+
+        visited.add(t);
+        return iterableSome(t.getChildren(), (child) =>
+            this.typeContainsUnion(child, visited),
+        );
+    }
+
+    private typeReaches(
+        t: Type,
+        target: Type,
+        visited = new Set<Type>(),
+    ): boolean {
+        if (t === target) return true;
+        if (visited.has(t)) return false;
+
+        visited.add(t);
+        return iterableSome(t.getChildren(), (child) =>
+            this.typeReaches(child, target, visited),
+        );
+    }
+
+    private isRecursiveUnion(u: UnionType): boolean {
+        return iterableSome(u.getChildren(), (child) =>
+            this.typeReaches(child, u),
+        );
+    }
+
+    private recursiveUnionUsesStackOptional(u: UnionType): boolean {
+        const [maybeNull] = removeNullFromUnion(u, true);
+        return (
+            this.isRecursiveUnion(u) &&
+            maybeNull !== null &&
+            this.isOptionalAsValuePossible(u)
+        );
+    }
+
     public isImplicitCycleBreaker(t: Type): boolean {
+        // Containers break completeness cycles for classes, but not for type
+        // aliases: an alias name is not in scope on its own right-hand side.
         const kind = t.kind;
-        return kind === "array" || kind === "map";
+        if (kind !== "array" && kind !== "map") return false;
+
+        return !iterableSome(t.getChildren(), (child) =>
+            this.typeContainsUnion(child),
+        );
+    }
+
+    protected canBreakCycles(t: Type): boolean {
+        return t instanceof ClassType || t instanceof UnionType;
     }
 
     // Is likely to return std::optional or boost::optional
@@ -534,7 +583,13 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitLine("#pragma once");
         this.ensureBlankLine();
 
-        if (this.haveOptionalProperties) {
+        if (
+            this.haveOptionalProperties ||
+            (!this._options.codeFormat &&
+                iterableSome(this.namedUnions, (u) =>
+                    this.recursiveUnionUsesStackOptional(u),
+                ))
+        ) {
             if (this._options.boost) {
                 this.emitInclude(true, "boost/optional.hpp");
             } else {
@@ -1465,9 +1520,61 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             set.add(propType);
                             return [true, set];
                         })();
+                        const isRecursiveNamedUnion =
+                            propType instanceof UnionType &&
+                            this.namedUnions.has(propType) &&
+                            this.isRecursiveUnion(propType);
+                        if (
+                            isRecursiveNamedUnion &&
+                            p.isOptional &&
+                            removeNullFromUnion(propType, true)[0] !== null
+                        ) {
+                            cppType = this.cppType(
+                                propType,
+                                {
+                                    needsForwardIndirection: true,
+                                    needsOptionalIndirection: true,
+                                    inJsonNamespace: false,
+                                },
+                                false,
+                                true,
+                                true,
+                            );
+                            const propertyName =
+                                this._stringType.wrapEncodingChange(
+                                    [ourQualifier],
+                                    this._stringType.getType(),
+                                    this.NarrowString.getType(),
+                                    this._stringType.createStringLiteral([
+                                        stringEscape(json),
+                                    ]),
+                                );
+                            this.emitLine(
+                                assignment.wrap(
+                                    [],
+                                    [
+                                        "j.find(",
+                                        propertyName,
+                                        ") != j.end() ? j.at(",
+                                        propertyName,
+                                        ").get<",
+                                        cppType,
+                                        ">() : ",
+                                        cppType,
+                                        "()",
+                                    ],
+                                ),
+                                ";",
+                            );
+                            return;
+                        }
+
                         if (nullOrOptional) {
+                            const optionalTypes = isRecursiveNamedUnion
+                                ? new Set<Type>([propType])
+                                : typeSet;
                             cppType = this.cppTypeInOptional(
-                                typeSet,
+                                optionalTypes,
                                 {
                                     needsForwardIndirection: false,
                                     needsOptionalIndirection: false,
@@ -1477,7 +1584,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                                 true,
                             );
                             toType = this.cppTypeInOptional(
-                                typeSet,
+                                optionalTypes,
                                 {
                                     needsForwardIndirection: false,
                                     needsOptionalIndirection: false,
@@ -1697,12 +1804,66 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected emitUnionTypedefs(u: UnionType, unionName: Name): void {
+        const variantType = this.variantType(u, false);
+        if (!this.isRecursiveUnion(u)) {
+            this.emitLine("using ", unionName, " = ", variantType, ";");
+            return;
+        }
+
+        // A struct introduces its name before the base type is parsed, allowing
+        // recursion through containers such as std::vector.
+        this.emitBlock(["struct ", unionName, " : ", variantType], true, () => {
+            this.emitLine("using base = ", variantType, ";");
+            this.emitLine("using base::base;");
+            this.emitLine("using base::operator=;");
+        });
+    }
+
+    protected emitUnionWrapperHeaders(u: UnionType, unionName: Name): void {
+        if (!this.isRecursiveUnion(u)) return;
+
         this.emitLine(
-            "using ",
+            "void from_json(",
+            this.withConst("json"),
+            " & j, ",
             unionName,
-            " = ",
-            this.variantType(u, false),
-            ";",
+            " & x);",
+        );
+        this.emitLine(
+            "void to_json(json & j, ",
+            this.withConst(unionName),
+            " & x);",
+        );
+    }
+
+    protected emitUnionWrapperFunctions(u: UnionType, unionName: Name): void {
+        if (!this.isRecursiveUnion(u)) return;
+
+        this.emitBlock(
+            [
+                "inline void from_json(",
+                this.withConst("json"),
+                " & j, ",
+                unionName,
+                " & x)",
+            ],
+            false,
+            () => this.emitLine("x = j.get<", unionName, "::base>();"),
+        );
+        this.ensureBlankLine();
+        this.emitBlock(
+            [
+                "inline void to_json(json & j, ",
+                this.withConst(unionName),
+                " & x)",
+            ],
+            false,
+            () =>
+                this.emitLine(
+                    "j = static_cast<",
+                    this.withConst([unionName, "::base"]),
+                    " &>(x);",
+                ),
         );
     }
 
@@ -2881,6 +3042,15 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.emitHelperFunctions();
         }
 
+        if (iterableSome(this.namedUnions, (u) => this.isRecursiveUnion(u))) {
+            this.forEachUnion("none", (u: UnionType, unionName: Name) => {
+                if (this.isRecursiveUnion(u)) {
+                    this.emitLine("struct ", unionName, ";");
+                }
+            });
+            this.ensureBlankLine();
+        }
+
         this.forEachDeclaration("interposing", (decl) =>
             this.emitDeclaration(decl),
         );
@@ -2903,6 +3073,12 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.forEachEnum(
                 "leading-and-interposing",
                 (_: unknown, enumName: Name) => this.emitEnumHeaders(enumName),
+            );
+
+            this.forEachUnion(
+                "leading-and-interposing",
+                (u: UnionType, unionName: Name) =>
+                    this.emitUnionWrapperHeaders(u, unionName),
             );
         });
     }
@@ -2932,6 +3108,12 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             "leading-and-interposing",
             (e: EnumType, enumName: Name) =>
                 this.emitEnumFunctions(e, enumName),
+        );
+
+        this.forEachUnion(
+            "leading-and-interposing",
+            (u: UnionType, unionName: Name) =>
+                this.emitUnionWrapperFunctions(u, unionName),
         );
     }
 

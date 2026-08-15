@@ -43,6 +43,11 @@ export const goOptions = {
         'If set, all non-required objects will be tagged with ",omitempty"',
         false,
     ),
+    enumTypeNameSuffix: new BooleanOption(
+        "enum-type-name-suffix",
+        "Append the enum type name to enum constant names",
+        false,
+    ),
 };
 
 const golangLanguageConfig = {

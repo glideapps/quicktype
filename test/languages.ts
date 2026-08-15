@@ -581,6 +581,7 @@ export const GoLanguage: Language = {
         // fields preserve null instead of being omitted.
         ["omit-empty.json", { "omit-empty": "true" }],
         ["nullable-optional-one-of.schema", { "omit-empty": "true" }],
+        ["enum.schema", { "enum-type-name-suffix": "true" }],
     ],
     sourceFiles: ["src/language/Golang/index.ts"],
 };
@@ -832,8 +833,6 @@ export const CPlusPlusLanguage: Language = {
         "keyword-unions.schema",
         // The generated deserializer accepts non-object values when all class properties are optional.
         "nested-intersection-union.schema",
-        // Recursive top-level unions produce aliases that can refer to later aliases.
-        "recursive-union-flattening.schema",
     ],
     rendererOptions: {},
     quickTestRendererOptions: [
