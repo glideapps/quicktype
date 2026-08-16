@@ -79,7 +79,8 @@ export type LanguageFeature =
     | "minmax"
     | "minmaxlength"
     | "minmaxitems"
-    | "pattern";
+    | "pattern"
+    | "property-names";
 
 export interface Language {
     name: LanguageName;
@@ -1115,7 +1116,14 @@ export const TypeScriptLanguage: Language = {
         "e8b04.json",
     ],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults", "strict-optional", "date-time"],
+    features: [
+        "enum",
+        "union",
+        "no-defaults",
+        "strict-optional",
+        "date-time",
+        "property-names",
+    ],
     output: "TopLevel.ts",
     topLevel: "TopLevel",
     skipJSON: [],
@@ -1159,7 +1167,14 @@ export const JavaScriptLanguage: Language = {
     diffViaSchema: false,
     skipDiffViaSchema: [],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults", "strict-optional", "date-time"],
+    features: [
+        "enum",
+        "union",
+        "no-defaults",
+        "strict-optional",
+        "date-time",
+        "property-names",
+    ],
     output: "TopLevel.js",
     topLevel: "TopLevel",
     skipJSON: [],
@@ -1219,7 +1234,13 @@ export const FlowLanguage: Language = {
     diffViaSchema: false,
     skipDiffViaSchema: [],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults", "strict-optional"],
+    features: [
+        "enum",
+        "union",
+        "no-defaults",
+        "strict-optional",
+        "property-names",
+    ],
     output: "TopLevel.js",
     topLevel: "TopLevel",
     skipJSON: [],

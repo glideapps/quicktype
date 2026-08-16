@@ -1,5 +1,6 @@
 import { arrayIntercalate } from "collection-utils";
 
+import { propertyNamesForType } from "../../attributes/PropertyNames.js";
 import { ConvenienceRenderer } from "../../ConvenienceRenderer.js";
 import { type Name, type Namer, funPrefixNamer } from "../../Naming.js";
 import type { RenderContext } from "../../Renderer.js";
@@ -21,6 +22,7 @@ import type { TargetLanguage } from "../../TargetLanguage.js";
 import type {
     ClassProperty,
     ClassType,
+    MapType,
     ObjectType,
     Type,
 } from "../../Type/index.js";
@@ -127,7 +129,12 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
             (_stringType) => '""',
             (arrayType) => ["a(", this.typeMapTypeFor(arrayType.items), ")"],
             (_classType) => panic("We handled this above"),
-            (mapType) => ["m(", this.typeMapTypeFor(mapType.values), ")"],
+            (mapType) => [
+                "m(",
+                this.typeMapTypeFor(mapType.values),
+                ...this.typeMapKeysFor(mapType),
+                ")",
+            ],
             (_enumType) => panic("We handled this above"),
             (unionType) => {
                 const children = Array.from(unionType.getChildren()).map(
@@ -143,6 +150,16 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
                 return '""';
             },
         );
+    }
+
+    /** Extra `m()` argument listing allowed keys, so the converter can reject
+     * others. Empty when the map's keys are unconstrained. */
+    private typeMapKeysFor(mapType: MapType): Sourcelike[] {
+        const keys = propertyNamesForType(mapType);
+        if (keys === undefined) return [];
+
+        const cases = Array.from(keys).map((c) => `"${utf16StringEscape(c)}"`);
+        return [", [", cases.join(", "), "]"];
     }
 
     private typeMapTypeForProperty(p: ClassProperty): Sourcelike {
@@ -413,7 +430,7 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
         return d;
     }
 
-    function transformObject(props${anyMapAnnotation}, additional${anyAnnotation}, val${anyAnnotation})${anyAnnotation} {
+    function transformObject(props${anyMapAnnotation}, additional${anyAnnotation}, val${anyAnnotation}, keys${anyAnnotation})${anyAnnotation} {
         if (val === null || typeof val !== "object" || Array.isArray(val)) {
             return invalidValue(l(ref || "object"), val, key, parent);
         }
@@ -425,6 +442,9 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
         });
         Object.getOwnPropertyNames(val).forEach(key => {
             if (!Object.prototype.hasOwnProperty.call(props, key)) {
+                if (keys !== undefined && keys.indexOf(key) < 0) {
+                    return invalidValue(l(keys.map((k${stringAnnotation}) => JSON.stringify(k)).join(" | ")), key, key, ref);
+                }
                 result[key] = ${
                     this._jsOptions.runtimeTypecheckIgnoreUnknownProperties
                         ? "val[key]"
@@ -450,7 +470,7 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
     if (typeof typ === "object") {
         return typ.hasOwnProperty("unionMembers") ? transformUnion(typ.unionMembers, val)
             : typ.hasOwnProperty("arrayItems")    ? transformArray(typ.arrayItems, val)
-            : typ.hasOwnProperty("props")         ? transformObject(getProps(typ), typ.additional, val)
+            : typ.hasOwnProperty("props")         ? transformObject(getProps(typ), typ.additional, val, typ.keys)
             : invalidValue(typ, val, key, parent);
     }
     // Numbers can be parsed by Date but shouldn't be.
@@ -482,9 +502,9 @@ function o(props${anyArrayAnnotation}, additional${anyAnnotation}) {
     return { props, additional };
 }
 
-function m(additional${anyAnnotation}) {
+function m(additional${anyAnnotation}, keys${anyAnnotation} = undefined) {
     const props${anyArrayAnnotation} = [];
-    return { props, additional };
+    return { props, additional, keys };
 }
 
 function r(name${stringAnnotation}) {

@@ -1,0 +1,25 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["icon", "languages"],
+    "properties": {
+        "icon": { "type": "string" },
+        "languages": {
+            "type": "object",
+            "propertyNames": {
+                "type": "string",
+                "enum": ["de", "en"]
+            },
+            "additionalProperties": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["name"],
+                "properties": {
+                    "name": { "type": "string" },
+                    "description": { "type": "string" }
+                }
+            }
+        }
+    }
+}

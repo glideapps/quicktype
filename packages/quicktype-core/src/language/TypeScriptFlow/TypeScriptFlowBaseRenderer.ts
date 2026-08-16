@@ -16,6 +16,7 @@ import {
     ArrayType,
     type ClassType,
     EnumType,
+    type MapType,
     ObjectType,
     type Type,
     UnionType,
@@ -79,6 +80,16 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
         );
     }
 
+    /** Overridden by TypeScript to spell out a `propertyNames` key constraint;
+     * Flow has no mapped types. */
+    protected sourceForMapType(mapType: MapType): MultiWord {
+        return singleWord([
+            "{ [key: string]: ",
+            this.sourceFor(mapType.values).source,
+            " }",
+        ]);
+    }
+
     // Flow (pinned at flow-bin 0.66 in CI) has no tuple-rest syntax, so
     // the base implementation always renders plain array types; the
     // TypeScript renderer overrides this to spell out `minItems`
@@ -126,12 +137,7 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
             (_stringType) => singleWord("string"),
             (arrayType) => this.sourceForArrayType(arrayType),
             (_classType) => panic("We handled this above"),
-            (mapType) =>
-                singleWord([
-                    "{ [key: string]: ",
-                    this.sourceFor(mapType.values).source,
-                    " }",
-                ]),
+            (mapType) => this.sourceForMapType(mapType),
             (_enumType) => panic("We handled this above"),
             (unionType) => {
                 if (
