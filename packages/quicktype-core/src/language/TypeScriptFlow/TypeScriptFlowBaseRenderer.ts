@@ -166,6 +166,15 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
 
     protected abstract emitClassBlock(c: ClassType, className: Name): void;
 
+    protected sourceForAdditionalProperties(
+        c: ClassType,
+    ): MultiWord | undefined {
+        const additionalProperties = c.getAdditionalProperties();
+        return additionalProperties === undefined
+            ? undefined
+            : this.sourceFor(additionalProperties);
+    }
+
     protected emitClassBlockBody(c: ClassType): void {
         this.emitPropertyTable(c, (name, _jsonName, p) => {
             const t = p.type;
@@ -186,15 +195,10 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
             ];
         });
 
-        const additionalProperties = c.getAdditionalProperties();
-        if (additionalProperties) {
+        const additionalProperties = this.sourceForAdditionalProperties(c);
+        if (additionalProperties !== undefined) {
             this.emitTable([
-                [
-                    "[property: string]",
-                    ": ",
-                    this.sourceFor(additionalProperties).source,
-                    ";",
-                ],
+                ["[property: string]", ": ", additionalProperties.source, ";"],
             ]);
         }
     }

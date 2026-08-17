@@ -4,6 +4,7 @@ import {
     type MultiWord,
     type Sourcelike,
     modifySource,
+    multiWord,
     parenIfNeeded,
     singleWord,
 } from "../../Source.js";
@@ -56,6 +57,27 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
 
         source.push("...", parenIfNeeded(itemType), "[]]");
         return singleWord(source);
+    }
+
+    protected sourceForAdditionalProperties(
+        c: ClassType,
+    ): MultiWord | undefined {
+        const additionalProperties = c.getAdditionalProperties();
+        if (additionalProperties === undefined) return undefined;
+        if (additionalProperties.kind === "any") {
+            return this.sourceFor(additionalProperties);
+        }
+
+        const properties = Array.from(c.getProperties().values());
+        const types = [
+            this.sourceFor(additionalProperties),
+            ...properties.map((p) => this.sourceFor(p.type)),
+        ];
+        if (properties.some((p) => p.isOptional)) {
+            types.push(singleWord("undefined"));
+        }
+
+        return multiWord(" | ", ...types.map(parenIfNeeded));
     }
 
     protected uncheckedParsedJson(t: Type, parsedJson: Sourcelike): Sourcelike {
