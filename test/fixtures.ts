@@ -929,6 +929,31 @@ class JSONSchemaFixture extends LanguageFixture {
     }
 }
 
+// Ruby's full schema fixture has known dry-struct runtime failures for unions.
+// Keep keyword-unions covered in CI by checking that its output parses.
+class RubySchemaSyntaxFixture extends JSONSchemaFixture {
+    constructor() {
+        super(
+            {
+                ...languages.RubyLanguage,
+                setupCommand: undefined,
+                compileCommand: "ruby -c TopLevel.rb",
+                runCommand: undefined,
+            },
+            "schema-ruby-syntax",
+        );
+    }
+
+    getSamples(sources: string[]): { priority: Sample[]; others: Sample[] } {
+        return samplesFromSources(
+            sources,
+            ["test/inputs/schema/keyword-unions.schema"],
+            [],
+            "schema",
+        );
+    }
+}
+
 // `leadingComments` is a quicktype-core API option, so the CLI fixture path
 // cannot exercise it.
 class LeadingCommentsGoFixture extends JSONSchemaFixture {
@@ -1811,6 +1836,7 @@ export const allFixtures: Fixture[] = [
     new JSONSchemaFixture(languages.CPlusPlusLanguage),
     new JSONSchemaFixture(languages.RustLanguage),
     new JSONSchemaFixture(languages.RubyLanguage),
+    new RubySchemaSyntaxFixture(),
     new JSONSchemaFixture(languages.PythonLanguage),
     new JSONSchemaFixture(languages.PHPLanguage),
     new JSONSchemaFixture(languages.ElmLanguage),

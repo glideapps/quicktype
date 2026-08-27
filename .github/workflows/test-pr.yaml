@@ -50,7 +50,7 @@ jobs:
                     - dart,schema-dart
                     # - swift,schema-swift # pgp issue
                     - javascript-prop-types
-                    - ruby
+                    - ruby,schema-ruby-syntax
                     - php,schema-php
                     - scala3,schema-scala3
                     - scala3-upickle,schema-scala3-upickle
