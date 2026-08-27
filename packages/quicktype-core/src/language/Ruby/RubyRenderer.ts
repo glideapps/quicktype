@@ -75,6 +75,16 @@ export class RubyRenderer extends ConvenienceRenderer {
         };
     }
 
+    protected forbiddenForUnionMembers(
+        _u: UnionType,
+        _unionNamed: Name,
+    ): ForbiddenWordsInfo {
+        return {
+            names: forbiddenForObjectProperties,
+            includeGlobalForbidden: true,
+        };
+    }
+
     protected makeNamedTypeNamer(): Namer {
         return new Namer("types", (n) => simpleNameStyle(n, true), []);
     }
