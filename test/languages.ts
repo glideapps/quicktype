@@ -147,7 +147,6 @@ export const CSharpLanguage: Language = {
     output: "QuickType.cs",
     topLevel: "TopLevel",
     skipJSON: [
-        "empty-enum.json", // https://github.com/JamesNK/Newtonsoft.Json/issues/1687
         "31189.json", // JSON.NET doesn't accept year 0000 as 1BC, though it should
     ],
     skipMiscJSON: false,
