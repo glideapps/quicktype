@@ -379,7 +379,7 @@ export const CrystalLanguage: Language = {
     diffViaSchema: false,
     skipDiffViaSchema: [],
     allowMissingNull: true,
-    features: ["enum", "union", "no-defaults"],
+    features: ["union", "no-defaults"],
     output: "TopLevel.cr",
     topLevel: "TopLevel",
     skipJSON: [
@@ -390,10 +390,6 @@ export const CrystalLanguage: Language = {
     ],
     skipSchema: [
         "integer-type.schema", // Crystal integers are Int32.
-        // Crystal does not handle enum mapping
-        ...skipsEnumValueValidation.filter(
-            (schema) => schema !== "optional-enum.schema",
-        ),
         "keyword-unions.schema",
     ],
     skipMiscJSON: false,
