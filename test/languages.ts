@@ -1493,6 +1493,8 @@ export const KotlinXLanguage: Language = {
     skipDiffViaSchema: [
         "bug427.json",
         "keywords.json",
+        "77392.json",
+        "b4865.json",
         // TODO Investigate these
         "34702.json",
         "76ae1.json",
@@ -1513,9 +1515,7 @@ export const KotlinXLanguage: Language = {
         "optional-union.json",
         "00c36.json",
         "2df80.json",
-        "77392.json",
         "7fbfb.json",
-        "b4865.json",
         "c8c7e.json",
         "cda6c.json",
         "e53b5.json",
