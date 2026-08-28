@@ -213,7 +213,9 @@ export class CrystalRenderer extends ConvenienceRenderer {
         this.forEachTopLevel(
             "leading",
             (t, name) => this.emitTopLevelAlias(t, name),
-            (t) => this.namedTypeToNameForTopLevel(t) === undefined,
+            (t) =>
+                t.kind === "enum" ||
+                this.namedTypeToNameForTopLevel(t) === undefined,
         );
 
         this.forEachObject(
