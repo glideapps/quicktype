@@ -1960,7 +1960,9 @@ export const ElixirLanguage: Language = {
 
         // The test incorrectly succeeds due to the emitter being permissive for unions that contain only primitives. A future enhancement
         // for the Elixir emitter could be a user-controlled 'strict' mode that pattern matches even on unions of only primitive types.
-        ...skipsMapValueValidation,
+        ...skipsMapValueValidation.filter(
+            (schema) => schema !== "go-schema-pattern-properties.schema",
+        ),
 
         // A bare top-level map is emitted as a Jason.decode!/encode! pass-through
         // with no shape validation, so the .fail.json case (a non-object) is not

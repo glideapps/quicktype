@@ -13,7 +13,6 @@ import {
     ClassType,
     EnumType,
     MapType,
-    PrimitiveType,
     type Type,
     UnionType,
 } from "../../Type/index.js";
@@ -454,11 +453,11 @@ export class ElixirRenderer extends ConvenienceRenderer {
         return matchType<Sourcelike>(
             t,
             (_anyType) => [],
-            (_nullType) => [],
-            (_boolType) => [],
-            (_integerType) => [],
-            (_doubleType) => [],
-            (_stringType) => [],
+            (_nullType) => [`${mode}_`, name, prefix],
+            (_boolType) => [`${mode}_`, name, prefix],
+            (_integerType) => [`${mode}_`, name, prefix],
+            (_doubleType) => [`${mode}_`, name, prefix],
+            (_stringType) => [`${mode}_`, name, prefix],
             (_arrayType) => [],
             (classType) => [
                 this.nameForNamedTypeWithNamespace(classType),
@@ -545,11 +544,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 ")",
             ],
             (mapType) => {
-                const mapValueTypes = [...mapType.values.getChildren()];
-                const mapValueTypesNotPrimitive = mapValueTypes.filter(
-                    (type) => !(type instanceof PrimitiveType),
-                );
-                if (mapValueTypesNotPrimitive.length === 0) {
+                if (mapType.values.kind === "any") {
                     return [primitive];
                 }
 
@@ -560,7 +555,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                         '"]\n|> Map.new(fn {key, value} -> {key, ',
                         this.nameOfTransformFunction(
                             mapType.values,
-                            jsonName,
+                            name,
                             false,
                         ),
                         "_value(value)} end)",
@@ -568,7 +563,8 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 }
                 if (
                     mapType.values instanceof EnumType ||
-                    mapType.values instanceof ClassType
+                    mapType.values instanceof ClassType ||
+                    (mapType.values.isPrimitive() && !optional)
                 ) {
                     return [
                         'm["',
@@ -576,8 +572,9 @@ export class ElixirRenderer extends ConvenienceRenderer {
                         '"]\n|> Map.new(fn {key, value} -> {key, ',
                         this.nameOfTransformFunction(
                             mapType.values,
-                            jsonName,
+                            name,
                             false,
+                            "_value",
                         ),
                         "(value)} end)",
                     ];
@@ -699,11 +696,10 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 ")",
             ],
             (mapType) => {
-                const mapValueTypes = [...mapType.values.getChildren()];
-                const mapValueTypesNotPrimitive = mapValueTypes.filter(
-                    (type) => !(type instanceof PrimitiveType),
-                );
-                if (mapValueTypesNotPrimitive.length === 0) {
+                if (
+                    mapType.values.kind === "any" ||
+                    mapType.values.isPrimitive()
+                ) {
                     return [expression];
                 }
 
@@ -938,7 +934,15 @@ export class ElixirRenderer extends ConvenienceRenderer {
                         }
                     } else if (p.type.kind === "map") {
                         const mapType = p.type as MapType;
-                        if (mapType.values instanceof UnionType) {
+                        const value = mapType.values;
+                        if (value.isPrimitive() && value.kind !== "any") {
+                            this.emitPatternMatches(
+                                [value],
+                                name,
+                                parentName,
+                                "_value",
+                            );
+                        } else if (mapType.values instanceof UnionType) {
                             const unionType = mapType.values;
                             const typesInUnion = [...unionType.getChildren()];
 
