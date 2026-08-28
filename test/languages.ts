@@ -1122,7 +1122,6 @@ export const TypeScriptLanguage: Language = {
     skipMiscJSON: false,
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
-        "keyword-unions.schema", // can't handle "constructor" property
         // Pre-existing failures (this fixture is not in CI yet, and these
         // fail with unmodified master too): objects with both declared
         // properties and typed additionalProperties render as an interface
@@ -1166,7 +1165,6 @@ export const JavaScriptLanguage: Language = {
     skipMiscJSON: false,
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
-        "keyword-unions.schema", // can't handle "constructor" property
     ],
     rendererOptions: {},
     quickTestRendererOptions: [
