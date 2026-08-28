@@ -281,6 +281,9 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
                     this.typeMapTypeFor((type as ArrayType).items),
                     ")",
                 ]);
+            } else if (type.kind === "map") {
+                this.ensureBlankLine();
+                this.emitExport(name, this.typeMapTypeFor(type));
             } else {
                 this.ensureBlankLine();
                 this.emitExport(name, ["_", name]);
