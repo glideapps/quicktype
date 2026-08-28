@@ -1510,37 +1510,15 @@ export const KotlinJacksonLanguage: Language = {
         "bug427.json",
     ],
     skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
-        // Very weird - the types are correct, but it can (de)serialize the string,
-        // which is not represented in the types (implicit-class-array-union);
-        // class-map-union: KlaxonException: Couldn't find a suitable constructor for class UnionValue to initialize with {}
-        ...skipsUntypedUnions,
-        // Deserializes an array where a union of two classes is expected
-        // instead of rejecting it.
-        "nested-intersection-union.schema",
-        "class-with-additional.schema",
-        ...skipsMapValueValidation,
+        "implicit-class-array-union.schema",
         // IllegalArgumentException
         "accessors.schema",
         "description.schema",
         "union-list.schema",
-        // KlaxonException: Need to extract inside
-        "bool-string.schema",
-        "integer-string.schema",
-        "uuid.schema",
-        // produces {"foo" : "java.lang.Object@48d61b48"}
-        "any.schema",
         // KlaxonException: Couldn't find a suitable constructor for class UnionValue to initialize with {}
         "direct-union.schema",
-        // Some weird name collision
-        "keyword-enum.schema",
         "keyword-unions.schema",
-        "recursive-union-flattening.schema",
         "top-level-primitive-array.schema",
-        // A top-level array is deserialized into an `ArrayList<Long>` whose
-        // element type is erased at runtime, so a mistyped element
-        // round-trips instead of failing.
-        ...skipsArrayElementValidation,
     ],
     skipMiscJSON: false,
     rendererOptions: { framework: "jackson" },
