@@ -4874,7 +4874,8 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                         );
                                                         this.emitLine(
                                                             "if (NULL != item) { *item = ",
-                                                            cJSON.items.getValue,
+                                                            cJSON.items
+                                                                .getValue,
                                                             "(e); list_add_tail(x->value, item, sizeof(*item)); }",
                                                         );
                                                     } else {
