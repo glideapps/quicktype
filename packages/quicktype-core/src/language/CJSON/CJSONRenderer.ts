@@ -4865,13 +4865,16 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                         );
                                                     } else {
                                                         this.emitLine(
-                                                            "list_add_tail(x->value, ",
                                                             // @ts-expect-error awaiting refactor
-                                                            cJSON.items
-                                                                ?.getValue,
-                                                            "(e), sizeof(",
                                                             cJSON.items?.cType,
-                                                            " *));",
+                                                            " * item = cJSON_malloc(sizeof(*item));",
+                                                        );
+                                                        this.emitLine(
+                                                            "if (NULL != item) { *item = ",
+                                                            cJSON.items
+                                                                ?.getValue ??
+                                                                "",
+                                                            "(e); list_add_tail(x->value, item, sizeof(*item)); }",
                                                         );
                                                     }
                                                 };

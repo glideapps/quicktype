@@ -645,8 +645,6 @@ export const CJSONLanguage: Language = {
         "combinations2.json",
         /* Array in Array in Union is not supported (for the current implementation, can be added later, need recursivity) */
         "combinations4.json",
-        /* Top-level arrays of scalars store scalar values as pointers incorrectly. */
-        "issue2680-scalar-array.json",
     ],
     skipMiscJSON: false,
     skipSchema: [
