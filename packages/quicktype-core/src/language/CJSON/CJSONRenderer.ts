@@ -2404,6 +2404,18 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                 () => {
                                                     if (
                                                         cJSON.cjsonType ===
+                                                        "cJSON_Enum"
+                                                    ) {
+                                                        const object = `j${level > 0 ? level.toString() : ""}`;
+                                                        const value = `cJSON_GetObjectItemCaseSensitive(${object}, "${jsonName}")`;
+                                                        // Enum getters return zero for unknown strings, so
+                                                        // every direct enum property needs this guard.
+                                                        this.emitLine(
+                                                            `if (!cJSON_IsString(${value}) || 0 == ${this.sourcelikeToString(cJSON.getValue)}(${value})) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
+                                                        );
+                                                    }
+                                                    if (
+                                                        cJSON.cjsonType ===
                                                             "cJSON_Array" &&
                                                         cJSON.items !==
                                                             undefined
