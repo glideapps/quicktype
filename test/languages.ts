@@ -639,7 +639,9 @@ export const CJSONLanguage: Language = {
         ...skipsIntFloatUnions,
         /* Union, Map and Arrays with invalid types are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
         "class-with-additional.schema",
-        ...skipsMapValueValidation,
+        ...skipsMapValueValidation.filter(
+            (schema) => schema !== "go-schema-pattern-properties.schema",
+        ),
         /* Top-level array elements with invalid types (e.g. a string where
          * an integer is expected) are not checked either. */
         "multi-type-enum.schema",
