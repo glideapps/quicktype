@@ -1420,24 +1420,9 @@ export const KotlinJacksonLanguage: Language = {
         // https://github.com/cbeust/klaxon/issues/146
         "identifiers.json",
         "simple-identifiers.json",
-        // Klaxon cannot parse List<List<Enum | Union>>
-        // https://github.com/cbeust/klaxon/issues/145
-        "kitchen-sink.json",
-        "26c9c.json",
-        "421d4.json",
-        "a0496.json",
-        "fcca3.json",
-        "ae9ca.json",
-        "617e8.json",
-        "5f7fe.json",
-        "f74d5.json",
-        "a3d8c.json",
-        "combinations1.json",
         "combinations2.json",
         "combinations3.json",
         "combinations4.json",
-        "unions.json",
-        "php-mixed-union.json",
         "nst-test-suite.json",
         // These should be enabled
         "nbl-stats.json",
