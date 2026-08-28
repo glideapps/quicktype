@@ -1221,7 +1221,6 @@ export const FlowLanguage: Language = {
     skipMiscJSON: false,
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
-        "keyword-unions.schema", // can't handle "constructor" property
     ],
     rendererOptions: { "explicit-unions": "yes" },
     quickTestRendererOptions: [
