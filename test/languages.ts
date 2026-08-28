@@ -1639,23 +1639,6 @@ export const PikeLanguage: Language = {
         "identifiers.json", // quicktype internal error
         "7eb30.json", // illegal characters in expressions
         "c6cfd.json", // illegal characters in values
-        // all below: Pike's Stdio.File.write() does not support wide strings.
-        "nst-test-suite.json",
-        "0b91a.json",
-        "29f47.json",
-        "337ed.json",
-        "33d2e.json",
-        "458db.json",
-        "6c155.json",
-        "6de06.json",
-        "734ad.json",
-        "8592b.json",
-        "9ac3b.json",
-        "cb0cc.json",
-        "d23d5.json",
-        "dc44f.json",
-        "dec3a.json",
-        "f22f5.json",
     ],
     skipMiscJSON: false,
     skipSchema: [
