@@ -641,8 +641,6 @@ export const CJSONLanguage: Language = {
     skipMiscJSON: false,
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
-        /* Member names are different when generating with schema */
-        "vega-lite.schema",
         /* Enum as TopLevel is not supported */
         "top-level-enum.schema",
         /* Union with Number and Integer are not supported; min/max constraints on numbers rely on the same distinction */
