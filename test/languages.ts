@@ -154,7 +154,6 @@ export const CSharpLanguage: Language = {
     skipMiscJSON: false,
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
-        "top-level-enum.schema", // The code we generate for top-level enums is incompatible with the driver
     ],
     // The default framework is SystemTextJson; this fixture deliberately
     // pins NewtonSoft so the Newtonsoft renderer keeps end-to-end coverage.
@@ -209,7 +208,6 @@ export const CSharpLanguageSystemTextJson: Language = {
     skipMiscJSON: false,
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
-        "top-level-enum.schema", // The code we generate for top-level enums is incompatible with the driver
         // The following skips are pre-existing System.Text.Json renderer issues,
         // found when first enabling the schema fixture for this language:
         // minmaxlength.schema, optional-constraints.schema, and
