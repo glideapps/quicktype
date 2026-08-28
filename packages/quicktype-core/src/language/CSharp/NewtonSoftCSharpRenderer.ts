@@ -294,7 +294,10 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             ? denseJsonPropertyName
             : "JsonProperty";
         const escapedName = utf16StringEscape(jsonName);
-        const isNullable = followTargetType(property.type).isNullable;
+        const targetType = followTargetType(property.type);
+        const isNullable = targetType.isNullable;
+        const isEmptyStringEnum =
+            targetType instanceof EnumType && targetType.cases.has("");
         const isOptional = property.isOptional;
         const requiredClass = this._options.dense ? "R" : "Required";
         const nullValueHandlingClass = this._options.dense
@@ -305,7 +308,10 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 ? [", NullValueHandling = ", nullValueHandlingClass, ".Ignore"]
                 : [];
         let required: Sourcelike;
-        if (!this._options.checkRequired || (isOptional && isNullable)) {
+        if (
+            !this._options.checkRequired ||
+            (isOptional && (isNullable || isEmptyStringEnum))
+        ) {
             required = [nullValueHandling];
         } else if (isOptional && !isNullable) {
             required = [
