@@ -1171,7 +1171,6 @@ export const JavaScriptPropTypesLanguage: Language = {
     output: "toplevel.js",
     topLevel: "TopLevel",
     skipJSON: [
-        "ed095.json",
         "bug790.json", // renderer does not support recursion
         "recursive.json", // renderer does not support recursion
         "spotify-album.json", // renderer does not support recursion
