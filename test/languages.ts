@@ -983,8 +983,6 @@ export const SwiftLanguage: Language = {
     output: "quicktype.swift",
     topLevel: "TopLevel",
     skipJSON: [
-        // Swift only supports top-level arrays and objects
-        "no-classes.json",
         // This at least is keeping blns-object from working: https://bugs.swift.org/browse/SR-6314
         "blns-object.json",
         // Doesn't seem to work on Linux, works on MacOS
@@ -994,8 +992,6 @@ export const SwiftLanguage: Language = {
     skipMiscJSON: false,
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
-        // The code we generate for top-level enums is incompatible with the driver
-        "top-level-enum.schema",
         // This works on macOS, but on Linux one of the failure test cases doesn't fail
         ...skipsUntypedUnions,
         "required.schema",
@@ -1008,7 +1004,6 @@ export const SwiftLanguage: Language = {
         "date-time.schema",
         "class-with-additional.schema",
         "vega-lite.schema",
-        "top-level-primitive.schema",
     ],
     rendererOptions: { "support-linux": "true" },
     quickTestRendererOptions: [
