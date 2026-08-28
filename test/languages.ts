@@ -544,10 +544,7 @@ export const GoLanguage: Language = {
         "bug427.json",
         "nbl-stats.json",
         "0e0c2.json",
-        "2df80.json",
-        "337ed.json",
         "34702.json",
-        "7eb30.json",
         "e8b04.json",
     ],
     allowMissingNull: false,
@@ -565,7 +562,6 @@ export const GoLanguage: Language = {
     ],
     skipMiscJSON: false,
     skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
         // can't differenciate empty array and nothing for optional empty array
         // (omitempty).
         "postman-collection.schema",
