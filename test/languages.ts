@@ -928,6 +928,7 @@ export const SwiftLanguage: Language = {
         "bug427.json",
         "github-events.json",
         "keywords.json",
+        "null-safe.json",
         "0a358.json", // date-time issues
         "0a91a.json",
         "337ed.json",
@@ -956,7 +957,6 @@ export const SwiftLanguage: Language = {
         "blns-object.json",
         // Doesn't seem to work on Linux, works on MacOS
         "nst-test-suite.json",
-        "null-safe.json",
     ],
     skipMiscJSON: false,
     skipSchema: [
