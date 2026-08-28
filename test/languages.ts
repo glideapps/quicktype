@@ -1770,7 +1770,6 @@ export const HaskellLanguage: Language = {
     ],
     skipMiscJSON: false,
     skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
         ...skipsUntypedUnions,
         "direct-union.schema",
         "empty-object.schema",
