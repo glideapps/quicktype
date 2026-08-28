@@ -1677,6 +1677,7 @@ export const KotlinXLanguage: Language = {
         "a3d8c.json",
         "f74d5.json",
         "fcca3.json",
+        "blns-object.json", // JSON-to-schema property naming is not stable for case collisions.
     ],
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
