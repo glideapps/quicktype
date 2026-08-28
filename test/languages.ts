@@ -1141,8 +1141,7 @@ export const JavaScriptLanguage: Language = {
     runCommand(sample: string) {
         return `node main.js "${sample}"`;
     },
-    // FIXME: enable once TypeScript supports unions
-    diffViaSchema: false,
+    diffViaSchema: true,
     skipDiffViaSchema: [],
     allowMissingNull: false,
     features: ["enum", "union", "no-defaults", "strict-optional", "date-time"],
