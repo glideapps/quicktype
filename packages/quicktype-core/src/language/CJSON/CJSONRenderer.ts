@@ -2573,6 +2573,16 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                                         ?.cjsonType ===
                                                                                         "cJSON_Union"
                                                                                 ) {
+                                                                                    if (
+                                                                                        cJSON
+                                                                                            .items
+                                                                                            ?.cjsonType ===
+                                                                                        "cJSON_Object"
+                                                                                    ) {
+                                                                                        this.emitLine(
+                                                                                            `if (!cJSON_IsObject(e${child_level})) { x${level > 0 ? level.toString() : ""}->${this.sourcelikeToString(name)} = x${child_level}; cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
+                                                                                        );
+                                                                                    }
                                                                                     this.emitLine(
                                                                                         "list_add_tail(x",
                                                                                         child_level.toString(),
