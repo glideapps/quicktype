@@ -994,8 +994,6 @@ export const SwiftLanguage: Language = {
     skipMiscJSON: false,
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
-        // The code we generate for top-level enums is incompatible with the driver
-        "top-level-enum.schema",
         // This works on macOS, but on Linux one of the failure test cases doesn't fail
         ...skipsUntypedUnions,
         "required.schema",
@@ -1008,7 +1006,6 @@ export const SwiftLanguage: Language = {
         "date-time.schema",
         "class-with-additional.schema",
         "vega-lite.schema",
-        "top-level-primitive.schema",
     ],
     rendererOptions: { "support-linux": "true" },
     quickTestRendererOptions: [
