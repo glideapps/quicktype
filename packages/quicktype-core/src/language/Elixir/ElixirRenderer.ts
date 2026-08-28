@@ -1163,6 +1163,11 @@ end`);
                             if (isTopLevelArray) {
                                 const arrayElement = (topLevel as ArrayType)
                                     .items;
+                                const elementModule = arrayElement.isPrimitive()
+                                    ? ""
+                                    : this.nameForNamedTypeWithNamespace(
+                                          arrayElement,
+                                      );
 
                                 let isUnion = false;
 
@@ -1180,12 +1185,11 @@ end`);
                                     this.emitLine("|> Jason.decode!()");
                                     this.emitLine(
                                         "|> Enum.map(&",
-                                        isUnion
-                                            ? ["decode_element/1)"]
-                                            : [
-                                                  this.nameWithNamespace(name),
-                                                  "Element.from_map/1)",
-                                              ],
+                                        arrayElement.isPrimitive()
+                                            ? [" &1)"]
+                                            : isUnion
+                                              ? ["decode_element/1)"]
+                                              : [elementModule, ".from_map/1)"],
                                     );
                                 });
 
@@ -1194,12 +1198,11 @@ end`);
                                 this.emitBlock("def to_json(list) do", () => {
                                     this.emitLine(
                                         "Enum.map(list, &",
-                                        isUnion
-                                            ? ["encode_element/1)"]
-                                            : [
-                                                  this.nameWithNamespace(name),
-                                                  "Element.to_map/1)",
-                                              ],
+                                        arrayElement.isPrimitive()
+                                            ? [" &1)"]
+                                            : isUnion
+                                              ? ["encode_element/1)"]
+                                              : [elementModule, ".to_map/1)"],
                                     );
                                     this.emitLine("|> Jason.encode!()");
                                 });
