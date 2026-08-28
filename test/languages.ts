@@ -805,8 +805,6 @@ export const CPlusPlusLanguage: Language = {
     output: "quicktype.hpp",
     topLevel: "TopLevel",
     skipJSON: [
-        // fails on a string containing null
-        "nst-test-suite.json",
         // uses too much memory compiling
         "combinations.json",
         "combinations1.json",

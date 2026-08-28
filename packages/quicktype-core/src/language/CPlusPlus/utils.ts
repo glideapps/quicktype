@@ -213,7 +213,17 @@ export class BaseString {
     }
 
     public createStringLiteral(inner: Sourcelike): Sourcelike {
-        return [this._stringLiteralPrefix, '"', inner, '"'];
+        const literal = [this._stringLiteralPrefix, '"', inner, '"'];
+        return [
+            this._stringType,
+            "(",
+            literal,
+            ", sizeof(",
+            literal,
+            ") / sizeof(",
+            literal,
+            "[0]) - 1)",
+        ];
     }
 
     public wrapToString(inner: Sourcelike): Sourcelike {
