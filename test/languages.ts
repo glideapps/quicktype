@@ -1970,19 +1970,18 @@ export const TypeScriptEffectSchemaLanguage: Language = {
         // The renderer does not support a bare top-level map.
         "empty-object.schema",
         "integer-before-number.schema", // Python-specific union-order regression.
-        "any.schema",
-        ...skipsUntypedUnions,
-        "direct-union.schema",
-        ...skipsEnumValueValidation,
-        ...skipsMapValueValidation,
-        "intersection.schema",
-        "multi-type-enum.schema",
         "keyword-unions.schema",
-        "optional-any.schema",
-        "required.schema",
-        // The default-value fail sample also relies on required-property enforcement.
-        "default-value.schema",
-        "required-non-properties.schema",
+        // Recursive schemas reference declarations before initialization.
+        "list.schema",
+        "union-list.schema",
+        "simple-ref.schema",
+        "rust-cycle-breaker-union.schema",
+        "ref-remote.schema",
+        "recursive-union-flattening.schema",
+        "postman-collection.schema",
+        // The driver cannot find schemas for top-level arrays.
+        "top-level-array.schema",
+        "top-level-primitive-array.schema",
         "issue2680-top-level-array.schema",
     ],
     rendererOptions: {},
