@@ -35,7 +35,7 @@ jobs:
 
             matrix:
                 fixture:
-                    - typescript,typescript-zod,schema-typescript-zod,typescript-effect-schema
+                    - typescript,typescript-zod,schema-typescript-zod,typescript-effect-schema,schema-typescript-effect-schema
                     - javascript,schema-javascript
                     - golang,schema-golang
                     - cjson,schema-cjson

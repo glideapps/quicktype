@@ -1843,6 +1843,7 @@ export const allFixtures: Fixture[] = [
     new JSONSchemaFixture(languages.SwiftLanguage),
     new JSONSchemaFixture(languages.TypeScriptLanguage),
     new JSONSchemaFixture(languages.TypeScriptZodLanguage),
+    new JSONSchemaFixture(languages.TypeScriptEffectSchemaLanguage),
     new JSONSchemaFixture(languages.FlowLanguage),
     new JSONSchemaFixture(languages.JavaScriptLanguage),
     new JSONSchemaFixture(languages.KotlinLanguage),
