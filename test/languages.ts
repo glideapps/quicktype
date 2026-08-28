@@ -256,7 +256,6 @@ export const JavaLanguage: Language = {
     ],
     skipMiscJSON: false,
     skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
         "keyword-unions.schema", // generates classes with names that are case-insensitively equal
         // The generated converter deserializes a top-level array with a raw
         // `List`, so a mistyped element round-trips instead of failing.
@@ -271,7 +270,6 @@ export const JavaLanguage: Language = {
 export const JavaLanguageWithLegacyDateTime: Language = {
     ...JavaLanguage,
     skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
         ...JavaLanguage.skipSchema,
         "date-time.schema", // Expects less strict serialization.
     ],
@@ -816,7 +814,6 @@ export const CPlusPlusLanguage: Language = {
     ],
     skipMiscJSON: false,
     skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
         // uses too much memory
         "keyword-unions.schema",
     ],
@@ -1102,7 +1099,6 @@ export const TypeScriptLanguage: Language = {
     skipJSON: [],
     skipMiscJSON: false,
     skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
         // Pre-existing failures (this fixture is not in CI yet, and these
         // fail with unmodified master too): objects with both declared
         // properties and typed additionalProperties render as an interface
@@ -1143,9 +1139,7 @@ export const JavaScriptLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
-    skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
-    ],
+    skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [
         { "runtime-typecheck": "false" },
