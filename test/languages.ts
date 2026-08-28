@@ -307,7 +307,6 @@ export const PythonLanguage: Language = {
         "34702.json",
         "7681c.json",
         "c3303.json",
-        "e8b04.json",
         "f6a65.json",
     ],
     allowMissingNull: true,
