@@ -352,7 +352,6 @@ export const RustLanguage: Language = {
         "keywords.json",
         "recursive.json",
         "github-events.json",
-        "nst-test-suite.json",
         "0a91a.json",
         "0cffa.json",
         "127a1.json",
@@ -362,7 +361,6 @@ export const RustLanguage: Language = {
         "76ae1.json",
         "af2d1.json",
         "c3303.json",
-        "e8b04.json",
         "f6a65.json",
     ],
     allowMissingNull: false,
@@ -370,7 +368,7 @@ export const RustLanguage: Language = {
     output: "module_under_test.rs",
     topLevel: "TopLevel",
     skipJSON: [],
-    skipSchema: ["integer-before-number.schema"], // Python-specific union-order regression.
+    skipSchema: [],
     skipMiscJSON: false,
     rendererOptions: {},
     quickTestRendererOptions: [
