@@ -969,7 +969,9 @@ export const SwiftLanguage: Language = {
         "multi-type-enum.schema",
         "intersection.schema",
         ...skipsMapValueValidation,
-        ...skipsEnumValueValidation,
+        ...skipsEnumValueValidation.filter(
+            (schema) => schema !== "optional-enum.schema",
+        ),
         "date-time.schema",
         "class-with-additional.schema",
         "vega-lite.schema",
