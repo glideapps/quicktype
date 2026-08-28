@@ -522,8 +522,6 @@ export const RubyLanguage: Language = {
     ],
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
-        // We don't generate a convenience method for top-level enums
-        "top-level-enum.schema",
         // Top-level scalar arrays redefine Array#to_json recursively.
         "issue2680-top-level-array.schema",
     ],

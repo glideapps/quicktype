@@ -1,3 +1,5 @@
+import { mapContains } from "collection-utils";
+
 import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
@@ -580,6 +582,20 @@ export class RubyRenderer extends ConvenienceRenderer {
                 table.push([[name], [` = "${stringEscape(json)}"`]]);
             });
             this.emitTable(table);
+
+            if (this._options.justTypes || !mapContains(this.topLevels, e)) {
+                return;
+            }
+
+            this.ensureBlankLine();
+            this.emitBlock("def self.from_dynamic!(d)", () => {
+                this.emitLine(this.fromDynamic(e, "d"));
+            });
+
+            this.ensureBlankLine();
+            this.emitBlock("def self.from_json!(json)", () => {
+                this.emitLine("from_dynamic!(JSON.parse(json))");
+            });
         });
     }
 
