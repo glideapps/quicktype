@@ -61,9 +61,6 @@ jobs:
                     # Partially working
                     # - schema-typescript # TODO Unify with typescript once fixed
 
-                    # Language is too niche / obscure to test easily on ubuntu-22.04
-                    # - pike,schema-pike
-
                     # Not yet started
                     # @schani can you help me understand this fixture?
                     # It looks like it tests 13+ languages?
@@ -83,6 +80,8 @@ jobs:
                       runs-on: ubuntu-latest-16-cores
                     - fixture: kotlinx,schema-kotlinx
                       runs-on: ubuntu-latest-16-cores
+                    - fixture: pike,schema-pike
+                      runs-on: ubuntu-24.04
 
                     # - fixture: objective-c # segfault on compiled test cmd
                     #   runs-on: macos-latest
@@ -100,6 +99,12 @@ jobs:
               uses: shivammathur/setup-php@v2
               with:
                   php-version: "8.2"
+
+            - name: Install Pike
+              if: ${{ contains(matrix.fixture, 'pike') }}
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y pike8.0-core
 
             - name: Setup Dart
               if: ${{ contains(matrix.fixture, 'dart') }}
