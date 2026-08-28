@@ -1420,9 +1420,6 @@ export const KotlinJacksonLanguage: Language = {
         // https://github.com/cbeust/klaxon/issues/146
         "identifiers.json",
         "simple-identifiers.json",
-        "combinations2.json",
-        "combinations3.json",
-        "combinations4.json",
         "nst-test-suite.json",
         // These should be enabled
         "nbl-stats.json",
