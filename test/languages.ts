@@ -816,8 +816,6 @@ export const CPlusPlusLanguage: Language = {
     skipJSON: [
         // fails on a string containing null
         "nst-test-suite.json",
-        // compiler error I don't want to figure out right now
-        "nbl-stats.json",
         // uses too much memory compiling
         "combinations.json",
         "combinations1.json",
