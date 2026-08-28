@@ -169,7 +169,7 @@ import com.fasterxml.jackson.module.kotlin.*`);
                 name,
                 "(elements: Collection<",
                 elementType,
-                ">) : ArrayList<",
+                "> = emptyList()) : ArrayList<",
                 elementType,
                 ">(elements)",
             ],

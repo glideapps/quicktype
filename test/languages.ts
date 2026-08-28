@@ -1459,7 +1459,6 @@ export const KotlinJacksonLanguage: Language = {
         // KlaxonException: Couldn't find a suitable constructor for class UnionValue to initialize with {}
         "direct-union.schema",
         "keyword-unions.schema",
-        "top-level-primitive-array.schema",
     ],
     skipMiscJSON: false,
     rendererOptions: { framework: "jackson" },
