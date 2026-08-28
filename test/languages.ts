@@ -1433,7 +1433,6 @@ export const KotlinLanguage: Language = {
         "nbl-stats.json",
         // TODO Investigate these
         "af2d1.json",
-        "32431.json",
         "bug427.json",
     ],
     skipSchema: [
@@ -1528,7 +1527,6 @@ export const KotlinJacksonLanguage: Language = {
         "nbl-stats.json",
         // TODO Investigate these
         "af2d1.json",
-        "32431.json",
         "bug427.json",
     ],
     skipSchema: [
