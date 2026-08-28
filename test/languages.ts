@@ -2069,24 +2069,9 @@ export const TypeScriptZodLanguage: Language = {
     ],
     skipMiscJSON: false,
     skipSchema: [
-        // The renderer does not support a bare top-level map.
-        "empty-object.schema",
         "integer-before-number.schema", // Python-specific union-order regression.
-        "any.schema",
-        ...skipsUntypedUnions,
-        "direct-union.schema",
-        ...skipsEnumValueValidation,
         // z.coerce.date() serializes back as ISO UTC, not the input string
         "date-time.schema",
-        ...skipsMapValueValidation,
-        "intersection.schema",
-        "multi-type-enum.schema",
-        "optional-any.schema",
-        "recursive-union-flattening.schema",
-        "required.schema",
-        // The default-value fail sample also relies on required-property enforcement.
-        "default-value.schema",
-        "required-non-properties.schema",
     ],
     rendererOptions: {},
     quickTestRendererOptions: [],
