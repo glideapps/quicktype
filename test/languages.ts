@@ -630,11 +630,8 @@ export const CJSONLanguage: Language = {
     output: "TopLevel.h",
     topLevel: "TopLevel",
     skipJSON: [
-        /* Line feed in identifiers is not supported */
-        "identifiers.json",
         /* Quote in identifier is not supported */
         "blns-object.json",
-        "simple-identifiers.json",
         /* cJSON is not able to parse input with special characters */
         "nst-test-suite.json",
         /* Union with no name in nullable Array in Array is not supported */
