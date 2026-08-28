@@ -341,6 +341,7 @@ class Run implements RunContext {
                             graph,
                             stringTypeMapping,
                             conflateNumbers,
+                            targetLanguage.supportsUnionsWithMultipleObjectTypes,
                             true,
                             debugPrintReconstitution,
                         );
@@ -371,6 +372,7 @@ class Run implements RunContext {
                     graph,
                     stringTypeMapping,
                     conflateNumbers,
+                    targetLanguage.supportsUnionsWithMultipleObjectTypes,
                     false,
                     debugPrintReconstitution,
                 );
@@ -435,6 +437,7 @@ class Run implements RunContext {
                 graph,
                 stringTypeMapping,
                 conflateNumbers,
+                targetLanguage.supportsUnionsWithMultipleObjectTypes,
                 false,
                 debugPrintReconstitution,
             );
@@ -484,6 +487,7 @@ class Run implements RunContext {
                 graph,
                 stringTypeMapping,
                 conflateNumbers,
+                targetLanguage.supportsUnionsWithMultipleObjectTypes,
                 false,
                 debugPrintReconstitution,
             );

@@ -111,6 +111,10 @@ export abstract class TargetLanguage<
         return false;
     }
 
+    public get supportsUnionsWithMultipleObjectTypes(): boolean {
+        return false;
+    }
+
     public get supportsFullObjectType(): boolean {
         return false;
     }

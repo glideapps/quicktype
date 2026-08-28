@@ -1,0 +1,12 @@
+{
+  "firstProperty": {
+    "a": "alpha",
+    "b": 1,
+    "c": true
+  },
+  "secondProperty": {
+    "d": "delta",
+    "e": 2,
+    "f": false
+  }
+}

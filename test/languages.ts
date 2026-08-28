@@ -70,6 +70,7 @@ const skipsArrayElementValidation = ["issue2680-top-level-array.schema"];
 export type LanguageFeature =
     | "enum"
     | "union"
+    | "class-union"
     | "no-defaults"
     | "strict-optional"
     | "date-time"
@@ -1096,7 +1097,14 @@ export const TypeScriptLanguage: Language = {
         "e8b04.json",
     ],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults", "strict-optional", "date-time"],
+    features: [
+        "enum",
+        "union",
+        "class-union",
+        "no-defaults",
+        "strict-optional",
+        "date-time",
+    ],
     output: "TopLevel.ts",
     topLevel: "TopLevel",
     skipJSON: [],
@@ -1447,6 +1455,9 @@ export const KotlinLanguage: Language = {
         "top-level-enum.schema",
         "top-level-primitive.schema",
         "recursive-union-flattening.schema",
+        // Pre-existing Klaxon constructor-matching limitation for merged
+        // multi-object unions, unrelated to the TypeScript-only union change.
+        "anyof-object-union.schema",
         // A top-level array is deserialized without enforcing its element
         // type, so a mistyped element round-trips instead of failing.
         ...skipsArrayElementValidation,
@@ -1616,6 +1627,11 @@ export const KotlinXLanguage: Language = {
         // deserialization fails at runtime (documented TODO in
         // KotlinXRenderer.ts).
         "accessors.schema",
+        // secondProperty is an array|object union, which the kotlinx
+        // renderer emits as a sealed class without serializer wiring, so it
+        // fails to deserialize at runtime (documented TODO in
+        // KotlinXRenderer.ts).
+        "anyof-object-union.schema",
         "bool-string.schema",
         "class-map-union.schema",
         "class-with-additional.schema",
