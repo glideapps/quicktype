@@ -214,15 +214,18 @@ export class BaseString {
 
     public createStringLiteral(inner: Sourcelike): Sourcelike {
         const literal = [this._stringLiteralPrefix, '"', inner, '"'];
+        const hasNul = (source: Sourcelike): boolean =>
+            Array.isArray(source)
+                ? source.some(hasNul)
+                : typeof source === "string" &&
+                  /(^|[^\\])(?:\\\\)*\\u0000/.test(source);
+        if (!hasNul(inner)) return literal;
         return [
+            "([] { constexpr auto &s = ",
+            literal,
+            "; return ",
             this._stringType,
-            "(",
-            literal,
-            ", sizeof(",
-            literal,
-            ") / sizeof(",
-            literal,
-            "[0]) - 1)",
+            "(s, sizeof(s) / sizeof(s[0]) - 1); }())",
         ];
     }
 
