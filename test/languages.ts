@@ -1897,6 +1897,7 @@ export const HaskellLanguage: Language = {
         ...skipsUntypedUnions,
         "direct-union.schema",
         "empty-object.schema",
+        ...skipsEnumValueValidation,
         "intersection.schema",
         "multi-type-enum.schema",
         "keyword-unions.schema",
