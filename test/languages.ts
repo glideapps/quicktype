@@ -1901,27 +1901,9 @@ export const TypeScriptEffectSchemaLanguage: Language = {
     features: ["enum", "union", "no-defaults"],
     output: "TopLevel.ts",
     topLevel: "TopLevel",
-    skipJSON: [
-        // Does not handle recursive
-        "direct-recursive.json",
-        "list.json",
-        "bug790.json",
-
-        "bug427.json",
-        "nst-test-suite.json",
-    ],
+    skipJSON: ["bug427.json", "nst-test-suite.json"],
     skipMiscJSON: false,
-    skipSchema: [
-        "keyword-unions.schema",
-        // Recursive schemas reference declarations before initialization.
-        "list.schema",
-        "union-list.schema",
-        "simple-ref.schema",
-        "rust-cycle-breaker-union.schema",
-        "ref-remote.schema",
-        "recursive-union-flattening.schema",
-        "postman-collection.schema",
-    ],
+    skipSchema: ["keyword-unions.schema"],
     rendererOptions: {},
     quickTestRendererOptions: [],
     sourceFiles: ["src/language/TypeScriptEffectSchema/index.ts"],
