@@ -50,6 +50,9 @@ import {
 
 type MemoryAttribute = "assign" | "strong" | "copy";
 
+const objectiveCStringEscape = (s: string): string =>
+    stringEscape(s).replace(/\\u0000/g, "\\000");
+
 const DEBUG = false;
 
 export class ObjectiveCRenderer extends ConvenienceRenderer {
@@ -534,7 +537,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
     }
 
     private emitNonClassTopLevelTypedef(t: Type, name: Name): void {
-        const nonPointerTypeName = this.objcType(t)[0];
+        const nonPointerTypeName = this.objcType(t, true)[0];
         this.emitLine("typedef ", nonPointerTypeName, " ", name, ";");
     }
 
@@ -657,7 +660,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                         ";",
                     );
                     this.emitLine(
-                        "NSData *data = [NSJSONSerialization dataWithJSONObject:json options:kNilOptions error:error];",
+                        "NSData *data = [NSJSONSerialization dataWithJSONObject:json options:NSJSONWritingFragmentsAllowed error:error];",
                     );
                     this.emitLine("return *error ? nil : data;");
                 },
@@ -730,7 +733,8 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         this.forEachClassProperty(t, "none", (name, jsonName) => {
             irregular =
                 irregular ||
-                stringEscape(jsonName) !== this.sourcelikeToString(name);
+                objectiveCStringEscape(jsonName) !==
+                    this.sourcelikeToString(name);
         });
         return irregular;
     }
@@ -764,7 +768,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                     this.indent(() => {
                         this.forEachClassProperty(t, "none", (name, jsonName) =>
                             this.emitLine(
-                                `@"${stringEscape(jsonName)}": @"`,
+                                `@"${objectiveCStringEscape(jsonName)}": @"`,
                                 name,
                                 '",',
                             ),
@@ -927,7 +931,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                                         property.type,
                                     )
                                 ) {
-                                    const key = stringEscape(jsonKey);
+                                    const key = objectiveCStringEscape(jsonKey);
                                     const name = ["_", propertyName];
                                     this.emitLine(
                                         '@"',
@@ -1040,7 +1044,11 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 );
                 this.indent(() => {
                     this.forEachEnumCase(enumType, "none", (_, jsonValue) => {
-                        const value = ['@"', stringEscape(jsonValue), '"'];
+                        const value = [
+                            '@"',
+                            objectiveCStringEscape(jsonValue),
+                            '"',
+                        ];
                         this.emitLine(
                             value,
                             ": [[",
@@ -1065,7 +1073,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 " { return ",
                 instances,
                 '[@"',
-                stringEscape(jsonValue),
+                objectiveCStringEscape(jsonValue),
                 '"]; }',
             );
         });
