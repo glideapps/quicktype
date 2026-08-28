@@ -512,15 +512,11 @@ export const RubyLanguage: Language = {
         "php-mixed-union.json",
         "nbl-stats.json",
         "kitchen-sink.json",
-        // Top-level scalar arrays redefine Array#to_json recursively.
-        "issue2680-scalar-array.json",
     ],
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
         // We don't generate a convenience method for top-level enums
         "top-level-enum.schema",
-        // Top-level scalar arrays redefine Array#to_json recursively.
-        "issue2680-top-level-array.schema",
     ],
     skipMiscJSON: false,
     rendererOptions: {},

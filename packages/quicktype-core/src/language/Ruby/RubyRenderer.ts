@@ -871,7 +871,9 @@ export class RubyRenderer extends ConvenienceRenderer {
 
                         // The json gem defines to_json on maps and primitives, so we only need to supply
                         // it for arrays.
-                        const needsToJsonDefined = topLevel.kind === "array";
+                        const needsToJsonDefined =
+                            topLevel instanceof ArrayType &&
+                            !topLevel.items.isPrimitive();
 
                         const classDeclaration = (): void => {
                             this.emitBlock(["class ", name], () => {
