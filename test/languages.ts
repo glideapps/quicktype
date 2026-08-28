@@ -132,7 +132,7 @@ export const CSharpLanguage: Language = {
         return `dotnet run -p:CheckEolTargetFramework=false -- "${sample}"`;
     },
     diffViaSchema: true,
-    skipDiffViaSchema: ["34702.json"],
+    skipDiffViaSchema: ["31189.json", "34702.json"],
     allowMissingNull: false,
     features: [
         "enum",
@@ -146,9 +146,7 @@ export const CSharpLanguage: Language = {
     ],
     output: "QuickType.cs",
     topLevel: "TopLevel",
-    skipJSON: [
-        "31189.json", // JSON.NET doesn't accept year 0000 as 1BC, though it should
-    ],
+    skipJSON: [],
     skipMiscJSON: false,
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
@@ -186,7 +184,7 @@ export const CSharpLanguageSystemTextJson: Language = {
         return `dotnet run -p:CheckEolTargetFramework=false -- "${sample}"`;
     },
     diffViaSchema: true,
-    skipDiffViaSchema: ["34702.json"],
+    skipDiffViaSchema: ["31189.json", "34702.json"],
     allowMissingNull: false,
     features: [
         "enum",
@@ -200,9 +198,7 @@ export const CSharpLanguageSystemTextJson: Language = {
     ],
     output: "QuickType.cs",
     topLevel: "TopLevel",
-    skipJSON: [
-        "31189.json", // .NET doesn't accept year 0000 as 1BC, though it should
-    ],
+    skipJSON: [],
     skipMiscJSON: false,
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
@@ -319,9 +315,7 @@ export const PythonLanguage: Language = {
     ],
     output: "quicktype.py",
     topLevel: "TopLevel",
-    skipJSON: [
-        "31189.json", // year 0 is out of range
-    ],
+    skipJSON: [],
     skipMiscJSON: false,
     skipSchema: [
         "keyword-unions.schema", // Requires more than 255 arguments
