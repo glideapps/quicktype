@@ -1667,11 +1667,7 @@ export const KotlinXLanguage: Language = {
         "a3d8c.json",
         "f74d5.json",
         "fcca3.json",
-        // stringEscape renders astral-plane characters as `\u{5 hex digits}`,
-        // which Kotlin misparses (it only supports 4-digit `\u` escapes), so
-        // the @SerialName annotations don't match the JSON keys.
-        "blns-object.json",
-        "identifiers.json",
+        "blns-object.json", // JSON-to-schema property naming is not stable for case collisions.
     ],
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
