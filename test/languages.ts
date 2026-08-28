@@ -323,9 +323,7 @@ export const PythonLanguage: Language = {
         "31189.json", // year 0 is out of range
     ],
     skipMiscJSON: false,
-    skipSchema: [
-        "keyword-unions.schema", // Requires more than 255 arguments
-    ],
+    skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [
         // The default is "3.10"; keep the older feature sets covered.
