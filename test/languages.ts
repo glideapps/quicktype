@@ -1996,7 +1996,6 @@ export const ElixirLanguage: Language = {
         "required.schema",
         // The default-value fail sample also relies on required-property enforcement.
         "default-value.schema",
-        "top-level-primitive-array.schema",
         "boolean-subschema.schema",
         "intersection.schema",
         "optional-any.schema",
