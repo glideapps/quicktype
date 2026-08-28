@@ -230,7 +230,16 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         }
 
         this.ensureBlankLine();
-        this.emitLine("\nexport const ", name, "Schema = ", "z.object({");
+        const hasOptionalConstructor =
+            t.getProperties().get("constructor")?.isOptional === true;
+        this.emitLine(
+            "\nexport const ",
+            name,
+            "Schema = ",
+            hasOptionalConstructor
+                ? 'z.preprocess(value => typeof value === "object" && value !== null && !Array.isArray(value) ? Object.assign(Object.create(null), value) : value, z.object({'
+                : "z.object({",
+        );
         this.indent(() => {
             this.forEachClassProperty(t, "none", (_, jsonName, property) => {
                 this.emitLine(
@@ -241,7 +250,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
                 );
             });
         });
-        this.emitLine("});");
+        this.emitLine(hasOptionalConstructor ? "}));" : "});");
         if (!this._options.justSchema) {
             this.emitLine(
                 "export type ",

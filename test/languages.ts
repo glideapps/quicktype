@@ -2082,15 +2082,11 @@ export const TypeScriptZodLanguage: Language = {
         ...skipsUntypedUnions,
         "direct-union.schema",
         ...skipsEnumValueValidation,
-        // zod validates the inherited Object.prototype.constructor when an
-        // optional "constructor" property is absent
-        "constructor.schema",
         // z.coerce.date() serializes back as ISO UTC, not the input string
         "date-time.schema",
         ...skipsMapValueValidation,
         "intersection.schema",
         "multi-type-enum.schema",
-        "keyword-unions.schema",
         "optional-any.schema",
         "recursive-union-flattening.schema",
         "required.schema",
