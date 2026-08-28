@@ -1993,7 +1993,6 @@ export const TypeScriptEffectSchemaLanguage: Language = {
         "c8c7e.json",
         "e53b5.json",
         "f3139.json",
-        "f22f5.json",
         "bug855-short.json",
         "bug427.json",
         "nst-test-suite.json",
