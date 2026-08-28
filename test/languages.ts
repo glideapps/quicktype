@@ -1819,8 +1819,18 @@ export const PHPLanguage: Language = {
         // heterogeneous array under a PHP-reserved-word property name.
         "php-mixed-union.json",
         "php-validation.json",
+        "00ec5.json",
+        "016af.json",
+        "033b1.json",
+        "07540.json",
+        "0779f.json",
+        "09f54.json",
+        "0b91a.json",
+        "0cffa.json",
+        "0e0c2.json",
+        "0fecf.json",
     ],
-    skipMiscJSON: true,
+    skipMiscJSON: false,
     skipSchema: [
         // The renderer does not support a bare top-level map.
         "empty-object.schema",
