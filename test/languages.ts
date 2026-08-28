@@ -784,19 +784,9 @@ export const CPlusPlusLanguage: Language = {
     ],
     output: "quicktype.hpp",
     topLevel: "TopLevel",
-    skipJSON: [
-        // uses too much memory compiling
-        "combinations.json",
-        "combinations1.json",
-        "combinations2.json",
-        "combinations3.json",
-        "combinations4.json",
-    ],
+    skipJSON: [],
     skipMiscJSON: false,
-    skipSchema: [
-        // uses too much memory
-        "keyword-unions.schema",
-    ],
+    skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [
         { "code-format": "with-struct" },
@@ -805,11 +795,8 @@ export const CPlusPlusLanguage: Language = {
         ["bug2521.json", { wstring: "use-wstring" }],
         { "const-style": "east-const" },
         // The default is boost=false (C++17); this keeps the boost code
-        // path covered.  Pinned to specific inputs because the default
-        // quicktest inputs (combinations[1-4].json) are all in this
-        // fixture's skipJSON, so plain-options quicktests never run for
-        // C++.  unions.json exercises nulls inside unions, where the
-        // boost and std optional/variant code paths differ.
+        // path covered.  unions.json exercises nulls inside unions, where
+        // the boost and std optional/variant code paths differ.
         ["unions.json", { boost: "true" }],
         ["pokedex.json", { boost: "true" }],
         ["optional-any.schema", { "hide-null-optional": "true" }],
