@@ -1118,8 +1118,6 @@ export const JavaScriptPropTypesLanguage: Language = {
         "76ae1.json", // renderer does not support recursion
     ],
     skipSchema: [
-        // The renderer does not support a bare top-level map.
-        "empty-object.schema",
         "integer-before-number.schema", // Python-specific union-order regression.
     ],
     skipMiscJSON: false,
@@ -1838,12 +1836,7 @@ export const PHPLanguage: Language = {
         // Unions are inlined as PHP union type declarations, so a
         // top-level union produces no named TopLevel class for the driver.
         "recursive-union-flattening.schema",
-        // The generated code for top-level enums is incompatible with the
-        // driver.
-        "top-level-enum.schema",
         // The driver does not support top-level arrays.
-        "union.schema",
-        "top-level-array.schema",
         "top-level-primitive-array.schema",
         "issue2680-top-level-array.schema",
     ],
