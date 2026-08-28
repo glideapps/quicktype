@@ -428,7 +428,9 @@ export const CrystalLanguage: Language = {
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
         // Crystal does not handle enum mapping
-        ...skipsEnumValueValidation,
+        ...skipsEnumValueValidation.filter(
+            (schema) => schema !== "optional-enum.schema",
+        ),
         // Crystal does not support top-level primitives
         "top-level-enum.schema",
         "keyword-unions.schema",
