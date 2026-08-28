@@ -139,6 +139,14 @@ function checkJSONSchema(x: unknown, refOrLoc: Ref | (() => Ref)): JSONSchema {
 
 const numberRegexp = /^[0-9]+$/;
 
+function unescapeJSONPointerSegment(segment: string): string {
+    return segment.replace(/~1/g, "/").replace(/~0/g, "~");
+}
+
+function escapeJSONPointerSegment(segment: string): string {
+    return segment.replace(/~/g, "~0").replace(/\//g, "~1");
+}
+
 function normalizeURI(uri: string | URI): URI {
     // FIXME: This is overly complicated and a bit shady.  The problem is
     // that `normalize` will URL-escape, with the result that if we want to
@@ -169,7 +177,10 @@ export class Ref {
         if (path !== "") {
             const parts = path.split("/");
             parts.forEach((part) => {
-                elements.push({ kind: PathElementKind.KeyOrIndex, key: part });
+                elements.push({
+                    kind: PathElementKind.KeyOrIndex,
+                    key: unescapeJSONPointerSegment(part),
+                });
             });
         }
 
@@ -323,7 +334,7 @@ export class Ref {
                 case PathElementKind.Object:
                     return "object";
                 case PathElementKind.KeyOrIndex:
-                    return e.key;
+                    return escapeJSONPointerSegment(e.key);
                 default:
                     return assertNever(e);
             }
@@ -1454,7 +1465,7 @@ function removeExtension(fn: string): string {
 function nameFromURI(uri: URI): string | undefined {
     const fragment = uri.fragment();
     if (fragment !== "") {
-        const components = fragment.split("/");
+        const components = fragment.split("/").map(unescapeJSONPointerSegment);
         const len = components.length;
         if (components[len - 1] !== "") {
             return removeExtension(components[len - 1]);

@@ -670,8 +670,9 @@ export const CJSONLanguage: Language = {
         "ie-suffix-singularization.schema",
         "intersection.schema",
         "required.schema",
-        // The default-value fail sample also relies on required-property
-        // enforcement, which cJSON does not do.
+        // These fail samples also rely on required-property enforcement,
+        // which cJSON does not do.
+        "json-pointer-escaped-keys.schema",
         "default-value.schema",
         /* Pure Any type not supported (for the current implementation, can be added later, should manage a callback to provide the final application a way to handle it at parsing and creation of cJSON) */
         "any.schema",
