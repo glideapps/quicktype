@@ -372,11 +372,12 @@ export class ElixirRenderer extends ConvenienceRenderer {
         parentName: Sourcelike,
         suffix = "",
         optional = false,
+        force = false,
     ): void {
         this.ensureBlankLine();
 
         let typesToMatch = this.sortAndFilterPatternMatchTypes(types);
-        if (typesToMatch.length < 2) {
+        if (typesToMatch.length < 2 && !force) {
             return;
         }
 
@@ -1178,6 +1179,16 @@ end`);
                                         name,
                                     );
                                     isUnion = true;
+                                } else if (arrayElement.isPrimitive()) {
+                                    this.emitPatternMatches(
+                                        [arrayElement],
+                                        "element",
+                                        name,
+                                        "",
+                                        false,
+                                        true,
+                                    );
+                                    isUnion = true;
                                 }
 
                                 this.emitBlock("def from_json(json) do", () => {
@@ -1185,11 +1196,9 @@ end`);
                                     this.emitLine("|> Jason.decode!()");
                                     this.emitLine(
                                         "|> Enum.map(&",
-                                        arrayElement.isPrimitive()
-                                            ? [" &1)"]
-                                            : isUnion
-                                              ? ["decode_element/1)"]
-                                              : [elementModule, ".from_map/1)"],
+                                        isUnion
+                                            ? ["decode_element/1)"]
+                                            : [elementModule, ".from_map/1)"],
                                     );
                                 });
 
@@ -1198,11 +1207,9 @@ end`);
                                 this.emitBlock("def to_json(list) do", () => {
                                     this.emitLine(
                                         "Enum.map(list, &",
-                                        arrayElement.isPrimitive()
-                                            ? [" &1)"]
-                                            : isUnion
-                                              ? ["encode_element/1)"]
-                                              : [elementModule, ".to_map/1)"],
+                                        isUnion
+                                            ? ["encode_element/1)"]
+                                            : [elementModule, ".to_map/1)"],
                                     );
                                     this.emitLine("|> Jason.encode!()");
                                 });

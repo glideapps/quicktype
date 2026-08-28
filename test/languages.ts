@@ -2016,7 +2016,6 @@ export const ElixirLanguage: Language = {
 
         // A top-level array is deserialized without enforcing its element
         // type, so a mistyped element round-trips instead of failing.
-        ...skipsArrayElementValidation,
     ],
     rendererOptions: {},
     quickTestRendererOptions: [],
