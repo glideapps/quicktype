@@ -4863,18 +4863,29 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                             cJSON.items?.cType,
                                                             " *));",
                                                         );
-                                                    } else {
+                                                    } else if (
+                                                        cJSON.items
+                                                            ?.deleteType ===
+                                                        "cJSON_free"
+                                                    ) {
                                                         this.emitLine(
-                                                            // @ts-expect-error awaiting refactor
-                                                            cJSON.items?.cType,
+                                                            cJSON.items.cType,
                                                             " * item = cJSON_malloc(sizeof(*item));",
                                                         );
                                                         this.emitLine(
                                                             "if (NULL != item) { *item = ",
-                                                            cJSON.items
-                                                                ?.getValue ??
-                                                                "",
+                                                            cJSON.items.getValue,
                                                             "(e); list_add_tail(x->value, item, sizeof(*item)); }",
+                                                        );
+                                                    } else {
+                                                        this.emitLine(
+                                                            "list_add_tail(x->value, ",
+                                                            // @ts-expect-error awaiting refactor
+                                                            cJSON.items
+                                                                ?.getValue,
+                                                            "(e), sizeof(",
+                                                            cJSON.items?.cType,
+                                                            " *));",
                                                         );
                                                     }
                                                 };
