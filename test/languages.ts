@@ -1709,12 +1709,10 @@ export const HaskellLanguage: Language = {
     },
     diffViaSchema: true,
     skipDiffViaSchema: [
-        "bug863.json",
         "reddit.json",
         "github-events.json",
         "nbl-stats.json",
         "0a91a.json",
-        "0e0c2.json",
         "29f47.json",
         "2df80.json",
         "27332.json",
