@@ -670,6 +670,7 @@ export const CJSONLanguage: Language = {
         "ie-suffix-singularization.schema",
         "intersection.schema",
         "required.schema",
+        "allof-closed-objects.schema",
         // The default-value fail sample also relies on required-property
         // enforcement, which cJSON does not do.
         "default-value.schema",
@@ -984,6 +985,8 @@ export const SwiftLanguage: Language = {
         // This works on macOS, but on Linux one of the failure test cases doesn't fail
         ...skipsUntypedUnions,
         "required.schema",
+        // Same Linux-only missing-required behavior as required.schema.
+        "allof-closed-objects.schema",
         // The default-value fail sample also relies on required-property enforcement.
         "default-value.schema",
         "multi-type-enum.schema",
@@ -1847,6 +1850,9 @@ export const HaskellLanguage: Language = {
         "optional-any.schema",
         "ie-suffix-singularization.schema",
         "required.schema",
+        // Same undetectable expected-failure limitation as required.schema:
+        // a failed decode prints "null" and exits 0.
+        "allof-closed-objects.schema",
         // The default-value fail sample also relies on required-property enforcement.
         "default-value.schema",
         "required-non-properties.schema",
@@ -2153,6 +2159,7 @@ export const ElixirLanguage: Language = {
         "ie-suffix-singularization.schema",
         "strict-optional.schema",
         "required.schema",
+        "allof-closed-objects.schema",
         // The default-value fail sample also relies on required-property enforcement.
         "default-value.schema",
         "top-level-primitive-array.schema",
