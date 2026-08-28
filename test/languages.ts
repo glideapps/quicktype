@@ -262,7 +262,6 @@ export const JavaLanguage: Language = {
         "keyword-unions.schema", // generates classes with names that are case-insensitively equal
         // The generated converter deserializes a top-level array with a raw
         // `List`, so a mistyped element round-trips instead of failing.
-        ...skipsArrayElementValidation,
     ],
     rendererOptions: {},
     // The default is array-type=list; this keeps the T[] code path

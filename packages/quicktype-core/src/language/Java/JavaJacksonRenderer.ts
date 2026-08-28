@@ -31,6 +31,13 @@ export class JacksonRenderer extends JavaRenderer {
         "SerializerProvider",
     ];
 
+    private mapperType(t: Type): Sourcelike {
+        if (this._options.useList && t instanceof ArrayType) {
+            return ["new TypeReference<", this.javaType(false, t), ">() {}"];
+        }
+        return [this.javaTypeWithoutGenerics(false, t), ".class"];
+    }
+
     protected emitClassAttributes(c: ClassType, _className: Name): void {
         if (c.getProperties().size === 0)
             this.emitLine(
@@ -635,6 +642,7 @@ export class JacksonRenderer extends JavaRenderer {
             "com.fasterxml.jackson.databind.module.SimpleModule",
             "com.fasterxml.jackson.core.JsonParser",
             "com.fasterxml.jackson.core.JsonProcessingException",
+            "com.fasterxml.jackson.core.type.TypeReference",
             "java.util.*",
         ].concat(this._dateTimeProvider.converterImports);
         this.emitPackageAndImports(imports);
@@ -719,11 +727,8 @@ export class JacksonRenderer extends JavaRenderer {
                             "()",
                         ],
                         () => {
-                            const renderedForClass =
-                                this.javaTypeWithoutGenerics(
-                                    false,
-                                    topLevelType,
-                                );
+                            const renderedForMapper =
+                                this.mapperType(topLevelType);
                             this.emitLine(
                                 "ObjectMapper mapper = new ObjectMapper();",
                             );
@@ -738,14 +743,14 @@ export class JacksonRenderer extends JavaRenderer {
                             this.emitLine(
                                 readerName,
                                 " = mapper.readerFor(",
-                                renderedForClass,
-                                ".class);",
+                                renderedForMapper,
+                                ");",
                             );
                             this.emitLine(
                                 writerName,
                                 " = mapper.writerFor(",
-                                renderedForClass,
-                                ".class);",
+                                renderedForMapper,
+                                ");",
                             );
                         },
                     );
