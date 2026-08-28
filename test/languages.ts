@@ -389,14 +389,11 @@ export const CrystalLanguage: Language = {
         "nst-test-suite.json",
     ],
     skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
         "integer-type.schema", // Crystal integers are Int32.
         // Crystal does not handle enum mapping
         ...skipsEnumValueValidation.filter(
             (schema) => schema !== "optional-enum.schema",
         ),
-        // Crystal does not support top-level primitives
-        "top-level-enum.schema",
         "keyword-unions.schema",
     ],
     skipMiscJSON: false,
