@@ -831,8 +831,6 @@ export const CPlusPlusLanguage: Language = {
         "integer-before-number.schema", // Python-specific union-order regression.
         // uses too much memory
         "keyword-unions.schema",
-        // The generated deserializer accepts non-object values when all class properties are optional.
-        "nested-intersection-union.schema",
     ],
     rendererOptions: {},
     quickTestRendererOptions: [

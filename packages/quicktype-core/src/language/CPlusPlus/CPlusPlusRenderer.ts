@@ -1456,6 +1456,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             ],
             false,
             () => {
+                this.emitLine(
+                    'if (!j.is_object()) throw std::runtime_error("Expected object");',
+                );
                 if (c.getProperties().size === 0) {
                     this.emitLine("(void)j;");
                     this.emitLine("(void)x;");
