@@ -152,6 +152,10 @@ export class GoRenderer extends ConvenienceRenderer {
 
     private propertyGoType(cp: ClassProperty): Sourcelike {
         const t = cp.type;
+        if (cp.isOptional && (t.kind === "array" || t.kind === "map")) {
+            return ["*", this.goType(t, true)];
+        }
+
         if (t instanceof UnionType && nullableFromUnion(t) === null) {
             return ["*", this.goType(t, true)];
         }

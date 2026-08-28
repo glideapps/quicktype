@@ -547,16 +547,9 @@ export const GoLanguage: Language = {
         "simple-identifiers.json",
         "blns-object.json",
         "nst-test-suite.json",
-        // can't differenciate empty array and nothing for optional empty array
-        // (omitempty).
-        "github-events.json",
     ],
     skipMiscJSON: false,
-    skipSchema: [
-        // can't differenciate empty array and nothing for optional empty array
-        // (omitempty).
-        "postman-collection.schema",
-    ],
+    skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [
         // Runs against the expected-output file
