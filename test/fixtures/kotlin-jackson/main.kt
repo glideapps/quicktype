@@ -10,6 +10,6 @@ fun output(json: String) {
 
 fun main(args: Array<String>) {
 	val json = File(args[0]).readText()
-	val top = TopLevel.fromJson(json)!!
-	output(top.toJson())
+	val top = mapper.readValue(json, TopLevel::class.java)
+	output(mapper.writeValueAsString(top))
 }

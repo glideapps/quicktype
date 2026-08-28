@@ -1522,8 +1522,6 @@ export const KotlinJacksonLanguage: Language = {
         "unions.json",
         "php-mixed-union.json",
         "nst-test-suite.json",
-        // Klaxon does not support top-level primitives
-        "no-classes.json",
         // These should be enabled
         "nbl-stats.json",
         // TODO Investigate these
@@ -1557,13 +1555,7 @@ export const KotlinJacksonLanguage: Language = {
         // Some weird name collision
         "keyword-enum.schema",
         "keyword-unions.schema",
-        // Klaxon does not support top-level primitives/unions
-        "top-level-enum.schema",
-        "top-level-primitive.schema",
         "recursive-union-flattening.schema",
-        // Jackson cannot deserialize the generated ArrayList subclass because
-        // it has no default constructor.
-        "top-level-array.schema",
         "top-level-primitive-array.schema",
         // A top-level array is deserialized into an `ArrayList<Long>` whose
         // element type is erased at runtime, so a mistyped element
