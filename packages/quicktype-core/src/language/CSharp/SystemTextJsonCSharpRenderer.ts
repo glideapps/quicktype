@@ -370,7 +370,7 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
                 this.emitExpressionMember(
                     ["public static ", csType, " FromJson(string json)"],
                     [
-                        "JsonSerializer.Deserialize<",
+                        "global::System.Text.Json.JsonSerializer.Deserialize<",
                         csType,
                         ">(json, ",
                         this._options.namespace,
