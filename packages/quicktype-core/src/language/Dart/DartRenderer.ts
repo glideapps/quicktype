@@ -352,6 +352,8 @@ export class DartRenderer extends ConvenienceRenderer {
     ): Sourcelike {
         if (isNullable && !this._options.requiredProperties) {
             return [
+                map,
+                " == null ? null : ",
                 "Map.from(",
                 map,
                 "!).map((k, v) => MapEntry<String, ",
