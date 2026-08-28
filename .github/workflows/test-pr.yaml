@@ -52,6 +52,7 @@ jobs:
                     - javascript-prop-types
                     - ruby,schema-ruby-syntax
                     - php,schema-php
+                    - crystal,schema-crystal
                     - scala3,schema-scala3
                     - scala3-upickle,schema-scala3-upickle
                     - elixir,schema-elixir,graphql-elixir
@@ -68,9 +69,6 @@ jobs:
                     # @schani can you help me understand this fixture?
                     # It looks like it tests 13+ languages?
                     # - graphql
-
-                    # Never tested?
-                    # - crystal
 
                 runs-on: [ubuntu-22.04]
 
@@ -100,6 +98,10 @@ jobs:
               uses: shivammathur/setup-php@v2
               with:
                   php-version: "8.2"
+
+            - name: Setup Crystal
+              if: ${{ contains(matrix.fixture, 'crystal') }}
+              uses: crystal-lang/install-crystal@v1
 
             - name: Setup Dart
               if: ${{ contains(matrix.fixture, 'dart') }}

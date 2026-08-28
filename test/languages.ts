@@ -405,17 +405,11 @@ export const CrystalLanguage: Language = {
         "blns-object.json",
         "identifiers.json",
         "simple-identifiers.json",
-        "bug427.json",
         "nst-test-suite.json",
-        "34702.json",
-        "34702.json",
-        "4961a.json",
-        "32431.json",
-        "68c30.json",
-        "e8b04.json",
     ],
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
+        "integer-type.schema", // Crystal integers are Int32.
         // Crystal does not handle enum mapping
         ...skipsEnumValueValidation.filter(
             (schema) => schema !== "optional-enum.schema",
