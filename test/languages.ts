@@ -1415,7 +1415,6 @@ export const KotlinLanguage: Language = {
         "nbl-stats.json",
         // TODO Investigate these
         "af2d1.json",
-        "bug427.json",
     ],
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
@@ -1441,7 +1440,6 @@ export const KotlinLanguage: Language = {
         // KlaxonException: Couldn't find a suitable constructor for class UnionValue to initialize with {}
         "direct-union.schema",
         // Some weird name collision
-        "keyword-enum.schema",
         "keyword-unions.schema",
         // Klaxon does not support top-level primitives/unions
         "top-level-enum.schema",
@@ -1505,9 +1503,6 @@ export const KotlinJacksonLanguage: Language = {
         "nst-test-suite.json",
         // These should be enabled
         "nbl-stats.json",
-        // TODO Investigate these
-        "af2d1.json",
-        "bug427.json",
     ],
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
