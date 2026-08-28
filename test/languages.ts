@@ -1910,48 +1910,9 @@ export const TypeScriptZodLanguage: Language = {
     features: ["enum", "union", "no-defaults", "date-time", "minmaxitems"],
     output: "TopLevel.ts",
     topLevel: "TopLevel",
-    skipJSON: [
-        // The test driver can't find the top-level schema among the
-        // prefixed names (FluffyTopLevelSchema etc.)
-        "2df80.json",
-
-        // z.coerce.date() serializes timestamps with milliseconds, the
-        // input has none
-        "github-events.json",
-
-        "00c36.json",
-        "10be4.json",
-        "050b0.json",
-        "06bee.json",
-        "07c75.json",
-        "3536b.json",
-        "13d8d.json",
-        "43970.json",
-        "570ec.json",
-        "4d6fb.json",
-        "66121.json",
-        "5eae5.json",
-        "6eb00.json",
-        "7f568.json",
-        "7fbfb.json",
-        "8592b.json",
-        "9847b.json",
-        "996bd.json",
-        "9a503.json",
-        "9eed5.json",
-        "ad8be.json",
-        "ae7f0.json",
-        "b4865.json",
-        "cda6c.json",
-        "c8c7e.json",
-        "e53b5.json",
-        "f3139.json",
-        "f22f5.json",
-        "nbl-stats.json",
-    ],
+    skipJSON: [],
     skipMiscJSON: false,
     skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
         // z.coerce.date() serializes back as ISO UTC, not the input string
         "date-time.schema",
     ],
