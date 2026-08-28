@@ -2011,7 +2011,6 @@ export const ElixirLanguage: Language = {
         "76ae1.json",
         "6de06.json",
         "4d6fb.json",
-        "34702.json",
         "2df80.json",
         "29f47.json",
         "27332.json",
