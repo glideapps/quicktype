@@ -1815,6 +1815,11 @@ export const PHPLanguage: Language = {
         "number-map.json",
         "omit-empty.json",
         "url.json",
+        "nbl-stats.json",
+        "reddit.json",
+        "spotify-album.json",
+        "us-avg-temperatures.json",
+        "us-senators.json",
         // The motivating repro for non-nullable union support: a
         // heterogeneous array under a PHP-reserved-word property name.
         "php-mixed-union.json",
