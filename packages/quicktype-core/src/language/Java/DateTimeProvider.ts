@@ -217,7 +217,7 @@ export class JavaLegacyDateTimeProvider extends JavaDateTimeProvider {
     public timeType = "Date";
 
     public dateTimeJacksonAnnotations: string[] = [
-        '@JsonFormat(pattern = "yyyy-MM-dd\'T\'HH:mm:ssX", timezone = "UTC")',
+        '@JsonFormat(pattern = "yyyy-MM-dd\'T\'HH:mm:ss.SSSX", timezone = "UTC")',
     ];
 
     public dateJacksonAnnotations: string[] = [
@@ -259,6 +259,9 @@ export class JavaLegacyDateTimeProvider extends JavaDateTimeProvider {
         this._renderer.emitBlock(
             "public static Date parseAllDateTimeString(String str)",
             () => {
+                this._renderer.emitLine(
+                    'str = str.replaceFirst("(\\\\.\\\\d{3})\\\\d+", "$1");',
+                );
                 this._renderer.emitBlock(
                     "for (String format : DATE_TIME_FORMATS)",
                     () => {

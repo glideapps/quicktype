@@ -275,8 +275,6 @@ export const JavaLanguageWithLegacyDateTime: Language = {
     ],
     skipJSON: [
         ...(JavaLanguage.skipJSON !== undefined ? JavaLanguage.skipJSON : []),
-        "0a358.json", // Expects less strict serialization (optional milliseconds).
-        "337ed.json", // Expects less strict serialization (optional milliseconds).
     ],
     skipMiscJSON: true, // Handles edge cases differently and does not allow optional milliseconds.
     rendererOptions: { "datetime-provider": "legacy" },
