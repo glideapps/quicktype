@@ -1377,8 +1377,7 @@ export const KotlinLanguage: Language = {
         "direct-union.schema",
         // Some weird name collision
         "keyword-unions.schema",
-        // Klaxon does not support top-level enums/unions
-        "top-level-enum.schema",
+        // Klaxon does not support top-level unions
         "recursive-union-flattening.schema",
         // A top-level array is deserialized without enforcing its element
         // type, so a mistyped element round-trips instead of failing.

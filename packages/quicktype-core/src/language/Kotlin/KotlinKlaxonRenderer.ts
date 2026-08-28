@@ -406,6 +406,10 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
 
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
+        const isTopLevel = iterableSome(
+            this.topLevels,
+            ([_, top]) => top === e,
+        );
 
         this.emitBlock(["enum class ", enumName, "(val value: String)"], () => {
             let count = e.cases.size;
@@ -416,8 +420,20 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
                     --count === 0 ? ";" : ",",
                 );
             });
+            if (isTopLevel) {
+                this.ensureBlankLine();
+                this.emitLine(
+                    "public fun toJson() = klaxon.toJsonString(value)",
+                );
+            }
             this.ensureBlankLine();
             this.emitBlock("companion object", () => {
+                if (isTopLevel) {
+                    this.emitLine(
+                        'public fun fromJson(json: String) = fromValue(klaxon.parseArray<String>("[${json}]")!![0])',
+                    );
+                    this.ensureBlankLine();
+                }
                 this.emitBlock(
                     [
                         "public fun fromValue(value: String): ",
