@@ -1572,10 +1572,9 @@ export const DartLanguage: Language = {
     features: [],
     output: "TopLevel.dart",
     topLevel: "TopLevel",
-    skipJSON: ["combinations2.json", "combinations1.json", "keywords.json"],
+    skipJSON: ["combinations2.json", "combinations1.json"],
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
-        "keyword-unions.schema",
     ],
     skipMiscJSON: true,
     rendererOptions: {},
