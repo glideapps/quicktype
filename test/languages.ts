@@ -1956,15 +1956,7 @@ export const ElixirLanguage: Language = {
         // TopLevel before Bar, but this doesn't address the actual problem if for example a pattern match to Bar was in TopLevel.
         "mutually-recursive.schema",
 
-        // Struct keys cannot be enforced at runtime in Elixir and their values will just be set to null.
-        "ie-suffix-singularization.schema",
         "strict-optional.schema",
-        "required.schema",
-        // The default-value fail sample also relies on required-property enforcement.
-        "default-value.schema",
-        "boolean-subschema.schema",
-        "intersection.schema",
-        "optional-any.schema",
 
         // The test incorrectly succeeds due to the emitter being permissive for unions that contain only primitives. A future enhancement
         // for the Elixir emitter could be a user-controlled 'strict' mode that pattern matches even on unions of only primitive types.

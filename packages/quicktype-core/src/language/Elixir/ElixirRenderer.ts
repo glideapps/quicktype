@@ -372,12 +372,12 @@ export class ElixirRenderer extends ConvenienceRenderer {
         parentName: Sourcelike,
         suffix = "",
         optional = false,
-        force = false,
+        _force = false,
     ): void {
         this.ensureBlankLine();
 
         let typesToMatch = this.sortAndFilterPatternMatchTypes(types);
-        if (typesToMatch.length < 2 && !force) {
+        if (typesToMatch.length === 0) {
             return;
         }
 
@@ -484,25 +484,26 @@ export class ElixirRenderer extends ConvenienceRenderer {
         optional = false,
     ): Sourcelike {
         const primitive = ['m["', jsonName, '"]'];
+        const checked = ["decode_", name, "(", primitive, ")"];
 
         return matchType<Sourcelike>(
             t,
             (_anyType) => primitive,
-            (_nullType) => primitive,
-            (_boolType) => primitive,
-            (_integerType) => primitive,
-            (_doubleType) => primitive,
-            (_stringType) => primitive,
+            (_nullType) => (optional ? primitive : checked),
+            (_boolType) => (optional ? primitive : checked),
+            (_integerType) => (optional ? primitive : checked),
+            (_doubleType) => (optional ? primitive : checked),
+            (_stringType) => (optional ? primitive : checked),
             (arrayType) => {
                 const arrayElement = arrayType.items;
                 if (arrayElement instanceof ArrayType) {
-                    return primitive;
+                    return optional ? primitive : checked;
                 }
                 if (arrayElement.isPrimitive()) {
-                    return primitive;
+                    return optional ? primitive : checked;
                 }
                 if (arrayElement instanceof MapType) {
-                    return primitive;
+                    return optional ? primitive : checked;
                 }
 
                 if (optional) {
@@ -862,6 +863,14 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 }
 
                 this.forEachClassProperty(c, "none", (name, _jsonName, p) => {
+                    const parentName = this.nameForNamedTypeWithNamespace(c);
+                    if (
+                        (p.type.isPrimitive() || p.type.kind === "array") &&
+                        p.type.kind !== "any" &&
+                        !p.isOptional
+                    ) {
+                        this.emitPatternMatches([p.type], name, parentName);
+                    }
                     if (p.type.kind === "union") {
                         const unionTypes = [...p.type.getChildren()];
                         const unionPrimitiveTypes = unionTypes.filter((type) =>
