@@ -1895,18 +1895,8 @@ export const HaskellLanguage: Language = {
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
         ...skipsUntypedUnions,
-        // The test driver encodes the Maybe result, so a failed decode prints
-        // "null" and exits 0 — expected-failure samples cannot be detected.
-        // (A top-level `[Int]` correctly fails to decode `[1, 2, "three"]`,
-        // but the driver still exits 0.)
-        "boolean-subschema.schema",
-        "issue2680-top-level-array.schema",
-        "nested-intersection-union.schema",
-        "prefix-items.schema",
         "direct-union.schema",
         "empty-object.schema",
-        ...skipsEnumValueValidation,
-        ...skipsMapValueValidation,
         "intersection.schema",
         "multi-type-enum.schema",
         "keyword-unions.schema",
