@@ -4863,6 +4863,21 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                             cJSON.items?.cType,
                                                             " *));",
                                                         );
+                                                    } else if (
+                                                        cJSON.items
+                                                            ?.deleteType ===
+                                                        "cJSON_free"
+                                                    ) {
+                                                        this.emitLine(
+                                                            cJSON.items.cType,
+                                                            " * item = cJSON_malloc(sizeof(*item));",
+                                                        );
+                                                        this.emitLine(
+                                                            "if (NULL != item) { *item = ",
+                                                            cJSON.items
+                                                                .getValue,
+                                                            "(e); list_add_tail(x->value, item, sizeof(*item)); }",
+                                                        );
                                                     } else {
                                                         this.emitLine(
                                                             "list_add_tail(x->value, ",
