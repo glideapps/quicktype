@@ -2689,6 +2689,13 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                     ) {
                                                         const child_level =
                                                             level + 1;
+                                                        const items =
+                                                            cJSON.items;
+                                                        const element = `e${child_level}`;
+                                                        const nullable =
+                                                            items.isNullable
+                                                                ? `!cJSON_IsNull(${element}) && `
+                                                                : "";
                                                         this.emitLine(
                                                             cJSON.cType,
                                                             " * x",
@@ -2729,6 +2736,14 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                         ")",
                                                                     ],
                                                                     () => {
+                                                                        if (
+                                                                            items.isType !==
+                                                                            ""
+                                                                        ) {
+                                                                            this.emitLine(
+                                                                                `if (${nullable}!${items.isType}(${element})) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
+                                                                            );
+                                                                        }
                                                                         const add =
                                                                             (
                                                                                 type: Type,
