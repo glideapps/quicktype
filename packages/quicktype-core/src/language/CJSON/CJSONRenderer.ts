@@ -2377,6 +2377,11 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                 );
                                             const object = `j${level > 0 ? level.toString() : ""}`;
                                             const value = `cJSON_GetObjectItemCaseSensitive(${object}, "${jsonName}")`;
+                                            if (!property.isOptional) {
+                                                this.emitLine(
+                                                    `if (!cJSON_HasObjectItem(${object}, "${jsonName}")) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
+                                                );
+                                            }
                                             this.emitBlock(
                                                 !cJSON.isNullable
                                                     ? [
