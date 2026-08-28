@@ -930,12 +930,9 @@ export const SwiftLanguage: Language = {
         "keywords.json",
         "0a358.json", // date-time issues
         "0a91a.json",
-        "26c9c.json", // uri/string confusion
-        "32d5c.json", // date-time issues
         "337ed.json",
         "34702.json",
         "54d32.json", // date-time issues
-        "5eae5.json", // date-time issues
         "77392.json", // date-time issues
         "7f568.json",
         "734ad.json",
@@ -949,8 +946,6 @@ export const SwiftLanguage: Language = {
         "e53b5.json",
         "e8b04.json",
         "fcca3.json",
-        "f82d9.json",
-        "bug863.json", // Unable to resolve reserved keyword use, "description"
     ],
     allowMissingNull: true,
     features: ["enum", "union", "no-defaults", "date-time"],
