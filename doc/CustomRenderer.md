@@ -30,7 +30,7 @@ export class MyCustomRenderer extends CSharpRenderer {
         }
         return undefined;
     }
-    // See: http://blog.quicktype.io/customizing-quicktype/ for more context
+    // See the documentation above for how to override renderer methods
 }
 ```
 
@@ -142,4 +142,4 @@ export class BrandNewRenderer extends ConvenienceRenderer {
 
 ## Links
 
-Blog post with an older example: http://blog.quicktype.io/customizing-quicktype/
+*Note: The legacy blog post on customizing quicktype has been deprecated. Please refer to this document for renderer customization details.*
