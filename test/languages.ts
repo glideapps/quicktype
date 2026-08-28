@@ -1608,15 +1608,8 @@ export const KotlinXLanguage: Language = {
     output: "TopLevel.kt",
     topLevel: "TopLevel",
     skipJSON: [
-        // Top-level arrays render as `typealias TopLevel = JsonArray<T>`,
-        // which doesn't compile — kotlinx's JsonArray takes no type
-        // arguments (documented TODO in KotlinXRenderer.ts).
-        "kotlin-enum-class-case-collision.json",
         "bug863.json",
-        "github-events.json",
         "optional-union.json",
-        "issue2680-object-array.json",
-        "issue2680-scalar-array.json",
         "00c36.json",
         "010b1.json",
         "050b0.json",
@@ -1715,12 +1708,7 @@ export const KotlinXLanguage: Language = {
         // Additionally exceeds the JVM's 255-parameter limit when the
         // serialization plugin generates the synthesized constructors.
         "keyword-unions.schema",
-        // Top-level array: `typealias TopLevel = JsonArray<T>` doesn't
-        // compile (documented TODO in KotlinXRenderer.ts).
         "union.schema",
-        "top-level-array.schema",
-        "top-level-primitive-array.schema",
-        "issue2680-top-level-array.schema",
     ],
     skipMiscJSON: false,
     rendererOptions: { framework: "kotlinx" },
