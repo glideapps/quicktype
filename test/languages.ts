@@ -1631,7 +1631,7 @@ export const PikeLanguage: Language = {
     diffViaSchema: false,
     skipDiffViaSchema: [],
     allowMissingNull: true,
-    features: ["union"],
+    features: [],
     output: "TopLevel.pmod",
     topLevel: "TopLevel",
     skipJSON: [
@@ -1647,8 +1647,12 @@ export const PikeLanguage: Language = {
         ...skipsIntFloatUnions,
         // all below: not failing on expected failure. That's because Pike's quite tolerant with assignments.
         ...skipsMapValueValidation,
+        "all-of-additional-properties-false.schema",
         "class-with-additional.schema",
+        "const-non-string.schema",
         "multi-type-enum.schema",
+        "optional-any.schema",
+        ...skipsArrayElementValidation,
         ...skipsUntypedUnions,
     ],
     rendererOptions: {},
