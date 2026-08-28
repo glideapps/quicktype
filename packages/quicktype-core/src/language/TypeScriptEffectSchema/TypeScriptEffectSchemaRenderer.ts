@@ -293,6 +293,18 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
                 }),
             );
         });
+
+        this.forEachTopLevel("none", (type, name) => {
+            if (["class", "object", "enum"].includes(type.kind)) return;
+
+            this.ensureBlankLine();
+            const schema = this.typeMapTypeFor(type);
+            this.emitLine(["export const ", name, " = ", schema, ";"]);
+            if (!this._options.justSchema) {
+                const typeOf = " = S.Schema.Type<typeof ";
+                this.emitLine(["export type ", name, typeOf, name, ">;"]);
+            }
+        });
     }
 
     protected emitSourceStructure(): void {

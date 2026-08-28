@@ -1896,34 +1896,16 @@ export const TypeScriptEffectSchemaLanguage: Language = {
     output: "TopLevel.ts",
     topLevel: "TopLevel",
     skipJSON: [
-        "2df80.json",
-        "29f47.json",
-
         // Does not handle recursive
         "direct-recursive.json",
         "list.json",
         "bug790.json",
 
-        // Does not handle top level arrays
-        "bug863.json",
-        "issue2680-scalar-array.json",
-
-        "no-classes.json",
-        "00c36.json",
-        "7fbfb.json",
-        "cda6c.json",
-        "c8c7e.json",
-        "e53b5.json",
-        "bug855-short.json",
         "bug427.json",
         "nst-test-suite.json",
-        "ed095.json",
     ],
     skipMiscJSON: false,
     skipSchema: [
-        // The renderer does not support a bare top-level map.
-        "empty-object.schema",
-        "integer-before-number.schema", // Python-specific union-order regression.
         "keyword-unions.schema",
         // Recursive schemas reference declarations before initialization.
         "list.schema",
@@ -1933,10 +1915,6 @@ export const TypeScriptEffectSchemaLanguage: Language = {
         "ref-remote.schema",
         "recursive-union-flattening.schema",
         "postman-collection.schema",
-        // The driver cannot find schemas for top-level arrays.
-        "top-level-array.schema",
-        "top-level-primitive-array.schema",
-        "issue2680-top-level-array.schema",
     ],
     rendererOptions: {},
     quickTestRendererOptions: [],
