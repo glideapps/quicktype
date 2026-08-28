@@ -983,8 +983,6 @@ export const SwiftLanguage: Language = {
     output: "quicktype.swift",
     topLevel: "TopLevel",
     skipJSON: [
-        // Swift only supports top-level arrays and objects
-        "no-classes.json",
         // This at least is keeping blns-object from working: https://bugs.swift.org/browse/SR-6314
         "blns-object.json",
         // Doesn't seem to work on Linux, works on MacOS
