@@ -187,7 +187,7 @@ async function main() {
 main();
 ```
 
-The argument to `quicktype` is a complex object with many optional properties. [Explore its definition](https://github.com/quicktype/quicktype/blob/master/packages/quicktype-core/src/Run.ts#L637) to understand what options are allowed.
+The argument to `quicktype` is a complex object with many optional properties. [Explore its definition](https://github.com/quicktype/quicktype/blob/master/packages/quicktype-core/src/Run.ts#L126) to understand what options are allowed.
 
 #### TypeScript: the `lang` option is a `LanguageName`, not a `string`
 
