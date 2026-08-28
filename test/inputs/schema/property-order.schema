@@ -1,0 +1,24 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "zebra": { "type": "string" },
+        "mango": { "type": "number" },
+        "apple": { "type": "boolean" },
+        "delta": { "type": "string" },
+        "banana": { "type": "integer" },
+        "ordered": {
+            "type": "object",
+            "quicktypePropertyOrder": ["mango", "zebra"],
+            "properties": {
+                "zebra": { "type": "string" },
+                "mango": { "type": "number" },
+                "apple": { "type": "boolean" }
+            },
+            "required": ["zebra", "mango", "apple"],
+            "additionalProperties": false
+        }
+    },
+    "required": ["zebra", "mango", "apple", "delta", "banana", "ordered"],
+    "additionalProperties": false
+}

@@ -669,6 +669,7 @@ export const CJSONLanguage: Language = {
         /* Required properties absent are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
         "ie-suffix-singularization.schema",
         "intersection.schema",
+        "property-order.schema",
         "required.schema",
         // The default-value fail sample also relies on required-property
         // enforcement, which cJSON does not do.
@@ -1846,6 +1847,7 @@ export const HaskellLanguage: Language = {
         "keyword-unions.schema",
         "optional-any.schema",
         "ie-suffix-singularization.schema",
+        "property-order.schema",
         "required.schema",
         // The default-value fail sample also relies on required-property enforcement.
         "default-value.schema",
@@ -2158,6 +2160,7 @@ export const ElixirLanguage: Language = {
         "top-level-primitive-array.schema",
         "boolean-subschema.schema",
         "intersection.schema",
+        "property-order.schema",
         "optional-any.schema",
 
         // The test incorrectly succeeds due to the emitter being permissive for unions that contain only primitives. A future enhancement
