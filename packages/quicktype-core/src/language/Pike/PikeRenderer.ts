@@ -164,6 +164,11 @@ export class PikeRenderer extends ConvenienceRenderer {
             });
             this.emitTable(table);
         });
+        this.ensureBlankLine();
+        this.emitBlock(
+            [enumName, " ", enumName, "_from_JSON(mixed json)"],
+            () => this.emitLine("return json;"),
+        );
     }
 
     protected emitUnion(u: UnionType, unionName: Name): void {

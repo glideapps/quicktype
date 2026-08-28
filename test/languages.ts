@@ -1643,8 +1643,6 @@ export const PikeLanguage: Language = {
     skipMiscJSON: false,
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
-        "top-level-enum.schema", // output generated properly, but not a class
-        "keyword-unions.schema", // seems like a problem with deserializing
         // no implicit cast int <-> float in Pike
         ...skipsIntFloatUnions,
         // all below: not failing on expected failure. That's because Pike's quite tolerant with assignments.
