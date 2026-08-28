@@ -212,7 +212,6 @@ export const CSharpLanguageSystemTextJson: Language = {
         "top-level-enum.schema", // The code we generate for top-level enums is incompatible with the driver
         // The following skips are pre-existing System.Text.Json renderer issues,
         // found when first enabling the schema fixture for this language:
-        "keyword-unions.schema", // a property named "JsonSerializer" collides with System.Text.Json.JsonSerializer: CS0120
         // minmaxlength.schema, optional-constraints.schema, and
         // optional-const-ref.schema used to be skipped here because the
         // generated converters triggered CS8602 warnings, which "dotnet
