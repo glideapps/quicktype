@@ -164,7 +164,6 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
     }
 
     private emitObject(name: Name, t: ObjectType): void {
-        this.emittedObjects.add(name);
         this.ensureBlankLine();
         this.emitLine(
             "\nexport class ",
@@ -186,6 +185,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
             });
         });
         this.emitLine("}) {}");
+        this.emittedObjects.add(name);
     }
 
     private emitEnum(e: EnumType, enumName: Name): void {
@@ -212,8 +212,11 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
 
     protected walkObjectNames(objectType: ObjectType): Name[] {
         const names: Name[] = [];
+        const visited = new Set<Type>();
 
         const recurse = (type: Type): void => {
+            if (visited.has(type)) return;
+            visited.add(type);
             if (type.kind === "object" || type.kind === "class") {
                 names.push(this.nameForNamedType(type));
                 this.forEachClassProperty(
