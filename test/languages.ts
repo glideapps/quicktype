@@ -1414,6 +1414,7 @@ export const KotlinJacksonLanguage: Language = {
     skipDiffViaSchema: [
         "bug427.json",
         "keywords.json",
+        "blns-object.json",
         // TODO Investigate these
         "34702.json",
         "76ae1.json",
@@ -1425,7 +1426,6 @@ export const KotlinJacksonLanguage: Language = {
     skipJSON: [
         // Some odd property names prevent Klaxon from mapping to constructors
         // https://github.com/cbeust/klaxon/issues/146
-        "blns-object.json",
         "identifiers.json",
         "simple-identifiers.json",
         // Klaxon cannot parse List<List<Enum | Union>>
