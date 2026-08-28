@@ -2375,6 +2375,8 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                     property.type,
                                                     property.isOptional,
                                                 );
+                                            const object = `j${level > 0 ? level.toString() : ""}`;
+                                            const value = `cJSON_GetObjectItemCaseSensitive(${object}, "${jsonName}")`;
                                             this.emitBlock(
                                                 !cJSON.isNullable
                                                     ? [
@@ -2402,6 +2404,11 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                           '"))))',
                                                       ],
                                                 () => {
+                                                    if (cJSON.isType !== "") {
+                                                        this.emitLine(
+                                                            `if (!${cJSON.isType}(${value})) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
+                                                        );
+                                                    }
                                                     if (
                                                         cJSON.cjsonType ===
                                                             "cJSON_Array" &&
