@@ -4810,6 +4810,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                 cJSON.cjsonType === "cJSON_Array" &&
                                 cJSON.items !== undefined
                             ) {
+                                const items = cJSON.items;
                                 this.emitLine(
                                     "x->value = list_create(false, NULL);",
                                 );
@@ -4891,7 +4892,20 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                     }
                                                 };
 
-                                                if (cJSON.items?.isNullable) {
+                                                if (
+                                                    !items.isNullable &&
+                                                    items.isType !== ""
+                                                ) {
+                                                    this.emitLine(
+                                                        "if (!",
+                                                        items.isType,
+                                                        "(e)) { cJSON_Delete",
+                                                        className,
+                                                        "(x); return NULL; }",
+                                                    );
+                                                }
+
+                                                if (items.isNullable) {
                                                     this.emitBlock(
                                                         [
                                                             "if (!cJSON_IsNull(e))",

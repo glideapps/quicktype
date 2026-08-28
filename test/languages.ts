@@ -662,7 +662,6 @@ export const CJSONLanguage: Language = {
         ...skipsMapValueValidation,
         /* Top-level array elements with invalid types (e.g. a string where
          * an integer is expected) are not checked either. */
-        ...skipsArrayElementValidation,
         "multi-type-enum.schema",
         "nested-intersection-union.schema",
         "prefix-items.schema",
