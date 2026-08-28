@@ -21,6 +21,7 @@ import {
     type NamingStyle,
     allUpperWordStyle,
     makeNameStyle,
+    stringEscape,
 } from "../../support/Strings.js";
 import {
     assert,
@@ -522,6 +523,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                         this.sourcelikeToString(enumName),
                     );
                     this.forEachEnumCase(enumType, "none", (name, jsonName) => {
+                        jsonName = stringEscape(jsonName);
                         this.emitLine(
                             onFirst ? "" : "else ",
                             'if (!strcmp(cJSON_GetStringValue(j), "',
@@ -556,6 +558,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                         this.sourcelikeToString(enumName),
                     );
                     this.forEachEnumCase(enumType, "none", (name, jsonName) => {
+                        jsonName = stringEscape(jsonName);
                         this.emitLine(
                             "case ",
                             combinedName,
@@ -2366,6 +2369,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                         type,
                                         "none",
                                         (name, jsonName, property) => {
+                                            jsonName = stringEscape(jsonName);
                                             const cJSON =
                                                 this.quicktypeTypeToCJSON(
                                                     property.type,
@@ -3337,6 +3341,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                         type,
                                         "none",
                                         (name, jsonName, property) => {
+                                            jsonName = stringEscape(jsonName);
                                             const cJSON =
                                                 this.quicktypeTypeToCJSON(
                                                     property.type,
