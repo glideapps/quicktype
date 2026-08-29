@@ -894,20 +894,6 @@ export const SwiftLanguage: Language = {
     skipMiscJSON: false,
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
-        // This works on macOS, but on Linux one of the failure test cases doesn't fail
-        ...skipsUntypedUnions,
-        "required.schema",
-        // The default-value fail sample also relies on required-property enforcement.
-        "default-value.schema",
-        "multi-type-enum.schema",
-        "intersection.schema",
-        ...skipsMapValueValidation,
-        ...skipsEnumValueValidation.filter(
-            (schema) => schema !== "optional-enum.schema",
-        ),
-        "date-time.schema",
-        "class-with-additional.schema",
-        "vega-lite.schema",
     ],
     rendererOptions: { "support-linux": "true" },
     quickTestRendererOptions: [
