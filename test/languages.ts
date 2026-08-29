@@ -388,10 +388,7 @@ export const CrystalLanguage: Language = {
         "simple-identifiers.json",
         "nst-test-suite.json",
     ],
-    skipSchema: [
-        "integer-type.schema", // Crystal integers are Int32.
-        "keyword-unions.schema",
-    ],
+    skipSchema: ["keyword-unions.schema"],
     skipMiscJSON: false,
     rendererOptions: {},
     quickTestRendererOptions: [],
