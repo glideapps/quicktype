@@ -1744,10 +1744,6 @@ export const TypeScriptEffectSchemaLanguage: Language = {
         "7681c.json",
         "127a1.json",
         "26b49.json",
-
-        "bug863.json",
-        "29f47.json",
-        "2df80.json",
     ],
     allowMissingNull: false,
     features: ["enum", "union", "no-defaults"],
