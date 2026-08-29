@@ -832,8 +832,18 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.variantIndirection(
                     classType,
                     ctx.needsForwardIndirection &&
-                        this.isForwardDeclaredType(classType) &&
-                        !isOptional,
+                        !isOptional &&
+                        // A required class-typed member still needs heap
+                        // indirection when the class participates in a cycle,
+                        // otherwise it would be stored by value and form an
+                        // incomplete recursive type.  Optional members already
+                        // get this through `isCycleBreakerType` in
+                        // `isOptionalAsValuePossible`; mirror that here so that
+                        // required recursive members (e.g. a `oneOf`/`anyOf`
+                        // branch that requires a self-referential property)
+                        // compile.
+                        (this.isForwardDeclaredType(classType) ||
+                            this.isCycleBreakerType(classType)),
                     [
                         this.ourQualifier(inJsonNamespace),
                         this.nameForNamedType(classType),

@@ -33,6 +33,7 @@ import { defaultValueAttributeProducer } from "../attributes/DefaultValue.js";
 import { descriptionAttributeProducer } from "../attributes/Description.js";
 import { enumValuesAttributeProducer } from "../attributes/EnumValues.js";
 import { StringTypes } from "../attributes/StringTypes.js";
+import { schemaSetOperationTypeAttributeKind } from "../attributes/Schema.js";
 import {
     type TypeAttributes,
     combineTypeAttributes,
@@ -1253,6 +1254,11 @@ async function addTypesInSchema(
                 );
             }
 
+            unionAttributes = combineTypeAttributes(
+                "union",
+                unionAttributes,
+                schemaSetOperationTypeAttributeKind.makeAttributes(true),
+            );
             const unionType = typeBuilder.getUniqueUnionType(
                 unionAttributes,
                 undefined,
