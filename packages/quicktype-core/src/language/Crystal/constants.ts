@@ -127,6 +127,7 @@ export const keywords = [
     "true",
     "type",
     "typeof",
+    "to_json",
     "uninitialized",
     "union",
     "unless",
