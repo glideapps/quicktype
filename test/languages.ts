@@ -58,15 +58,6 @@ const skipsMapValueValidation = [
     "unevaluated-properties.schema",
 ];
 
-// The generated deserializer for a top-level array of scalars uses a
-// loosely-typed container (e.g. a raw `List`, an `ArrayList<Long>` whose
-// element type is erased at runtime, or an untyped decoder) that does not
-// enforce the declared element type, so a top-level array whose element has
-// the wrong scalar type (a string where an integer is expected) round-trips
-// instead of failing.  Add any new top-level-array schema whose fail sample
-// relies on rejecting a mistyped element.
-const skipsArrayElementValidation = ["issue2680-top-level-array.schema"];
-
 export type LanguageFeature =
     | "enum"
     | "union"
@@ -1317,12 +1308,8 @@ export const KotlinLanguage: Language = {
         "direct-union.schema",
         // Some weird name collision
         "keyword-unions.schema",
-        // Klaxon does not support top-level enums/unions
-        "top-level-enum.schema",
+        // Klaxon does not support top-level unions
         "recursive-union-flattening.schema",
-        // A top-level array is deserialized without enforcing its element
-        // type, so a mistyped element round-trips instead of failing.
-        ...skipsArrayElementValidation,
     ],
     skipMiscJSON: false,
     // The default framework is jackson; this fixture deliberately pins
