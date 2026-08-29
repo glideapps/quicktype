@@ -632,6 +632,24 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                     this.emitLine(
                         "id json = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:error];",
                     );
+                    const container =
+                        t instanceof ArrayType ? "NSArray" : "NSDictionary";
+                    if (t instanceof ArrayType || t instanceof MapType) {
+                        this.emitLine(
+                            "if (![json isKindOfClass:",
+                            container,
+                            '.class]) [NSException raise:@"Invalid JSON" format:@"Expected ',
+                            container,
+                            '."];',
+                        );
+                    }
+                    if (t instanceof ArrayType && t.items.isPrimitive()) {
+                        this.emitLine(
+                            "for (id item in json) if (![item isKindOfClass:",
+                            this.jsonType(t.items)[0],
+                            '.class]) [NSException raise:@"Invalid JSON" format:@"Invalid array item."];',
+                        );
+                    }
                     this.emitLine(
                         "return *error ? nil : ",
                         this.fromDynamicExpression(t, "json"),

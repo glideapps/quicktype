@@ -908,9 +908,7 @@ export const ObjectiveCLanguage: Language = {
     skipMiscJSON: false,
     skipSchema: [
         "boolean-subschema.schema",
-        "empty-object.schema",
         "go-schema-pattern-properties.schema",
-        "issue2680-top-level-array.schema",
         "optional-any.schema",
     ],
     rendererOptions: { functions: "true" },
