@@ -141,11 +141,15 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
             (unionType) => {
                 const children = Array.from(unionType.getChildren())
                     // Coercing schemas can accept null, so handle it first.
-                    .sort(
-                        (a, b) =>
-                            Number(b.kind === "null") -
-                            Number(a.kind === "null"),
-                    )
+                    .sort((a, b) => {
+                        const rank = (x: Type): number =>
+                            x.kind === "null"
+                                ? 0
+                                : x.kind === "date-time"
+                                  ? 2
+                                  : 1;
+                        return rank(a) - rank(b);
+                    })
                     .map((type: Type) => this.typeMapTypeFor(type, false));
                 return ["z.union([", ...arrayIntercalate(", ", children), "])"];
             },

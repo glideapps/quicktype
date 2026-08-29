@@ -1756,10 +1756,7 @@ export const TypeScriptZodLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
-    skipSchema: [
-        // z.coerce.date() serializes back as ISO UTC, not the input string
-        "date-time.schema",
-    ],
+    skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [],
     sourceFiles: ["src/language/TypeScriptZod/index.ts"],
