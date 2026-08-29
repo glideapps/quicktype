@@ -1957,12 +1957,6 @@ export const ElixirLanguage: Language = {
         // for the Elixir emitter could be a user-controlled 'strict' mode that pattern matches even on unions of only primitive types.
         ...skipsMapValueValidation,
 
-        // A bare top-level map is emitted as a Jason.decode!/encode! pass-through
-        // with no shape validation, so the .fail.json case (a non-object) is not
-        // rejected and round-trips instead of exiting nonzero. Same permissiveness
-        // class as go-schema-pattern-properties above.
-        "empty-object.schema",
-
         // The generated top-level type is not emitted as a TopLevel module the fixture can call.
         "recursive-union-flattening.schema",
 

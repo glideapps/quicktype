@@ -1214,8 +1214,22 @@ end`);
                                     this.emitLine("|> Jason.encode!()");
                                 });
                             } else {
+                                if (topLevel instanceof MapType) {
+                                    this.emitLine(
+                                        this.patternMatchClauseDecode(
+                                            topLevel,
+                                            "value",
+                                        ),
+                                    );
+                                    this.ensureBlankLine();
+                                }
+
                                 this.emitBlock("def from_json(json) do", () => {
-                                    this.emitLine("Jason.decode!(json)");
+                                    this.emitLine("json");
+                                    this.emitLine("|> Jason.decode!()");
+                                    if (topLevel instanceof MapType) {
+                                        this.emitLine("|> decode_value()");
+                                    }
                                 });
 
                                 this.ensureBlankLine();
