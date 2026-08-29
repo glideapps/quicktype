@@ -626,7 +626,6 @@ export const CJSONLanguage: Language = {
         /* Top-level array elements with invalid types (e.g. a string where
          * an integer is expected) are not checked either. */
         "multi-type-enum.schema",
-        "nested-intersection-union.schema",
         "prefix-items.schema",
         /* Constraints (min/max and regex) are not supported (for the current implementation, can be added later, should abord parsing and return NULL) */
         "minmaxlength.schema",
