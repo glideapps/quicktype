@@ -823,6 +823,7 @@ export const SwiftLanguage: Language = {
     diffViaSchema: true,
     skipDiffViaSchema: [
         "bug427.json",
+        "blns-object.json",
         "github-events.json",
         "keywords.json",
         "null-safe.json",
@@ -850,8 +851,6 @@ export const SwiftLanguage: Language = {
     output: "quicktype.swift",
     topLevel: "TopLevel",
     skipJSON: [
-        // This at least is keeping blns-object from working: https://bugs.swift.org/browse/SR-6314
-        "blns-object.json",
         // Doesn't seem to work on Linux, works on MacOS
         "nst-test-suite.json",
     ],
