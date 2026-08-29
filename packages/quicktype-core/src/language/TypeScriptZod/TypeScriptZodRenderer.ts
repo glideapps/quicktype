@@ -109,7 +109,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
             (_anyType) => "z.any()",
             (_nullType) => "z.null()",
             (_boolType) => "z.boolean()",
-            (_integerType) => "z.number()",
+            (_integerType) => "z.number().int()",
             (_doubleType) => "z.number()",
             (_stringType) => "z.string()",
             (arrayType) => {

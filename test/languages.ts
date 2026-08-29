@@ -64,6 +64,7 @@ export type LanguageFeature =
     | "no-defaults"
     | "strict-optional"
     | "date-time"
+    | "integer"
     | "integer-string"
     | "bool-string"
     | "uuid"
@@ -1698,7 +1699,14 @@ export const TypeScriptZodLanguage: Language = {
     diffViaSchema: true,
     skipDiffViaSchema: [],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults", "date-time", "minmaxitems"],
+    features: [
+        "enum",
+        "union",
+        "no-defaults",
+        "date-time",
+        "integer",
+        "minmaxitems",
+    ],
     output: "TopLevel.ts",
     topLevel: "TopLevel",
     skipJSON: [],
