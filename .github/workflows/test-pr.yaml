@@ -49,7 +49,7 @@ jobs:
                     - json-ts-csharp
                     - dart,schema-dart
                     # - swift,schema-swift # pgp issue
-                    - javascript-prop-types
+                    - javascript-prop-types,schema-javascript-prop-types
                     - ruby,schema-ruby-syntax
                     - php,schema-php
                     - crystal,schema-crystal
