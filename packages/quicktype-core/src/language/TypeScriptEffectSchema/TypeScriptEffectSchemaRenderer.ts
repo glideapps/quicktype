@@ -131,6 +131,9 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
             (_enumType) => panic("Should already be handled."),
             (unionType) => {
                 const types = Array.from(unionType.getChildren());
+                const rank = (type: Type): number =>
+                    type.kind === "class" || type.kind === "object" ? 1 : 0;
+                types.sort((a, b) => rank(a) - rank(b));
                 const children: Sourcelike[] = [];
                 let nullable = false;
                 for (const type of types) {
