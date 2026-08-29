@@ -1241,7 +1241,6 @@ export const KotlinLanguage: Language = {
         "af2d1.json",
     ],
     skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
         // Very weird - the types are correct, but it can (de)serialize the string,
         // which is not represented in the types (implicit-class-array-union);
         // class-map-union: KlaxonException: Couldn't find a suitable constructor for class UnionValue to initialize with {}
@@ -1265,8 +1264,6 @@ export const KotlinLanguage: Language = {
         "direct-union.schema",
         // Some weird name collision
         "keyword-unions.schema",
-        // Klaxon does not support top-level unions
-        "recursive-union-flattening.schema",
     ],
     skipMiscJSON: false,
     // The default framework is jackson; this fixture deliberately pins
