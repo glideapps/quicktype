@@ -114,8 +114,14 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
             (_mapType) => "PropTypes.object",
             (_enumType) => panic("Should already be handled."),
             (unionType) => {
+                const isNullableEnum =
+                    unionType.findMember("enum") !== undefined &&
+                    unionType.findMember("null") !== undefined;
                 const children = Array.from(unionType.getChildren()).map(
-                    (type: Type) => this.typeMapTypeFor(type, false),
+                    (type: Type) =>
+                        isNullableEnum && type.kind === "null"
+                            ? "PropTypes.oneOf([null])"
+                            : this.typeMapTypeFor(type, false),
                 );
                 return [
                     "PropTypes.oneOfType([",
@@ -211,9 +217,9 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
             this.forEachEnumCase(
                 enumType,
                 "none",
-                (name: Name, _jsonName, _position) => {
+                (_name: Name, jsonName, _position) => {
                     options.push("'");
-                    options.push(name);
+                    options.push(utf16StringEscape(jsonName));
                     options.push("'");
                     options.push(", ");
                 },
@@ -223,7 +229,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
             this.emitLine([
                 "const _",
                 enumName,
-                " = PropTypes.oneOfType([",
+                " = PropTypes.oneOf([",
                 ...options,
                 "]);",
             ]);

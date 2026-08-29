@@ -990,7 +990,7 @@ export const JavaScriptPropTypesLanguage: Language = {
     diffViaSchema: false,
     skipDiffViaSchema: [],
     allowMissingNull: false,
-    features: ["union"],
+    features: ["enum", "union"],
     output: "toplevel.js",
     topLevel: "TopLevel",
     skipJSON: ["bug790.json"], // renderer does not support recursion
