@@ -490,23 +490,8 @@ export const RubyLanguage: Language = {
     skipJSON: [
         // Chokes on { "1": "one" } because _[0-9]+ is reserved in ruby
         "blns-object.json",
-        // Ruby union code does not work with new Dry
-        // can't convert Symbol into Hash (Dry::Types::CoercionError)
-        "bug863.json",
-        "combinations1.json",
-        "combinations2.json",
-        "combinations3.json",
-        "combinations4.json",
-        "nst-test-suite.json",
-        "optional-union.json",
-        "union-constructor-clash.json",
-        "unions.json",
-        "php-mixed-union.json",
-        "nbl-stats.json",
-        "kitchen-sink.json",
     ],
     skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
         // We don't generate a convenience method for top-level enums
         "top-level-enum.schema",
     ],

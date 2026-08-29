@@ -622,7 +622,11 @@ export class RubyRenderer extends ConvenienceRenderer {
                             .map((memberName) => [", ", memberName, ": nil"]);
                         if (this.propertyTypeMarshalsImplicitlyFromDynamic(t)) {
                             this.emitBlock(
-                                ["if schema[:", name, "].right.valid? d"],
+                                [
+                                    "if schema.key(:",
+                                    name,
+                                    ").type.right.valid? d",
+                                ],
                                 () => {
                                     this.emitLine(
                                         "return new(",
@@ -642,9 +646,9 @@ export class RubyRenderer extends ConvenienceRenderer {
                                 );
                                 this.emitBlock(
                                     [
-                                        "if schema[:",
+                                        "if schema.key(:",
                                         name,
-                                        "].right.valid? value",
+                                        ").type.right.valid? value",
                                     ],
                                     () => {
                                         this.emitLine(
