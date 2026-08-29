@@ -1841,6 +1841,7 @@ export const allFixtures: Fixture[] = [
     new JSONSchemaFixture(languages.PHPLanguage),
     new JSONSchemaFixture(languages.ElmLanguage),
     new JSONSchemaFixture(languages.SwiftLanguage),
+    new JSONSchemaFixture(languages.ObjectiveCLanguage),
     new JSONSchemaFixture(languages.TypeScriptLanguage),
     new JSONSchemaFixture(languages.TypeScriptZodLanguage),
     new JSONSchemaFixture(languages.TypeScriptEffectSchemaLanguage),
