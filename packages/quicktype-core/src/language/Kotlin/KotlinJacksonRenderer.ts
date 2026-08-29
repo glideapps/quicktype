@@ -26,7 +26,7 @@ export class KotlinJacksonRenderer extends KotlinRenderer {
             (_nullType) => "null",
             (_boolType) => "is BooleanNode",
             (_integerType) => "is IntNode, is LongNode",
-            (_doubleType) => "is DoubleNode",
+            (_doubleType) => "is IntNode, is LongNode, is DoubleNode",
             (_stringType) => "is TextNode",
             (_arrayType) => "is ArrayNode",
             // These could be stricter, but for now we don't allow maps
