@@ -379,30 +379,17 @@ export const CrystalLanguage: Language = {
     diffViaSchema: false,
     skipDiffViaSchema: [],
     allowMissingNull: true,
-    features: ["enum", "union", "no-defaults"],
+    features: ["union", "no-defaults"],
     output: "TopLevel.cr",
     topLevel: "TopLevel",
     skipJSON: [
         "blns-object.json",
         "identifiers.json",
         "simple-identifiers.json",
-        "bug427.json",
         "nst-test-suite.json",
-        "34702.json",
-        "34702.json",
-        "4961a.json",
-        "32431.json",
-        "68c30.json",
-        "e8b04.json",
     ],
     skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
-        // Crystal does not handle enum mapping
-        ...skipsEnumValueValidation.filter(
-            (schema) => schema !== "optional-enum.schema",
-        ),
-        // Crystal does not support top-level primitives
-        "top-level-enum.schema",
+        "integer-type.schema", // Crystal integers are Int32.
         "keyword-unions.schema",
     ],
     skipMiscJSON: false,
