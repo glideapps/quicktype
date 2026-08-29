@@ -854,9 +854,7 @@ export const SwiftLanguage: Language = {
         "nst-test-suite.json",
     ],
     skipMiscJSON: false,
-    skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
-    ],
+    skipSchema: [],
     rendererOptions: { "support-linux": "true" },
     quickTestRendererOptions: [
         { "support-linux": "false" },
