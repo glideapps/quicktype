@@ -1511,7 +1511,7 @@ export const PikeLanguage: Language = {
     diffViaSchema: false,
     skipDiffViaSchema: [],
     allowMissingNull: true,
-    features: ["union"],
+    features: [],
     output: "TopLevel.pmod",
     topLevel: "TopLevel",
     skipJSON: [
@@ -1519,35 +1519,20 @@ export const PikeLanguage: Language = {
         "identifiers.json", // quicktype internal error
         "7eb30.json", // illegal characters in expressions
         "c6cfd.json", // illegal characters in values
-        // all below: Pike's Stdio.File.write() does not support wide strings.
-        "nst-test-suite.json",
-        "0b91a.json",
-        "29f47.json",
-        "337ed.json",
-        "33d2e.json",
-        "458db.json",
-        "6c155.json",
-        "6de06.json",
-        "734ad.json",
-        "8592b.json",
-        "9ac3b.json",
-        "cb0cc.json",
-        "d23d5.json",
-        "dc44f.json",
-        "dec3a.json",
-        "f22f5.json",
     ],
     skipMiscJSON: false,
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
-        "top-level-enum.schema", // output generated properly, but not a class
-        "keyword-unions.schema", // seems like a problem with deserializing
         // no implicit cast int <-> float in Pike
         ...skipsIntFloatUnions,
         // all below: not failing on expected failure. That's because Pike's quite tolerant with assignments.
         ...skipsMapValueValidation,
+        "all-of-additional-properties-false.schema",
         "class-with-additional.schema",
+        "const-non-string.schema",
         "multi-type-enum.schema",
+        "optional-any.schema",
+        ...skipsArrayElementValidation,
         ...skipsUntypedUnions,
     ],
     rendererOptions: {},
