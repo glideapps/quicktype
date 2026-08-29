@@ -123,7 +123,7 @@ export const CSharpLanguage: Language = {
         return `dotnet run -p:CheckEolTargetFramework=false -- "${sample}"`;
     },
     diffViaSchema: true,
-    skipDiffViaSchema: ["31189.json", "34702.json"],
+    skipDiffViaSchema: ["34702.json"],
     allowMissingNull: false,
     features: [
         "enum",
@@ -175,7 +175,7 @@ export const CSharpLanguageSystemTextJson: Language = {
         return `dotnet run -p:CheckEolTargetFramework=false -- "${sample}"`;
     },
     diffViaSchema: true,
-    skipDiffViaSchema: ["31189.json", "34702.json"],
+    skipDiffViaSchema: ["34702.json"],
     allowMissingNull: false,
     features: [
         "enum",
