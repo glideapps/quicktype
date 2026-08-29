@@ -930,15 +930,10 @@ export const ObjectiveCLanguage: Language = {
         // Almost all strings work except any containing \u001b
         // See https://goo.gl/L8HfUP
         "blns-object.json",
-        // NSJSONSerialization can read but not write top-level primitives
-        "no-classes.json",
         // TODO
         "combinations.json",
-        "combinations1.json",
         // Needs to distinguish between optional and null properties
         "optional-union.json",
-        // Compile error
-        "nst-test-suite.json",
         // Could not convert JSON to model: Error Domain=JSONSerialization Code=-1 "(null)" UserInfo={exception=-[NSNull countByEnumeratingWithState:objects:count:]: unrecognized selector sent to instance 0x7fff807b6ea0}
         "combinations2.json",
         "combinations3.json",

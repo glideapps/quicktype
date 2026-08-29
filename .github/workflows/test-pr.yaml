@@ -83,11 +83,8 @@ jobs:
                     - fixture: pike,schema-pike
                       runs-on: ubuntu-24.04
 
-                    # - fixture: objective-c # segfault on compiled test cmd
-                    #   runs-on: macos-latest
-                    # comment-injection-objective-c also hits that runtime
-                    # segfault (the generated .m compiles but ./test crashes
-                    # with SIGSEGV), so it stays out of CI too.
+                    - fixture: objective-c,comment-injection-objective-c
+                      runs-on: macos-latest
 
         name: ${{ matrix.fixture }}
         steps:
