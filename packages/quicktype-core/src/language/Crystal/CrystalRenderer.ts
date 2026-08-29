@@ -89,7 +89,7 @@ export class CrystalRenderer extends ConvenienceRenderer {
             (_nullType) =>
                 maybeAnnotated(withIssues, nullTypeIssueAnnotation, "Nil"),
             (_boolType) => "Bool",
-            (_integerType) => "Int32",
+            (_integerType) => "Int64",
             (_doubleType) => "Float64",
             (_stringType) => "String",
             (arrayType) => [
