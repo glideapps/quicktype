@@ -388,7 +388,7 @@ export const CrystalLanguage: Language = {
         "simple-identifiers.json",
         "nst-test-suite.json",
     ],
-    skipSchema: ["keyword-unions.schema"],
+    skipSchema: [],
     skipMiscJSON: false,
     rendererOptions: {},
     quickTestRendererOptions: [],
