@@ -994,12 +994,7 @@ export const JavaScriptPropTypesLanguage: Language = {
     output: "toplevel.js",
     topLevel: "TopLevel",
     skipJSON: [],
-    skipSchema: [
-        "class-with-additional.schema",
-        "go-schema-pattern-properties.schema",
-        "class-map-union.schema",
-        "unevaluated-properties.schema",
-    ],
+    skipSchema: [],
     skipMiscJSON: false,
     rendererOptions: { "module-system": "es6" },
     quickTestRendererOptions: [{ converters: "top-level" }],
