@@ -1793,6 +1793,11 @@ export const PHPLanguage: Language = {
         "43eaf.json",
         "458db.json",
         "4961a.json",
+        "4a0d7.json",
+        "4a455.json",
+        "4c547.json",
+        "4d6fb.json",
+        "4e336.json",
     ],
     skipMiscJSON: false,
     skipSchema: [
