@@ -840,6 +840,21 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                     this.emitBlock("if (self = [super init])", () => {
                         if (DEBUG) this.emitLine("__json = dict;");
 
+                        this.forEachClassProperty(
+                            t,
+                            "none",
+                            (_name, jsonName, property) => {
+                                if (
+                                    !property.isOptional &&
+                                    property.type.kind === "bool"
+                                ) {
+                                    this.emitLine(
+                                        `if (![dict[@"${objectiveCStringEscape(jsonName)}"] isKindOfClass:NSNumber.class]) return nil;`,
+                                    );
+                                }
+                            },
+                        );
+
                         this.emitLine(
                             "[self setValuesForKeysWithDictionary:dict];",
                         );
