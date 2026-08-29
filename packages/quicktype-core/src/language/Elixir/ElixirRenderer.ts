@@ -13,7 +13,6 @@ import {
     ClassType,
     EnumType,
     MapType,
-    PrimitiveType,
     type Type,
     UnionType,
 } from "../../Type/index.js";
@@ -372,12 +371,12 @@ export class ElixirRenderer extends ConvenienceRenderer {
         parentName: Sourcelike,
         suffix = "",
         optional = false,
-        force = false,
+        _force = false,
     ): void {
         this.ensureBlankLine();
 
         let typesToMatch = this.sortAndFilterPatternMatchTypes(types);
-        if (typesToMatch.length < 2 && !force) {
+        if (typesToMatch.length === 0) {
             return;
         }
 
@@ -454,11 +453,11 @@ export class ElixirRenderer extends ConvenienceRenderer {
         return matchType<Sourcelike>(
             t,
             (_anyType) => [],
-            (_nullType) => [],
-            (_boolType) => [],
-            (_integerType) => [],
-            (_doubleType) => [],
-            (_stringType) => [],
+            (_nullType) => [`${mode}_`, name, prefix],
+            (_boolType) => [`${mode}_`, name, prefix],
+            (_integerType) => [`${mode}_`, name, prefix],
+            (_doubleType) => [`${mode}_`, name, prefix],
+            (_stringType) => [`${mode}_`, name, prefix],
             (_arrayType) => [],
             (classType) => [
                 this.nameForNamedTypeWithNamespace(classType),
@@ -484,25 +483,26 @@ export class ElixirRenderer extends ConvenienceRenderer {
         optional = false,
     ): Sourcelike {
         const primitive = ['m["', jsonName, '"]'];
+        const checked = ["decode_", name, "(", primitive, ")"];
 
         return matchType<Sourcelike>(
             t,
             (_anyType) => primitive,
-            (_nullType) => primitive,
-            (_boolType) => primitive,
-            (_integerType) => primitive,
-            (_doubleType) => primitive,
-            (_stringType) => primitive,
+            (_nullType) => (optional ? primitive : checked),
+            (_boolType) => (optional ? primitive : checked),
+            (_integerType) => (optional ? primitive : checked),
+            (_doubleType) => (optional ? primitive : checked),
+            (_stringType) => (optional ? primitive : checked),
             (arrayType) => {
                 const arrayElement = arrayType.items;
                 if (arrayElement instanceof ArrayType) {
-                    return primitive;
+                    return optional ? primitive : checked;
                 }
                 if (arrayElement.isPrimitive()) {
-                    return primitive;
+                    return optional ? primitive : checked;
                 }
                 if (arrayElement instanceof MapType) {
-                    return primitive;
+                    return optional ? primitive : checked;
                 }
 
                 if (optional) {
@@ -544,11 +544,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 ")",
             ],
             (mapType) => {
-                const mapValueTypes = [...mapType.values.getChildren()];
-                const mapValueTypesNotPrimitive = mapValueTypes.filter(
-                    (type) => !(type instanceof PrimitiveType),
-                );
-                if (mapValueTypesNotPrimitive.length === 0) {
+                if (mapType.values.kind === "any") {
                     return [primitive];
                 }
 
@@ -559,7 +555,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                         '"]\n|> Map.new(fn {key, value} -> {key, ',
                         this.nameOfTransformFunction(
                             mapType.values,
-                            jsonName,
+                            name,
                             false,
                         ),
                         "_value(value)} end)",
@@ -567,7 +563,8 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 }
                 if (
                     mapType.values instanceof EnumType ||
-                    mapType.values instanceof ClassType
+                    mapType.values instanceof ClassType ||
+                    (mapType.values.isPrimitive() && !optional)
                 ) {
                     return [
                         'm["',
@@ -575,8 +572,9 @@ export class ElixirRenderer extends ConvenienceRenderer {
                         '"]\n|> Map.new(fn {key, value} -> {key, ',
                         this.nameOfTransformFunction(
                             mapType.values,
-                            jsonName,
+                            name,
                             false,
+                            "_value",
                         ),
                         "(value)} end)",
                     ];
@@ -700,11 +698,10 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 ")",
             ],
             (mapType) => {
-                const mapValueTypes = [...mapType.values.getChildren()];
-                const mapValueTypesNotPrimitive = mapValueTypes.filter(
-                    (type) => !(type instanceof PrimitiveType),
-                );
-                if (mapValueTypesNotPrimitive.length === 0) {
+                if (
+                    mapType.values.kind === "any" ||
+                    mapType.values.isPrimitive()
+                ) {
                     return [expression];
                 }
 
@@ -864,6 +861,14 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 }
 
                 this.forEachClassProperty(c, "none", (name, _jsonName, p) => {
+                    const parentName = this.nameForNamedTypeWithNamespace(c);
+                    if (
+                        (p.type.isPrimitive() || p.type.kind === "array") &&
+                        p.type.kind !== "any" &&
+                        !p.isOptional
+                    ) {
+                        this.emitPatternMatches([p.type], name, parentName);
+                    }
                     if (p.type.kind === "union") {
                         const unionTypes = [...p.type.getChildren()];
                         const unionPrimitiveTypes = unionTypes.filter((type) =>
@@ -931,7 +936,15 @@ export class ElixirRenderer extends ConvenienceRenderer {
                         }
                     } else if (p.type.kind === "map") {
                         const mapType = p.type as MapType;
-                        if (mapType.values instanceof UnionType) {
+                        const value = mapType.values;
+                        if (value.isPrimitive() && value.kind !== "any") {
+                            this.emitPatternMatches(
+                                [value],
+                                name,
+                                parentName,
+                                "_value",
+                            );
+                        } else if (mapType.values instanceof UnionType) {
                             const unionType = mapType.values;
                             const typesInUnion = [...unionType.getChildren()];
 
