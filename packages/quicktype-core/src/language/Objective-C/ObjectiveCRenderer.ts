@@ -537,7 +537,8 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
     }
 
     private emitNonClassTopLevelTypedef(t: Type, name: Name): void {
-        const nonPointerTypeName = this.objcType(t, true)[0];
+        const nonPointerTypeName =
+            t instanceof UnionType ? "NSObject" : this.objcType(t, true)[0];
         this.emitLine("typedef ", nonPointerTypeName, " ", name, ";");
     }
 
@@ -1170,7 +1171,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             this.forEachTopLevel(
                 "leading-and-interposing",
                 (t, n) => this.emitNonClassTopLevelTypedef(t, n),
-                (t) => !(t instanceof ClassType),
+                (t) => !(t instanceof ClassType || t instanceof EnumType),
             );
 
             const hasTopLevelNonClassTypes = iterableSome(
