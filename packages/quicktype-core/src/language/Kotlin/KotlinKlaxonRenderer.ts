@@ -527,6 +527,10 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
         maybeNull: PrimitiveType | null,
         unionName: Name,
     ): void {
+        const isTopLevel = iterableSome(
+            this.topLevels,
+            ([_, top]) => top === u,
+        );
         this.ensureBlankLine();
         this.emitLine(
             "public fun toJson(): String = klaxon.toJsonString(when (this) {",
@@ -546,6 +550,14 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
         this.emitLine("})");
         this.ensureBlankLine();
         this.emitBlock("companion object", () => {
+            if (isTopLevel) {
+                this.emitLine(
+                    "public fun fromJson(json: String): ",
+                    unionName,
+                    " = fromJson(JsonValue(Parser().parse(StringBuilder(json)), null, null, klaxon))",
+                );
+                this.ensureBlankLine();
+            }
             this.emitLine(
                 "public fun fromJson(jv: JsonValue): ",
                 unionName,
