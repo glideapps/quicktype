@@ -232,37 +232,31 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         const order: number[] = [];
         const mapKey: Name[] = [];
         const mapValue: Sourcelike[][] = [];
+        const find = (value: unknown, found: Name[] = []): Name[] => {
+            if (mapKey.includes(value as Name)) found.push(value as Name);
+            else if (Array.isArray(value))
+                for (const v of value) find(v, found);
+            else if (value !== null && typeof value === "object")
+                for (const v of Object.values(value)) find(v, found);
+            return found;
+        };
         this.forEachObject("none", (type: ObjectType, name: Name) => {
             mapKey.push(name);
             mapValue.push(this.gatherSource(() => this.emitObject(name, type)));
         });
 
-        // order these
-        mapKey.forEach((_, index) => {
-            // assume first
-            let ordinal = 0;
-
-            // pull out all names
-            const source = mapValue[index];
-            const names = source.filter((value) => value as Name);
-
-            // must be behind all these names
-            names.forEach((name) => {
-                const depName = name;
-
-                // find this name's ordinal, if it has already been added
-                order.forEach((orderItem) => {
-                    const depIndex = orderItem;
-                    if (mapKey[depIndex] === depName) {
-                        // this is the index of the dependency, so make sure we come after it
-                        ordinal = Math.max(ordinal, depIndex + 1);
-                    }
-                });
-            });
-
-            // insert index
-            order.splice(ordinal, 0, index);
-        });
+        const pending = mapKey.map((_, index) => index);
+        while (pending.length > 0) {
+            const ready = pending.findIndex((index) =>
+                find(mapValue[index]).every((name) => {
+                    if (name === mapKey[index]) return true;
+                    const dependency = mapKey.indexOf(name);
+                    return dependency < 0 || order.includes(dependency);
+                }),
+            );
+            const at = ready < 0 ? pending.length - 1 : ready;
+            order.push(...pending.splice(at, 1));
+        }
 
         // now emit ordered source
         order.forEach((i) => {

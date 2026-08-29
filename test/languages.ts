@@ -1016,7 +1016,6 @@ export const JavaScriptPropTypesLanguage: Language = {
         "bug790.json", // renderer does not support recursion
         "recursive.json", // renderer does not support recursion
         "spotify-album.json", // renderer does not support recursion
-        "76ae1.json", // renderer does not support recursion
     ],
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
