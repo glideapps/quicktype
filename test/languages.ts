@@ -1526,7 +1526,7 @@ export const PikeLanguage: Language = {
         "const-non-string.schema",
         "multi-type-enum.schema",
         "optional-any.schema",
-        ...skipsArrayElementValidation,
+        "issue2680-top-level-array.schema",
         ...skipsUntypedUnions,
     ],
     rendererOptions: {},
