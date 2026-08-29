@@ -1229,6 +1229,13 @@ end`);
                                     this.emitLine("|> Jason.encode!()");
                                 });
                             } else {
+                                if (topLevel instanceof UnionType) {
+                                    this.emitPatternMatches(
+                                        [...topLevel.getChildren()],
+                                        "value",
+                                        name,
+                                    );
+                                }
                                 if (topLevel instanceof MapType) {
                                     this.emitLine(
                                         this.patternMatchClauseDecode(
@@ -1242,7 +1249,10 @@ end`);
                                 this.emitBlock("def from_json(json) do", () => {
                                     this.emitLine("json");
                                     this.emitLine("|> Jason.decode!()");
-                                    if (topLevel instanceof MapType) {
+                                    if (
+                                        topLevel instanceof MapType ||
+                                        topLevel instanceof UnionType
+                                    ) {
                                         this.emitLine("|> decode_value()");
                                     }
                                 });
@@ -1250,13 +1260,20 @@ end`);
                                 this.ensureBlankLine();
 
                                 this.emitBlock("def to_json(data) do", () => {
-                                    this.emitLine("Jason.encode!(data)");
+                                    if (topLevel instanceof UnionType) {
+                                        this.emitLine("data |> encode_value()");
+                                        this.emitLine("|> Jason.encode!()");
+                                    } else {
+                                        this.emitLine("Jason.encode!(data)");
+                                    }
                                 });
                             }
                         },
                     );
                 },
-                (t) => this.namedTypeToNameForTopLevel(t) === undefined,
+                (t) =>
+                    t instanceof UnionType ||
+                    this.namedTypeToNameForTopLevel(t) === undefined,
             );
         }
     }

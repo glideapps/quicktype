@@ -1727,7 +1727,6 @@ export const ElixirLanguage: Language = {
     ],
     skipMiscJSON: false,
     skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
         // The error occurs because a guard clause that references TopLevel is compiled before TopLevel itself. To fix this, put
         // TopLevel before Bar, but this doesn't address the actual problem if for example a pattern match to Bar was in TopLevel.
         "mutually-recursive.schema",
@@ -1737,9 +1736,6 @@ export const ElixirLanguage: Language = {
         ...skipsMapValueValidation.filter(
             (schema) => schema !== "go-schema-pattern-properties.schema",
         ),
-
-        // The generated top-level type is not emitted as a TopLevel module the fixture can call.
-        "recursive-union-flattening.schema",
 
         // A top-level array is deserialized without enforcing its element
         // type, so a mistyped element round-trips instead of failing.
