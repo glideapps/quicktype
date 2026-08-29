@@ -364,6 +364,15 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             (unionType) => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
+                    if (nullable instanceof ClassType) {
+                        return [
+                            "NSNullify([",
+                            typed,
+                            " isKindOfClass:NSNull.class] ? nil : [",
+                            typed,
+                            " JSONDictionary])",
+                        ];
+                    }
                     if (this.implicitlyConvertsFromJSON(nullable)) {
                         return ["NSNullify(", typed, ")"];
                     }
@@ -827,7 +836,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 "+ (instancetype)fromJSONDictionary:(NSDictionary *)dict",
                 () => {
                     this.emitLine(
-                        "return dict ? [[",
+                        "return [dict isKindOfClass:NSDictionary.class] ? [[",
                         className,
                         " alloc] initWithJSONDictionary:dict] : nil;",
                     );
@@ -1343,7 +1352,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
 	id result = nil;
 	if ([collection isKindOfClass:NSArray.class]) {
 			result = [NSMutableArray arrayWithCapacity:[(NSArray *)collection count]];
-			for (id x in collection) [result addObject:f(x)];
+			for (id x in collection) [result addObject:NSNullify(f(x))];
 	} else if ([collection isKindOfClass:NSDictionary.class]) {
 			result = [NSMutableDictionary dictionaryWithCapacity:[(NSDictionary *)collection count]];
 			for (id key in collection) [result setObject:f([collection objectForKey:key]) forKey:key];
