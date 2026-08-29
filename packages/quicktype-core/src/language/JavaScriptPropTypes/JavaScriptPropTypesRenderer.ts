@@ -77,6 +77,10 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         return funPrefixNamer("enum-cases", (s) => this.nameStyle(s, false));
     }
 
+    protected isImplicitCycleBreaker(_t: Type): boolean {
+        return false;
+    }
+
     protected namedTypeToNameForTopLevel(type: Type): Type | undefined {
         return directlyReachableSingleNamedType(type);
     }
@@ -94,6 +98,14 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
 
     private typeMapTypeFor(t: Type, required = true): Sourcelike {
         if (["class", "object", "enum"].includes(t.kind)) {
+            if (this.isCycleBreakerType(t)) {
+                const name = this.nameForNamedType(t);
+                return [
+                    "(...args) => ",
+                    this.sourcelikeToString(["_", name]),
+                    "(...args)",
+                ];
+            }
             return ["_", this.nameForNamedType(t)];
         }
 
