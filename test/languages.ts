@@ -416,7 +416,6 @@ export const RubyLanguage: Language = {
         "bug863.json",
         "kitchen-sink.json",
         "github-events.json",
-        "nbl-stats.json",
         "reddit.json",
         "00c36.json",
         "050b0.json",
