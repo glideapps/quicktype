@@ -284,6 +284,24 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
         );
     }
 
+    protected emitTopLevelPrimitive(t: PrimitiveType, name: Name): void {
+        const typeName = this.sourcelikeToString(name);
+        const valueType = this.sourcelikeToString(this.kotlinType(t));
+        const parse =
+            t.kind === "integer"
+                ? "json.toLong()"
+                : t.kind === "double"
+                  ? "json.toDouble()"
+                  : `klaxon.parseArray<${valueType}>("[\${json}]")!![0]`;
+        this.emitMultiline(`data class ${typeName}(val value: ${valueType}) {
+    public fun toJson() = klaxon.toJsonString(value)
+
+    companion object {
+        public fun fromJson(json: String) = ${typeName}(${parse})
+    }
+}`);
+    }
+
     protected emitTopLevelMap(t: MapType, name: Name): void {
         const elementType = this.kotlinType(t.values);
         this.emitBlock(

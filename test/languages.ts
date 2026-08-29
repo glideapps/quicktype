@@ -1318,8 +1318,6 @@ export const KotlinLanguage: Language = {
         "unions.json",
         "php-mixed-union.json",
         "nst-test-suite.json",
-        // Klaxon does not support top-level primitives
-        "no-classes.json",
         // These should be enabled
         "nbl-stats.json",
         // TODO Investigate these
@@ -1350,9 +1348,8 @@ export const KotlinLanguage: Language = {
         "direct-union.schema",
         // Some weird name collision
         "keyword-unions.schema",
-        // Klaxon does not support top-level primitives/unions
+        // Klaxon does not support top-level enums/unions
         "top-level-enum.schema",
-        "top-level-primitive.schema",
         "recursive-union-flattening.schema",
         // A top-level array is deserialized without enforcing its element
         // type, so a mistyped element round-trips instead of failing.
