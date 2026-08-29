@@ -995,12 +995,10 @@ export const JavaScriptPropTypesLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
         "class-with-additional.schema",
         "go-schema-pattern-properties.schema",
         ...skipsUntypedUnions,
         "multi-type-enum.schema",
-        "recursive-union-flattening.schema",
         "rust-cycle-breaker-union.schema",
         "unevaluated-properties.schema",
     ],

@@ -293,7 +293,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
                     this.typeMapTypeFor((type as ArrayType).items),
                     ")",
                 ]);
-            } else if (type.kind === "map") {
+            } else if (type.kind === "map" || type.kind === "union") {
                 this.ensureBlankLine();
                 this.emitExport(name, this.typeMapTypeFor(type));
             } else {
