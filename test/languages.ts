@@ -997,9 +997,7 @@ export const JavaScriptPropTypesLanguage: Language = {
     skipSchema: [
         "class-with-additional.schema",
         "go-schema-pattern-properties.schema",
-        ...skipsUntypedUnions,
-        "multi-type-enum.schema",
-        "rust-cycle-breaker-union.schema",
+        "class-map-union.schema",
         "unevaluated-properties.schema",
     ],
     skipMiscJSON: false,

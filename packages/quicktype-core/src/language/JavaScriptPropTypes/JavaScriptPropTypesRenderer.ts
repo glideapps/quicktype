@@ -112,7 +112,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         const match = matchType<Sourcelike>(
             t,
             (_anyType) => "PropTypes.any",
-            (_nullType) => "PropTypes.any",
+            (_nullType) => "PropTypes.oneOf([null])",
             (_boolType) => "PropTypes.bool",
             (_integerType) => "PropTypes.number",
             (_doubleType) => "PropTypes.number",
@@ -308,10 +308,19 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         this.emitLine("_", name, " = PropTypes.shape({");
         this.indent(() => {
             this.forEachClassProperty(t, "none", (_, jsonName, property) => {
+                const type = this.typeMapTypeForProperty(property);
+                const validator =
+                    property.isOptional && jsonName in Object.prototype
+                        ? [
+                              "(props, name, ...args) => Object.prototype.hasOwnProperty.call(props, name) ? ",
+                              type,
+                              "(props, name, ...args) : null",
+                          ]
+                        : type;
                 this.emitLine(
                     `"${utf16StringEscape(jsonName)}"`,
                     ": ",
-                    this.typeMapTypeForProperty(property),
+                    validator,
                     ",",
                 );
             });
