@@ -823,14 +823,6 @@ export const ElmLanguage: Language = {
         "simple-ref.schema", // recursion
         "recursive-union-flattening.schema", // recursion
         "rust-cycle-breaker-union.schema", // recursion
-        // elm/json's field decoder uses the JS `in` operator, which finds
-        // inherited Object.prototype members, so an absent "constructor"
-        // property decodes to the object's constructor function.
-        "constructor.schema",
-        "keyword-unions.schema",
-        // The generated decoder accepts invalid union members because all
-        // class properties decode via `Jpipe.optional`.
-        "nested-intersection-union.schema",
     ],
     rendererOptions: {},
     // `list` is the default now; keep the `Array` code path covered.
