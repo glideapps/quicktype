@@ -1190,8 +1190,6 @@ I havea no idea how to encode these tests correctly.
         "nst-test-suite.json",
     ],
     skipSchema: [
-        // The renderer does not support a bare top-level map.
-        "empty-object.schema",
         "integer-before-number.schema", // Python-specific union-order regression.
     ],
     skipMiscJSON: false,
