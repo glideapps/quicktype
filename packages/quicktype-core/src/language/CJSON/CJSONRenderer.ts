@@ -3084,6 +3084,9 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                             jsonName,
                                                             '"));',
                                                         );
+                                                        this.emitLine(
+                                                            `if (NULL == x${level > 0 ? level.toString() : ""}->${this.sourcelikeToString(name)}) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
+                                                        );
                                                     } else if (
                                                         property.isOptional ||
                                                         cJSON.isNullable
