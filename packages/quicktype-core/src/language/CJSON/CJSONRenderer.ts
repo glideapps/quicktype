@@ -2573,6 +2573,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                                         ?.cjsonType ===
                                                                                         "cJSON_Union"
                                                                                 ) {
+                                                                                    const item = `item${child_level}`;
                                                                                     if (
                                                                                         cJSON
                                                                                             .items
@@ -2584,15 +2585,28 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                                         );
                                                                                     }
                                                                                     this.emitLine(
-                                                                                        "list_add_tail(x",
-                                                                                        child_level.toString(),
-                                                                                        ", ",
+                                                                                        cJSON
+                                                                                            .items
+                                                                                            ?.cType,
+                                                                                        " * ",
+                                                                                        item,
+                                                                                        " = ",
                                                                                         cJSON
                                                                                             .items
                                                                                             ?.getValue,
                                                                                         "(e",
                                                                                         child_level.toString(),
-                                                                                        "), sizeof(",
+                                                                                        ");",
+                                                                                    );
+                                                                                    this.emitLine(
+                                                                                        `if (NULL == ${item}) { x${level > 0 ? level.toString() : ""}->${this.sourcelikeToString(name)} = x${child_level}; cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
+                                                                                    );
+                                                                                    this.emitLine(
+                                                                                        "list_add_tail(x",
+                                                                                        child_level.toString(),
+                                                                                        ", ",
+                                                                                        item,
+                                                                                        ", sizeof(",
                                                                                         cJSON
                                                                                             .items
                                                                                             ?.cType,
