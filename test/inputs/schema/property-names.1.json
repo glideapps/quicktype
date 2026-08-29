@@ -1,0 +1,7 @@
+{
+    "icon": "flag",
+    "languages": {
+        "de": { "name": "Deutsch", "description": "German" },
+        "en": { "name": "English" }
+    }
+}

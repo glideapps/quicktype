@@ -1,4 +1,5 @@
 import { minMaxItemsForType } from "../../attributes/Constraints.js";
+import { propertyNamesForType } from "../../attributes/PropertyNames.js";
 import type { Name } from "../../Naming.js";
 import {
     type MultiWord,
@@ -8,7 +9,13 @@ import {
     singleWord,
 } from "../../Source.js";
 import { camelCase, utf16StringEscape } from "../../support/Strings.js";
-import type { ArrayType, ClassType, EnumType, Type } from "../../Type/index.js";
+import type {
+    ArrayType,
+    ClassType,
+    EnumType,
+    MapType,
+    Type,
+} from "../../Type/index.js";
 import { isNamedType } from "../../Type/TypeUtils.js";
 import type { JavaScriptTypeAnnotations } from "../JavaScript/index.js";
 
@@ -56,6 +63,26 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
 
         source.push("...", parenIfNeeded(itemType), "[]]");
         return singleWord(source);
+    }
+
+    // `propertyNames` restricts the allowed keys, not which are present, so
+    // this is `Partial<Record<Key, V>>` rather than a bare `Record` (which
+    // would require every key) or an index signature (`error TS1337`).
+    protected sourceForMapType(mapType: MapType): MultiWord {
+        const keys = propertyNamesForType(mapType);
+        if (keys === undefined) {
+            return super.sourceForMapType(mapType);
+        }
+
+        return singleWord([
+            "Partial<Record<",
+            Array.from(keys)
+                .map((c) => `"${utf16StringEscape(c)}"`)
+                .join(" | "),
+            ", ",
+            this.sourceFor(mapType.values).source,
+            ">>",
+        ]);
     }
 
     protected uncheckedParsedJson(t: Type, parsedJson: Sourcelike): Sourcelike {

@@ -32,6 +32,7 @@ import {
 import { defaultValueAttributeProducer } from "../attributes/DefaultValue.js";
 import { descriptionAttributeProducer } from "../attributes/Description.js";
 import { enumValuesAttributeProducer } from "../attributes/EnumValues.js";
+import { propertyNamesTypeAttributeKind } from "../attributes/PropertyNames.js";
 import { StringTypes } from "../attributes/StringTypes.js";
 import {
     type TypeAttributes,
@@ -799,6 +800,23 @@ class Resolver {
     }
 }
 
+/** The strings a schema restricts to, if it's a finite set. A mixed-type
+ * `enum` doesn't count, since the non-string cases can't be property names. */
+function finiteStringCases(
+    schema: JSONSchema,
+): ReadonlySet<string> | undefined {
+    if (typeof schema !== "object" || schema === null) return undefined;
+    if (typeof schema.const === "string") return new Set([schema.const]);
+    if (!Array.isArray(schema.enum)) return undefined;
+
+    const cases = schema.enum.filter((c) => typeof c === "string");
+    if (cases.length === 0 || cases.length !== schema.enum.length) {
+        return undefined;
+    }
+
+    return new Set(cases);
+}
+
 async function addTypesInSchema(
     resolver: Resolver,
     typeBuilder: TypeBuilder,
@@ -827,6 +845,7 @@ async function addTypesInSchema(
         additionalProperties: unknown,
         sortKey: (k: string) => number | string = (k: string): string =>
             k.toLowerCase(),
+        propertyNames?: ReadonlySet<string>,
     ): Promise<TypeRef> {
         const required = new Set(requiredArray);
         const propertiesMap = mapSortBy(mapFromObject(properties), (_, k) =>
@@ -865,6 +884,29 @@ async function addTypesInSchema(
             );
         }
 
+        // Required keys can't live in a map, so expand a finite key set into
+        // explicit properties (#1959). Required keys outside that set fall
+        // through to the check below, which rejects them.
+        const valueType = additionalPropertiesType;
+        const expandKeyCases =
+            propertyNames !== undefined &&
+            props.size === 0 &&
+            required.size > 0 &&
+            valueType !== undefined;
+        if (expandKeyCases) {
+            const caseProps = mapSortBy(
+                mapFromIterable(propertyNames, (name) =>
+                    typeBuilder.makeClassProperty(
+                        valueType,
+                        !required.has(name),
+                    ),
+                ),
+                (_, k) => sortKey(k),
+            );
+            mapMergeInto(props, caseProps);
+            additionalPropertiesType = undefined;
+        }
+
         const additionalRequired = setSubtract(required, props.keys());
         if (additionalRequired.size > 0) {
             const t = additionalPropertiesType;
@@ -882,8 +924,17 @@ async function addTypesInSchema(
             mapMergeInto(props, additionalProps);
         }
 
+        let objectAttributes = attributes;
+        if (propertyNames !== undefined && !expandKeyCases) {
+            objectAttributes = combineTypeAttributes(
+                "union",
+                attributes,
+                propertyNamesTypeAttributeKind.makeAttributes(propertyNames),
+            );
+        }
+
         return typeBuilder.getUniqueObjectType(
-            attributes,
+            objectAttributes,
             props,
             additionalPropertiesType,
         );
@@ -1112,6 +1163,20 @@ async function addTypesInSchema(
             return typeBuilder.getArrayType(arrayAttributes, itemType);
         }
 
+        /** The finite key set `propertyNames` allows, if any; anything else
+         * (`pattern`, `$ref`, ...) leaves the keys unrestricted. */
+        function makePropertyNames(): ReadonlySet<string> | undefined {
+            if (schema.propertyNames === undefined) return undefined;
+
+            const propertyNamesLoc = loc.push("propertyNames");
+            return finiteStringCases(
+                checkJSONSchema(
+                    schema.propertyNames,
+                    propertyNamesLoc.canonicalRef,
+                ),
+            );
+        }
+
         async function makeObjectType(): Promise<TypeRef> {
             let required: string[];
             if (
@@ -1181,6 +1246,7 @@ async function addTypesInSchema(
                 required,
                 additionalProperties,
                 orderKey,
+                makePropertyNames(),
             );
         }
 
@@ -1280,6 +1346,7 @@ async function addTypesInSchema(
             schema.properties !== undefined ||
             schema.additionalProperties !== undefined ||
             schema.unevaluatedProperties !== undefined ||
+            schema.propertyNames !== undefined ||
             schema.items !== undefined ||
             schema.prefixItems !== undefined ||
             schema.required !== undefined ||
