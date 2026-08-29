@@ -256,6 +256,11 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
 
     protected emitTopLevelArray(t: ArrayType, name: Name): void {
         const elementType = this.kotlinType(t.items);
+        const parseType = t.items.kind === "integer" ? "Any" : elementType;
+        const validate =
+            t.items.kind === "integer"
+                ? ".map { when (it) { is Int -> it.toLong(); is Long -> it; else -> throw IllegalArgumentException() } }"
+                : [];
         this.emitBlock(
             [
                 "class ",
@@ -276,8 +281,10 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
                         "public fun fromJson(json: String) = ",
                         name,
                         "(klaxon.parseArray<",
-                        elementType,
-                        ">(json)!!)",
+                        parseType,
+                        ">(json)!!",
+                        validate,
+                        ")",
                     );
                 });
             },
