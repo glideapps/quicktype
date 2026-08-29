@@ -1945,7 +1945,6 @@ export const ElixirLanguage: Language = {
 
         // Struct keys cannot be enforced at runtime in Elixir and their values will just be set to null.
         "ie-suffix-singularization.schema",
-        "strict-optional.schema",
         "required.schema",
         // The default-value fail sample also relies on required-property enforcement.
         "default-value.schema",
