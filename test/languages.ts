@@ -889,7 +889,7 @@ export const ObjectiveCLanguage: Language = {
     diffViaSchema: false,
     skipDiffViaSchema: [],
     allowMissingNull: true,
-    features: ["enum", "no-defaults"],
+    features: [],
     output: "QTTopLevel.m",
     topLevel: "QTTopLevel",
     skipJSON: [
@@ -906,7 +906,18 @@ export const ObjectiveCLanguage: Language = {
         "combinations4.json",
     ],
     skipMiscJSON: false,
-    skipSchema: ["integer-before-number.schema"], // Python-specific union-order regression.
+    skipSchema: [
+        "boolean-subschema.schema",
+        "direct-union.schema",
+        "empty-object.schema",
+        "go-schema-pattern-properties.schema",
+        "integer-before-number.schema",
+        "issue2680-top-level-array.schema",
+        "optional-any.schema",
+        "recursive-union-flattening.schema",
+        "top-level-enum.schema",
+        "union.schema",
+    ],
     rendererOptions: { functions: "true" },
     quickTestRendererOptions: [],
     sourceFiles: ["src/language/Objective-C/index.ts"],

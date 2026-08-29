@@ -81,7 +81,7 @@ jobs:
                     - fixture: pike,schema-pike
                       runs-on: ubuntu-24.04
 
-                    - fixture: objective-c,comment-injection-objective-c
+                    - fixture: objective-c,schema-objective-c,comment-injection-objective-c
                       runs-on: macos-latest
 
         name: ${{ matrix.fixture }}
