@@ -1488,12 +1488,11 @@ export const DartLanguage: Language = {
     features: [],
     output: "TopLevel.dart",
     topLevel: "TopLevel",
-    skipJSON: ["combinations2.json", "combinations1.json", "keywords.json"],
+    skipJSON: [],
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
-        "keyword-unions.schema",
     ],
-    skipMiscJSON: true,
+    skipMiscJSON: false,
     rendererOptions: {},
     // The default is final-props=true; this keeps the mutable-property
     // code path covered.  The targeted from-map sample also verifies that
