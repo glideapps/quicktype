@@ -553,8 +553,6 @@ export const CJSONLanguage: Language = {
         "combinations3.json",
         /* Map in Array in TopLevel is not supported (for the current implementation, can be added later, need recursivity) */
         "combinations2.json",
-        /* Array in Array in Union is not supported (for the current implementation, can be added later, need recursivity) */
-        "combinations4.json",
     ],
     skipMiscJSON: false,
     skipSchema: [
@@ -896,10 +894,6 @@ export const ObjectiveCLanguage: Language = {
         // Almost all strings work except any containing \u001b
         // See https://goo.gl/L8HfUP
         "blns-object.json",
-        // TODO
-        "combinations.json",
-        // Needs to distinguish between optional and null properties
-        "optional-union.json",
         // Could not convert JSON to model: Error Domain=JSONSerialization Code=-1 "(null)" UserInfo={exception=-[NSNull countByEnumeratingWithState:objects:count:]: unrecognized selector sent to instance 0x7fff807b6ea0}
         "combinations2.json",
         "combinations3.json",
