@@ -1297,8 +1297,6 @@ export const KotlinJacksonLanguage: Language = {
         "identifiers.json",
         "simple-identifiers.json",
         "nst-test-suite.json",
-        // These should be enabled
-        "nbl-stats.json",
     ],
     skipSchema: [
         "implicit-class-array-union.schema",
