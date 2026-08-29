@@ -90,6 +90,10 @@ export class TypeScriptTargetLanguage extends TargetLanguage<
         return true;
     }
 
+    public get supportsUnionsWithMultipleObjectTypes(): boolean {
+        return true;
+    }
+
     protected makeRenderer<Lang extends LanguageName = "typescript">(
         renderContext: RenderContext,
         untypedOptionValues: RendererOptions<Lang>,
@@ -137,6 +141,10 @@ export class FlowTargetLanguage extends TargetLanguage<
     }
 
     public get supportsFullObjectType(): boolean {
+        return true;
+    }
+
+    public get supportsUnionsWithMultipleObjectTypes(): boolean {
         return true;
     }
 

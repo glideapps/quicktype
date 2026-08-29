@@ -115,6 +115,10 @@ export abstract class TargetLanguage<
         return false;
     }
 
+    public get supportsUnionsWithMultipleObjectTypes(): boolean {
+        return false;
+    }
+
     public needsTransformerForType(_t: Type): boolean {
         return false;
     }

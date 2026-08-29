@@ -43,6 +43,10 @@ export class JSONSchemaTargetLanguage extends TargetLanguage<
         return true;
     }
 
+    public get supportsUnionsWithMultipleObjectTypes(): boolean {
+        return true;
+    }
+
     protected makeRenderer<Lang extends LanguageName = "json-schema">(
         renderContext: RenderContext,
         _untypedOptionValues: RendererOptions<Lang>,
