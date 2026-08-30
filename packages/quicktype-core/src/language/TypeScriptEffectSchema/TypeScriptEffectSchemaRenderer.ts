@@ -3,6 +3,7 @@ import { arrayIntercalate } from "collection-utils";
 import {
     minMaxItemsForType,
     minMaxLengthForType,
+    minMaxValueForType,
     patternForType,
 } from "../../attributes/Constraints.js";
 import { ConvenienceRenderer } from "../../ConvenienceRenderer.js";
@@ -123,8 +124,8 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
             (_anyType) => "S.Any",
             (_nullType) => "S.Null",
             (_boolType) => "S.Boolean",
-            (_integerType) => "S.Int",
-            (_doubleType) => "S.Number",
+            (integerType) => this.numberSchema(integerType, "S.Int"),
+            (doubleType) => this.numberSchema(doubleType, "S.Number"),
             (stringType) => this.stringSchema(stringType),
             (arrayType) => {
                 const [minItems, maxItems] =
@@ -216,6 +217,16 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
             schema.push(
                 `.pipe(S.pattern(new RegExp(${JSON.stringify(pattern)})))`,
             );
+        return schema;
+    }
+
+    private numberSchema(t: Type, base: string): Sourcelike {
+        const [min, max] = minMaxValueForType(t) ?? [];
+        const schema: Sourcelike[] = [base];
+        if (min !== undefined)
+            schema.push(".pipe(S.greaterThanOrEqualTo(", min.toString(), "))");
+        if (max !== undefined)
+            schema.push(".pipe(S.lessThanOrEqualTo(", max.toString(), "))");
         return schema;
     }
 
