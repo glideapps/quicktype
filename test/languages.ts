@@ -1694,6 +1694,7 @@ export const TypeScriptZodLanguage: Language = {
         "union",
         "no-defaults",
         "date-time",
+        "uuid",
         "integer",
         "minmaxitems",
         "strict-optional",
