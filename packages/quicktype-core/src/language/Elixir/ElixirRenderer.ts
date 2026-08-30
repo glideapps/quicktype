@@ -29,6 +29,8 @@ import {
 } from "./utils.js";
 
 export class ElixirRenderer extends ConvenienceRenderer {
+    private readonly _definedClasses = new Set<ClassType>();
+
     public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
@@ -306,9 +308,19 @@ export class ElixirRenderer extends ConvenienceRenderer {
                     "def encode_",
                     attributeName,
                     suffix,
-                    "(%",
-                    this.nameForNamedTypeWithNamespace(classType),
-                    "{} = value), do: ",
+                    "(",
+                    this._definedClasses.has(classType)
+                        ? [
+                              "%",
+                              this.nameForNamedTypeWithNamespace(classType),
+                              "{}",
+                          ]
+                        : [
+                              "%{__struct__: ",
+                              this.nameForNamedTypeWithNamespace(classType),
+                              "}",
+                          ],
+                    " = value), do: ",
                     this.nameForNamedTypeWithNamespace(classType),
                     ".to_map(value)",
                 ];
@@ -833,6 +845,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 });
 
                 this.emitLine(["defstruct [", attributeNames, "]"]);
+                this._definedClasses.add(c);
                 this.ensureBlankLine();
 
                 const typeDefinitionTable: Sourcelike[][] = [
