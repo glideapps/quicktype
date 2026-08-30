@@ -3,6 +3,7 @@ import { arrayIntercalate } from "collection-utils";
 import {
     minMaxItemsForType,
     minMaxLengthForType,
+    patternForType,
 } from "../../attributes/Constraints.js";
 import { ConvenienceRenderer } from "../../ConvenienceRenderer.js";
 import { type Name, type Namer, funPrefixNamer } from "../../Naming.js";
@@ -205,11 +206,16 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
 
     private stringSchema(t: Type): Sourcelike {
         const [min, max] = minMaxLengthForType(t) ?? [];
+        const pattern = patternForType(t);
         const schema: Sourcelike[] = ["S.String"];
         if (min !== undefined)
             schema.push(".pipe(S.minLength(", min.toString(), "))");
         if (max !== undefined)
             schema.push(".pipe(S.maxLength(", max.toString(), "))");
+        if (pattern !== undefined)
+            schema.push(
+                `.pipe(S.pattern(new RegExp(${JSON.stringify(pattern)})))`,
+            );
         return schema;
     }
 
