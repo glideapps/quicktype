@@ -1434,7 +1434,10 @@ export class PhpRenderer extends ConvenienceRenderer {
                     " $",
                     name,
                     "; // json:",
-                    jsonName,
+                    jsonName
+                        .replace(/\n/g, "\\n")
+                        .replace(/\r/g, "\\r")
+                        .replace(/\?>/g, "? >"),
                     " ",
                     p.type.isNullable ? "Optional" : "Required",
                 );
