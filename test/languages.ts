@@ -1712,6 +1712,7 @@ export const TypeScriptZodLanguage: Language = {
         "uuid",
         "bool-string",
         "integer",
+        "minmaxlength",
         "minmaxitems",
         "pattern",
         "strict-optional",
