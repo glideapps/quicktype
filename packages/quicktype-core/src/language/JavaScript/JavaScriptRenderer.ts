@@ -1,5 +1,6 @@
 import { arrayIntercalate } from "collection-utils";
 
+import { patternForType } from "../../attributes/Constraints.js";
 import { ConvenienceRenderer } from "../../ConvenienceRenderer.js";
 import { type Name, type Namer, funPrefixNamer } from "../../Naming.js";
 import type { RenderContext } from "../../Renderer.js";
@@ -124,7 +125,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
             (_boolType) => "true",
             (_integerType) => "i(0)",
             (_doubleType) => "3.14",
-            (_stringType) => '""',
+            (stringType) => this.typeMapString(stringType),
             (arrayType) => ["a(", this.typeMapTypeFor(arrayType.items), ")"],
             (_classType) => panic("We handled this above"),
             (mapType) => ["m(", this.typeMapTypeFor(mapType.values), ")"],
@@ -143,6 +144,11 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
                 return '""';
             },
         );
+    }
+
+    private typeMapString(t: Type): Sourcelike {
+        const pattern = patternForType(t);
+        return pattern === undefined ? '""' : `p(${JSON.stringify(pattern)})`;
     }
 
     private typeMapTypeForProperty(p: ClassProperty): Sourcelike {
@@ -448,7 +454,8 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
     }
     if (Array.isArray(typ)) return transformEnum(typ, val);
     if (typeof typ === "object") {
-        return typ.hasOwnProperty("integer")      ? typeof val === "number" && val % 1 === 0 ? val : invalidValue(l("integer"), val, key, parent)
+        return typ.hasOwnProperty("pattern")      ? typeof val === "string" && new RegExp(typ.pattern).test(val) ? val : invalidValue(typ, val, key, parent)
+            : typ.hasOwnProperty("integer")      ? typeof val === "number" && val % 1 === 0 ? val : invalidValue(l("integer"), val, key, parent)
             : typ.hasOwnProperty("unionMembers") ? transformUnion(typ.unionMembers, val)
             : typ.hasOwnProperty("arrayItems")    ? transformArray(typ.arrayItems, val)
             : typ.hasOwnProperty("props")         ? transformObject(getProps(typ), typ.additional, val)
@@ -477,6 +484,10 @@ function a(typ${anyAnnotation}) {
 
 function i(typ${anyAnnotation}) {
     return { integer: typ };
+}
+
+function p(pattern${anyAnnotation}) {
+    return { pattern };
 }
 
 function u(...typs${anyArrayAnnotation}) {
