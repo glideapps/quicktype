@@ -265,7 +265,12 @@ export class PikeRenderer extends ConvenienceRenderer {
             if (t instanceof PrimitiveType) {
                 this.emitLine(["return json;"]);
             } else if (t instanceof ArrayType) {
-                if (t.items instanceof PrimitiveType)
+                if (t.items.kind === "integer") {
+                    this.emitMultiline(`return map(json, lambda(mixed value) {
+    if (!intp(value)) error("Expected integer");
+    return (int)value;
+});`);
+                } else if (t.items instanceof PrimitiveType)
                     this.emitLine(["return json;"]);
                 else
                     this.emitLine([
