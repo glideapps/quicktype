@@ -1049,7 +1049,7 @@ export const JavaScriptPropTypesLanguage: Language = {
     diffViaSchema: false,
     skipDiffViaSchema: [],
     allowMissingNull: false,
-    features: ["enum", "union", "integer", "minmaxitems"],
+    features: ["enum", "union", "integer", "minmaxitems", "pattern"],
     output: "toplevel.js",
     topLevel: "TopLevel",
     skipJSON: [],
