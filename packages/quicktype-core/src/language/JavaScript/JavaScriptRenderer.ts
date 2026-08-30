@@ -3,6 +3,7 @@ import { arrayIntercalate } from "collection-utils";
 import {
     minMaxItemsForType,
     minMaxLengthForType,
+    minMaxValueForType,
     patternForType,
 } from "../../attributes/Constraints.js";
 import { ConvenienceRenderer } from "../../ConvenienceRenderer.js";
@@ -127,8 +128,8 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
             (_anyType) => '"any"',
             (_nullType) => "null",
             (_boolType) => "true",
-            (_integerType) => "i(0)",
-            (_doubleType) => "3.14",
+            (integerType) => this.typeMapNumber(integerType, "i(0)"),
+            (doubleType) => this.typeMapNumber(doubleType, "3.14"),
             (stringType) => this.typeMapString(stringType),
             (arrayType) => {
                 const [min, max] = minMaxItemsForType(arrayType) ?? [];
@@ -167,6 +168,13 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
         return min === undefined && max === undefined
             ? type
             : `s(${type}, ${min ?? "undefined"}, ${max ?? "undefined"})`;
+    }
+
+    private typeMapNumber(t: Type, example: string): Sourcelike {
+        const [min, max] = minMaxValueForType(t) ?? [];
+        return min === undefined && max === undefined
+            ? example
+            : `n(${example}, ${min ?? "undefined"}, ${max ?? "undefined"})`;
     }
 
     private typeMapTypeForProperty(p: ClassProperty): Sourcelike {
@@ -481,6 +489,7 @@ ${hasArrayConstraints ? '        if ((typ.min !== undefined && val.length < typ.
     if (typeof typ === "object") {
         return ${hasUUID ? 'typ.hasOwnProperty("uuid")         ? typeof val === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val) ? val : invalidValue(typ, val, key, parent)\n            : ' : ""}typ.hasOwnProperty("pattern")      ? typeof val === "string" && new RegExp(typ.pattern).test(val) ? val : invalidValue(typ, val, key, parent)
             : typ.hasOwnProperty("string")       ? typeof val === "string" && (typ.min === undefined || val.length >= typ.min) && (typ.max === undefined || val.length <= typ.max) ? transform(val, typ.string, getProps, key, parent) : invalidValue(typ, val, key, parent)
+            : typ.hasOwnProperty("number")       ? typeof val === "number" && (typ.min === undefined || val >= typ.min) && (typ.max === undefined || val <= typ.max) ? transform(val, typ.number, getProps, key, parent) : invalidValue(typ, val, key, parent)
             : typ.hasOwnProperty("integer")      ? typeof val === "number" && val % 1 === 0 ? val : invalidValue(l("integer"), val, key, parent)
             : typ.hasOwnProperty("unionMembers") ? transformUnion(typ.unionMembers, val)
             : typ.hasOwnProperty("arrayItems")    ? transformArray(${hasArrayConstraints ? "typ" : "typ.arrayItems"}, val)
@@ -518,6 +527,10 @@ function p(pattern${anyAnnotation}) {
 
 function s(typ${anyAnnotation}, min${anyAnnotation}, max${anyAnnotation}) {
     return { string: typ, min, max };
+}
+
+function n(typ${anyAnnotation}, min${anyAnnotation}, max${anyAnnotation}) {
+    return { number: typ, min, max };
 }
 
 function u(...typs${anyArrayAnnotation}) {
