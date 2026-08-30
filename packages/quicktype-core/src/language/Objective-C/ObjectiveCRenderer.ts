@@ -517,6 +517,13 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                         jsonName,
                         nullable,
                     );
+                    if (nullable instanceof EnumType) {
+                        this.emitLine(
+                            "if (",
+                            name,
+                            ` == nil && dict[@"${objectiveCStringEscape(jsonName)}"] && ![dict[@"${objectiveCStringEscape(jsonName)}"] isKindOfClass:NSNull.class]) return nil;`,
+                        );
+                    }
                 } else {
                     // TODO This is a union, but for now we just leave it dynamic
                     this.emitLine(
