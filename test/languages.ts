@@ -1327,6 +1327,7 @@ export const KotlinJacksonLanguage: Language = {
         "enum",
         "union",
         "no-defaults",
+        "strict-optional",
         "date-time",
         "integer",
         "minmaxitems",
