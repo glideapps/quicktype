@@ -9,6 +9,7 @@ import {
 import {
     minMaxItemsForType,
     minMaxValueForType,
+    patternForType,
 } from "../../attributes/Constraints.js";
 import {
     ConvenienceRenderer,
@@ -886,6 +887,12 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                                 if (maxItems !== undefined) {
                                     this.emitLine(
                                         `if ([(NSArray *)dict[@"${objectiveCStringEscape(jsonName)}"] count] > ${maxItems}) return nil;`,
+                                    );
+                                }
+                                const pattern = patternForType(property.type);
+                                if (pattern !== undefined) {
+                                    this.emitLine(
+                                        `if (dict[@"${objectiveCStringEscape(jsonName)}"] && [dict[@"${objectiveCStringEscape(jsonName)}"] rangeOfString:@"${objectiveCStringEscape(pattern)}" options:NSRegularExpressionSearch].location == NSNotFound) return nil;`,
                                     );
                                 }
                                 if (
