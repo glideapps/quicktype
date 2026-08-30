@@ -122,7 +122,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
             (_anyType) => '"any"',
             (_nullType) => "null",
             (_boolType) => "true",
-            (_integerType) => "0",
+            (_integerType) => "i(0)",
             (_doubleType) => "3.14",
             (_stringType) => '""',
             (arrayType) => ["a(", this.typeMapTypeFor(arrayType.items), ")"],
@@ -448,7 +448,8 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
     }
     if (Array.isArray(typ)) return transformEnum(typ, val);
     if (typeof typ === "object") {
-        return typ.hasOwnProperty("unionMembers") ? transformUnion(typ.unionMembers, val)
+        return typ.hasOwnProperty("integer")      ? typeof val === "number" && val % 1 === 0 ? val : invalidValue(l("integer"), val, key, parent)
+            : typ.hasOwnProperty("unionMembers") ? transformUnion(typ.unionMembers, val)
             : typ.hasOwnProperty("arrayItems")    ? transformArray(typ.arrayItems, val)
             : typ.hasOwnProperty("props")         ? transformObject(getProps(typ), typ.additional, val)
             : invalidValue(typ, val, key, parent);
@@ -472,6 +473,10 @@ function l(typ${anyAnnotation}) {
 
 function a(typ${anyAnnotation}) {
     return { arrayItems: typ };
+}
+
+function i(typ${anyAnnotation}) {
+    return { integer: typ };
 }
 
 function u(...typs${anyArrayAnnotation}) {
