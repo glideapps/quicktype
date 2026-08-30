@@ -15,6 +15,7 @@ import {
 import { getAccessorName } from "../../attributes/AccessorNames.js";
 import { defaultValueForType } from "../../attributes/DefaultValue.js";
 import { enumCaseValues } from "../../attributes/EnumValues.js";
+import { minMaxItemsForType } from "../../attributes/Constraints.js";
 import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
@@ -1516,6 +1517,24 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             key,
                             ').is_number_integer()) throw std::runtime_error("Expected integer");',
                         );
+                    }
+
+                    const minMaxItems = minMaxItemsForType(propType);
+                    if (minMaxItems !== undefined) {
+                        const [minItems, maxItems] = minMaxItems;
+                        const key = this.sourcelikeToString(
+                            this.NarrowString.createStringLiteral([
+                                stringEscape(json),
+                            ]),
+                        );
+                        if (minItems !== undefined)
+                            this.emitLine(
+                                `if (j.at(${key}).size() < ${minItems}) throw std::runtime_error("Too few items");`,
+                            );
+                        if (maxItems !== undefined)
+                            this.emitLine(
+                                `if (j.at(${key}).size() > ${maxItems}) throw std::runtime_error("Too many items");`,
+                            );
                     }
 
                     if (p.isOptional || propType instanceof UnionType) {
