@@ -483,6 +483,7 @@ export const RubyLanguage: Language = {
         "no-defaults",
         "integer",
         "minmax",
+        "minmaxlength",
         "strict-optional",
     ],
     output: "TopLevel.rb",
