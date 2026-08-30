@@ -6,6 +6,7 @@ import {
     mapSome,
 } from "collection-utils";
 
+import { minMaxValueForType } from "../../attributes/Constraints.js";
 import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
@@ -860,6 +861,18 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                             t,
                             "none",
                             (_name, jsonName, property) => {
+                                const [min, max] =
+                                    minMaxValueForType(property.type) ?? [];
+                                if (min !== undefined) {
+                                    this.emitLine(
+                                        `if (dict[@"${objectiveCStringEscape(jsonName)}"] && [dict[@"${objectiveCStringEscape(jsonName)}"] doubleValue] < ${min}) return nil;`,
+                                    );
+                                }
+                                if (max !== undefined) {
+                                    this.emitLine(
+                                        `if (dict[@"${objectiveCStringEscape(jsonName)}"] && [dict[@"${objectiveCStringEscape(jsonName)}"] doubleValue] > ${max}) return nil;`,
+                                    );
+                                }
                                 if (
                                     !property.isOptional &&
                                     property.type.isNullable
