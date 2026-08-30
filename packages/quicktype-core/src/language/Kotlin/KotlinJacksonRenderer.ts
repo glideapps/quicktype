@@ -152,6 +152,16 @@ import com.fasterxml.jackson.module.kotlin.*`);
             this.emitLine(
                 "setSerializationInclusion(JsonInclude.Include.NON_NULL)",
             );
+            if (
+                iterableSome(
+                    this.typeGraph.allTypesUnordered(),
+                    (t) => t.kind === "integer",
+                )
+            ) {
+                this.emitLine(
+                    "disable(DeserializationFeature.ACCEPT_FLOAT_AS_INT)",
+                );
+            }
         });
 
         if (converters.length > 0) {
