@@ -2,6 +2,7 @@ import { arrayIntercalate } from "collection-utils";
 
 import {
     minMaxItemsForType,
+    minMaxLengthForType,
     patternForType,
 } from "../../attributes/Constraints.js";
 import { ConvenienceRenderer } from "../../ConvenienceRenderer.js";
@@ -108,14 +109,20 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         }
 
         const stringType = (type: Type): Sourcelike => {
+            const [min, max] = minMaxLengthForType(type) ?? [];
             const pattern = patternForType(type);
-            return pattern === undefined
-                ? "z.string()"
-                : [
-                      'z.string().regex(new RegExp("',
-                      utf16StringEscape(pattern),
-                      '"))',
-                  ];
+            return [
+                "z.string()",
+                min === undefined ? "" : [".min(", String(min), ")"],
+                max === undefined ? "" : [".max(", String(max), ")"],
+                pattern === undefined
+                    ? ""
+                    : [
+                          '.regex(new RegExp("',
+                          utf16StringEscape(pattern),
+                          '"))',
+                      ],
+            ];
         };
         const match = matchType<Sourcelike>(
             t,
