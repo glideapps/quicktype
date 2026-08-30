@@ -935,6 +935,7 @@ export const ObjectiveCLanguage: Language = {
         "minmaxitems",
         "pattern",
         "minmaxlength",
+        "no-defaults",
         "strict-optional",
     ],
     output: "QTTopLevel.m",

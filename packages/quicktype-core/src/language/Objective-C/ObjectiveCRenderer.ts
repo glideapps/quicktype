@@ -486,13 +486,17 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                     this.fromDynamicExpression(arrayType, name),
                     ";",
                 ),
-            (classType) =>
+            (classType) => {
                 this.emitLine(
                     name,
                     " = ",
                     this.fromDynamicExpression(classType, ["(id)", name]),
                     ";",
-                ),
+                );
+                this.emitLine(
+                    `if (!${this.sourcelikeToString(name)} && dict[@"${objectiveCStringEscape(jsonName)}"] && ![dict[@"${objectiveCStringEscape(jsonName)}"] isKindOfClass:NSNull.class]) return nil;`,
+                );
+            },
             (mapType) => {
                 const itemType = mapType.values;
                 this.emitLine(
@@ -918,12 +922,18 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                                 }
                                 if (
                                     !property.isOptional &&
-                                    (property.type.kind === "bool" ||
-                                        property.type instanceof ArrayType)
+                                    !["any", "null", "union"].includes(
+                                        property.type.kind,
+                                    )
                                 ) {
+                                    const jsonClass =
+                                        property.type instanceof ClassType ||
+                                        property.type instanceof MapType
+                                            ? "NSDictionary"
+                                            : this.jsonType(property.type)[0];
                                     this.emitLine(
                                         `if (![dict[@"${objectiveCStringEscape(jsonName)}"] isKindOfClass:`,
-                                        this.jsonType(property.type)[0],
+                                        jsonClass,
                                         ".class]) return nil;",
                                     );
                                 }
