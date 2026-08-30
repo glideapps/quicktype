@@ -903,7 +903,6 @@ export const ObjectiveCLanguage: Language = {
     skipSchema: [
         "boolean-subschema.schema",
         "go-schema-pattern-properties.schema",
-        "optional-any.schema",
     ],
     rendererOptions: { functions: "true" },
     quickTestRendererOptions: [],
