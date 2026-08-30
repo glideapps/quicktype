@@ -1720,6 +1720,7 @@ export const TypeScriptZodLanguage: Language = {
         "date-time",
         "uuid",
         "bool-string",
+        "integer-string",
         "integer",
         "minmax",
         "minmaxlength",

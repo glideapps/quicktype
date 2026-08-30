@@ -183,9 +183,14 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
                     })
                     .map((type: Type) => {
                         const schema = this.typeMapTypeFor(type, false);
-                        return type.kind === "bool-string" &&
+                        if (
+                            type.kind === "bool-string" &&
                             unionType.findMember("bool") !== undefined
-                            ? [schema, '.transform(x => x === "true")']
+                        )
+                            return [schema, '.transform(x => x === "true")'];
+                        return type.kind === "integer-string" &&
+                            unionType.findMember("integer") !== undefined
+                            ? [schema, ".transform(Number)"]
                             : schema;
                     });
                 return ["z.union([", ...arrayIntercalate(", ", children), "])"];
@@ -199,6 +204,9 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
                 }
                 if (_transformedStringType.kind === "bool-string") {
                     return 'z.enum(["true", "false"])';
+                }
+                if (_transformedStringType.kind === "integer-string") {
+                    return "z.string().regex(/^-?\\d+$/)";
                 }
 
                 return "z.string()";
