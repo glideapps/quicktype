@@ -1763,6 +1763,7 @@ export const TypeScriptEffectSchemaLanguage: Language = {
         "uuid",
         "minmaxlength",
         "bool-string",
+        "date-time",
     ],
     output: "TopLevel.ts",
     topLevel: "TopLevel",

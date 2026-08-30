@@ -38,6 +38,9 @@ export class TypeScriptEffectSchemaTargetLanguage extends TargetLanguage<
         >();
         mapping.set("uuid", "uuid");
         mapping.set("bool-string", "bool-string");
+        mapping.set("date", "date");
+        mapping.set("time", "time");
+        mapping.set("date-time", "date-time");
         return mapping;
     }
 

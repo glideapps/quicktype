@@ -180,6 +180,12 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
                     return coerceStrings
                         ? 'S.transform(S.Literal("true", "false"), S.Boolean, { strict: true, decode: (value) => value === "true", encode: (value) => value ? "true" : "false" })'
                         : 'S.Literal("true", "false")';
+                if (_transformedStringType.kind === "date")
+                    return "S.String.pipe(S.pattern(/^\\d{4}-\\d{2}-\\d{2}$/))";
+                if (_transformedStringType.kind === "time")
+                    return "S.String.pipe(S.pattern(/^\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$/))";
+                if (_transformedStringType.kind === "date-time")
+                    return "S.String.pipe(S.pattern(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$/))";
                 return "S.String";
             },
         );
