@@ -7,6 +7,7 @@ import { arrayIntercalate } from "collection-utils";
 import { getAccessorName } from "../../attributes/AccessorNames.js";
 import {
     minMaxItemsForType,
+    minMaxLengthForType,
     minMaxValueForType,
     patternForType,
 } from "../../attributes/Constraints.js";
@@ -2407,6 +2408,10 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                             const pattern = patternForType(
                                                 property.type,
                                             );
+                                            const [minLength, maxLength] =
+                                                minMaxLengthForType(
+                                                    property.type,
+                                                ) ?? [];
                                             if (!property.isOptional) {
                                                 this.emitLine(
                                                     `if (!cJSON_HasObjectItem(${object}, "${jsonName}")) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
@@ -2467,6 +2472,14 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                             `regex_t regex; regcomp(&regex, "${stringEscape(pattern)}", REG_EXTENDED); if (regexec(&regex, ${value}->valuestring, 0, NULL, 0)) { regfree(&regex); cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; } regfree(&regex);`,
                                                         );
                                                     }
+                                                    if (minLength !== undefined)
+                                                        this.emitLine(
+                                                            `if (strlen(${value}->valuestring) < ${minLength}) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
+                                                        );
+                                                    if (maxLength !== undefined)
+                                                        this.emitLine(
+                                                            `if (strlen(${value}->valuestring) > ${maxLength}) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
+                                                        );
                                                     if (
                                                         cJSON.cjsonType ===
                                                         "cJSON_Enum"
