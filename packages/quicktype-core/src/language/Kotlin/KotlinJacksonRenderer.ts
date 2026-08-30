@@ -1,6 +1,9 @@
 import { arrayIntercalate, iterableSome } from "collection-utils";
 
-import { minMaxItemsForType } from "../../attributes/Constraints.js";
+import {
+    minMaxItemsForType,
+    minMaxValueForType,
+} from "../../attributes/Constraints.js";
 import type { Name } from "../../Naming.js";
 import { type Sourcelike, modifySource } from "../../Source.js";
 import { camelCase } from "../../support/Strings.js";
@@ -297,6 +300,15 @@ import com.fasterxml.jackson.module.kotlin.*`);
                         checks.push(`${before} >= ${min}${after}`);
                     if (max !== undefined)
                         checks.push(`${before} <= ${max}${after}`);
+                    const [numberMin, numberMax] =
+                        minMaxValueForType(p.type) ?? [];
+                    const numberBefore = p.isOptional
+                        ? `${n}?.let { require(it`
+                        : `require(${n}`;
+                    if (numberMin !== undefined)
+                        checks.push(`${numberBefore} >= ${numberMin}${after}`);
+                    if (numberMax !== undefined)
+                        checks.push(`${numberBefore} <= ${numberMax}${after}`);
                 });
                 if (checks.length > 0)
                     this.emitBlock("init", () =>
