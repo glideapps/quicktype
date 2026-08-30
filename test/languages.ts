@@ -1655,6 +1655,7 @@ export const TypeScriptZodLanguage: Language = {
         "date-time",
         "integer",
         "minmaxitems",
+        "pattern",
         "strict-optional",
     ],
     output: "TopLevel.ts",

@@ -1,6 +1,9 @@
 import { arrayIntercalate } from "collection-utils";
 
-import { minMaxItemsForType } from "../../attributes/Constraints.js";
+import {
+    minMaxItemsForType,
+    patternForType,
+} from "../../attributes/Constraints.js";
 import { ConvenienceRenderer } from "../../ConvenienceRenderer.js";
 import { type Name, type Namer, funPrefixNamer } from "../../Naming.js";
 import type { RenderContext } from "../../Renderer.js";
@@ -104,6 +107,16 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
             return [this.nameForNamedType(t), "Schema"];
         }
 
+        const stringType = (type: Type): Sourcelike => {
+            const pattern = patternForType(type);
+            return pattern === undefined
+                ? "z.string()"
+                : [
+                      'z.string().regex(new RegExp("',
+                      utf16StringEscape(pattern),
+                      '"))',
+                  ];
+        };
         const match = matchType<Sourcelike>(
             t,
             (_anyType) => "z.any()",
@@ -111,7 +124,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
             (_boolType) => "z.boolean()",
             (_integerType) => "z.number().int()",
             (_doubleType) => "z.number()",
-            (_stringType) => "z.string()",
+            (string) => stringType(string),
             (arrayType) => {
                 const [minItems, maxItems] =
                     minMaxItemsForType(arrayType) ?? [];
