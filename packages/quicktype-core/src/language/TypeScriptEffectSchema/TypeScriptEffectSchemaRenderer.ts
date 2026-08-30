@@ -1,6 +1,9 @@
 import { arrayIntercalate } from "collection-utils";
 
-import { minMaxItemsForType } from "../../attributes/Constraints.js";
+import {
+    minMaxItemsForType,
+    minMaxLengthForType,
+} from "../../attributes/Constraints.js";
 import { ConvenienceRenderer } from "../../ConvenienceRenderer.js";
 import { type Name, type Namer, funPrefixNamer } from "../../Naming.js";
 import type { RenderContext } from "../../Renderer.js";
@@ -117,7 +120,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
             (_boolType) => "S.Boolean",
             (_integerType) => "S.Int",
             (_doubleType) => "S.Number",
-            (_stringType) => "S.String",
+            (stringType) => this.stringSchema(stringType),
             (arrayType) => {
                 const [minItems, maxItems] =
                     minMaxItemsForType(arrayType) ?? [];
@@ -177,6 +180,16 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
         }
 
         return match;
+    }
+
+    private stringSchema(t: Type): Sourcelike {
+        const [min, max] = minMaxLengthForType(t) ?? [];
+        const schema: Sourcelike[] = ["S.String"];
+        if (min !== undefined)
+            schema.push(".pipe(S.minLength(", min.toString(), "))");
+        if (max !== undefined)
+            schema.push(".pipe(S.maxLength(", max.toString(), "))");
+        return schema;
     }
 
     private emitObject(name: Name, t: ObjectType): void {

@@ -1739,6 +1739,7 @@ export const TypeScriptEffectSchemaLanguage: Language = {
         "strict-optional",
         "minmaxitems",
         "uuid",
+        "minmaxlength",
     ],
     output: "TopLevel.ts",
     topLevel: "TopLevel",
