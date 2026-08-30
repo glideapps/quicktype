@@ -1484,9 +1484,7 @@ export const PikeLanguage: Language = {
     output: "TopLevel.pmod",
     topLevel: "TopLevel",
     skipJSON: [
-        "blns-object.json", // illegal characters in expressions
         "identifiers.json", // quicktype internal error
-        "7eb30.json", // illegal characters in expressions
     ],
     skipMiscJSON: false,
     skipSchema: [
