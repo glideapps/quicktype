@@ -1656,6 +1656,7 @@ export const TypeScriptZodLanguage: Language = {
         "integer",
         "minmaxitems",
         "strict-optional",
+        "uuid",
     ],
     output: "TopLevel.ts",
     topLevel: "TopLevel",
