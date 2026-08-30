@@ -925,7 +925,7 @@ export const ObjectiveCLanguage: Language = {
     diffViaSchema: false,
     skipDiffViaSchema: [],
     allowMissingNull: true,
-    features: ["enum", "strict-optional"],
+    features: ["enum", "minmax", "minmaxInteger", "strict-optional"],
     output: "QTTopLevel.m",
     topLevel: "QTTopLevel",
     skipJSON: [
