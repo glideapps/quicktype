@@ -230,11 +230,7 @@ export const JavaLanguage: Language = {
     features: ["enum", "union", "uuid"],
     output: "src/main/java/io/quicktype/TopLevel.java",
     topLevel: "TopLevel",
-    skipJSON: [
-        "identifiers.json",
-        "simple-identifiers.json",
-        "nst-test-suite.json",
-    ],
+    skipJSON: [],
     skipMiscJSON: false,
     skipSchema: [
         "keyword-unions.schema", // generates classes with names that are case-insensitively equal
@@ -265,6 +261,12 @@ export const JavaLanguageWithLegacyDateTime: Language = {
 export const JavaLanguageWithLombok: Language = {
     ...JavaLanguage,
     base: "test/fixtures/java-lombok",
+    // Lombok-generated accessors cannot use the empty-key any-getter/setter.
+    skipJSON: [
+        "identifiers.json",
+        "simple-identifiers.json",
+        "nst-test-suite.json",
+    ],
     quickTestRendererOptions: [{ "array-type": "array", lombok: "true" }],
 };
 
