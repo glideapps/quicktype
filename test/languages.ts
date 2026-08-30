@@ -896,10 +896,6 @@ export const ObjectiveCLanguage: Language = {
         // Almost all strings work except any containing \u001b
         // See https://goo.gl/L8HfUP
         "blns-object.json",
-        // Could not convert JSON to model: Error Domain=JSONSerialization Code=-1 "(null)" UserInfo={exception=-[NSNull countByEnumeratingWithState:objects:count:]: unrecognized selector sent to instance 0x7fff807b6ea0}
-        "combinations2.json",
-        "combinations3.json",
-        "combinations4.json",
     ],
     skipMiscJSON: false,
     skipSchema: [
