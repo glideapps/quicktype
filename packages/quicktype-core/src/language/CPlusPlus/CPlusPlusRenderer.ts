@@ -1505,6 +1505,19 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         return;
                     }
 
+                    if (propType.kind === "integer") {
+                        const key = this.NarrowString.createStringLiteral([
+                            stringEscape(json),
+                        ]);
+                        this.emitLine(
+                            "if (j.find(",
+                            key,
+                            ") != j.end() && !j.at(",
+                            key,
+                            ').is_number_integer()) throw std::runtime_error("Expected integer");',
+                        );
+                    }
+
                     if (p.isOptional || propType instanceof UnionType) {
                         const [nullOrOptional, typeSet] = ((): [
                             boolean,

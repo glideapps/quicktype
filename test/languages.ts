@@ -719,6 +719,7 @@ export const CPlusPlusLanguage: Language = {
         "enum",
         "union",
         "no-defaults",
+        "integer",
     ],
     output: "quicktype.hpp",
     topLevel: "TopLevel",
