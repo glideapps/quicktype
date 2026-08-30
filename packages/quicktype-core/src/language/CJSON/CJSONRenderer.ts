@@ -5,6 +5,7 @@ import { arrayIntercalate } from "collection-utils";
 /* eslint-disable @typescript-eslint/naming-convention */
 
 import { getAccessorName } from "../../attributes/AccessorNames.js";
+import { minMaxValueForType } from "../../attributes/Constraints.js";
 import { enumCaseValues } from "../../attributes/EnumValues.js";
 import {
     ConvenienceRenderer,
@@ -2391,6 +2392,10 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                 );
                                             const object = `j${level > 0 ? level.toString() : ""}`;
                                             const value = `cJSON_GetObjectItemCaseSensitive(${object}, "${jsonName}")`;
+                                            const [minimum, maximum] =
+                                                minMaxValueForType(
+                                                    property.type,
+                                                ) ?? [];
                                             if (!property.isOptional) {
                                                 this.emitLine(
                                                     `if (!cJSON_HasObjectItem(${object}, "${jsonName}")) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
@@ -2426,6 +2431,16 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                     if (cJSON.isType !== "") {
                                                         this.emitLine(
                                                             `if (!${this.sourcelikeToString(cJSON.isType)}(${value})) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
+                                                        );
+                                                    }
+                                                    if (minimum !== undefined) {
+                                                        this.emitLine(
+                                                            `if (${value}->valuedouble < ${minimum}) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
+                                                        );
+                                                    }
+                                                    if (maximum !== undefined) {
+                                                        this.emitLine(
+                                                            `if (${value}->valuedouble > ${maximum}) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
                                                         );
                                                     }
                                                     if (

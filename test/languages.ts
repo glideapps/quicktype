@@ -569,6 +569,7 @@ export const CJSONLanguage: Language = {
     allowMissingNull: false,
     features: [
         "minmax",
+        "minmaxInteger",
         "minmaxlength",
         "pattern",
         "enum",
@@ -595,7 +596,9 @@ export const CJSONLanguage: Language = {
         /* Enum as TopLevel is not supported */
         "top-level-enum.schema",
         /* Union with Number and Integer are not supported; min/max constraints on numbers rely on the same distinction */
-        ...skipsIntFloatUnions,
+        ...skipsIntFloatUnions.filter(
+            (schema) => schema !== "minmax-integer.schema",
+        ),
         /* Union, Map and Arrays with invalid types are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
         ...skipsMapValueValidation.filter(
             (schema) => schema !== "go-schema-pattern-properties.schema",
