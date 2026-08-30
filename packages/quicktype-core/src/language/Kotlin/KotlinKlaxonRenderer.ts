@@ -27,7 +27,14 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
             (_nullType) => "null",
             (_boolType) => [e, ".boolean"],
             (_integerType) => ["(", e, ".int?.toLong() ?: ", e, ".longValue)"],
-            (_doubleType) => [e, ".double"],
+            (_doubleType) => [
+                e,
+                ".double ?: ",
+                e,
+                ".int?.toDouble() ?: ",
+                e,
+                ".longValue?.toDouble()",
+            ],
             (_stringType) => [e, ".string"],
             (arrayType) => [
                 e,
@@ -72,14 +79,17 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
         );
     }
 
-    private unionMemberJsonValueGuard(t: Type, _e: Sourcelike): Sourcelike {
+    private unionMemberJsonValueGuard(t: Type, u: UnionType): Sourcelike {
         return matchType<Sourcelike>(
             t,
             (_anyType) => "is Any",
             (_nullType) => "null",
             (_boolType) => "is Boolean",
             (_integerType) => "is Int, is Long",
-            (_doubleType) => "is Double",
+            (_doubleType) =>
+                iterableSome(u.members, (m) => m.kind === "integer")
+                    ? "is Double"
+                    : "is Double, is Int, is Long",
             (_stringType) => "is String",
             (_arrayType) => "is JsonArray<*>",
             // These could be stricter, but for now we don't allow maps
@@ -588,7 +598,7 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
                     null,
                     (name, t) => {
                         const guard = this.sourcelikeToString(
-                            this.unionMemberJsonValueGuard(t, "jv.inside"),
+                            this.unionMemberJsonValueGuard(t, u),
                         );
                         const group = groups.find((g) => g.guard === guard);
                         if (group === undefined) {
@@ -630,12 +640,7 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
                 if (maybeNull !== null) {
                     const name = this.nameForUnionMember(u, maybeNull);
                     table.push([
-                        [
-                            this.unionMemberJsonValueGuard(
-                                maybeNull,
-                                "jv.inside",
-                            ),
-                        ],
+                        [this.unionMemberJsonValueGuard(maybeNull, u)],
                         [" -> ", name, "()"],
                     ]);
                 }

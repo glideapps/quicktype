@@ -1238,9 +1238,6 @@ export const KotlinLanguage: Language = {
         "class-with-additional.schema",
         ...skipsMapValueValidation,
         // IllegalArgumentException
-        "accessors.schema",
-        "description.schema",
-        "union-list.schema",
         // KlaxonException: Need to extract inside
         "bool-string.schema",
         "integer-string.schema",
