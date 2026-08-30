@@ -167,6 +167,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
                 ];
             },
             (_transformedStringType) => {
+                if (_transformedStringType.kind === "uuid") return "S.UUID";
                 return "S.String";
             },
         );
