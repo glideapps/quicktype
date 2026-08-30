@@ -930,6 +930,7 @@ export const ObjectiveCLanguage: Language = {
     allowMissingNull: true,
     features: [
         "enum",
+        "integer",
         "minmax",
         "minmaxInteger",
         "minmaxitems",
