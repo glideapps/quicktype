@@ -1,11 +1,14 @@
 import { funPrefixNamer } from "../../Naming.js";
 import {
+    isAscii,
     isLetterOrUnderscoreOrDigit,
     legalizeCharacters,
     makeNameStyle,
 } from "../../support/Strings.js";
 
-const legalizeName = legalizeCharacters(isLetterOrUnderscoreOrDigit);
+const legalizeName = legalizeCharacters(
+    (cp) => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp),
+);
 export const enumNamingFunction = funPrefixNamer(
     "enumNamer",
     makeNameStyle("upper-underscore", legalizeName),
