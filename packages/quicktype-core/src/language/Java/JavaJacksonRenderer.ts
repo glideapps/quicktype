@@ -1,3 +1,5 @@
+import { iterableSome } from "collection-utils";
+
 import type { Name } from "../../Naming.js";
 import type { Sourcelike } from "../../Source.js";
 import { assertNever, panic } from "../../support/Support.js";
@@ -737,6 +739,16 @@ export class JacksonRenderer extends JavaRenderer {
                             this.emitLine(
                                 "mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);",
                             );
+                            if (
+                                iterableSome(
+                                    this.typeGraph.allTypesUnordered(),
+                                    (t) => t.kind === "integer",
+                                )
+                            ) {
+                                this.emitLine(
+                                    "mapper.configure(DeserializationFeature.ACCEPT_FLOAT_AS_INT, false);",
+                                );
+                            }
                             this.emitLine(
                                 "mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);",
                             );
