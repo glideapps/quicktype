@@ -229,11 +229,7 @@ export const JavaLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
-    skipSchema: [
-        "keyword-unions.schema", // generates classes with names that are case-insensitively equal
-        // The generated converter deserializes a top-level array with a raw
-        // `List`, so a mistyped element round-trips instead of failing.
-    ],
+    skipSchema: [],
     rendererOptions: {},
     // The default is array-type=list; this keeps the T[] code path
     // covered.
