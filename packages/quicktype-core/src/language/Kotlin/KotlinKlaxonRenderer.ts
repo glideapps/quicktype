@@ -5,7 +5,7 @@ import { type Sourcelike, modifySource } from "../../Source.js";
 import { camelCase } from "../../support/Strings.js";
 import { mustNotHappen } from "../../support/Support.js";
 import {
-    type ArrayType,
+    ArrayType,
     type ClassProperty,
     ClassType,
     type EnumType,
@@ -467,6 +467,13 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
     }
 
     private emitGenericConverter(): void {
+        const hasNestedUnionArrays = iterableSome(
+            this.typeGraph.allTypesUnordered(),
+            (t) =>
+                t instanceof ArrayType &&
+                t.items instanceof ArrayType &&
+                t.items.items instanceof UnionType,
+        );
         this.ensureBlankLine();
         this.emitLine(
             "private fun <T> Klaxon.convert(k: kotlin.reflect.KClass<*>, fromJson: (JsonValue) -> T, toJson: (T) -> String, isUnion: Boolean = false) =",
@@ -482,7 +489,9 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
                     ],
                     [
                         "override fun fromJson(jv: JsonValue)",
-                        " = fromJson(jv) as Any",
+                        hasNestedUnionArrays
+                            ? " = if (isUnion && jv.inside is JsonArray<*>) (jv.inside as JsonArray<*>).map { fromJson(JsonValue(it, null, null, this@convert)) } else fromJson(jv) as Any"
+                            : " = fromJson(jv) as Any",
                     ],
                     [
                         "override fun canConvert(cls: Class<*>)",
