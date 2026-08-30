@@ -150,7 +150,9 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
             (_enumType) => panic("Should already be handled."),
             (unionType) => {
                 const types = Array.from(unionType.getChildren());
-                const coerce = types.some((type) => type.kind === "bool");
+                const coerce = types.some(
+                    (type) => type.kind === "bool" || type.kind === "integer",
+                );
                 const rank = (type: Type): number =>
                     type.kind === "class" || type.kind === "object" ? 1 : 0;
                 types.sort((a, b) => rank(a) - rank(b));
@@ -186,6 +188,10 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
                     return "S.String.pipe(S.pattern(/^\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$/))";
                 if (_transformedStringType.kind === "date-time")
                     return "S.String.pipe(S.pattern(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$/))";
+                if (_transformedStringType.kind === "integer-string")
+                    return coerceStrings
+                        ? "S.NumberFromString.pipe(S.int())"
+                        : "S.String.pipe(S.pattern(/^-?\\d+$/))";
                 return "S.String";
             },
         );
