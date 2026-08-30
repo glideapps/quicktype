@@ -114,7 +114,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
             (_anyType) => "S.Any",
             (_nullType) => "S.Null",
             (_boolType) => "S.Boolean",
-            (_integerType) => "S.Number",
+            (_integerType) => "S.Int",
             (_doubleType) => "S.Number",
             (_stringType) => "S.String",
             (arrayType) => [
