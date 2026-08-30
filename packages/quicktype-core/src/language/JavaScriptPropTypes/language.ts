@@ -7,6 +7,11 @@ import {
     type IntegerRange,
 } from "../../support/IntegerRange.js";
 import { TargetLanguage } from "../../TargetLanguage.js";
+import type { StringTypeMapping } from "../../Type/TypeBuilderUtils.js";
+import type {
+    PrimitiveStringTypeKind,
+    TransformedStringTypeKind,
+} from "../../Type/index.js";
 import type { LanguageName, RendererOptions } from "../../types.js";
 
 import { JavaScriptPropTypesRenderer } from "./JavaScriptPropTypesRenderer.js";
@@ -44,6 +49,13 @@ export class JavaScriptPropTypesTargetLanguage extends TargetLanguage<
 
     public getOptions(): typeof javaScriptPropTypesOptions {
         return javaScriptPropTypesOptions;
+    }
+
+    public get stringTypeMapping(): StringTypeMapping {
+        const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> =
+            new Map();
+        mapping.set("uuid", "uuid");
+        return mapping;
     }
 
     protected makeRenderer<Lang extends LanguageName = "javascript-prop-types">(

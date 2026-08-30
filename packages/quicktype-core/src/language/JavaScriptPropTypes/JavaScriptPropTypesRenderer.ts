@@ -183,7 +183,10 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
                     "])",
                 ];
             },
-            (_transformedStringType) => {
+            (transformedStringType) => {
+                if (transformedStringType.kind === "uuid") {
+                    return '(props, name) => props[name] == null || /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(props[name]) ? null : new Error("Expected UUID")';
+                }
                 return "PropTypes.string";
             },
         );

@@ -1058,6 +1058,7 @@ export const JavaScriptPropTypesLanguage: Language = {
         "minmaxlength",
         "minmaxitems",
         "pattern",
+        "uuid",
     ],
     output: "toplevel.js",
     topLevel: "TopLevel",
