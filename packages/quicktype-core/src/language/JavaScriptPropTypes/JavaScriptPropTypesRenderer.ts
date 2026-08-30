@@ -1,6 +1,9 @@
 import { arrayIntercalate } from "collection-utils";
 
-import { minMaxItemsForType } from "../../attributes/Constraints.js";
+import {
+    minMaxItemsForType,
+    patternForType,
+} from "../../attributes/Constraints.js";
 import { ConvenienceRenderer } from "../../ConvenienceRenderer.js";
 import { type Name, type Namer, funPrefixNamer } from "../../Naming.js";
 import type { RenderContext } from "../../Renderer.js";
@@ -110,6 +113,15 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
             return ["_", this.nameForNamedType(t)];
         }
 
+        const stringType = (type: Type): Sourcelike => {
+            const pattern = patternForType(type);
+            if (pattern === undefined) return "PropTypes.string";
+            return [
+                "(props, name) => { const value = props[name]; return value == null || (typeof value === 'string' && new RegExp(\"",
+                utf16StringEscape(pattern),
+                '").test(value)) ? null : new Error("Expected matching string"); }',
+            ];
+        };
         const match = matchType<Sourcelike>(
             t,
             (_anyType) => "PropTypes.any",
@@ -117,7 +129,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
             (_boolType) => "PropTypes.bool",
             (_integerType) => "Integer",
             (_doubleType) => "PropTypes.number",
-            (_stringType) => "PropTypes.string",
+            (type) => stringType(type),
             (arrayType) => {
                 const item = this.typeMapTypeFor(arrayType.items, false);
                 const [min, max] = minMaxItemsForType(arrayType) ?? [];
