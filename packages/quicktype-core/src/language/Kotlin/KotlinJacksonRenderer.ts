@@ -225,7 +225,7 @@ import com.fasterxml.jackson.module.kotlin.*`);
         const isPrefixBool = jsonName.startsWith("is"); // https://github.com/FasterXML/jackson-module-kotlin/issues/80
         const propertyOpts: Sourcelike[] = [];
 
-        if (namesDiffer || isPrefixBool) {
+        if (namesDiffer || isPrefixBool || /^[a-z][A-Z]/.test(jsonName)) {
             propertyOpts.push(`"${escapedName}"`);
         }
 
