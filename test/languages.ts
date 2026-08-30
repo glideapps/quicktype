@@ -323,7 +323,6 @@ export const RustLanguage: Language = {
     diffViaSchema: true,
     skipDiffViaSchema: [
         "bug427.json",
-        "keywords.json",
         "recursive.json",
         "github-events.json",
         "0a91a.json",
@@ -828,7 +827,6 @@ export const SwiftLanguage: Language = {
         "bug427.json",
         "blns-object.json",
         "github-events.json",
-        "keywords.json",
         "null-safe.json",
         "0a358.json", // date-time issues
         "0a91a.json",
@@ -1194,7 +1192,6 @@ export const KotlinLanguage: Language = {
     diffViaSchema: true,
     skipDiffViaSchema: [
         "bug427.json",
-        "keywords.json",
         // TODO Investigate these
         "34702.json",
         "76ae1.json",
@@ -1277,7 +1274,6 @@ export const KotlinJacksonLanguage: Language = {
     diffViaSchema: true,
     skipDiffViaSchema: [
         "bug427.json",
-        "keywords.json",
         "blns-object.json",
         // TODO Investigate these
         "34702.json",

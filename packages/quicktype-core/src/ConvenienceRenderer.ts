@@ -531,25 +531,31 @@ export abstract class ConvenienceRenderer extends Renderer {
     ): Name | undefined {
         const namer = this.namerForObjectProperty(o, p);
         if (namer === null) return undefined;
-        // FIXME: This alternative should really depend on what the
-        // actual name of the class ends up being.  We can do this
-        // with a DependencyName.
         // Also, we currently don't have any languages where properties
         // are global, so collisions here could only occur where two
         // properties of the same class have the same name, in which case
         // the alternative would also be the same, i.e. useless.  But
         // maybe we'll need global properties for some weird language at
         // some point.
-        const alternative = `${o.getCombinedName()}_${jsonName}`;
         const order =
             assignedName === undefined
                 ? classPropertyNameOrder
                 : assignedClassPropertyNameOrder;
-        const names =
-            assignedName === undefined
-                ? [jsonName, alternative]
-                : [assignedName];
-        return new SimpleName(names, namer, order);
+        if (assignedName !== undefined) {
+            return new SimpleName([assignedName], namer, order);
+        }
+        const styledName = namer.nameStyle(jsonName);
+        const collisions = Array.from(o.getProperties().keys())
+            .filter((name) => namer.nameStyle(name) === styledName)
+            .sort();
+        if (collisions.length === 1 || collisions[0] === jsonName) {
+            return new SimpleName([jsonName], namer, order);
+        }
+        return new DependencyName(
+            namer,
+            order,
+            (lookup) => `${lookup(_className)}_${jsonName}`,
+        );
     }
 
     protected makePropertyDependencyNames(
