@@ -29,6 +29,7 @@ export class JacksonRenderer extends JavaRenderer {
         "JsonProcessingException",
         "DeserializationContext",
         "SerializerProvider",
+        "None",
     ];
 
     private mapperType(t: Type): Sourcelike {
