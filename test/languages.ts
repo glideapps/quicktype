@@ -610,7 +610,6 @@ export const CJSONLanguage: Language = {
         "multi-type-enum.schema",
         "prefix-items.schema",
         /* Constraints (min/max and regex) are not supported (for the current implementation, can be added later, should abord parsing and return NULL) */
-        "minmaxlength.schema",
         "schema-constraints.schema",
         "optional-const-ref.schema",
         /* Same unsupported min/max, length and regex constraints, applied to optional properties */
