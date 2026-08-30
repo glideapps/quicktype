@@ -1583,7 +1583,6 @@ export const HaskellLanguage: Language = {
         "empty-object.schema",
         ...skipsEnumValueValidation,
         "intersection.schema",
-        "multi-type-enum.schema",
         "keyword-unions.schema",
         "optional-any.schema",
         "ie-suffix-singularization.schema",
