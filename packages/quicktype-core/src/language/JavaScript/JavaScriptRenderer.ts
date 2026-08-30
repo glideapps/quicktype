@@ -140,6 +140,8 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
                 if (transformedStringType.kind === "date-time") {
                     return "Date";
                 }
+                if (transformedStringType.kind === "uuid")
+                    return '{ uuid: "" }';
 
                 return '""';
             },
@@ -339,6 +341,9 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
                 stringArray: stringArrayAnnotation,
                 never: neverAnnotation,
             } = this.typeAnnotations;
+            const hasUUID = Array.from(this.typeGraph.allTypesUnordered()).some(
+                (t) => t.kind === "uuid",
+            );
             this.ensureBlankLine();
             this.emitMultiline(`function invalidValue(typ${anyAnnotation}, val${anyAnnotation}, key${anyAnnotation}, parent${anyAnnotation} = '')${neverAnnotation} {
     const prettyTyp = prettyTypeName(typ);
@@ -454,7 +459,7 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
     }
     if (Array.isArray(typ)) return transformEnum(typ, val);
     if (typeof typ === "object") {
-        return typ.hasOwnProperty("pattern")      ? typeof val === "string" && new RegExp(typ.pattern).test(val) ? val : invalidValue(typ, val, key, parent)
+        return ${hasUUID ? 'typ.hasOwnProperty("uuid")         ? typeof val === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val) ? val : invalidValue(typ, val, key, parent)\n            : ' : ""}typ.hasOwnProperty("pattern")      ? typeof val === "string" && new RegExp(typ.pattern).test(val) ? val : invalidValue(typ, val, key, parent)
             : typ.hasOwnProperty("integer")      ? typeof val === "number" && val % 1 === 0 ? val : invalidValue(l("integer"), val, key, parent)
             : typ.hasOwnProperty("unionMembers") ? transformUnion(typ.unionMembers, val)
             : typ.hasOwnProperty("arrayItems")    ? transformArray(typ.arrayItems, val)
