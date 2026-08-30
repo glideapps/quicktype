@@ -2,6 +2,7 @@ import { arrayIntercalate } from "collection-utils";
 
 import {
     minMaxItemsForType,
+    minMaxLengthForType,
     patternForType,
 } from "../../attributes/Constraints.js";
 import { ConvenienceRenderer } from "../../ConvenienceRenderer.js";
@@ -114,12 +115,22 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         }
 
         const stringType = (type: Type): Sourcelike => {
+            const [min, max] = minMaxLengthForType(type) ?? [];
             const pattern = patternForType(type);
-            if (pattern === undefined) return "PropTypes.string";
+            if (min === undefined && max === undefined && pattern === undefined)
+                return "PropTypes.string";
             return [
-                "(props, name) => { const value = props[name]; return value == null || (typeof value === 'string' && new RegExp(\"",
-                utf16StringEscape(pattern),
-                '").test(value)) ? null : new Error("Expected matching string"); }',
+                "(props, name) => { const value = props[name]; return value == null || (typeof value === 'string'",
+                min === undefined ? "" : [" && value.length >= ", String(min)],
+                max === undefined ? "" : [" && value.length <= ", String(max)],
+                pattern === undefined
+                    ? ""
+                    : [
+                          ' && new RegExp("',
+                          utf16StringEscape(pattern),
+                          '").test(value)',
+                      ],
+                ') ? null : new Error("Expected bounded string"); }',
             ];
         };
         const match = matchType<Sourcelike>(
