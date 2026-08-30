@@ -7,6 +7,7 @@ import { camelCase } from "../../support/Strings.js";
 import { mustNotHappen } from "../../support/Support.js";
 import {
     type ArrayType,
+    type ClassProperty,
     ClassType,
     type EnumType,
     type MapType,
@@ -20,6 +21,13 @@ import { KotlinRenderer } from "./KotlinRenderer.js";
 import { stringEscape, unionMemberMatchPriority } from "./utils.js";
 
 export class KotlinJacksonRenderer extends KotlinRenderer {
+    protected propertyDefault(
+        p: ClassProperty,
+        _nullableOrOptional: boolean,
+    ): Sourcelike {
+        return p.isOptional || p.type.kind === "null" ? " = null" : "";
+    }
+
     private unionMemberJsonValueGuard(t: Type, _e: Sourcelike): Sourcelike {
         return matchType<Sourcelike>(
             t,
