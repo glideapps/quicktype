@@ -1771,6 +1771,7 @@ export const TypeScriptEffectSchemaLanguage: Language = {
         "minmaxlength",
         "bool-string",
         "date-time",
+        "integer-string",
     ],
     output: "TopLevel.ts",
     topLevel: "TopLevel",

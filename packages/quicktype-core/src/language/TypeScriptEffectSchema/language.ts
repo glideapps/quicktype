@@ -41,6 +41,7 @@ export class TypeScriptEffectSchemaTargetLanguage extends TargetLanguage<
         mapping.set("date", "date");
         mapping.set("time", "time");
         mapping.set("date-time", "date-time");
+        mapping.set("integer-string", "integer-string");
         return mapping;
     }
 
