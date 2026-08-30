@@ -1294,11 +1294,7 @@ export const KotlinJacksonLanguage: Language = {
         "simple-identifiers.json",
         "nst-test-suite.json",
     ],
-    skipSchema: [
-        // KlaxonException: Couldn't find a suitable constructor for class UnionValue to initialize with {}
-        "direct-union.schema",
-        "keyword-unions.schema",
-    ],
+    skipSchema: ["keyword-unions.schema"],
     skipMiscJSON: false,
     rendererOptions: { framework: "jackson" },
     quickTestRendererOptions: [],

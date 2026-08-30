@@ -23,7 +23,7 @@ export class KotlinJacksonRenderer extends KotlinRenderer {
         return matchType<Sourcelike>(
             t,
             (_anyType) => "is Any",
-            (_nullType) => "null",
+            (_nullType) => "is NullNode",
             (_boolType) => "is BooleanNode",
             (_integerType) => "is IntNode, is LongNode",
             (_doubleType) => "is IntNode, is LongNode, is DoubleNode",
@@ -73,6 +73,13 @@ import com.fasterxml.jackson.module.kotlin.*`);
             this.typeGraph.allNamedTypes(),
             (t) => t instanceof UnionType && nullableFromUnion(t) === null,
         );
+        const hasNullableUnions = iterableSome(
+            this.typeGraph.allNamedTypes(),
+            (t) =>
+                t instanceof UnionType &&
+                nullableFromUnion(t) === null &&
+                t.isNullable,
+        );
         const hasEmptyObjects = iterableSome(
             this.typeGraph.allNamedTypes(),
             (c) => c instanceof ClassType && c.getProperties().size === 0,
@@ -88,7 +95,7 @@ import com.fasterxml.jackson.module.kotlin.*`);
             usesDate ||
             usesTime
         ) {
-            this.emitGenericConverter();
+            this.emitGenericConverter(hasNullableUnions);
         }
 
         const converters: Sourcelike[][] = [];
@@ -333,7 +340,7 @@ import com.fasterxml.jackson.module.kotlin.*`);
         });
     }
 
-    private emitGenericConverter(): void {
+    private emitGenericConverter(hasNullableUnions: boolean): void {
         this.ensureBlankLine();
         this.emitMultiline(`
 @Suppress("UNCHECKED_CAST")
@@ -342,7 +349,7 @@ private fun <T> ObjectMapper.convert(k: kotlin.reflect.KClass<*>, fromJson: (Jso
 			override fun serialize(value: T, gen: JsonGenerator, provider: SerializerProvider) = gen.writeRawValue(toJson(value))
 	})
 	addDeserializer(k.java as Class<T>, object : StdDeserializer<T>(k.java as Class<T>) {
-			override fun deserialize(p: JsonParser, ctxt: DeserializationContext) = fromJson(p.readValueAsTree())
+			override fun deserialize(p: JsonParser, ctxt: DeserializationContext) = fromJson(p.readValueAsTree())${hasNullableUnions ? "\n\t\t\toverride fun getNullValue(ctxt: DeserializationContext) = if (isUnion) fromJson(NullNode.instance) else null" : ""}
 	})
 })`);
     }
@@ -364,7 +371,7 @@ private fun <T> ObjectMapper.convert(k: kotlin.reflect.KClass<*>, fromJson: (Jso
             });
             if (maybeNull !== null) {
                 const name = this.nameForUnionMember(u, maybeNull);
-                toJsonTable.push([["is ", name], [' -> "null"']]);
+                toJsonTable.push([["is ", name], [" -> null"]]);
             }
 
             this.emitTable(toJsonTable);
