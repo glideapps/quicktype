@@ -994,7 +994,7 @@ export const JavaScriptPropTypesLanguage: Language = {
     features: ["enum", "union"],
     output: "toplevel.js",
     topLevel: "TopLevel",
-    skipJSON: ["bug790.json"], // renderer does not support recursion
+    skipJSON: [],
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
         "class-with-additional.schema",
