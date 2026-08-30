@@ -1,5 +1,6 @@
 import { arrayIntercalate } from "collection-utils";
 
+import { minMaxItemsForType } from "../../attributes/Constraints.js";
 import { ConvenienceRenderer } from "../../ConvenienceRenderer.js";
 import { type Name, type Namer, funPrefixNamer } from "../../Naming.js";
 import type { RenderContext } from "../../Renderer.js";
@@ -117,11 +118,25 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
             (_integerType) => "Integer",
             (_doubleType) => "PropTypes.number",
             (_stringType) => "PropTypes.string",
-            (arrayType) => [
-                "PropTypes.arrayOf(",
-                this.typeMapTypeFor(arrayType.items, false),
-                ")",
-            ],
+            (arrayType) => {
+                const item = this.typeMapTypeFor(arrayType.items, false);
+                const [min, max] = minMaxItemsForType(arrayType) ?? [];
+                if (min === undefined && max === undefined)
+                    return ["PropTypes.arrayOf(", item, ")"];
+                return [
+                    "(props, name, ...args) => { const value = props[name]; if (value != null && (",
+                    min === undefined
+                        ? "false"
+                        : ["value.length < ", String(min)],
+                    " || ",
+                    max === undefined
+                        ? "false"
+                        : ["value.length > ", String(max)],
+                    ')) return new Error("Expected bounded array"); return PropTypes.arrayOf(',
+                    item,
+                    ")(props, name, ...args); }",
+                ];
+            },
             (_classType) => panic("Should already be handled."),
             (mapType) => [
                 "PropTypes.objectOf(",
