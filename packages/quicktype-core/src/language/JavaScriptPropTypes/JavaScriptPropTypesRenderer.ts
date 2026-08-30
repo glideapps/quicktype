@@ -123,7 +123,11 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
                 ")",
             ],
             (_classType) => panic("Should already be handled."),
-            (_mapType) => "PropTypes.object",
+            (mapType) => [
+                "PropTypes.objectOf(",
+                this.typeMapTypeFor(mapType.values, false),
+                ")",
+            ],
             (_enumType) => panic("Should already be handled."),
             (unionType) => {
                 const isNullableEnum =
