@@ -2,6 +2,7 @@ import { arrayIntercalate, iterableSome } from "collection-utils";
 
 import {
     minMaxItemsForType,
+    minMaxLengthForType,
     minMaxValueForType,
 } from "../../attributes/Constraints.js";
 import type { Name } from "../../Naming.js";
@@ -317,6 +318,15 @@ import com.fasterxml.jackson.module.kotlin.*`);
                         checks.push(`${numberBefore} >= ${numberMin}${after}`);
                     if (numberMax !== undefined)
                         checks.push(`${numberBefore} <= ${numberMax}${after}`);
+                    const [lengthMin, lengthMax] =
+                        minMaxLengthForType(p.type) ?? [];
+                    const lengthBefore = p.isOptional
+                        ? `${n}?.let { require(it.length`
+                        : `require(${n}.length`;
+                    if (lengthMin !== undefined)
+                        checks.push(`${lengthBefore} >= ${lengthMin}${after}`);
+                    if (lengthMax !== undefined)
+                        checks.push(`${lengthBefore} <= ${lengthMax}${after}`);
                 });
                 if (checks.length > 0)
                     this.emitBlock("init", () =>
