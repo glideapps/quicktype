@@ -3,6 +3,7 @@ import { arrayIntercalate } from "collection-utils";
 import {
     minMaxItemsForType,
     minMaxLengthForType,
+    minMaxValueForType,
     patternForType,
 } from "../../attributes/Constraints.js";
 import { ConvenienceRenderer } from "../../ConvenienceRenderer.js";
@@ -133,13 +134,28 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
                 ') ? null : new Error("Expected bounded string"); }',
             ];
         };
+
+        const numberType = (type: Type, integer: boolean): Sourcelike => {
+            const [min, max] = minMaxValueForType(type) ?? [];
+            if (min === undefined && max === undefined)
+                return integer ? "Integer" : "PropTypes.number";
+            return [
+                "(props, name) => { const value = props[name]; return value == null || (",
+                integer
+                    ? "Number.isInteger(value)"
+                    : "typeof value === 'number'",
+                min === undefined ? "" : [" && value >= ", String(min)],
+                max === undefined ? "" : [" && value <= ", String(max)],
+                ') ? null : new Error("Expected bounded number"); }',
+            ];
+        };
         const match = matchType<Sourcelike>(
             t,
             (_anyType) => "PropTypes.any",
             (_nullType) => "PropTypes.oneOf([null])",
             (_boolType) => "PropTypes.bool",
-            (_integerType) => "Integer",
-            (_doubleType) => "PropTypes.number",
+            (integerType) => numberType(integerType, true),
+            (doubleType) => numberType(doubleType, false),
             (type) => stringType(type),
             (arrayType) => {
                 const item = this.typeMapTypeFor(arrayType.items, false);

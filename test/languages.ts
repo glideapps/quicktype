@@ -1059,6 +1059,7 @@ export const JavaScriptPropTypesLanguage: Language = {
         "union",
         "integer",
         "minmaxlength",
+        "minmax",
         "minmaxitems",
         "pattern",
     ],
