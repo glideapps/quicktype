@@ -1323,6 +1323,7 @@ export const KotlinJacksonLanguage: Language = {
         "date-time",
         "integer",
         "minmaxitems",
+        "minmax",
     ],
     output: "TopLevel.kt",
     topLevel: "TopLevel",
