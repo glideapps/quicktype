@@ -55,6 +55,8 @@ export class JavaScriptPropTypesTargetLanguage extends TargetLanguage<
         const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> =
             new Map();
         mapping.set("uuid", "uuid");
+        mapping.set("date", "date-time");
+        mapping.set("date-time", "date-time");
         return mapping;
     }
 
