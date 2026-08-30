@@ -290,6 +290,7 @@ export const PythonLanguage: Language = {
         "integer-string",
         "bool-string",
         "uuid",
+        "integer",
     ],
     output: "quicktype.py",
     topLevel: "TopLevel",
@@ -331,7 +332,7 @@ export const RustLanguage: Language = {
         "f6a65.json",
     ],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults"],
+    features: ["enum", "union", "no-defaults", "integer"],
     output: "module_under_test.rs",
     topLevel: "TopLevel",
     skipJSON: [],
@@ -386,7 +387,7 @@ export const CrystalLanguage: Language = {
         "127a1.json",
     ],
     allowMissingNull: true,
-    features: ["union", "no-defaults"],
+    features: ["union", "no-defaults", "integer"],
     output: "TopLevel.cr",
     topLevel: "TopLevel",
     skipJSON: [
@@ -463,7 +464,7 @@ export const RubyLanguage: Language = {
         "e8b04.json",
     ],
     allowMissingNull: true,
-    features: ["enum", "union", "no-defaults"],
+    features: ["enum", "union", "no-defaults", "integer", "strict-optional"],
     output: "TopLevel.rb",
     topLevel: "TopLevel",
     skipJSON: [],
@@ -489,7 +490,7 @@ export const GoLanguage: Language = {
         "e8b04.json",
     ],
     allowMissingNull: false,
-    features: ["union"],
+    features: ["union", "integer"],
     output: "quicktype.go",
     topLevel: "TopLevel",
     skipJSON: [
@@ -778,7 +779,7 @@ export const ElmLanguage: Language = {
         "e8b04.json",
     ],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults"],
+    features: ["enum", "union", "no-defaults", "integer"],
     output: "QuickType.elm",
     topLevel: "QuickType",
     // Elm type aliases cannot be recursive, so all inputs that produce
@@ -843,7 +844,7 @@ export const SwiftLanguage: Language = {
         "fcca3.json",
     ],
     allowMissingNull: true,
-    features: ["enum", "union", "no-defaults", "date-time"],
+    features: ["enum", "union", "no-defaults", "date-time", "integer"],
     output: "quicktype.swift",
     topLevel: "TopLevel",
     skipJSON: [
@@ -1014,7 +1015,7 @@ export const FlowLanguage: Language = {
     diffViaSchema: false,
     skipDiffViaSchema: [],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults", "strict-optional"],
+    features: ["enum", "union", "no-defaults", "strict-optional", "date-time"],
     output: "TopLevel.js",
     topLevel: "TopLevel",
     skipJSON: [],
@@ -1193,7 +1194,7 @@ export const KotlinLanguage: Language = {
         "76ae1.json",
     ],
     allowMissingNull: true,
-    features: ["enum", "union", "no-defaults", "date-time"],
+    features: ["enum", "union", "no-defaults", "date-time", "integer"],
     output: "TopLevel.kt",
     topLevel: "TopLevel",
     skipJSON: [
@@ -1318,7 +1319,7 @@ export const KotlinXLanguage: Language = {
     // date-time.schema itself stays skipped: its union-array properties
     // hit the union limitation above. The serializers are exercised by
     // the JSON inputs with inferred date-times instead.
-    features: ["enum", "no-defaults", "date-time"],
+    features: ["enum", "no-defaults", "date-time", "integer"],
     output: "TopLevel.kt",
     topLevel: "TopLevel",
     skipJSON: [
@@ -1586,7 +1587,7 @@ export const PHPLanguage: Language = {
     diffViaSchema: false,
     skipDiffViaSchema: [],
     allowMissingNull: true,
-    features: ["enum", "uuid"],
+    features: ["enum", "union", "no-defaults", "uuid", "integer"],
     output: "TopLevel.php",
     topLevel: "TopLevel",
     skipJSON: [
@@ -1654,6 +1655,7 @@ export const TypeScriptZodLanguage: Language = {
         "date-time",
         "integer",
         "minmaxitems",
+        "strict-optional",
     ],
     output: "TopLevel.ts",
     topLevel: "TopLevel",
@@ -1683,7 +1685,7 @@ export const TypeScriptEffectSchemaLanguage: Language = {
         "26b49.json",
     ],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults", "integer"],
+    features: ["enum", "union", "no-defaults", "integer", "strict-optional"],
     output: "TopLevel.ts",
     topLevel: "TopLevel",
     skipJSON: [],
