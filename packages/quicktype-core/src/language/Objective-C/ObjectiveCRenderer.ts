@@ -8,6 +8,7 @@ import {
 
 import {
     minMaxItemsForType,
+    minMaxLengthForType,
     minMaxValueForType,
     patternForType,
 } from "../../attributes/Constraints.js";
@@ -893,6 +894,18 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                                 if (pattern !== undefined) {
                                     this.emitLine(
                                         `if (dict[@"${objectiveCStringEscape(jsonName)}"] && [dict[@"${objectiveCStringEscape(jsonName)}"] rangeOfString:@"${objectiveCStringEscape(pattern)}" options:NSRegularExpressionSearch].location == NSNotFound) return nil;`,
+                                    );
+                                }
+                                const [minLength, maxLength] =
+                                    minMaxLengthForType(property.type) ?? [];
+                                if (minLength !== undefined) {
+                                    this.emitLine(
+                                        `if (dict[@"${objectiveCStringEscape(jsonName)}"] && [dict[@"${objectiveCStringEscape(jsonName)}"] length] < ${minLength}) return nil;`,
+                                    );
+                                }
+                                if (maxLength !== undefined) {
+                                    this.emitLine(
+                                        `if ([dict[@"${objectiveCStringEscape(jsonName)}"] length] > ${maxLength}) return nil;`,
                                     );
                                 }
                                 if (
