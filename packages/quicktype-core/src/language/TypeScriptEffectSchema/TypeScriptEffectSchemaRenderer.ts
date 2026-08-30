@@ -1,5 +1,6 @@
 import { arrayIntercalate } from "collection-utils";
 
+import { minMaxItemsForType } from "../../attributes/Constraints.js";
 import { ConvenienceRenderer } from "../../ConvenienceRenderer.js";
 import { type Name, type Namer, funPrefixNamer } from "../../Naming.js";
 import type { RenderContext } from "../../Renderer.js";
@@ -117,11 +118,22 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
             (_integerType) => "S.Int",
             (_doubleType) => "S.Number",
             (_stringType) => "S.String",
-            (arrayType) => [
-                "S.Array(",
-                this.typeMapTypeFor(arrayType.items, false),
-                ")",
-            ],
+            (arrayType) => {
+                const [minItems, maxItems] =
+                    minMaxItemsForType(arrayType) ?? [];
+                const schema: Sourcelike[] = [
+                    "S.Array(",
+                    this.typeMapTypeFor(arrayType.items, false),
+                    ")",
+                ];
+                if (minItems !== undefined && minItems > 0) {
+                    schema.push(".pipe(S.minItems(", minItems.toString(), "))");
+                }
+                if (maxItems !== undefined) {
+                    schema.push(".pipe(S.maxItems(", maxItems.toString(), "))");
+                }
+                return schema;
+            },
             (_classType) => panic("Should already be handled."),
             (_mapType) => [
                 "S.Record({ key: S.String, value: ",
