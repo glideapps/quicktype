@@ -114,7 +114,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
             (_anyType) => "PropTypes.any",
             (_nullType) => "PropTypes.oneOf([null])",
             (_boolType) => "PropTypes.bool",
-            (_integerType) => "PropTypes.number",
+            (_integerType) => "Integer",
             (_doubleType) => "PropTypes.number",
             (_stringType) => "PropTypes.string",
             (arrayType) => [
@@ -205,6 +205,14 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
     protected emitImports(): void {
         this.ensureBlankLine();
         this.emitLine(this.importStatement("PropTypes", '"prop-types"'));
+        if (
+            [...this.typeGraph.allTypesUnordered()].some(
+                (t) => t.kind === "integer",
+            )
+        )
+            this.emitLine(
+                'const Integer = (props, name) => props[name] == null || Number.isInteger(props[name]) ? null : new Error("Expected integer");',
+            );
     }
 
     private emitExport(name: Sourcelike, value: Sourcelike): void {
