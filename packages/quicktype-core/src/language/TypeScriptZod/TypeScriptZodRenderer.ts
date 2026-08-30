@@ -3,6 +3,7 @@ import { arrayIntercalate } from "collection-utils";
 import {
     minMaxItemsForType,
     minMaxLengthForType,
+    minMaxValueForType,
     patternForType,
 } from "../../attributes/Constraints.js";
 import { ConvenienceRenderer } from "../../ConvenienceRenderer.js";
@@ -124,13 +125,23 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
                       ],
             ];
         };
+
+        const numberType = (type: Type, integer: boolean): Sourcelike => {
+            const [min, max] = minMaxValueForType(type) ?? [];
+            return [
+                "z.number()",
+                integer ? ".int()" : "",
+                min === undefined ? "" : [".min(", String(min), ")"],
+                max === undefined ? "" : [".max(", String(max), ")"],
+            ];
+        };
         const match = matchType<Sourcelike>(
             t,
             (_anyType) => "z.any()",
             (_nullType) => "z.null()",
             (_boolType) => "z.boolean()",
-            (_integerType) => "z.number().int()",
-            (_doubleType) => "z.number()",
+            (integerType) => numberType(integerType, true),
+            (doubleType) => numberType(doubleType, false),
             (string) => stringType(string),
             (arrayType) => {
                 const [minItems, maxItems] =
