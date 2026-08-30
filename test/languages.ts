@@ -995,7 +995,7 @@ export const JavaScriptPropTypesLanguage: Language = {
     diffViaSchema: false,
     skipDiffViaSchema: [],
     allowMissingNull: false,
-    features: ["enum", "union"],
+    features: ["enum", "union", "integer"],
     output: "toplevel.js",
     topLevel: "TopLevel",
     skipJSON: [],
