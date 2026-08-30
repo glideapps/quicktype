@@ -159,7 +159,7 @@ export class PikeRenderer extends ConvenienceRenderer {
             this.forEachEnumCase(e, "none", (name, jsonName) => {
                 table.push([
                     [name, ' = "', stringEscape(jsonName), '", '],
-                    ['// json: "', jsonName, '"'],
+                    ['// json: "', stringEscape(jsonName), '"'],
                 ]);
             });
             this.emitTable(table);
@@ -229,7 +229,7 @@ export class PikeRenderer extends ConvenienceRenderer {
             table.push([
                 [pikeType, " "],
                 [name, "; "],
-                ['// json: "', jsonName, '"'],
+                ['// json: "', stringEscape(jsonName), '"'],
             ]);
         });
         this.emitTable(table);

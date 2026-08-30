@@ -1480,9 +1480,7 @@ export const PikeLanguage: Language = {
     features: [],
     output: "TopLevel.pmod",
     topLevel: "TopLevel",
-    skipJSON: [
-        "identifiers.json", // quicktype internal error
-    ],
+    skipJSON: [],
     skipMiscJSON: false,
     skipSchema: [
         // no implicit cast int <-> float in Pike
