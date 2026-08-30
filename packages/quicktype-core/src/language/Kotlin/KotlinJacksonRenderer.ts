@@ -1,5 +1,6 @@
 import { arrayIntercalate, iterableSome } from "collection-utils";
 
+import { minMaxItemsForType } from "../../attributes/Constraints.js";
 import type { Name } from "../../Naming.js";
 import { type Sourcelike, modifySource } from "../../Source.js";
 import { camelCase } from "../../support/Strings.js";
@@ -284,6 +285,25 @@ import com.fasterxml.jackson.module.kotlin.*`);
         );
         if (isTopLevel) {
             this.emitBlock(")", () => {
+                const checks: string[] = [];
+                this.forEachClassProperty(c, "none", (name, _json, p) => {
+                    const [min, max] = minMaxItemsForType(p.type) ?? [];
+                    const n = this.sourcelikeToString(name);
+                    const before = p.isOptional
+                        ? `${n}?.let { require(it.size`
+                        : `require(${n}.size`;
+                    const after = p.isOptional ? ") }" : ")";
+                    if (min !== undefined)
+                        checks.push(`${before} >= ${min}${after}`);
+                    if (max !== undefined)
+                        checks.push(`${before} <= ${max}${after}`);
+                });
+                if (checks.length > 0)
+                    this.emitBlock("init", () =>
+                        checks.forEach((check) => {
+                            this.emitLine(check);
+                        }),
+                    );
                 this.emitLine("fun toJson() = mapper.writeValueAsString(this)");
                 this.ensureBlankLine();
                 this.emitBlock("companion object", () => {
