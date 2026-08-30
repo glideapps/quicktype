@@ -355,9 +355,12 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
 
     // The "this" type can't be `dynamic`, so we have to force it to `object`.
     private topLevelResultType(t: Type): Sourcelike {
-        return t.kind === "any" || t.kind === "none"
-            ? "object"
-            : this.csType(t);
+        const targetType = followTargetType(t);
+        return targetType instanceof UnionType
+            ? this.csType(targetType)
+            : t.kind === "any" || t.kind === "none"
+              ? "object"
+              : this.csType(t);
     }
 
     private emitFromJsonForTopLevel(t: Type, name: Name): void {

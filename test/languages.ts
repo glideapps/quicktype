@@ -133,9 +133,7 @@ export const CSharpLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
-    skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
-    ],
+    skipSchema: [],
     // The default framework is SystemTextJson; this fixture deliberately
     // pins NewtonSoft so the Newtonsoft renderer keeps end-to-end coverage.
     rendererOptions: { "check-required": "true", framework: "NewtonSoft" },
@@ -186,7 +184,6 @@ export const CSharpLanguageSystemTextJson: Language = {
     skipJSON: [],
     skipMiscJSON: false,
     skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
         // The following skips are pre-existing System.Text.Json renderer issues,
         // found when first enabling the schema fixture for this language:
         // minmaxlength.schema, optional-constraints.schema, and
