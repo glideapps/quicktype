@@ -1,3 +1,5 @@
+import { arrayIntercalate } from "collection-utils";
+
 // FIXME: NEEDS REFACTOR
 /* eslint-disable @typescript-eslint/no-shadow */
 /* eslint-disable @typescript-eslint/naming-convention */
@@ -659,6 +661,18 @@ export class CJSONRenderer extends ConvenienceRenderer {
      */
     protected emitUnionPrototypes(unionType: UnionType): void {
         const unionName = this.nameForNamedType(unionType);
+        const checks: Sourcelike[] = Array.from(
+            removeNullFromUnion(unionType)[1],
+            (type) => [this.quicktypeTypeToCJSON(type, false).isType, "(j)"],
+        );
+
+        this.emitLine(
+            "#define cJSON_Is",
+            unionName,
+            "(j) (",
+            arrayIntercalate(" || ", checks),
+            ")",
+        );
 
         this.emitLine(
             "struct ",
@@ -2411,7 +2425,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                 () => {
                                                     if (cJSON.isType !== "") {
                                                         this.emitLine(
-                                                            `if (!${cJSON.isType}(${value})) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
+                                                            `if (!${this.sourcelikeToString(cJSON.isType)}(${value})) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
                                                         );
                                                     }
                                                     if (
@@ -2789,7 +2803,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                             ""
                                                                         ) {
                                                                             this.emitLine(
-                                                                                `if (${nullable}!${items.isType}(${element})) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
+                                                                                `if (${nullable}!${this.sourcelikeToString(items.isType)}(${element})) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
                                                                             );
                                                                         }
                                                                         const add =
@@ -5665,7 +5679,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                     cType: ["struct ", this.nameForNamedType(unionType)],
                     optionalQualifier: "*",
                     cjsonType: "cJSON_Union",
-                    isType: "",
+                    isType: ["cJSON_Is", this.nameForNamedType(unionType)],
                     getValue: [
                         "cJSON_Get",
                         this.nameForNamedType(unionType),

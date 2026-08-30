@@ -564,7 +564,6 @@ export const CJSONLanguage: Language = {
         /* Union with Number and Integer are not supported; min/max constraints on numbers rely on the same distinction */
         ...skipsIntFloatUnions,
         /* Union, Map and Arrays with invalid types are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
-        "class-with-additional.schema",
         ...skipsMapValueValidation.filter(
             (schema) => schema !== "go-schema-pattern-properties.schema",
         ),
