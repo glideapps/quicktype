@@ -2,6 +2,7 @@ import { arrayIntercalate } from "collection-utils";
 
 import {
     minMaxItemsForType,
+    minMaxLengthForType,
     patternForType,
 } from "../../attributes/Constraints.js";
 import { ConvenienceRenderer } from "../../ConvenienceRenderer.js";
@@ -160,7 +161,12 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
 
     private typeMapString(t: Type): Sourcelike {
         const pattern = patternForType(t);
-        return pattern === undefined ? '""' : `p(${JSON.stringify(pattern)})`;
+        const type =
+            pattern === undefined ? '""' : `p(${JSON.stringify(pattern)})`;
+        const [min, max] = minMaxLengthForType(t) ?? [];
+        return min === undefined && max === undefined
+            ? type
+            : `s(${type}, ${min ?? "undefined"}, ${max ?? "undefined"})`;
     }
 
     private typeMapTypeForProperty(p: ClassProperty): Sourcelike {
@@ -474,6 +480,7 @@ ${hasArrayConstraints ? '        if ((typ.min !== undefined && val.length < typ.
     if (Array.isArray(typ)) return transformEnum(typ, val);
     if (typeof typ === "object") {
         return ${hasUUID ? 'typ.hasOwnProperty("uuid")         ? typeof val === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val) ? val : invalidValue(typ, val, key, parent)\n            : ' : ""}typ.hasOwnProperty("pattern")      ? typeof val === "string" && new RegExp(typ.pattern).test(val) ? val : invalidValue(typ, val, key, parent)
+            : typ.hasOwnProperty("string")       ? typeof val === "string" && (typ.min === undefined || val.length >= typ.min) && (typ.max === undefined || val.length <= typ.max) ? transform(val, typ.string, getProps, key, parent) : invalidValue(typ, val, key, parent)
             : typ.hasOwnProperty("integer")      ? typeof val === "number" && val % 1 === 0 ? val : invalidValue(l("integer"), val, key, parent)
             : typ.hasOwnProperty("unionMembers") ? transformUnion(typ.unionMembers, val)
             : typ.hasOwnProperty("arrayItems")    ? transformArray(${hasArrayConstraints ? "typ" : "typ.arrayItems"}, val)
@@ -507,6 +514,10 @@ function i(typ${anyAnnotation}) {
 
 function p(pattern${anyAnnotation}) {
     return { pattern };
+}
+
+function s(typ${anyAnnotation}, min${anyAnnotation}, max${anyAnnotation}) {
+    return { string: typ, min, max };
 }
 
 function u(...typs${anyArrayAnnotation}) {
