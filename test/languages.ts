@@ -1230,7 +1230,6 @@ export const KotlinLanguage: Language = {
         "php-mixed-union.json",
         "nst-test-suite.json",
         // These should be enabled
-        "nbl-stats.json",
         // TODO Investigate these
         "af2d1.json",
     ],
