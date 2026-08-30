@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -205,11 +205,14 @@ describe("quicktype-core package", () => {
     // — without the marker the ESM build would be loaded as CommonJS and
     // every import would fail at runtime.
     test("npm pack includes both builds and the ESM marker", () => {
-        const packOutput = execFileSync(
-            "npm",
-            ["pack", "--dry-run", "--json"],
-            { cwd: coreDirectory, encoding: "utf8" },
-        );
+        // Run through a shell: on Windows npm is a "npm.cmd" batch shim,
+        // which Node refuses to spawn directly and cannot resolve under the
+        // bare name "npm". The command is a fixed literal, so there is
+        // nothing for the shell to interpolate.
+        const packOutput = execSync("npm pack --dry-run --json", {
+            cwd: coreDirectory,
+            encoding: "utf8",
+        });
         const [{ files }] = JSON.parse(packOutput) as Array<{
             files: Array<{ path: string }>;
         }>;
