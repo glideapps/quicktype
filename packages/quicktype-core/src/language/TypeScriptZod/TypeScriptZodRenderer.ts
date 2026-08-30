@@ -163,7 +163,13 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
                                   : 1;
                         return rank(a) - rank(b);
                     })
-                    .map((type: Type) => this.typeMapTypeFor(type, false));
+                    .map((type: Type) => {
+                        const schema = this.typeMapTypeFor(type, false);
+                        return type.kind === "bool-string" &&
+                            unionType.findMember("bool") !== undefined
+                            ? [schema, '.transform(x => x === "true")']
+                            : schema;
+                    });
                 return ["z.union([", ...arrayIntercalate(", ", children), "])"];
             },
             (_transformedStringType) => {
@@ -172,6 +178,9 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
                 }
                 if (_transformedStringType.kind === "uuid") {
                     return "z.string().uuid()";
+                }
+                if (_transformedStringType.kind === "bool-string") {
+                    return 'z.enum(["true", "false"])';
                 }
 
                 return "z.string()";
