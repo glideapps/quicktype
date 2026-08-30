@@ -1296,7 +1296,6 @@ export const KotlinJacksonLanguage: Language = {
         "nst-test-suite.json",
     ],
     skipSchema: [
-        "implicit-class-array-union.schema",
         // KlaxonException: Couldn't find a suitable constructor for class UnionValue to initialize with {}
         "direct-union.schema",
         "keyword-unions.schema",

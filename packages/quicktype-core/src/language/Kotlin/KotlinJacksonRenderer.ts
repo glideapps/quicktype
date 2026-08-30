@@ -412,13 +412,13 @@ private fun <T> ObjectMapper.convert(k: kotlin.reflect.KClass<*>, fromJson: (Jso
                     );
                     let expr: Sourcelike = [
                         ordered[ordered.length - 1].name,
-                        "(mapper.treeToValue(jn))",
+                        "(mapper.convertValue(jn))",
                     ];
                     for (let i = ordered.length - 2; i >= 0; i--) {
                         expr = [
                             "try { ",
                             ordered[i].name,
-                            "(mapper.treeToValue(jn)) } catch (e: Exception) { ",
+                            "(mapper.convertValue(jn)) } catch (e: Exception) { ",
                             expr,
                             " }",
                         ];
