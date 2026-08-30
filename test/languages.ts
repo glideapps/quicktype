@@ -570,6 +570,7 @@ export const CJSONLanguage: Language = {
     features: [
         "minmax",
         "minmaxInteger",
+        "minmaxitems",
         "minmaxlength",
         "pattern",
         "enum",
