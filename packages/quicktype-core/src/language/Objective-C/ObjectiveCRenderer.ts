@@ -855,10 +855,13 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                             (_name, jsonName, property) => {
                                 if (
                                     !property.isOptional &&
-                                    property.type.kind === "bool"
+                                    (property.type.kind === "bool" ||
+                                        property.type instanceof ArrayType)
                                 ) {
                                     this.emitLine(
-                                        `if (![dict[@"${objectiveCStringEscape(jsonName)}"] isKindOfClass:NSNumber.class]) return nil;`,
+                                        `if (![dict[@"${objectiveCStringEscape(jsonName)}"] isKindOfClass:`,
+                                        this.jsonType(property.type)[0],
+                                        ".class]) return nil;",
                                     );
                                 }
                             },
