@@ -237,7 +237,7 @@ export const JavaLanguage: Language = {
     diffViaSchema: false,
     skipDiffViaSchema: [],
     allowMissingNull: false,
-    features: ["enum", "union", "uuid", "date-time"],
+    features: ["enum", "union", "uuid", "date-time", "integer"],
     output: "src/main/java/io/quicktype/TopLevel.java",
     topLevel: "TopLevel",
     skipJSON: [],
