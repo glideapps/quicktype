@@ -103,7 +103,11 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
         return ["S.optional(", this.typeMapTypeFor(p.type), ")"];
     }
 
-    private typeMapTypeFor(t: Type, required = true): Sourcelike {
+    private typeMapTypeFor(
+        t: Type,
+        required = true,
+        coerceStrings = false,
+    ): Sourcelike {
         if (t.kind === "class" || t.kind === "object" || t.kind === "enum") {
             const name = this.nameForNamedType(t);
             if (this.emittedObjects.has(name)) {
@@ -146,6 +150,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
             (_enumType) => panic("Should already be handled."),
             (unionType) => {
                 const types = Array.from(unionType.getChildren());
+                const coerce = types.some((type) => type.kind === "bool");
                 const rank = (type: Type): number =>
                     type.kind === "class" || type.kind === "object" ? 1 : 0;
                 types.sort((a, b) => rank(a) - rank(b));
@@ -155,7 +160,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
                     if (type.kind === "null") {
                         nullable = true;
                     } else {
-                        children.push(this.typeMapTypeFor(type, false));
+                        children.push(this.typeMapTypeFor(type, false, coerce));
                     }
                 }
 
@@ -171,6 +176,10 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
             },
             (_transformedStringType) => {
                 if (_transformedStringType.kind === "uuid") return "S.UUID";
+                if (_transformedStringType.kind === "bool-string")
+                    return coerceStrings
+                        ? 'S.transform(S.Literal("true", "false"), S.Boolean, { strict: true, decode: (value) => value === "true", encode: (value) => value ? "true" : "false" })'
+                        : 'S.Literal("true", "false")';
                 return "S.String";
             },
         );

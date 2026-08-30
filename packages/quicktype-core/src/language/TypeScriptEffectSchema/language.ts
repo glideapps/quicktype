@@ -37,6 +37,7 @@ export class TypeScriptEffectSchemaTargetLanguage extends TargetLanguage<
             PrimitiveStringTypeKind
         >();
         mapping.set("uuid", "uuid");
+        mapping.set("bool-string", "bool-string");
         return mapping;
     }
 
