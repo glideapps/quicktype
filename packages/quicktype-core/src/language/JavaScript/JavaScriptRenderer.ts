@@ -1,6 +1,9 @@
 import { arrayIntercalate } from "collection-utils";
 
-import { patternForType } from "../../attributes/Constraints.js";
+import {
+    minMaxItemsForType,
+    patternForType,
+} from "../../attributes/Constraints.js";
 import { ConvenienceRenderer } from "../../ConvenienceRenderer.js";
 import { type Name, type Namer, funPrefixNamer } from "../../Naming.js";
 import type { RenderContext } from "../../Renderer.js";
@@ -126,7 +129,14 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
             (_integerType) => "i(0)",
             (_doubleType) => "3.14",
             (stringType) => this.typeMapString(stringType),
-            (arrayType) => ["a(", this.typeMapTypeFor(arrayType.items), ")"],
+            (arrayType) => {
+                const [min, max] = minMaxItemsForType(arrayType) ?? [];
+                const suffix =
+                    min === undefined && max === undefined
+                        ? ")"
+                        : `, ${min ?? "undefined"}, ${max ?? "undefined"})`;
+                return ["a(", this.typeMapTypeFor(arrayType.items), suffix];
+            },
             (_classType) => panic("We handled this above"),
             (mapType) => ["m(", this.typeMapTypeFor(mapType.values), ")"],
             (_enumType) => panic("We handled this above"),
@@ -344,6 +354,9 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
             const hasUUID = Array.from(this.typeGraph.allTypesUnordered()).some(
                 (t) => t.kind === "uuid",
             );
+            const hasArrayConstraints = Array.from(
+                this.typeGraph.allTypesUnordered(),
+            ).some((t) => minMaxItemsForType(t) !== undefined);
             this.ensureBlankLine();
             this.emitMultiline(`function invalidValue(typ${anyAnnotation}, val${anyAnnotation}, key${anyAnnotation}, parent${anyAnnotation} = '')${neverAnnotation} {
     const prettyTyp = prettyTypeName(typ);
@@ -410,7 +423,8 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
     function transformArray(typ${anyAnnotation}, val${anyAnnotation})${anyAnnotation} {
         // val must be an array with no invalid elements
         if (!Array.isArray(val)) return invalidValue(l("array"), val, key, parent);
-        return val.map(el => transform(el, typ, getProps));
+${hasArrayConstraints ? '        if ((typ.min !== undefined && val.length < typ.min) || (typ.max !== undefined && val.length > typ.max)) return invalidValue(l("array"), val, key, parent);' : ""}
+        return val.map(el => transform(el, typ${hasArrayConstraints ? ".arrayItems" : ""}, getProps));
     }
 
     function transformDate(val${anyAnnotation})${anyAnnotation} {
@@ -462,7 +476,7 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
         return ${hasUUID ? 'typ.hasOwnProperty("uuid")         ? typeof val === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val) ? val : invalidValue(typ, val, key, parent)\n            : ' : ""}typ.hasOwnProperty("pattern")      ? typeof val === "string" && new RegExp(typ.pattern).test(val) ? val : invalidValue(typ, val, key, parent)
             : typ.hasOwnProperty("integer")      ? typeof val === "number" && val % 1 === 0 ? val : invalidValue(l("integer"), val, key, parent)
             : typ.hasOwnProperty("unionMembers") ? transformUnion(typ.unionMembers, val)
-            : typ.hasOwnProperty("arrayItems")    ? transformArray(typ.arrayItems, val)
+            : typ.hasOwnProperty("arrayItems")    ? transformArray(${hasArrayConstraints ? "typ" : "typ.arrayItems"}, val)
             : typ.hasOwnProperty("props")         ? transformObject(getProps(typ), typ.additional, val)
             : invalidValue(typ, val, key, parent);
     }
@@ -483,8 +497,8 @@ function l(typ${anyAnnotation}) {
     return { literal: typ };
 }
 
-function a(typ${anyAnnotation}) {
-    return { arrayItems: typ };
+function a(typ${anyAnnotation}${hasArrayConstraints ? `, min${anyAnnotation} = undefined, max${anyAnnotation} = undefined` : ""}) {
+    return { arrayItems: typ${hasArrayConstraints ? ", min, max" : ""} };
 }
 
 function i(typ${anyAnnotation}) {
