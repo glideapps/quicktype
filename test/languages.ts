@@ -915,7 +915,7 @@ export const ObjectiveCLanguage: Language = {
         "blns-object.json",
     ],
     skipMiscJSON: false,
-    skipSchema: ["go-schema-pattern-properties.schema"],
+    skipSchema: [],
     rendererOptions: { functions: "true" },
     quickTestRendererOptions: [],
     sourceFiles: ["src/language/Objective-C/index.ts"],

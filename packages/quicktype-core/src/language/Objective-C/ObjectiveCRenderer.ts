@@ -871,6 +871,21 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                                         ".class]) return nil;",
                                     );
                                 }
+                                if (
+                                    property.type instanceof MapType &&
+                                    [
+                                        "bool",
+                                        "integer",
+                                        "double",
+                                        "string",
+                                    ].includes(property.type.values.kind)
+                                ) {
+                                    this.emitLine(
+                                        `for (id value in [dict[@"${objectiveCStringEscape(jsonName)}"] allValues]) if (![value isKindOfClass:`,
+                                        this.jsonType(property.type.values)[0],
+                                        ".class]) return nil;",
+                                    );
+                                }
                             },
                         );
 
