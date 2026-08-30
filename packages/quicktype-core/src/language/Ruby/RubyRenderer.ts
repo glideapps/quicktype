@@ -2,6 +2,7 @@ import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer.js";
+import { minMaxValueForType } from "../../attributes/Constraints.js";
 import { type Name, Namer } from "../../Naming.js";
 import type { RenderContext } from "../../Renderer.js";
 import type { OptionValues } from "../../RendererOptions/index.js";
@@ -103,13 +104,23 @@ export class RubyRenderer extends ConvenienceRenderer {
 
     private dryType(t: Type, isOptional = false): Sourcelike {
         const optional = isOptional ? ".optional" : "";
+        const minMax = (type: Type): string => {
+            const [min, max] = minMaxValueForType(type) ?? [];
+            const constraints = [
+                min === undefined ? undefined : `gteq: ${min}`,
+                max === undefined ? undefined : `lteq: ${max}`,
+            ].filter((x): x is string => x !== undefined);
+            return constraints.length === 0
+                ? ""
+                : `.constrained(${constraints.join(", ")})`;
+        };
         return matchType<Sourcelike>(
             t,
             (_anyType) => ["Types::Any", optional],
             (_nullType) => ["Types::Nil", optional],
             (_boolType) => ["Types::Bool", optional],
-            (_integerType) => ["Types::Integer", optional],
-            (_doubleType) => ["Types::Double", optional],
+            (integerType) => ["Types::Integer", minMax(integerType), optional],
+            (doubleType) => ["Types::Double", minMax(doubleType), optional],
             (_stringType) => ["Types::String", optional],
             (arrayType) => [
                 "Types.Array(",
