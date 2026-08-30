@@ -8,6 +8,7 @@ import { getAccessorName } from "../../attributes/AccessorNames.js";
 import {
     minMaxItemsForType,
     minMaxValueForType,
+    patternForType,
 } from "../../attributes/Constraints.js";
 import { enumCaseValues } from "../../attributes/EnumValues.js";
 import {
@@ -2403,6 +2404,9 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                 minMaxItemsForType(
                                                     property.type,
                                                 ) ?? [];
+                                            const pattern = patternForType(
+                                                property.type,
+                                            );
                                             if (!property.isOptional) {
                                                 this.emitLine(
                                                     `if (!cJSON_HasObjectItem(${object}, "${jsonName}")) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
@@ -2458,6 +2462,11 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                         this.emitLine(
                                                             `if (cJSON_GetArraySize(${value}) > ${maxItems}) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
                                                         );
+                                                    if (pattern !== undefined) {
+                                                        this.emitLine(
+                                                            `regex_t regex; regcomp(&regex, "${stringEscape(pattern)}", REG_EXTENDED); if (regexec(&regex, ${value}->valuestring, 0, NULL, 0)) { regfree(&regex); cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; } regfree(&regex);`,
+                                                        );
+                                                    }
                                                     if (
                                                         cJSON.cjsonType ===
                                                         "cJSON_Enum"
@@ -5795,6 +5804,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
             this.emitIncludeLine("stdbool.h", true);
             this.emitIncludeLine("stdlib.h", true);
             this.emitIncludeLine("string.h", true);
+            this.emitIncludeLine("regex.h", true);
             this.emitIncludeLine("cJSON.h", true);
             this.emitIncludeLine("hashtable.h", true);
             this.emitIncludeLine("list.h", true);
