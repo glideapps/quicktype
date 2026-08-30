@@ -1698,7 +1698,7 @@ export const TypeScriptEffectSchemaLanguage: Language = {
         "26b49.json",
     ],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults"],
+    features: ["enum", "union", "no-defaults", "integer"],
     output: "TopLevel.ts",
     topLevel: "TopLevel",
     skipJSON: [],
