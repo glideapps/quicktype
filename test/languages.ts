@@ -747,6 +747,7 @@ export const CPlusPlusLanguage: Language = {
         "no-defaults",
         "integer",
         "minmaxitems",
+        "strict-optional",
     ],
     output: "quicktype.hpp",
     topLevel: "TopLevel",

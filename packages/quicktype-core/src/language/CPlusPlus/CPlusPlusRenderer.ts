@@ -1537,6 +1537,16 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             );
                     }
 
+                    if (!p.isOptional && propType.isNullable) {
+                        this.emitLine(
+                            "j.at(",
+                            this.NarrowString.createStringLiteral([
+                                stringEscape(json),
+                            ]),
+                            ");",
+                        );
+                    }
+
                     if (p.isOptional || propType instanceof UnionType) {
                         const [nullOrOptional, typeSet] = ((): [
                             boolean,
