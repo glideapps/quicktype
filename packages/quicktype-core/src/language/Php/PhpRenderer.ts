@@ -1568,7 +1568,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                         );
                         this.emitLine(
                             "$out->{'",
-                            jsonName,
+                            stringEscape(jsonName),
                             "'} = $this->",
                             names.to,
                             "();",
@@ -1622,7 +1622,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                             "::",
                             names.from,
                             "($obj->{'",
-                            jsonName,
+                            stringEscape(jsonName),
                             "'})",
                         );
                         comma = ",";
