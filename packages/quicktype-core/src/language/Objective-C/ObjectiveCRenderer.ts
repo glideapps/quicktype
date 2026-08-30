@@ -862,6 +862,14 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                             (_name, jsonName, property) => {
                                 if (
                                     !property.isOptional &&
+                                    property.type.isNullable
+                                ) {
+                                    this.emitLine(
+                                        `if (!dict[@"${objectiveCStringEscape(jsonName)}"]) return nil;`,
+                                    );
+                                }
+                                if (
+                                    !property.isOptional &&
                                     (property.type.kind === "bool" ||
                                         property.type instanceof ArrayType)
                                 ) {
