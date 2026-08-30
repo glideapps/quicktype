@@ -1629,7 +1629,6 @@ export const PHPLanguage: Language = {
         "blns-object.json",
         "bug855-short.json",
         "bug863.json",
-        "identifiers.json",
         "issue2680-scalar-array.json",
         "keywords.json",
         "no-classes.json",

@@ -13,6 +13,8 @@ import {
 
 export const stringEscape = utf16ConcatMap((codePoint) => {
     const character = String.fromCharCode(codePoint);
+    if (codePoint === 0x0a) return `' . "\\n" . '`;
+    if (codePoint === 0x0d) return `' . "\\r" . '`;
     return codePoint === 0x27 || codePoint === 0x5c
         ? `\\${character}`
         : character;
