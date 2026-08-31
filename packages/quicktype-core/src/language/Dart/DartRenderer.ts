@@ -5,6 +5,7 @@ import {
 import {
     minMaxItemsForType,
     minMaxLengthForType,
+    patternForType,
 } from "../../attributes/Constraints.js";
 import {
     ConvenienceRenderer,
@@ -426,6 +427,20 @@ export class DartRenderer extends ConvenienceRenderer {
                 ")",
             ];
         };
+        const validatePattern = (type: Type, value: Sourcelike): Sourcelike => {
+            const pattern = patternForType(type);
+            if (pattern === undefined) return value;
+            const checked: Sourcelike = [
+                '((x) => RegExp("',
+                stringEscape(pattern),
+                '").hasMatch(x) ? x : throw FormatException("Expected matching string"))(',
+                value,
+                ")",
+            ];
+            return isNullable
+                ? [value, " == null ? null : ", checked]
+                : checked;
+        };
         return matchType<Sourcelike>(
             t,
             (_anyType) => dynamic,
@@ -433,7 +448,11 @@ export class DartRenderer extends ConvenienceRenderer {
             (_boolType) => dynamic,
             (_integerType) => dynamic,
             (_doubleType) => [dynamic, "?.toDouble()"],
-            (stringType) => validateString(stringType, dynamic),
+            (stringType) =>
+                validatePattern(
+                    stringType,
+                    validateString(stringType, dynamic),
+                ),
             (arrayType) =>
                 this.mapList(
                     isNullable || arrayType.isNullable,
