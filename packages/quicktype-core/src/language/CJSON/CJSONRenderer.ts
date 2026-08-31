@@ -5567,14 +5567,14 @@ export class CJSONRenderer extends ConvenienceRenderer {
             t,
             (_anyType) => {
                 return {
-                    cType: "void",
+                    cType: "cJSON",
                     optionalQualifier: "*",
-                    cjsonType: "cJSON_Invalid",
-                    isType: "cJSON_IsInvalid",
-                    getValue: "",
-                    addToObject: "",
-                    createObject: "",
-                    deleteType: "",
+                    cjsonType: "cJSON_Object",
+                    isType: "",
+                    getValue: "quicktype_cJSON_Duplicate",
+                    addToObject: "cJSON_AddItemToObject",
+                    createObject: "quicktype_cJSON_Duplicate",
+                    deleteType: "cJSON_Delete",
                     items: undefined,
                     isNullable,
                 };
@@ -5827,6 +5827,9 @@ export class CJSONRenderer extends ConvenienceRenderer {
             this.ensureBlankLine();
 
             /* Additional cJSON types */
+            this.emitLine(
+                "#define quicktype_cJSON_Duplicate(j) cJSON_Duplicate(j, true)",
+            );
             this.emitLine("#ifndef cJSON_Bool");
             this.emitLine("#define cJSON_Bool (cJSON_True | cJSON_False)");
             this.emitLine("#endif");
