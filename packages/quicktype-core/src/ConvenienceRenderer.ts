@@ -676,14 +676,14 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected makeNameForEnumCase(
-        e: EnumType,
+        _e: EnumType,
         _enumName: Name,
         caseName: string,
         assignedName: string | undefined,
     ): Name {
         // FIXME: See the FIXME in `makeNameForProperty`.  We do have global
         // enum cases, though (in Go), so this is actually useful already.
-        const alternative = `${e.getCombinedName()}_${caseName}`;
+        const alternative = `value_${caseName}`;
         const order =
             assignedName === undefined
                 ? enumCaseNameOrder

@@ -130,7 +130,7 @@ export const CSharpLanguage: Language = {
         return `dotnet run -p:CheckEolTargetFramework=false -- "${sample}"`;
     },
     diffViaSchema: true,
-    skipDiffViaSchema: ["34702.json"],
+    skipDiffViaSchema: [],
     allowMissingNull: false,
     features: [
         "enum",
@@ -180,7 +180,7 @@ export const CSharpLanguageSystemTextJson: Language = {
         return `dotnet run -p:CheckEolTargetFramework=false -- "${sample}"`;
     },
     diffViaSchema: true,
-    skipDiffViaSchema: ["34702.json"],
+    skipDiffViaSchema: [],
     allowMissingNull: false,
     features: [
         "enum",
@@ -285,7 +285,6 @@ export const PythonLanguage: Language = {
         "0cffa.json",
         "127a1.json",
         "26b49.json",
-        "34702.json",
         "7681c.json",
         "c3303.json",
         "f6a65.json",
@@ -500,13 +499,7 @@ export const GoLanguage: Language = {
         return `go run main.go quicktype.go < "${sample}"`;
     },
     diffViaSchema: true,
-    skipDiffViaSchema: [
-        "bug427.json",
-        "nbl-stats.json",
-        "0e0c2.json",
-        "34702.json",
-        "e8b04.json",
-    ],
+    skipDiffViaSchema: ["bug427.json", "e8b04.json"],
     allowMissingNull: false,
     features: ["enum", "union", "integer"],
     output: "quicktype.go",
@@ -554,7 +547,6 @@ export const CJSONLanguage: Language = {
     diffViaSchema: true,
     skipDiffViaSchema: [
         /* Enum constants are different when generating with schema */
-        "34702.json",
         /* Member names are different when generating with schema */
         "0a91a.json",
         "7f568.json",
@@ -715,7 +707,6 @@ export const CPlusPlusLanguage: Language = {
         "bug427.json",
         "keywords.json",
         "0a91a.json",
-        "34702.json",
         "7f568.json",
         "e8b04.json",
         "fcca3.json",
