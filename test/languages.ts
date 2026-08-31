@@ -1709,7 +1709,6 @@ export const PHPLanguage: Language = {
         "54d32.json",
         "734ad.json",
         "77392.json",
-        "7eb30.json",
         "7fbfb.json",
         "80aff.json",
         "9ac3b.json",
