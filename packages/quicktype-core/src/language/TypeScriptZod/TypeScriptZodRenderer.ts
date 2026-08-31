@@ -1,6 +1,11 @@
 import { arrayIntercalate } from "collection-utils";
 
-import { minMaxItemsForType } from "../../attributes/Constraints.js";
+import {
+    minMaxItemsForType,
+    minMaxLengthForType,
+    minMaxValueForType,
+    patternForType,
+} from "../../attributes/Constraints.js";
 import { ConvenienceRenderer } from "../../ConvenienceRenderer.js";
 import { type Name, type Namer, funPrefixNamer } from "../../Naming.js";
 import type { RenderContext } from "../../Renderer.js";
@@ -104,14 +109,40 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
             return [this.nameForNamedType(t), "Schema"];
         }
 
+        const stringType = (type: Type): Sourcelike => {
+            const [min, max] = minMaxLengthForType(type) ?? [];
+            const pattern = patternForType(type);
+            return [
+                "z.string()",
+                min === undefined ? "" : [".min(", String(min), ")"],
+                max === undefined ? "" : [".max(", String(max), ")"],
+                pattern === undefined
+                    ? ""
+                    : [
+                          '.regex(new RegExp("',
+                          utf16StringEscape(pattern),
+                          '"))',
+                      ],
+            ];
+        };
+
+        const numberType = (type: Type, integer: boolean): Sourcelike => {
+            const [min, max] = minMaxValueForType(type) ?? [];
+            return [
+                "z.number()",
+                integer ? ".int()" : "",
+                min === undefined ? "" : [".min(", String(min), ")"],
+                max === undefined ? "" : [".max(", String(max), ")"],
+            ];
+        };
         const match = matchType<Sourcelike>(
             t,
             (_anyType) => "z.any()",
             (_nullType) => "z.null()",
             (_boolType) => "z.boolean()",
-            (_integerType) => "z.number()",
-            (_doubleType) => "z.number()",
-            (_stringType) => "z.string()",
+            (integerType) => numberType(integerType, true),
+            (doubleType) => numberType(doubleType, false),
+            (string) => stringType(string),
             (arrayType) => {
                 const [minItems, maxItems] =
                     minMaxItemsForType(arrayType) ?? [];
@@ -141,12 +172,27 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
             (unionType) => {
                 const children = Array.from(unionType.getChildren())
                     // Coercing schemas can accept null, so handle it first.
-                    .sort(
-                        (a, b) =>
-                            Number(b.kind === "null") -
-                            Number(a.kind === "null"),
-                    )
-                    .map((type: Type) => this.typeMapTypeFor(type, false));
+                    .sort((a, b) => {
+                        const rank = (x: Type): number =>
+                            x.kind === "null"
+                                ? 0
+                                : x.kind === "date-time"
+                                  ? 2
+                                  : 1;
+                        return rank(a) - rank(b);
+                    })
+                    .map((type: Type) => {
+                        const schema = this.typeMapTypeFor(type, false);
+                        if (
+                            type.kind === "bool-string" &&
+                            unionType.findMember("bool") !== undefined
+                        )
+                            return [schema, '.transform(x => x === "true")'];
+                        return type.kind === "integer-string" &&
+                            unionType.findMember("integer") !== undefined
+                            ? [schema, ".transform(Number)"]
+                            : schema;
+                    });
                 return ["z.union([", ...arrayIntercalate(", ", children), "])"];
             },
             (_transformedStringType) => {
@@ -155,6 +201,12 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
                 }
                 if (_transformedStringType.kind === "uuid") {
                     return "z.string().uuid()";
+                }
+                if (_transformedStringType.kind === "bool-string") {
+                    return 'z.enum(["true", "false"])';
+                }
+                if (_transformedStringType.kind === "integer-string") {
+                    return "z.string().regex(/^-?\\d+$/)";
                 }
 
                 return "z.string()";
@@ -246,7 +298,16 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         }
 
         this.ensureBlankLine();
-        this.emitLine("\nexport const ", name, "Schema = ", "z.object({");
+        const hasOptionalConstructor =
+            t.getProperties().get("constructor")?.isOptional === true;
+        this.emitLine(
+            "\nexport const ",
+            name,
+            "Schema = ",
+            hasOptionalConstructor
+                ? 'z.preprocess(value => typeof value === "object" && value !== null && !Array.isArray(value) ? Object.assign(Object.create(null), value) : value, z.object({'
+                : "z.object({",
+        );
         this.indent(() => {
             this.forEachClassProperty(t, "none", (_, jsonName, property) => {
                 this.emitLine(
@@ -257,7 +318,11 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
                 );
             });
         });
-        this.emitLine("})", this.objectUnknownKeySuffix(t), ";");
+        this.emitLine(
+            "})",
+            this.objectUnknownKeySuffix(t),
+            hasOptionalConstructor ? ");" : ";",
+        );
         if (!this._options.justSchema) {
             this.emitLine(
                 "export type ",

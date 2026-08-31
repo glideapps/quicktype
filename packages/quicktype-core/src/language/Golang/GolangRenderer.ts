@@ -152,6 +152,10 @@ export class GoRenderer extends ConvenienceRenderer {
 
     private propertyGoType(cp: ClassProperty): Sourcelike {
         const t = cp.type;
+        if (cp.isOptional && (t.kind === "array" || t.kind === "map")) {
+            return ["*", this.goType(t, true)];
+        }
+
         if (t instanceof UnionType && nullableFromUnion(t) === null) {
             return ["*", this.goType(t, true)];
         }
@@ -319,13 +323,15 @@ export class GoRenderer extends ConvenienceRenderer {
 
     private emitEnum(e: EnumType, enumName: Name): void {
         this.startFile(enumName);
-        this.emitPackageDefinitons(false);
+        this.emitPackageDefinitons(true);
         this.emitDescription(this.descriptionForType(e));
         this.emitLine("type ", enumName, " string");
         this.ensureBlankLine();
         this.emitLine("const (");
         const columns: Sourcelike[][] = [];
+        const cases: string[] = [];
         this.forEachEnumCase(e, "none", (name, jsonName) => {
+            cases.push(this.sourcelikeToString(name));
             columns.push([
                 [name, " "],
                 [enumName, ' = "', stringEscape(jsonName), '"'],
@@ -333,6 +339,31 @@ export class GoRenderer extends ConvenienceRenderer {
         });
         this.indent(() => this.emitTable(columns));
         this.emitLine(")");
+        const type = this.sourcelikeToString(enumName);
+        const allTypes = Array.from(this.typeGraph.allTypesUnordered());
+        if (
+            allTypes.some(
+                (t) =>
+                    t instanceof UnionType &&
+                    nullableFromUnion(t) === null &&
+                    t.getChildren().has(e),
+            )
+        ) {
+            this.endFile();
+            return;
+        }
+        this.ensureBlankLine();
+        this.emitMultiline(`type invalid${type} string
+func (x invalid${type}) Error() string { return "invalid ${type}: " + string(x) }
+
+func (x *${type}) UnmarshalJSON(data []byte) error {
+    var value string
+    if err := json.Unmarshal(data, &value); err != nil { return err }
+    switch ${type}(value) {
+    case ${cases.join(", ")}: *x = ${type}(value); return nil
+    }
+    return invalid${type}(value)
+}`);
         this.endFile();
     }
 

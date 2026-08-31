@@ -93,12 +93,16 @@ jobs:
                   cache-dependency-path: head-source/package-lock.json
 
             - name: Build base after a cache miss
+              id: base-build
               if: steps.compatibility.outputs.supported == 'true' && steps.base-cache.outputs.cache-hit != 'true'
+              continue-on-error: true
               working-directory: base-source
               run: npm ci && npm run build
 
             - name: Generate base snapshot after a cache miss
-              if: steps.compatibility.outputs.supported == 'true' && steps.base-cache.outputs.cache-hit != 'true'
+              id: base-snapshot
+              if: steps.compatibility.outputs.supported == 'true' && steps.base-cache.outputs.cache-hit != 'true' && steps.base-build.outcome == 'success'
+              continue-on-error: true
               working-directory: base-source
               env:
                   ALL_FIXTURES: "1"
@@ -108,19 +112,19 @@ jobs:
               run: npm run test:output-snapshot
 
             - name: Save PR-scoped base snapshot after a cache miss
-              if: steps.compatibility.outputs.supported == 'true' && steps.base-cache.outputs.cache-hit != 'true'
+              if: steps.compatibility.outputs.supported == 'true' && steps.base-cache.outputs.cache-hit != 'true' && steps.base-snapshot.outcome == 'success'
               uses: actions/cache/save@v4
               with:
                   path: .output-diffs/base
                   key: ${{ env.OUTPUT_SNAPSHOT_CACHE_PREFIX }}-${{ runner.os }}-${{ github.event.pull_request.base.sha }}
 
             - name: Build tested PR merge
-              if: steps.compatibility.outputs.supported == 'true'
+              if: steps.compatibility.outputs.supported == 'true' && (steps.base-cache.outputs.cache-hit == 'true' || steps.base-snapshot.outcome == 'success')
               working-directory: head-source
               run: npm ci && npm run build
 
             - name: Generate tested PR merge snapshot
-              if: steps.compatibility.outputs.supported == 'true'
+              if: steps.compatibility.outputs.supported == 'true' && (steps.base-cache.outputs.cache-hit == 'true' || steps.base-snapshot.outcome == 'success')
               working-directory: head-source
               env:
                   ALL_FIXTURES: "1"
@@ -130,19 +134,20 @@ jobs:
               run: npm run test:output-snapshot
 
             - name: Compare snapshots
-              if: steps.compatibility.outputs.supported == 'true'
+              if: steps.compatibility.outputs.supported == 'true' && (steps.base-cache.outputs.cache-hit == 'true' || steps.base-snapshot.outcome == 'success')
               run: |
                   mkdir -p .output-diffs/result
                   head-source/node_modules/.bin/tsx head-source/script/output-diff.ts compare \
                       .output-diffs/base .output-diffs/head \
                       .output-diffs/result/result.json .output-diffs/result/output.diff
 
-            - name: Write bootstrap result
-              if: steps.compatibility.outputs.supported != 'true'
+            - name: Write unavailable comparison result
+              if: steps.compatibility.outputs.supported != 'true' || (steps.base-cache.outputs.cache-hit != 'true' && steps.base-snapshot.outcome != 'success')
               run: |
                   mkdir -p .output-diffs/result
                   printf '%s\n' '{"version":1,"hasDifferences":false,"files":[],"summary":{"added":0,"changedLines":0,"deleted":0,"deletions":0,"files":0,"insertions":0,"modified":0}}' > .output-diffs/result/result.json
                   : > .output-diffs/result/output.diff
+                  echo "The base commit could not generate an output snapshot, so this comparison is unavailable." >> "$GITHUB_STEP_SUMMARY"
 
             - name: Write comparison metadata
               env:
@@ -151,7 +156,7 @@ jobs:
                   PR_NUMBER: ${{ github.event.pull_request.number }}
                   PR_SHA: ${{ github.sha }}
                   PR_URL: ${{ github.event.pull_request.html_url }}
-                  SUPPORTED: ${{ steps.compatibility.outputs.supported }}
+                  SUPPORTED: ${{ steps.compatibility.outputs.supported == 'true' && (steps.base-cache.outputs.cache-hit == 'true' || steps.base-snapshot.outcome == 'success') }}
               run: |
                   node - <<'NODE'
                   const fs = require("node:fs");

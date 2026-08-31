@@ -6,6 +6,7 @@ import {
     getOptionValues,
 } from "../../RendererOptions/index.js";
 import { TargetLanguage } from "../../TargetLanguage.js";
+import type { StringTypeMapping } from "../../Type/TypeBuilderUtils.js";
 import type { LanguageName, RendererOptions } from "../../types.js";
 
 import { ObjectiveCRenderer } from "./ObjectiveCRenderer.js";
@@ -52,6 +53,13 @@ export class ObjectiveCTargetLanguage extends TargetLanguage<
 
     public getOptions(): typeof objectiveCOptions {
         return objectiveCOptions;
+    }
+
+    public get stringTypeMapping(): StringTypeMapping {
+        return new Map([
+            ["uuid", "uuid"],
+            ["date-time", "date-time"],
+        ]);
     }
 
     protected makeRenderer<Lang extends LanguageName = "objective-c">(
