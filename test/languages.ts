@@ -1630,7 +1630,6 @@ export const HaskellLanguage: Language = {
         "nbl-stats.json",
         "bug855-short.json",
         "combinations4.json",
-        "identifiers.json",
         "blns-object.json",
         "recursive.json",
         "bug427.json",
