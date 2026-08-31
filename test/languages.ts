@@ -1600,7 +1600,6 @@ export const HaskellLanguage: Language = {
     topLevel: "QuickType",
     skipJSON: [
         "combinations4.json",
-        "identifiers.json",
         "blns-object.json",
         "nst-test-suite.json",
         "keywords.json",
