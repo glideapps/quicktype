@@ -317,7 +317,18 @@ export class PikeRenderer extends ConvenienceRenderer {
             () => {
                 this.emitLine([className, " retval = ", className, "();"]);
                 this.ensureBlankLine();
-                this.forEachClassProperty(c, "none", (name, jsonName) => {
+                this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+                    if (
+                        !p.isOptional &&
+                        p.type.kind === "union" &&
+                        nullableFromUnion(p.type as UnionType) !== null
+                    ) {
+                        this.emitLine(
+                            'if (!has_index(json, "',
+                            stringEscape(jsonName),
+                            '")) error("Missing required property");',
+                        );
+                    }
                     this.emitLine([
                         "retval.",
                         name,
