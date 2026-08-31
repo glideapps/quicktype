@@ -1520,6 +1520,7 @@ export const DartLanguage: Language = {
         "minmaxlength",
         "pattern",
         "minmax",
+        "enum",
     ],
     output: "TopLevel.dart",
     topLevel: "TopLevel",

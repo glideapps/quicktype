@@ -499,14 +499,15 @@ export class DartRenderer extends ConvenienceRenderer {
                     ),
                 ),
             (enumType) => {
-                return [
+                const value: Sourcelike = [
                     defined(this._enumValues.get(enumType)),
                     ".map[",
                     dynamic,
-                    !isNullable || this._options.requiredProperties
-                        ? "]!"
-                        : "]",
+                    "]!",
                 ];
+                return isNullable && !this._options.requiredProperties
+                    ? [dynamic, " == null ? null : ", value]
+                    : value;
             },
             (unionType) => {
                 const maybeNullable = nullableFromUnion(unionType);
