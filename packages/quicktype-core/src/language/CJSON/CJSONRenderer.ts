@@ -803,6 +803,14 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                     ")",
                                                 ],
                                                 () => {
+                                                    if (
+                                                        cJSON.items?.isType !==
+                                                        ""
+                                                    ) {
+                                                        this.emitLine(
+                                                            `if (!${this.sourcelikeToString(cJSON.items?.isType ?? "")}(e${child_level})) { x->value.${this.sourcelikeToString(this.nameForUnionMember(unionType, type))} = x${child_level}; cJSON_Delete${this.sourcelikeToString(unionName)}(x); return NULL; }`,
+                                                        );
+                                                    }
                                                     const add = (
                                                         cJSON: TypeCJSON,
                                                         level: number,
@@ -1248,6 +1256,11 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                         cJSON.getValue,
                                         "(j);",
                                     );
+                                    if (cJSON.cjsonType === "cJSON_Object") {
+                                        this.emitLine(
+                                            `if (NULL == x->value.${this.sourcelikeToString(this.nameForUnionMember(unionType, type))}) x->type = 0;`,
+                                        );
+                                    }
                                 }
                             },
                         );

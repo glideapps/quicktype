@@ -589,7 +589,9 @@ export const CJSONLanguage: Language = {
         "direct-union.schema",
         "recursive-union-flattening.schema",
         /* Class elements with invalid type are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
-        ...skipsUntypedUnions,
+        ...skipsUntypedUnions.filter(
+            (schema) => schema !== "implicit-class-array-union.schema",
+        ),
     ],
     rendererOptions: { "header-only": "false" },
     quickTestRendererOptions: [
