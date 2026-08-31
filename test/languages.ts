@@ -1532,6 +1532,7 @@ export const HaskellLanguage: Language = {
     },
     diffViaSchema: true,
     skipDiffViaSchema: [
+        "keywords.json",
         "00c36.json",
         "10be4.json",
         "050b0.json",
@@ -1581,12 +1582,7 @@ export const HaskellLanguage: Language = {
     features: ["enum", "union", "no-defaults"],
     output: "QuickType.hs",
     topLevel: "QuickType",
-    skipJSON: [
-        "combinations4.json",
-        "blns-object.json",
-        "nst-test-suite.json",
-        "keywords.json",
-    ],
+    skipJSON: ["combinations4.json", "blns-object.json", "nst-test-suite.json"],
     skipMiscJSON: false,
     skipSchema: [...skipsUntypedUnions, "keyword-unions.schema"],
     rendererOptions: {},
