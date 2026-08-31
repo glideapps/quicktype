@@ -353,6 +353,55 @@ class TypeNamesTypeAttributeKind extends TypeAttributeKind<TypeNames> {
 export const namesTypeAttributeKind: TypeAttributeKind<TypeNames> =
     new TypeNamesTypeAttributeKind();
 
+// String enums are materialized after their regular names have been made
+// inferred.  Preserve only the original given names for enum identity.
+class EnumTypeNameIdentityTypeAttributeKind extends TypeAttributeKind<
+    ReadonlySet<string>
+> {
+    public constructor() {
+        super("enumTypeNames");
+    }
+
+    public get inIdentity(): boolean {
+        return true;
+    }
+
+    public combine(
+        namesArray: Array<ReadonlySet<string>>,
+    ): ReadonlySet<string> {
+        const names = new Set<string>();
+        for (const otherNames of namesArray) {
+            setUnionInto(names, otherNames);
+        }
+
+        return names;
+    }
+
+    public makeInferred(names: ReadonlySet<string>): ReadonlySet<string> {
+        return names;
+    }
+}
+
+const enumTypeNameIdentityTypeAttributeKind =
+    new EnumTypeNameIdentityTypeAttributeKind();
+
+export function makeEnumTypeNameIdentityAttributes(
+    attributes: TypeAttributes,
+): TypeAttributes {
+    const names = namesTypeAttributeKind.tryGetInAttributes(attributes);
+    if (names === undefined || names.areInferred) return new Map();
+    return enumTypeNameIdentityTypeAttributeKind.makeAttributes(names.names);
+}
+
+export function enumTypeNameIdentityAttributes(
+    attributes: TypeAttributes,
+): TypeAttributes {
+    const names =
+        enumTypeNameIdentityTypeAttributeKind.tryGetInAttributes(attributes);
+    if (names === undefined) return new Map();
+    return enumTypeNameIdentityTypeAttributeKind.makeAttributes(names);
+}
+
 export function modifyTypeNames(
     attributes: TypeAttributes,
     modifier: (tn: TypeNames | undefined) => TypeNames | undefined,

@@ -10,7 +10,7 @@ import {
 } from "collection-utils";
 
 import { StringTypes } from "../attributes/StringTypes.js";
-import { emptyTypeAttributes } from "../attributes/TypeAttributes.js";
+import { enumTypeNameIdentityAttributes } from "../attributes/TypeNames.js";
 import type { GraphRewriteBuilder } from "../GraphRewriting.js";
 import type { RunContext } from "../Run.js";
 import { assert, defined } from "../support/Support.js";
@@ -196,7 +196,12 @@ export function expandStrings(
                 !isAlwaysEmptyString(Array.from(keys)) &&
                 fullCases !== undefined
             ) {
-                types.push(builder.getEnumType(emptyTypeAttributes, fullCases));
+                types.push(
+                    builder.getEnumType(
+                        enumTypeNameIdentityAttributes(attributes),
+                        fullCases,
+                    ),
+                );
             } else {
                 return builder.getStringType(
                     attributes,
