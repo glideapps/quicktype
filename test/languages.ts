@@ -1849,10 +1849,6 @@ export const ElixirLanguage: Language = {
     skipSchema: [
         // The test incorrectly succeeds due to the emitter being permissive for unions that contain only primitives. A future enhancement
         // for the Elixir emitter could be a user-controlled 'strict' mode that pattern matches even on unions of only primitive types.
-        ...skipsMapValueValidation.filter(
-            (schema) => schema !== "go-schema-pattern-properties.schema",
-        ),
-
         // A top-level array is deserialized without enforcing its element
         // type, so a mistyped element round-trips instead of failing.
     ],

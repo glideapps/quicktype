@@ -470,7 +470,11 @@ export class ElixirRenderer extends ConvenienceRenderer {
             (_integerType) => [`${mode}_`, name, prefix],
             (_doubleType) => [`${mode}_`, name, prefix],
             (_stringType) => [`${mode}_`, name, prefix],
-            (_arrayType) => [],
+            (arrayType) => [
+                "(fn value -> Enum.map(value, &",
+                this.nameOfTransformFunction(arrayType.items, name, encode),
+                "/1) end).",
+            ],
             (classType) => [
                 this.nameForNamedTypeWithNamespace(classType),
                 `.${encode ? "to" : "from"}_map`,
@@ -576,6 +580,8 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 if (
                     mapType.values instanceof EnumType ||
                     mapType.values instanceof ClassType ||
+                    (mapType.values instanceof ArrayType &&
+                        mapType.values.items instanceof ClassType) ||
                     (mapType.values.isPrimitive() && !optional)
                 ) {
                     return [
@@ -728,7 +734,9 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 }
                 if (
                     mapType.values instanceof EnumType ||
-                    mapType.values instanceof ClassType
+                    mapType.values instanceof ClassType ||
+                    (mapType.values instanceof ArrayType &&
+                        mapType.values.items instanceof ClassType)
                 ) {
                     return [
                         "struct.",
