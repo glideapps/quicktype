@@ -1266,9 +1266,7 @@ export const KotlinLanguage: Language = {
         // instead of rejecting it.
         "nested-intersection-union.schema",
         "class-with-additional.schema",
-        ...skipsMapValueValidation.filter(
-            (schema) => schema !== "go-schema-pattern-properties.schema",
-        ),
+        ...skipsMapValueValidation,
         // IllegalArgumentException
         // KlaxonException: Need to extract inside
         "bool-string.schema",
@@ -1513,7 +1511,9 @@ export const PikeLanguage: Language = {
             (schema) => schema !== "integer-float-union.schema",
         ),
         // all below: not failing on expected failure. That's because Pike's quite tolerant with assignments.
-        ...skipsMapValueValidation,
+        ...skipsMapValueValidation.filter(
+            (schema) => schema !== "go-schema-pattern-properties.schema",
+        ),
         "class-with-additional.schema",
         "multi-type-enum.schema",
         "optional-any.schema",
