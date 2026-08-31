@@ -5622,8 +5622,8 @@ export class CJSONRenderer extends ConvenienceRenderer {
                 return {
                     cType: this.typeIntegerSize,
                     optionalQualifier: isOptional === true ? "*" : "",
-                    cjsonType: "cJSON_Number",
-                    isType: "cJSON_IsNumber",
+                    cjsonType: "cJSON_Integer",
+                    isType: "quicktype_cJSON_IsInteger",
                     getValue: "cJSON_GetNumberValue",
                     addToObject: "cJSON_AddNumberToObject",
                     createObject: "cJSON_CreateNumber",
@@ -5838,6 +5838,10 @@ export class CJSONRenderer extends ConvenienceRenderer {
             this.ensureBlankLine();
 
             /* Additional cJSON types */
+            this.emitLine("#define cJSON_Integer (1 << 18)");
+            this.emitLine(
+                "#define quicktype_cJSON_IsInteger(j) (cJSON_IsNumber(j) && (j)->valuedouble == (int64_t)(j)->valuedouble)",
+            );
             this.emitLine("#ifndef cJSON_Bool");
             this.emitLine("#define cJSON_Bool (cJSON_True | cJSON_False)");
             this.emitLine("#endif");
