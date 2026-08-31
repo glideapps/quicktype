@@ -211,14 +211,14 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         );
 
         if (required) {
-            return [match];
+            return ["PropTypes.oneOfType([", match, "]).isRequired"];
         }
 
         return match;
     }
 
     private typeMapTypeForProperty(p: ClassProperty): Sourcelike {
-        return this.typeMapTypeFor(p.type);
+        return this.typeMapTypeFor(p.type, !p.isOptional);
     }
 
     private importStatement(
