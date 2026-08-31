@@ -1400,7 +1400,6 @@ export const KotlinXLanguage: Language = {
         "integer-string.schema",
         "min-max-items.schema", // unionItems is an int|string union array
         "minmaxlength.schema",
-        "multi-type-enum.schema",
         "mutually-recursive.schema",
         "prefix-items.schema",
         "recursive-union-flattening.schema",

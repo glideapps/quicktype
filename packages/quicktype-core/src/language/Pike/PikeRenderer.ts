@@ -321,6 +321,17 @@ export class PikeRenderer extends ConvenienceRenderer {
                 this.emitLine([className, " retval = ", className, "();"]);
                 this.ensureBlankLine();
                 this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+                    const rejectsArray =
+                        p.type instanceof UnionType &&
+                        nullableFromUnion(p.type) === null &&
+                        !Array.from(p.type.members).some(
+                            (t) => t instanceof ArrayType,
+                        );
+                    if (rejectsArray) {
+                        this.emitLine(
+                            `if (arrayp(json["${stringEscape(jsonName)}"])) error("Unexpected array");`,
+                        );
+                    }
                     if (
                         !p.isOptional &&
                         p.type.kind === "union" &&
