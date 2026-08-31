@@ -3,6 +3,7 @@ import { type Sourcelike, modifySource } from "../../Source.js";
 import { camelCase } from "../../support/Strings.js";
 import type { ArrayType, EnumType, MapType, Type } from "../../Type/index.js";
 import { UnionType } from "../../Type/index.js";
+import { nullableFromUnion } from "../../Type/TypeUtils.js";
 
 import { KotlinRenderer } from "./KotlinRenderer.js";
 import { stringEscape } from "./utils.js";
@@ -42,7 +43,7 @@ export class KotlinXRenderer extends KotlinRenderer {
         withIssues = false,
         noOptional = false,
     ): Sourcelike {
-        if (t instanceof UnionType && t.findMember("null") === undefined)
+        if (t instanceof UnionType && nullableFromUnion(t) === null)
             return "JsonElement";
         return super.kotlinType(t, withIssues, noOptional);
     }
