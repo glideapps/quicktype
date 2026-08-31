@@ -513,7 +513,7 @@ export const GoLanguage: Language = {
         "e8b04.json",
     ],
     allowMissingNull: false,
-    features: ["union", "integer"],
+    features: ["enum", "union", "integer"],
     output: "quicktype.go",
     topLevel: "TopLevel",
     skipJSON: [
