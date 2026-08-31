@@ -487,8 +487,17 @@ export function splitIntoWords(s: string): WordInName[] {
     const words: WordInName[] = [];
     for (const [start, end, allUpper] of intervals) {
         const word = s.slice(start, end);
+        // A fully-uppercase word interval is an acronym when either the input
+        // has lowercase somewhere else (so the uppercase run stands out, e.g.
+        // the "HTTP" in "getHTTPResponse"), or the whole input is that single
+        // uppercase word (e.g. a custom enum value like "DASH" or "MSS").
+        // A fully-uppercase input made of several words (e.g. "RANK_TITLE") is
+        // deliberately *not* treated as acronyms: doing so would collapse the
+        // word boundary (to "RANKTITLE") and break naming round-trips through
+        // JSON Schema.
         const isAcronym =
-            (lastLowerCaseIndex !== undefined && allUpper) ||
+            (allUpper &&
+                (lastLowerCaseIndex !== undefined || intervals.length === 1)) ||
             knownAcronyms.has(word.toLowerCase() as (typeof acronyms)[number]);
         words.push({ word, isAcronym });
     }

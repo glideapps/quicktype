@@ -18,6 +18,7 @@ const skipsEnumValueValidation = [
     "enum-large.schema",
     "optional-enum.schema",
     "const-non-string.schema",
+    "uppercase-acronym-enum.schema",
     "haskell-enum-forbidden.schema",
     "nullable-optional-one-of.schema",
     "all-of-additional-properties-false.schema",
