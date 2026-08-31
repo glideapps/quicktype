@@ -9,20 +9,6 @@ import type { RendererOptions } from "../dist/quicktype-core/Run";
 // modes, add it to the shared list so every affected language skips it at
 // once.
 
-// The generated code does not reject invalid enum values, so the
-// `.fail.enum.json` samples for these enum-bearing schemas do not fail as
-// expected.  Add any new schema whose fail sample relies on enum-value
-// rejection.
-const skipsEnumValueValidation = [
-    "enum.schema",
-    "enum-large.schema",
-    "optional-enum.schema",
-    "const-non-string.schema",
-    "haskell-enum-forbidden.schema",
-    "nullable-optional-one-of.schema",
-    "all-of-additional-properties-false.schema",
-];
-
 // The language makes no int/double distinction in unions (e.g. an integer is
 // implicitly accepted where a float union member is expected), so fail
 // samples that rely on rejecting an int where a double is expected (or vice
@@ -807,7 +793,6 @@ export const ElmLanguage: Language = {
     ],
     skipMiscJSON: false,
     skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
         "union-list.schema", // recursion
         "list.schema", // recursion
         "ref-remote.schema", // recursion
@@ -1120,12 +1105,11 @@ export const Scala3Language: Language = {
         "af2d1.json",
     ],
     allowMissingNull: true,
-    features: ["enum", "union", "no-defaults"],
+    features: ["enum", "union", "no-defaults", "integer"],
     output: "TopLevel.scala",
     topLevel: "TopLevel",
     skipJSON: [],
     skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
         // The generated case class exceeds the JVM's 254-parameter limit.
         "keyword-unions.schema",
     ],
@@ -1162,7 +1146,6 @@ export const Scala3UpickleLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
         // The generated case class exceeds the JVM's 254-parameter limit.
         "keyword-unions.schema",
     ],
@@ -1439,7 +1422,6 @@ export const KotlinXLanguage: Language = {
         "date-time.schema",
         // The string|date-time property becomes a union once Kotlin maps
         // date-time (it was a plain string before).
-        "date-time-or-string.schema",
         "description.schema",
         "direct-union.schema",
         "enum.schema", // enum.3.json contains an int|string union
@@ -1580,25 +1562,6 @@ export const HaskellLanguage: Language = {
     },
     diffViaSchema: true,
     skipDiffViaSchema: [
-        "reddit.json",
-        "github-events.json",
-        "nbl-stats.json",
-        "0a91a.json",
-        "29f47.json",
-        "2df80.json",
-        "27332.json",
-        "34702.json",
-        "6de06.json",
-        "76ae1.json",
-        "af2d1.json",
-        "be234.json",
-        "e8b04.json",
-    ],
-    allowMissingNull: false,
-    features: ["enum", "union", "no-defaults"],
-    output: "QuickType.hs",
-    topLevel: "QuickType",
-    skipJSON: [
         "00c36.json",
         "10be4.json",
         "050b0.json",
@@ -1627,31 +1590,36 @@ export const HaskellLanguage: Language = {
         "e53b5.json",
         "f3139.json",
         "f22f5.json",
-        "nbl-stats.json",
         "bug855-short.json",
+        "recursive.json",
+        "bug427.json",
+        "reddit.json",
+        "github-events.json",
+        "nbl-stats.json",
+        "0a91a.json",
+        "29f47.json",
+        "2df80.json",
+        "27332.json",
+        "34702.json",
+        "6de06.json",
+        "76ae1.json",
+        "af2d1.json",
+        "be234.json",
+        "e8b04.json",
+    ],
+    allowMissingNull: false,
+    features: ["enum", "union", "no-defaults"],
+    output: "QuickType.hs",
+    topLevel: "QuickType",
+    skipJSON: [
         "combinations4.json",
         "identifiers.json",
         "blns-object.json",
-        "recursive.json",
-        "bug427.json",
         "nst-test-suite.json",
         "keywords.json",
     ],
     skipMiscJSON: false,
-    skipSchema: [
-        ...skipsUntypedUnions,
-        "direct-union.schema",
-        "empty-object.schema",
-        ...skipsEnumValueValidation,
-        "intersection.schema",
-        "keyword-unions.schema",
-        "optional-any.schema",
-        "ie-suffix-singularization.schema",
-        "required.schema",
-        // The default-value fail sample also relies on required-property enforcement.
-        "default-value.schema",
-        "required-non-properties.schema",
-    ],
+    skipSchema: [...skipsUntypedUnions, "keyword-unions.schema"],
     rendererOptions: {},
     // The default is array-type=list; this keeps the Vector code path
     // covered.
@@ -1686,17 +1654,13 @@ export const PHPLanguage: Language = {
         "no-classes.json",
         "00c36.json",
         "2df80.json",
-        "734ad.json",
         "7fbfb.json",
-        "b4865.json",
         "c8c7e.json",
         "cda6c.json",
         "e53b5.json",
     ],
     skipMiscJSON: false,
     skipSchema: [
-        // The renderer does not support a bare top-level map.
-        "empty-object.schema",
         "integer-before-number.schema", // Python-specific union-order regression.
         // Unions are inlined as PHP union type declarations, so a
         // top-level union produces no named TopLevel class for the driver.
