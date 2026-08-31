@@ -190,8 +190,10 @@ export class RubyRenderer extends ConvenienceRenderer {
                     optional,
                 ];
             },
-            (_transformed) => [
-                "Types::String.constrained(format: /\\A[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\\z/i)",
+            (transformed) => [
+                transformed.kind === "uuid"
+                    ? "Types::String.constrained(format: /\\A[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\\z/i)"
+                    : "Types::String.constrained(format: /\\A\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d+)?(?:Z|[+-]\\d\\d:\\d\\d)\\z/i)",
                 optional,
             ],
         );
