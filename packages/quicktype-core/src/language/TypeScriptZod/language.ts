@@ -16,11 +16,6 @@ import { TypeScriptZodRenderer } from "./TypeScriptZodRenderer.js";
 
 export const typeScriptZodOptions = {
     justSchema: new BooleanOption("just-schema", "Schema only", false),
-    preferConstValues: new BooleanOption(
-        "prefer-const-values",
-        "Use literal schema for string enums with single value",
-        false,
-    ),
 };
 
 export const typeScriptZodLanguageConfig = {
@@ -40,8 +35,8 @@ export class TypeScriptZodTargetLanguage extends TargetLanguage<
         super(typeScriptZodLanguageConfig);
     }
 
-    public getOptions(): typeof typeScriptZodOptions {
-        return typeScriptZodOptions;
+    public getOptions(): Record<string, never> {
+        return {};
     }
 
     public get stringTypeMapping(): StringTypeMapping {

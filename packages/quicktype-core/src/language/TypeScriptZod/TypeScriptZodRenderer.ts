@@ -38,14 +38,6 @@ import { legalizeName } from "../JavaScript/utils.js";
 
 import type { typeScriptZodOptions } from "./language.js";
 
-type TypeScriptZodRendererOptions = Omit<
-    OptionValues<typeof typeScriptZodOptions>,
-    "preferConstValues"
-> &
-    Partial<
-        Pick<OptionValues<typeof typeScriptZodOptions>, "preferConstValues">
-    >;
-
 export class TypeScriptZodRenderer extends ConvenienceRenderer {
     /** TypeRefs of object types that participate in a reference cycle.
      * These must be emitted as z.lazy() schemas with an explicit type
@@ -55,7 +47,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
     public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        protected readonly _options: TypeScriptZodRendererOptions,
+        protected readonly _options: OptionValues<typeof typeScriptZodOptions>,
     ) {
         super(targetLanguage, renderContext);
     }
@@ -385,7 +377,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         this.ensureBlankLine();
         this.emitDescription(this.descriptionForType(e));
 
-        if (this._options.preferConstValues && e.cases.size === 1) {
+        if (e.cases.size === 1) {
             const value = e.cases.values().next().value;
             if (value === undefined) panic("Single-value enum has no case.");
             this.emitLine(

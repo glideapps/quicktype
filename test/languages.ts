@@ -1768,9 +1768,7 @@ export const TypeScriptZodLanguage: Language = {
     skipMiscJSON: false,
     skipSchema: [],
     rendererOptions: {},
-    quickTestRendererOptions: [
-        ["single-value-enum.schema", { "prefer-const-values": "true" }],
-    ],
+    quickTestRendererOptions: [],
     sourceFiles: ["src/language/TypeScriptZod/index.ts"],
 };
 
