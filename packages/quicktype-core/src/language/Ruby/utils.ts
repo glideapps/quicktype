@@ -23,7 +23,11 @@ export enum Strictness {
 }
 
 export const forbiddenForObjectProperties = Array.from(
-    new Set([...keywords.keywords, ...keywords.reservedProperties]),
+    new Set([
+        ...keywords.keywords,
+        ...keywords.reservedProperties,
+        ...Array.from({ length: 9 }, (_, i) => `_${i + 1}`),
+    ]),
 );
 function unicodeEscape(codePoint: number): string {
     return `\\u{${intToHex(codePoint, 0)}}`;

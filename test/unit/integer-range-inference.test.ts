@@ -16,7 +16,6 @@ import { describe, expect, test } from "vitest";
 
 import {
     INT16_RANGE,
-    INT32_RANGE,
     INT64_RANGE,
     InputData,
     type IntegerRange,
@@ -130,8 +129,8 @@ function rangeForLanguage(lang: LanguageName): IntegerRange | null {
 }
 
 describe("language-declared integer ranges", () => {
-    test("Crystal renders integers as Int32, so its range is int32", () => {
-        expect(rangeForLanguage("crystal")).toEqual(INT32_RANGE);
+    test("Crystal renders integers as Int64, so its range is int64", () => {
+        expect(rangeForLanguage("crystal")).toEqual(INT64_RANGE);
     });
 
     test("Elm's Int is a JavaScript number at runtime", () => {
@@ -169,14 +168,14 @@ describe("streaming inference of numbers at the integer-range boundary", () => {
         expect(lines).toMatch(/Smaller\s+\*?float64/);
     });
 
-    test("Crystal: whole numbers beyond Int32 become Float64", async () => {
+    test("Crystal: whole numbers inside Int64 remain integers", async () => {
         const lines = await streamedLinesForJSON(
             "crystal",
             '{"fits": 2147483647, "overflows": 2147483648}',
             rangeForLanguage("crystal"),
         );
-        expect(lines).toMatch(/fits.*Int32/);
-        expect(lines).toMatch(/overflows.*Float64/);
+        expect(lines).toMatch(/fits.*Int64/);
+        expect(lines).toMatch(/overflows.*Int64/);
     });
 
     test("Python: arbitrary-precision integers never overflow to float", async () => {

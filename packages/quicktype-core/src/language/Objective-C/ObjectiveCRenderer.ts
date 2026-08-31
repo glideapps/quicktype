@@ -7,6 +7,12 @@ import {
 } from "collection-utils";
 
 import {
+    minMaxItemsForType,
+    minMaxLengthForType,
+    minMaxValueForType,
+    patternForType,
+} from "../../attributes/Constraints.js";
+import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer.js";
@@ -49,6 +55,9 @@ import {
 } from "./utils.js";
 
 type MemoryAttribute = "assign" | "strong" | "copy";
+
+const objectiveCStringEscape = (s: string): string =>
+    stringEscape(s).replace(/\\u0000/g, "\\000");
 
 const DEBUG = false;
 
@@ -196,6 +205,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                     ? this.memoryAttribute(nullable, true)
                     : "copy";
             },
+            (_transformedStringType) => "copy",
         );
     }
 
@@ -238,6 +248,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                     ? this.objcType(nullable, true)
                     : ["id", ""];
             },
+            (_transformedStringType) => ["NSString", " *"],
         );
     }
 
@@ -266,6 +277,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 const nullable = nullableFromUnion(unionType);
                 return nullable !== null ? this.jsonType(nullable) : ["id", ""];
             },
+            (_transformedStringType) => ["NSString", " *"],
         );
     }
 
@@ -315,6 +327,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                     ? this.fromDynamicExpression(nullable, dynamic)
                     : dynamic;
             },
+            (_transformedStringType) => dynamic,
         );
     }
 
@@ -361,6 +374,15 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             (unionType) => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
+                    if (nullable instanceof ClassType) {
+                        return [
+                            "NSNullify([",
+                            typed,
+                            " isKindOfClass:NSNull.class] ? nil : [",
+                            typed,
+                            " JSONDictionary])",
+                        ];
+                    }
                     if (this.implicitlyConvertsFromJSON(nullable)) {
                         return ["NSNullify(", typed, ")"];
                     }
@@ -375,6 +397,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 // TODO support unions
                 return typed;
             },
+            (_transformedStringType) => typed,
         );
     }
 
@@ -468,13 +491,17 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                     this.fromDynamicExpression(arrayType, name),
                     ";",
                 ),
-            (classType) =>
+            (classType) => {
                 this.emitLine(
                     name,
                     " = ",
                     this.fromDynamicExpression(classType, ["(id)", name]),
                     ";",
-                ),
+                );
+                this.emitLine(
+                    `if (!${this.sourcelikeToString(name)} && dict[@"${objectiveCStringEscape(jsonName)}"] && ![dict[@"${objectiveCStringEscape(jsonName)}"] isKindOfClass:NSNull.class]) return nil;`,
+                );
+            },
             (mapType) => {
                 const itemType = mapType.values;
                 this.emitLine(
@@ -505,6 +532,13 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                         jsonName,
                         nullable,
                     );
+                    if (nullable instanceof EnumType) {
+                        this.emitLine(
+                            "if (",
+                            name,
+                            ` == nil && dict[@"${objectiveCStringEscape(jsonName)}"] && ![dict[@"${objectiveCStringEscape(jsonName)}"] isKindOfClass:NSNull.class]) return nil;`,
+                        );
+                    }
                 } else {
                     // TODO This is a union, but for now we just leave it dynamic
                     this.emitLine(
@@ -534,7 +568,8 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
     }
 
     private emitNonClassTopLevelTypedef(t: Type, name: Name): void {
-        const nonPointerTypeName = this.objcType(t)[0];
+        const nonPointerTypeName =
+            t instanceof UnionType ? "NSObject" : this.objcType(t, true)[0];
         this.emitLine("typedef ", nonPointerTypeName, " ", name, ";");
     }
 
@@ -628,6 +663,24 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                     this.emitLine(
                         "id json = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:error];",
                     );
+                    const container =
+                        t instanceof ArrayType ? "NSArray" : "NSDictionary";
+                    if (t instanceof ArrayType || t instanceof MapType) {
+                        this.emitLine(
+                            "if (![json isKindOfClass:",
+                            container,
+                            '.class]) [NSException raise:@"Invalid JSON" format:@"Expected ',
+                            container,
+                            '."];',
+                        );
+                    }
+                    if (t instanceof ArrayType && t.items.isPrimitive()) {
+                        this.emitLine(
+                            "for (id item in json) if (![item isKindOfClass:",
+                            this.jsonType(t.items)[0],
+                            '.class]) [NSException raise:@"Invalid JSON" format:@"Invalid array item."];',
+                        );
+                    }
                     this.emitLine(
                         "return *error ? nil : ",
                         this.fromDynamicExpression(t, "json"),
@@ -657,7 +710,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                         ";",
                     );
                     this.emitLine(
-                        "NSData *data = [NSJSONSerialization dataWithJSONObject:json options:kNilOptions error:error];",
+                        "NSData *data = [NSJSONSerialization dataWithJSONObject:json options:NSJSONWritingFragmentsAllowed error:error];",
                     );
                     this.emitLine("return *error ? nil : data;");
                 },
@@ -730,7 +783,8 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         this.forEachClassProperty(t, "none", (name, jsonName) => {
             irregular =
                 irregular ||
-                stringEscape(jsonName) !== this.sourcelikeToString(name);
+                objectiveCStringEscape(jsonName) !==
+                    this.sourcelikeToString(name);
         });
         return irregular;
     }
@@ -764,7 +818,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                     this.indent(() => {
                         this.forEachClassProperty(t, "none", (name, jsonName) =>
                             this.emitLine(
-                                `@"${stringEscape(jsonName)}": @"`,
+                                `@"${objectiveCStringEscape(jsonName)}": @"`,
                                 name,
                                 '",',
                             ),
@@ -804,7 +858,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 "+ (instancetype)fromJSONDictionary:(NSDictionary *)dict",
                 () => {
                     this.emitLine(
-                        "return dict ? [[",
+                        "return [dict isKindOfClass:NSDictionary.class] ? [[",
                         className,
                         " alloc] initWithJSONDictionary:dict] : nil;",
                     );
@@ -816,6 +870,110 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 () => {
                     this.emitBlock("if (self = [super init])", () => {
                         if (DEBUG) this.emitLine("__json = dict;");
+
+                        this.forEachClassProperty(
+                            t,
+                            "none",
+                            (_name, jsonName, property) => {
+                                const [min, max] =
+                                    minMaxValueForType(property.type) ?? [];
+                                if (min !== undefined) {
+                                    this.emitLine(
+                                        `if (dict[@"${objectiveCStringEscape(jsonName)}"] && [dict[@"${objectiveCStringEscape(jsonName)}"] doubleValue] < ${min}) return nil;`,
+                                    );
+                                }
+                                if (max !== undefined) {
+                                    this.emitLine(
+                                        `if (dict[@"${objectiveCStringEscape(jsonName)}"] && [dict[@"${objectiveCStringEscape(jsonName)}"] doubleValue] > ${max}) return nil;`,
+                                    );
+                                }
+                                const [minItems, maxItems] =
+                                    minMaxItemsForType(property.type) ?? [];
+                                if (minItems !== undefined) {
+                                    this.emitLine(
+                                        `if (dict[@"${objectiveCStringEscape(jsonName)}"] && [(NSArray *)dict[@"${objectiveCStringEscape(jsonName)}"] count] < ${minItems}) return nil;`,
+                                    );
+                                }
+                                if (maxItems !== undefined) {
+                                    this.emitLine(
+                                        `if ([(NSArray *)dict[@"${objectiveCStringEscape(jsonName)}"] count] > ${maxItems}) return nil;`,
+                                    );
+                                }
+                                const pattern = patternForType(property.type);
+                                if (pattern !== undefined) {
+                                    this.emitLine(
+                                        `if (dict[@"${objectiveCStringEscape(jsonName)}"] && [dict[@"${objectiveCStringEscape(jsonName)}"] rangeOfString:@"${objectiveCStringEscape(pattern)}" options:NSRegularExpressionSearch].location == NSNotFound) return nil;`,
+                                    );
+                                }
+                                const [minLength, maxLength] =
+                                    minMaxLengthForType(property.type) ?? [];
+                                if (minLength !== undefined) {
+                                    this.emitLine(
+                                        `if (dict[@"${objectiveCStringEscape(jsonName)}"] && [dict[@"${objectiveCStringEscape(jsonName)}"] length] < ${minLength}) return nil;`,
+                                    );
+                                }
+                                if (maxLength !== undefined) {
+                                    this.emitLine(
+                                        `if ([dict[@"${objectiveCStringEscape(jsonName)}"] length] > ${maxLength}) return nil;`,
+                                    );
+                                }
+                                if (property.type.kind === "uuid") {
+                                    this.emitLine(
+                                        `if (dict[@"${objectiveCStringEscape(jsonName)}"] && ![[NSUUID alloc] initWithUUIDString:dict[@"${objectiveCStringEscape(jsonName)}"]]) return nil;`,
+                                    );
+                                }
+                                if (property.type.kind === "date-time") {
+                                    this.emitLine(
+                                        `if (dict[@"${objectiveCStringEscape(jsonName)}"] && [dict[@"${objectiveCStringEscape(jsonName)}"] rangeOfString:@"^[0-9]{4}-[0-9]{2}-[0-9]{2}T" options:NSRegularExpressionSearch].location == NSNotFound) return nil;`,
+                                    );
+                                }
+                                if (
+                                    !property.isOptional &&
+                                    property.type.isNullable
+                                ) {
+                                    this.emitLine(
+                                        `if (!dict[@"${objectiveCStringEscape(jsonName)}"]) return nil;`,
+                                    );
+                                }
+                                if (
+                                    !property.isOptional &&
+                                    !["any", "null", "union"].includes(
+                                        property.type.kind,
+                                    )
+                                ) {
+                                    const jsonClass =
+                                        property.type instanceof ClassType ||
+                                        property.type instanceof MapType
+                                            ? "NSDictionary"
+                                            : this.jsonType(property.type)[0];
+                                    this.emitLine(
+                                        `if (![dict[@"${objectiveCStringEscape(jsonName)}"] isKindOfClass:`,
+                                        jsonClass,
+                                        ".class]) return nil;",
+                                    );
+                                }
+                                if (property.type.kind === "integer") {
+                                    this.emitLine(
+                                        `if ([dict[@"${objectiveCStringEscape(jsonName)}"] doubleValue] != [dict[@"${objectiveCStringEscape(jsonName)}"] longLongValue]) return nil;`,
+                                    );
+                                }
+                                if (
+                                    property.type instanceof MapType &&
+                                    [
+                                        "bool",
+                                        "integer",
+                                        "double",
+                                        "string",
+                                    ].includes(property.type.values.kind)
+                                ) {
+                                    this.emitLine(
+                                        `for (id value in [dict[@"${objectiveCStringEscape(jsonName)}"] allValues]) if (![value isKindOfClass:`,
+                                        this.jsonType(property.type.values)[0],
+                                        ".class]) return nil;",
+                                    );
+                                }
+                            },
+                        );
 
                         this.emitLine(
                             "[self setValuesForKeysWithDictionary:dict];",
@@ -927,7 +1085,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                                         property.type,
                                     )
                                 ) {
-                                    const key = stringEscape(jsonKey);
+                                    const key = objectiveCStringEscape(jsonKey);
                                     const name = ["_", propertyName];
                                     this.emitLine(
                                         '@"',
@@ -1040,7 +1198,11 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 );
                 this.indent(() => {
                     this.forEachEnumCase(enumType, "none", (_, jsonValue) => {
-                        const value = ['@"', stringEscape(jsonValue), '"'];
+                        const value = [
+                            '@"',
+                            objectiveCStringEscape(jsonValue),
+                            '"',
+                        ];
                         this.emitLine(
                             value,
                             ": [[",
@@ -1065,7 +1227,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 " { return ",
                 instances,
                 '[@"',
-                stringEscape(jsonValue),
+                objectiveCStringEscape(jsonValue),
                 '"]; }',
             );
         });
@@ -1162,7 +1324,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             this.forEachTopLevel(
                 "leading-and-interposing",
                 (t, n) => this.emitNonClassTopLevelTypedef(t, n),
-                (t) => !(t instanceof ClassType),
+                (t) => !(t instanceof ClassType || t instanceof EnumType),
             );
 
             const hasTopLevelNonClassTypes = iterableSome(
@@ -1300,10 +1462,10 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             this.emitMultiline(`static id map(id collection, id (^f)(id value)) {
 	id result = nil;
 	if ([collection isKindOfClass:NSArray.class]) {
-			result = [NSMutableArray arrayWithCapacity:[collection count]];
-			for (id x in collection) [result addObject:f(x)];
+			result = [NSMutableArray arrayWithCapacity:[(NSArray *)collection count]];
+			for (id x in collection) [result addObject:NSNullify(f(x))];
 	} else if ([collection isKindOfClass:NSDictionary.class]) {
-			result = [NSMutableDictionary dictionaryWithCapacity:[collection count]];
+			result = [NSMutableDictionary dictionaryWithCapacity:[(NSDictionary *)collection count]];
 			for (id key in collection) [result setObject:f([collection objectForKey:key]) forKey:key];
 	}
 	return result;

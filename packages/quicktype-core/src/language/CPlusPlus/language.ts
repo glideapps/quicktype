@@ -6,6 +6,7 @@ import {
     getOptionValues,
 } from "../../RendererOptions/index.js";
 import { TargetLanguage } from "../../TargetLanguage.js";
+import type { StringTypeMapping } from "../../Type/TypeBuilderUtils.js";
 import type { LanguageName, RendererOptions } from "../../types.js";
 
 import { CPlusPlusRenderer } from "./CPlusPlusRenderer.js";
@@ -136,6 +137,13 @@ export class CPlusPlusTargetLanguage extends TargetLanguage<
 
     public get supportsOptionalClassProperties(): boolean {
         return true;
+    }
+
+    public get stringTypeMapping(): StringTypeMapping {
+        return new Map([
+            ["uuid", "uuid"],
+            ["date-time", "date-time"],
+        ]);
     }
 
     protected makeRenderer<Lang extends LanguageName = "c++">(

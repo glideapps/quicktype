@@ -50,16 +50,30 @@ interface SchemaPathCase {
     schemaDir: string;
 }
 
+// On Windows the temp directory already is a real drive-letter path, so
+// the cases below use it directly. The literal "C:/Users/quicktype" tree
+// the POSIX runs rely on cannot be created there at all: a path segment
+// may not contain a colon, so mkdir fails with ENOENT.
+const isWindows = process.platform === "win32";
+
 const cases: SchemaPathCase[] = [
     {
         description: "Windows absolute path with backslashes",
-        schemaDir: "C:/Users/quicktype",
-        schemaArg: () => "C:\\Users\\quicktype\\top.schema.json",
+        schemaDir: isWindows ? "backslashes" : "C:/Users/quicktype",
+        schemaArg: (tempDir) =>
+            isWindows
+                ? path.join(tempDir, "backslashes", "top.schema.json")
+                : "C:\\Users\\quicktype\\top.schema.json",
     },
     {
         description: "Windows absolute path with forward slashes",
-        schemaDir: "C:/Users/quicktype",
-        schemaArg: () => "C:/Users/quicktype/top.schema.json",
+        schemaDir: isWindows ? "forward-slashes" : "C:/Users/quicktype",
+        schemaArg: (tempDir) =>
+            isWindows
+                ? path
+                      .join(tempDir, "forward-slashes", "top.schema.json")
+                      .replace(/\\/g, "/")
+                : "C:/Users/quicktype/top.schema.json",
     },
     {
         // Must keep working exactly as before the fix.

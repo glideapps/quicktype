@@ -2,6 +2,12 @@ import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer.js";
+import {
+    minMaxItemsForType,
+    minMaxLengthForType,
+    minMaxValueForType,
+    patternForType,
+} from "../../attributes/Constraints.js";
 import { type Name, Namer } from "../../Naming.js";
 import type { RenderContext } from "../../Renderer.js";
 import type { OptionValues } from "../../RendererOptions/index.js";
@@ -75,6 +81,16 @@ export class RubyRenderer extends ConvenienceRenderer {
         };
     }
 
+    protected forbiddenForUnionMembers(
+        _u: UnionType,
+        _unionNamed: Name,
+    ): ForbiddenWordsInfo {
+        return {
+            names: forbiddenForObjectProperties,
+            includeGlobalForbidden: true,
+        };
+    }
+
     protected makeNamedTypeNamer(): Namer {
         return new Namer("types", (n) => simpleNameStyle(n, true), []);
     }
@@ -93,18 +109,60 @@ export class RubyRenderer extends ConvenienceRenderer {
 
     private dryType(t: Type, isOptional = false): Sourcelike {
         const optional = isOptional ? ".optional" : "";
+        const pattern = (type: Type): Sourcelike => {
+            const regex = patternForType(type);
+            return regex === undefined
+                ? ""
+                : `.constrained(format: Regexp.new("${stringEscape(regex)}"))`;
+        };
+        const cardinality = (type: Type): string => {
+            const [min, max] = minMaxItemsForType(type) ?? [];
+            const constraints = [
+                min === undefined ? undefined : `min_size: ${min}`,
+                max === undefined ? undefined : `max_size: ${max}`,
+            ].filter((x): x is string => x !== undefined);
+            return constraints.length === 0
+                ? ""
+                : `.constrained(${constraints.join(", ")})`;
+        };
+        const minMax = (type: Type): string => {
+            const [min, max] = minMaxValueForType(type) ?? [];
+            const constraints = [
+                min === undefined ? undefined : `gteq: ${min}`,
+                max === undefined ? undefined : `lteq: ${max}`,
+            ].filter((x): x is string => x !== undefined);
+            return constraints.length === 0
+                ? ""
+                : `.constrained(${constraints.join(", ")})`;
+        };
+        const length = (type: Type): string => {
+            const [min, max] = minMaxLengthForType(type) ?? [];
+            const constraints = [
+                min === undefined ? undefined : `min_size: ${min}`,
+                max === undefined ? undefined : `max_size: ${max}`,
+            ].filter((x): x is string => x !== undefined);
+            return constraints.length === 0
+                ? ""
+                : `.constrained(${constraints.join(", ")})`;
+        };
         return matchType<Sourcelike>(
             t,
             (_anyType) => ["Types::Any", optional],
             (_nullType) => ["Types::Nil", optional],
             (_boolType) => ["Types::Bool", optional],
-            (_integerType) => ["Types::Integer", optional],
-            (_doubleType) => ["Types::Double", optional],
-            (_stringType) => ["Types::String", optional],
+            (integerType) => ["Types::Integer", minMax(integerType), optional],
+            (doubleType) => ["Types::Double", minMax(doubleType), optional],
+            (stringType) => [
+                "Types::String",
+                length(stringType),
+                pattern(stringType),
+                optional,
+            ],
             (arrayType) => [
                 "Types.Array(",
                 this.dryType(arrayType.items),
                 ")",
+                cardinality(arrayType),
                 optional,
             ],
             (classType) => [this.nameForNamedType(classType), optional],
@@ -612,7 +670,11 @@ export class RubyRenderer extends ConvenienceRenderer {
                             .map((memberName) => [", ", memberName, ": nil"]);
                         if (this.propertyTypeMarshalsImplicitlyFromDynamic(t)) {
                             this.emitBlock(
-                                ["if schema[:", name, "].right.valid? d"],
+                                [
+                                    "if schema.key(:",
+                                    name,
+                                    ").type.right.valid? d",
+                                ],
                                 () => {
                                     this.emitLine(
                                         "return new(",
@@ -632,9 +694,9 @@ export class RubyRenderer extends ConvenienceRenderer {
                                 );
                                 this.emitBlock(
                                     [
-                                        "if schema[:",
+                                        "if schema.key(:",
                                         name,
-                                        "].right.valid? value",
+                                        ").type.right.valid? value",
                                     ],
                                     () => {
                                         this.emitLine(
@@ -861,7 +923,9 @@ export class RubyRenderer extends ConvenienceRenderer {
 
                         // The json gem defines to_json on maps and primitives, so we only need to supply
                         // it for arrays.
-                        const needsToJsonDefined = topLevel.kind === "array";
+                        const needsToJsonDefined =
+                            topLevel instanceof ArrayType &&
+                            !topLevel.items.isPrimitive();
 
                         const classDeclaration = (): void => {
                             this.emitBlock(["class ", name], () => {
