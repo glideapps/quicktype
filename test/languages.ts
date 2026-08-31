@@ -1555,12 +1555,12 @@ export const PikeLanguage: Language = {
     skipMiscJSON: false,
     skipSchema: [
         // no implicit cast int <-> float in Pike
-        ...skipsIntFloatUnions,
+        ...skipsIntFloatUnions.filter(
+            (schema) => schema !== "integer-float-union.schema",
+        ),
         // all below: not failing on expected failure. That's because Pike's quite tolerant with assignments.
         ...skipsMapValueValidation,
-        "all-of-additional-properties-false.schema",
         "class-with-additional.schema",
-        "const-non-string.schema",
         "multi-type-enum.schema",
         "optional-any.schema",
         ...skipsUntypedUnions,
