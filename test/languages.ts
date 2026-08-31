@@ -1400,6 +1400,7 @@ export const KotlinXLanguage: Language = {
         "integer-string.schema",
         "min-max-items.schema", // unionItems is an int|string union array
         "minmaxlength.schema",
+        "multi-type-enum.schema",
         "mutually-recursive.schema",
         "prefix-items.schema",
         "recursive-union-flattening.schema",
@@ -1512,7 +1513,6 @@ export const PikeLanguage: Language = {
         // all below: not failing on expected failure. That's because Pike's quite tolerant with assignments.
         ...skipsMapValueValidation,
         "class-with-additional.schema",
-        "multi-type-enum.schema",
         "optional-any.schema",
         ...skipsUntypedUnions,
     ],
