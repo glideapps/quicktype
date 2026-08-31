@@ -405,6 +405,26 @@ function attributesForTypes(
         traverse(t, rootPath, typesArray.length === 1);
     }
 
+    // A nested homogeneous union next to null becomes one non-null type during
+    // unification, so its attributes belong on that type rather than on the
+    // enclosing nullable union.
+    const allDescendants = defined(typesForUnion.get(rootPath[0]));
+    const nullableUnionsCollapsedIntoType = new Set(
+        Array.from(unions).filter((u) => {
+            if (unionsEquivalentToRoot.has(u)) return false;
+            const descendants = defined(typesForUnion.get(u));
+            const otherDescendants = Array.from(allDescendants).filter(
+                (t) => !descendants.has(t),
+            );
+            return (
+                descendants.size > 1 &&
+                new Set(Array.from(descendants, (t) => t.kind)).size === 1 &&
+                otherDescendants.length > 0 &&
+                otherDescendants.every((t) => t.kind === "null")
+            );
+        }),
+    );
+
     const resultAttributes = mapMap(unionsForType, (unionForType, t) => {
         const singleAncestors = Array.from(unionForType).filter(
             (u) => defined(typesForUnion.get(u)).size === 1,
@@ -416,14 +436,31 @@ function attributesForTypes(
         const inheritedAttributes = singleAncestors.map((u) =>
             u.getAttributes(),
         );
-        return combineTypeAttributes(
+        let attributes = combineTypeAttributes(
             "union",
             [t.getAttributes()].concat(inheritedAttributes),
         );
+        const collapsedAncestors = Array.from(unionForType).filter(
+            (u): u is UnionType =>
+                u instanceof UnionType &&
+                nullableUnionsCollapsedIntoType.has(u),
+        );
+        for (const u of collapsedAncestors.reverse()) {
+            attributes = combineTypeAttributes(
+                "union",
+                u.getAttributes(),
+                increaseTypeAttributesDistance(attributes),
+            );
+        }
+
+        return attributes;
     });
     const unionAttributes = Array.from(unions).map((u) => {
         const t = typesForUnion.get(u);
-        if (t !== undefined && t.size === 1) {
+        if (
+            (t !== undefined && t.size === 1) ||
+            nullableUnionsCollapsedIntoType.has(u)
+        ) {
             return emptyTypeAttributes;
         }
 
