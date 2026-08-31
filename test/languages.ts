@@ -1060,6 +1060,7 @@ export const JavaScriptPropTypesLanguage: Language = {
         "enum",
         "union",
         "integer",
+        "date-time",
         "minmaxlength",
         "minmax",
         "minmaxitems",
