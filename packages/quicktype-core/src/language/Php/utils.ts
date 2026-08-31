@@ -128,6 +128,7 @@ export const phpForbiddenClassNames: readonly string[] = [
     "Null",
     "Object",
     "Or",
+    "Override",
     "Parent",
     "Print",
     "Private",
