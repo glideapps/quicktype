@@ -268,12 +268,7 @@ export const JavaLanguageWithLegacyDateTime: Language = {
 export const JavaLanguageWithLombok: Language = {
     ...JavaLanguage,
     base: "test/fixtures/java-lombok",
-    // Lombok-generated accessors cannot use the empty-key any-getter/setter.
-    skipJSON: [
-        "identifiers.json",
-        "simple-identifiers.json",
-        "nst-test-suite.json",
-    ],
+    skipJSON: [],
     quickTestRendererOptions: [{ "array-type": "array", lombok: "true" }],
 };
 
@@ -609,9 +604,6 @@ export const CJSONLanguage: Language = {
                 schema !== "go-schema-pattern-properties.schema" &&
                 schema !== "unevaluated-properties.schema",
         ),
-        /* Top-level array elements with invalid types (e.g. a string where
-         * an integer is expected) are not checked either. */
-        "prefix-items.schema",
         /* Required properties absent are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
         /* Pure Any type not supported (for the current implementation, can be added later, should manage a callback to provide the final application a way to handle it at parsing and creation of cJSON) */
         "any.schema",
@@ -1699,7 +1691,6 @@ export const PHPLanguage: Language = {
         "bug855-short.json",
         "bug863.json",
         "issue2680-scalar-array.json",
-        "keywords.json",
         "no-classes.json",
         "null-safe.json",
         "00c36.json",
@@ -1709,7 +1700,6 @@ export const PHPLanguage: Language = {
         "54d32.json",
         "734ad.json",
         "77392.json",
-        "7eb30.json",
         "7fbfb.json",
         "80aff.json",
         "9ac3b.json",

@@ -1242,6 +1242,9 @@ export class CJSONRenderer extends ConvenienceRenderer {
                         );
                         onFirst = false;
                     }
+                    this.emitLine(
+                        "if (0 == x->type) { cJSON_free(x); return NULL; }",
+                    );
                 });
                 this.emitLine("return x;");
             },
