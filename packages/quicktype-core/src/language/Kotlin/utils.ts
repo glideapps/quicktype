@@ -14,7 +14,7 @@ import {
     isPrintable,
     legalizeCharacters,
     splitIntoWords,
-    utf32ConcatMap,
+    utf16ConcatMap,
 } from "../../support/Strings.js";
 
 function isPartCharacter(codePoint: number): boolean {
@@ -50,7 +50,7 @@ function unicodeEscape(codePoint: number): string {
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-const _stringEscape = utf32ConcatMap(
+const _stringEscape = utf16ConcatMap(
     escapeNonPrintableMapper(isPrintable, unicodeEscape),
 );
 

@@ -92,6 +92,7 @@ export class Namer {
         public readonly name: string,
         public readonly nameStyle: NameStyle,
         public prefixes: string[],
+        private readonly _caseInsensitiveStyledNames = false,
     ) {
         this._prefixes = new Set(prefixes);
     }
@@ -104,6 +105,16 @@ export class Namer {
         namesToAssignIterable: Iterable<Name>,
     ): ReadonlyMap<Name, string> {
         const forbiddenNames = new Set(forbiddenNamesIterable);
+        const isForbidden = (candidate: string): boolean =>
+            iterableSome(
+                forbiddenNames,
+                (name) =>
+                    name === candidate ||
+                    (this._caseInsensitiveStyledNames &&
+                        name === this.nameStyle(name) &&
+                        candidate === this.nameStyle(candidate) &&
+                        name.toLowerCase() === candidate.toLowerCase()),
+            );
         const namesToAssign = Array.from(namesToAssignIterable);
 
         assert(
@@ -122,7 +133,7 @@ export class Namer {
             const maybeUniqueName = iterableFind(
                 proposedNames,
                 (proposed) =>
-                    !forbiddenNames.has(namingFunction.nameStyle(proposed)) &&
+                    !isForbidden(namingFunction.nameStyle(proposed)) &&
                     namesToAssign.every(
                         (n) =>
                             n === name ||

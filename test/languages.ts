@@ -3,13 +3,6 @@ import type { LanguageName } from "quicktype-core";
 // @ts-expect-error: ../dist only exists after the root package is built
 import type { RendererOptions } from "../dist/quicktype-core/Run";
 
-const easySampleJSONs = [
-    "bitcoin-block.json",
-    "pokedex.json",
-    "simple-object.json",
-    "getting-started.json",
-];
-
 // Shared `skipSchema` lists for failure modes that many languages have in
 // common.  Spread these into a language's `skipSchema` instead of repeating
 // the individual entries.  When a new test schema hits one of these failure
@@ -58,21 +51,13 @@ const skipsMapValueValidation = [
     "unevaluated-properties.schema",
 ];
 
-// The generated deserializer for a top-level array of scalars uses a
-// loosely-typed container (e.g. a raw `List`, an `ArrayList<Long>` whose
-// element type is erased at runtime, or an untyped decoder) that does not
-// enforce the declared element type, so a top-level array whose element has
-// the wrong scalar type (a string where an integer is expected) round-trips
-// instead of failing.  Add any new top-level-array schema whose fail sample
-// relies on rejecting a mistyped element.
-const skipsArrayElementValidation = ["issue2680-top-level-array.schema"];
-
 export type LanguageFeature =
     | "enum"
     | "union"
     | "no-defaults"
     | "strict-optional"
     | "date-time"
+    | "integer"
     | "integer-string"
     | "bool-string"
     | "uuid"
@@ -112,7 +97,20 @@ export const JSONSchemaLanguage: Language = {
     diffViaSchema: false,
     skipDiffViaSchema: [],
     allowMissingNull: false,
-    features: ["minmax", "minmaxlength", "pattern"],
+    features: [
+        "enum",
+        "union",
+        "no-defaults",
+        "strict-optional",
+        "date-time",
+        "uuid",
+        "integer",
+        "minmax",
+        "minmaxitems",
+        "minmaxlength",
+        "minmaxitems",
+        "pattern",
+    ],
     output: "TopLevel.schema",
     topLevel: "TopLevel",
     skipJSON: [],
@@ -146,16 +144,9 @@ export const CSharpLanguage: Language = {
     ],
     output: "QuickType.cs",
     topLevel: "TopLevel",
-    skipJSON: [
-        "nbl-stats.json", // See issue #823
-        "empty-enum.json", // https://github.com/JamesNK/Newtonsoft.Json/issues/1687
-        "31189.json", // JSON.NET doesn't accept year 0000 as 1BC, though it should
-    ],
+    skipJSON: [],
     skipMiscJSON: false,
-    skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
-        "top-level-enum.schema", // The code we generate for top-level enums is incompatible with the driver
-    ],
+    skipSchema: [],
     // The default framework is SystemTextJson; this fixture deliberately
     // pins NewtonSoft so the Newtonsoft renderer keeps end-to-end coverage.
     rendererOptions: { "check-required": "true", framework: "NewtonSoft" },
@@ -200,19 +191,15 @@ export const CSharpLanguageSystemTextJson: Language = {
         "integer-string",
         "bool-string",
         "uuid",
+        "integer",
     ],
     output: "QuickType.cs",
     topLevel: "TopLevel",
-    skipJSON: [
-        "31189.json", // .NET doesn't accept year 0000 as 1BC, though it should
-    ],
+    skipJSON: [],
     skipMiscJSON: false,
     skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
-        "top-level-enum.schema", // The code we generate for top-level enums is incompatible with the driver
         // The following skips are pre-existing System.Text.Json renderer issues,
         // found when first enabling the schema fixture for this language:
-        "keyword-unions.schema", // a property named "JsonSerializer" collides with System.Text.Json.JsonSerializer: CS0120
         // minmaxlength.schema, optional-constraints.schema, and
         // optional-const-ref.schema used to be skipped here because the
         // generated converters triggered CS8602 warnings, which "dotnet
@@ -251,22 +238,12 @@ export const JavaLanguage: Language = {
     diffViaSchema: false,
     skipDiffViaSchema: [],
     allowMissingNull: false,
-    features: ["enum", "union", "uuid"],
+    features: ["enum", "union", "uuid", "date-time", "integer"],
     output: "src/main/java/io/quicktype/TopLevel.java",
     topLevel: "TopLevel",
-    skipJSON: [
-        "identifiers.json",
-        "simple-identifiers.json",
-        "nst-test-suite.json",
-    ],
+    skipJSON: [],
     skipMiscJSON: false,
-    skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
-        "keyword-unions.schema", // generates classes with names that are case-insensitively equal
-        // The generated converter deserializes a top-level array with a raw
-        // `List`, so a mistyped element round-trips instead of failing.
-        ...skipsArrayElementValidation,
-    ],
+    skipSchema: [],
     rendererOptions: {},
     // The default is array-type=list; this keeps the T[] code path
     // covered.
@@ -277,14 +254,11 @@ export const JavaLanguage: Language = {
 export const JavaLanguageWithLegacyDateTime: Language = {
     ...JavaLanguage,
     skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
         ...JavaLanguage.skipSchema,
         "date-time.schema", // Expects less strict serialization.
     ],
     skipJSON: [
         ...(JavaLanguage.skipJSON !== undefined ? JavaLanguage.skipJSON : []),
-        "0a358.json", // Expects less strict serialization (optional milliseconds).
-        "337ed.json", // Expects less strict serialization (optional milliseconds).
     ],
     skipMiscJSON: true, // Handles edge cases differently and does not allow optional milliseconds.
     rendererOptions: { "datetime-provider": "legacy" },
@@ -294,6 +268,12 @@ export const JavaLanguageWithLegacyDateTime: Language = {
 export const JavaLanguageWithLombok: Language = {
     ...JavaLanguage,
     base: "test/fixtures/java-lombok",
+    // Lombok-generated accessors cannot use the empty-key any-getter/setter.
+    skipJSON: [
+        "identifiers.json",
+        "simple-identifiers.json",
+        "nst-test-suite.json",
+    ],
     quickTestRendererOptions: [{ "array-type": "array", lombok: "true" }],
 };
 
@@ -313,7 +293,6 @@ export const PythonLanguage: Language = {
         "34702.json",
         "7681c.json",
         "c3303.json",
-        "e8b04.json",
         "f6a65.json",
     ],
     allowMissingNull: true,
@@ -325,16 +304,13 @@ export const PythonLanguage: Language = {
         "integer-string",
         "bool-string",
         "uuid",
+        "integer",
     ],
     output: "quicktype.py",
     topLevel: "TopLevel",
-    skipJSON: [
-        "31189.json", // year 0 is out of range
-    ],
+    skipJSON: [],
     skipMiscJSON: false,
-    skipSchema: [
-        "keyword-unions.schema", // Requires more than 255 arguments
-    ],
+    skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [
         // The default is "3.10"; keep the older feature sets covered.
@@ -358,7 +334,6 @@ export const RustLanguage: Language = {
         "keywords.json",
         "recursive.json",
         "github-events.json",
-        "nst-test-suite.json",
         "0a91a.json",
         "0cffa.json",
         "127a1.json",
@@ -368,15 +343,14 @@ export const RustLanguage: Language = {
         "76ae1.json",
         "af2d1.json",
         "c3303.json",
-        "e8b04.json",
         "f6a65.json",
     ],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults"],
+    features: ["enum", "union", "no-defaults", "integer"],
     output: "module_under_test.rs",
     topLevel: "TopLevel",
     skipJSON: [],
-    skipSchema: ["integer-before-number.schema"], // Python-specific union-order regression.
+    skipSchema: [],
     skipMiscJSON: false,
     rendererOptions: {},
     quickTestRendererOptions: [
@@ -406,33 +380,37 @@ export const CrystalLanguage: Language = {
     runCommand(sample: string) {
         return `./quicktype "${sample}"`;
     },
-    diffViaSchema: false,
-    skipDiffViaSchema: [],
+    diffViaSchema: true,
+    skipDiffViaSchema: [
+        "keywords.json",
+        "bug427.json",
+        "recursive.json",
+        "github-events.json",
+        "32431.json",
+        "0cffa.json",
+        "af2d1.json",
+        "0a91a.json",
+        "4961a.json",
+        "26b49.json",
+        "68c30.json",
+        "c3303.json",
+        "76ae1.json",
+        "34702.json",
+        "f6a65.json",
+        "7681c.json",
+        "127a1.json",
+    ],
     allowMissingNull: true,
-    features: ["enum", "union", "no-defaults"],
+    features: ["union", "no-defaults", "integer"],
     output: "TopLevel.cr",
     topLevel: "TopLevel",
     skipJSON: [
         "blns-object.json",
         "identifiers.json",
         "simple-identifiers.json",
-        "bug427.json",
         "nst-test-suite.json",
-        "34702.json",
-        "34702.json",
-        "4961a.json",
-        "32431.json",
-        "68c30.json",
-        "e8b04.json",
     ],
-    skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
-        // Crystal does not handle enum mapping
-        ...skipsEnumValueValidation,
-        // Crystal does not support top-level primitives
-        "top-level-enum.schema",
-        "keyword-unions.schema",
-    ],
+    skipSchema: [],
     skipMiscJSON: false,
     rendererOptions: {},
     quickTestRendererOptions: [],
@@ -457,7 +435,6 @@ export const RubyLanguage: Language = {
         "bug863.json",
         "kitchen-sink.json",
         "github-events.json",
-        "nbl-stats.json",
         "reddit.json",
         "00c36.json",
         "050b0.json",
@@ -501,36 +478,20 @@ export const RubyLanguage: Language = {
         "e8b04.json",
     ],
     allowMissingNull: true,
-    features: ["enum", "union", "no-defaults"],
+    features: [
+        "enum",
+        "union",
+        "no-defaults",
+        "integer",
+        "minmax",
+        "minmaxlength",
+        "pattern",
+        "strict-optional",
+    ],
     output: "TopLevel.rb",
     topLevel: "TopLevel",
-    skipJSON: [
-        // Chokes on { "1": "one" } because _[0-9]+ is reserved in ruby
-        "blns-object.json",
-        // Ruby union code does not work with new Dry
-        // can't convert Symbol into Hash (Dry::Types::CoercionError)
-        "bug863.json",
-        "combinations1.json",
-        "combinations2.json",
-        "combinations3.json",
-        "combinations4.json",
-        "nst-test-suite.json",
-        "optional-union.json",
-        "union-constructor-clash.json",
-        "unions.json",
-        "php-mixed-union.json",
-        "nbl-stats.json",
-        "kitchen-sink.json",
-        // Top-level scalar arrays redefine Array#to_json recursively.
-        "issue2680-scalar-array.json",
-    ],
-    skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
-        // We don't generate a convenience method for top-level enums
-        "top-level-enum.schema",
-        // Top-level scalar arrays redefine Array#to_json recursively.
-        "issue2680-top-level-array.schema",
-    ],
+    skipJSON: [],
+    skipSchema: [],
     skipMiscJSON: false,
     rendererOptions: {},
     quickTestRendererOptions: [["pokedex.json", { namespace: "QuickType" }]],
@@ -548,14 +509,11 @@ export const GoLanguage: Language = {
         "bug427.json",
         "nbl-stats.json",
         "0e0c2.json",
-        "2df80.json",
-        "337ed.json",
         "34702.json",
-        "7eb30.json",
         "e8b04.json",
     ],
     allowMissingNull: false,
-    features: ["union"],
+    features: ["enum", "union", "integer"],
     output: "quicktype.go",
     topLevel: "TopLevel",
     skipJSON: [
@@ -563,17 +521,9 @@ export const GoLanguage: Language = {
         "simple-identifiers.json",
         "blns-object.json",
         "nst-test-suite.json",
-        // can't differenciate empty array and nothing for optional empty array
-        // (omitempty).
-        "github-events.json",
     ],
     skipMiscJSON: false,
-    skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
-        // can't differenciate empty array and nothing for optional empty array
-        // (omitempty).
-        "postman-collection.schema",
-    ],
+    skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [
         // Runs against the expected-output file
@@ -622,20 +572,20 @@ export const CJSONLanguage: Language = {
     allowMissingNull: false,
     features: [
         "minmax",
+        "minmaxInteger",
+        "minmaxitems",
         "minmaxlength",
         "pattern",
         "enum",
         "union",
         "no-defaults",
+        "strict-optional",
     ],
     output: "TopLevel.h",
     topLevel: "TopLevel",
     skipJSON: [
-        /* Line feed in identifiers is not supported */
-        "identifiers.json",
         /* Quote in identifier is not supported */
         "blns-object.json",
-        "simple-identifiers.json",
         /* cJSON is not able to parse input with special characters */
         "nst-test-suite.json",
         /* Union with no name in nullable Array in Array is not supported */
@@ -643,56 +593,31 @@ export const CJSONLanguage: Language = {
         "combinations3.json",
         /* Map in Array in TopLevel is not supported (for the current implementation, can be added later, need recursivity) */
         "combinations2.json",
-        /* Array in Array in Union is not supported (for the current implementation, can be added later, need recursivity) */
-        "combinations4.json",
-        /* Top-level arrays of scalars store scalar values as pointers incorrectly. */
-        "issue2680-scalar-array.json",
     ],
     skipMiscJSON: false,
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
-        /* Member names are different when generating with schema */
-        "vega-lite.schema",
         /* Enum as TopLevel is not supported */
         "top-level-enum.schema",
         /* Union with Number and Integer are not supported; min/max constraints on numbers rely on the same distinction */
-        ...skipsIntFloatUnions,
-        /* Enum with invalid values are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
-        ...skipsEnumValueValidation,
+        ...skipsIntFloatUnions.filter(
+            (schema) => schema !== "minmax-integer.schema",
+        ),
         /* Union, Map and Arrays with invalid types are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
-        "boolean-subschema.schema",
-        "class-with-additional.schema",
-        ...skipsMapValueValidation,
+        ...skipsMapValueValidation.filter(
+            (schema) =>
+                schema !== "go-schema-pattern-properties.schema" &&
+                schema !== "unevaluated-properties.schema",
+        ),
         /* Top-level array elements with invalid types (e.g. a string where
          * an integer is expected) are not checked either. */
-        ...skipsArrayElementValidation,
-        "multi-type-enum.schema",
-        "nested-intersection-union.schema",
         "prefix-items.schema",
-        /* Constraints (min/max and regex) are not supported (for the current implementation, can be added later, should abord parsing and return NULL) */
-        "minmaxlength.schema",
-        "schema-constraints.schema",
-        "optional-const-ref.schema",
-        /* Same unsupported min/max, length and regex constraints, applied to optional properties */
-        "optional-constraints.schema",
-        "pattern.schema",
         /* Required properties absent are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
-        "ie-suffix-singularization.schema",
-        "intersection.schema",
-        "required.schema",
-        // The default-value fail sample also relies on required-property
-        // enforcement, which cJSON does not do.
-        "default-value.schema",
         /* Pure Any type not supported (for the current implementation, can be added later, should manage a callback to provide the final application a way to handle it at parsing and creation of cJSON) */
         "any.schema",
         "direct-union.schema",
         "optional-any.schema",
         "recursive-union-flattening.schema",
-        /* Self-referential union member (a union whose member recursively
-         * refers back to the enclosing object) is not supported by the
-         * multi-source renderer; generation aborts. Pre-existing cJSON
-         * limitation, unrelated to the Rust fixture this schema targets. */
-        "rust-cycle-breaker-union.schema",
         "required-non-properties.schema",
         /* Class elements with invalid type are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
         ...skipsUntypedUnions,
@@ -720,7 +645,7 @@ export const CJSONDefaultLanguage: Language = {
     diffViaSchema: false,
     skipDiffViaSchema: [],
     allowMissingNull: false,
-    features: [],
+    features: ["minmaxitems"],
     output: "TopLevel.h",
     topLevel: "TopLevel",
     includeJSON: ["nbl-stats.json"],
@@ -811,29 +736,17 @@ export const CPlusPlusLanguage: Language = {
         "enum",
         "union",
         "no-defaults",
+        "integer",
+        "minmaxitems",
+        "strict-optional",
+        "uuid",
+        "date-time",
     ],
     output: "quicktype.hpp",
     topLevel: "TopLevel",
-    skipJSON: [
-        // fails on a string containing null
-        "nst-test-suite.json",
-        // compiler error I don't want to figure out right now
-        "nbl-stats.json",
-        // uses too much memory compiling
-        "combinations.json",
-        "combinations1.json",
-        "combinations2.json",
-        "combinations3.json",
-        "combinations4.json",
-    ],
+    skipJSON: [],
     skipMiscJSON: false,
-    skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
-        // uses too much memory
-        "keyword-unions.schema",
-        // The generated deserializer accepts non-object values when all class properties are optional.
-        "nested-intersection-union.schema",
-    ],
+    skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [
         { "code-format": "with-struct" },
@@ -842,11 +755,8 @@ export const CPlusPlusLanguage: Language = {
         ["bug2521.json", { wstring: "use-wstring" }],
         { "const-style": "east-const" },
         // The default is boost=false (C++17); this keeps the boost code
-        // path covered.  Pinned to specific inputs because the default
-        // quicktest inputs (combinations[1-4].json) are all in this
-        // fixture's skipJSON, so plain-options quicktests never run for
-        // C++.  unions.json exercises nulls inside unions, where the
-        // boost and std optional/variant code paths differ.
+        // path covered.  unions.json exercises nulls inside unions, where
+        // the boost and std optional/variant code paths differ.
         ["unions.json", { boost: "true" }],
         ["pokedex.json", { boost: "true" }],
         ["optional-any.schema", { "hide-null-optional": "true" }],
@@ -879,34 +789,19 @@ export const ElmLanguage: Language = {
     },
     diffViaSchema: true,
     skipDiffViaSchema: [
-        "blns-object.json",
         "identifiers.json",
         "keywords.json",
-        "nst-test-suite.json",
-        "simple-identifiers.json",
-        "bug863.json",
-        "reddit.json",
         "github-events.json",
         "nbl-stats.json",
         "0a91a.json",
         "0e0c2.json",
-        "29f47.json",
-        "2df80.json",
-        "27332.json",
-        "32431.json",
-        "337ed.json",
         "34702.json",
-        "4a455.json",
-        "6de06.json",
         "76ae1.json",
-        "7eb30.json",
-        "ae9ca.json",
         "af2d1.json",
-        "be234.json",
         "e8b04.json",
     ],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults"],
+    features: ["enum", "union", "no-defaults", "integer"],
     output: "QuickType.elm",
     topLevel: "QuickType",
     // Elm type aliases cannot be recursive, so all inputs that produce
@@ -930,14 +825,6 @@ export const ElmLanguage: Language = {
         "simple-ref.schema", // recursion
         "recursive-union-flattening.schema", // recursion
         "rust-cycle-breaker-union.schema", // recursion
-        // elm/json's field decoder uses the JS `in` operator, which finds
-        // inherited Object.prototype members, so an absent "constructor"
-        // property decodes to the object's constructor function.
-        "constructor.schema",
-        "keyword-unions.schema",
-        // The generated decoder accepts invalid union members because all
-        // class properties decode via `Jpipe.optional`.
-        "nested-intersection-union.schema",
     ],
     rendererOptions: {},
     // `list` is the default now; keep the `Array` code path covered.
@@ -955,16 +842,15 @@ export const SwiftLanguage: Language = {
     diffViaSchema: true,
     skipDiffViaSchema: [
         "bug427.json",
+        "blns-object.json",
         "github-events.json",
         "keywords.json",
+        "null-safe.json",
         "0a358.json", // date-time issues
         "0a91a.json",
-        "26c9c.json", // uri/string confusion
-        "32d5c.json", // date-time issues
         "337ed.json",
         "34702.json",
         "54d32.json", // date-time issues
-        "5eae5.json", // date-time issues
         "77392.json", // date-time issues
         "7f568.json",
         "734ad.json",
@@ -978,41 +864,17 @@ export const SwiftLanguage: Language = {
         "e53b5.json",
         "e8b04.json",
         "fcca3.json",
-        "f82d9.json",
-        "bug863.json", // Unable to resolve reserved keyword use, "description"
     ],
     allowMissingNull: true,
-    features: ["enum", "union", "no-defaults", "date-time"],
+    features: ["enum", "union", "no-defaults", "date-time", "integer"],
     output: "quicktype.swift",
     topLevel: "TopLevel",
     skipJSON: [
-        // Swift only supports top-level arrays and objects
-        "no-classes.json",
-        // This at least is keeping blns-object from working: https://bugs.swift.org/browse/SR-6314
-        "blns-object.json",
         // Doesn't seem to work on Linux, works on MacOS
         "nst-test-suite.json",
-        "null-safe.json",
     ],
     skipMiscJSON: false,
-    skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
-        // The code we generate for top-level enums is incompatible with the driver
-        "top-level-enum.schema",
-        // This works on macOS, but on Linux one of the failure test cases doesn't fail
-        ...skipsUntypedUnions,
-        "required.schema",
-        // The default-value fail sample also relies on required-property enforcement.
-        "default-value.schema",
-        "multi-type-enum.schema",
-        "intersection.schema",
-        ...skipsMapValueValidation,
-        ...skipsEnumValueValidation,
-        "date-time.schema",
-        "class-with-additional.schema",
-        "vega-lite.schema",
-        "top-level-primitive.schema",
-    ],
+    skipSchema: [],
     rendererOptions: { "support-linux": "true" },
     quickTestRendererOptions: [
         { "support-linux": "false" },
@@ -1060,29 +922,28 @@ export const ObjectiveCLanguage: Language = {
     diffViaSchema: false,
     skipDiffViaSchema: [],
     allowMissingNull: true,
-    features: ["enum", "no-defaults"],
+    features: [
+        "enum",
+        "integer",
+        "minmax",
+        "minmaxInteger",
+        "minmaxitems",
+        "pattern",
+        "minmaxlength",
+        "no-defaults",
+        "strict-optional",
+        "uuid",
+        "date-time",
+    ],
     output: "QTTopLevel.m",
     topLevel: "QTTopLevel",
     skipJSON: [
         // Almost all strings work except any containing \u001b
         // See https://goo.gl/L8HfUP
         "blns-object.json",
-        // NSJSONSerialization can read but not write top-level primitives
-        "no-classes.json",
-        // TODO
-        "combinations.json",
-        "combinations1.json",
-        // Needs to distinguish between optional and null properties
-        "optional-union.json",
-        // Compile error
-        "nst-test-suite.json",
-        // Could not convert JSON to model: Error Domain=JSONSerialization Code=-1 "(null)" UserInfo={exception=-[NSNull countByEnumeratingWithState:objects:count:]: unrecognized selector sent to instance 0x7fff807b6ea0}
-        "combinations2.json",
-        "combinations3.json",
-        "combinations4.json",
     ],
     skipMiscJSON: false,
-    skipSchema: ["integer-before-number.schema"], // Python-specific union-order regression.
+    skipSchema: [],
     rendererOptions: { functions: "true" },
     quickTestRendererOptions: [],
     sourceFiles: ["src/language/Objective-C/index.ts"],
@@ -1098,31 +959,26 @@ export const TypeScriptLanguage: Language = {
         return `tsx main.ts "${sample}"`;
     },
     diffViaSchema: true,
-    skipDiffViaSchema: [
-        "bug427.json",
-        "bug863.json",
-        "kitchen-sink.json",
-        "nbl-stats.json",
-        "nst-test-suite.json",
-        "00c36.json",
-        "2df80.json",
-        "34702.json",
-        "76ae1.json",
-        "7fbfb.json",
-        "c8c7e.json",
-        "cda6c.json",
-        "e53b5.json",
-        "e8b04.json",
-    ],
+    skipDiffViaSchema: [],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults", "strict-optional", "date-time"],
+    features: [
+        "enum",
+        "union",
+        "no-defaults",
+        "strict-optional",
+        "date-time",
+        "integer",
+        "pattern",
+        "uuid",
+        "minmaxitems",
+        "minmaxlength",
+        "minmax",
+    ],
     output: "TopLevel.ts",
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
     skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
-        "keyword-unions.schema", // can't handle "constructor" property
         // Pre-existing failures (this fixture is not in CI yet, and these
         // fail with unmodified master too): objects with both declared
         // properties and typed additionalProperties render as an interface
@@ -1155,19 +1011,27 @@ export const JavaScriptLanguage: Language = {
     runCommand(sample: string) {
         return `node main.js "${sample}"`;
     },
-    // FIXME: enable once TypeScript supports unions
-    diffViaSchema: false,
+    diffViaSchema: true,
     skipDiffViaSchema: [],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults", "strict-optional", "date-time"],
+    features: [
+        "enum",
+        "union",
+        "no-defaults",
+        "strict-optional",
+        "date-time",
+        "integer",
+        "pattern",
+        "uuid",
+        "minmaxitems",
+        "minmaxlength",
+        "minmax",
+    ],
     output: "TopLevel.js",
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
-    skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
-        "keyword-unions.schema", // can't handle "constructor" property
-    ],
+    skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [
         { "runtime-typecheck": "false" },
@@ -1189,21 +1053,21 @@ export const JavaScriptPropTypesLanguage: Language = {
     diffViaSchema: false,
     skipDiffViaSchema: [],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults", "strict-optional", "date-time"],
+    features: [
+        "enum",
+        "union",
+        "integer",
+        "date-time",
+        "minmaxlength",
+        "minmax",
+        "minmaxitems",
+        "pattern",
+        "uuid",
+    ],
     output: "toplevel.js",
     topLevel: "TopLevel",
-    skipJSON: [
-        "ed095.json",
-        "bug790.json", // renderer does not support recursion
-        "recursive.json", // renderer does not support recursion
-        "spotify-album.json", // renderer does not support recursion
-        "76ae1.json", // renderer does not support recursion
-    ],
-    skipSchema: [
-        // The renderer does not support a bare top-level map.
-        "empty-object.schema",
-        "integer-before-number.schema", // Python-specific union-order regression.
-    ],
+    skipJSON: [],
+    skipSchema: [],
     skipMiscJSON: false,
     rendererOptions: { "module-system": "es6" },
     quickTestRendererOptions: [{ converters: "top-level" }],
@@ -1219,15 +1083,24 @@ export const FlowLanguage: Language = {
     diffViaSchema: false,
     skipDiffViaSchema: [],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults", "strict-optional"],
+    features: [
+        "enum",
+        "union",
+        "no-defaults",
+        "strict-optional",
+        "date-time",
+        "integer",
+        "pattern",
+        "uuid",
+        "minmaxitems",
+        "minmaxlength",
+        "minmax",
+    ],
     output: "TopLevel.js",
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
-    skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
-        "keyword-unions.schema", // can't handle "constructor" property
-    ],
+    skipSchema: [],
     rendererOptions: { "explicit-unions": "yes" },
     quickTestRendererOptions: [
         { "runtime-typecheck": "false" },
@@ -1377,8 +1250,6 @@ I havea no idea how to encode these tests correctly.
         "nst-test-suite.json",
     ],
     skipSchema: [
-        // The renderer does not support a bare top-level map.
-        "empty-object.schema",
         "integer-before-number.schema", // Python-specific union-order regression.
     ],
     skipMiscJSON: false,
@@ -1403,7 +1274,7 @@ export const KotlinLanguage: Language = {
         "76ae1.json",
     ],
     allowMissingNull: true,
-    features: ["enum", "union", "no-defaults", "date-time"],
+    features: ["enum", "union", "no-defaults", "date-time", "integer"],
     output: "TopLevel.kt",
     topLevel: "TopLevel",
     skipJSON: [
@@ -1432,17 +1303,11 @@ export const KotlinLanguage: Language = {
         "unions.json",
         "php-mixed-union.json",
         "nst-test-suite.json",
-        // Klaxon does not support top-level primitives
-        "no-classes.json",
         // These should be enabled
-        "nbl-stats.json",
         // TODO Investigate these
         "af2d1.json",
-        "32431.json",
-        "bug427.json",
     ],
     skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
         // Very weird - the types are correct, but it can (de)serialize the string,
         // which is not represented in the types (implicit-class-array-union);
         // class-map-union: KlaxonException: Couldn't find a suitable constructor for class UnionValue to initialize with {}
@@ -1453,9 +1318,6 @@ export const KotlinLanguage: Language = {
         "class-with-additional.schema",
         ...skipsMapValueValidation,
         // IllegalArgumentException
-        "accessors.schema",
-        "description.schema",
-        "union-list.schema",
         // KlaxonException: Need to extract inside
         "bool-string.schema",
         "integer-string.schema",
@@ -1465,15 +1327,7 @@ export const KotlinLanguage: Language = {
         // KlaxonException: Couldn't find a suitable constructor for class UnionValue to initialize with {}
         "direct-union.schema",
         // Some weird name collision
-        "keyword-enum.schema",
         "keyword-unions.schema",
-        // Klaxon does not support top-level primitives/unions
-        "top-level-enum.schema",
-        "top-level-primitive.schema",
-        "recursive-union-flattening.schema",
-        // A top-level array is deserialized without enforcing its element
-        // type, so a mistyped element round-trips instead of failing.
-        ...skipsArrayElementValidation,
     ],
     skipMiscJSON: false,
     // The default framework is jackson; this fixture deliberately pins
@@ -1494,87 +1348,34 @@ export const KotlinJacksonLanguage: Language = {
     skipDiffViaSchema: [
         "bug427.json",
         "keywords.json",
+        "blns-object.json",
         // TODO Investigate these
         "34702.json",
         "76ae1.json",
     ],
     allowMissingNull: true,
-    features: ["enum", "union", "no-defaults", "date-time"],
+    features: [
+        "enum",
+        "union",
+        "no-defaults",
+        "strict-optional",
+        "date-time",
+        "integer",
+        "minmaxitems",
+        "minmax",
+        "minmaxlength",
+        "pattern",
+    ],
     output: "TopLevel.kt",
     topLevel: "TopLevel",
     skipJSON: [
         // Some odd property names prevent Klaxon from mapping to constructors
         // https://github.com/cbeust/klaxon/issues/146
-        "blns-object.json",
         "identifiers.json",
         "simple-identifiers.json",
-        // Klaxon cannot parse List<List<Enum | Union>>
-        // https://github.com/cbeust/klaxon/issues/145
-        "kitchen-sink.json",
-        "26c9c.json",
-        "421d4.json",
-        "a0496.json",
-        "fcca3.json",
-        "ae9ca.json",
-        "617e8.json",
-        "5f7fe.json",
-        "f74d5.json",
-        "a3d8c.json",
-        "combinations1.json",
-        "combinations2.json",
-        "combinations3.json",
-        "combinations4.json",
-        "unions.json",
-        "php-mixed-union.json",
         "nst-test-suite.json",
-        // Klaxon does not support top-level primitives
-        "no-classes.json",
-        // These should be enabled
-        "nbl-stats.json",
-        // TODO Investigate these
-        "af2d1.json",
-        "32431.json",
-        "bug427.json",
     ],
-    skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
-        // Very weird - the types are correct, but it can (de)serialize the string,
-        // which is not represented in the types (implicit-class-array-union);
-        // class-map-union: KlaxonException: Couldn't find a suitable constructor for class UnionValue to initialize with {}
-        ...skipsUntypedUnions,
-        // Deserializes an array where a union of two classes is expected
-        // instead of rejecting it.
-        "nested-intersection-union.schema",
-        "class-with-additional.schema",
-        ...skipsMapValueValidation,
-        // IllegalArgumentException
-        "accessors.schema",
-        "description.schema",
-        "union-list.schema",
-        // KlaxonException: Need to extract inside
-        "bool-string.schema",
-        "integer-string.schema",
-        "uuid.schema",
-        // produces {"foo" : "java.lang.Object@48d61b48"}
-        "any.schema",
-        // KlaxonException: Couldn't find a suitable constructor for class UnionValue to initialize with {}
-        "direct-union.schema",
-        // Some weird name collision
-        "keyword-enum.schema",
-        "keyword-unions.schema",
-        // Klaxon does not support top-level primitives/unions
-        "top-level-enum.schema",
-        "top-level-primitive.schema",
-        "recursive-union-flattening.schema",
-        // Jackson cannot deserialize the generated ArrayList subclass because
-        // it has no default constructor.
-        "top-level-array.schema",
-        "top-level-primitive-array.schema",
-        // A top-level array is deserialized into an `ArrayList<Long>` whose
-        // element type is erased at runtime, so a mistyped element
-        // round-trips instead of failing.
-        ...skipsArrayElementValidation,
-    ],
+    skipSchema: ["keyword-unions.schema"],
     skipMiscJSON: false,
     rendererOptions: { framework: "jackson" },
     quickTestRendererOptions: [],
@@ -1592,6 +1393,8 @@ export const KotlinXLanguage: Language = {
     skipDiffViaSchema: [
         "bug427.json",
         "keywords.json",
+        "77392.json",
+        "b4865.json",
         // TODO Investigate these
         "34702.json",
         "76ae1.json",
@@ -1604,56 +1407,18 @@ export const KotlinXLanguage: Language = {
     // date-time.schema itself stays skipped: its union-array properties
     // hit the union limitation above. The serializers are exercised by
     // the JSON inputs with inferred date-times instead.
-    features: ["enum", "no-defaults", "date-time"],
+    features: ["enum", "no-defaults", "date-time", "integer"],
     output: "TopLevel.kt",
     topLevel: "TopLevel",
     skipJSON: [
-        // Top-level arrays render as `typealias TopLevel = JsonArray<T>`,
-        // which doesn't compile — kotlinx's JsonArray takes no type
-        // arguments (documented TODO in KotlinXRenderer.ts).
-        "kotlin-enum-class-case-collision.json",
         "bug863.json",
-        "github-events.json",
         "optional-union.json",
-        "issue2680-object-array.json",
-        "issue2680-scalar-array.json",
         "00c36.json",
-        "010b1.json",
-        "050b0.json",
-        "06bee.json",
-        "07c75.json",
-        "0a91a.json",
-        "10be4.json",
-        "13d8d.json",
-        "1a7f5.json",
         "2df80.json",
-        "32d5c.json",
-        "3536b.json",
-        "43970.json",
-        "570ec.json",
-        "5eae5.json",
-        "66121.json",
-        "6eb00.json",
-        "77392.json",
-        "7f568.json",
         "7fbfb.json",
-        "9847b.json",
-        "996bd.json",
-        "9a503.json",
-        "9eed5.json",
-        "a45b0.json",
-        "ab0d1.json",
-        "ad8be.json",
-        "b4865.json",
         "c8c7e.json",
         "cda6c.json",
-        "e2a58.json",
         "e53b5.json",
-        "e8a0b.json",
-        "e8b04.json",
-        "f3139.json",
-        "f3edf.json",
-        "f466a.json",
         // Unions render as sealed classes without serializer wiring, so
         // deserialization fails at runtime (documented TODO in
         // KotlinXRenderer.ts).
@@ -1677,11 +1442,7 @@ export const KotlinXLanguage: Language = {
         "a3d8c.json",
         "f74d5.json",
         "fcca3.json",
-        // stringEscape renders astral-plane characters as `\u{5 hex digits}`,
-        // which Kotlin misparses (it only supports 4-digit `\u` escapes), so
-        // the @SerialName annotations don't match the JSON keys.
-        "blns-object.json",
-        "identifiers.json",
+        "blns-object.json", // JSON-to-schema property naming is not stable for case collisions.
     ],
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
@@ -1715,12 +1476,7 @@ export const KotlinXLanguage: Language = {
         // Additionally exceeds the JVM's 255-parameter limit when the
         // serialization plugin generates the synthesized constructors.
         "keyword-unions.schema",
-        // Top-level array: `typealias TopLevel = JsonArray<T>` doesn't
-        // compile (documented TODO in KotlinXRenderer.ts).
         "union.schema",
-        "top-level-array.schema",
-        "top-level-primitive-array.schema",
-        "issue2680-top-level-array.schema",
     ],
     skipMiscJSON: false,
     rendererOptions: { framework: "kotlinx" },
@@ -1734,51 +1490,45 @@ export const DartLanguage: Language = {
     runCommand(sample: string) {
         return `dart --enable-experiment=non-nullable parser.dart "${sample}"`;
     },
-    diffViaSchema: false,
-    skipDiffViaSchema: [],
+    diffViaSchema: true,
+    skipDiffViaSchema: [
+        "keywords.json",
+        "bug427.json",
+        "bug863.json",
+        "f6a65.json",
+        "e53b5.json",
+        "7681c.json",
+        "127a1.json",
+        "fcca3.json",
+        "34702.json",
+        "c8c7e.json",
+        "c3303.json",
+        "00c36.json",
+        "76ae1.json",
+        "26b49.json",
+        "cda6c.json",
+        "e8b04.json",
+        "2df80.json",
+        "0cffa.json",
+        "7fbfb.json",
+    ],
     allowMissingNull: true,
-    features: [],
+    features: [
+        "integer",
+        "no-defaults",
+        "date-time",
+        "minmaxlength",
+        "pattern",
+        "minmax",
+        "enum",
+    ],
     output: "TopLevel.dart",
     topLevel: "TopLevel",
-    skipJSON: [
-        "direct-recursive.json",
-        "list.json",
-        "combinations2.json",
-        "combinations1.json",
-        "combinations3.json",
-        "combinations4.json",
-        "recursive.json",
-        "nbl-stats.json",
-        "reddit.json",
-        "pokedex.json",
-        "bug427.json",
-        "us-senators.json",
-        "0a91a.json",
-        "github-events.json",
-        "keywords.json",
-    ],
+    skipJSON: [],
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
-        "enum-with-null.schema",
-        // Deliberately NOT ...skipsEnumValueValidation: Dart runs
-        // optional-enum.schema as its own regression test (see PR #2720),
-        // so only these two enum schemas are skipped.
-        "enum.schema",
-        "enum-large.schema",
-        "const-non-string.schema",
-        "bool-string.schema",
-        "intersection.schema",
-        "keyword-enum.schema",
-        "integer-string.schema",
-        "mutually-recursive.schema",
-        "postman-collection.schema",
-        "list.schema",
-        "simple-ref.schema",
-        "keyword-unions.schema",
-        "ref-remote.schema",
-        "uuid.schema",
     ],
-    skipMiscJSON: true,
+    skipMiscJSON: false,
     rendererOptions: {},
     // The default is final-props=true; this keeps the mutable-property
     // code path covered.  The targeted from-map sample also verifies that
@@ -1796,46 +1546,40 @@ export const PikeLanguage: Language = {
     runCommand(sample: string) {
         return `pike main.pike "${sample}"`;
     },
-    diffViaSchema: false,
-    skipDiffViaSchema: [],
+    diffViaSchema: true,
+    skipDiffViaSchema: [
+        "keywords.json",
+        "nbl-stats.json",
+        "bug427.json",
+        "github-events.json",
+        "f6a65.json",
+        "7681c.json",
+        "127a1.json",
+        "34702.json",
+        "c3303.json",
+        "7f568.json",
+        "26b49.json",
+        "e8b04.json",
+        "0a91a.json",
+        "0e0c2.json",
+        "0cffa.json",
+    ],
     allowMissingNull: true,
-    features: ["union"],
+    features: ["strict-optional", "enum"],
     output: "TopLevel.pmod",
     topLevel: "TopLevel",
-    skipJSON: [
-        "blns-object.json", // illegal characters in expressions
-        "identifiers.json", // quicktype internal error
-        "7eb30.json", // illegal characters in expressions
-        "c6cfd.json", // illegal characters in values
-        // all below: Pike's Stdio.File.write() does not support wide strings.
-        "nst-test-suite.json",
-        "0b91a.json",
-        "29f47.json",
-        "337ed.json",
-        "33d2e.json",
-        "458db.json",
-        "6c155.json",
-        "6de06.json",
-        "734ad.json",
-        "8592b.json",
-        "9ac3b.json",
-        "cb0cc.json",
-        "d23d5.json",
-        "dc44f.json",
-        "dec3a.json",
-        "f22f5.json",
-    ],
+    skipJSON: [],
     skipMiscJSON: false,
     skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
-        "top-level-enum.schema", // output generated properly, but not a class
-        "keyword-unions.schema", // seems like a problem with deserializing
         // no implicit cast int <-> float in Pike
         ...skipsIntFloatUnions,
         // all below: not failing on expected failure. That's because Pike's quite tolerant with assignments.
         ...skipsMapValueValidation,
+        "all-of-additional-properties-false.schema",
         "class-with-additional.schema",
+        "const-non-string.schema",
         "multi-type-enum.schema",
+        "optional-any.schema",
         ...skipsUntypedUnions,
     ],
     rendererOptions: {},
@@ -1853,12 +1597,10 @@ export const HaskellLanguage: Language = {
     },
     diffViaSchema: true,
     skipDiffViaSchema: [
-        "bug863.json",
         "reddit.json",
         "github-events.json",
         "nbl-stats.json",
         "0a91a.json",
-        "0e0c2.json",
         "29f47.json",
         "2df80.json",
         "27332.json",
@@ -1914,22 +1656,11 @@ export const HaskellLanguage: Language = {
     ],
     skipMiscJSON: false,
     skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
         ...skipsUntypedUnions,
-        // The test driver encodes the Maybe result, so a failed decode prints
-        // "null" and exits 0 — expected-failure samples cannot be detected.
-        // (A top-level `[Int]` correctly fails to decode `[1, 2, "three"]`,
-        // but the driver still exits 0.)
-        "boolean-subschema.schema",
-        "issue2680-top-level-array.schema",
-        "nested-intersection-union.schema",
-        "prefix-items.schema",
         "direct-union.schema",
         "empty-object.schema",
         ...skipsEnumValueValidation,
-        ...skipsMapValueValidation,
         "intersection.schema",
-        "multi-type-enum.schema",
         "keyword-unions.schema",
         "optional-any.schema",
         "ie-suffix-singularization.schema",
@@ -1952,49 +1683,52 @@ export const PHPLanguage: Language = {
     diffViaSchema: false,
     skipDiffViaSchema: [],
     allowMissingNull: true,
-    features: ["enum", "uuid"],
+    features: [
+        "enum",
+        "union",
+        "no-defaults",
+        "uuid",
+        "integer",
+        "minmax",
+        "minmaxitems",
+    ],
     output: "TopLevel.php",
     topLevel: "TopLevel",
-    includeJSON: [
-        ...easySampleJSONs,
-        "uuids.json",
-        "nested-objects.json",
-        "bug2663.json",
-        // Union-heavy inputs: PHP renders non-nullable unions as inline
-        // PHP 8.0 union type declarations with runtime dispatch.
-        "unions.json",
-        "union-constructor-clash.json",
-        "combinations1.json",
-        "combinations2.json",
-        "combinations3.json",
-        "combinations4.json",
-        "nst-test-suite.json",
-        "kitchen-sink.json",
-        "list.json",
-        "bug427.json",
-        // The motivating repro for non-nullable union support: a
-        // heterogeneous array under a PHP-reserved-word property name.
-        "php-mixed-union.json",
-        "php-validation.json",
+    skipJSON: [
+        "blns-object.json",
+        "bug855-short.json",
+        "bug863.json",
+        "issue2680-scalar-array.json",
+        "keywords.json",
+        "no-classes.json",
+        "null-safe.json",
+        "00c36.json",
+        "0a358.json",
+        "2df80.json",
+        "337ed.json",
+        "54d32.json",
+        "734ad.json",
+        "77392.json",
+        "7eb30.json",
+        "7fbfb.json",
+        "80aff.json",
+        "9ac3b.json",
+        "a0496.json",
+        "b4865.json",
+        "c8c7e.json",
+        "cda6c.json",
+        "d23d5.json",
+        "e53b5.json",
     ],
-    skipMiscJSON: true,
+    skipMiscJSON: false,
     skipSchema: [
         // The renderer does not support a bare top-level map.
         "empty-object.schema",
         "integer-before-number.schema", // Python-specific union-order regression.
-        // PHP class names are case-insensitive, but the namer dedups
-        // case-sensitively, so this declares classes that collide (same
-        // reason Java and Python skip it).
-        "keyword-unions.schema",
         // Unions are inlined as PHP union type declarations, so a
         // top-level union produces no named TopLevel class for the driver.
         "recursive-union-flattening.schema",
-        // The generated code for top-level enums is incompatible with the
-        // driver.
-        "top-level-enum.schema",
         // The driver does not support top-level arrays.
-        "union.schema",
-        "top-level-array.schema",
         "top-level-primitive-array.schema",
         "issue2680-top-level-array.schema",
     ],
@@ -2011,108 +1745,28 @@ export const TypeScriptZodLanguage: Language = {
         return `npm run --silent test "${sample}"`;
     },
     diffViaSchema: true,
-    skipDiffViaSchema: [
-        // Schema generated type uses first key as type name, JSON uses last
-        "0cffa.json",
-        "f6a65.json",
-        "c3303.json",
-        "7681c.json",
-        "127a1.json",
-        "26b49.json",
-
-        "bug863.json",
-        "reddit.json",
-        "github-events.json",
-        "nbl-stats.json",
-        "0a91a.json",
-        "0e0c2.json",
-        "29f47.json",
-        "2df80.json",
-        "27332.json",
-        "34702.json",
-        "6de06.json",
-        "76ae1.json",
-        "af2d1.json",
-        "be234.json",
-        "e8b04.json",
-    ],
+    skipDiffViaSchema: [],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults", "date-time", "minmaxitems"],
+    features: [
+        "enum",
+        "union",
+        "no-defaults",
+        "date-time",
+        "uuid",
+        "bool-string",
+        "integer-string",
+        "integer",
+        "minmax",
+        "minmaxlength",
+        "minmaxitems",
+        "pattern",
+        "strict-optional",
+    ],
     output: "TopLevel.ts",
     topLevel: "TopLevel",
-    skipJSON: [
-        // The test driver can't find the top-level schema among the
-        // prefixed names (FluffyTopLevelSchema etc.)
-        "2df80.json",
-
-        // z.coerce.date() serializes timestamps with milliseconds, the
-        // input has none
-        "github-events.json",
-
-        "00c36.json",
-        "10be4.json",
-        "050b0.json",
-        "06bee.json",
-        "07c75.json",
-        "3536b.json",
-        "13d8d.json",
-        "43970.json",
-        "570ec.json",
-        "4d6fb.json",
-        "66121.json",
-        "5eae5.json",
-        "6eb00.json",
-        "7f568.json",
-        "7fbfb.json",
-        "8592b.json",
-        "9847b.json",
-        "996bd.json",
-        "9a503.json",
-        "9eed5.json",
-        "ad8be.json",
-        "ae7f0.json",
-        "b4865.json",
-        "cda6c.json",
-        "c8c7e.json",
-        "e53b5.json",
-        "f3139.json",
-        "f22f5.json",
-        "nbl-stats.json",
-        "bug855-short.json",
-        "combinations4.json",
-        "identifiers.json",
-        "blns-object.json",
-        "bug427.json",
-        "nst-test-suite.json",
-        "keywords.json",
-        "ed095.json",
-        "32d5c.json",
-    ],
+    skipJSON: [],
     skipMiscJSON: false,
-    skipSchema: [
-        // The renderer does not support a bare top-level map.
-        "empty-object.schema",
-        "integer-before-number.schema", // Python-specific union-order regression.
-        "any.schema",
-        ...skipsUntypedUnions,
-        "direct-union.schema",
-        ...skipsEnumValueValidation,
-        // zod validates the inherited Object.prototype.constructor when an
-        // optional "constructor" property is absent
-        "constructor.schema",
-        // z.coerce.date() serializes back as ISO UTC, not the input string
-        "date-time.schema",
-        ...skipsMapValueValidation,
-        "intersection.schema",
-        "multi-type-enum.schema",
-        "keyword-unions.schema",
-        "optional-any.schema",
-        "recursive-union-flattening.schema",
-        "required.schema",
-        // The default-value fail sample also relies on required-property enforcement.
-        "default-value.schema",
-        "required-non-properties.schema",
-    ],
+    skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [
         ["single-value-enum.schema", { "prefer-const-values": "true" }],
@@ -2136,107 +1790,28 @@ export const TypeScriptEffectSchemaLanguage: Language = {
         "7681c.json",
         "127a1.json",
         "26b49.json",
-
-        "bug863.json",
-        "reddit.json",
-        "github-events.json",
-        "nbl-stats.json",
-        "0a91a.json",
-        "0e0c2.json",
-        "29f47.json",
-        "2df80.json",
-        "27332.json",
-        "34702.json",
-        "6de06.json",
-        "76ae1.json",
-        "af2d1.json",
-        "be234.json",
-        "e8b04.json",
     ],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults"],
+    features: [
+        "enum",
+        "union",
+        "no-defaults",
+        "integer",
+        "strict-optional",
+        "minmaxitems",
+        "uuid",
+        "minmaxlength",
+        "bool-string",
+        "date-time",
+        "integer-string",
+        "pattern",
+        "minmax",
+    ],
     output: "TopLevel.ts",
     topLevel: "TopLevel",
-    skipJSON: [
-        // Uses generated schema before it's defined
-        "be234.json",
-        "76ae1.json",
-        "6de06.json",
-        "2df80.json",
-        "29f47.json",
-        "spotify-album.json",
-        "reddit.json",
-        "github-events.json",
-
-        // Does not handle recursive
-        "direct-recursive.json",
-        "list.json",
-        "bug790.json",
-
-        // Does not handle top level arrays
-        "bug863.json",
-        "issue2680-scalar-array.json",
-
-        "no-classes.json",
-        "00c36.json",
-        "10be4.json",
-        "050b0.json",
-        "06bee.json",
-        "07c75.json",
-        "3536b.json",
-        "13d8d.json",
-        "43970.json",
-        "570ec.json",
-        "4d6fb.json",
-        "66121.json",
-        "5eae5.json",
-        "6eb00.json",
-        "7f568.json",
-        "7fbfb.json",
-        "8592b.json",
-        "9847b.json",
-        "996bd.json",
-        "9a503.json",
-        "9eed5.json",
-        "ad8be.json",
-        "ae7f0.json",
-        "b4865.json",
-        "cda6c.json",
-        "c8c7e.json",
-        "e53b5.json",
-        "f3139.json",
-        "f22f5.json",
-        "nbl-stats.json",
-        "bug855-short.json",
-        "combinations4.json",
-        "identifiers.json",
-        "blns-object.json",
-        "recursive.json",
-        "bug427.json",
-        "nst-test-suite.json",
-        "keywords.json",
-        "ed095.json",
-    ],
+    skipJSON: [],
     skipMiscJSON: false,
-    skipSchema: [
-        // The renderer does not support a bare top-level map.
-        "empty-object.schema",
-        "integer-before-number.schema", // Python-specific union-order regression.
-        "any.schema",
-        ...skipsUntypedUnions,
-        "direct-union.schema",
-        ...skipsEnumValueValidation,
-        ...skipsMapValueValidation,
-        "intersection.schema",
-        "multi-type-enum.schema",
-        "keyword-unions.schema",
-        "optional-any.schema",
-        "required.schema",
-        // The default-value fail sample also relies on required-property enforcement.
-        "default-value.schema",
-        "required-non-properties.schema",
-        "issue2680-top-level-array.schema",
-    ],
+    skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [],
     sourceFiles: ["src/language/TypeScriptEffectSchema/index.ts"],
@@ -2264,7 +1839,6 @@ export const ElixirLanguage: Language = {
         "76ae1.json",
         "6de06.json",
         "4d6fb.json",
-        "34702.json",
         "2df80.json",
         "29f47.json",
         "27332.json",
@@ -2276,56 +1850,19 @@ export const ElixirLanguage: Language = {
         "reddit.json",
     ],
     allowMissingNull: false,
-    features: ["enum", "no-defaults", "strict-optional"],
+    features: ["enum", "no-defaults", "strict-optional", "integer"],
     output: "QuickType.ex",
     topLevel: "TopLevel",
     skipJSON: [
         // Some field names are too long to be expressed as atoms and some contain invalid characters.
         "blns-object.json",
-        // A top-level array of scalars generates a TopLevel that maps
-        // `TopLevelElement.from_map/1` over the elements, but no
-        // `TopLevelElement` module is emitted for a scalar element type, so
-        // the program raises UndefinedFunctionError at runtime. (A top-level
-        // array of objects works because that module is emitted.)
-        "issue2680-scalar-array.json",
     ],
     skipMiscJSON: false,
     skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
-        // The error occurs because a guard clause that references TopLevel is compiled before TopLevel itself. To fix this, put
-        // TopLevel before Bar, but this doesn't address the actual problem if for example a pattern match to Bar was in TopLevel.
-        "mutually-recursive.schema",
-
-        // Struct keys cannot be enforced at runtime in Elixir and their values will just be set to null.
-        "ie-suffix-singularization.schema",
-        "strict-optional.schema",
-        "required.schema",
-        // The default-value fail sample also relies on required-property enforcement.
-        "default-value.schema",
-        // The renderer references a nonexistent TopLevelElement module for
-        // top-level arrays.
-        "top-level-array.schema",
-        "top-level-primitive-array.schema",
-        "boolean-subschema.schema",
-        "intersection.schema",
-        "optional-any.schema",
-
         // The test incorrectly succeeds due to the emitter being permissive for unions that contain only primitives. A future enhancement
         // for the Elixir emitter could be a user-controlled 'strict' mode that pattern matches even on unions of only primitive types.
-        ...skipsMapValueValidation,
-
-        // A bare top-level map is emitted as a Jason.decode!/encode! pass-through
-        // with no shape validation, so the .fail.json case (a non-object) is not
-        // rejected and round-trips instead of exiting nonzero. Same permissiveness
-        // class as go-schema-pattern-properties above.
-        "empty-object.schema",
-
-        // The generated top-level type is not emitted as a TopLevel module the fixture can call.
-        "recursive-union-flattening.schema",
-
         // A top-level array is deserialized without enforcing its element
         // type, so a mistyped element round-trips instead of failing.
-        ...skipsArrayElementValidation,
     ],
     rendererOptions: {},
     quickTestRendererOptions: [],

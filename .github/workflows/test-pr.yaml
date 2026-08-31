@@ -35,7 +35,7 @@ jobs:
 
             matrix:
                 fixture:
-                    - typescript,typescript-zod,schema-typescript-zod,typescript-effect-schema
+                    - typescript,typescript-zod,schema-typescript-zod,typescript-effect-schema,schema-typescript-effect-schema
                     - javascript,schema-javascript
                     - golang,schema-golang
                     - cjson,schema-cjson
@@ -49,9 +49,10 @@ jobs:
                     - json-ts-csharp
                     - dart,schema-dart
                     # - swift,schema-swift # pgp issue
-                    - javascript-prop-types
-                    - ruby
+                    - javascript-prop-types,schema-javascript-prop-types
+                    - ruby,schema-ruby-syntax
                     - php,schema-php
+                    - crystal,schema-crystal
                     - scala3,schema-scala3
                     - scala3-upickle,schema-scala3-upickle
                     - elixir,schema-elixir,graphql-elixir
@@ -61,16 +62,10 @@ jobs:
                     # Partially working
                     # - schema-typescript # TODO Unify with typescript once fixed
 
-                    # Language is too niche / obscure to test easily on ubuntu-22.04
-                    # - pike,schema-pike
-
                     # Not yet started
                     # @schani can you help me understand this fixture?
                     # It looks like it tests 13+ languages?
                     # - graphql
-
-                    # Never tested?
-                    # - crystal
 
                 runs-on: [ubuntu-22.04]
 
@@ -83,12 +78,11 @@ jobs:
                       runs-on: ubuntu-latest-16-cores
                     - fixture: kotlinx,schema-kotlinx
                       runs-on: ubuntu-latest-16-cores
+                    - fixture: pike,schema-pike
+                      runs-on: ubuntu-24.04
 
-                    # - fixture: objective-c # segfault on compiled test cmd
-                    #   runs-on: macos-latest
-                    # comment-injection-objective-c also hits that runtime
-                    # segfault (the generated .m compiles but ./test crashes
-                    # with SIGSEGV), so it stays out of CI too.
+                    - fixture: objective-c,schema-objective-c,comment-injection-objective-c
+                      runs-on: macos-latest
 
         name: ${{ matrix.fixture }}
         steps:
@@ -100,6 +94,16 @@ jobs:
               uses: shivammathur/setup-php@v2
               with:
                   php-version: "8.2"
+
+            - name: Install Pike
+              if: ${{ contains(matrix.fixture, 'pike') }}
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y pike8.0-core
+
+            - name: Setup Crystal
+              if: ${{ contains(matrix.fixture, 'crystal') }}
+              uses: crystal-lang/install-crystal@v1
 
             - name: Setup Dart
               if: ${{ contains(matrix.fixture, 'dart') }}

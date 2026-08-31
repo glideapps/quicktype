@@ -3,6 +3,12 @@ import {
     nullTypeIssueAnnotation,
 } from "../../Annotation.js";
 import {
+    minMaxItemsForType,
+    minMaxLengthForType,
+    minMaxValueForType,
+    patternForType,
+} from "../../attributes/Constraints.js";
+import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer.js";
@@ -313,35 +319,30 @@ export class DartRenderer extends ConvenienceRenderer {
         );
     }
 
+    // biome-ignore format: keep the constraint wrapper compact
     protected mapList(
         isNullable: boolean,
         itemType: Sourcelike,
         list: Sourcelike,
         mapper: Sourcelike,
+        constrained?: Type,
     ): Sourcelike {
+        const [min, max] = constrained === undefined ? [undefined, undefined] : (minMaxItemsForType(constrained) ?? []);
+        const checked = (value: Sourcelike): Sourcelike =>
+            min === undefined && max === undefined ? value : [
+                "(() { final x = ", value, "; if (",
+                [min !== undefined && `x.length < ${min}`, max !== undefined && `x.length > ${max}`].filter(Boolean).join(" || "),
+                ") throw FormatException('Invalid array length'); return x; })()",
+            ];
         if (isNullable && !this._options.requiredProperties) {
             return [
                 list,
                 " == null ? null : ",
-                "List<",
-                itemType,
-                ">.from(",
-                list,
-                "!.map((x) => ",
-                mapper,
-                "))",
+                checked(["List<", itemType, ">.from(", list, "!.map((x) => ", mapper, "))"]),
             ];
         }
 
-        return [
-            "List<",
-            itemType,
-            ">.from(",
-            list,
-            ".map((x) => ",
-            mapper,
-            "))",
-        ];
+        return checked(["List<", itemType, ">.from(", list, ".map((x) => ", mapper, "))"]);
     }
 
     protected mapMap(
@@ -352,6 +353,8 @@ export class DartRenderer extends ConvenienceRenderer {
     ): Sourcelike {
         if (isNullable && !this._options.requiredProperties) {
             return [
+                map,
+                " == null ? null : ",
                 "Map.from(",
                 map,
                 "!).map((k, v) => MapEntry<String, ",
@@ -411,14 +414,61 @@ export class DartRenderer extends ConvenienceRenderer {
         t: Type,
         ...dynamic: Sourcelike[]
     ): Sourcelike {
+        const validateString = (type: Type, value: Sourcelike): Sourcelike => {
+            const [min, max] = minMaxLengthForType(type) ?? [];
+            if (min === undefined && max === undefined) return value;
+            return [
+                isNullable ? [value, " == null ? null : "] : [],
+                "((x) => ",
+                min === undefined ? "true" : `x.length >= ${min}`,
+                " && ",
+                max === undefined ? "true" : `x.length <= ${max}`,
+                ' ? x : throw FormatException("Expected bounded string"))(',
+                value,
+                ")",
+            ];
+        };
+        const validatePattern = (type: Type, value: Sourcelike): Sourcelike => {
+            const pattern = patternForType(type);
+            if (pattern === undefined) return value;
+            const checked: Sourcelike = [
+                '((x) => RegExp("',
+                stringEscape(pattern),
+                '").hasMatch(x) ? x : throw FormatException("Expected matching string"))(',
+                value,
+                ")",
+            ];
+            return isNullable
+                ? [value, " == null ? null : ", checked]
+                : checked;
+        };
+        const validateNumber = (type: Type, value: Sourcelike): Sourcelike => {
+            const [min, max] = minMaxValueForType(type) ?? [];
+            if (min === undefined && max === undefined) return value;
+            return [
+                isNullable ? [value, " == null ? null : "] : [],
+                "((x) => ",
+                min === undefined ? "true" : `x >= ${min}`,
+                " && ",
+                max === undefined ? "true" : `x <= ${max}`,
+                ' ? x : throw FormatException("Expected bounded number"))(',
+                value,
+                ")",
+            ];
+        };
         return matchType<Sourcelike>(
             t,
             (_anyType) => dynamic,
             (_nullType) => dynamic, // FIXME: check null
             (_boolType) => dynamic,
-            (_integerType) => dynamic,
-            (_doubleType) => [dynamic, "?.toDouble()"],
-            (_stringType) => dynamic,
+            (integerType) => validateNumber(integerType, dynamic),
+            (doubleType) =>
+                validateNumber(doubleType, [dynamic, "?.toDouble()"]),
+            (stringType) =>
+                validatePattern(
+                    stringType,
+                    validateString(stringType, dynamic),
+                ),
             (arrayType) =>
                 this.mapList(
                     isNullable || arrayType.isNullable,
@@ -429,6 +479,7 @@ export class DartRenderer extends ConvenienceRenderer {
                         arrayType.items,
                         "x",
                     ),
+                    arrayType,
                 ),
             (classType) =>
                 this.mapClass(
@@ -448,14 +499,15 @@ export class DartRenderer extends ConvenienceRenderer {
                     ),
                 ),
             (enumType) => {
-                return [
+                const value: Sourcelike = [
                     defined(this._enumValues.get(enumType)),
                     ".map[",
                     dynamic,
-                    !isNullable || this._options.requiredProperties
-                        ? "]!"
-                        : "]",
+                    "]!",
                 ];
+                return isNullable && !this._options.requiredProperties
+                    ? [dynamic, " == null ? null : ", value]
+                    : value;
             },
             (unionType) => {
                 const maybeNullable = nullableFromUnion(unionType);

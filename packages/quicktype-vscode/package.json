@@ -148,7 +148,7 @@
         "@types/node-persist": "^3.1.8",
         "@types/readable-stream": "^4.0.10",
         "@types/vscode": "^1.87.0",
-        "@vscode/test-cli": "^0.0.6",
+        "@vscode/test-cli": "^0.0.15",
         "@vscode/test-electron": "^2.5.2",
         "@vscode/vsce": "^3.9.2",
         "typescript": "~7.0.2",

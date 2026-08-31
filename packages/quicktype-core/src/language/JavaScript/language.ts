@@ -73,6 +73,7 @@ export class JavaScriptTargetLanguage extends TargetLanguage<
         const dateTimeType = "date-time";
         mapping.set("date", dateTimeType);
         mapping.set("date-time", dateTimeType);
+        mapping.set("uuid", "uuid");
         return mapping;
     }
 

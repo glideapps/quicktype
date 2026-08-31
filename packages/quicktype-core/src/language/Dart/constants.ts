@@ -64,6 +64,7 @@ export const keywords = [
     "List",
     "String",
     "File",
+    "Function",
     "fromJson",
     "toJson",
     "fromMap",

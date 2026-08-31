@@ -82,7 +82,7 @@ Check out the "Language" and "Other" tabs in the options panel. What you're look
 
 <img width="33%" height="33%" alt="Screenshot showing the options panel" src="https://raw.githubusercontent.com/quicktype/quicktype/master/media/faq/options-panel.png" />
 
-If it isn't, then depending on your coding skills, you might be able to [customize the output](https://blog.quicktype.io/customizing-quicktype/).
+If it isn't, then depending on your coding skills, you might be able to [customize the output](doc/CustomRenderer.md).
 
 ## Am I allowed to use the generated code in my software?
 
@@ -108,7 +108,7 @@ The [JSON Schema homepage](http://json-schema.org) contains many links and resou
 
 ## I'd like to customize the output for my particular application.
 
-We have [a blog post](https://blog.quicktype.io/customizing-quicktype/) on that very topic.
+Check out our guide on [customizing output](doc/CustomRenderer.md).
 
 ## How can I control the property order in JSON Schema?
 

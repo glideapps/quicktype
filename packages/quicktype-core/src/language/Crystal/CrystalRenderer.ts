@@ -89,7 +89,7 @@ export class CrystalRenderer extends ConvenienceRenderer {
             (_nullType) =>
                 maybeAnnotated(withIssues, nullTypeIssueAnnotation, "Nil"),
             (_boolType) => "Bool",
-            (_integerType) => "Int32",
+            (_integerType) => "Int64",
             (_doubleType) => "Float64",
             (_stringType) => "String",
             (arrayType) => [
@@ -213,7 +213,9 @@ export class CrystalRenderer extends ConvenienceRenderer {
         this.forEachTopLevel(
             "leading",
             (t, name) => this.emitTopLevelAlias(t, name),
-            (t) => this.namedTypeToNameForTopLevel(t) === undefined,
+            (t) =>
+                t.kind === "enum" ||
+                this.namedTypeToNameForTopLevel(t) === undefined,
         );
 
         this.forEachObject(
