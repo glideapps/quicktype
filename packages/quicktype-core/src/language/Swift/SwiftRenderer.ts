@@ -210,6 +210,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 if (transformedStringType.kind === "date-time") {
                     return "Date";
                 }
+                if (transformedStringType.kind === "uuid") return "UUID";
 
                 return panic(
                     `Transformed string type ${transformedStringType.kind} not supported`,
@@ -770,7 +771,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
 formatter.calendar = Calendar(identifier: .iso8601)
 formatter.locale = Locale(identifier: "en_US_POSIX")
 formatter.timeZone = TimeZone(secondsFromGMT: 0)
-formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssXXXXX"
+formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXXXX"
 encoder.dateEncodingStrategy = .formatted(formatter)`);
             }
 
