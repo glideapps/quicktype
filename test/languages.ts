@@ -390,7 +390,6 @@ export const CrystalLanguage: Language = {
         "68c30.json",
         "c3303.json",
         "76ae1.json",
-        "34702.json",
         "f6a65.json",
         "7681c.json",
         "127a1.json",
@@ -716,9 +715,7 @@ export const CPlusPlusLanguage: Language = {
         "keywords.json",
         "0a91a.json",
         "34702.json",
-        "7f568.json",
         "e8b04.json",
-        "fcca3.json",
     ],
     allowMissingNull: false,
     features: [

@@ -540,7 +540,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         // the alternative would also be the same, i.e. useless.  But
         // maybe we'll need global properties for some weird language at
         // some point.
-        const alternative = `${o.getCombinedName()}_${jsonName}`;
+        const alternative = `property_${jsonName}`;
         const order =
             assignedName === undefined
                 ? classPropertyNameOrder
