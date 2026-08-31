@@ -33,7 +33,13 @@ function filesBelow(root: string, current = root): string[] {
     return fs.readdirSync(current, { withFileTypes: true }).flatMap((entry) => {
         const fullPath = path.join(current, entry.name);
         if (entry.isDirectory()) return filesBelow(root, fullPath);
-        return entry.isFile() ? [path.relative(root, fullPath)] : [];
+        // Always "/"-separated: these paths are matched against the paths in
+        // `git diff` output, which uses forward slashes on every platform,
+        // and are split on "/" when the report is rendered. `path.relative`
+        // would hand back backslashes on Windows.
+        return entry.isFile()
+            ? [path.relative(root, fullPath).split(path.sep).join("/")]
+            : [];
     });
 }
 

@@ -28,6 +28,7 @@ export const forbiddenNames = [
     "Dict",
     "Maybe",
     "makeNullableEncoder",
+    "optionalField",
     // Parameter names used in generated functions.  Elm 0.19 does not
     // allow a parameter to shadow a top-level definition.
     "x",

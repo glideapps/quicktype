@@ -1,8 +1,16 @@
+import { arrayIntercalate } from "collection-utils";
+
 // FIXME: NEEDS REFACTOR
 /* eslint-disable @typescript-eslint/no-shadow */
 /* eslint-disable @typescript-eslint/naming-convention */
 
 import { getAccessorName } from "../../attributes/AccessorNames.js";
+import {
+    minMaxItemsForType,
+    minMaxLengthForType,
+    minMaxValueForType,
+    patternForType,
+} from "../../attributes/Constraints.js";
 import { enumCaseValues } from "../../attributes/EnumValues.js";
 import {
     ConvenienceRenderer,
@@ -21,6 +29,7 @@ import {
     type NamingStyle,
     allUpperWordStyle,
     makeNameStyle,
+    stringEscape,
 } from "../../support/Strings.js";
 import {
     assert,
@@ -522,6 +531,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                         this.sourcelikeToString(enumName),
                     );
                     this.forEachEnumCase(enumType, "none", (name, jsonName) => {
+                        jsonName = stringEscape(jsonName);
                         this.emitLine(
                             onFirst ? "" : "else ",
                             'if (!strcmp(cJSON_GetStringValue(j), "',
@@ -556,6 +566,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                         this.sourcelikeToString(enumName),
                     );
                     this.forEachEnumCase(enumType, "none", (name, jsonName) => {
+                        jsonName = stringEscape(jsonName);
                         this.emitLine(
                             "case ",
                             combinedName,
@@ -656,6 +667,18 @@ export class CJSONRenderer extends ConvenienceRenderer {
      */
     protected emitUnionPrototypes(unionType: UnionType): void {
         const unionName = this.nameForNamedType(unionType);
+        const checks: Sourcelike[] = Array.from(
+            removeNullFromUnion(unionType)[1],
+            (type) => [this.quicktypeTypeToCJSON(type, false).isType, "(j)"],
+        );
+
+        this.emitLine(
+            "#define cJSON_Is",
+            unionName,
+            "(j) (",
+            arrayIntercalate(" || ", checks),
+            ")",
+        );
 
         this.emitLine(
             "struct ",
@@ -2366,11 +2389,34 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                         type,
                                         "none",
                                         (name, jsonName, property) => {
+                                            jsonName = stringEscape(jsonName);
                                             const cJSON =
                                                 this.quicktypeTypeToCJSON(
                                                     property.type,
                                                     property.isOptional,
                                                 );
+                                            const object = `j${level > 0 ? level.toString() : ""}`;
+                                            const value = `cJSON_GetObjectItemCaseSensitive(${object}, "${jsonName}")`;
+                                            const [minimum, maximum] =
+                                                minMaxValueForType(
+                                                    property.type,
+                                                ) ?? [];
+                                            const [minItems, maxItems] =
+                                                minMaxItemsForType(
+                                                    property.type,
+                                                ) ?? [];
+                                            const pattern = patternForType(
+                                                property.type,
+                                            );
+                                            const [minLength, maxLength] =
+                                                minMaxLengthForType(
+                                                    property.type,
+                                                ) ?? [];
+                                            if (!property.isOptional) {
+                                                this.emitLine(
+                                                    `if (!cJSON_HasObjectItem(${object}, "${jsonName}")) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
+                                                );
+                                            }
                                             this.emitBlock(
                                                 !cJSON.isNullable
                                                     ? [
@@ -2398,6 +2444,54 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                           '"))))',
                                                       ],
                                                 () => {
+                                                    if (cJSON.isType !== "") {
+                                                        this.emitLine(
+                                                            `if (!${this.sourcelikeToString(cJSON.isType)}(${value})) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
+                                                        );
+                                                    }
+                                                    if (minimum !== undefined) {
+                                                        this.emitLine(
+                                                            `if (${value}->valuedouble < ${minimum}) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
+                                                        );
+                                                    }
+                                                    if (maximum !== undefined) {
+                                                        this.emitLine(
+                                                            `if (${value}->valuedouble > ${maximum}) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
+                                                        );
+                                                    }
+                                                    if (minItems !== undefined)
+                                                        this.emitLine(
+                                                            `if (cJSON_GetArraySize(${value}) < ${minItems}) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
+                                                        );
+                                                    if (maxItems !== undefined)
+                                                        this.emitLine(
+                                                            `if (cJSON_GetArraySize(${value}) > ${maxItems}) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
+                                                        );
+                                                    if (pattern !== undefined) {
+                                                        this.emitLine(
+                                                            `regex_t regex; regcomp(&regex, "${stringEscape(pattern)}", REG_EXTENDED); if (regexec(&regex, ${value}->valuestring, 0, NULL, 0)) { regfree(&regex); cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; } regfree(&regex);`,
+                                                        );
+                                                    }
+                                                    if (minLength !== undefined)
+                                                        this.emitLine(
+                                                            `if (strlen(${value}->valuestring) < ${minLength}) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
+                                                        );
+                                                    if (maxLength !== undefined)
+                                                        this.emitLine(
+                                                            `if (strlen(${value}->valuestring) > ${maxLength}) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
+                                                        );
+                                                    if (
+                                                        cJSON.cjsonType ===
+                                                        "cJSON_Enum"
+                                                    ) {
+                                                        const object = `j${level > 0 ? level.toString() : ""}`;
+                                                        const value = `cJSON_GetObjectItemCaseSensitive(${object}, "${jsonName}")`;
+                                                        // Enum getters return zero for unknown strings, so
+                                                        // every direct enum property needs this guard.
+                                                        this.emitLine(
+                                                            `if (!cJSON_IsString(${value}) || 0 == ${this.sourcelikeToString(cJSON.getValue)}(${value})) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
+                                                        );
+                                                    }
                                                     if (
                                                         cJSON.cjsonType ===
                                                             "cJSON_Array" &&
@@ -2545,16 +2639,40 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                                         ?.cjsonType ===
                                                                                         "cJSON_Union"
                                                                                 ) {
+                                                                                    const item = `item${child_level}`;
+                                                                                    if (
+                                                                                        cJSON
+                                                                                            .items
+                                                                                            ?.cjsonType ===
+                                                                                        "cJSON_Object"
+                                                                                    ) {
+                                                                                        this.emitLine(
+                                                                                            `if (!cJSON_IsObject(e${child_level})) { x${level > 0 ? level.toString() : ""}->${this.sourcelikeToString(name)} = x${child_level}; cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
+                                                                                        );
+                                                                                    }
                                                                                     this.emitLine(
-                                                                                        "list_add_tail(x",
-                                                                                        child_level.toString(),
-                                                                                        ", ",
+                                                                                        cJSON
+                                                                                            .items
+                                                                                            ?.cType,
+                                                                                        " * ",
+                                                                                        item,
+                                                                                        " = ",
                                                                                         cJSON
                                                                                             .items
                                                                                             ?.getValue,
                                                                                         "(e",
                                                                                         child_level.toString(),
-                                                                                        "), sizeof(",
+                                                                                        ");",
+                                                                                    );
+                                                                                    this.emitLine(
+                                                                                        `if (NULL == ${item}) { x${level > 0 ? level.toString() : ""}->${this.sourcelikeToString(name)} = x${child_level}; cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
+                                                                                    );
+                                                                                    this.emitLine(
+                                                                                        "list_add_tail(x",
+                                                                                        child_level.toString(),
+                                                                                        ", ",
+                                                                                        item,
+                                                                                        ", sizeof(",
                                                                                         cJSON
                                                                                             .items
                                                                                             ?.cType,
@@ -2685,6 +2803,13 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                     ) {
                                                         const child_level =
                                                             level + 1;
+                                                        const items =
+                                                            cJSON.items;
+                                                        const element = `e${child_level}`;
+                                                        const nullable =
+                                                            items.isNullable
+                                                                ? `!cJSON_IsNull(${element}) && `
+                                                                : "";
                                                         this.emitLine(
                                                             cJSON.cType,
                                                             " * x",
@@ -2725,6 +2850,14 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                         ")",
                                                                     ],
                                                                     () => {
+                                                                        if (
+                                                                            items.isType !==
+                                                                            ""
+                                                                        ) {
+                                                                            this.emitLine(
+                                                                                `if (${nullable}!${this.sourcelikeToString(items.isType)}(${element})) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
+                                                                            );
+                                                                        }
                                                                         const add =
                                                                             (
                                                                                 type: Type,
@@ -3030,6 +3163,9 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                             ', "',
                                                             jsonName,
                                                             '"));',
+                                                        );
+                                                        this.emitLine(
+                                                            `if (NULL == x${level > 0 ? level.toString() : ""}->${this.sourcelikeToString(name)}) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
                                                         );
                                                     } else if (
                                                         property.isOptional ||
@@ -3337,6 +3473,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                         type,
                                         "none",
                                         (name, jsonName, property) => {
+                                            jsonName = stringEscape(jsonName);
                                             const cJSON =
                                                 this.quicktypeTypeToCJSON(
                                                     property.type,
@@ -4810,6 +4947,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                 cJSON.cjsonType === "cJSON_Array" &&
                                 cJSON.items !== undefined
                             ) {
+                                const items = cJSON.items;
                                 this.emitLine(
                                     "x->value = list_create(false, NULL);",
                                 );
@@ -4863,6 +5001,21 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                             cJSON.items?.cType,
                                                             " *));",
                                                         );
+                                                    } else if (
+                                                        cJSON.items
+                                                            ?.deleteType ===
+                                                        "cJSON_free"
+                                                    ) {
+                                                        this.emitLine(
+                                                            cJSON.items.cType,
+                                                            " * item = cJSON_malloc(sizeof(*item));",
+                                                        );
+                                                        this.emitLine(
+                                                            "if (NULL != item) { *item = ",
+                                                            cJSON.items
+                                                                .getValue,
+                                                            "(e); list_add_tail(x->value, item, sizeof(*item)); }",
+                                                        );
                                                     } else {
                                                         this.emitLine(
                                                             "list_add_tail(x->value, ",
@@ -4876,7 +5029,20 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                     }
                                                 };
 
-                                                if (cJSON.items?.isNullable) {
+                                                if (
+                                                    !items.isNullable &&
+                                                    items.isType !== ""
+                                                ) {
+                                                    this.emitLine(
+                                                        "if (!",
+                                                        items.isType,
+                                                        "(e)) { cJSON_Delete",
+                                                        className,
+                                                        "(x); return NULL; }",
+                                                    );
+                                                }
+
+                                                if (items.isNullable) {
                                                     this.emitBlock(
                                                         [
                                                             "if (!cJSON_IsNull(e))",
@@ -5565,7 +5731,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                     cType: ["struct ", this.nameForNamedType(unionType)],
                     optionalQualifier: "*",
                     cjsonType: "cJSON_Union",
-                    isType: "",
+                    isType: ["cJSON_Is", this.nameForNamedType(unionType)],
                     getValue: [
                         "cJSON_Get",
                         this.nameForNamedType(unionType),
@@ -5651,6 +5817,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
             this.emitIncludeLine("stdbool.h", true);
             this.emitIncludeLine("stdlib.h", true);
             this.emitIncludeLine("string.h", true);
+            this.emitIncludeLine("regex.h", true);
             this.emitIncludeLine("cJSON.h", true);
             this.emitIncludeLine("hashtable.h", true);
             this.emitIncludeLine("list.h", true);

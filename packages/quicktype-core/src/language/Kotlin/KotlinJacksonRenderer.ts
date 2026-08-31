@@ -1,11 +1,18 @@
 import { arrayIntercalate, iterableSome } from "collection-utils";
 
+import {
+    minMaxItemsForType,
+    minMaxLengthForType,
+    minMaxValueForType,
+    patternForType,
+} from "../../attributes/Constraints.js";
 import type { Name } from "../../Naming.js";
 import { type Sourcelike, modifySource } from "../../Source.js";
 import { camelCase } from "../../support/Strings.js";
 import { mustNotHappen } from "../../support/Support.js";
 import {
     type ArrayType,
+    type ClassProperty,
     ClassType,
     type EnumType,
     type MapType,
@@ -19,14 +26,21 @@ import { KotlinRenderer } from "./KotlinRenderer.js";
 import { stringEscape, unionMemberMatchPriority } from "./utils.js";
 
 export class KotlinJacksonRenderer extends KotlinRenderer {
+    protected propertyDefault(
+        p: ClassProperty,
+        _nullableOrOptional: boolean,
+    ): Sourcelike {
+        return p.isOptional || p.type.kind === "null" ? " = null" : "";
+    }
+
     private unionMemberJsonValueGuard(t: Type, _e: Sourcelike): Sourcelike {
         return matchType<Sourcelike>(
             t,
             (_anyType) => "is Any",
-            (_nullType) => "null",
+            (_nullType) => "is NullNode",
             (_boolType) => "is BooleanNode",
             (_integerType) => "is IntNode, is LongNode",
-            (_doubleType) => "is DoubleNode",
+            (_doubleType) => "is IntNode, is LongNode, is DoubleNode",
             (_stringType) => "is TextNode",
             (_arrayType) => "is ArrayNode",
             // These could be stricter, but for now we don't allow maps
@@ -73,6 +87,13 @@ import com.fasterxml.jackson.module.kotlin.*`);
             this.typeGraph.allNamedTypes(),
             (t) => t instanceof UnionType && nullableFromUnion(t) === null,
         );
+        const hasNullableUnions = iterableSome(
+            this.typeGraph.allNamedTypes(),
+            (t) =>
+                t instanceof UnionType &&
+                nullableFromUnion(t) === null &&
+                t.isNullable,
+        );
         const hasEmptyObjects = iterableSome(
             this.typeGraph.allNamedTypes(),
             (c) => c instanceof ClassType && c.getProperties().size === 0,
@@ -88,7 +109,7 @@ import com.fasterxml.jackson.module.kotlin.*`);
             usesDate ||
             usesTime
         ) {
-            this.emitGenericConverter();
+            this.emitGenericConverter(hasNullableUnions);
         }
 
         const converters: Sourcelike[][] = [];
@@ -152,6 +173,16 @@ import com.fasterxml.jackson.module.kotlin.*`);
             this.emitLine(
                 "setSerializationInclusion(JsonInclude.Include.NON_NULL)",
             );
+            if (
+                iterableSome(
+                    this.typeGraph.allTypesUnordered(),
+                    (t) => t.kind === "integer",
+                )
+            ) {
+                this.emitLine(
+                    "disable(DeserializationFeature.ACCEPT_FLOAT_AS_INT)",
+                );
+            }
         });
 
         if (converters.length > 0) {
@@ -169,7 +200,7 @@ import com.fasterxml.jackson.module.kotlin.*`);
                 name,
                 "(elements: Collection<",
                 elementType,
-                ">) : ArrayList<",
+                "> = emptyList()) : ArrayList<",
                 elementType,
                 ">(elements)",
             ],
@@ -225,7 +256,7 @@ import com.fasterxml.jackson.module.kotlin.*`);
         const isPrefixBool = jsonName.startsWith("is"); // https://github.com/FasterXML/jackson-module-kotlin/issues/80
         const propertyOpts: Sourcelike[] = [];
 
-        if (namesDiffer || isPrefixBool) {
+        if (namesDiffer || isPrefixBool || /^[a-z][A-Z]/.test(jsonName)) {
             propertyOpts.push(`"${escapedName}"`);
         }
 
@@ -267,6 +298,52 @@ import com.fasterxml.jackson.module.kotlin.*`);
         );
         if (isTopLevel) {
             this.emitBlock(")", () => {
+                const checks: string[] = [];
+                this.forEachClassProperty(c, "none", (name, _json, p) => {
+                    const [min, max] = minMaxItemsForType(p.type) ?? [];
+                    const n = this.sourcelikeToString(name);
+                    const before = p.isOptional
+                        ? `${n}?.let { require(it.size`
+                        : `require(${n}.size`;
+                    const after = p.isOptional ? ") }" : ")";
+                    if (min !== undefined)
+                        checks.push(`${before} >= ${min}${after}`);
+                    if (max !== undefined)
+                        checks.push(`${before} <= ${max}${after}`);
+                    const [numberMin, numberMax] =
+                        minMaxValueForType(p.type) ?? [];
+                    const numberBefore = p.isOptional
+                        ? `${n}?.let { require(it`
+                        : `require(${n}`;
+                    if (numberMin !== undefined)
+                        checks.push(`${numberBefore} >= ${numberMin}${after}`);
+                    if (numberMax !== undefined)
+                        checks.push(`${numberBefore} <= ${numberMax}${after}`);
+                    const [lengthMin, lengthMax] =
+                        minMaxLengthForType(p.type) ?? [];
+                    const lengthBefore = p.isOptional
+                        ? `${n}?.let { require(it.length`
+                        : `require(${n}.length`;
+                    if (lengthMin !== undefined)
+                        checks.push(`${lengthBefore} >= ${lengthMin}${after}`);
+                    if (lengthMax !== undefined)
+                        checks.push(`${lengthBefore} <= ${lengthMax}${after}`);
+                    const pattern = patternForType(p.type);
+                    if (pattern !== undefined) {
+                        const regex = `Regex("${stringEscape(pattern)}").containsMatchIn`;
+                        checks.push(
+                            p.isOptional
+                                ? `${n}?.let { require(${regex}(it)) }`
+                                : `require(${regex}(${n}))`,
+                        );
+                    }
+                });
+                if (checks.length > 0)
+                    this.emitBlock("init", () =>
+                        checks.forEach((check) => {
+                            this.emitLine(check);
+                        }),
+                    );
                 this.emitLine("fun toJson() = mapper.writeValueAsString(this)");
                 this.ensureBlankLine();
                 this.emitBlock("companion object", () => {
@@ -333,7 +410,7 @@ import com.fasterxml.jackson.module.kotlin.*`);
         });
     }
 
-    private emitGenericConverter(): void {
+    private emitGenericConverter(hasNullableUnions: boolean): void {
         this.ensureBlankLine();
         this.emitMultiline(`
 @Suppress("UNCHECKED_CAST")
@@ -342,7 +419,7 @@ private fun <T> ObjectMapper.convert(k: kotlin.reflect.KClass<*>, fromJson: (Jso
 			override fun serialize(value: T, gen: JsonGenerator, provider: SerializerProvider) = gen.writeRawValue(toJson(value))
 	})
 	addDeserializer(k.java as Class<T>, object : StdDeserializer<T>(k.java as Class<T>) {
-			override fun deserialize(p: JsonParser, ctxt: DeserializationContext) = fromJson(p.readValueAsTree())
+			override fun deserialize(p: JsonParser, ctxt: DeserializationContext) = fromJson(p.readValueAsTree())${hasNullableUnions ? "\n\t\t\toverride fun getNullValue(ctxt: DeserializationContext) = if (isUnion) fromJson(NullNode.instance) else null" : ""}
 	})
 })`);
     }
@@ -364,7 +441,7 @@ private fun <T> ObjectMapper.convert(k: kotlin.reflect.KClass<*>, fromJson: (Jso
             });
             if (maybeNull !== null) {
                 const name = this.nameForUnionMember(u, maybeNull);
-                toJsonTable.push([["is ", name], [' -> "null"']]);
+                toJsonTable.push([["is ", name], [" -> null"]]);
             }
 
             this.emitTable(toJsonTable);
@@ -412,13 +489,13 @@ private fun <T> ObjectMapper.convert(k: kotlin.reflect.KClass<*>, fromJson: (Jso
                     );
                     let expr: Sourcelike = [
                         ordered[ordered.length - 1].name,
-                        "(mapper.treeToValue(jn))",
+                        "(mapper.convertValue(jn))",
                     ];
                     for (let i = ordered.length - 2; i >= 0; i--) {
                         expr = [
                             "try { ",
                             ordered[i].name,
-                            "(mapper.treeToValue(jn)) } catch (e: Exception) { ",
+                            "(mapper.convertValue(jn)) } catch (e: Exception) { ",
                             expr,
                             " }",
                         ];

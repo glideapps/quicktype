@@ -15,6 +15,7 @@ import {
 import { getAccessorName } from "../../attributes/AccessorNames.js";
 import { defaultValueForType } from "../../attributes/DefaultValue.js";
 import { enumCaseValues } from "../../attributes/EnumValues.js";
+import { minMaxItemsForType } from "../../attributes/Constraints.js";
 import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
@@ -889,6 +890,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     this.nameForNamedType(unionType),
                 ];
             },
+            (_transformedStringType) => this._stringType.getType(),
         );
         if (!isOptional) return typeSource;
         return [this.optionalType(t), "<", typeSource, ">"];
@@ -1456,6 +1458,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             ],
             false,
             () => {
+                this.emitLine(
+                    'if (!j.is_object()) throw std::runtime_error("Expected object");',
+                );
                 if (c.getProperties().size === 0) {
                     this.emitLine("(void)j;");
                     this.emitLine("(void)x;");
@@ -1500,6 +1505,73 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             ";",
                         );
                         return;
+                    }
+
+                    if (propType.kind === "integer") {
+                        const key = this.NarrowString.createStringLiteral([
+                            stringEscape(json),
+                        ]);
+                        this.emitLine(
+                            "if (j.find(",
+                            key,
+                            ") != j.end() && !j.at(",
+                            key,
+                            ').is_number_integer()) throw std::runtime_error("Expected integer");',
+                        );
+                    }
+
+                    if (propType.kind === "uuid") {
+                        const key = this.NarrowString.createStringLiteral([
+                            stringEscape(json),
+                        ]);
+                        this.emitLine(
+                            "if (j.find(",
+                            key,
+                            ") != j.end() && !std::regex_match(j.at(",
+                            key,
+                            ').get<std::string>(), std::regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"))) throw std::runtime_error("Expected UUID");',
+                        );
+                    }
+
+                    if (propType.kind === "date-time") {
+                        const key = this.NarrowString.createStringLiteral([
+                            stringEscape(json),
+                        ]);
+                        this.emitLine(
+                            "if (j.find(",
+                            key,
+                            ") != j.end() && !std::regex_match(j.at(",
+                            key,
+                            ').get<std::string>(), std::regex("^[0-9]{4}-[0-9]{2}-[0-9]{2}T.*$"))) throw std::runtime_error("Expected date-time");',
+                        );
+                    }
+
+                    const minMaxItems = minMaxItemsForType(propType);
+                    if (minMaxItems !== undefined) {
+                        const [minItems, maxItems] = minMaxItems;
+                        const key = this.sourcelikeToString(
+                            this.NarrowString.createStringLiteral([
+                                stringEscape(json),
+                            ]),
+                        );
+                        if (minItems !== undefined)
+                            this.emitLine(
+                                `if (j.at(${key}).size() < ${minItems}) throw std::runtime_error("Too few items");`,
+                            );
+                        if (maxItems !== undefined)
+                            this.emitLine(
+                                `if (j.at(${key}).size() > ${maxItems}) throw std::runtime_error("Too many items");`,
+                            );
+                    }
+
+                    if (!p.isOptional && propType.isNullable) {
+                        this.emitLine(
+                            "j.at(",
+                            this.NarrowString.createStringLiteral([
+                                stringEscape(json),
+                            ]),
+                            ");",
+                        );
                     }
 
                     if (p.isOptional || propType instanceof UnionType) {
@@ -1917,6 +1989,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             ["integer", "is_number_integer"],
             ["double", "is_number"],
             ["string", "is_string"],
+            ["uuid", "is_string"],
+            ["date-time", "is_string"],
             ["class", "is_object"],
             ["map", "is_object"],
             ["array", "is_array"],

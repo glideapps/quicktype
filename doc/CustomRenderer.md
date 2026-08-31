@@ -30,7 +30,6 @@ export class MyCustomRenderer extends CSharpRenderer {
         }
         return undefined;
     }
-    // See: http://blog.quicktype.io/customizing-quicktype/ for more context
 }
 ```
 
@@ -139,7 +138,3 @@ export class BrandNewRenderer extends ConvenienceRenderer {
     // Please reference existing Renderer classes and open a GitHub issue if you need help
 }
 ```
-
-## Links
-
-Blog post with an older example: http://blog.quicktype.io/customizing-quicktype/

@@ -9,9 +9,13 @@ import {
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer.js";
 import {
+    minMaxItemsForType,
+    minMaxValueForType,
+} from "../../attributes/Constraints.js";
+import {
     DependencyName,
     type Name,
-    type Namer,
+    Namer,
     funPrefixNamer,
 } from "../../Naming.js";
 import type { RenderContext } from "../../Renderer.js";
@@ -80,7 +84,8 @@ export class PhpRenderer extends ConvenienceRenderer {
     }
 
     protected makeNamedTypeNamer(): Namer {
-        return this.getNameStyling("typeNamingFunction");
+        const namer = this.getNameStyling("typeNamingFunction");
+        return new Namer(namer.name, namer.nameStyle, namer.prefixes, true);
     }
 
     protected namerForObjectProperty(): Namer {
@@ -1018,6 +1023,17 @@ export class PhpRenderer extends ConvenienceRenderer {
         scopeAttrName: string,
         skipPrimitiveTypeCheck = false,
     ): void {
+        const validateRange = (type: Type): void => {
+            const [min, max] = minMaxValueForType(type) ?? [];
+            if (min !== undefined)
+                this.emitLine(
+                    `if (${scopeAttrName} < ${min}) throw new Exception("Attribute Error");`,
+                );
+            if (max !== undefined)
+                this.emitLine(
+                    `if (${scopeAttrName} > ${max}) throw new Exception("Attribute Error");`,
+                );
+        };
         const is = (isfn: string, myT: Name = className): void => {
             this.emitBlock(["if (!", isfn, "(", scopeAttrName, "))"], () =>
                 this.emitLine(
@@ -1042,10 +1058,11 @@ export class PhpRenderer extends ConvenienceRenderer {
             (_boolType) => {
                 if (!skipPrimitiveTypeCheck) is("is_bool");
             },
-            (_integerType) => {
+            (integerType) => {
                 if (!skipPrimitiveTypeCheck) is("is_integer");
+                validateRange(integerType);
             },
-            (_doubleType) => {
+            (doubleType) => {
                 if (!skipPrimitiveTypeCheck) {
                     // PHP integers are acceptable wherever floats are, and
                     // json_decode gives an int for a whole JSON number.
@@ -1067,12 +1084,22 @@ export class PhpRenderer extends ConvenienceRenderer {
                             ),
                     );
                 }
+                validateRange(doubleType);
             },
             (_stringType) => {
                 if (!skipPrimitiveTypeCheck) is("is_string");
             },
             (arrayType) => {
                 is("is_array");
+                const [min, max] = minMaxItemsForType(arrayType) ?? [];
+                if (min !== undefined)
+                    this.emitLine(
+                        `if (count(${scopeAttrName}) < ${min}) throw new Exception("Attribute Error");`,
+                    );
+                if (max !== undefined)
+                    this.emitLine(
+                        `if (count(${scopeAttrName}) > ${max}) throw new Exception("Attribute Error");`,
+                    );
                 this.emitLine(
                     "array_walk(",
                     scopeAttrName,
@@ -1434,7 +1461,10 @@ export class PhpRenderer extends ConvenienceRenderer {
                     " $",
                     name,
                     "; // json:",
-                    jsonName,
+                    jsonName
+                        .replace(/\n/g, "\\n")
+                        .replace(/\r/g, "\\r")
+                        .replace(/\?>/g, "? >"),
                     " ",
                     p.type.isNullable ? "Optional" : "Required",
                 );
@@ -1568,7 +1598,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                         );
                         this.emitLine(
                             "$out->{'",
-                            jsonName,
+                            stringEscape(jsonName),
                             "'} = $this->",
                             names.to,
                             "();",
@@ -1622,7 +1652,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                             "::",
                             names.from,
                             "($obj->{'",
-                            jsonName,
+                            stringEscape(jsonName),
                             "'})",
                         );
                         comma = ",";

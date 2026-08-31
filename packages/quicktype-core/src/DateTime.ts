@@ -52,6 +52,7 @@ export class DefaultDateTimeRecognizer implements DateTimeRecognizer {
         const matches = DATE.exec(str);
         if (matches === null) return false;
 
+        if (+matches[1] === 0) return false;
         const month = +matches[2];
         const day = +matches[3];
         return month >= 1 && month <= 12 && day >= 1 && day <= DAYS[month];

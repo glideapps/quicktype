@@ -2,20 +2,23 @@ import {
     allLowerWordStyle,
     allUpperWordStyle,
     combineWords,
-    escapeNonPrintableMapper,
     firstUpperWordStyle,
     isAscii,
     isDigit,
     isLetter,
     splitIntoWords,
-    standardUnicodeHexEscape,
     utf16ConcatMap,
     utf16LegalizeCharacters,
 } from "../../support/Strings.js";
 
-export const stringEscape = utf16ConcatMap(
-    escapeNonPrintableMapper(isAscii, standardUnicodeHexEscape),
-);
+export const stringEscape = utf16ConcatMap((codePoint) => {
+    const character = String.fromCharCode(codePoint);
+    if (codePoint === 0x0a) return `' . "\\n" . '`;
+    if (codePoint === 0x0d) return `' . "\\r" . '`;
+    return codePoint === 0x27 || codePoint === 0x5c
+        ? `\\${character}`
+        : character;
+});
 
 function isStartCharacter(codePoint: number): boolean {
     if (codePoint === 0x5f) return true; // underscore

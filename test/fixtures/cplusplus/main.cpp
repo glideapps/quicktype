@@ -18,10 +18,13 @@ int main(int argc, const char * argv[]) {
     std::string str((std::istreambuf_iterator<char>(t)),
                     std::istreambuf_iterator<char>());
 
-    TopLevel tl = json::parse(str);
-    json j2 = tl;
-
-    std::cout << j2 << std::endl;
+    try {
+        TopLevel tl = json::parse(str);
+        json j2 = tl;
+        std::cout << j2 << std::endl;
+    } catch (const std::exception&) {
+        return 1;
+    }
 
     return 0;
 }

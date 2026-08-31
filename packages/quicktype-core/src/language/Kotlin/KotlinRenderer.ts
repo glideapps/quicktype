@@ -331,13 +331,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
                     meta.push(() => this.emitDescription(description));
                 }
 
-                this.renameAttribute(
-                    name,
-                    jsonName,
-                    !nullableOrOptional,
-                    meta,
-                    p,
-                );
+                this.renameAttribute(name, jsonName, !p.isOptional, meta, p);
 
                 if (meta.length > 0 && !first) {
                     this.ensureBlankLine();
@@ -352,7 +346,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
                     name,
                     ": ",
                     kotlinType(p),
-                    nullableOrOptional ? " = null" : "",
+                    this.propertyDefault(p, nullableOrOptional),
                     last ? "" : ",",
                 );
 
@@ -376,6 +370,13 @@ export class KotlinRenderer extends ConvenienceRenderer {
 
     protected emitClassAnnotations(_c: Type, _className: Name): void {
         // to be overridden
+    }
+
+    protected propertyDefault(
+        _p: ClassProperty,
+        nullableOrOptional: boolean,
+    ): Sourcelike {
+        return nullableOrOptional ? " = null" : "";
     }
 
     protected renameAttribute(
