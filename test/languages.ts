@@ -1507,7 +1507,6 @@ export const PikeLanguage: Language = {
             (schema) => schema !== "go-schema-pattern-properties.schema",
         ),
         "class-with-additional.schema",
-        "optional-any.schema",
         ...skipsUntypedUnions,
     ],
     rendererOptions: {},
