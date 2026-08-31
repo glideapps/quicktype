@@ -548,11 +548,12 @@ export class JavaRenderer extends ConvenienceRenderer {
                     ";",
                 );
             });
-            if (!this._options.lombok) {
+            if (!this._options.lombok || c.getProperties().has("")) {
                 this.forEachClassProperty(
                     c,
                     "leading-and-interposing",
                     (name, jsonName, p) => {
+                        if (this._options.lombok && jsonName.length > 0) return;
                         this.emitDescription(
                             this.descriptionForClassProperty(c, jsonName),
                         );

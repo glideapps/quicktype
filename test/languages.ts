@@ -268,12 +268,7 @@ export const JavaLanguageWithLegacyDateTime: Language = {
 export const JavaLanguageWithLombok: Language = {
     ...JavaLanguage,
     base: "test/fixtures/java-lombok",
-    // Lombok-generated accessors cannot use the empty-key any-getter/setter.
-    skipJSON: [
-        "identifiers.json",
-        "simple-identifiers.json",
-        "nst-test-suite.json",
-    ],
+    skipJSON: [],
     quickTestRendererOptions: [{ "array-type": "array", lombok: "true" }],
 };
 
