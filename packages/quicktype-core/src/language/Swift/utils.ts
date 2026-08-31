@@ -19,6 +19,8 @@ import {
 } from "../../support/Strings.js";
 import type { ClassProperty } from "../../Type/index.js";
 
+import { keywords } from "./constants.js";
+
 export const MAX_SAMELINE_PROPERTIES = 4;
 
 // These are all recognized by Swift as ISO8601 date-times:
@@ -74,6 +76,8 @@ export function swiftNameStyle(
         "",
         isStartCharacter,
     );
+    if (!isUpper && keywords.some((keyword) => keyword === combined))
+        return `${combined}_`;
     return addPrefixIfNecessary(prefix, combined);
 }
 
