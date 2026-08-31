@@ -609,9 +609,6 @@ export const CJSONLanguage: Language = {
                 schema !== "go-schema-pattern-properties.schema" &&
                 schema !== "unevaluated-properties.schema",
         ),
-        /* Top-level array elements with invalid types (e.g. a string where
-         * an integer is expected) are not checked either. */
-        "prefix-items.schema",
         /* Required properties absent are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
         /* Pure Any type not supported (for the current implementation, can be added later, should manage a callback to provide the final application a way to handle it at parsing and creation of cJSON) */
         "any.schema",
