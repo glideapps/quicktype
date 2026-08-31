@@ -145,6 +145,7 @@ export class SwiftTargetLanguage extends TargetLanguage<
         const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> =
             new Map();
         mapping.set("date-time", "date-time");
+        mapping.set("uuid", "uuid");
         return mapping;
     }
 
