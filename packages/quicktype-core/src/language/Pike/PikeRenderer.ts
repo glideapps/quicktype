@@ -14,11 +14,11 @@ import { stringEscape } from "../../support/Strings.js";
 import {
     ArrayType,
     type ClassType,
-    type EnumType,
+    EnumType,
     MapType,
     PrimitiveType,
     type Type,
-    type UnionType,
+    UnionType,
 } from "../../Type/index.js";
 import {
     matchType,
@@ -154,9 +154,11 @@ export class PikeRenderer extends ConvenienceRenderer {
     }
 
     protected emitEnum(e: EnumType, enumName: Name): void {
+        const checks: string[] = [];
         this.emitBlock([e.kind, " ", enumName], () => {
             const table: Sourcelike[][] = [];
             this.forEachEnumCase(e, "none", (name, jsonName) => {
+                checks.push(`json != "${stringEscape(jsonName)}"`);
                 table.push([
                     [name, ' = "', stringEscape(jsonName), '", '],
                     ['// json: "', stringEscape(jsonName), '"'],
@@ -165,9 +167,10 @@ export class PikeRenderer extends ConvenienceRenderer {
             this.emitTable(table);
         });
         this.ensureBlankLine();
+        const check = `if(json&&${checks.join("&&")})error("enum");`;
         this.emitBlock(
             [enumName, " ", enumName, "_from_JSON(mixed json)"],
-            () => this.emitLine("return json;"),
+            () => this.emitLine(check, "return json;"),
         );
     }
 
@@ -329,12 +332,24 @@ export class PikeRenderer extends ConvenienceRenderer {
                             '")) error("Missing required property");',
                         );
                     }
+
+                    const enumType =
+                        p.type instanceof UnionType
+                            ? nullableFromUnion(p.type)
+                            : p.type;
                     this.emitLine([
                         "retval.",
                         name,
-                        ' = json["',
+                        " = ",
+                        enumType instanceof EnumType
+                            ? [
+                                  this.nameForNamedType(enumType),
+                                  '_from_JSON(json["',
+                              ]
+                            : 'json["',
                         stringEscape(jsonName),
-                        '"];',
+                        enumType instanceof EnumType ? '"])' : '"]',
+                        ";",
                     ]);
                 });
                 this.ensureBlankLine();

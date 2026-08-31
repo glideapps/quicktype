@@ -1555,7 +1555,7 @@ export const PikeLanguage: Language = {
         "0cffa.json",
     ],
     allowMissingNull: true,
-    features: ["strict-optional"],
+    features: ["strict-optional", "enum"],
     output: "TopLevel.pmod",
     topLevel: "TopLevel",
     skipJSON: [],
