@@ -292,7 +292,8 @@ export class Scala3Renderer extends ConvenienceRenderer {
                     scalaType(p),
                     p.isOptional
                         ? " = None"
-                        : nullableOrOptional
+                        : nullableOrOptional &&
+                            this._scalaOptions.framework !== "Upickle"
                           ? " = None"
                           : "",
                     last ? "" : ",",
