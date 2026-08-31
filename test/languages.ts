@@ -466,6 +466,7 @@ export const RubyLanguage: Language = {
         "integer",
         "minmax",
         "minmaxlength",
+        "minmaxitems",
         "pattern",
         "strict-optional",
     ],
@@ -561,6 +562,7 @@ export const CJSONLanguage: Language = {
         "union",
         "no-defaults",
         "strict-optional",
+        "integer",
     ],
     output: "TopLevel.h",
     topLevel: "TopLevel",
@@ -1355,13 +1357,6 @@ export const KotlinXLanguage: Language = {
     output: "TopLevel.kt",
     topLevel: "TopLevel",
     skipJSON: [
-        "bug863.json",
-        "00c36.json",
-        "2df80.json",
-        "7fbfb.json",
-        "c8c7e.json",
-        "cda6c.json",
-        "e53b5.json",
         // Unions render as sealed classes without serializer wiring, so
         // deserialization fails at runtime (documented TODO in
         // KotlinXRenderer.ts).
@@ -1385,29 +1380,10 @@ export const KotlinXLanguage: Language = {
         // Unions render as sealed classes without serializer wiring, so
         // deserialization fails at runtime (documented TODO in
         // KotlinXRenderer.ts).
-        "accessors.schema",
-        "bool-string.schema",
-        "class-map-union.schema",
-        "class-with-additional.schema",
-        "date-time.schema",
-        // The string|date-time property becomes a union once Kotlin maps
-        // date-time (it was a plain string before).
-        "description.schema",
-        "direct-union.schema",
         "enum.schema", // enum.3.json contains an int|string union
-        "implicit-class-array-union.schema",
-        "integer-float-union.schema",
-        "integer-string.schema",
-        "min-max-items.schema", // unionItems is an int|string union array
-        "minmaxlength.schema",
-        "multi-type-enum.schema",
-        "mutually-recursive.schema",
-        "prefix-items.schema",
         "recursive-union-flattening.schema",
         "rust-cycle-breaker-union.schema",
         "tuple.schema",
-        "union-int-double.schema",
-        "union-list.schema",
         // Additionally exceeds the JVM's 255-parameter limit when the
         // serialization plugin generates the synthesized constructors.
         "keyword-unions.schema",
