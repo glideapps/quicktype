@@ -168,7 +168,7 @@ import com.fasterxml.jackson.module.kotlin.*`);
         this.emitLine("val mapper = jacksonObjectMapper().apply {");
         this.indent(() => {
             this.emitLine(
-                "propertyNamingStrategy = PropertyNamingStrategy.LOWER_CAMEL_CASE",
+                'propertyNamingStrategy = object : PropertyNamingStrategy.PropertyNamingStrategyBase() { override fun translate(name: String) = if (name == "empty") "" else name }',
             );
             this.emitLine(
                 "setSerializationInclusion(JsonInclude.Include.NON_NULL)",
@@ -256,7 +256,12 @@ import com.fasterxml.jackson.module.kotlin.*`);
         const isPrefixBool = jsonName.startsWith("is"); // https://github.com/FasterXML/jackson-module-kotlin/issues/80
         const propertyOpts: Sourcelike[] = [];
 
-        if (namesDiffer || isPrefixBool || /^[a-z][A-Z]/.test(jsonName)) {
+        if (
+            namesDiffer ||
+            isPrefixBool ||
+            jsonName === "empty" ||
+            /^[a-z][A-Z]/.test(jsonName)
+        ) {
             propertyOpts.push(`"${escapedName}"`);
         }
 

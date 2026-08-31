@@ -1318,13 +1318,7 @@ export const KotlinJacksonLanguage: Language = {
     ],
     output: "TopLevel.kt",
     topLevel: "TopLevel",
-    skipJSON: [
-        // Some odd property names prevent Klaxon from mapping to constructors
-        // https://github.com/cbeust/klaxon/issues/146
-        "identifiers.json",
-        "simple-identifiers.json",
-        "nst-test-suite.json",
-    ],
+    skipJSON: [],
     skipSchema: ["keyword-unions.schema"],
     skipMiscJSON: false,
     rendererOptions: { framework: "jackson" },
