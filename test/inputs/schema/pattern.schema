@@ -11,7 +11,7 @@
     },
     "escaped": {
       "type": "string",
-      "pattern": "^\\d+\\.[a-z]+$"
+      "pattern": "^[0-9]+\\.[a-z]+$"
     },
     "union": {
       "oneOf": [
