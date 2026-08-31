@@ -970,16 +970,7 @@ export const TypeScriptLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
-    skipSchema: [
-        // Pre-existing failures (this fixture is not in CI yet, and these
-        // fail with unmodified master too): objects with both declared
-        // properties and typed additionalProperties render as an interface
-        // whose properties are not assignable to its index signature
-        // (TS2411).
-        "class-map-union.schema",
-        "class-with-additional.schema",
-        "vega-lite.schema",
-    ],
+    skipSchema: [],
     rendererOptions: { "explicit-unions": "yes" },
     quickTestRendererOptions: [
         { "runtime-typecheck": "false" },
