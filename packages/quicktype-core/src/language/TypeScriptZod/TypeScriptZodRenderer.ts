@@ -104,28 +104,6 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         return p.isOptional ? [typeMap, ".optional()"] : typeMap;
     }
 
-    protected renderString(type: Type, base: Sourcelike): Sourcelike {
-        const constraints: Sourcelike[] = [base];
-        const [minimumLength, maximumLength] = minMaxLengthForType(type) ?? [];
-        const pattern = patternForType(type);
-
-        if (minimumLength !== undefined) {
-            constraints.push(".min(", minimumLength.toString(10), ")");
-        }
-        if (maximumLength !== undefined) {
-            constraints.push(".max(", maximumLength.toString(10), ")");
-        }
-        if (pattern !== undefined) {
-            constraints.push(
-                ".regex(new RegExp(",
-                JSON.stringify(pattern),
-                "))",
-            );
-        }
-
-        return constraints;
-    }
-
     protected typeMapTypeFor(t: Type, required = true): Sourcelike {
         if (["class", "object", "enum"].includes(t.kind)) {
             return [this.nameForNamedType(t), "Schema"];
@@ -164,7 +142,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
             (_boolType) => "z.boolean()",
             (integerType) => numberType(integerType, true),
             (doubleType) => numberType(doubleType, false),
-            (stringType) => this.renderString(stringType, "z.string()"),
+            (string) => stringType(string),
             (arrayType) => {
                 const [minItems, maxItems] =
                     minMaxItemsForType(arrayType) ?? [];
