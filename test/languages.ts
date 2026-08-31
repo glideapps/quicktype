@@ -793,7 +793,7 @@ export const ElmLanguage: Language = {
         "e8b04.json",
     ],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults", "integer"],
+    features: ["enum", "union", "no-defaults", "strict-optional", "integer"],
     output: "QuickType.elm",
     topLevel: "QuickType",
     // Elm type aliases cannot be recursive, so all inputs that produce
