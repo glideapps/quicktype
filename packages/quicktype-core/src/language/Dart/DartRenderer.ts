@@ -2,6 +2,7 @@ import {
     anyTypeIssueAnnotation,
     nullTypeIssueAnnotation,
 } from "../../Annotation.js";
+import { minMaxItemsForType } from "../../attributes/Constraints.js";
 import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
@@ -313,35 +314,30 @@ export class DartRenderer extends ConvenienceRenderer {
         );
     }
 
+    // biome-ignore format: keep the constraint wrapper compact
     protected mapList(
         isNullable: boolean,
         itemType: Sourcelike,
         list: Sourcelike,
         mapper: Sourcelike,
+        constrained?: Type,
     ): Sourcelike {
+        const [min, max] = constrained === undefined ? [undefined, undefined] : (minMaxItemsForType(constrained) ?? []);
+        const checked = (value: Sourcelike): Sourcelike =>
+            min === undefined && max === undefined ? value : [
+                "(() { final x = ", value, "; if (",
+                [min !== undefined && `x.length < ${min}`, max !== undefined && `x.length > ${max}`].filter(Boolean).join(" || "),
+                ") throw FormatException('Invalid array length'); return x; })()",
+            ];
         if (isNullable && !this._options.requiredProperties) {
             return [
                 list,
                 " == null ? null : ",
-                "List<",
-                itemType,
-                ">.from(",
-                list,
-                "!.map((x) => ",
-                mapper,
-                "))",
+                checked(["List<", itemType, ">.from(", list, "!.map((x) => ", mapper, "))"]),
             ];
         }
 
-        return [
-            "List<",
-            itemType,
-            ">.from(",
-            list,
-            ".map((x) => ",
-            mapper,
-            "))",
-        ];
+        return checked(["List<", itemType, ">.from(", list, ".map((x) => ", mapper, "))"]);
     }
 
     protected mapMap(
@@ -431,6 +427,7 @@ export class DartRenderer extends ConvenienceRenderer {
                         arrayType.items,
                         "x",
                     ),
+                    arrayType,
                 ),
             (classType) =>
                 this.mapClass(

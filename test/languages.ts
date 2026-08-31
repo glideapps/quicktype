@@ -645,7 +645,7 @@ export const CJSONDefaultLanguage: Language = {
     diffViaSchema: false,
     skipDiffViaSchema: [],
     allowMissingNull: false,
-    features: [],
+    features: ["minmaxitems"],
     output: "TopLevel.h",
     topLevel: "TopLevel",
     includeJSON: ["nbl-stats.json"],
