@@ -4,6 +4,7 @@ import {
     anyTypeIssueAnnotation,
     nullTypeIssueAnnotation,
 } from "../../Annotation.js";
+import { minMaxValueForType } from "../../attributes/Constraints.js";
 import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
@@ -233,14 +234,24 @@ export class ElmRenderer extends ConvenienceRenderer {
         return defined(this._namedTypeDependents.get(name)).decoder;
     }
 
+    private decoderForNumber(t: Type, decoder: string): MultiWord {
+        const [min, max] = minMaxValueForType(t) ?? [];
+        if (min === undefined && max === undefined) return singleWord(decoder);
+        const minCheck = min === undefined ? "True" : `x >= ${min}`;
+        const maxCheck = max === undefined ? "True" : `x <= ${max}`;
+        return singleWord(
+            `(Jdec.andThen (\\x -> if ${minCheck} && ${maxCheck} then Jdec.succeed x else Jdec.fail "Number out of range") ${decoder})`,
+        );
+    }
+
     private decoderNameForType(t: Type, noOptional = false): MultiWord {
         return matchType<MultiWord>(
             t,
             (_anyType) => singleWord("Jdec.value"),
             (_nullType) => multiWord(" ", "Jdec.null", "()"),
             (_boolType) => singleWord("Jdec.bool"),
-            (_integerType) => singleWord("Jdec.int"),
-            (_doubleType) => singleWord("Jdec.float"),
+            (integerType) => this.decoderForNumber(integerType, "Jdec.int"),
+            (doubleType) => this.decoderForNumber(doubleType, "Jdec.float"),
             (_stringType) => singleWord("Jdec.string"),
             (arrayType) =>
                 multiWord(
