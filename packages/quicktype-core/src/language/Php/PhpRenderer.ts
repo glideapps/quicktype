@@ -8,6 +8,7 @@ import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer.js";
+import { minMaxValueForType } from "../../attributes/Constraints.js";
 import {
     DependencyName,
     type Name,
@@ -1018,6 +1019,17 @@ export class PhpRenderer extends ConvenienceRenderer {
         scopeAttrName: string,
         skipPrimitiveTypeCheck = false,
     ): void {
+        const validateRange = (type: Type): void => {
+            const [min, max] = minMaxValueForType(type) ?? [];
+            if (min !== undefined)
+                this.emitLine(
+                    `if (${scopeAttrName} < ${min}) throw new Exception("Attribute Error");`,
+                );
+            if (max !== undefined)
+                this.emitLine(
+                    `if (${scopeAttrName} > ${max}) throw new Exception("Attribute Error");`,
+                );
+        };
         const is = (isfn: string, myT: Name = className): void => {
             this.emitBlock(["if (!", isfn, "(", scopeAttrName, "))"], () =>
                 this.emitLine(
@@ -1042,10 +1054,11 @@ export class PhpRenderer extends ConvenienceRenderer {
             (_boolType) => {
                 if (!skipPrimitiveTypeCheck) is("is_bool");
             },
-            (_integerType) => {
+            (integerType) => {
                 if (!skipPrimitiveTypeCheck) is("is_integer");
+                validateRange(integerType);
             },
-            (_doubleType) => {
+            (doubleType) => {
                 if (!skipPrimitiveTypeCheck) {
                     // PHP integers are acceptable wherever floats are, and
                     // json_decode gives an int for a whole JSON number.
@@ -1067,6 +1080,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                             ),
                     );
                 }
+                validateRange(doubleType);
             },
             (_stringType) => {
                 if (!skipPrimitiveTypeCheck) is("is_string");
