@@ -5,6 +5,7 @@ import {
 import {
     minMaxItemsForType,
     minMaxLengthForType,
+    minMaxValueForType,
     patternForType,
 } from "../../attributes/Constraints.js";
 import {
@@ -441,13 +442,28 @@ export class DartRenderer extends ConvenienceRenderer {
                 ? [value, " == null ? null : ", checked]
                 : checked;
         };
+        const validateNumber = (type: Type, value: Sourcelike): Sourcelike => {
+            const [min, max] = minMaxValueForType(type) ?? [];
+            if (min === undefined && max === undefined) return value;
+            return [
+                isNullable ? [value, " == null ? null : "] : [],
+                "((x) => ",
+                min === undefined ? "true" : `x >= ${min}`,
+                " && ",
+                max === undefined ? "true" : `x <= ${max}`,
+                ' ? x : throw FormatException("Expected bounded number"))(',
+                value,
+                ")",
+            ];
+        };
         return matchType<Sourcelike>(
             t,
             (_anyType) => dynamic,
             (_nullType) => dynamic, // FIXME: check null
             (_boolType) => dynamic,
-            (_integerType) => dynamic,
-            (_doubleType) => [dynamic, "?.toDouble()"],
+            (integerType) => validateNumber(integerType, dynamic),
+            (doubleType) =>
+                validateNumber(doubleType, [dynamic, "?.toDouble()"]),
             (stringType) =>
                 validatePattern(
                     stringType,

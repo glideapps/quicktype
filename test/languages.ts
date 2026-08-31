@@ -1519,6 +1519,7 @@ export const DartLanguage: Language = {
         "date-time",
         "minmaxlength",
         "pattern",
+        "minmax",
     ],
     output: "TopLevel.dart",
     topLevel: "TopLevel",
