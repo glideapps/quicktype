@@ -1157,7 +1157,7 @@ export const Scala3UpickleLanguage: Language = {
         "af2d1.json",
     ],
     allowMissingNull: true,
-    features: ["enum", "union", "no-defaults"],
+    features: ["enum", "union", "no-defaults", "integer"],
     output: "TopLevel.scala",
     topLevel: "TopLevel",
     skipJSON: [],
