@@ -2,7 +2,10 @@ import {
     anyTypeIssueAnnotation,
     nullTypeIssueAnnotation,
 } from "../../Annotation.js";
-import { minMaxItemsForType } from "../../attributes/Constraints.js";
+import {
+    minMaxItemsForType,
+    minMaxLengthForType,
+} from "../../attributes/Constraints.js";
 import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
@@ -409,6 +412,20 @@ export class DartRenderer extends ConvenienceRenderer {
         t: Type,
         ...dynamic: Sourcelike[]
     ): Sourcelike {
+        const validateString = (type: Type, value: Sourcelike): Sourcelike => {
+            const [min, max] = minMaxLengthForType(type) ?? [];
+            if (min === undefined && max === undefined) return value;
+            return [
+                isNullable ? [value, " == null ? null : "] : [],
+                "((x) => ",
+                min === undefined ? "true" : `x.length >= ${min}`,
+                " && ",
+                max === undefined ? "true" : `x.length <= ${max}`,
+                ' ? x : throw FormatException("Expected bounded string"))(',
+                value,
+                ")",
+            ];
+        };
         return matchType<Sourcelike>(
             t,
             (_anyType) => dynamic,
@@ -416,7 +433,7 @@ export class DartRenderer extends ConvenienceRenderer {
             (_boolType) => dynamic,
             (_integerType) => dynamic,
             (_doubleType) => [dynamic, "?.toDouble()"],
-            (_stringType) => dynamic,
+            (stringType) => validateString(stringType, dynamic),
             (arrayType) =>
                 this.mapList(
                     isNullable || arrayType.isNullable,

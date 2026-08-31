@@ -1511,7 +1511,7 @@ export const DartLanguage: Language = {
         "7fbfb.json",
     ],
     allowMissingNull: true,
-    features: ["integer", "no-defaults", "date-time"],
+    features: ["integer", "no-defaults", "date-time", "minmaxlength"],
     output: "TopLevel.dart",
     topLevel: "TopLevel",
     skipJSON: [],
