@@ -1673,7 +1673,15 @@ export const PHPLanguage: Language = {
     diffViaSchema: false,
     skipDiffViaSchema: [],
     allowMissingNull: true,
-    features: ["enum", "union", "no-defaults", "uuid", "integer", "minmax"],
+    features: [
+        "enum",
+        "union",
+        "no-defaults",
+        "uuid",
+        "integer",
+        "minmax",
+        "minmaxitems",
+    ],
     output: "TopLevel.php",
     topLevel: "TopLevel",
     skipJSON: [
