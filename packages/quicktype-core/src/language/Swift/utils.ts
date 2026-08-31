@@ -32,7 +32,8 @@ export const MAX_SAMELINE_PROPERTIES = 4;
 // 2018-08-14T02:45:50z
 // 2018-00008-1T002:45:3Z
 
-const swiftDateTimeRegex = /^\d+-\d+-\d+T\d+:\d+:\d+([zZ]|[+-]\d+(:\d+)?)$/;
+const swiftDateTimeRegex =
+    /^\d+-\d+-\d+T\d+:\d+:\d+(?:\.\d+)?([zZ]|[+-]\d+(:\d+)?)$/;
 
 export class SwiftDateTimeRecognizer extends DefaultDateTimeRecognizer {
     public isDateTime(str: string): boolean {

@@ -98,6 +98,7 @@ object JsonExt:
         if t != null then t.nn else throw new Exception(json.toString(), stack.result().headOption.getOrElse(null))
     }
 end JsonExt
+given OptionPickler.Reader[Long] = JsonExt.strictLong
 `);
         this.ensureBlankLine();
     }
