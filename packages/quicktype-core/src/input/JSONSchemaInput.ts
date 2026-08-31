@@ -1184,6 +1184,17 @@ async function addTypesInSchema(
             );
         }
 
+        async function makeTypeFromCase(
+            caseSchema: unknown,
+            caseLoc: Location,
+        ): Promise<TypeRef> {
+            return await toType(
+                checkJSONSchema(caseSchema, caseLoc.canonicalRef),
+                caseLoc,
+                makeTypeAttributesInferred(typeAttributes),
+            );
+        }
+
         async function makeTypesFromCases(
             cases: unknown[],
             kind: string,
@@ -1196,14 +1207,9 @@ async function addTypesInSchema(
                 );
             }
 
-            return await arrayMapSync(cases, async (t, index) => {
-                const caseLoc = kindLoc.push(index.toString());
-                return await toType(
-                    checkJSONSchema(t, caseLoc.canonicalRef),
-                    caseLoc,
-                    makeTypeAttributesInferred(typeAttributes),
-                );
-            });
+            return await arrayMapSync(cases, async (t, index) =>
+                makeTypeFromCase(t, kindLoc.push(index.toString())),
+            );
         }
 
         const intersectionType = typeBuilder.getUniqueIntersectionType(
@@ -1389,6 +1395,18 @@ async function addTypesInSchema(
 
         if (schema.allOf !== undefined) {
             types.push(...(await makeTypesFromCases(schema.allOf, "allOf")));
+        }
+
+        for (const keyword of ["then", "else"]) {
+            const conditionalSchema = schema[keyword];
+            if (conditionalSchema !== undefined) {
+                types.push(
+                    await makeTypeFromCase(
+                        conditionalSchema,
+                        loc.push(keyword),
+                    ),
+                );
+            }
         }
 
         if (schema.oneOf !== undefined) {
