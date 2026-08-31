@@ -1533,6 +1533,19 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         );
                     }
 
+                    if (propType.kind === "date-time") {
+                        const key = this.NarrowString.createStringLiteral([
+                            stringEscape(json),
+                        ]);
+                        this.emitLine(
+                            "if (j.find(",
+                            key,
+                            ") != j.end() && !std::regex_match(j.at(",
+                            key,
+                            ').get<std::string>(), std::regex("^[0-9]{4}-[0-9]{2}-[0-9]{2}T.*$"))) throw std::runtime_error("Expected date-time");',
+                        );
+                    }
+
                     const minMaxItems = minMaxItemsForType(propType);
                     if (minMaxItems !== undefined) {
                         const [minItems, maxItems] = minMaxItems;
@@ -1977,6 +1990,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             ["double", "is_number"],
             ["string", "is_string"],
             ["uuid", "is_string"],
+            ["date-time", "is_string"],
             ["class", "is_object"],
             ["map", "is_object"],
             ["array", "is_array"],
