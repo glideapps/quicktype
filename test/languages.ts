@@ -604,28 +604,19 @@ export const CJSONLanguage: Language = {
         ),
         /* Union, Map and Arrays with invalid types are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
         ...skipsMapValueValidation.filter(
-            (schema) => schema !== "go-schema-pattern-properties.schema",
+            (schema) =>
+                schema !== "go-schema-pattern-properties.schema" &&
+                schema !== "unevaluated-properties.schema",
         ),
         /* Top-level array elements with invalid types (e.g. a string where
          * an integer is expected) are not checked either. */
-        "multi-type-enum.schema",
         "prefix-items.schema",
-        /* Constraints (min/max and regex) are not supported (for the current implementation, can be added later, should abord parsing and return NULL) */
-        "schema-constraints.schema",
-        "optional-const-ref.schema",
-        /* Same unsupported min/max, length and regex constraints, applied to optional properties */
-        "optional-constraints.schema",
         /* Required properties absent are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
         /* Pure Any type not supported (for the current implementation, can be added later, should manage a callback to provide the final application a way to handle it at parsing and creation of cJSON) */
         "any.schema",
         "direct-union.schema",
         "optional-any.schema",
         "recursive-union-flattening.schema",
-        /* Self-referential union member (a union whose member recursively
-         * refers back to the enclosing object) is not supported by the
-         * multi-source renderer; generation aborts. Pre-existing cJSON
-         * limitation, unrelated to the Rust fixture this schema targets. */
-        "rust-cycle-breaker-union.schema",
         "required-non-properties.schema",
         /* Class elements with invalid type are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
         ...skipsUntypedUnions,
@@ -1516,7 +1507,7 @@ export const DartLanguage: Language = {
         "7fbfb.json",
     ],
     allowMissingNull: true,
-    features: [],
+    features: ["integer", "no-defaults", "date-time"],
     output: "TopLevel.dart",
     topLevel: "TopLevel",
     skipJSON: [],
