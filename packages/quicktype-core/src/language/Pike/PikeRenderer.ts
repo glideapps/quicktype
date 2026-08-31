@@ -346,7 +346,10 @@ export class PikeRenderer extends ConvenienceRenderer {
                                   this.nameForNamedType(enumType),
                                   '_from_JSON(json["',
                               ]
-                            : 'json["',
+                            : [
+                                  p.type.kind === "double" ? "(float)" : "",
+                                  'json["',
+                              ],
                         stringEscape(jsonName),
                         enumType instanceof EnumType ? '"])' : '"]',
                         ";",

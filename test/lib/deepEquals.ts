@@ -59,6 +59,9 @@ export default function deepEquals(
 
     if (typeof x === "string" && typeof y === "string") {
         if (assumeStringsEqual || x === y) return true;
+        const uuid = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
+        if (uuid.test(x) && uuid.test(y) && x.toLowerCase() === y.toLowerCase())
+            return true;
         const [xMoment, isTime] = tryParseMoment(x);
         const [yMoment] = tryParseMoment(y);
         if (

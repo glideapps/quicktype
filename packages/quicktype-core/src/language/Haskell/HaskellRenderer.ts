@@ -29,6 +29,10 @@ import { forbiddenNames } from "./constants.js";
 import type { haskellOptions } from "./language.js";
 import { lowerNamingFunction, upperNamingFunction } from "./utils.js";
 
+function haskellStringEscape(s: string): string {
+    return stringEscape(s).replace(/\\U0*([0-9a-fA-F]+)/g, "\\x$1\\&");
+}
+
 export class HaskellRenderer extends ConvenienceRenderer {
     public constructor(
         targetLanguage: TargetLanguage,
@@ -327,7 +331,7 @@ export class HaskellRenderer extends ConvenienceRenderer {
                         this.emitLine(
                             onFirst ? "[ " : ", ",
                             '"',
-                            stringEscape(jsonName),
+                            haskellStringEscape(jsonName),
                             '" .= ',
                             name,
                             className,
@@ -361,7 +365,7 @@ export class HaskellRenderer extends ConvenienceRenderer {
                             "v ",
                             operator,
                             ' "',
-                            stringEscape(jsonName),
+                            haskellStringEscape(jsonName),
                             '"',
                         );
                         onFirst = false;
@@ -385,7 +389,7 @@ export class HaskellRenderer extends ConvenienceRenderer {
                     "toJSON ",
                     this.enumCaseName(name, enumName),
                     ' = "',
-                    stringEscape(jsonName),
+                    haskellStringEscape(jsonName),
                     '"',
                 );
             });
@@ -402,7 +406,7 @@ export class HaskellRenderer extends ConvenienceRenderer {
                     this.forEachEnumCase(e, "none", (name, jsonName) => {
                         this.emitLine(
                             'parseText "',
-                            stringEscape(jsonName),
+                            haskellStringEscape(jsonName),
                             '" = return ',
                             this.enumCaseName(name, enumName),
                         );
