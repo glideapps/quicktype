@@ -14,8 +14,7 @@ import {
     splitIntoWords,
     utf32ConcatMap,
 } from "../../support/Strings.js";
-import { type ClassProperty, UnionType } from "../../Type/index.js";
-import { nullableFromUnion } from "../../Type/TypeUtils.js";
+import type { ClassProperty } from "../../Type/index.js";
 
 const legalizeName = legalizeCharacters(
     (cp) => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp),
@@ -61,16 +60,8 @@ export function requiredOrOptional(p: ClassProperty): RequiredOrOptional {
         return { reqOrOpt: "Jpipe.optional", fallback };
     }
 
-    const t = p.type;
-    if (
-        p.isOptional ||
-        (t instanceof UnionType && nullableFromUnion(t) !== null)
-    ) {
+    if (p.isOptional) {
         return optional(" Nothing");
-    }
-
-    if (t.kind === "null") {
-        return optional(" ()");
     }
 
     return { reqOrOpt: "Jpipe.required", fallback: "" };
