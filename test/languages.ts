@@ -1612,7 +1612,6 @@ export const PHPLanguage: Language = {
     output: "TopLevel.php",
     topLevel: "TopLevel",
     skipJSON: [
-        "bug855-short.json",
         "bug863.json",
         "issue2680-scalar-array.json",
         "no-classes.json",

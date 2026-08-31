@@ -28,6 +28,7 @@ import {
     type ClassProperty,
     type ClassType,
     type EnumType,
+    MapType,
     type Type,
     UnionType,
 } from "../../Type/index.js";
@@ -107,6 +108,8 @@ export class PhpRenderer extends ConvenienceRenderer {
     }
 
     protected namedTypeToNameForTopLevel(type: Type): Type | undefined {
+        if (type instanceof MapType && type.values.kind === "class")
+            return undefined;
         return directlyReachableSingleNamedType(type);
     }
 
@@ -1850,6 +1853,17 @@ export class PhpRenderer extends ConvenienceRenderer {
     protected emitSourceStructure(givenFilename: string): void {
         this.emitLine("<?php");
         this.emitLine("declare(strict_types=1);");
+        this.forEachTopLevel("none", (t, name) => {
+            if (!(t instanceof MapType) || t.values.kind !== "class") return;
+            const topLevel = this.sourcelikeToString(name);
+            const valueType = this.sourcelikeToString(
+                this.nameForNamedType(t.values),
+            );
+            this.emitMultiline(`class ${topLevel} { private array $value;
+public function __construct(array $value) { $this->value = $value; }
+public static function from(stdClass $obj): ${topLevel} { return new ${topLevel}(array_map(fn($value) => ${valueType}::from($value), (array)$obj)); }
+public function to(): stdClass { return (object)array_map(fn($value) => $value->to(), $this->value); } }`);
+        });
         this.forEachNamedType(
             "leading-and-interposing",
             (c: ClassType, n: Name) => this.emitClassDefinition(c, n),
