@@ -856,7 +856,7 @@ export const SwiftLanguage: Language = {
         "fcca3.json",
     ],
     allowMissingNull: true,
-    features: ["enum", "union", "no-defaults", "date-time", "integer"],
+    features: ["enum", "union", "no-defaults", "date-time", "uuid", "integer"],
     output: "quicktype.swift",
     topLevel: "TopLevel",
     skipJSON: [

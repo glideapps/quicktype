@@ -210,6 +210,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 if (transformedStringType.kind === "date-time") {
                     return "Date";
                 }
+                if (transformedStringType.kind === "uuid") return "UUID";
 
                 return panic(
                     `Transformed string type ${transformedStringType.kind} not supported`,
