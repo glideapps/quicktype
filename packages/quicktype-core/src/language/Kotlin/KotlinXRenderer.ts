@@ -2,6 +2,8 @@ import type { Name } from "../../Naming.js";
 import { type Sourcelike, modifySource } from "../../Source.js";
 import { camelCase } from "../../support/Strings.js";
 import type { ArrayType, EnumType, MapType, Type } from "../../Type/index.js";
+import { UnionType } from "../../Type/index.js";
+import { nullableFromUnion } from "../../Type/TypeUtils.js";
 
 import { KotlinRenderer } from "./KotlinRenderer.js";
 import { stringEscape } from "./utils.js";
@@ -36,6 +38,16 @@ const dateTimeSerializers = [
  * TODO: Union, Any, Top Level Array, Top Level Map
  */
 export class KotlinXRenderer extends KotlinRenderer {
+    protected override kotlinType(
+        t: Type,
+        withIssues = false,
+        noOptional = false,
+    ): Sourcelike {
+        if (t instanceof UnionType && nullableFromUnion(t) === null)
+            return "JsonElement";
+        return super.kotlinType(t, withIssues, noOptional);
+    }
+
     protected forbiddenNamesForGlobalNamespace(): readonly string[] {
         return [
             ...super.forbiddenNamesForGlobalNamespace(),
