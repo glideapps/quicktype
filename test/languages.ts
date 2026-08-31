@@ -1699,7 +1699,6 @@ export const PHPLanguage: Language = {
         "bug855-short.json",
         "bug863.json",
         "issue2680-scalar-array.json",
-        "keywords.json",
         "no-classes.json",
         "null-safe.json",
         "00c36.json",
