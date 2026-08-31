@@ -17,6 +17,8 @@ import {
 import { type ClassProperty, UnionType } from "../../Type/index.js";
 import { nullableFromUnion } from "../../Type/TypeUtils.js";
 
+import { forbiddenNames } from "./constants.js";
+
 const legalizeName = legalizeCharacters(
     (cp) => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp),
 );
@@ -47,9 +49,12 @@ export const elmStringEscape = utf32ConcatMap(
 export const upperNamingFunction = funPrefixNamer("upper", (n) =>
     elmNameStyle(n, true),
 );
-export const lowerNamingFunction = funPrefixNamer("lower", (n) =>
-    elmNameStyle(n, false),
-);
+export const lowerNamingFunction = funPrefixNamer("lower", (n) => {
+    const styled = elmNameStyle(n, false);
+    return forbiddenNames.some((name) => name === styled)
+        ? `${styled}_`
+        : styled;
+});
 
 interface RequiredOrOptional {
     fallback: string;

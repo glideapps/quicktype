@@ -781,11 +781,7 @@ export const ElmLanguage: Language = {
     },
     diffViaSchema: true,
     skipDiffViaSchema: [
-        "identifiers.json",
-        "keywords.json",
-        "github-events.json",
         "nbl-stats.json",
-        "0a91a.json",
         "0e0c2.json",
         "34702.json",
         "76ae1.json",
