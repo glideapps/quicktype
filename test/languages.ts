@@ -19,6 +19,9 @@ const skipsEnumValueValidation = [
     "optional-enum.schema",
     "const-non-string.schema",
     "haskell-enum-forbidden.schema",
+    // Its only negative sample rejects an out-of-range enum value, which
+    // languages that don't validate enum values can't fail.
+    "percent-encoded-ref.schema",
     "nullable-optional-one-of.schema",
     "all-of-additional-properties-false.schema",
 ];

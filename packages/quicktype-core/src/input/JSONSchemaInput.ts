@@ -169,7 +169,10 @@ export class Ref {
         if (path !== "") {
             const parts = path.split("/");
             parts.forEach((part) => {
-                elements.push({ kind: PathElementKind.KeyOrIndex, key: part });
+                elements.push({
+                    kind: PathElementKind.KeyOrIndex,
+                    key: decodeURIComponent(part),
+                });
             });
         }
 

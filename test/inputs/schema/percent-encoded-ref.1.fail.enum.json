@@ -1,0 +1,10 @@
+{
+  "foo": {
+    "state": "nope",
+    "changeTime": 1
+  },
+  "woo": {
+    "state": "zxc",
+    "changeTime": 2
+  }
+}

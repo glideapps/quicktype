@@ -42,6 +42,17 @@ function schemaForSource(source: string) {
     };
 }
 
+async function typescriptForSource(source: string): Promise<string> {
+    const schemaInput = new JSONSchemaInput(undefined);
+    await schemaInput.addSource(schemaSourceForSource(source));
+
+    const inputData = new InputData();
+    inputData.addInput(schemaInput);
+
+    const result = await quicktype({ inputData, lang: "typescript" });
+    return result.lines.join("\n");
+}
+
 async function swiftForSource(source: string): Promise<string> {
     const schemaInput = new JSONSchemaInput(undefined);
     await schemaInput.addSource(schemaSourceForSource(source));
@@ -97,7 +108,7 @@ describe("schemaForTypeScriptSources", () => {
         expect(person.properties.age.type).toBe("number");
         expect(person.required).toEqual(["name"]);
         expect(person.additionalProperties).toBe(false);
-        expect(uris).toEqual(["#/definitions/"]);
+        expect(uris).toEqual(["#/definitions/Person"]);
     });
 
     test("a #TopLevel marker selects the top-level type and is stripped", () => {
@@ -265,6 +276,41 @@ describe("schemaForTypeScriptSources", () => {
         `);
 
         expect(schema.definitions.Map.properties.width.type).toBe("number");
+    });
+
+    // https://github.com/glideapps/quicktype/issues/1992
+    test("generic instantiations retain their exported type names", async () => {
+        const output = await typescriptForSource(`
+            export class StateInfo<T> {
+                public state: T;
+                public changeTime: number;
+            }
+
+            export enum xxx {
+                jam = "xx",
+                jest = "yy",
+            }
+
+            export enum www {
+                Disabled = "asd",
+                Ok = "qwe",
+            }
+
+            export class foo {
+                public state: StateInfo<xxx>;
+            }
+
+            export class woo {
+                public test2: StateInfo<www>;
+            }
+        `);
+
+        expect(output).toContain("export interface StateInfoXxx");
+        expect(output).toContain("export interface StateInfoWWW");
+        expect(output).toContain('export type Xxx = "xx" | "yy";');
+        expect(output).toContain('export type WWW = "asd" | "qwe";');
+        expect(output).not.toContain("PurpleStateInfoT");
+        expect(output).not.toContain("StateInfoT1");
     });
 
     test("unsupported built-in types are reported with a helpful message", () => {

@@ -1,4 +1,5 @@
 import {
+    areEqual,
     iterableFirst,
     mapFromIterable,
     mapFromObject,
@@ -31,6 +32,11 @@ export type AccessorNames = Map<string, AccessorEntry>;
 class AccessorNamesTypeAttributeKind extends TypeAttributeKind<AccessorNames> {
     public constructor() {
         super("accessorNames");
+    }
+
+    public combine(names: AccessorNames[]): AccessorNames | undefined {
+        const first = names[0];
+        return names.every((name) => areEqual(name, first)) ? first : undefined;
     }
 
     public makeInferred(_: AccessorNames): undefined {
