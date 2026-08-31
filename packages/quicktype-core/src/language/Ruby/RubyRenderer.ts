@@ -3,6 +3,7 @@ import {
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer.js";
 import {
+    minMaxItemsForType,
     minMaxLengthForType,
     minMaxValueForType,
     patternForType,
@@ -114,6 +115,16 @@ export class RubyRenderer extends ConvenienceRenderer {
                 ? ""
                 : `.constrained(format: Regexp.new("${stringEscape(regex)}"))`;
         };
+        const cardinality = (type: Type): string => {
+            const [min, max] = minMaxItemsForType(type) ?? [];
+            const constraints = [
+                min === undefined ? undefined : `min_size: ${min}`,
+                max === undefined ? undefined : `max_size: ${max}`,
+            ].filter((x): x is string => x !== undefined);
+            return constraints.length === 0
+                ? ""
+                : `.constrained(${constraints.join(", ")})`;
+        };
         const minMax = (type: Type): string => {
             const [min, max] = minMaxValueForType(type) ?? [];
             const constraints = [
@@ -151,6 +162,7 @@ export class RubyRenderer extends ConvenienceRenderer {
                 "Types.Array(",
                 this.dryType(arrayType.items),
                 ")",
+                cardinality(arrayType),
                 optional,
             ],
             (classType) => [this.nameForNamedType(classType), optional],

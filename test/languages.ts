@@ -106,6 +106,7 @@ export const JSONSchemaLanguage: Language = {
         "uuid",
         "integer",
         "minmax",
+        "minmaxitems",
         "minmaxlength",
         "minmaxitems",
         "pattern",
