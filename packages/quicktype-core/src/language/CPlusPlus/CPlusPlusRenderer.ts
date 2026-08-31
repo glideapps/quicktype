@@ -890,6 +890,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     this.nameForNamedType(unionType),
                 ];
             },
+            (_transformedStringType) => this._stringType.getType(),
         );
         if (!isOptional) return typeSource;
         return [this.optionalType(t), "<", typeSource, ">"];
@@ -1519,6 +1520,19 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         );
                     }
 
+                    if (propType.kind === "uuid") {
+                        const key = this.NarrowString.createStringLiteral([
+                            stringEscape(json),
+                        ]);
+                        this.emitLine(
+                            "if (j.find(",
+                            key,
+                            ") != j.end() && !std::regex_match(j.at(",
+                            key,
+                            ').get<std::string>(), std::regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"))) throw std::runtime_error("Expected UUID");',
+                        );
+                    }
+
                     const minMaxItems = minMaxItemsForType(propType);
                     if (minMaxItems !== undefined) {
                         const [minItems, maxItems] = minMaxItems;
@@ -1962,6 +1976,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             ["integer", "is_number_integer"],
             ["double", "is_number"],
             ["string", "is_string"],
+            ["uuid", "is_string"],
             ["class", "is_object"],
             ["map", "is_object"],
             ["array", "is_array"],
