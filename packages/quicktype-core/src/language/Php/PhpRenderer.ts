@@ -80,7 +80,7 @@ export class PhpRenderer extends ConvenienceRenderer {
     ): ForbiddenWordsInfo {
         // `$this` is the only variable name PHP reserves; a property named
         // "this" would produce an illegal `$this` constructor parameter.
-        return { names: ["this"], includeGlobalForbidden: true };
+        return { names: ["this", "_"], includeGlobalForbidden: true };
     }
 
     protected makeNamedTypeNamer(): Namer {
