@@ -932,6 +932,7 @@ export const ObjectiveCLanguage: Language = {
         "no-defaults",
         "strict-optional",
         "uuid",
+        "date-time",
     ],
     output: "QTTopLevel.m",
     topLevel: "QTTopLevel",

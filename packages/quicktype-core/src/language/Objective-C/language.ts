@@ -56,7 +56,10 @@ export class ObjectiveCTargetLanguage extends TargetLanguage<
     }
 
     public get stringTypeMapping(): StringTypeMapping {
-        return new Map([["uuid", "uuid"]]);
+        return new Map([
+            ["uuid", "uuid"],
+            ["date-time", "date-time"],
+        ]);
     }
 
     protected makeRenderer<Lang extends LanguageName = "objective-c">(
