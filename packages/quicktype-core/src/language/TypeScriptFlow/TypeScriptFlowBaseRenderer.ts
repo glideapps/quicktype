@@ -188,11 +188,15 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
 
         const additionalProperties = c.getAdditionalProperties();
         if (additionalProperties) {
+            const indexTypes = [
+                additionalProperties,
+                ...Array.from(c.getProperties().values(), (p) => p.type),
+            ].map((t) => this.sourceFor(t).source);
             this.emitTable([
                 [
                     "[property: string]",
                     ": ",
-                    this.sourceFor(additionalProperties).source,
+                    multiWord(" | ", ...indexTypes).source,
                     ";",
                 ],
             ]);
