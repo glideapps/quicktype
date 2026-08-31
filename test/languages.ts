@@ -835,22 +835,13 @@ export const SwiftLanguage: Language = {
         "blns-object.json",
         "github-events.json",
         "keywords.json",
-        "null-safe.json",
-        "0a358.json", // date-time issues
         "0a91a.json",
         "337ed.json",
         "34702.json",
-        "54d32.json", // date-time issues
-        "77392.json", // date-time issues
         "7f568.json",
         "734ad.json",
         "76ae1.json",
-        "80aff.json", // date-time issues
-        "9ac3b.json", // date-time issues
-        "a0496.json", // date-time issues
-        "b4865.json", // date-time issues
         "c8c7e.json",
-        "d23d5.json", // date-time issues
         "e53b5.json",
         "e8b04.json",
         "fcca3.json",
