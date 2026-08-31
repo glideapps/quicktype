@@ -922,6 +922,11 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                                         `if (dict[@"${objectiveCStringEscape(jsonName)}"] && ![[NSUUID alloc] initWithUUIDString:dict[@"${objectiveCStringEscape(jsonName)}"]]) return nil;`,
                                     );
                                 }
+                                if (property.type.kind === "date-time") {
+                                    this.emitLine(
+                                        `if (dict[@"${objectiveCStringEscape(jsonName)}"] && [dict[@"${objectiveCStringEscape(jsonName)}"] rangeOfString:@"^[0-9]{4}-[0-9]{2}-[0-9]{2}T" options:NSRegularExpressionSearch].location == NSNotFound) return nil;`,
+                                    );
+                                }
                                 if (
                                     !property.isOptional &&
                                     property.type.isNullable
