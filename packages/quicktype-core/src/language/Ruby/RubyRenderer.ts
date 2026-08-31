@@ -5,6 +5,7 @@ import {
 import {
     minMaxLengthForType,
     minMaxValueForType,
+    patternForType,
 } from "../../attributes/Constraints.js";
 import { type Name, Namer } from "../../Naming.js";
 import type { RenderContext } from "../../Renderer.js";
@@ -107,6 +108,12 @@ export class RubyRenderer extends ConvenienceRenderer {
 
     private dryType(t: Type, isOptional = false): Sourcelike {
         const optional = isOptional ? ".optional" : "";
+        const pattern = (type: Type): Sourcelike => {
+            const regex = patternForType(type);
+            return regex === undefined
+                ? ""
+                : `.constrained(format: Regexp.new("${stringEscape(regex)}"))`;
+        };
         const minMax = (type: Type): string => {
             const [min, max] = minMaxValueForType(type) ?? [];
             const constraints = [
@@ -134,7 +141,12 @@ export class RubyRenderer extends ConvenienceRenderer {
             (_boolType) => ["Types::Bool", optional],
             (integerType) => ["Types::Integer", minMax(integerType), optional],
             (doubleType) => ["Types::Double", minMax(doubleType), optional],
-            (stringType) => ["Types::String", length(stringType), optional],
+            (stringType) => [
+                "Types::String",
+                length(stringType),
+                pattern(stringType),
+                optional,
+            ],
             (arrayType) => [
                 "Types.Array(",
                 this.dryType(arrayType.items),
