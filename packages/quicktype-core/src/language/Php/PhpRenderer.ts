@@ -671,7 +671,7 @@ export class PhpRenderer extends ConvenienceRenderer {
                     this.emitLine(
                         ...lhs,
                         ...args,
-                        "->format(DateTimeInterface::ISO8601);",
+                        '->format("Y-m-d\\\\TH:i:s.uP");',
                     );
                     return;
                 }
@@ -791,12 +791,7 @@ export class PhpRenderer extends ConvenienceRenderer {
             },
             (transformedStringType) => {
                 if (transformedStringType.kind === "date-time") {
-                    this.emitLine(
-                        "$tmp = ",
-                        "DateTime::createFromFormat(DateTimeInterface::ISO8601, ",
-                        args,
-                        ");",
-                    );
+                    this.emitLine("$tmp = ", "new DateTime(", args, ");");
                     this.transformDateTime(className, "", ["$tmp"]);
                     this.emitLine("return $tmp;");
                     return;
