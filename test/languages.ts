@@ -579,8 +579,6 @@ export const CJSONLanguage: Language = {
     output: "TopLevel.h",
     topLevel: "TopLevel",
     skipJSON: [
-        /* Quote in identifier is not supported */
-        "blns-object.json",
         /* cJSON is not able to parse input with special characters */
         "nst-test-suite.json",
         /* Union with no name in nullable Array in Array is not supported */

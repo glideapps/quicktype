@@ -65,6 +65,17 @@ import {
     legalizeName,
 } from "./utils.js";
 
+function cStringEscape(s: string): string {
+    return stringEscape(s).replace(
+        /\\u00(0[0-9a-f]|1[0-9a-f]|7f|8[0-9a-f]|9[0-9a-f])/g,
+        (_match, hex: string) => {
+            const cp = Number.parseInt(hex, 16);
+            const octal = (b: number) => `\\${b.toString(8).padStart(3, "0")}`;
+            return cp < 0x80 ? octal(cp) : octal(0xc2) + octal(cp);
+        },
+    );
+}
+
 export class CJSONRenderer extends ConvenienceRenderer {
     private currentHeaderFilename:
         | string
@@ -531,7 +542,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                         this.sourcelikeToString(enumName),
                     );
                     this.forEachEnumCase(enumType, "none", (name, jsonName) => {
-                        jsonName = stringEscape(jsonName);
+                        jsonName = cStringEscape(jsonName);
                         this.emitLine(
                             onFirst ? "" : "else ",
                             'if (!strcmp(cJSON_GetStringValue(j), "',
@@ -566,7 +577,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                         this.sourcelikeToString(enumName),
                     );
                     this.forEachEnumCase(enumType, "none", (name, jsonName) => {
-                        jsonName = stringEscape(jsonName);
+                        jsonName = cStringEscape(jsonName);
                         this.emitLine(
                             "case ",
                             combinedName,
@@ -2392,7 +2403,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                         type,
                                         "none",
                                         (name, jsonName, property) => {
-                                            jsonName = stringEscape(jsonName);
+                                            jsonName = cStringEscape(jsonName);
                                             const cJSON =
                                                 this.quicktypeTypeToCJSON(
                                                     property.type,
@@ -3476,7 +3487,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                         type,
                                         "none",
                                         (name, jsonName, property) => {
-                                            jsonName = stringEscape(jsonName);
+                                            jsonName = cStringEscape(jsonName);
                                             const cJSON =
                                                 this.quicktypeTypeToCJSON(
                                                     property.type,
