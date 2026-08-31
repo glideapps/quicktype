@@ -29,6 +29,7 @@ import {
     type ObjectType,
     PrimitiveType,
     type Type,
+    UnionType,
 } from "../../Type/index.js";
 import {
     directlyReachableSingleNamedType,
@@ -210,15 +211,25 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
             },
         );
 
+        const allowsNull =
+            t.kind === "null" ||
+            (t instanceof UnionType && t.findMember("null") !== undefined);
+        if (required && allowsNull) {
+            return [
+                '(props, name, ...args) => props[name] === undefined ? new Error("Expected required property") : PropTypes.oneOfType([',
+                match,
+                "])(props, name, ...args)",
+            ];
+        }
         if (required) {
-            return [match];
+            return ["PropTypes.oneOfType([", match, "]).isRequired"];
         }
 
         return match;
     }
 
     private typeMapTypeForProperty(p: ClassProperty): Sourcelike {
-        return this.typeMapTypeFor(p.type);
+        return this.typeMapTypeFor(p.type, !p.isOptional);
     }
 
     private importStatement(
