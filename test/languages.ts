@@ -1266,7 +1266,9 @@ export const KotlinLanguage: Language = {
         // instead of rejecting it.
         "nested-intersection-union.schema",
         "class-with-additional.schema",
-        ...skipsMapValueValidation,
+        ...skipsMapValueValidation.filter(
+            (schema) => schema !== "go-schema-pattern-properties.schema",
+        ),
         // IllegalArgumentException
         // KlaxonException: Need to extract inside
         "bool-string.schema",
