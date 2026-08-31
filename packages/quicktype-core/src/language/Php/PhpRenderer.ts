@@ -11,7 +11,7 @@ import {
 import {
     DependencyName,
     type Name,
-    type Namer,
+    Namer,
     funPrefixNamer,
 } from "../../Naming.js";
 import type { RenderContext } from "../../Renderer.js";
@@ -80,7 +80,8 @@ export class PhpRenderer extends ConvenienceRenderer {
     }
 
     protected makeNamedTypeNamer(): Namer {
-        return this.getNameStyling("typeNamingFunction");
+        const namer = this.getNameStyling("typeNamingFunction");
+        return new Namer(namer.name, namer.nameStyle, namer.prefixes, true);
     }
 
     protected namerForObjectProperty(): Namer {

@@ -1711,10 +1711,6 @@ export const PHPLanguage: Language = {
         // The renderer does not support a bare top-level map.
         "empty-object.schema",
         "integer-before-number.schema", // Python-specific union-order regression.
-        // PHP class names are case-insensitive, but the namer dedups
-        // case-sensitively, so this declares classes that collide (same
-        // reason Java and Python skip it).
-        "keyword-unions.schema",
         // Unions are inlined as PHP union type declarations, so a
         // top-level union produces no named TopLevel class for the driver.
         "recursive-union-flattening.schema",
