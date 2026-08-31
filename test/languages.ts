@@ -1580,6 +1580,7 @@ export const HaskellLanguage: Language = {
     },
     diffViaSchema: true,
     skipDiffViaSchema: [
+        "keywords.json",
         "reddit.json",
         "github-events.json",
         "nbl-stats.json",
@@ -1635,7 +1636,6 @@ export const HaskellLanguage: Language = {
         "recursive.json",
         "bug427.json",
         "nst-test-suite.json",
-        "keywords.json",
     ],
     skipMiscJSON: false,
     skipSchema: [
