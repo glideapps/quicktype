@@ -1,5 +1,11 @@
 import { arrayIntercalate } from "collection-utils";
 
+import {
+    minMaxItemsForType,
+    minMaxLengthForType,
+    minMaxValueForType,
+    patternForType,
+} from "../../attributes/Constraints.js";
 import { ConvenienceRenderer } from "../../ConvenienceRenderer.js";
 import { type Name, type Namer, funPrefixNamer } from "../../Naming.js";
 import type { RenderContext } from "../../Renderer.js";
@@ -77,6 +83,10 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         return funPrefixNamer("enum-cases", (s) => this.nameStyle(s, false));
     }
 
+    protected isImplicitCycleBreaker(_t: Type): boolean {
+        return false;
+    }
+
     protected namedTypeToNameForTopLevel(type: Type): Type | undefined {
         return directlyReachableSingleNamedType(type);
     }
@@ -94,28 +104,94 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
 
     private typeMapTypeFor(t: Type, required = true): Sourcelike {
         if (["class", "object", "enum"].includes(t.kind)) {
+            if (this.isCycleBreakerType(t)) {
+                const name = this.nameForNamedType(t);
+                return [
+                    "(...args) => ",
+                    this.sourcelikeToString(["_", name]),
+                    "(...args)",
+                ];
+            }
             return ["_", this.nameForNamedType(t)];
         }
 
+        const stringType = (type: Type): Sourcelike => {
+            const [min, max] = minMaxLengthForType(type) ?? [];
+            const pattern = patternForType(type);
+            if (min === undefined && max === undefined && pattern === undefined)
+                return "PropTypes.string";
+            return [
+                "(props, name) => { const value = props[name]; return value == null || (typeof value === 'string'",
+                min === undefined ? "" : [" && value.length >= ", String(min)],
+                max === undefined ? "" : [" && value.length <= ", String(max)],
+                pattern === undefined
+                    ? ""
+                    : [
+                          ' && new RegExp("',
+                          utf16StringEscape(pattern),
+                          '").test(value)',
+                      ],
+                ') ? null : new Error("Expected bounded string"); }',
+            ];
+        };
+
+        const numberType = (type: Type, integer: boolean): Sourcelike => {
+            const [min, max] = minMaxValueForType(type) ?? [];
+            if (min === undefined && max === undefined)
+                return integer ? "Integer" : "PropTypes.number";
+            return [
+                "(props, name) => { const value = props[name]; return value == null || (",
+                integer
+                    ? "Number.isInteger(value)"
+                    : "typeof value === 'number'",
+                min === undefined ? "" : [" && value >= ", String(min)],
+                max === undefined ? "" : [" && value <= ", String(max)],
+                ') ? null : new Error("Expected bounded number"); }',
+            ];
+        };
         const match = matchType<Sourcelike>(
             t,
             (_anyType) => "PropTypes.any",
-            (_nullType) => "PropTypes.any",
+            (_nullType) => "PropTypes.oneOf([null])",
             (_boolType) => "PropTypes.bool",
-            (_integerType) => "PropTypes.number",
-            (_doubleType) => "PropTypes.number",
-            (_stringType) => "PropTypes.string",
-            (arrayType) => [
-                "PropTypes.arrayOf(",
-                this.typeMapTypeFor(arrayType.items, false),
+            (integerType) => numberType(integerType, true),
+            (doubleType) => numberType(doubleType, false),
+            (type) => stringType(type),
+            (arrayType) => {
+                const item = this.typeMapTypeFor(arrayType.items, false);
+                const [min, max] = minMaxItemsForType(arrayType) ?? [];
+                if (min === undefined && max === undefined)
+                    return ["PropTypes.arrayOf(", item, ")"];
+                return [
+                    "(props, name, ...args) => { const value = props[name]; if (value != null && (",
+                    min === undefined
+                        ? "false"
+                        : ["value.length < ", String(min)],
+                    " || ",
+                    max === undefined
+                        ? "false"
+                        : ["value.length > ", String(max)],
+                    ')) return new Error("Expected bounded array"); return PropTypes.arrayOf(',
+                    item,
+                    ")(props, name, ...args); }",
+                ];
+            },
+            (_classType) => panic("Should already be handled."),
+            (mapType) => [
+                "PropTypes.objectOf(",
+                this.typeMapTypeFor(mapType.values, false),
                 ")",
             ],
-            (_classType) => panic("Should already be handled."),
-            (_mapType) => "PropTypes.object",
             (_enumType) => panic("Should already be handled."),
             (unionType) => {
+                const isNullableEnum =
+                    unionType.findMember("enum") !== undefined &&
+                    unionType.findMember("null") !== undefined;
                 const children = Array.from(unionType.getChildren()).map(
-                    (type: Type) => this.typeMapTypeFor(type, false),
+                    (type: Type) =>
+                        isNullableEnum && type.kind === "null"
+                            ? "PropTypes.oneOf([null])"
+                            : this.typeMapTypeFor(type, false),
                 );
                 return [
                     "PropTypes.oneOfType([",
@@ -123,7 +199,13 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
                     "])",
                 ];
             },
-            (_transformedStringType) => {
+            (transformedStringType) => {
+                if (transformedStringType.kind === "uuid") {
+                    return '(props, name) => props[name] == null || /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(props[name]) ? null : new Error("Expected UUID")';
+                }
+                if (transformedStringType.kind === "date-time") {
+                    return '(props, name) => props[name] == null || !Number.isNaN(Date.parse(props[name])) ? null : new Error("Expected date-time")';
+                }
                 return "PropTypes.string";
             },
         );
@@ -183,6 +265,14 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
     protected emitImports(): void {
         this.ensureBlankLine();
         this.emitLine(this.importStatement("PropTypes", '"prop-types"'));
+        if (
+            [...this.typeGraph.allTypesUnordered()].some(
+                (t) => t.kind === "integer",
+            )
+        )
+            this.emitLine(
+                'const Integer = (props, name) => props[name] == null || Number.isInteger(props[name]) ? null : new Error("Expected integer");',
+            );
     }
 
     private emitExport(name: Sourcelike, value: Sourcelike): void {
@@ -211,9 +301,9 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
             this.forEachEnumCase(
                 enumType,
                 "none",
-                (name: Name, _jsonName, _position) => {
+                (_name: Name, jsonName, _position) => {
                     options.push("'");
-                    options.push(name);
+                    options.push(utf16StringEscape(jsonName));
                     options.push("'");
                     options.push(", ");
                 },
@@ -223,7 +313,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
             this.emitLine([
                 "const _",
                 enumName,
-                " = PropTypes.oneOfType([",
+                " = PropTypes.oneOf([",
                 ...options,
                 "]);",
             ]);
@@ -232,37 +322,31 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         const order: number[] = [];
         const mapKey: Name[] = [];
         const mapValue: Sourcelike[][] = [];
+        const find = (value: unknown, found: Name[] = []): Name[] => {
+            if (mapKey.includes(value as Name)) found.push(value as Name);
+            else if (Array.isArray(value))
+                for (const v of value) find(v, found);
+            else if (value !== null && typeof value === "object")
+                for (const v of Object.values(value)) find(v, found);
+            return found;
+        };
         this.forEachObject("none", (type: ObjectType, name: Name) => {
             mapKey.push(name);
             mapValue.push(this.gatherSource(() => this.emitObject(name, type)));
         });
 
-        // order these
-        mapKey.forEach((_, index) => {
-            // assume first
-            let ordinal = 0;
-
-            // pull out all names
-            const source = mapValue[index];
-            const names = source.filter((value) => value as Name);
-
-            // must be behind all these names
-            names.forEach((name) => {
-                const depName = name;
-
-                // find this name's ordinal, if it has already been added
-                order.forEach((orderItem) => {
-                    const depIndex = orderItem;
-                    if (mapKey[depIndex] === depName) {
-                        // this is the index of the dependency, so make sure we come after it
-                        ordinal = Math.max(ordinal, depIndex + 1);
-                    }
-                });
-            });
-
-            // insert index
-            order.splice(ordinal, 0, index);
-        });
+        const pending = mapKey.map((_, index) => index);
+        while (pending.length > 0) {
+            const ready = pending.findIndex((index) =>
+                find(mapValue[index]).every((name) => {
+                    if (name === mapKey[index]) return true;
+                    const dependency = mapKey.indexOf(name);
+                    return dependency < 0 || order.includes(dependency);
+                }),
+            );
+            const at = ready < 0 ? pending.length - 1 : ready;
+            order.push(...pending.splice(at, 1));
+        }
 
         // now emit ordered source
         order.forEach((i) => {
@@ -281,6 +365,9 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
                     this.typeMapTypeFor((type as ArrayType).items),
                     ")",
                 ]);
+            } else if (type.kind === "map" || type.kind === "union") {
+                this.ensureBlankLine();
+                this.emitExport(name, this.typeMapTypeFor(type));
             } else {
                 this.ensureBlankLine();
                 this.emitExport(name, ["_", name]);
@@ -293,10 +380,19 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
         this.emitLine("_", name, " = PropTypes.shape({");
         this.indent(() => {
             this.forEachClassProperty(t, "none", (_, jsonName, property) => {
+                const type = this.typeMapTypeForProperty(property);
+                const validator =
+                    property.isOptional && jsonName in Object.prototype
+                        ? [
+                              "(props, name, ...args) => Object.prototype.hasOwnProperty.call(props, name) ? ",
+                              type,
+                              "(props, name, ...args) : null",
+                          ]
+                        : type;
                 this.emitLine(
                     `"${utf16StringEscape(jsonName)}"`,
                     ": ",
-                    this.typeMapTypeForProperty(property),
+                    validator,
                     ",",
                 );
             });

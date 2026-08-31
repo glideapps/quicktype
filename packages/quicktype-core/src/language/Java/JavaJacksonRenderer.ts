@@ -1,3 +1,5 @@
+import { iterableSome } from "collection-utils";
+
 import type { Name } from "../../Naming.js";
 import type { Sourcelike } from "../../Source.js";
 import { assertNever, panic } from "../../support/Support.js";
@@ -29,7 +31,15 @@ export class JacksonRenderer extends JavaRenderer {
         "JsonProcessingException",
         "DeserializationContext",
         "SerializerProvider",
+        "None",
     ];
+
+    private mapperType(t: Type): Sourcelike {
+        if (this._options.useList && t instanceof ArrayType) {
+            return ["new TypeReference<", this.javaType(false, t), ">() {}"];
+        }
+        return [this.javaTypeWithoutGenerics(false, t), ".class"];
+    }
 
     protected emitClassAttributes(c: ClassType, _className: Name): void {
         if (c.getProperties().size === 0)
@@ -635,6 +645,7 @@ export class JacksonRenderer extends JavaRenderer {
             "com.fasterxml.jackson.databind.module.SimpleModule",
             "com.fasterxml.jackson.core.JsonParser",
             "com.fasterxml.jackson.core.JsonProcessingException",
+            "com.fasterxml.jackson.core.type.TypeReference",
             "java.util.*",
         ].concat(this._dateTimeProvider.converterImports);
         this.emitPackageAndImports(imports);
@@ -719,11 +730,8 @@ export class JacksonRenderer extends JavaRenderer {
                             "()",
                         ],
                         () => {
-                            const renderedForClass =
-                                this.javaTypeWithoutGenerics(
-                                    false,
-                                    topLevelType,
-                                );
+                            const renderedForMapper =
+                                this.mapperType(topLevelType);
                             this.emitLine(
                                 "ObjectMapper mapper = new ObjectMapper();",
                             );
@@ -731,6 +739,16 @@ export class JacksonRenderer extends JavaRenderer {
                             this.emitLine(
                                 "mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);",
                             );
+                            if (
+                                iterableSome(
+                                    this.typeGraph.allTypesUnordered(),
+                                    (t) => t.kind === "integer",
+                                )
+                            ) {
+                                this.emitLine(
+                                    "mapper.configure(DeserializationFeature.ACCEPT_FLOAT_AS_INT, false);",
+                                );
+                            }
                             this.emitLine(
                                 "mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);",
                             );
@@ -738,14 +756,14 @@ export class JacksonRenderer extends JavaRenderer {
                             this.emitLine(
                                 readerName,
                                 " = mapper.readerFor(",
-                                renderedForClass,
-                                ".class);",
+                                renderedForMapper,
+                                ");",
                             );
                             this.emitLine(
                                 writerName,
                                 " = mapper.writerFor(",
-                                renderedForClass,
-                                ".class);",
+                                renderedForMapper,
+                                ");",
                             );
                         },
                     );

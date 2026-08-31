@@ -9,7 +9,7 @@ import {
 import {
     DependencyName,
     type Name,
-    type Namer,
+    Namer,
     funPrefixNamer,
 } from "../../Naming.js";
 import type { RenderContext } from "../../Renderer.js";
@@ -101,7 +101,8 @@ export class JavaRenderer extends ConvenienceRenderer {
     }
 
     protected makeNamedTypeNamer(): Namer {
-        return this.getNameStyling("typeNamingFunction");
+        const namer = this.getNameStyling("typeNamingFunction");
+        return new Namer(namer.name, namer.nameStyle, namer.prefixes, true);
     }
 
     protected namerForObjectProperty(): Namer {
@@ -559,6 +560,25 @@ export class JavaRenderer extends ConvenienceRenderer {
                             this._gettersAndSettersForPropertyName.get(name),
                         );
                         const rendered = this.javaType(false, p.type);
+                        if (jsonName.length === 0) {
+                            this.emitLine("@JsonAnyGetter");
+                            this.emitLine(
+                                "public java.util.Map<String, Object> ",
+                                getterName,
+                                '() { return java.util.Collections.<String, Object>singletonMap("", ',
+                                name,
+                                "); }",
+                            );
+                            this.emitLine("@JsonAnySetter");
+                            this.emitLine(
+                                "public void setEmpty(String key, ",
+                                rendered,
+                                " value) { if (key.isEmpty()) this.",
+                                name,
+                                " = value; }",
+                            );
+                            return;
+                        }
                         this.annotationsForAccessor(
                             c,
                             className,

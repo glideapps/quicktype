@@ -465,6 +465,17 @@ export class ElmRenderer extends ConvenienceRenderer {
                         this.decoderNameForProperty(p),
                     );
                     const { reqOrOpt, fallback } = requiredOrOptional(p);
+                    if (reqOrOpt.endsWith("optional")) {
+                        this.emitLine([
+                            '|> Jpipe.custom (optionalField "',
+                            elmStringEscape(jsonName),
+                            '" ',
+                            propDecoder,
+                            fallback,
+                            ")",
+                        ]);
+                        return;
+                    }
                     this.emitLine(
                         "|> ",
                         reqOrOpt,
@@ -723,6 +734,12 @@ import Dict exposing (Dict)`);
 
         this.ensureBlankLine();
         this.emitLine("-- decoders and encoders");
+        this.emitMultiline(`optionalField key decoder fallback =
+    Jdec.dict Jdec.value
+        |> Jdec.andThen (\\m ->
+            case Dict.get key m of
+                Nothing -> Jdec.succeed fallback
+                Just x -> Jdec.decodeValue decoder x |> Result.map Jdec.succeed |> Result.withDefault (Jdec.fail ("Invalid " ++ key)))`);
         this.forEachTopLevel(
             "leading-and-interposing",
             (t: Type, topLevelName: Name) =>

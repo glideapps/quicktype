@@ -196,7 +196,7 @@ export class HaskellRenderer extends ConvenienceRenderer {
             (_arrayType) => singleWord("Array"),
             (_classType) => singleWord("Object"),
             (_mapType) => singleWord("Object"),
-            (_enumType) => singleWord("Object"),
+            (_enumType) => singleWord("String"),
             (_unionType) => singleWord("Object"),
         );
     }

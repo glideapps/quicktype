@@ -5,6 +5,11 @@ import {
     type IntegerRange,
 } from "../../support/IntegerRange.js";
 import { TargetLanguage } from "../../TargetLanguage.js";
+import type {
+    PrimitiveStringTypeKind,
+    TransformedStringTypeKind,
+} from "../../Type/index.js";
+import type { StringTypeMapping } from "../../Type/TypeBuilderUtils.js";
 import type { LanguageName, RendererOptions } from "../../types.js";
 
 import { TypeScriptEffectSchemaRenderer } from "./TypeScriptEffectSchemaRenderer.js";
@@ -24,6 +29,20 @@ export class TypeScriptEffectSchemaTargetLanguage extends TargetLanguage<
 > {
     public getSupportedIntegerRange(): IntegerRange | null {
         return JS_SAFE_INTEGER_RANGE;
+    }
+
+    public get stringTypeMapping(): StringTypeMapping {
+        const mapping = new Map<
+            TransformedStringTypeKind,
+            PrimitiveStringTypeKind
+        >();
+        mapping.set("uuid", "uuid");
+        mapping.set("bool-string", "bool-string");
+        mapping.set("date", "date");
+        mapping.set("time", "time");
+        mapping.set("date-time", "date-time");
+        mapping.set("integer-string", "integer-string");
+        return mapping;
     }
 
     public constructor() {

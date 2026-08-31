@@ -929,6 +929,31 @@ class JSONSchemaFixture extends LanguageFixture {
     }
 }
 
+// Ruby's full schema fixture has known dry-struct runtime failures for unions.
+// Keep keyword-unions covered in CI by checking that its output parses.
+class RubySchemaSyntaxFixture extends JSONSchemaFixture {
+    constructor() {
+        super(
+            {
+                ...languages.RubyLanguage,
+                setupCommand: undefined,
+                compileCommand: "ruby -c TopLevel.rb",
+                runCommand: undefined,
+            },
+            "schema-ruby-syntax",
+        );
+    }
+
+    getSamples(sources: string[]): { priority: Sample[]; others: Sample[] } {
+        return samplesFromSources(
+            sources,
+            ["test/inputs/schema/keyword-unions.schema"],
+            [],
+            "schema",
+        );
+    }
+}
+
 // `leadingComments` is a quicktype-core API option, so the CLI fixture path
 // cannot exercise it.
 class LeadingCommentsGoFixture extends JSONSchemaFixture {
@@ -1601,141 +1626,8 @@ class GraphQLFixture extends LanguageFixture {
     }
 }
 
-class CommandSuccessfulLanguageFixture extends LanguageFixture {
-    constructor(
-        language: languages.Language,
-        public name: string = language.name,
-    ) {
-        super(language);
-    }
-
-    runForName(name: string): boolean {
-        return this.name === name || name === "json";
-    }
-
-    async runQuicktype(
-        sample: string,
-        additionalRendererOptions: RendererOptions,
-    ): Promise<void> {
-        // FIXME: add options
-        await quicktypeForLanguage(
-            this.language,
-            sample,
-            "json",
-            true,
-            additionalRendererOptions,
-        );
-    }
-
-    async test(
-        filename: string,
-        _additionalRendererOptions: RendererOptions,
-        _additionalFiles: string[],
-    ): Promise<number> {
-        if (this.language.compileCommand) {
-            await execAsync(this.language.compileCommand);
-        }
-
-        if (this.language.runCommand === undefined) {
-            throw new Error("Invalid run command.");
-        }
-
-        const command = this.language.runCommand(filename);
-        const results = await execAsync(command);
-
-        if (results.stdout.indexOf("Success") === -1) {
-            throw new Error(`Test failed:\n${results.stdout}`);
-        }
-
-        return 0;
-    }
-
-    shouldSkipTest(sample: Sample): boolean {
-        if (fs.statSync(sample.path).size > 32 * 1024 * 1024) {
-            return true;
-        }
-        return _.includes(this.language.skipJSON, path.basename(sample.path));
-    }
-
-    getSamples(sources: string[]): { priority: Sample[]; others: Sample[] } {
-        // FIXME: this should only run once
-        const prioritySamples = _.concat(
-            testsInDir("test/inputs/json/priority", "json"),
-            testsInDir("test/inputs/json/samples", "json"),
-        );
-
-        const miscSamples = this.language.skipMiscJSON
-            ? []
-            : testsInDir("test/inputs/json/misc", "json");
-
-        let { priority, others } = samplesFromSources(
-            sources,
-            prioritySamples,
-            miscSamples,
-            "json",
-        );
-
-        const combinationInputs = _.map([1, 2, 3, 4], (n) =>
-            _.find(prioritySamples, (p) =>
-                p.endsWith(`/priority/combinations${n}.json`),
-            ),
-        );
-        if (combinationInputs.some((p) => p === undefined)) {
-            return failWith(
-                "priority/combinations[1234].json samples not found",
-                { prioritySamples },
-            );
-        }
-        if (sources.length === 0 && INCLUDE_RENDERER_OPTION_SAMPLES) {
-            const quickTestSamples = _.chain(
-                this.language.quickTestRendererOptions,
-            )
-                .flatMap((qt) => {
-                    if (Array.isArray(qt)) {
-                        const [filename, ro] = qt;
-                        if (filename.endsWith(".schema")) {
-                            // Runs in the JSON Schema fixture instead.
-                            return [];
-                        }
-
-                        const input = _.find(
-                            ([] as string[]).concat(
-                                prioritySamples,
-                                miscSamples,
-                            ),
-                            (p) => p.endsWith(`/${filename}`),
-                        );
-                        if (input === undefined) {
-                            return failWith(
-                                `quick-test sample ${filename} not found`,
-                                { qt },
-                            );
-                        }
-                        return [
-                            {
-                                path: input,
-                                additionalRendererOptions: ro,
-                                saveOutput: false,
-                            },
-                        ];
-                    }
-
-                    return _.map(combinationInputs, (p) => ({
-                        path: defined(p),
-                        additionalRendererOptions: qt,
-                        saveOutput: false,
-                    }));
-                })
-                .value();
-            priority = quickTestSamples.concat(priority);
-        }
-
-        return { priority, others };
-    }
-}
-
 export const allFixtures: Fixture[] = [
-    // new JSONFixture(languages.CrystalLanguage),
+    new JSONFixture(languages.CrystalLanguage),
     new JSONFixture(languages.CSharpLanguage),
     new JSONFixture(languages.CSharpLanguageRecords, "csharp-records"),
     new JSONFixture(
@@ -1783,9 +1675,10 @@ export const allFixtures: Fixture[] = [
     new JSONFixture(languages.PikeLanguage),
     new JSONFixture(languages.HaskellLanguage),
     new JSONFixture(languages.ElixirLanguage),
+    new JSONFixture(languages.JavaScriptPropTypesLanguage),
     new JSONSchemaJSONFixture(languages.CSharpLanguage),
     new JSONTypeScriptFixture(languages.CSharpLanguage),
-    // new JSONSchemaFixture(languages.CrystalLanguage),
+    new JSONSchemaFixture(languages.CrystalLanguage),
     new JSONSchemaFixture(languages.JSONSchemaLanguage),
     new JSONSchemaFixture(languages.CSharpLanguage),
     new JSONSchemaFixture(
@@ -1811,14 +1704,18 @@ export const allFixtures: Fixture[] = [
     new JSONSchemaFixture(languages.CPlusPlusLanguage),
     new JSONSchemaFixture(languages.RustLanguage),
     new JSONSchemaFixture(languages.RubyLanguage),
+    new RubySchemaSyntaxFixture(),
     new JSONSchemaFixture(languages.PythonLanguage),
     new JSONSchemaFixture(languages.PHPLanguage),
     new JSONSchemaFixture(languages.ElmLanguage),
     new JSONSchemaFixture(languages.SwiftLanguage),
+    new JSONSchemaFixture(languages.ObjectiveCLanguage),
     new JSONSchemaFixture(languages.TypeScriptLanguage),
     new JSONSchemaFixture(languages.TypeScriptZodLanguage),
+    new JSONSchemaFixture(languages.TypeScriptEffectSchemaLanguage),
     new JSONSchemaFixture(languages.FlowLanguage),
     new JSONSchemaFixture(languages.JavaScriptLanguage),
+    new JSONSchemaFixture(languages.JavaScriptPropTypesLanguage),
     new JSONSchemaFixture(languages.KotlinLanguage),
     new JSONSchemaFixture(
         languages.KotlinJacksonLanguage,
@@ -1875,5 +1772,4 @@ export const allFixtures: Fixture[] = [
     new GraphQLFixture(languages.HaskellLanguage),
     new GraphQLFixture(languages.PHPLanguage),
     new GraphQLFixture(languages.ElixirLanguage),
-    new CommandSuccessfulLanguageFixture(languages.JavaScriptPropTypesLanguage),
 ];

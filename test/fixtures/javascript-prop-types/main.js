@@ -33,11 +33,13 @@ try {
 }
 
 if (!checkerWorks) {
-    console.log(
+    console.error(
         "Failure: prop-types checks are disabled (NODE_ENV=production?)",
     );
+    process.exitCode = 1;
 } else if (errors.length > 0) {
-    console.log("Failure:", errors.join("\n"));
+    console.error("Failure:", errors.join("\n"));
+    process.exitCode = 1;
 } else {
-    console.log("Success");
+    console.log(JSON.stringify(obj));
 }

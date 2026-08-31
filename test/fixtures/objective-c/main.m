@@ -13,7 +13,7 @@ int main(int argc, const char * argv[]) {
             exit(1);
         }
         
-        NSError *error;
+        NSError *error = nil;
         NSString *inputJSON = [NSString stringWithContentsOfFile:filePath
                                                         encoding:NSUTF8StringEncoding
                                                            error:&error];
@@ -38,4 +38,3 @@ int main(int argc, const char * argv[]) {
     }
     return 0;
 }
-

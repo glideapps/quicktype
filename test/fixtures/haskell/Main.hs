@@ -13,4 +13,4 @@ main = do
     let filePath = head args
     content <- BS.readFile filePath
     let dec = decodeTopLevel content
-    BS.putStr $ encode dec
+    BS.putStr $ encode $ fromJust dec
