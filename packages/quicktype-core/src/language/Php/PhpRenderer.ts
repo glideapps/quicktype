@@ -8,7 +8,10 @@ import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer.js";
-import { minMaxValueForType } from "../../attributes/Constraints.js";
+import {
+    minMaxItemsForType,
+    minMaxValueForType,
+} from "../../attributes/Constraints.js";
 import {
     DependencyName,
     type Name,
@@ -1087,6 +1090,15 @@ export class PhpRenderer extends ConvenienceRenderer {
             },
             (arrayType) => {
                 is("is_array");
+                const [min, max] = minMaxItemsForType(arrayType) ?? [];
+                if (min !== undefined)
+                    this.emitLine(
+                        `if (count(${scopeAttrName}) < ${min}) throw new Exception("Attribute Error");`,
+                    );
+                if (max !== undefined)
+                    this.emitLine(
+                        `if (count(${scopeAttrName}) > ${max}) throw new Exception("Attribute Error");`,
+                    );
                 this.emitLine(
                     "array_walk(",
                     scopeAttrName,
