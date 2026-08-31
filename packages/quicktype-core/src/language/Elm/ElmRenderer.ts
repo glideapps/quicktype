@@ -4,6 +4,7 @@ import {
     anyTypeIssueAnnotation,
     nullTypeIssueAnnotation,
 } from "../../Annotation.js";
+import { minMaxItemsForType } from "../../attributes/Constraints.js";
 import { minMaxValueForType } from "../../attributes/Constraints.js";
 import {
     ConvenienceRenderer,
@@ -244,6 +245,15 @@ export class ElmRenderer extends ConvenienceRenderer {
         );
     }
 
+    private arrayConstraint(t: Type): string {
+        const [min, max] = minMaxItemsForType(t) ?? [];
+        if (min === undefined && max === undefined) return "";
+        const length = `${this.arrayType}.length x`;
+        const minCheck = min === undefined ? "True" : `${length} >= ${min}`;
+        const maxCheck = max === undefined ? "True" : `${length} <= ${max}`;
+        return `|> Jdec.andThen (\\x -> if ${minCheck} && ${maxCheck} then Jdec.succeed x else Jdec.fail "Array length out of range")`;
+    }
+
     private decoderNameForType(t: Type, noOptional = false): MultiWord {
         return matchType<MultiWord>(
             t,
@@ -258,6 +268,7 @@ export class ElmRenderer extends ConvenienceRenderer {
                     " ",
                     ["Jdec.", decapitalize(this.arrayType)],
                     parenIfNeeded(this.decoderNameForType(arrayType.items)),
+                    this.arrayConstraint(arrayType),
                 ),
             (classType) => singleWord(this.decoderNameForNamedType(classType)),
             (mapType) =>
