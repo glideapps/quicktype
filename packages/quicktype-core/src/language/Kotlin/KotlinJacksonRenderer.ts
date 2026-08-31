@@ -4,6 +4,7 @@ import {
     minMaxItemsForType,
     minMaxLengthForType,
     minMaxValueForType,
+    patternForType,
 } from "../../attributes/Constraints.js";
 import type { Name } from "../../Naming.js";
 import { type Sourcelike, modifySource } from "../../Source.js";
@@ -327,6 +328,15 @@ import com.fasterxml.jackson.module.kotlin.*`);
                         checks.push(`${lengthBefore} >= ${lengthMin}${after}`);
                     if (lengthMax !== undefined)
                         checks.push(`${lengthBefore} <= ${lengthMax}${after}`);
+                    const pattern = patternForType(p.type);
+                    if (pattern !== undefined) {
+                        const regex = `Regex("${stringEscape(pattern)}").containsMatchIn`;
+                        checks.push(
+                            p.isOptional
+                                ? `${n}?.let { require(${regex}(it)) }`
+                                : `require(${regex}(${n}))`,
+                        );
+                    }
                 });
                 if (checks.length > 0)
                     this.emitBlock("init", () =>

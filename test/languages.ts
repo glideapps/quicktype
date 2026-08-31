@@ -1367,6 +1367,7 @@ export const KotlinJacksonLanguage: Language = {
         "minmaxitems",
         "minmax",
         "minmaxlength",
+        "pattern",
     ],
     output: "TopLevel.kt",
     topLevel: "TopLevel",
