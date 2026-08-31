@@ -468,6 +468,7 @@ export const RubyLanguage: Language = {
         "minmaxlength",
         "pattern",
         "strict-optional",
+        "uuid",
     ],
     output: "TopLevel.rb",
     topLevel: "TopLevel",

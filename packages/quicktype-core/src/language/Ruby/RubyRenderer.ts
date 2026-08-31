@@ -190,6 +190,10 @@ export class RubyRenderer extends ConvenienceRenderer {
                     optional,
                 ];
             },
+            (_transformed) => [
+                "Types::String.constrained(format: /\\A[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\\z/i)",
+                optional,
+            ],
         );
     }
 
@@ -279,6 +283,7 @@ export class RubyRenderer extends ConvenienceRenderer {
 
                 return exp;
             },
+            (_transformed) => exp,
         );
     }
 
@@ -368,6 +373,7 @@ export class RubyRenderer extends ConvenienceRenderer {
                 ];
                 return optional ? [e, " ? ", expression, " : nil"] : expression;
             },
+            (_transformed) => primitive,
         );
     }
 
@@ -412,6 +418,7 @@ export class RubyRenderer extends ConvenienceRenderer {
 
                 return [e, optional ? "&" : "", ".to_dynamic"];
             },
+            (_transformed) => e,
         );
     }
 
@@ -436,6 +443,7 @@ export class RubyRenderer extends ConvenienceRenderer {
 
                 return false;
             },
+            (_transformed) => true,
         );
     }
 
@@ -467,6 +475,7 @@ export class RubyRenderer extends ConvenienceRenderer {
 
                 return false;
             },
+            (_transformed) => true,
         );
     }
 
