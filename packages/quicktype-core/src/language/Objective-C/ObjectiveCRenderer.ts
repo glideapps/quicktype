@@ -205,6 +205,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                     ? this.memoryAttribute(nullable, true)
                     : "copy";
             },
+            (_transformedStringType) => "copy",
         );
     }
 
@@ -247,6 +248,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                     ? this.objcType(nullable, true)
                     : ["id", ""];
             },
+            (_transformedStringType) => ["NSString", " *"],
         );
     }
 
@@ -275,6 +277,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 const nullable = nullableFromUnion(unionType);
                 return nullable !== null ? this.jsonType(nullable) : ["id", ""];
             },
+            (_transformedStringType) => ["NSString", " *"],
         );
     }
 
@@ -324,6 +327,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                     ? this.fromDynamicExpression(nullable, dynamic)
                     : dynamic;
             },
+            (_transformedStringType) => dynamic,
         );
     }
 
@@ -393,6 +397,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 // TODO support unions
                 return typed;
             },
+            (_transformedStringType) => typed,
         );
     }
 
@@ -910,6 +915,11 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                                 if (maxLength !== undefined) {
                                     this.emitLine(
                                         `if ([dict[@"${objectiveCStringEscape(jsonName)}"] length] > ${maxLength}) return nil;`,
+                                    );
+                                }
+                                if (property.type.kind === "uuid") {
+                                    this.emitLine(
+                                        `if (dict[@"${objectiveCStringEscape(jsonName)}"] && ![[NSUUID alloc] initWithUUIDString:dict[@"${objectiveCStringEscape(jsonName)}"]]) return nil;`,
                                     );
                                 }
                                 if (
