@@ -1283,7 +1283,6 @@ export const KotlinLanguage: Language = {
         // Deserializes an array where a union of two classes is expected
         // instead of rejecting it.
         "nested-intersection-union.schema",
-        "class-with-additional.schema",
         ...skipsMapValueValidation,
         // IllegalArgumentException
         // KlaxonException: Need to extract inside
