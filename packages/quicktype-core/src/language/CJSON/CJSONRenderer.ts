@@ -1248,6 +1248,16 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                         cJSON.getValue,
                                         "(j);",
                                     );
+                                    if (cJSON.cjsonType === "cJSON_Object") {
+                                        this.emitLine(
+                                            "if (NULL == x->value.",
+                                            this.nameForUnionMember(
+                                                unionType,
+                                                type,
+                                            ),
+                                            ") x->type = 0;",
+                                        );
+                                    }
                                 }
                             },
                         );
@@ -2979,6 +2989,9 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                                                         ?.cjsonType ===
                                                                                         "cJSON_Union"
                                                                                 ) {
+                                                                                    this.emitLine(
+                                                                                        `${this.sourcelikeToString(cJSON.items?.cType ?? "")} * validated = ${this.sourcelikeToString(cJSON.items?.getValue ?? "")}(${element}); if (NULL == validated) { x${level > 0 ? level.toString() : ""}->${this.sourcelikeToString(name)} = x${child_level}; cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; } ${this.sourcelikeToString(cJSON.items?.deleteType ?? "")}(validated);`,
+                                                                                    );
                                                                                     this.emitLine(
                                                                                         "hashtable_add(x",
                                                                                         child_level.toString(),
