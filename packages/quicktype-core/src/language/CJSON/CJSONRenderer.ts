@@ -678,10 +678,10 @@ export class CJSONRenderer extends ConvenienceRenderer {
      */
     protected emitUnionPrototypes(unionType: UnionType): void {
         const unionName = this.nameForNamedType(unionType);
-        const checks: Sourcelike[] = Array.from(
-            removeNullFromUnion(unionType)[1],
-            (type) => [this.quicktypeTypeToCJSON(type, false).isType, "(j)"],
-        );
+        const checks: Sourcelike[] = Array.from(unionType.members, (type) => [
+            this.quicktypeTypeToCJSON(type, false).isType,
+            "(j)",
+        ]);
 
         this.emitLine(
             "#define cJSON_Is",
