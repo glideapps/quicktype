@@ -193,6 +193,7 @@ export class Scala3Renderer extends ConvenienceRenderer {
 
                 return this.nameForNamedType(unionType);
             },
+            (_transformed) => "java.time.Instant",
         );
     }
 

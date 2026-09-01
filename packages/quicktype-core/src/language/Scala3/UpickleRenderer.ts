@@ -60,6 +60,7 @@ given OptionPickler.ReadWriter[NullValue] = OptionPickler.readwriter[ujson.Value
     _ => ujson.Null,
     json => if json.isNull then None else throw new upickle.core.Abort("not null")
 )
+given OptionPickler.ReadWriter[java.time.Instant] = OptionPickler.readwriter[String].bimap(_.toString, java.time.Instant.parse)
 
 object JsonExt:
     val valueReader = OptionPickler.readwriter[ujson.Value]
