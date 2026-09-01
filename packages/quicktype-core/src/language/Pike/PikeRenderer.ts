@@ -323,6 +323,15 @@ export class PikeRenderer extends ConvenienceRenderer {
                 this.forEachClassProperty(c, "none", (name, jsonName, p) => {
                     if (
                         !p.isOptional &&
+                        p.type instanceof MapType &&
+                        p.type.values.kind === "integer"
+                    ) {
+                        this.emitLine(
+                            `foreach (json["${stringEscape(jsonName)}"]; mixed _; mixed value) if (!intp(value)) error("Expected integer");`,
+                        );
+                    }
+                    if (
+                        !p.isOptional &&
                         p.type.kind === "union" &&
                         nullableFromUnion(p.type as UnionType) !== null
                     ) {
