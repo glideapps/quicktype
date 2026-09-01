@@ -471,6 +471,7 @@ export const RubyLanguage: Language = {
         "pattern",
         "strict-optional",
         "uuid",
+        "date-time",
     ],
     output: "TopLevel.rb",
     topLevel: "TopLevel",
