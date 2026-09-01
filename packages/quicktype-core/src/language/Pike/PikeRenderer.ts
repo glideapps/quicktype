@@ -362,6 +362,14 @@ export class PikeRenderer extends ConvenienceRenderer {
                         );
                     }
                     if (
+                        mapType instanceof MapType &&
+                        mapType.values instanceof ArrayType
+                    ) {
+                        this.emitLine(
+                            `foreach (json["${stringEscape(jsonName)}"]; mixed _; mixed value) if (!arrayp(value)) error("Expected array");`,
+                        );
+                    }
+                    if (
                         !p.isOptional &&
                         p.type.kind === "union" &&
                         nullableFromUnion(p.type as UnionType) !== null
