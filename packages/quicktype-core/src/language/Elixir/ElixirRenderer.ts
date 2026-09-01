@@ -500,25 +500,26 @@ export class ElixirRenderer extends ConvenienceRenderer {
     ): Sourcelike {
         const primitive = ['m["', jsonName, '"]'];
         const checked = ["decode_", name, "(", primitive, ")"];
+        const optionalChecked = [primitive, " && ", checked];
 
         return matchType<Sourcelike>(
             t,
             (_anyType) => primitive,
             (_nullType) => (optional ? primitive : checked),
-            (_boolType) => (optional ? primitive : checked),
-            (_integerType) => (optional ? primitive : checked),
-            (_doubleType) => (optional ? primitive : checked),
-            (_stringType) => (optional ? primitive : checked),
+            (_boolType) => (optional ? optionalChecked : checked),
+            (_integerType) => (optional ? optionalChecked : checked),
+            (_doubleType) => (optional ? optionalChecked : checked),
+            (_stringType) => (optional ? optionalChecked : checked),
             (arrayType) => {
                 const arrayElement = arrayType.items;
                 if (arrayElement instanceof ArrayType) {
-                    return optional ? primitive : checked;
+                    return optional ? optionalChecked : checked;
                 }
                 if (arrayElement.isPrimitive()) {
-                    return optional ? primitive : checked;
+                    return optional ? optionalChecked : checked;
                 }
                 if (arrayElement instanceof MapType) {
-                    return optional ? primitive : checked;
+                    return optional ? optionalChecked : checked;
                 }
 
                 if (optional) {
@@ -885,8 +886,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                     const parentName = this.nameForNamedTypeWithNamespace(c);
                     if (
                         (p.type.isPrimitive() || p.type.kind === "array") &&
-                        p.type.kind !== "any" &&
-                        !p.isOptional
+                        p.type.kind !== "any"
                     ) {
                         this.emitPatternMatches([p.type], name, parentName);
                     }
@@ -906,6 +906,11 @@ export class ElixirRenderer extends ConvenienceRenderer {
                             let suffix = "";
                             let itemTypes: Type[] = [];
                             if (unionTypesNonNull[0] instanceof ArrayType) {
+                                this.emitPatternMatches(
+                                    [unionTypesNonNull[0]],
+                                    name,
+                                    parentName,
+                                );
                                 suffix = "_element";
                                 itemTypes = [
                                     ...unionTypesNonNull[0].getChildren(),
