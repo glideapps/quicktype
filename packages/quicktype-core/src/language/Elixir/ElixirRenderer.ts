@@ -2,6 +2,7 @@ import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer.js";
+import { patternForType } from "../../attributes/Constraints.js";
 import { type Name, Namer } from "../../Naming.js";
 import type { RenderContext } from "../../Renderer.js";
 import type { OptionValues } from "../../RendererOptions/index.js";
@@ -153,6 +154,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
         attributeName: Sourcelike,
         suffix = "",
     ): Sourcelike {
+        const pattern = patternForType(t);
         return matchType<Sourcelike>(
             t,
             (_anyType) => [],
@@ -188,7 +190,13 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 "def decode_",
                 attributeName,
                 suffix,
-                "(value) when is_binary(value), do: value",
+                "(value) when is_binary(value)",
+                pattern === undefined
+                    ? ", do: value"
+                    : [
+                          ` do\n  if Regex.match?(Regex.compile!("${escapeDoubleQuotes(pattern.replace(/\\/g, "\\\\"))}"), value) do\n`,
+                          "    value\n  else\n    raise ArgumentError\n  end\nend",
+                      ],
             ],
             (_arrayType) => [
                 "def decode_",
@@ -508,7 +516,8 @@ export class ElixirRenderer extends ConvenienceRenderer {
             (_boolType) => (optional ? primitive : checked),
             (_integerType) => (optional ? primitive : checked),
             (_doubleType) => (optional ? primitive : checked),
-            (_stringType) => (optional ? primitive : checked),
+            (_stringType) =>
+                optional ? [primitive, " && ", checked] : checked,
             (arrayType) => {
                 const arrayElement = arrayType.items;
                 if (arrayElement instanceof ArrayType) {
@@ -886,7 +895,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                     if (
                         (p.type.isPrimitive() || p.type.kind === "array") &&
                         p.type.kind !== "any" &&
-                        !p.isOptional
+                        (!p.isOptional || p.type.kind === "string")
                     ) {
                         this.emitPatternMatches([p.type], name, parentName);
                     }
