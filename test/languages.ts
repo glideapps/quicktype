@@ -470,6 +470,8 @@ export const RubyLanguage: Language = {
         "minmaxitems",
         "pattern",
         "strict-optional",
+        "uuid",
+        "date-time",
     ],
     output: "TopLevel.rb",
     topLevel: "TopLevel",
@@ -578,7 +580,6 @@ export const CJSONLanguage: Language = {
     ],
     skipMiscJSON: false,
     skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
         /* Enum as TopLevel is not supported */
         "top-level-enum.schema",
         /* Union, Map and Arrays with invalid types are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
@@ -590,7 +591,6 @@ export const CJSONLanguage: Language = {
         /* Required properties absent are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
         /* Pure Any type not supported (for the current implementation, can be added later, should manage a callback to provide the final application a way to handle it at parsing and creation of cJSON) */
         "direct-union.schema",
-        "recursive-union-flattening.schema",
         /* Class elements with invalid type are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
         ...skipsUntypedUnions,
     ],
@@ -782,6 +782,7 @@ export const ElmLanguage: Language = {
         "minmax",
         "minmaxInteger",
         "minmaxitems",
+        "minmaxlength",
     ],
     output: "QuickType.elm",
     topLevel: "QuickType",
@@ -1101,7 +1102,7 @@ export const Scala3Language: Language = {
         "af2d1.json",
     ],
     allowMissingNull: true,
-    features: ["enum", "union", "no-defaults", "integer", "date-time"],
+    features: ["enum", "union", "no-defaults", "integer", "date-time", "uuid"],
     output: "TopLevel.scala",
     topLevel: "TopLevel",
     skipJSON: [],
@@ -1144,6 +1145,7 @@ export const Scala3UpickleLanguage: Language = {
         "integer",
         "strict-optional",
         "date-time",
+        "uuid",
     ],
     output: "TopLevel.scala",
     topLevel: "TopLevel",
@@ -1398,13 +1400,9 @@ export const KotlinXLanguage: Language = {
         // deserialization fails at runtime (documented TODO in
         // KotlinXRenderer.ts).
         "enum.schema", // enum.3.json contains an int|string union
-        "recursive-union-flattening.schema",
-        "rust-cycle-breaker-union.schema",
-        "tuple.schema",
         // Additionally exceeds the JVM's 255-parameter limit when the
         // serialization plugin generates the synthesized constructors.
         "keyword-unions.schema",
-        "union.schema",
     ],
     skipMiscJSON: false,
     rendererOptions: { framework: "kotlinx" },
@@ -1507,7 +1505,6 @@ export const PikeLanguage: Language = {
         ...skipsMapValueValidation.filter(
             (schema) => schema !== "go-schema-pattern-properties.schema",
         ),
-        "class-with-additional.schema",
         "optional-any.schema",
         ...skipsUntypedUnions,
     ],
@@ -1576,7 +1573,7 @@ export const HaskellLanguage: Language = {
     features: ["enum", "union", "no-defaults"],
     output: "QuickType.hs",
     topLevel: "QuickType",
-    skipJSON: ["combinations4.json", "blns-object.json", "nst-test-suite.json"],
+    skipJSON: ["combinations4.json"],
     skipMiscJSON: false,
     skipSchema: [...skipsUntypedUnions, "keyword-unions.schema"],
     rendererOptions: {},
@@ -1607,8 +1604,6 @@ export const PHPLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [
         "bug863.json",
-        "issue2680-scalar-array.json",
-        "no-classes.json",
         "00c36.json",
         "2df80.json",
         "7fbfb.json",
@@ -1623,7 +1618,6 @@ export const PHPLanguage: Language = {
         // top-level union produces no named TopLevel class for the driver.
         "recursive-union-flattening.schema",
         // The driver does not support top-level arrays.
-        "top-level-primitive-array.schema",
         "issue2680-top-level-array.schema",
     ],
     rendererOptions: {},
