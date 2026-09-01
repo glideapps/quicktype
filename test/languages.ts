@@ -1504,7 +1504,9 @@ export const PikeLanguage: Language = {
         ),
         // all below: not failing on expected failure. That's because Pike's quite tolerant with assignments.
         ...skipsMapValueValidation.filter(
-            (schema) => schema !== "go-schema-pattern-properties.schema",
+            (schema) =>
+                schema !== "go-schema-pattern-properties.schema" &&
+                schema !== "unevaluated-properties.schema",
         ),
         ...skipsUntypedUnions,
     ],
