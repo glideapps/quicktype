@@ -580,7 +580,6 @@ export const CJSONLanguage: Language = {
     ],
     skipMiscJSON: false,
     skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
         /* Enum as TopLevel is not supported */
         "top-level-enum.schema",
         /* Union, Map and Arrays with invalid types are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
@@ -592,7 +591,6 @@ export const CJSONLanguage: Language = {
         /* Required properties absent are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
         /* Pure Any type not supported (for the current implementation, can be added later, should manage a callback to provide the final application a way to handle it at parsing and creation of cJSON) */
         "direct-union.schema",
-        "recursive-union-flattening.schema",
         /* Class elements with invalid type are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
         ...skipsUntypedUnions,
     ],
