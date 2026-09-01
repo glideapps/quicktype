@@ -1,5 +1,6 @@
 import { arrayIntercalate, iterableSome } from "collection-utils";
 
+import { minMaxValueForType } from "../../attributes/Constraints.js";
 import type { Name } from "../../Naming.js";
 import { type Sourcelike, modifySource } from "../../Source.js";
 import { camelCase } from "../../support/Strings.js";
@@ -387,6 +388,18 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
         );
         if (isTopLevel) {
             this.emitBlock(")", () => {
+                this.forEachClassProperty(c, "none", (name, _jsonName, p) => {
+                    const value = this.sourcelikeToString(name);
+                    const validate = (operator: string, bound: number) =>
+                        p.isOptional
+                            ? `${value}?.let { require(it ${operator} ${bound}) }`
+                            : `require(${value} ${operator} ${bound})`;
+                    const emitValidation = (condition: string) =>
+                        this.emitBlock("init", () => this.emitLine(condition));
+                    const [min, max] = minMaxValueForType(p.type) ?? [];
+                    if (min !== undefined) emitValidation(validate(">=", min));
+                    if (max !== undefined) emitValidation(validate("<=", max));
+                });
                 this.emitLine(
                     "public fun toJson() = klaxon.toJsonString(this)",
                 );
