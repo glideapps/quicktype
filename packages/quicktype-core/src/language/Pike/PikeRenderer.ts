@@ -13,7 +13,7 @@ import {
 import { stringEscape } from "../../support/Strings.js";
 import {
     ArrayType,
-    type ClassType,
+    ClassType,
     EnumType,
     MapType,
     PrimitiveType,
@@ -377,6 +377,17 @@ export class PikeRenderer extends ConvenienceRenderer {
                         p.type instanceof UnionType
                             ? nullableFromUnion(p.type)
                             : p.type;
+                    if (enumType instanceof ClassType) {
+                        const nestedTypeName = this.sourcelikeToString(
+                            this.nameForNamedType(enumType),
+                        );
+                        const nestedValue = `json["${stringEscape(jsonName)}"]`;
+                        this.emitLine(
+                            p.type instanceof UnionType
+                                ? `if (has_index(json, "${stringEscape(jsonName)}") && ${nestedValue} != Val.null) ${nestedTypeName}_from_JSON(${nestedValue});`
+                                : `${nestedTypeName}_from_JSON(${nestedValue});`,
+                        );
+                    }
                     this.emitLine([
                         "retval.",
                         name,
