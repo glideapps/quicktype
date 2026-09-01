@@ -1448,6 +1448,7 @@ export const DartLanguage: Language = {
         "pattern",
         "minmax",
         "enum",
+        "minmaxitems",
     ],
     output: "TopLevel.dart",
     topLevel: "TopLevel",
@@ -1500,7 +1501,9 @@ export const PikeLanguage: Language = {
     skipSchema: [
         // no implicit cast int <-> float in Pike
         ...skipsIntFloatUnions.filter(
-            (schema) => schema !== "integer-float-union.schema",
+            (schema) =>
+                schema !== "integer-float-union.schema" &&
+                schema !== "union-int-double.schema",
         ),
         // all below: not failing on expected failure. That's because Pike's quite tolerant with assignments.
         ...skipsMapValueValidation.filter(
@@ -1570,12 +1573,12 @@ export const HaskellLanguage: Language = {
         "e8b04.json",
     ],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults"],
+    features: ["enum", "union", "no-defaults", "integer", "strict-optional"],
     output: "QuickType.hs",
     topLevel: "QuickType",
     skipJSON: ["combinations4.json"],
     skipMiscJSON: false,
-    skipSchema: [...skipsUntypedUnions, "keyword-unions.schema"],
+    skipSchema: ["keyword-unions.schema"],
     rendererOptions: {},
     // The default is array-type=list; this keeps the Vector code path
     // covered.
