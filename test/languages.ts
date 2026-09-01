@@ -1504,7 +1504,6 @@ export const PikeLanguage: Language = {
         ...skipsMapValueValidation.filter(
             (schema) => schema !== "go-schema-pattern-properties.schema",
         ),
-        "class-with-additional.schema",
         "optional-any.schema",
         ...skipsUntypedUnions,
     ],
