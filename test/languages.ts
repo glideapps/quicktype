@@ -1739,7 +1739,13 @@ export const ElixirLanguage: Language = {
         "reddit.json",
     ],
     allowMissingNull: false,
-    features: ["enum", "no-defaults", "strict-optional", "integer"],
+    features: [
+        "enum",
+        "no-defaults",
+        "strict-optional",
+        "integer",
+        "minmaxlength",
+    ],
     output: "QuickType.ex",
     topLevel: "TopLevel",
     skipJSON: [
