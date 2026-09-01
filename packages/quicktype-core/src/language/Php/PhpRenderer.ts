@@ -1640,6 +1640,20 @@ export class PhpRenderer extends ConvenienceRenderer {
                     className,
                 ],
                 () => {
+                    this.forEachClassProperty(
+                        c,
+                        "none",
+                        (_name, jsonName, p) => {
+                            if (!p.isOptional)
+                                this.emitBlock(
+                                    `if (!property_exists($obj, '${stringEscape(jsonName)}'))`,
+                                    () =>
+                                        this.emitLine(
+                                            'throw new Exception("Missing required property");',
+                                        ),
+                                );
+                        },
+                    );
                     if (this._options.fastGet) {
                         this.forEachClassProperty(c, "none", (name) => {
                             const names = defined(
