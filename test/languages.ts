@@ -592,7 +592,9 @@ export const CJSONLanguage: Language = {
         /* Pure Any type not supported (for the current implementation, can be added later, should manage a callback to provide the final application a way to handle it at parsing and creation of cJSON) */
         "direct-union.schema",
         /* Class elements with invalid type are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
-        ...skipsUntypedUnions,
+        ...skipsUntypedUnions.filter(
+            (schema) => schema !== "class-map-union.schema",
+        ),
     ],
     rendererOptions: { "header-only": "false" },
     quickTestRendererOptions: [
