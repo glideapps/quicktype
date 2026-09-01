@@ -781,6 +781,7 @@ export const ElmLanguage: Language = {
         "integer",
         "minmax",
         "minmaxInteger",
+        "minmaxitems",
         "minmaxlength",
     ],
     output: "QuickType.elm",
