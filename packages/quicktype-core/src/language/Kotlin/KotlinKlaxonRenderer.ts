@@ -1,6 +1,7 @@
 import { arrayIntercalate, iterableSome } from "collection-utils";
 
 import {
+    minMaxItemsForType,
     minMaxLengthForType,
     minMaxValueForType,
 } from "../../attributes/Constraints.js";
@@ -413,6 +414,17 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
                         minMaxLengthForType(p.type) ?? [];
                     if (minLength !== undefined) emitLength(">=", minLength);
                     if (maxLength !== undefined) emitLength("<=", maxLength);
+                    const array = p.isOptional
+                        ? `${value}?.let { require(it.size`
+                        : `require(${value}.size`;
+                    const emitItems = (operator: string, bound: number) =>
+                        emitValidation(
+                            `${array} ${operator} ${bound}${p.isOptional ? ") }" : ")"}`,
+                        );
+                    const [minItems, maxItems] =
+                        minMaxItemsForType(p.type) ?? [];
+                    if (minItems !== undefined) emitItems(">=", minItems);
+                    if (maxItems !== undefined) emitItems("<=", maxItems);
                 });
                 this.emitLine(
                     "public fun toJson() = klaxon.toJsonString(this)",
