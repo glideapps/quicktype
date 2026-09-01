@@ -55,6 +55,13 @@ export class RubyTargetLanguage extends TargetLanguage<
         return rubyOptions;
     }
 
+    public get stringTypeMapping() {
+        return new Map([
+            ["uuid", "uuid"] as const,
+            ["date-time", "date-time"] as const,
+        ]);
+    }
+
     public get supportsOptionalClassProperties(): boolean {
         return true;
     }

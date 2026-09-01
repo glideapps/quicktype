@@ -30,7 +30,11 @@ import type { haskellOptions } from "./language.js";
 import { lowerNamingFunction, upperNamingFunction } from "./utils.js";
 
 function haskellStringEscape(s: string): string {
-    return stringEscape(s).replace(/\\U0*([0-9a-fA-F]+)/g, "\\x$1\\&");
+    return stringEscape(s).replace(
+        /\\u([0-9a-fA-F]{4})|\\U([0-9a-fA-F]{8})/g,
+        (_match, bmp: string | undefined, astral: string | undefined) =>
+            `\\x${bmp ?? astral}\\&`,
+    );
 }
 
 export class HaskellRenderer extends ConvenienceRenderer {
@@ -137,7 +141,7 @@ export class HaskellRenderer extends ConvenienceRenderer {
             (_nullType) => multiWord(" ", "Maybe", "Text"),
             (_boolType) => singleWord("Bool"),
             (_integerType) => singleWord("Int"),
-            (_doubleType) => singleWord("Float"),
+            (_doubleType) => singleWord("Double"),
             (_stringType) => singleWord("Text"),
             (arrayType) => {
                 if (this._options.useList) {

@@ -4,6 +4,7 @@ import {
     anyTypeIssueAnnotation,
     nullTypeIssueAnnotation,
 } from "../../Annotation.js";
+import { minMaxLengthForType } from "../../attributes/Constraints.js";
 import { minMaxValueForType } from "../../attributes/Constraints.js";
 import {
     ConvenienceRenderer,
@@ -244,6 +245,18 @@ export class ElmRenderer extends ConvenienceRenderer {
         );
     }
 
+    private decoderForString(t: Type): MultiWord {
+        const [min, max] = minMaxLengthForType(t) ?? [];
+        if (min === undefined && max === undefined)
+            return singleWord("Jdec.string");
+        const length = "String.length x";
+        const minCheck = min === undefined ? "True" : `${length} >= ${min}`;
+        const maxCheck = max === undefined ? "True" : `${length} <= ${max}`;
+        return singleWord(
+            `(Jdec.andThen (\\x -> if ${minCheck} && ${maxCheck} then Jdec.succeed x else Jdec.fail "String length out of range") Jdec.string)`,
+        );
+    }
+
     private decoderNameForType(t: Type, noOptional = false): MultiWord {
         return matchType<MultiWord>(
             t,
@@ -252,7 +265,7 @@ export class ElmRenderer extends ConvenienceRenderer {
             (_boolType) => singleWord("Jdec.bool"),
             (integerType) => this.decoderForNumber(integerType, "Jdec.int"),
             (doubleType) => this.decoderForNumber(doubleType, "Jdec.float"),
-            (_stringType) => singleWord("Jdec.string"),
+            (stringType) => this.decoderForString(stringType),
             (arrayType) =>
                 multiWord(
                     " ",

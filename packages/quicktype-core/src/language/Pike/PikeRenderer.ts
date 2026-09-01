@@ -346,6 +346,21 @@ export class PikeRenderer extends ConvenienceRenderer {
                             `if (json["${stringEscape(jsonName)}"] != Standards.JSON.true && json["${stringEscape(jsonName)}"] != Standards.JSON.false) error("Expected bool");`,
                         );
                     }
+                    const mapType =
+                        p.type instanceof UnionType
+                            ? nullableFromUnion(p.type)
+                            : p.type;
+                    const rejectsStringMap =
+                        mapType instanceof MapType &&
+                        mapType.values instanceof UnionType &&
+                        !Array.from(mapType.values.members).some(
+                            (t) => t.kind === "string",
+                        );
+                    if (rejectsStringMap) {
+                        this.emitLine(
+                            `foreach (json["${stringEscape(jsonName)}"]; mixed _; mixed value) if (stringp(value)) error("Unexpected string");`,
+                        );
+                    }
                     if (
                         !p.isOptional &&
                         p.type.kind === "union" &&
