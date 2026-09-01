@@ -38,6 +38,14 @@ const dateTimeSerializers = [
  * TODO: Union, Any, Top Level Array, Top Level Map
  */
 export class KotlinXRenderer extends KotlinRenderer {
+    protected override emitUnionDefinition(u: UnionType, name: Name): void {
+        if (nullableFromUnion(u) === null) {
+            this.emitLine(["typealias ", name, " = JsonElement"]);
+            return;
+        }
+        super.emitUnionDefinition(u, name);
+    }
+
     protected override kotlinType(
         t: Type,
         withIssues = false,

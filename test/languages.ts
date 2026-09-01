@@ -1400,13 +1400,9 @@ export const KotlinXLanguage: Language = {
         // deserialization fails at runtime (documented TODO in
         // KotlinXRenderer.ts).
         "enum.schema", // enum.3.json contains an int|string union
-        "recursive-union-flattening.schema",
-        "rust-cycle-breaker-union.schema",
-        "tuple.schema",
         // Additionally exceeds the JVM's 255-parameter limit when the
         // serialization plugin generates the synthesized constructors.
         "keyword-unions.schema",
-        "union.schema",
     ],
     skipMiscJSON: false,
     rendererOptions: { framework: "kotlinx" },
