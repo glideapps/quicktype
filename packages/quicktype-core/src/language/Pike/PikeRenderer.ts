@@ -2,6 +2,7 @@ import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer.js";
+import { minMaxValueForType } from "../../attributes/Constraints.js";
 import type { Name, Namer } from "../../Naming.js";
 import {
     type MultiWord,
@@ -321,6 +322,19 @@ export class PikeRenderer extends ConvenienceRenderer {
                 this.emitLine([className, " retval = ", className, "();"]);
                 this.ensureBlankLine();
                 this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+                    const jsonValue = `json["${stringEscape(jsonName)}"]`;
+                    const optionalGuard = p.isOptional
+                        ? `has_index(json, "${stringEscape(jsonName)}") && `
+                        : "";
+                    const [min, max] = minMaxValueForType(p.type) ?? [];
+                    if (min !== undefined)
+                        this.emitLine(
+                            `if (${optionalGuard}${jsonValue} < ${min}) error("Value below minimum");`,
+                        );
+                    if (max !== undefined)
+                        this.emitLine(
+                            `if (${optionalGuard}${jsonValue} > ${max}) error("Value above maximum");`,
+                        );
                     const rejectsArray =
                         p.type instanceof UnionType &&
                         nullableFromUnion(p.type) === null &&

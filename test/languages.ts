@@ -1492,7 +1492,7 @@ export const PikeLanguage: Language = {
         "0cffa.json",
     ],
     allowMissingNull: true,
-    features: ["strict-optional", "enum"],
+    features: ["strict-optional", "enum", "minmax", "minmaxInteger"],
     output: "TopLevel.pmod",
     topLevel: "TopLevel",
     skipJSON: [],
@@ -1500,7 +1500,9 @@ export const PikeLanguage: Language = {
     skipSchema: [
         // no implicit cast int <-> float in Pike
         ...skipsIntFloatUnions.filter(
-            (schema) => schema !== "integer-float-union.schema",
+            (schema) =>
+                schema !== "integer-float-union.schema" &&
+                schema !== "minmax.schema",
         ),
         // all below: not failing on expected failure. That's because Pike's quite tolerant with assignments.
         ...skipsMapValueValidation.filter(
