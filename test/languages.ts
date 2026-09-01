@@ -1609,8 +1609,6 @@ export const PHPLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [
         "bug863.json",
-        "issue2680-scalar-array.json",
-        "no-classes.json",
         "00c36.json",
         "2df80.json",
         "7fbfb.json",
@@ -1625,7 +1623,6 @@ export const PHPLanguage: Language = {
         // top-level union produces no named TopLevel class for the driver.
         "recursive-union-flattening.schema",
         // The driver does not support top-level arrays.
-        "top-level-primitive-array.schema",
         "issue2680-top-level-array.schema",
     ],
     rendererOptions: {},
