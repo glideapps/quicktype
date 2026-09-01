@@ -365,6 +365,14 @@ export class PikeRenderer extends ConvenienceRenderer {
                         this.emitLine(
                             `if (${optionalGuard}!Regexp("${stringEscape(pattern)}")->match(${jsonValue})) error("String does not match pattern");`,
                         );
+                    const requiredType =
+                        p.type instanceof UnionType
+                            ? nullableFromUnion(p.type)
+                            : p.type;
+                    if (!p.isOptional && requiredType?.kind === "integer")
+                        this.emitLine(
+                            `if (!intp(${jsonValue})) error("Expected integer");`,
+                        );
                     const rejectsArray =
                         p.type instanceof UnionType &&
                         nullableFromUnion(p.type) === null &&
