@@ -321,6 +321,41 @@ export class PikeRenderer extends ConvenienceRenderer {
                 this.emitLine([className, " retval = ", className, "();"]);
                 this.ensureBlankLine();
                 this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+                    const rejectsArray =
+                        p.type instanceof UnionType &&
+                        nullableFromUnion(p.type) === null &&
+                        !Array.from(p.type.members).some(
+                            (t) => t instanceof ArrayType,
+                        );
+                    if (rejectsArray) {
+                        this.emitLine(
+                            `if (arrayp(json["${stringEscape(jsonName)}"])) error("Unexpected array");`,
+                        );
+                    }
+                    if (
+                        !p.isOptional &&
+                        p.type instanceof MapType &&
+                        p.type.values.kind === "integer"
+                    ) {
+                        this.emitLine(
+                            `foreach (json["${stringEscape(jsonName)}"]; mixed _; mixed value) if (!intp(value)) error("Expected integer");`,
+                        );
+                    }
+                    const mapType =
+                        p.type instanceof UnionType
+                            ? nullableFromUnion(p.type)
+                            : p.type;
+                    const rejectsStringMap =
+                        mapType instanceof MapType &&
+                        mapType.values instanceof UnionType &&
+                        !Array.from(mapType.values.members).some(
+                            (t) => t.kind === "string",
+                        );
+                    if (rejectsStringMap) {
+                        this.emitLine(
+                            `foreach (json["${stringEscape(jsonName)}"]; mixed _; mixed value) if (stringp(value)) error("Unexpected string");`,
+                        );
+                    }
                     if (
                         !p.isOptional &&
                         p.type.kind === "union" &&

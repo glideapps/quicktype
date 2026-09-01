@@ -48,6 +48,7 @@ export type LanguageFeature =
     | "bool-string"
     | "uuid"
     | "minmax"
+    | "minmaxInteger"
     | "minmaxlength"
     | "minmaxitems"
     | "pattern";
@@ -466,8 +467,11 @@ export const RubyLanguage: Language = {
         "integer",
         "minmax",
         "minmaxlength",
+        "minmaxitems",
         "pattern",
         "strict-optional",
+        "uuid",
+        "date-time",
     ],
     output: "TopLevel.rb",
     topLevel: "TopLevel",
@@ -561,6 +565,7 @@ export const CJSONLanguage: Language = {
         "union",
         "no-defaults",
         "strict-optional",
+        "integer",
     ],
     output: "TopLevel.h",
     topLevel: "TopLevel",
@@ -575,7 +580,6 @@ export const CJSONLanguage: Language = {
     ],
     skipMiscJSON: false,
     skipSchema: [
-        "integer-before-number.schema", // Python-specific union-order regression.
         /* Enum as TopLevel is not supported */
         "top-level-enum.schema",
         /* Union, Map and Arrays with invalid types are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
@@ -586,7 +590,6 @@ export const CJSONLanguage: Language = {
         ),
         /* Required properties absent are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
         /* Pure Any type not supported (for the current implementation, can be added later, should manage a callback to provide the final application a way to handle it at parsing and creation of cJSON) */
-        "recursive-union-flattening.schema",
         /* Class elements with invalid type are not checked (for the current implementation, can be added later, should abord parsing and return NULL) */
         ...skipsUntypedUnions,
     ],
@@ -769,7 +772,16 @@ export const ElmLanguage: Language = {
         "e8b04.json",
     ],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults", "strict-optional", "integer"],
+    features: [
+        "enum",
+        "union",
+        "no-defaults",
+        "strict-optional",
+        "integer",
+        "minmax",
+        "minmaxInteger",
+        "minmaxlength",
+    ],
     output: "QuickType.elm",
     topLevel: "QuickType",
     // Elm type aliases cannot be recursive, so all inputs that produce
@@ -1088,7 +1100,7 @@ export const Scala3Language: Language = {
         "af2d1.json",
     ],
     allowMissingNull: true,
-    features: ["enum", "union", "no-defaults", "integer"],
+    features: ["enum", "union", "no-defaults", "integer", "date-time", "uuid"],
     output: "TopLevel.scala",
     topLevel: "TopLevel",
     skipJSON: [],
@@ -1124,7 +1136,15 @@ export const Scala3UpickleLanguage: Language = {
         "af2d1.json",
     ],
     allowMissingNull: true,
-    features: ["enum", "union", "no-defaults", "integer", "strict-optional"],
+    features: [
+        "enum",
+        "union",
+        "no-defaults",
+        "integer",
+        "strict-optional",
+        "date-time",
+        "uuid",
+    ],
     output: "TopLevel.scala",
     topLevel: "TopLevel",
     skipJSON: [],
@@ -1354,13 +1374,6 @@ export const KotlinXLanguage: Language = {
     output: "TopLevel.kt",
     topLevel: "TopLevel",
     skipJSON: [
-        "bug863.json",
-        "00c36.json",
-        "2df80.json",
-        "7fbfb.json",
-        "c8c7e.json",
-        "cda6c.json",
-        "e53b5.json",
         // Unions render as sealed classes without serializer wiring, so
         // deserialization fails at runtime (documented TODO in
         // KotlinXRenderer.ts).
@@ -1384,33 +1397,10 @@ export const KotlinXLanguage: Language = {
         // Unions render as sealed classes without serializer wiring, so
         // deserialization fails at runtime (documented TODO in
         // KotlinXRenderer.ts).
-        "accessors.schema",
-        "bool-string.schema",
-        "class-map-union.schema",
-        "class-with-additional.schema",
-        "date-time.schema",
-        // The string|date-time property becomes a union once Kotlin maps
-        // date-time (it was a plain string before).
-        "description.schema",
-        "direct-union.schema",
         "enum.schema", // enum.3.json contains an int|string union
-        "implicit-class-array-union.schema",
-        "integer-float-union.schema",
-        "integer-string.schema",
-        "min-max-items.schema", // unionItems is an int|string union array
-        "minmaxlength.schema",
-        "multi-type-enum.schema",
-        "mutually-recursive.schema",
-        "prefix-items.schema",
-        "recursive-union-flattening.schema",
-        "rust-cycle-breaker-union.schema",
-        "tuple.schema",
-        "union-int-double.schema",
-        "union-list.schema",
         // Additionally exceeds the JVM's 255-parameter limit when the
         // serialization plugin generates the synthesized constructors.
         "keyword-unions.schema",
-        "union.schema",
     ],
     skipMiscJSON: false,
     rendererOptions: { framework: "kotlinx" },
@@ -1510,9 +1500,9 @@ export const PikeLanguage: Language = {
             (schema) => schema !== "integer-float-union.schema",
         ),
         // all below: not failing on expected failure. That's because Pike's quite tolerant with assignments.
-        ...skipsMapValueValidation,
-        "class-with-additional.schema",
-        "multi-type-enum.schema",
+        ...skipsMapValueValidation.filter(
+            (schema) => schema !== "go-schema-pattern-properties.schema",
+        ),
         "optional-any.schema",
         ...skipsUntypedUnions,
     ],
@@ -1581,7 +1571,7 @@ export const HaskellLanguage: Language = {
     features: ["enum", "union", "no-defaults"],
     output: "QuickType.hs",
     topLevel: "QuickType",
-    skipJSON: ["combinations4.json", "blns-object.json", "nst-test-suite.json"],
+    skipJSON: ["combinations4.json"],
     skipMiscJSON: false,
     skipSchema: [...skipsUntypedUnions, "keyword-unions.schema"],
     rendererOptions: {},
@@ -1611,10 +1601,7 @@ export const PHPLanguage: Language = {
     output: "TopLevel.php",
     topLevel: "TopLevel",
     skipJSON: [
-        "bug855-short.json",
         "bug863.json",
-        "issue2680-scalar-array.json",
-        "no-classes.json",
         "00c36.json",
         "2df80.json",
         "7fbfb.json",
@@ -1629,7 +1616,6 @@ export const PHPLanguage: Language = {
         // top-level union produces no named TopLevel class for the driver.
         "recursive-union-flattening.schema",
         // The driver does not support top-level arrays.
-        "top-level-primitive-array.schema",
         "issue2680-top-level-array.schema",
     ],
     rendererOptions: {},

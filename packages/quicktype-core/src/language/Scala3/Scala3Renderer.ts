@@ -193,6 +193,10 @@ export class Scala3Renderer extends ConvenienceRenderer {
 
                 return this.nameForNamedType(unionType);
             },
+            (transformed) =>
+                transformed.kind === "uuid"
+                    ? "java.util.UUID"
+                    : "java.time.Instant",
         );
     }
 

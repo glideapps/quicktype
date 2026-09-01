@@ -49,6 +49,13 @@ export class Scala3TargetLanguage extends TargetLanguage<
         return true;
     }
 
+    public get stringTypeMapping() {
+        return new Map([
+            ["date-time", "date-time"] as const,
+            ["uuid", "uuid"] as const,
+        ]);
+    }
+
     public get supportsUnionsWithBothNumberTypes(): boolean {
         return true;
     }
