@@ -1599,6 +1599,7 @@ export const PHPLanguage: Language = {
         "minmax",
         "minmaxitems",
         "date-time",
+        "minmaxlength",
     ],
     output: "TopLevel.php",
     topLevel: "TopLevel",
