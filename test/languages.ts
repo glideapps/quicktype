@@ -48,6 +48,7 @@ export type LanguageFeature =
     | "bool-string"
     | "uuid"
     | "minmax"
+    | "minmaxInteger"
     | "minmaxlength"
     | "minmaxitems"
     | "pattern";
@@ -772,7 +773,15 @@ export const ElmLanguage: Language = {
         "e8b04.json",
     ],
     allowMissingNull: false,
-    features: ["enum", "union", "no-defaults", "strict-optional", "integer"],
+    features: [
+        "enum",
+        "union",
+        "no-defaults",
+        "strict-optional",
+        "integer",
+        "minmax",
+        "minmaxInteger",
+    ],
     output: "QuickType.elm",
     topLevel: "QuickType",
     // Elm type aliases cannot be recursive, so all inputs that produce
