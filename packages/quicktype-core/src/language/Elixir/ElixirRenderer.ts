@@ -2,6 +2,7 @@ import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer.js";
+import { minMaxItemsForType } from "../../attributes/Constraints.js";
 import { type Name, Namer } from "../../Naming.js";
 import type { RenderContext } from "../../Renderer.js";
 import type { OptionValues } from "../../RendererOptions/index.js";
@@ -153,6 +154,13 @@ export class ElixirRenderer extends ConvenienceRenderer {
         attributeName: Sourcelike,
         suffix = "",
     ): Sourcelike {
+        const itemsGuard = (type: Type): string => {
+            const [min, max] = minMaxItemsForType(type) ?? [];
+            return [
+                min === undefined ? "" : ` and length(value) >= ${min}`,
+                max === undefined ? "" : ` and length(value) <= ${max}`,
+            ].join("");
+        };
         return matchType<Sourcelike>(
             t,
             (_anyType) => [],
@@ -190,11 +198,11 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 suffix,
                 "(value) when is_binary(value), do: value",
             ],
-            (_arrayType) => [
+            (arrayType) => [
                 "def decode_",
                 attributeName,
                 suffix,
-                "(value) when is_list(value), do: value",
+                `(value) when is_list(value)${itemsGuard(arrayType)}, do: value`,
             ],
             (classType) => {
                 const requiredAttributeArgs: Sourcelike[] = [];
