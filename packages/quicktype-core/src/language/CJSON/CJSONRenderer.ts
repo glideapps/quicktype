@@ -678,6 +678,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
      */
     protected emitUnionPrototypes(unionType: UnionType): void {
         const unionName = this.nameForNamedType(unionType);
+        const renderedUnionName = this.sourcelikeToString(unionName);
         const checks: Sourcelike[] = Array.from(
             removeNullFromUnion(unionType)[1],
             (type) => [this.quicktypeTypeToCJSON(type, false).isType, "(j)"],
@@ -712,6 +713,12 @@ export class CJSONRenderer extends ConvenienceRenderer {
             unionName,
             " * x);",
         );
+        this.emitLine(
+            `struct ${renderedUnionName} * cJSON_Parse${renderedUnionName}(const char * s);`,
+        );
+        this.emitLine(
+            `char * cJSON_Print${renderedUnionName}(const struct ${renderedUnionName} * x);`,
+        );
         this.ensureBlankLine();
     }
 
@@ -722,6 +729,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
     protected emitUnionFunctions(unionType: UnionType): void {
         const [hasNull, nonNulls] = removeNullFromUnion(unionType);
         const unionName = this.nameForNamedType(unionType);
+        const renderedUnionName = this.sourcelikeToString(unionName);
 
         /* Create cJSON to unionType generator function */
         this.emitBlock(
@@ -1264,6 +1272,12 @@ export class CJSONRenderer extends ConvenienceRenderer {
                 });
                 this.emitLine("return x;");
             },
+        );
+        this.emitLine(
+            `struct ${renderedUnionName} * cJSON_Parse${renderedUnionName}(const char * s) { cJSON * j = cJSON_Parse(s); struct ${renderedUnionName} * x = j ? cJSON_Get${renderedUnionName}Value(j) : NULL; cJSON_Delete(j); return x; }`,
+        );
+        this.emitLine(
+            `char * cJSON_Print${renderedUnionName}(const struct ${renderedUnionName} * x) { cJSON * j = cJSON_Create${renderedUnionName}(x); char * s = j ? cJSON_Print(j) : NULL; cJSON_Delete(j); return s; }`,
         );
         this.ensureBlankLine();
 

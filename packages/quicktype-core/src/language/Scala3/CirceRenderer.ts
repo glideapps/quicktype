@@ -92,6 +92,13 @@ export class CirceRenderer extends Scala3Renderer {
                     "]",
                 ];
             },
+            (transformed) => [
+                "summon[Encoder[",
+                this.scalaType(transformed),
+                "]].apply(",
+                paramName,
+                ")",
+            ],
         );
     }
 

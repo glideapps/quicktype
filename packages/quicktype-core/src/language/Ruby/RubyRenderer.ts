@@ -190,6 +190,12 @@ export class RubyRenderer extends ConvenienceRenderer {
                     optional,
                 ];
             },
+            (transformed) => [
+                transformed.kind === "uuid"
+                    ? "Types::String.constrained(format: /\\A[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\\z/i)"
+                    : "Types::String.constrained(format: /\\A\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d+)?(?:Z|[+-]\\d\\d:\\d\\d)\\z/i)",
+                optional,
+            ],
         );
     }
 
@@ -279,6 +285,7 @@ export class RubyRenderer extends ConvenienceRenderer {
 
                 return exp;
             },
+            (_transformed) => exp,
         );
     }
 
@@ -368,6 +375,7 @@ export class RubyRenderer extends ConvenienceRenderer {
                 ];
                 return optional ? [e, " ? ", expression, " : nil"] : expression;
             },
+            (_transformed) => primitive,
         );
     }
 
@@ -412,6 +420,7 @@ export class RubyRenderer extends ConvenienceRenderer {
 
                 return [e, optional ? "&" : "", ".to_dynamic"];
             },
+            (_transformed) => e,
         );
     }
 
@@ -436,6 +445,7 @@ export class RubyRenderer extends ConvenienceRenderer {
 
                 return false;
             },
+            (_transformed) => true,
         );
     }
 
@@ -467,6 +477,7 @@ export class RubyRenderer extends ConvenienceRenderer {
 
                 return false;
             },
+            (_transformed) => true,
         );
     }
 
