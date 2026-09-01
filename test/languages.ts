@@ -1739,7 +1739,7 @@ export const ElixirLanguage: Language = {
         "reddit.json",
     ],
     allowMissingNull: false,
-    features: ["enum", "no-defaults", "strict-optional", "integer"],
+    features: ["enum", "union", "no-defaults", "strict-optional", "integer"],
     output: "QuickType.ex",
     topLevel: "TopLevel",
     skipJSON: [
@@ -1747,12 +1747,7 @@ export const ElixirLanguage: Language = {
         "blns-object.json",
     ],
     skipMiscJSON: false,
-    skipSchema: [
-        // The test incorrectly succeeds due to the emitter being permissive for unions that contain only primitives. A future enhancement
-        // for the Elixir emitter could be a user-controlled 'strict' mode that pattern matches even on unions of only primitive types.
-        // A top-level array is deserialized without enforcing its element
-        // type, so a mistyped element round-trips instead of failing.
-    ],
+    skipSchema: [...skipsUntypedUnions],
     rendererOptions: {},
     quickTestRendererOptions: [],
     sourceFiles: ["src/language/Elixir/index.ts"],
