@@ -12,6 +12,7 @@ import {
     minMaxItemsForType,
     minMaxLengthForType,
     minMaxValueForType,
+    patternForType,
 } from "../../attributes/Constraints.js";
 import {
     DependencyName,
@@ -1099,6 +1100,12 @@ export class PhpRenderer extends ConvenienceRenderer {
                 const [min, max] = minMaxLengthForType(stringType) ?? [];
                 if (min !== undefined) validateLength("<", min);
                 if (max !== undefined) validateLength(">", max);
+                const pattern = patternForType(stringType);
+                if (pattern !== undefined)
+                    this.emitBlock(
+                        `if (preg_match('~${stringEscape(pattern).replace(/~/g, "\\~")}~u', ${scopeAttrName}) !== 1)`,
+                        invalid,
+                    );
             },
             (arrayType) => {
                 is("is_array");
