@@ -1582,7 +1582,7 @@ export const HaskellLanguage: Language = {
     features: ["enum", "union", "no-defaults"],
     output: "QuickType.hs",
     topLevel: "QuickType",
-    skipJSON: ["combinations4.json", "nst-test-suite.json"],
+    skipJSON: ["combinations4.json"],
     skipMiscJSON: false,
     skipSchema: [...skipsUntypedUnions, "keyword-unions.schema"],
     rendererOptions: {},

@@ -141,7 +141,7 @@ export class HaskellRenderer extends ConvenienceRenderer {
             (_nullType) => multiWord(" ", "Maybe", "Text"),
             (_boolType) => singleWord("Bool"),
             (_integerType) => singleWord("Int"),
-            (_doubleType) => singleWord("Float"),
+            (_doubleType) => singleWord("Double"),
             (_stringType) => singleWord("Text"),
             (arrayType) => {
                 if (this._options.useList) {
