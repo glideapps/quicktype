@@ -2,7 +2,10 @@ import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer.js";
-import { minMaxValueForType } from "../../attributes/Constraints.js";
+import {
+    minMaxLengthForType,
+    minMaxValueForType,
+} from "../../attributes/Constraints.js";
 import type { Name, Namer } from "../../Naming.js";
 import {
     type MultiWord,
@@ -334,6 +337,16 @@ export class PikeRenderer extends ConvenienceRenderer {
                     if (max !== undefined)
                         this.emitLine(
                             `if (${optionalGuard}${jsonValue} > ${max}) error("Value above maximum");`,
+                        );
+                    const [minLength, maxLength] =
+                        minMaxLengthForType(p.type) ?? [];
+                    if (minLength !== undefined)
+                        this.emitLine(
+                            `if (${optionalGuard}sizeof(${jsonValue}) < ${minLength}) error("String too short");`,
+                        );
+                    if (maxLength !== undefined)
+                        this.emitLine(
+                            `if (${optionalGuard}sizeof(${jsonValue}) > ${maxLength}) error("String too long");`,
                         );
                     const rejectsArray =
                         p.type instanceof UnionType &&
