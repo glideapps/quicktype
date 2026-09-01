@@ -341,6 +341,11 @@ export class PikeRenderer extends ConvenienceRenderer {
                             `foreach (json["${stringEscape(jsonName)}"]; mixed _; mixed value) if (!intp(value)) error("Expected integer");`,
                         );
                     }
+                    if (!p.isOptional && p.type.kind === "bool") {
+                        this.emitLine(
+                            `if (json["${stringEscape(jsonName)}"] != Standards.JSON.true && json["${stringEscape(jsonName)}"] != Standards.JSON.false) error("Expected bool");`,
+                        );
+                    }
                     const mapType =
                         p.type instanceof UnionType
                             ? nullableFromUnion(p.type)
