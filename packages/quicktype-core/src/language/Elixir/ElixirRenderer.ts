@@ -2,7 +2,10 @@ import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer.js";
-import { patternForType } from "../../attributes/Constraints.js";
+import {
+    minMaxLengthForType,
+    patternForType,
+} from "../../attributes/Constraints.js";
 import { type Name, Namer } from "../../Naming.js";
 import type { RenderContext } from "../../Renderer.js";
 import type { OptionValues } from "../../RendererOptions/index.js";
@@ -155,6 +158,16 @@ export class ElixirRenderer extends ConvenienceRenderer {
         suffix = "",
     ): Sourcelike {
         const pattern = patternForType(t);
+        const [min, max] = minMaxLengthForType(t) ?? [];
+        const length = "String.length(value)";
+        const constraints: string[] = [];
+        if (min !== undefined) constraints.push(`${length} >= ${min}`);
+        if (max !== undefined) constraints.push(`${length} <= ${max}`);
+        if (pattern !== undefined) {
+            constraints.push(
+                `Regex.match?(Regex.compile!("${escapeDoubleQuotes(pattern.replace(/\\/g, "\\\\"))}"), value)`,
+            );
+        }
         return matchType<Sourcelike>(
             t,
             (_anyType) => [],
@@ -190,13 +203,9 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 "def decode_",
                 attributeName,
                 suffix,
-                "(value) when is_binary(value)",
-                pattern === undefined
-                    ? ", do: value"
-                    : [
-                          ` do\n  if Regex.match?(Regex.compile!("${escapeDoubleQuotes(pattern.replace(/\\/g, "\\\\"))}"), value) do\n`,
-                          "    value\n  else\n    raise ArgumentError\n  end\nend",
-                      ],
+                min === undefined && max === undefined && pattern === undefined
+                    ? "(value) when is_binary(value), do: value"
+                    : `(value) when is_binary(value) do\n  if ${constraints.join(" and ")}, do: value, else: raise(ArgumentError)\nend`,
             ],
             (_arrayType) => [
                 "def decode_",
