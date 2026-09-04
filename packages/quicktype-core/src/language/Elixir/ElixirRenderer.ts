@@ -2,7 +2,10 @@ import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer.js";
-import { minMaxValueForType } from "../../attributes/Constraints.js";
+import {
+    minMaxLengthForType,
+    minMaxValueForType,
+} from "../../attributes/Constraints.js";
 import { type Name, Namer } from "../../Naming.js";
 import type { RenderContext } from "../../Renderer.js";
 import type { OptionValues } from "../../RendererOptions/index.js";
@@ -154,11 +157,20 @@ export class ElixirRenderer extends ConvenienceRenderer {
         attributeName: Sourcelike,
         suffix = "",
     ): Sourcelike {
-        const [min, max] = minMaxValueForType(t) ?? [];
+        const [minValue, maxValue] = minMaxValueForType(t) ?? [];
         const rangeGuard = [
-            min === undefined ? "" : ` and value >= ${min}`,
-            max === undefined ? "" : ` and value <= ${max}`,
+            minValue === undefined ? "" : ` and value >= ${minValue}`,
+            maxValue === undefined ? "" : ` and value <= ${maxValue}`,
         ].join("");
+        const [minLength, maxLength] = minMaxLengthForType(t) ?? [];
+        const length = "String.length(value)";
+        const constraints: string[] = [];
+        if (minLength !== undefined) {
+            constraints.push(`${length} >= ${minLength}`);
+        }
+        if (maxLength !== undefined) {
+            constraints.push(`${length} <= ${maxLength}`);
+        }
         return matchType<Sourcelike>(
             t,
             (_anyType) => [],
@@ -194,7 +206,9 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 "def decode_",
                 attributeName,
                 suffix,
-                "(value) when is_binary(value), do: value",
+                minLength === undefined && maxLength === undefined
+                    ? "(value) when is_binary(value), do: value"
+                    : `(value) when is_binary(value) do\n  if ${constraints.join(" and ")}, do: value, else: raise(ArgumentError)\nend`,
             ],
             (_arrayType) => [
                 "def decode_",
@@ -515,7 +529,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
             (_boolType) => (optional ? primitive : checked),
             (_integerType) => (optional ? optionalChecked : checked),
             (_doubleType) => (optional ? optionalChecked : checked),
-            (_stringType) => (optional ? primitive : checked),
+            (_stringType) => (optional ? optionalChecked : checked),
             (arrayType) => {
                 const arrayElement = arrayType.items;
                 if (arrayElement instanceof ArrayType) {
@@ -894,7 +908,9 @@ export class ElixirRenderer extends ConvenienceRenderer {
                         (p.type.isPrimitive() || p.type.kind === "array") &&
                         p.type.kind !== "any" &&
                         (!p.isOptional ||
-                            ["integer", "double"].includes(p.type.kind))
+                            ["integer", "double", "string"].includes(
+                                p.type.kind,
+                            ))
                     ) {
                         this.emitPatternMatches([p.type], name, parentName);
                     }
