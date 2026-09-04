@@ -1451,6 +1451,7 @@ export const DartLanguage: Language = {
         "integer",
         "no-defaults",
         "date-time",
+        "strict-optional",
         "minmaxlength",
         "pattern",
         "minmax",
