@@ -12,6 +12,7 @@ import {
     minMaxItemsForType,
     minMaxLengthForType,
     minMaxValueForType,
+    patternForType,
 } from "../../attributes/Constraints.js";
 import {
     DependencyName,
@@ -1099,6 +1100,12 @@ export class PhpRenderer extends ConvenienceRenderer {
                 const [min, max] = minMaxLengthForType(stringType) ?? [];
                 if (min !== undefined) validateLength("<", min);
                 if (max !== undefined) validateLength(">", max);
+                const pattern = patternForType(stringType);
+                if (pattern !== undefined)
+                    this.emitBlock(
+                        `if (preg_match('~${stringEscape(pattern).replace(/~/g, "\\~")}~u', ${scopeAttrName}) !== 1)`,
+                        invalid,
+                    );
             },
             (arrayType) => {
                 is("is_array");
@@ -1633,6 +1640,20 @@ export class PhpRenderer extends ConvenienceRenderer {
                     className,
                 ],
                 () => {
+                    this.forEachClassProperty(
+                        c,
+                        "none",
+                        (_name, jsonName, p) => {
+                            if (!p.isOptional)
+                                this.emitBlock(
+                                    `if (!property_exists($obj, '${stringEscape(jsonName)}'))`,
+                                    () =>
+                                        this.emitLine(
+                                            'throw new Exception("Missing required property");',
+                                        ),
+                                );
+                        },
+                    );
                     if (this._options.fastGet) {
                         this.forEachClassProperty(c, "none", (name) => {
                             const names = defined(
