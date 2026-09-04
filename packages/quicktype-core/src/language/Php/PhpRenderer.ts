@@ -10,6 +10,7 @@ import {
 } from "../../ConvenienceRenderer.js";
 import {
     minMaxItemsForType,
+    minMaxLengthForType,
     minMaxValueForType,
 } from "../../attributes/Constraints.js";
 import {
@@ -1085,8 +1086,19 @@ export class PhpRenderer extends ConvenienceRenderer {
                 }
                 validateRange(doubleType);
             },
-            (_stringType) => {
+            (stringType) => {
                 if (!skipPrimitiveTypeCheck) is("is_string");
+                const invalid = () =>
+                    this.emitLine('throw new Exception("Attribute Error");');
+                const validateLength = (operator: string, bound: number) => {
+                    this.emitBlock(
+                        `if (preg_match_all('/./us', ${scopeAttrName}) ${operator} ${bound})`,
+                        invalid,
+                    );
+                };
+                const [min, max] = minMaxLengthForType(stringType) ?? [];
+                if (min !== undefined) validateLength("<", min);
+                if (max !== undefined) validateLength(">", max);
             },
             (arrayType) => {
                 is("is_array");

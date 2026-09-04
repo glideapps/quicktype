@@ -772,15 +772,19 @@ export class DartRenderer extends ConvenienceRenderer {
         );
         this.indent(() => {
             this.forEachClassProperty(c, "none", (name, jsonName, property) => {
+                const key = stringEscape(jsonName);
+                const value = `json["${key}"]`;
+                const input =
+                    !property.isOptional && property.type.isNullable
+                        ? `(json.containsKey("${key}") ? ${value} : throw FormatException('Missing required property'))`
+                        : value;
                 this.emitLine(
                     name,
                     ": ",
                     this.fromDynamicExpression(
                         property.type.isNullable,
                         property.type,
-                        'json["',
-                        stringEscape(jsonName),
-                        '"]',
+                        input,
                     ),
                     ",",
                 );
