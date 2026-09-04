@@ -1758,6 +1758,7 @@ export const ElixirLanguage: Language = {
         "strict-optional",
         "integer",
         "minmaxlength",
+        "pattern",
     ],
     output: "QuickType.ex",
     topLevel: "TopLevel",
