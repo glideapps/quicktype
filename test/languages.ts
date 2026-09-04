@@ -1496,10 +1496,12 @@ export const PikeLanguage: Language = {
     features: [
         "strict-optional",
         "enum",
+        "integer",
         "minmax",
         "minmaxInteger",
         "minmaxlength",
         "minmaxitems",
+        "pattern",
     ],
     output: "TopLevel.pmod",
     topLevel: "TopLevel",

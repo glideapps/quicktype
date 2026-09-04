@@ -6,6 +6,7 @@ import {
     minMaxItemsForType,
     minMaxLengthForType,
     minMaxValueForType,
+    patternForType,
 } from "../../attributes/Constraints.js";
 import type { Name, Namer } from "../../Naming.js";
 import {
@@ -358,6 +359,19 @@ export class PikeRenderer extends ConvenienceRenderer {
                     if (maxItems !== undefined)
                         this.emitLine(
                             `if (${optionalGuard}sizeof(${jsonValue}) > ${maxItems}) error("Array too long");`,
+                        );
+                    const pattern = patternForType(p.type);
+                    if (pattern !== undefined)
+                        this.emitLine(
+                            `if (${optionalGuard}!Regexp("${stringEscape(pattern)}")->match(${jsonValue})) error("String does not match pattern");`,
+                        );
+                    const requiredType =
+                        p.type instanceof UnionType
+                            ? nullableFromUnion(p.type)
+                            : p.type;
+                    if (!p.isOptional && requiredType?.kind === "integer")
+                        this.emitLine(
+                            `if (!intp(${jsonValue})) error("Expected integer");`,
                         );
                     const rejectsArray =
                         p.type instanceof UnionType &&
