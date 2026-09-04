@@ -1601,6 +1601,7 @@ export const PHPLanguage: Language = {
         "date-time",
         "minmaxlength",
         "pattern",
+        "strict-optional",
     ],
     output: "TopLevel.php",
     topLevel: "TopLevel",
