@@ -1499,6 +1499,7 @@ export const PikeLanguage: Language = {
         "minmax",
         "minmaxInteger",
         "minmaxlength",
+        "minmaxitems",
     ],
     output: "TopLevel.pmod",
     topLevel: "TopLevel",
