@@ -5,6 +5,7 @@ import {
 import {
     minMaxLengthForType,
     minMaxValueForType,
+    patternForType,
 } from "../../attributes/Constraints.js";
 import { type Name, Namer } from "../../Naming.js";
 import type { RenderContext } from "../../Renderer.js";
@@ -162,6 +163,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
             minValue === undefined ? "" : ` and value >= ${minValue}`,
             maxValue === undefined ? "" : ` and value <= ${maxValue}`,
         ].join("");
+        const pattern = patternForType(t);
         const [minLength, maxLength] = minMaxLengthForType(t) ?? [];
         const length = "String.length(value)";
         const constraints: string[] = [];
@@ -170,6 +172,11 @@ export class ElixirRenderer extends ConvenienceRenderer {
         }
         if (maxLength !== undefined) {
             constraints.push(`${length} <= ${maxLength}`);
+        }
+        if (pattern !== undefined) {
+            constraints.push(
+                `Regex.match?(Regex.compile!("${escapeDoubleQuotes(pattern.replace(/\\/g, "\\\\"))}"), value)`,
+            );
         }
         return matchType<Sourcelike>(
             t,
@@ -206,7 +213,9 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 "def decode_",
                 attributeName,
                 suffix,
-                minLength === undefined && maxLength === undefined
+                minLength === undefined &&
+                maxLength === undefined &&
+                pattern === undefined
                     ? "(value) when is_binary(value), do: value"
                     : `(value) when is_binary(value) do\n  if ${constraints.join(" and ")}, do: value, else: raise(ArgumentError)\nend`,
             ],
