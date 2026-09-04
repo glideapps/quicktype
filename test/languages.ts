@@ -1256,6 +1256,7 @@ export const KotlinLanguage: Language = {
         "minmaxInteger",
         "minmaxlength",
         "minmaxitems",
+        "pattern",
     ],
     output: "TopLevel.kt",
     topLevel: "TopLevel",

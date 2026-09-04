@@ -4,6 +4,7 @@ import {
     minMaxItemsForType,
     minMaxLengthForType,
     minMaxValueForType,
+    patternForType,
 } from "../../attributes/Constraints.js";
 import type { Name } from "../../Naming.js";
 import { type Sourcelike, modifySource } from "../../Source.js";
@@ -425,6 +426,15 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
                         minMaxItemsForType(p.type) ?? [];
                     if (minItems !== undefined) emitItems(">=", minItems);
                     if (maxItems !== undefined) emitItems("<=", maxItems);
+                    const pattern = patternForType(p.type);
+                    if (pattern !== undefined) {
+                        const target = p.isOptional ? "it" : value;
+                        const match = `Regex("${stringEscape(pattern)}").containsMatchIn(${target})`;
+                        const check = p.isOptional
+                            ? `${value}?.let { require(${match}) }`
+                            : `require(${match})`;
+                        emitValidation(check);
+                    }
                 });
                 this.emitLine(
                     "public fun toJson() = klaxon.toJsonString(this)",
