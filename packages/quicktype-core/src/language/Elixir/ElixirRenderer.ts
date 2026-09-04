@@ -2,6 +2,7 @@ import {
     ConvenienceRenderer,
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer.js";
+import { minMaxLengthForType } from "../../attributes/Constraints.js";
 import { type Name, Namer } from "../../Naming.js";
 import type { RenderContext } from "../../Renderer.js";
 import type { OptionValues } from "../../RendererOptions/index.js";
@@ -153,6 +154,11 @@ export class ElixirRenderer extends ConvenienceRenderer {
         attributeName: Sourcelike,
         suffix = "",
     ): Sourcelike {
+        const [min, max] = minMaxLengthForType(t) ?? [];
+        const length = "String.length(value)";
+        const constraints: string[] = [];
+        if (min !== undefined) constraints.push(`${length} >= ${min}`);
+        if (max !== undefined) constraints.push(`${length} <= ${max}`);
         return matchType<Sourcelike>(
             t,
             (_anyType) => [],
@@ -188,7 +194,9 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 "def decode_",
                 attributeName,
                 suffix,
-                "(value) when is_binary(value), do: value",
+                min === undefined && max === undefined
+                    ? "(value) when is_binary(value), do: value"
+                    : `(value) when is_binary(value) do\n  if ${constraints.join(" and ")}, do: value, else: raise(ArgumentError)\nend`,
             ],
             (_arrayType) => [
                 "def decode_",
@@ -508,7 +516,8 @@ export class ElixirRenderer extends ConvenienceRenderer {
             (_boolType) => (optional ? primitive : checked),
             (_integerType) => (optional ? primitive : checked),
             (_doubleType) => (optional ? primitive : checked),
-            (_stringType) => (optional ? primitive : checked),
+            (_stringType) =>
+                optional ? [primitive, " && ", checked] : checked,
             (arrayType) => {
                 const arrayElement = arrayType.items;
                 if (arrayElement instanceof ArrayType) {
@@ -886,7 +895,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                     if (
                         (p.type.isPrimitive() || p.type.kind === "array") &&
                         p.type.kind !== "any" &&
-                        !p.isOptional
+                        (!p.isOptional || p.type.kind === "string")
                     ) {
                         this.emitPatternMatches([p.type], name, parentName);
                     }
