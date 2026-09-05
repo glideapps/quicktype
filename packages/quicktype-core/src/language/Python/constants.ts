@@ -10,6 +10,7 @@ export const forbiddenTypeNames = [
     "dict",
     "Optional",
     "Union",
+    "UUID",
     "Iterable",
     "Type",
     "TypeVar",
