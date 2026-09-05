@@ -55,7 +55,7 @@ export function needTransformerForType(
     }
 
     if (t instanceof EnumType) return "automatic";
-    if (t.kind === "double")
+    if (t.kind === "double" || t.kind === "integer")
         return minMaxValueForType(t) !== undefined ? "manual" : "none";
     if (t.kind === "integer-string" || t.kind === "bool-string")
         return "manual";
