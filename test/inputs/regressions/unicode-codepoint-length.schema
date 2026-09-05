@@ -1,0 +1,24 @@
+{
+  "type": "object",
+  "properties": {
+    "exact": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 2,
+      "pattern": "^[^!]+$"
+    },
+    "minimum": {
+      "type": "string",
+      "minLength": 2
+    },
+    "maximum": {
+      "type": "string",
+      "maxLength": 1
+    }
+  },
+  "required": [
+    "exact",
+    "minimum",
+    "maximum"
+  ]
+}
