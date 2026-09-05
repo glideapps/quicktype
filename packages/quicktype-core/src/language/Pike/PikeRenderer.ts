@@ -433,6 +433,9 @@ export class PikeRenderer extends ConvenienceRenderer {
                         "retval.",
                         name,
                         " = ",
+                        enumType instanceof EnumType && p.type.isNullable
+                            ? `${jsonValue} == Standards.JSON.null ? ${jsonValue} : `
+                            : "",
                         enumType instanceof EnumType
                             ? [
                                   this.nameForNamedType(enumType),
