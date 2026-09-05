@@ -26,6 +26,20 @@ import { KotlinRenderer } from "./KotlinRenderer.js";
 import { stringEscape, unionMemberMatchPriority } from "./utils.js";
 
 export class KotlinJacksonRenderer extends KotlinRenderer {
+    protected forbiddenNamesForGlobalNamespace(): readonly string[] {
+        return [
+            ...super.forbiddenNamesForGlobalNamespace(),
+            "JsonGenerator",
+            "JsonNode",
+            "JsonParser",
+            "ObjectMapper",
+            "SerializerProvider",
+            "SimpleModule",
+            "StdDeserializer",
+            "StdSerializer",
+        ];
+    }
+
     protected propertyDefault(
         p: ClassProperty,
         _nullableOrOptional: boolean,
