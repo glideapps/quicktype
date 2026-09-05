@@ -511,7 +511,7 @@ export class JSONPythonRenderer extends PythonRenderer {
                     this.withModuleImport("re"),
                     '.match(r"^\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})?$", x)',
                 );
-                this.emitLine("return dateutil.parser.parse(x).time()");
+                this.emitLine("return dateutil.parser.parse(x).timetz()");
             },
         );
     }
