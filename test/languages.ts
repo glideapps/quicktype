@@ -70,6 +70,7 @@ export interface Language {
     includeJSON?: string[];
     skipMiscJSON: boolean;
     skipSchema: string[];
+    additionalSchemaFiles?: string[];
     rendererOptions: RendererOptions;
     quickTestRendererOptions: (RendererOptions | [string, RendererOptions])[];
     sourceFiles?: string[];
@@ -838,7 +839,6 @@ export const SwiftLanguage: Language = {
         "337ed.json",
         "34702.json",
         "7f568.json",
-        "734ad.json",
         "76ae1.json",
         "c8c7e.json",
         "e53b5.json",
@@ -863,6 +863,7 @@ export const SwiftLanguage: Language = {
             "simple-object.json",
             { "struct-or-class": "class", "final-classes": "true" },
         ],
+        { "struct-or-class": "class", "final-classes": "true" },
         // The default is density=normal; this keeps the dense code path
         // covered.
         { density: "dense" },
@@ -870,6 +871,7 @@ export const SwiftLanguage: Language = {
         { "access-level": "public" },
         { protocol: "equatable" },
         ["simple-object.json", { protocol: "hashable" }],
+        { protocol: "hashable" },
     ],
     sourceFiles: ["src/language/Swift/index.ts"],
 };
@@ -966,6 +968,8 @@ export const TypeScriptLanguage: Language = {
         { "runtime-typecheck-ignore-unknown-properties": "true" },
         { "nice-property-names": "true" },
         ["pokedex.json", { "prefer-types": "true" }],
+        { "prefer-types": "true" },
+        { "prefer-const-values": "true" },
         ["keywords.json", { "prefer-types": "true" }],
         { "acronym-style": "pascal" },
         { converters: "all-objects" },
@@ -1489,6 +1493,7 @@ export const DartLanguage: Language = {
     quickTestRendererOptions: [
         { "final-props": "false" },
         ["simple-object.json", { "from-map": "true" }],
+        { "from-map": "true" },
         ["simple-object.json", { "required-props": "true" }],
     ],
     sourceFiles: ["src/language/Dart/index.ts"],
