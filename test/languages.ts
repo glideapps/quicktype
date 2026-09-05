@@ -70,6 +70,7 @@ export interface Language {
     includeJSON?: string[];
     skipMiscJSON: boolean;
     skipSchema: string[];
+    additionalSchemaFiles?: string[];
     rendererOptions: RendererOptions;
     quickTestRendererOptions: (RendererOptions | [string, RendererOptions])[];
     sourceFiles?: string[];
@@ -1692,6 +1693,9 @@ export const TypeScriptZodLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
+    additionalSchemaFiles: [
+        "test/inputs/typescript-zod/unicode-codepoint-length.schema",
+    ],
     skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [],
