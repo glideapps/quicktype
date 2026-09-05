@@ -510,6 +510,7 @@ export const GoLanguage: Language = {
         return `go run main.go quicktype.go < "${sample}"`;
     },
     diffViaSchema: true,
+    roundtripViaSchema: true,
     skipDiffViaSchema: [
         "bug427.json",
         "nbl-stats.json",
@@ -1413,7 +1414,9 @@ export const KotlinXLanguage: Language = {
         return `./run.sh "${sample}"`;
     },
     diffViaSchema: true,
+    roundtripViaSchema: true,
     skipDiffViaSchema: [
+        "blns-object.json",
         "bug427.json",
         "keywords.json",
         "77392.json",
@@ -1450,7 +1453,6 @@ export const KotlinXLanguage: Language = {
         "a3d8c.json",
         "f74d5.json",
         "fcca3.json",
-        "blns-object.json", // JSON-to-schema property naming is not stable for case collisions.
     ],
     skipSchema: [
         "optional-property.schema",
@@ -1476,6 +1478,7 @@ export const DartLanguage: Language = {
         return `dart --enable-experiment=non-nullable parser.dart "${sample}"`;
     },
     diffViaSchema: true,
+    roundtripViaSchema: true,
     skipDiffViaSchema: [
         "keywords.json",
         "bug427.json",
