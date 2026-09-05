@@ -1702,7 +1702,7 @@ export const TypeScriptZodLanguage: Language = {
     skipJSON: [],
     skipMiscJSON: false,
     additionalSchemaFiles: [
-        "test/inputs/typescript-zod/unicode-codepoint-length.schema",
+        "test/inputs/regressions/unicode-codepoint-length.schema",
     ],
     skipSchema: [],
     rendererOptions: {},
