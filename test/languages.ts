@@ -1698,7 +1698,7 @@ export const TypeScriptZodLanguage: Language = {
     skipMiscJSON: false,
     skipSchema: [],
     rendererOptions: {},
-    quickTestRendererOptions: [],
+    quickTestRendererOptions: [{ "just-schema": "true" }],
     sourceFiles: ["src/language/TypeScriptZod/index.ts"],
 };
 
@@ -1742,7 +1742,7 @@ export const TypeScriptEffectSchemaLanguage: Language = {
     skipMiscJSON: false,
     skipSchema: [],
     rendererOptions: {},
-    quickTestRendererOptions: [],
+    quickTestRendererOptions: [{ "just-schema": "true" }],
     sourceFiles: ["src/language/TypeScriptEffectSchema/index.ts"],
 };
 
