@@ -966,6 +966,7 @@ export const TypeScriptLanguage: Language = {
         { "runtime-typecheck-ignore-unknown-properties": "true" },
         { "nice-property-names": "true" },
         ["pokedex.json", { "prefer-types": "true" }],
+        ["keywords.json", { "prefer-types": "true" }],
         { "acronym-style": "pascal" },
         { converters: "all-objects" },
         { readonly: "true" },
