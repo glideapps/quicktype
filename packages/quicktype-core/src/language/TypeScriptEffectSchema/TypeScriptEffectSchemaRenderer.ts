@@ -265,6 +265,13 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
             });
         });
         this.emitLine("}) {}");
+        if (t.getProperties().has("toString")) {
+            this.emitLine(
+                "Object.defineProperty(",
+                name,
+                '.prototype, "toString", { writable: true });',
+            );
+        }
         this.emittedObjects.add(name);
     }
 
