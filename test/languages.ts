@@ -70,6 +70,7 @@ export interface Language {
     includeJSON?: string[];
     skipMiscJSON: boolean;
     skipSchema: string[];
+    additionalSchemaFiles?: string[];
     rendererOptions: RendererOptions;
     quickTestRendererOptions: (RendererOptions | [string, RendererOptions])[];
     sourceFiles?: string[];
