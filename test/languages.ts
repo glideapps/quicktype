@@ -1841,13 +1841,7 @@ export const ElixirLanguage: Language = {
         "blns-object.json",
     ],
     skipMiscJSON: false,
-    skipSchema: [
-        "optional-property.schema",
-        // The test incorrectly succeeds due to the emitter being permissive for unions that contain only primitives. A future enhancement
-        // for the Elixir emitter could be a user-controlled 'strict' mode that pattern matches even on unions of only primitive types.
-        // A top-level array is deserialized without enforcing its element
-        // type, so a mistyped element round-trips instead of failing.
-    ],
+    skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [],
     sourceFiles: ["src/language/Elixir/index.ts"],
