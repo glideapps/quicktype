@@ -1746,7 +1746,7 @@ export const TypeScriptEffectSchemaLanguage: Language = {
     skipJSON: [],
     skipMiscJSON: false,
     additionalSchemaFiles: [
-        "test/inputs/typescript-effect-schema/unicode-codepoint-length.schema",
+        "test/inputs/regressions/unicode-codepoint-length.schema",
     ],
     skipSchema: [],
     rendererOptions: {},
