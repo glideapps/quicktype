@@ -1,0 +1,17 @@
+{
+  "dateTime": {
+    "value": 1
+  },
+  "enumValues": {
+    "label": "test"
+  },
+  "formatException": {
+    "count": 2
+  },
+  "regExp": {
+    "active": true
+  },
+  "timestamp": "2026-09-04T00:00:00Z",
+  "status": "ready",
+  "code": "abc"
+}
