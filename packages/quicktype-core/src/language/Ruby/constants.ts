@@ -54,6 +54,7 @@ const globalClasses = [
     "Continuation",
     "Data",
     "Date",
+    "DateTime",
     "Dir",
     "ENV",
     "EOFError",

@@ -14,7 +14,16 @@ export class FlowRenderer extends TypeScriptFlowBaseRenderer {
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
-        return ["Class", "Date", "Object", "String", "Array", "JSON", "Error"];
+        return [
+            "Class",
+            "Date",
+            "Object",
+            "String",
+            "Array",
+            "JSON",
+            "Error",
+            "RegExp",
+        ];
     }
 
     protected uncheckedParsedJson(t: Type, parsedJson: Sourcelike): Sourcelike {
