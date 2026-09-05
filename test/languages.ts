@@ -1708,6 +1708,9 @@ export const TypeScriptZodLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
+    additionalSchemaFiles: [
+        "test/inputs/regressions/unicode-codepoint-length.schema",
+    ],
     skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [{ "just-schema": "true" }],
