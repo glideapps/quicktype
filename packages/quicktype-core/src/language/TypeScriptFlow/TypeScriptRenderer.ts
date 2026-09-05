@@ -30,7 +30,7 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
-        return ["Array", "Date"];
+        return ["Array", "Date", "Convert"];
     }
 
     // An array with `minItems` >= 1 becomes a tuple that spells out the

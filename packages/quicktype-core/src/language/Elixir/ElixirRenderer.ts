@@ -5,6 +5,7 @@ import {
 import {
     minMaxItemsForType,
     minMaxLengthForType,
+    minMaxValueForType,
     patternForType,
 } from "../../attributes/Constraints.js";
 import { type Name, Namer } from "../../Naming.js";
@@ -158,6 +159,11 @@ export class ElixirRenderer extends ConvenienceRenderer {
         attributeName: Sourcelike,
         suffix = "",
     ): Sourcelike {
+        const [minValue, maxValue] = minMaxValueForType(t) ?? [];
+        const rangeGuard = [
+            minValue === undefined ? "" : ` and value >= ${minValue}`,
+            maxValue === undefined ? "" : ` and value <= ${maxValue}`,
+        ].join("");
         const itemsGuard = (type: Type): string => {
             const [min, max] = minMaxItemsForType(type) ?? [];
             return [
@@ -166,11 +172,15 @@ export class ElixirRenderer extends ConvenienceRenderer {
             ].join("");
         };
         const pattern = patternForType(t);
-        const [min, max] = minMaxLengthForType(t) ?? [];
+        const [minLength, maxLength] = minMaxLengthForType(t) ?? [];
         const length = "String.length(value)";
         const constraints: string[] = [];
-        if (min !== undefined) constraints.push(`${length} >= ${min}`);
-        if (max !== undefined) constraints.push(`${length} <= ${max}`);
+        if (minLength !== undefined) {
+            constraints.push(`${length} >= ${minLength}`);
+        }
+        if (maxLength !== undefined) {
+            constraints.push(`${length} <= ${maxLength}`);
+        }
         if (pattern !== undefined) {
             constraints.push(
                 `Regex.match?(Regex.compile!("${escapeDoubleQuotes(pattern.replace(/\\/g, "\\\\"))}"), value)`,
@@ -195,23 +205,25 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 "def decode_",
                 attributeName,
                 suffix,
-                "(value) when is_integer(value), do: value",
+                `(value) when is_integer(value)${rangeGuard}, do: value`,
             ],
             (_doubleType) => [
                 "def decode_",
                 attributeName,
                 suffix,
-                "(value) when is_float(value), do: value\n",
+                `(value) when is_float(value)${rangeGuard}, do: value\n`,
                 "def decode_",
                 attributeName,
                 suffix,
-                "(value) when is_integer(value), do: value",
+                `(value) when is_integer(value)${rangeGuard}, do: value`,
             ],
             (_stringType) => [
                 "def decode_",
                 attributeName,
                 suffix,
-                min === undefined && max === undefined && pattern === undefined
+                minLength === undefined &&
+                maxLength === undefined &&
+                pattern === undefined
                     ? "(value) when is_binary(value), do: value"
                     : `(value) when is_binary(value) do\n  if ${constraints.join(" and ")}, do: value, else: raise(ArgumentError)\nend`,
             ],
@@ -525,16 +537,16 @@ export class ElixirRenderer extends ConvenienceRenderer {
     ): Sourcelike {
         const primitive = ['m["', jsonName, '"]'];
         const checked = ["decode_", name, "(", primitive, ")"];
+        const optionalChecked = [primitive, " && ", checked];
 
         return matchType<Sourcelike>(
             t,
             (_anyType) => primitive,
             (_nullType) => (optional ? primitive : checked),
             (_boolType) => (optional ? primitive : checked),
-            (_integerType) => (optional ? primitive : checked),
-            (_doubleType) => (optional ? primitive : checked),
-            (_stringType) =>
-                optional ? [primitive, " && ", checked] : checked,
+            (_integerType) => (optional ? optionalChecked : checked),
+            (_doubleType) => (optional ? optionalChecked : checked),
+            (_stringType) => (optional ? optionalChecked : checked),
             (arrayType) => {
                 const arrayElement = arrayType.items;
                 if (arrayElement instanceof ArrayType) {
@@ -912,7 +924,10 @@ export class ElixirRenderer extends ConvenienceRenderer {
                     if (
                         (p.type.isPrimitive() || p.type.kind === "array") &&
                         p.type.kind !== "any" &&
-                        (!p.isOptional || p.type.kind === "string")
+                        (!p.isOptional ||
+                            ["integer", "double", "string"].includes(
+                                p.type.kind,
+                            ))
                     ) {
                         this.emitPatternMatches([p.type], name, parentName);
                     }

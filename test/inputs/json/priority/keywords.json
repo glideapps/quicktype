@@ -222,6 +222,7 @@
       "return": { "return": 123 },
       "right": { "right": 123 },
       "sbyte": { "sbyte": 123 },
+      "s": { "s": 123 },
       "sealed": { "sealed": 123 },
       "SEL": { "SEL": 123 },
       "select": { "select": 123 },

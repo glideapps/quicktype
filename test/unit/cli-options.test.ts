@@ -12,4 +12,13 @@ describe("CLI option parsing", () => {
             parseCLIOptions(["-o", "list.go", "-o", "list.ts"]),
         ).not.toThrow("Internal error");
     });
+
+    test.each([
+        "typescript-zod",
+        "typescript-effect-schema",
+    ])("%s accepts --just-schema", (lang) => {
+        expect(
+            parseCLIOptions(["--lang", lang, "--just-schema"]).rendererOptions,
+        ).toMatchObject({ "just-schema": true });
+    });
 });
