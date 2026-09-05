@@ -307,6 +307,7 @@ export const PythonLanguage: Language = {
         "integer",
         "strict-optional",
         "minmaxitems",
+        "pattern",
     ],
     output: "quicktype.py",
     topLevel: "TopLevel",

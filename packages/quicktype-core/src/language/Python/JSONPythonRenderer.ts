@@ -1,6 +1,9 @@
 import { arrayIntercalate } from "collection-utils";
 
-import { minMaxItemsForType } from "../../attributes/Constraints.js";
+import {
+    minMaxItemsForType,
+    patternForType,
+} from "../../attributes/Constraints.js";
 import { topLevelNameOrder } from "../../ConvenienceRenderer.js";
 import { DependencyName, type Name, funPrefixNamer } from "../../Naming.js";
 import {
@@ -1115,6 +1118,16 @@ export class JSONPythonRenderer extends PythonRenderer {
                             check([min.toString(), " <= len(", name, ")"]);
                         if (max !== undefined)
                             check(["len(", name, ") <= ", max.toString()]);
+                        const pattern = patternForType(cp.type);
+                        if (pattern !== undefined)
+                            check([
+                                this.withModuleImport("re"),
+                                ".search(",
+                                this.string(pattern),
+                                ", ",
+                                this.cast("str", property.value),
+                                ")",
+                            ]);
                     }
                 });
                 this.emitLine(
