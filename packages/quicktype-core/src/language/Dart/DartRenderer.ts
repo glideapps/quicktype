@@ -78,7 +78,10 @@ export class DartRenderer extends ConvenienceRenderer {
         _c: ClassType,
         _className: Name,
     ): ForbiddenWordsInfo {
-        return { names: [], includeGlobalForbidden: true };
+        return {
+            names: this._options.generateCopyWith ? ["copyWith"] : [],
+            includeGlobalForbidden: true,
+        };
     }
 
     protected makeNamedTypeNamer(): Namer {

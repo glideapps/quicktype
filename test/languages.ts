@@ -1490,6 +1490,8 @@ export const DartLanguage: Language = {
     quickTestRendererOptions: [
         { "final-props": "false" },
         ["simple-object.json", { "from-map": "true" }],
+        { "copy-with": "true" },
+        ["copy-with-property.json", { "copy-with": "true" }],
         ["simple-object.json", { "required-props": "true" }],
     ],
     sourceFiles: ["src/language/Dart/index.ts"],
