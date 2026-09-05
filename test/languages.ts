@@ -1739,6 +1739,9 @@ export const TypeScriptEffectSchemaLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
+    additionalSchemaFiles: [
+        "test/inputs/typescript-effect-schema/optional-property.schema",
+    ],
     skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [{ "just-schema": "true" }],
