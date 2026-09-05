@@ -139,7 +139,7 @@ export const CSharpLanguage: Language = {
     skipJSON: [],
     skipMiscJSON: false,
     additionalSchemaFiles: [
-        "test/inputs/csharp/unicode-codepoint-length.schema",
+        "test/inputs/regressions/unicode-codepoint-length.schema",
     ],
     skipSchema: [],
     // The default framework is SystemTextJson; this fixture deliberately
@@ -196,7 +196,7 @@ export const CSharpLanguageSystemTextJson: Language = {
     skipJSON: [],
     skipMiscJSON: false,
     additionalSchemaFiles: [
-        "test/inputs/csharp/unicode-codepoint-length.schema",
+        "test/inputs/regressions/unicode-codepoint-length.schema",
     ],
     skipSchema: [
         // The following skips are pre-existing System.Text.Json renderer issues,
