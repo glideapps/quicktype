@@ -57,6 +57,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
             "Console",
             "Exception",
             "DateTimeOffset",
+            "DateTimeStyles",
             "Guid",
             "Uri",
             ...(this._csOptions.useRecords
