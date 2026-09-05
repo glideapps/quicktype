@@ -384,6 +384,15 @@ export class PikeRenderer extends ConvenienceRenderer {
                             `if (arrayp(json["${stringEscape(jsonName)}"])) error("Unexpected array");`,
                         );
                     }
+                    const rejectsBool =
+                        p.type instanceof UnionType &&
+                        !Array.from(p.type.members).some(
+                            (t) => t.kind === "bool",
+                        );
+                    if (rejectsBool)
+                        this.emitLine(
+                            `if (${jsonValue} == Standards.JSON.true || ${jsonValue} == Standards.JSON.false) error("Unexpected bool");`,
+                        );
                     if (
                         !p.isOptional &&
                         p.type instanceof MapType &&
