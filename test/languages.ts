@@ -148,6 +148,7 @@ export const CSharpLanguage: Language = {
         { "csharp-version": "6" },
         { density: "dense" },
         { "number-type": "decimal" },
+        ["fractional-bounds.schema", { "number-type": "decimal" }],
         { "any-type": "dynamic" },
     ],
     sourceFiles: ["src/language/CSharp/index.ts"],
@@ -210,6 +211,7 @@ export const CSharpLanguageSystemTextJson: Language = {
         { "csharp-version": "6" },
         { density: "dense" },
         { "number-type": "decimal" },
+        ["fractional-bounds.schema", { "number-type": "decimal" }],
         { "any-type": "dynamic" },
         // Suppressing the DateOnly/TimeOnly converters (for pre-.NET 6
         // targets) must still produce compiling, round-tripping code.
