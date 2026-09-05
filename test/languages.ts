@@ -509,6 +509,7 @@ export const GoLanguage: Language = {
         return `go run main.go quicktype.go < "${sample}"`;
     },
     diffViaSchema: true,
+    roundtripViaSchema: true,
     skipDiffViaSchema: [
         "bug427.json",
         "nbl-stats.json",
@@ -1475,6 +1476,7 @@ export const DartLanguage: Language = {
         return `dart --enable-experiment=non-nullable parser.dart "${sample}"`;
     },
     diffViaSchema: true,
+    roundtripViaSchema: true,
     skipDiffViaSchema: [
         "keywords.json",
         "bug427.json",
