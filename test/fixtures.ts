@@ -1661,11 +1661,6 @@ export const allFixtures: Fixture[] = [
         "swift-sendable-objective-c",
     ),
     new JSONFixture(languages.ObjectiveCLanguage),
-    new (class extends JSONFixture {
-        runForName(name: string): boolean {
-            return name === "objective-c" || super.runForName(name);
-        }
-    })(languages.ObjectiveCCompileLanguage, "objective-c-compile"),
     new JSONFixture(languages.TypeScriptLanguage),
     new JSONFixture(languages.TypeScriptZodLanguage),
     new JSONFixture(languages.TypeScriptEffectSchemaLanguage),

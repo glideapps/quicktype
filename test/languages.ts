@@ -924,13 +924,6 @@ export const ObjectiveCLanguage: Language = {
     sourceFiles: ["src/language/Objective-C/index.ts"],
 };
 
-export const ObjectiveCCompileLanguage: Language = {
-    ...ObjectiveCLanguage,
-    includeJSON: ["blns-object.json"],
-    skipJSON: [],
-    runCommand: undefined,
-};
-
 export const TypeScriptLanguage: Language = {
     name: "typescript",
     base: "test/fixtures/typescript",
