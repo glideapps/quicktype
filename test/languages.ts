@@ -1759,6 +1759,7 @@ export const ElixirLanguage: Language = {
         "no-defaults",
         "strict-optional",
         "integer",
+        "minmaxitems",
         "minmaxlength",
         "pattern",
     ],
