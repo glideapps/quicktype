@@ -2,6 +2,7 @@ import { arrayIntercalate } from "collection-utils";
 
 import {
     minMaxItemsForType,
+    minMaxValueForType,
     patternForType,
 } from "../../attributes/Constraints.js";
 import { topLevelNameOrder } from "../../ConvenienceRenderer.js";
@@ -1118,6 +1119,12 @@ export class JSONPythonRenderer extends PythonRenderer {
                             check([min.toString(), " <= len(", name, ")"]);
                         if (max !== undefined)
                             check(["len(", name, ") <= ", max.toString()]);
+                        const [minValue, maxValue] =
+                            minMaxValueForType(cp.type) ?? [];
+                        if (minValue !== undefined)
+                            check([minValue.toString(), " <= ", name]);
+                        if (maxValue !== undefined)
+                            check([name, " <= ", maxValue.toString()]);
                         const pattern = patternForType(cp.type);
                         if (pattern !== undefined)
                             check([
