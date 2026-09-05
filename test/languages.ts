@@ -978,6 +978,15 @@ export const TypeScriptLanguage: Language = {
     sourceFiles: ["src/language/TypeScript/index.ts"],
 };
 
+export const TypeScriptTopLevelNameLanguage: Language = {
+    ...TypeScriptLanguage,
+    base: "test/fixtures/typescript-top-level-name",
+    topLevel: "Acme",
+    includeJSON: ["name-style.json"],
+    skipMiscJSON: true,
+    quickTestRendererOptions: [],
+};
+
 export const JavaScriptLanguage: Language = {
     name: "javascript",
     base: "test/fixtures/javascript",

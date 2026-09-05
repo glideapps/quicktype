@@ -558,6 +558,19 @@ class JSONFixture extends LanguageFixture {
     }
 }
 
+class TypeScriptTopLevelNameFixture extends JSONFixture {
+    constructor() {
+        super(
+            languages.TypeScriptTopLevelNameLanguage,
+            "typescript-top-level-name",
+        );
+    }
+
+    runForName(name: string): boolean {
+        return name === "typescript" || super.runForName(name);
+    }
+}
+
 // This fixture tests generating code for language X from JSON,
 // then generating code for Y from the code for X, making sure
 // that the resulting code for Y accepts the JSON by running it
@@ -1662,6 +1675,7 @@ export const allFixtures: Fixture[] = [
     ),
     new JSONFixture(languages.ObjectiveCLanguage),
     new JSONFixture(languages.TypeScriptLanguage),
+    new TypeScriptTopLevelNameFixture(),
     new JSONFixture(languages.TypeScriptZodLanguage),
     new JSONFixture(languages.TypeScriptEffectSchemaLanguage),
     new JSONFixture(languages.FlowLanguage),
