@@ -134,6 +134,7 @@ export const CSharpLanguage: Language = {
         "minmax",
         "minmaxInteger",
         "minmaxlength",
+        "minmaxlength",
     ],
     output: "QuickType.cs",
     topLevel: "TopLevel",
@@ -190,6 +191,7 @@ export const CSharpLanguageSystemTextJson: Language = {
         "uuid",
         "minmax",
         "minmaxInteger",
+        "minmaxlength",
         "minmaxlength",
         "integer",
     ],
@@ -1413,7 +1415,9 @@ export const KotlinXLanguage: Language = {
         return `./run.sh "${sample}"`;
     },
     diffViaSchema: true,
+    roundtripViaSchema: true,
     skipDiffViaSchema: [
+        "blns-object.json",
         "bug427.json",
         "keywords.json",
         "77392.json",
@@ -1450,7 +1454,6 @@ export const KotlinXLanguage: Language = {
         "a3d8c.json",
         "f74d5.json",
         "fcca3.json",
-        "blns-object.json", // JSON-to-schema property naming is not stable for case collisions.
     ],
     skipSchema: [
         "optional-property.schema",
