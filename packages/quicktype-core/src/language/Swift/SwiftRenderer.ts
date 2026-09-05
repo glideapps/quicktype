@@ -139,14 +139,17 @@ export class SwiftRenderer extends ConvenienceRenderer {
     }
 
     private get lowerNamingFunction(): Namer {
-        return funPrefixNamer("lower", (s) =>
-            swiftNameStyle(
+        return funPrefixNamer("lower", (s) => {
+            const name = swiftNameStyle(
                 "",
                 false,
                 s,
                 acronymStyle(this._options.acronymStyle),
-            ),
-        );
+            );
+            return (keywords as readonly string[]).includes(name)
+                ? `${name}Value`
+                : name;
+        });
     }
 
     protected swiftPropertyType(p: ClassProperty): Sourcelike {
