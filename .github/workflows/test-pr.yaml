@@ -77,7 +77,7 @@ jobs:
                     - fixture: pike,schema-pike
                       runs-on: ubuntu-24.04
 
-                    - fixture: swift,schema-swift
+                    - fixture: swift,schema-swift,schema-json-swift
                       runs-on: macos-latest
 
                     - fixture: objective-c,schema-objective-c,comment-injection-objective-c

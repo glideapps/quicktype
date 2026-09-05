@@ -613,6 +613,10 @@ class JSONToXToYFixture extends JSONFixture {
             additionalRendererOptions,
         );
 
+        if (this.runLanguage.compileCommand) {
+            await execAsync(this.runLanguage.compileCommand);
+        }
+
         // Parse the sample with the code generated from its schema, and compare to the sample
         compareJsonFileToJson(
             comparisonArgs(
@@ -1680,6 +1684,14 @@ export const allFixtures: Fixture[] = [
     new JSONFixture(languages.ElixirLanguage),
     new JSONFixture(languages.JavaScriptPropTypesLanguage),
     new JSONSchemaJSONFixture(languages.CSharpLanguage),
+    new JSONToXToYFixture(
+        "schema-json",
+        "schema",
+        "schema.json",
+        {},
+        [],
+        languages.SwiftLanguage,
+    ),
     new JSONTypeScriptFixture(languages.CSharpLanguage),
     new JSONSchemaFixture(languages.CrystalLanguage),
     new JSONSchemaFixture(languages.JSONSchemaLanguage),
