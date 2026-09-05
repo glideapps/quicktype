@@ -962,7 +962,7 @@ export const TypeScriptLanguage: Language = {
     skipJSON: [],
     skipMiscJSON: false,
     additionalSchemaFiles: [
-        "test/inputs/javascript/unicode-codepoint-length.schema",
+        "test/inputs/regressions/unicode-codepoint-length.schema",
     ],
     skipSchema: [],
     rendererOptions: { "explicit-unions": "yes" },
@@ -1012,7 +1012,7 @@ export const JavaScriptLanguage: Language = {
     skipJSON: [],
     skipMiscJSON: false,
     additionalSchemaFiles: [
-        "test/inputs/javascript/unicode-codepoint-length.schema",
+        "test/inputs/regressions/unicode-codepoint-length.schema",
     ],
     skipSchema: [],
     rendererOptions: {},
