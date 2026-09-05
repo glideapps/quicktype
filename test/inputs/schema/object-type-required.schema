@@ -5,10 +5,15 @@
             "properties": {
                 "foo": {
                     "type": "string"
+                },
+                "empty": {
+                    "type": "object",
+                    "additionalProperties": false
                 }
             },
             "required": [
-                "foo"
+                "foo",
+                "empty"
             ]
         },
         {

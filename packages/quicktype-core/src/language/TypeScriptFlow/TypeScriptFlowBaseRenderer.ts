@@ -66,7 +66,7 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
 
     protected typeMapTypeFor(t: Type): Sourcelike {
         if (this.emptyObjectTypeFor(t) !== undefined) {
-            return '"any"';
+            return 'm("any")';
         }
 
         return super.typeMapTypeFor(t);

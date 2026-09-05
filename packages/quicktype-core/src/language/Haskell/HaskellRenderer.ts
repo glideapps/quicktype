@@ -357,7 +357,7 @@ export class HaskellRenderer extends ConvenienceRenderer {
 
         this.indent(() => {
             if (this.classPropertyLength(c) === 0) {
-                this.emitLine("parseJSON emptyObject = return ", className);
+                this.emitLine("parseJSON (Object _) = return ", className);
             } else {
                 this.emitLine("parseJSON (Object v) = ", className);
                 this.indent(() => {

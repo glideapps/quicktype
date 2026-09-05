@@ -1,4 +1,5 @@
 {
     "foo": "abc",
-    "bar": "def"
+    "bar": "def",
+    "empty": {}
 }

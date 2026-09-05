@@ -369,6 +369,10 @@ export class PikeRenderer extends ConvenienceRenderer {
                         p.type instanceof UnionType
                             ? nullableFromUnion(p.type)
                             : p.type;
+                    if (!p.isOptional && p.type.kind === "class")
+                        this.emitLine(
+                            `if (!mappingp(${jsonValue})) error("Expected object");`,
+                        );
                     if (!p.isOptional && requiredType?.kind === "integer")
                         this.emitLine(
                             `if (!intp(${jsonValue})) error("Expected integer");`,

@@ -293,7 +293,7 @@ import com.fasterxml.jackson.module.kotlin.*`);
     protected emitEmptyClassDefinition(c: ClassType, className: Name): void {
         this.emitDescription(this.descriptionForType(c));
 
-        this.emitLine("typealias ", className, " = JsonNode");
+        this.emitLine("typealias ", className, " = ObjectNode");
     }
 
     protected emitClassDefinitionMethods(c: ClassType, className: Name): void {
