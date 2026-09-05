@@ -79,7 +79,13 @@ export class DartRenderer extends ConvenienceRenderer {
         _className: Name,
     ): ForbiddenWordsInfo {
         return {
-            names: this._options.generateCopyWith ? ["copyWith"] : [],
+            names: [
+                "hashCode",
+                "runtimeType",
+                "toString",
+                "noSuchMethod",
+                ...(this._options.generateCopyWith ? ["copyWith"] : []),
+            ],
             includeGlobalForbidden: true,
         };
     }

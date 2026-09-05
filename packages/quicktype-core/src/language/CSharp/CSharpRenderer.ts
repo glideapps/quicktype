@@ -60,7 +60,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
             "Guid",
             "Uri",
             ...(this._csOptions.useRecords
-                ? ["Clone", "EqualityContract", "PrintMembers"]
+                ? ["Clone", "EqualityContract", "PrintMembers", "ToString"]
                 : []),
         ];
     }
