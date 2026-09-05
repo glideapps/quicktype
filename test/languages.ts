@@ -105,7 +105,7 @@ export const JSONSchemaLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
-    skipSchema: [],
+    skipSchema: ["optional-property.schema"],
     rendererOptions: {},
     quickTestRendererOptions: [],
     sourceFiles: ["src/language/JSONSchema/JSONSchemaRenderer.ts"],
