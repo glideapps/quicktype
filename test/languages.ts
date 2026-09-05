@@ -306,6 +306,7 @@ export const PythonLanguage: Language = {
         "uuid",
         "integer",
         "strict-optional",
+        "minmaxitems",
     ],
     output: "quicktype.py",
     topLevel: "TopLevel",
