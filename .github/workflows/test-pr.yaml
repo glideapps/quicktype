@@ -35,7 +35,7 @@ jobs:
 
             matrix:
                 fixture:
-                    - typescript,typescript-zod,schema-typescript-zod,typescript-effect-schema,schema-typescript-effect-schema
+                    - typescript,schema-typescript,typescript-zod,schema-typescript-zod,typescript-effect-schema,schema-typescript-effect-schema
                     - javascript,schema-javascript
                     - golang,schema-golang
                     - cjson,schema-cjson
@@ -48,7 +48,6 @@ jobs:
                     - csharp,schema-csharp,csharp-records,schema-csharp-records,schema-json-csharp,graphql-csharp,csharp-SystemTextJson,schema-csharp-SystemTextJson
                     - json-ts-csharp
                     - dart,schema-dart
-                    # - swift,schema-swift # pgp issue
                     - javascript-prop-types,schema-javascript-prop-types
                     - ruby,schema-ruby-syntax
                     - php,schema-php
@@ -58,9 +57,6 @@ jobs:
                     - elixir,schema-elixir,graphql-elixir
                     - elm,schema-elm
                     - comment-injection-treesitter,comment-injection-typescript,comment-injection-typescript-zod,comment-injection-typescript-effect-schema
-
-                    # Partially working
-                    # - schema-typescript # TODO Unify with typescript once fixed
 
                     # Not yet started
                     # @schani can you help me understand this fixture?
@@ -80,6 +76,9 @@ jobs:
                       runs-on: ubuntu-latest-16-cores
                     - fixture: pike,schema-pike
                       runs-on: ubuntu-24.04
+
+                    - fixture: swift,schema-swift
+                      runs-on: macos-latest
 
                     - fixture: objective-c,schema-objective-c,comment-injection-objective-c
                       runs-on: macos-latest
@@ -110,12 +109,6 @@ jobs:
               uses: dart-lang/setup-dart@v1.3
               with:
                   sdk: 2.14.4
-
-            - name: Setup Swift
-              if: ${{ contains(matrix.fixture, 'swift') }}
-              uses: swift-actions/setup-swift@v1
-              with:
-                  swift-version: "5.7.2"
 
             - name: Install Ruby
               uses: ruby/setup-ruby@v1
