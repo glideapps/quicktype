@@ -29,17 +29,18 @@ export class KotlinJacksonRenderer extends KotlinRenderer {
     protected forbiddenNamesForGlobalNamespace(): readonly string[] {
         return [
             ...super.forbiddenNamesForGlobalNamespace(),
+            "DeserializationFeature",
             "JsonGenerator",
             "JsonNode",
             "JsonParser",
             "ObjectMapper",
             "SerializerProvider",
             "SimpleModule",
+            "SerializationFeature",
             "StdDeserializer",
             "StdSerializer",
         ];
     }
-
     protected propertyDefault(
         p: ClassProperty,
         _nullableOrOptional: boolean,
