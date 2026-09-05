@@ -94,6 +94,7 @@ export class DartTargetLanguage extends TargetLanguage<
         const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> =
             new Map();
         mapping.set("date", "date");
+        mapping.set("uuid", "uuid");
         mapping.set("date-time", "date-time");
         return mapping;
     }

@@ -150,6 +150,7 @@ export const CSharpLanguage: Language = {
         { "csharp-version": "6" },
         { density: "dense" },
         { "number-type": "decimal" },
+        ["fractional-bounds.schema", { "number-type": "decimal" }],
         { "any-type": "dynamic" },
     ],
     sourceFiles: ["src/language/CSharp/index.ts"],
@@ -212,6 +213,7 @@ export const CSharpLanguageSystemTextJson: Language = {
         { "csharp-version": "6" },
         { density: "dense" },
         { "number-type": "decimal" },
+        ["fractional-bounds.schema", { "number-type": "decimal" }],
         { "any-type": "dynamic" },
         // Suppressing the DateOnly/TimeOnly converters (for pre-.NET 6
         // targets) must still produce compiling, round-tripping code.
@@ -1477,6 +1479,7 @@ export const DartLanguage: Language = {
     allowMissingNull: true,
     features: [
         "integer",
+        "uuid",
         "no-defaults",
         "date-time",
         "strict-optional",
@@ -1505,6 +1508,8 @@ export const DartLanguage: Language = {
         { "final-props": "false" },
         ["simple-object.json", { "from-map": "true" }],
         { "from-map": "true" },
+        { "copy-with": "true" },
+        ["copy-with-property.json", { "copy-with": "true" }],
         ["simple-object.json", { "required-props": "true" }],
     ],
     sourceFiles: ["src/language/Dart/index.ts"],
