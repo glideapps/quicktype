@@ -347,17 +347,14 @@ function replaceNumber(
     forwardingRef: TypeRef,
     debugPrintTransformations: boolean,
 ): TypeRef {
-    const stringType = builder.getStringType(
-        emptyTypeAttributes,
-        StringTypes.unrestricted,
-    );
+    const numberType = builder.getPrimitiveType(t.kind);
     const [min, max] = defined(minMaxValueForType(t));
     const transformer = new DecodingTransformer(
         builder.typeGraph,
-        stringType,
+        numberType,
         new MinMaxValueTransformer(
             builder.typeGraph,
-            stringType,
+            numberType,
             undefined,
             min,
             max,
@@ -368,11 +365,11 @@ function replaceNumber(
     );
     const attributes = transformationAttributes(
         builder.typeGraph,
-        builder.getPrimitiveType("double", reconstitutedAttributes, undefined),
+        builder.getPrimitiveType(t.kind, reconstitutedAttributes, undefined),
         transformer,
         debugPrintTransformations,
     );
-    return builder.getPrimitiveType("double", attributes, forwardingRef);
+    return builder.getPrimitiveType(t.kind, attributes, forwardingRef);
 }
 
 function replaceString(
