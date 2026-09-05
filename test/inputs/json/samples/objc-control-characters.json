@@ -1,5 +1,5 @@
 {
-    "\u0000\u0001\u001b\u001f": "C0 controls",
+    "c0\u0000\u0001\u001b\u001f": "C0 controls",
     "\u007f\u0080\u0085\u009f": "C1 controls",
     "\\u001b": "literal escape",
     "\ud83d\ude00": "supplementary character"
