@@ -1299,8 +1299,6 @@ export const KotlinLanguage: Language = {
     output: "TopLevel.kt",
     topLevel: "TopLevel",
     skipJSON: [
-        // Klaxon emits unescaped control characters in enum values.
-        "objc-control-characters.json",
         // Some odd property names prevent Klaxon from mapping to constructors
         // https://github.com/cbeust/klaxon/issues/146
         "blns-object.json",
