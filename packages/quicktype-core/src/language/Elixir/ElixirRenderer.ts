@@ -3,6 +3,7 @@ import {
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer.js";
 import {
+    minMaxItemsForType,
     minMaxLengthForType,
     minMaxValueForType,
     patternForType,
@@ -163,6 +164,13 @@ export class ElixirRenderer extends ConvenienceRenderer {
             minValue === undefined ? "" : ` and value >= ${minValue}`,
             maxValue === undefined ? "" : ` and value <= ${maxValue}`,
         ].join("");
+        const itemsGuard = (type: Type): string => {
+            const [min, max] = minMaxItemsForType(type) ?? [];
+            return [
+                min === undefined ? "" : ` and length(value) >= ${min}`,
+                max === undefined ? "" : ` and length(value) <= ${max}`,
+            ].join("");
+        };
         const pattern = patternForType(t);
         const [minLength, maxLength] = minMaxLengthForType(t) ?? [];
         const length = "String.length(value)";
@@ -219,11 +227,11 @@ export class ElixirRenderer extends ConvenienceRenderer {
                     ? "(value) when is_binary(value), do: value"
                     : `(value) when is_binary(value) do\n  if ${constraints.join(" and ")}, do: value, else: raise(ArgumentError)\nend`,
             ],
-            (_arrayType) => [
+            (arrayType) => [
                 "def decode_",
                 attributeName,
                 suffix,
-                "(value) when is_list(value), do: value",
+                `(value) when is_list(value)${itemsGuard(arrayType)}, do: value`,
             ],
             (classType) => {
                 const requiredAttributeArgs: Sourcelike[] = [];

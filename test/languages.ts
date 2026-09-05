@@ -1252,7 +1252,18 @@ export const KotlinLanguage: Language = {
         "76ae1.json",
     ],
     allowMissingNull: true,
-    features: ["enum", "union", "no-defaults", "date-time", "integer"],
+    features: [
+        "enum",
+        "union",
+        "no-defaults",
+        "date-time",
+        "integer",
+        "minmax",
+        "minmaxInteger",
+        "minmaxlength",
+        "minmaxitems",
+        "pattern",
+    ],
     output: "TopLevel.kt",
     topLevel: "TopLevel",
     skipJSON: [
@@ -1502,7 +1513,16 @@ export const PikeLanguage: Language = {
         "0cffa.json",
     ],
     allowMissingNull: true,
-    features: ["strict-optional", "enum"],
+    features: [
+        "strict-optional",
+        "enum",
+        "integer",
+        "minmax",
+        "minmaxInteger",
+        "minmaxlength",
+        "minmaxitems",
+        "pattern",
+    ],
     output: "TopLevel.pmod",
     topLevel: "TopLevel",
     skipJSON: [],
@@ -1512,7 +1532,8 @@ export const PikeLanguage: Language = {
         ...skipsIntFloatUnions.filter(
             (schema) =>
                 schema !== "integer-float-union.schema" &&
-                schema !== "union-int-double.schema",
+                schema !== "union-int-double.schema" &&
+                schema !== "minmax.schema",
         ),
         // all below: not failing on expected failure. That's because Pike's quite tolerant with assignments.
         ...skipsMapValueValidation.filter(
@@ -1761,6 +1782,7 @@ export const ElixirLanguage: Language = {
         "integer",
         "minmax",
         "minmaxInteger",
+        "minmaxitems",
         "minmaxlength",
         "pattern",
     ],

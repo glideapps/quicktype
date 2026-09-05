@@ -1,5 +1,11 @@
 import { arrayIntercalate, iterableSome } from "collection-utils";
 
+import {
+    minMaxItemsForType,
+    minMaxLengthForType,
+    minMaxValueForType,
+    patternForType,
+} from "../../attributes/Constraints.js";
 import type { Name } from "../../Naming.js";
 import { type Sourcelike, modifySource } from "../../Source.js";
 import { camelCase } from "../../support/Strings.js";
@@ -387,6 +393,49 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
         );
         if (isTopLevel) {
             this.emitBlock(")", () => {
+                this.forEachClassProperty(c, "none", (name, _jsonName, p) => {
+                    const value = this.sourcelikeToString(name);
+                    const validate = (operator: string, bound: number) =>
+                        p.isOptional
+                            ? `${value}?.let { require(it ${operator} ${bound}) }`
+                            : `require(${value} ${operator} ${bound})`;
+                    const emitValidation = (condition: string) =>
+                        this.emitBlock("init", () => this.emitLine(condition));
+                    const [min, max] = minMaxValueForType(p.type) ?? [];
+                    if (min !== undefined) emitValidation(validate(">=", min));
+                    if (max !== undefined) emitValidation(validate("<=", max));
+                    const length = p.isOptional
+                        ? `${value}?.let { require(it.length`
+                        : `require(${value}.length`;
+                    const emitLength = (operator: string, bound: number) =>
+                        emitValidation(
+                            `${length} ${operator} ${bound}${p.isOptional ? ") }" : ")"}`,
+                        );
+                    const [minLength, maxLength] =
+                        minMaxLengthForType(p.type) ?? [];
+                    if (minLength !== undefined) emitLength(">=", minLength);
+                    if (maxLength !== undefined) emitLength("<=", maxLength);
+                    const array = p.isOptional
+                        ? `${value}?.let { require(it.size`
+                        : `require(${value}.size`;
+                    const emitItems = (operator: string, bound: number) =>
+                        emitValidation(
+                            `${array} ${operator} ${bound}${p.isOptional ? ") }" : ")"}`,
+                        );
+                    const [minItems, maxItems] =
+                        minMaxItemsForType(p.type) ?? [];
+                    if (minItems !== undefined) emitItems(">=", minItems);
+                    if (maxItems !== undefined) emitItems("<=", maxItems);
+                    const pattern = patternForType(p.type);
+                    if (pattern !== undefined) {
+                        const target = p.isOptional ? "it" : value;
+                        const match = `Regex("${stringEscape(pattern)}").containsMatchIn(${target})`;
+                        const check = p.isOptional
+                            ? `${value}?.let { require(${match}) }`
+                            : `require(${match})`;
+                        emitValidation(check);
+                    }
+                });
                 this.emitLine(
                     "public fun toJson() = klaxon.toJsonString(this)",
                 );
