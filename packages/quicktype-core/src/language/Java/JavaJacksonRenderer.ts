@@ -23,6 +23,8 @@ import { stringEscape } from "./utils.js";
 export class JacksonRenderer extends JavaRenderer {
     protected readonly _converterKeywords: string[] = [
         "JsonProperty",
+        "JsonSetter",
+        "Nulls",
         "JsonDeserialize",
         "JsonDeserializer",
         "JsonSerialize",
@@ -70,6 +72,10 @@ export class JacksonRenderer extends JavaRenderer {
         const annotations: string[] = [
             `@JsonProperty("${stringEscape(jsonName)}")`,
         ];
+
+        if (_isSetter && p.type.kind === "date-time") {
+            annotations.push("@JsonSetter(nulls = Nulls.FAIL)");
+        }
 
         const propertyType =
             p.type instanceof UnionType

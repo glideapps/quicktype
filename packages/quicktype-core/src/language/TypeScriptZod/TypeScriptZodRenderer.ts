@@ -201,7 +201,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
             },
             (_transformedStringType) => {
                 if (_transformedStringType.kind === "date-time") {
-                    return "z.coerce.date()";
+                    return "z.string().pipe(z.coerce.date())";
                 }
                 if (_transformedStringType.kind === "uuid") {
                     return "z.string().uuid()";
