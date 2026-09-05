@@ -3,7 +3,11 @@ import { iterableFirst, mapFirst } from "collection-utils";
 import { addDescriptionToSchema } from "../../attributes/Description.js";
 import { ConvenienceRenderer } from "../../ConvenienceRenderer.js";
 import type { Name, Namer } from "../../Naming.js";
-import { defined, panic } from "../../support/Support.js";
+import type { RenderContext } from "../../Renderer.js";
+import type { OptionValues } from "../../RendererOptions/index.js";
+import type { Sourcelike } from "../../Source.js";
+import { assert, defined, panic } from "../../support/Support.js";
+import type { TargetLanguage } from "../../TargetLanguage.js";
 import {
     type EnumType,
     type ObjectType,
@@ -13,6 +17,7 @@ import {
 } from "../../Type/index.js";
 import { matchTypeExhaustive } from "../../Type/TypeUtils.js";
 
+import type { jsonSchemaOptions } from "./language.js";
 import { namingFunction } from "./utils.js";
 
 interface Schema {
@@ -21,6 +26,22 @@ interface Schema {
 }
 
 export class JSONSchemaRenderer extends ConvenienceRenderer {
+    private _currentFilename: string | undefined;
+
+    // The title of the definition currently being rendered, when
+    // `multiFileOutput` is on. Used by `makeRef` to tell same-file
+    // references (`#/definitions/X`) apart from cross-file ones
+    // (`X.schema#/definitions/X`).
+    private _currentTitle: string | undefined;
+
+    public constructor(
+        targetLanguage: TargetLanguage,
+        renderContext: RenderContext,
+        private readonly _options: OptionValues<typeof jsonSchemaOptions>,
+    ) {
+        super(targetLanguage, renderContext);
+    }
+
     protected makeNamedTypeNamer(): Namer {
         return namingFunction;
     }
@@ -57,7 +78,30 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
     }
 
     private makeRef(t: Type): Schema {
-        return { $ref: `#/definitions/${this.nameForType(t)}` };
+        const title = this.nameForType(t);
+        if (
+            this._options.multiFileOutput === true &&
+            title !== this._currentTitle
+        ) {
+            return { $ref: `${title}.schema#/definitions/${title}` };
+        }
+
+        return { $ref: `#/definitions/${title}` };
+    }
+
+    // The title of the sole top-level type, used in multi-file mode to
+    // decide which file the document root type belongs on. Returns
+    // undefined when there are multiple top-levels (`FIXME` below).
+    private topLevelTitle(): string | undefined {
+        if (this.topLevels.size !== 1) {
+            return undefined;
+        }
+
+        let title: string | undefined;
+        this.forEachTopLevel("none", (_t, name) => {
+            title = defined(this.names.get(name));
+        });
+        return title;
     }
 
     private addAttributesToSchema(t: Type, schema: Schema): void {
@@ -177,15 +221,47 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
     }
 
     protected emitSourceStructure(): void {
-        // FIXME: Find a good way to do multiple top-levels.  Maybe multiple files?
-        const topLevelType =
-            this.topLevels.size === 1
-                ? this.schemaForType(defined(mapFirst(this.topLevels)))
-                : {};
-        const schema: Schema = {
-            $schema: "http://json-schema.org/draft-06/schema#",
-            ...topLevelType,
-        };
+        if (this._options.multiFileOutput === true) {
+            // FIXME: Find a good way to do multiple top-levels.  Maybe multiple files?
+            const rootTitle = this.topLevelTitle();
+            let rootTitleUsed = false;
+            const useAsRoot = (title: string): boolean => {
+                const isRoot = title === rootTitle;
+                if (isRoot) rootTitleUsed = true;
+                return isRoot;
+            };
+
+            this.forEachObject("none", (o: ObjectType, name: Name) => {
+                const title = defined(this.names.get(name));
+                this.outputDefinitionFile(title, useAsRoot(title), () => ({
+                    [title]: this.definitionForObject(o, title),
+                }));
+            });
+            this.forEachUnion("none", (u, name) => {
+                if (!this.unionNeedsName(u)) return;
+                const title = defined(this.names.get(name));
+                this.outputDefinitionFile(title, useAsRoot(title), () => ({
+                    [title]: this.definitionForUnion(u, title),
+                }));
+            });
+            this.forEachEnum("none", (e, name) => {
+                const title = defined(this.names.get(name));
+                this.outputDefinitionFile(title, useAsRoot(title), () => ({
+                    [title]: this.definitionForEnum(e, title),
+                }));
+            });
+
+            // The top-level type may not be an object/union/enum with its
+            // own definition (e.g. a bare array or map), in which case none
+            // of the files above is "the root". Give it a dedicated file so
+            // the document root type is never dropped in multi-file mode.
+            if (rootTitle !== undefined && !rootTitleUsed) {
+                this.outputDefinitionFile(rootTitle, true, () => ({}));
+            }
+
+            return;
+        }
+
         const definitions: { [name: string]: Schema } = {};
         this.forEachObject("none", (o: ObjectType, name: Name) => {
             const title = defined(this.names.get(name));
@@ -200,8 +276,72 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
             const title = defined(this.names.get(name));
             definitions[title] = this.definitionForEnum(e, title);
         });
-        schema.definitions = definitions;
+        this.emitMultiline(
+            JSON.stringify(
+                this.makeSchema(true, definitions),
+                undefined,
+                "    ",
+            ),
+        );
+    }
 
-        this.emitMultiline(JSON.stringify(schema, undefined, "    "));
+    // Builds the schema document for one output file. `includeRootType`
+    // controls whether the document's root also describes the overall
+    // top-level type: it's true for the single file in single-file mode,
+    // and for whichever per-definition file corresponds to the top-level
+    // type in multi-file mode. Every other per-definition file just holds
+    // its own definition.
+    private makeSchema(
+        includeRootType: boolean,
+        definitions: { [name: string]: Schema },
+    ): Schema {
+        const schema: Schema = {
+            $schema: "http://json-schema.org/draft-06/schema#",
+        };
+        if (includeRootType) {
+            Object.assign(
+                schema,
+                this.topLevels.size === 1
+                    ? this.schemaForType(defined(mapFirst(this.topLevels)))
+                    : {},
+            );
+        }
+
+        schema.definitions = definitions;
+        return schema;
+    }
+
+    private outputDefinitionFile(
+        title: string,
+        includeRootType: boolean,
+        makeDefinitions: () => { [name: string]: Schema },
+    ): void {
+        this.startFile(title);
+        this._currentTitle = title;
+        this.emitMultiline(
+            JSON.stringify(
+                this.makeSchema(includeRootType, makeDefinitions()),
+                undefined,
+                "    ",
+            ),
+        );
+        this._currentTitle = undefined;
+        this.endFile();
+    }
+
+    /// startFile takes a file name, appends ".schema" to it, and sets it as the current filename.
+    protected startFile(basename: Sourcelike): void {
+        assert(
+            this._currentFilename === undefined,
+            `Previous file wasn't finished: ${this._currentFilename}`,
+        );
+        this._currentFilename = `${this.sourcelikeToString(basename)}.schema`;
+        this.initializeEmitContextForFilename(this._currentFilename);
+    }
+
+    /// endFile pushes the current file name onto the collection of finished files and then resets the current file name. These finished files are used in index.ts to write the output.
+    protected endFile(): void {
+        this.finishFile(defined(this._currentFilename));
+        this._currentFilename = undefined;
     }
 }

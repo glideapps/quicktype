@@ -637,6 +637,44 @@ class JSONToXToYFixture extends JSONFixture {
 
 const dateTimeRecognizer = new DefaultDateTimeRecognizer();
 
+// Builds a fresh Ajv instance configured for the draft-06 schemas quicktype
+// generates: the draft-06 meta-schema (Ajv 8 no longer ships it), the
+// ajv-formats package (Ajv 8 moved format validators out of core), our
+// custom schema keywords (which strict mode would otherwise reject), and
+// the non-standard `date-time`/`integer`/`boolean` formats used for
+// transformed type kinds.
+// FIXME: Unify the date-time format with what's in StringTypes.ts.
+function makeJsonSchemaAjv(): typeof Ajv {
+    const ajv = new Ajv();
+    ajv.addMetaSchema(draft06MetaSchema);
+    addFormats(ajv);
+    ajv.addVocabulary(["qt-uri-protocols", "qt-uri-extensions"]);
+    ajv.addFormat("date-time", (s: string) => dateTimeRecognizer.isDateTime(s));
+    ajv.addFormat("integer", true);
+    ajv.addFormat("boolean", true);
+    return ajv;
+}
+
+// Reads every file in `dir`, parsing each as JSON. Fails the test if any
+// file isn't valid JSON, which is the first thing multi-file JSON Schema
+// output must get right: every emitted file has to parse on its own.
+function readJsonFilesInDir(dir: string): Map<string, unknown> {
+    const files = new Map<string, unknown>();
+    for (const filename of fs.readdirSync(dir)) {
+        const content = fs.readFileSync(path.join(dir, filename), "utf8");
+        try {
+            files.set(filename, JSON.parse(content));
+        } catch (error) {
+            failWith("Multi-file JSON Schema output is not valid JSON", {
+                filename,
+                error,
+            });
+        }
+    }
+
+    return files;
+}
+
 // This tests generating Schema from JSON, and then generating
 // target code from that Schema.  The target code is then run on
 // the original JSON.  Also generating a Schema from the Schema
@@ -662,26 +700,7 @@ class JSONSchemaJSONFixture extends JSONToXToYFixture {
             fs.readFileSync(this.language.output, "utf8"),
         );
 
-        const ajv = new Ajv();
-        // We generate draft-06 schemas, which Ajv 8 doesn't support out of
-        // the box anymore.
-        ajv.addMetaSchema(draft06MetaSchema);
-        // Ajv 8 moved the format validators into the ajv-formats package;
-        // its default mode is "full", like the old `format: "full"` option.
-        addFormats(ajv);
-        // Our custom schema keywords, which strict mode would reject.
-        ajv.addVocabulary(["qt-uri-protocols", "qt-uri-extensions"]);
-        // Make Ajv's date-time compatible with what we recognize.  All non-standard
-        // JSON formats that we use for transformed type kinds must be registered here
-        // with a validation function.  Formats registered with `true` are
-        // accepted without validating the string.  This replaces the old
-        // `unknownFormats: ["integer", "boolean"]` option.
-        // FIXME: Unify this with what's in StringTypes.ts.
-        ajv.addFormat("date-time", (s: string) =>
-            dateTimeRecognizer.isDateTime(s),
-        );
-        ajv.addFormat("integer", true);
-        ajv.addFormat("boolean", true);
+        const ajv = makeJsonSchemaAjv();
         const valid = ajv.validate(schema, input);
         if (!valid) {
             failWith("Generated schema does not validate input JSON.", {
@@ -707,6 +726,51 @@ class JSONSchemaJSONFixture extends JSONToXToYFixture {
             given: { file: schemaSchema },
             strict: true,
         });
+
+        // Also generate JSON Schema's multi-file output for the same input,
+        // and check that it's not just internally well-formed but
+        // equivalent to the single-file schema above: every emitted file
+        // must parse as JSON, every same-file and cross-file `$ref` must
+        // resolve, and exactly one file must carry the document root type
+        // (per-definition files must not restate it).
+        const multiDir = "multi-schema";
+        mkdirs(multiDir);
+        await quicktype({
+            src: [filename],
+            srcLang: "json",
+            lang: this.language.name,
+            topLevel: this.language.topLevel,
+            alphabetizeProperties: true,
+            out: path.join(multiDir, this.language.output),
+            rendererOptions: { "multi-file-output": true },
+        });
+
+        const multiFiles = readJsonFilesInDir(multiDir);
+        const rootFiles = Array.from(multiFiles.entries()).filter(([, doc]) =>
+            Object.keys(doc as Record<string, unknown>).some(
+                (key) => key !== "$schema" && key !== "definitions",
+            ),
+        );
+        if (rootFiles.length !== 1) {
+            failWith(
+                "Expected exactly one multi-file JSON Schema output file to carry the document root type",
+                { filename, rootFiles: rootFiles.map(([f]) => f) },
+            );
+        }
+
+        const [rootFilename] = rootFiles[0];
+        const multiAjv = makeJsonSchemaAjv();
+        for (const [multiFilename, doc] of multiFiles) {
+            multiAjv.addSchema(doc, multiFilename);
+        }
+
+        const multiValid = multiAjv.validate(rootFilename, input);
+        if (!multiValid) {
+            failWith(
+                "Multi-file JSON Schema output does not validate input JSON (dangling $ref or wrong root type)",
+                { filename, errors: multiAjv.errors },
+            );
+        }
 
         return 1;
     }
