@@ -153,7 +153,7 @@ import com.fasterxml.jackson.module.kotlin.*`);
             converters.push([
                 ["convert(", name, "::class,"],
                 [" { ", name, ".fromValue(it.asText()) },"],
-                [' { "\\"${it.value}\\"" })'],
+                [" { ObjectMapper().writeValueAsString(it.value) })"],
             ]);
         });
         this.forEachUnion("none", (_, name) => {

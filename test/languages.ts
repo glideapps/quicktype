@@ -1393,10 +1393,7 @@ export const KotlinJacksonLanguage: Language = {
     ],
     output: "TopLevel.kt",
     topLevel: "TopLevel",
-    skipJSON: [
-        // The enum serializer does not escape control characters.
-        "objc-control-characters.json",
-    ],
+    skipJSON: [],
     skipSchema: ["optional-property.schema", "keyword-unions.schema"],
     skipMiscJSON: false,
     rendererOptions: { framework: "jackson" },
