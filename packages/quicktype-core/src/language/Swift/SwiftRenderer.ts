@@ -19,12 +19,12 @@ import type { TargetLanguage } from "../../TargetLanguage.js";
 import {
     ArrayType,
     type ClassProperty,
-    type ClassType,
+    ClassType,
     EnumType,
     MapType,
     type Type,
     type TypeKind,
-    type UnionType,
+    UnionType,
 } from "../../Type/index.js";
 import {
     matchType,
@@ -47,6 +47,8 @@ export class SwiftRenderer extends ConvenienceRenderer {
     private _needAny = false;
 
     private _needNull = false;
+
+    private readonly _nestedTypeParents = new Map<Type, ClassType>();
 
     public constructor(
         targetLanguage: TargetLanguage,
@@ -193,18 +195,18 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 this.swiftType(arrayType.items, withIssues),
                 "]",
             ],
-            (classType) => this.nameForNamedType(classType),
+            (classType) => this.swiftNameForNamedType(classType),
             (mapType) => [
                 "[String: ",
                 this.swiftType(mapType.values, withIssues),
                 "]",
             ],
-            (enumType) => this.nameForNamedType(enumType),
+            (enumType) => this.swiftNameForNamedType(enumType),
             (unionType) => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null)
                     return [this.swiftType(nullable, withIssues), optional];
-                return this.nameForNamedType(unionType);
+                return this.swiftNameForNamedType(unionType);
             },
             (transformedStringType) => {
                 if (transformedStringType.kind === "date-time") {
@@ -451,6 +453,78 @@ export class SwiftRenderer extends ConvenienceRenderer {
         return "";
     }
 
+    private swiftNameForNamedType(t: Type): Sourcelike {
+        const parent = this._nestedTypeParents.get(t);
+        if (parent === undefined) return this.nameForNamedType(t);
+        return [this.nameForNamedType(parent), ".", this.nameForNamedType(t)];
+    }
+
+    // Returns the top-level type that owns `c` (itself when `c` is a top-level
+    // type, or its nested-type parent otherwise). Used to qualify JSON helper
+    // calls so each generated file is self-contained and multi-source outputs
+    // don't collide on module-level `newJSONDecoder`/`newJSONEncoder`.
+    private swiftHelperOwner(c: ClassType): ClassType {
+        return this._nestedTypeParents.get(c) ?? c;
+    }
+
+    private jsonDecoderCall(c: ClassType): Sourcelike {
+        if (this._options.nestTypes) {
+            return [
+                this.nameForNamedType(this.swiftHelperOwner(c)),
+                ".newJSONDecoder()",
+            ];
+        }
+        return "newJSONDecoder()";
+    }
+
+    private jsonEncoderCall(c: ClassType): Sourcelike {
+        if (this._options.nestTypes) {
+            return [
+                this.nameForNamedType(this.swiftHelperOwner(c)),
+                ".newJSONEncoder()",
+            ];
+        }
+        return "newJSONEncoder()";
+    }
+
+    private hasNonNamedTopLevels(): boolean {
+        for (const t of this.topLevels.values()) {
+            if (this.namedTypeToNameForTopLevel(t) === undefined) return true;
+        }
+        return false;
+    }
+
+    private setUpNestedTypes(): void {
+        if (!this._options.nestTypes) return;
+
+        const topLevels = new Set(this.topLevels.values());
+        const visited = new Set<Type>();
+        const visit = (t: Type, owner: ClassType): void => {
+            if (visited.has(t)) return;
+            visited.add(t);
+            for (const child of t.getChildren()) {
+                if (topLevels.has(child)) continue;
+                if (
+                    this.hasNameForType(child) &&
+                    !this._nestedTypeParents.has(child)
+                ) {
+                    this._nestedTypeParents.set(child, owner);
+                }
+                visit(child, owner);
+            }
+        };
+
+        for (const t of topLevels) {
+            if (t instanceof ClassType) visit(t, t);
+        }
+    }
+
+    private nestedTypesFor(owner: ClassType): Type[] {
+        return Array.from(this._nestedTypeParents.entries())
+            .filter(([, parent]) => parent === owner)
+            .map(([type]) => type);
+    }
+
     /// startFile takes a file name, appends ".swift" to it and sets it as the current filename.
     protected startFile(basename: Sourcelike): void {
         if (this._options.multiFileOutput === false) {
@@ -490,13 +564,17 @@ export class SwiftRenderer extends ConvenienceRenderer {
         ];
     }
 
-    private renderClassDefinition(c: ClassType, className: Name): void {
-        this.startFile(className);
+    private renderClassDefinition(
+        c: ClassType,
+        className: Name,
+        nested = false,
+    ): void {
+        if (!nested) this.startFile(className);
 
-        this.renderHeader(c, className);
+        if (!nested) this.renderHeader(c, className);
         this.emitDescription(this.descriptionForType(c));
 
-        this.emitMark(this.sourcelikeToString(className), true);
+        if (!nested) this.emitMark(this.sourcelikeToString(className), true);
 
         const isClass = this._options.useClasses || this.isCycleBreakerType(c);
         const structOrClass = isClass ? "class" : "struct";
@@ -688,11 +766,34 @@ export class SwiftRenderer extends ConvenienceRenderer {
                         );
                     }
                 }
+
+                if (this._options.nestTypes) {
+                    for (const nestedType of this.nestedTypesFor(c)) {
+                        this.ensureBlankLine();
+                        this.renderNestedType(nestedType);
+                    }
+                }
+
+                if (
+                    !nested &&
+                    this._options.nestTypes &&
+                    !this._options.justTypes &&
+                    this._options.convenienceInitializers
+                ) {
+                    this.ensureBlankLine();
+                    this.emitMark(
+                        "Helper functions for creating encoders and decoders",
+                    );
+                    this.emitNewEncoderDecoder("static ");
+                }
             },
         );
 
-        // FIXME: We emit only the MARK line for top-level-enum.schema
-        if (!this._options.justTypes && this._options.convenienceInitializers) {
+        if (
+            !nested &&
+            !this._options.justTypes &&
+            this._options.convenienceInitializers
+        ) {
             this.ensureBlankLine();
             this.emitMark(
                 this.sourcelikeToString(className) +
@@ -700,10 +801,19 @@ export class SwiftRenderer extends ConvenienceRenderer {
             );
             this.ensureBlankLine();
             this.emitConvenienceInitializersExtension(c, className);
+            for (const nestedType of this.nestedTypesFor(c)) {
+                if (nestedType instanceof ClassType) {
+                    this.ensureBlankLine();
+                    this.emitConvenienceInitializersExtension(
+                        nestedType,
+                        this.swiftNameForNamedType(nestedType),
+                    );
+                }
+            }
             this.ensureBlankLine();
         }
 
-        this.endFile();
+        if (!nested) this.endFile();
     }
 
     protected initializableProperties(c: ClassType): SwiftProperty[] {
@@ -719,8 +829,8 @@ export class SwiftRenderer extends ConvenienceRenderer {
         return properties;
     }
 
-    private emitNewEncoderDecoder(): void {
-        this.emitBlock("func newJSONDecoder() -> JSONDecoder", () => {
+    private emitNewEncoderDecoder(prefix = ""): void {
+        this.emitBlock([prefix, "func newJSONDecoder() -> JSONDecoder"], () => {
             this.emitLine("let decoder = JSONDecoder()");
             if (!this._options.linux) {
                 this.emitBlock(
@@ -755,7 +865,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
             this.emitLine("return decoder");
         });
         this.ensureBlankLine();
-        this.emitBlock("func newJSONEncoder() -> JSONEncoder", () => {
+        this.emitBlock([prefix, "func newJSONEncoder() -> JSONEncoder"], () => {
             this.emitLine("let encoder = JSONEncoder()");
             if (!this._options.linux) {
                 this.emitBlock(
@@ -781,7 +891,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
 
     private emitConvenienceInitializersExtension(
         c: ClassType,
-        className: Name,
+        className: Sourcelike,
     ): void {
         const isClass = this._options.useClasses || this.isCycleBreakerType(c);
         const convenience = isClass ? "convenience " : "";
@@ -791,13 +901,17 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
                 this.emitBlock("convenience init(data: Data) throws", () => {
                     if (this.propertyCount(c) > 0) {
                         this.emitLine(
-                            "let me = try newJSONDecoder().decode(",
+                            "let me = try ",
+                            this.jsonDecoderCall(c),
+                            ".decode(",
                             this.swiftType(c),
                             ".self, from: data)",
                         );
                     } else {
                         this.emitLine(
-                            "let _ = try newJSONDecoder().decode(",
+                            "let _ = try ",
+                            this.jsonDecoderCall(c),
+                            ".decode(",
                             this.swiftType(c),
                             ".self, from: data)",
                         );
@@ -813,7 +927,9 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             } else {
                 this.emitBlock("init(data: Data) throws", () => {
                     this.emitLine(
-                        "self = try newJSONDecoder().decode(",
+                        "self = try ",
+                        this.jsonDecoderCall(c),
+                        ".decode(",
                         this.swiftType(c),
                         ".self, from: data)",
                     );
@@ -854,7 +970,11 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             // Convenience serializers
             this.ensureBlankLine();
             this.emitBlock("func jsonData() throws -> Data", () => {
-                this.emitLine("return try newJSONEncoder().encode(self)");
+                this.emitLine(
+                    "return try ",
+                    this.jsonEncoderCall(c),
+                    ".encode(self)",
+                );
             });
             this.ensureBlankLine();
             this.emitBlock(
@@ -868,11 +988,17 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         });
     }
 
-    private renderEnumDefinition(e: EnumType, enumName: Name): void {
-        this.startFile(enumName);
+    private renderEnumDefinition(
+        e: EnumType,
+        enumName: Name,
+        nested = false,
+    ): void {
+        if (!nested) this.startFile(enumName);
 
-        this.emitLineOnce("import Foundation");
-        this.ensureBlankLine();
+        if (!nested) {
+            this.emitLineOnce("import Foundation");
+            this.ensureBlankLine();
+        }
 
         this.emitDescription(this.descriptionForType(e));
         const protocolString = this.getProtocolString("enum", "String");
@@ -903,14 +1029,20 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             );
         }
 
-        this.endFile();
+        if (!nested) this.endFile();
     }
 
-    private renderUnionDefinition(u: UnionType, unionName: Name): void {
-        this.startFile(unionName);
+    private renderUnionDefinition(
+        u: UnionType,
+        unionName: Name,
+        nested = false,
+    ): void {
+        if (!nested) this.startFile(unionName);
 
-        this.emitLineOnce("import Foundation");
-        this.ensureBlankLine();
+        if (!nested) {
+            this.emitLineOnce("import Foundation");
+            this.ensureBlankLine();
+        }
 
         function sortBy(t: Type): string {
             const kind = t.kind;
@@ -1043,7 +1175,18 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
                 }
             },
         );
-        this.endFile();
+        if (!nested) this.endFile();
+    }
+
+    private renderNestedType(t: Type): void {
+        const name = this.nameForNamedType(t);
+        if (t instanceof ClassType) {
+            this.renderClassDefinition(t, name, true);
+        } else if (t instanceof EnumType) {
+            this.renderEnumDefinition(t, name, true);
+        } else if (t instanceof UnionType) {
+            this.renderUnionDefinition(t, name, true);
+        }
     }
 
     private emitTopLevelMapAndArrayConvenienceInitializerExtensions(
@@ -1139,10 +1282,21 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             );
         }
 
+        // With --nest-types the JSON helpers are emitted as `static func`
+        // members of each top-level class, so module-level helpers are only
+        // needed for array/map top-levels (which can't host statics) or for
+        // Alamofire. When they are needed alongside nesting, scope them to
+        // `fileprivate` to keep multi-source standalone output collision-free.
+        const needFreeHelpers =
+            !this._options.nestTypes ||
+            this.hasNonNamedTopLevels() ||
+            this._options.alamofire;
+
         if (
-            (!this._options.justTypes &&
+            ((!this._options.justTypes &&
                 this._options.convenienceInitializers) ||
-            this._options.alamofire
+                this._options.alamofire) &&
+            needFreeHelpers
         ) {
             this.ensureBlankLine();
             this.emitMark(
@@ -1150,7 +1304,9 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
                 true,
             );
             this.ensureBlankLine();
-            this.emitNewEncoderDecoder();
+            this.emitNewEncoderDecoder(
+                this._options.nestTypes ? "fileprivate " : "",
+            );
         }
 
         if (this._options.alamofire) {
@@ -1452,7 +1608,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
         this.endFile();
     };
 
-    private emitConvenienceMutator(c: ClassType, className: Name): void {
+    private emitConvenienceMutator(c: ClassType, className: Sourcelike): void {
         this.emitLine("func with(");
         this.indent(() => {
             this.forEachClassProperty(c, "none", (name, _, p, position) => {
@@ -1494,18 +1650,28 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
     }
 
     protected emitSourceStructure(): void {
+        this.setUpNestedTypes();
         if (this._options.multiFileOutput === false) {
             this.renderSingleFileHeaderComments();
         }
 
         this.forEachNamedType(
             "leading-and-interposing",
-            (c: ClassType, className: Name) =>
-                this.renderClassDefinition(c, className),
-            (e: EnumType, enumName: Name) =>
-                this.renderEnumDefinition(e, enumName),
-            (u: UnionType, unionName: Name) =>
-                this.renderUnionDefinition(u, unionName),
+            (c: ClassType, className: Name) => {
+                if (!this._nestedTypeParents.has(c)) {
+                    this.renderClassDefinition(c, className);
+                }
+            },
+            (e: EnumType, enumName: Name) => {
+                if (!this._nestedTypeParents.has(e)) {
+                    this.renderEnumDefinition(e, enumName);
+                }
+            },
+            (u: UnionType, unionName: Name) => {
+                if (!this._nestedTypeParents.has(u)) {
+                    this.renderUnionDefinition(u, unionName);
+                }
+            },
         );
 
         if (!this._options.justTypes) {

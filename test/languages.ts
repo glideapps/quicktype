@@ -866,6 +866,13 @@ export const SwiftLanguage: Language = {
         { "access-level": "public" },
         { protocol: "equatable" },
         ["simple-object.json", { protocol: "hashable" }],
+        // Compile + round-trip coverage for the nested-types output.
+        { "nest-types": "true" },
+        // Exercise a child type that would otherwise be named `CodingKeys`
+        // and collide with the owner's synthesized `enum CodingKeys`. The
+        // child is renamed (e.g. to `CodingKeysClass`) and nested; this
+        // fixture compiles and round-trips it under --nest-types.
+        ["coding-keys.schema", { "nest-types": "true" }],
     ],
     sourceFiles: ["src/language/Swift/index.ts"],
 };

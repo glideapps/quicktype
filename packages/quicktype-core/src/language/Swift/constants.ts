@@ -98,4 +98,5 @@ export const keywords = [
     "convertDouble",
     "jsonString",
     "jsonData",
+    "CodingKeys",
 ] as const;

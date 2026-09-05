@@ -847,6 +847,10 @@ export abstract class ConvenienceRenderer extends Renderer {
         return this.nameStoreView.get(t);
     }
 
+    protected hasNameForType(t: Type): boolean {
+        return this.nameStoreView.tryGet(t) !== undefined;
+    }
+
     protected isForwardDeclaredType(t: Type): boolean {
         return defined(this._declarationIR).forwardedTypes.has(t);
     }

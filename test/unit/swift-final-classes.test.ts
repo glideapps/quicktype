@@ -110,4 +110,89 @@ describe("Swift class generation", () => {
             true,
         );
     });
+
+    test("can nest child types to avoid multi-source name collisions", async () => {
+        const first = new JSONSchemaInput(undefined);
+        await first.addSource({
+            name: "First",
+            schema: JSON.stringify(modelSchema),
+        });
+        const second = new JSONSchemaInput(undefined);
+        await second.addSource({
+            name: "Second",
+            schema: JSON.stringify(modelSchema),
+        });
+        const inputData = new InputData();
+        inputData.addInput(first);
+        inputData.addInput(second);
+
+        const result = await quicktype({
+            inputData,
+            lang: "swift",
+            rendererOptions: { "nest-types": true },
+        });
+        const output = result.lines.join("\n");
+
+        expect(output).toContain("struct First");
+        expect(output).toContain("struct Second");
+        expect(output).toContain("struct FirstChild");
+        expect(output).toContain("struct SecondChild");
+        expect(output).toContain("First.FirstChild");
+        expect(output).toContain("Second.SecondChild");
+        expect(output).not.toMatch(/^struct (?:FirstChild|SecondChild)/m);
+    });
+
+    test("scopes JSON helpers as static members when nesting", async () => {
+        const output = await renderSwift(modelSchema, {
+            "nest-types": "true",
+        });
+
+        // Helpers become static members of the top-level type ...
+        expect(output).toMatch(
+            /^ {4}static func newJSONDecoder\(\) -> JSONDecoder/m,
+        );
+        expect(output).toMatch(
+            /^ {4}static func newJSONEncoder\(\) -> JSONEncoder/m,
+        );
+        // ... and no module-level helper free functions are emitted.
+        expect(output).not.toMatch(/^func newJSONDecoder\(\)/m);
+        expect(output).not.toMatch(/^func newJSONEncoder\(\)/m);
+        // Convenience initializers qualify their helper calls with the owner.
+        expect(output).toContain("TopLevel.newJSONDecoder()");
+        expect(output).toContain("TopLevel.newJSONEncoder()");
+    });
+
+    test("keeps module-level helpers when nesting is disabled", async () => {
+        const output = await renderSwift(modelSchema);
+
+        expect(output).toMatch(/^func newJSONDecoder\(\) -> JSONDecoder/m);
+        expect(output).toMatch(/^func newJSONEncoder\(\) -> JSONEncoder/m);
+        expect(output).not.toMatch(/static func newJSONDecoder/);
+    });
+
+    test("renames a child type named CodingKeys instead of shadowing the owner's synthesized enum", async () => {
+        const schema = {
+            type: "object",
+            properties: {
+                "coding-keys": {
+                    type: "object",
+                    properties: { foo: { type: "string" } },
+                    required: ["foo"],
+                },
+            },
+            required: ["coding-keys"],
+        };
+
+        const output = await renderSwift(schema, { "nest-types": "true" });
+
+        // The owner emits a synthetic `enum CodingKeys`, so a child that
+        // would otherwise be named `CodingKeys` is renamed (e.g. to
+        // `CodingKeysClass`) and nested. Keeping the name `CodingKeys`
+        // would either redeclare the owner's enum (when nested) or shadow
+        // it during unqualified lookup (when left at module scope), both
+        // of which break `Codable` synthesis.
+        expect(output).not.toMatch(/\bstruct CodingKeys\b/);
+        expect(output).toMatch(/^ {4}struct CodingKeysClass: Codable/m);
+        expect(output).toMatch(/let codingKeys: \w*\.CodingKeysClass/);
+    });
 });
