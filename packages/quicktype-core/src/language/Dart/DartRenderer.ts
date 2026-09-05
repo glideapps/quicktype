@@ -417,9 +417,9 @@ export class DartRenderer extends ConvenienceRenderer {
             return [
                 isNullable ? [value, " == null ? null : "] : [],
                 "((x) => ",
-                min === undefined ? "true" : `x.length >= ${min}`,
+                min === undefined ? "true" : `x.runes.length >= ${min}`,
                 " && ",
-                max === undefined ? "true" : `x.length <= ${max}`,
+                max === undefined ? "true" : `x.runes.length <= ${max}`,
                 ' ? x : throw FormatException("Expected bounded string"))(',
                 value,
                 ")",
