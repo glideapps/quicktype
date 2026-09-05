@@ -497,7 +497,7 @@ ${hasArrayConstraints ? '        if ((typ.min !== undefined && val.length < typ.
             : invalidValue(typ, val, key, parent);
     }
     // Numbers can be parsed by Date but shouldn't be.
-    if (typ === Date && typeof val !== "number") return transformDate(val);
+    if (typ === Date && (typeof val === "string" || val instanceof Date)) return transformDate(val);
     return transformPrimitive(typ, val);
 }
 

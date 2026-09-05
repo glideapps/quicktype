@@ -1447,7 +1447,7 @@ public class TimeOnlyConverter : JsonConverter<TimeOnly>
 			}
 			else
 			{
-					return default(DateTimeOffset);
+					throw new JsonException("Cannot unmarshal date-time");
 			}
 	}
 
