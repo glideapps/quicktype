@@ -71,6 +71,7 @@ export interface Language {
     skipMiscJSON: boolean;
     skipSchema: string[];
     rendererOptions: RendererOptions;
+    combineClasses?: boolean;
     quickTestRendererOptions: (RendererOptions | [string, RendererOptions])[];
     sourceFiles?: string[];
 }
@@ -151,6 +152,16 @@ export const CSharpLanguage: Language = {
         { "any-type": "dynamic" },
     ],
     sourceFiles: ["src/language/CSharp/index.ts"],
+};
+
+export const CSharpNoCombineClassesLanguage: Language = {
+    ...CSharpLanguage,
+    diffViaSchema: false,
+    includeJSON: ["combined-enum.json"],
+    skipJSON: undefined,
+    skipMiscJSON: true,
+    combineClasses: false,
+    quickTestRendererOptions: [],
 };
 
 export const CSharpLanguageRecords: Language = {

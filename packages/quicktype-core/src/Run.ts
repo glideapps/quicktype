@@ -266,6 +266,7 @@ class Run implements RunContext {
                     this._options.inferMaps,
                     this._options.inferEnums,
                     this._options.fixedTopLevels,
+                    this._options.combineClasses,
                 ),
         );
 
@@ -282,6 +283,7 @@ class Run implements RunContext {
                 this._options.inferMaps,
                 this._options.inferEnums,
                 this._options.fixedTopLevels,
+                this._options.combineClasses,
             ),
         );
 
