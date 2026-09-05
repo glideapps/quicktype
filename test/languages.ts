@@ -186,12 +186,16 @@ export const CSharpLanguageSystemTextJson: Language = {
         "uuid",
         "minmax",
         "minmaxInteger",
+        "minmaxlength",
         "integer",
     ],
     output: "QuickType.cs",
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
+    additionalSchemaFiles: [
+        "test/inputs/regressions/unicode-codepoint-length.schema",
+    ],
     skipSchema: [
         // The following skips are pre-existing System.Text.Json renderer issues,
         // found when first enabling the schema fixture for this language:
