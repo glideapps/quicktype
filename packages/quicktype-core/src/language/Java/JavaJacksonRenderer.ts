@@ -31,6 +31,7 @@ export class JacksonRenderer extends JavaRenderer {
         "JsonSerializer",
         "JsonParser",
         "JsonProcessingException",
+        "ObjectMapper",
         "DeserializationContext",
         "SerializerProvider",
         "None",
