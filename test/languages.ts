@@ -61,6 +61,7 @@ export interface Language {
     runCommand?: (sample: string) => string;
     copyInput?: boolean;
     diffViaSchema: boolean;
+    roundtripViaSchema?: boolean;
     skipDiffViaSchema: string[];
     allowMissingNull: boolean;
     features: LanguageFeature[];
@@ -70,6 +71,7 @@ export interface Language {
     includeJSON?: string[];
     skipMiscJSON: boolean;
     skipSchema: string[];
+    additionalSchemaFiles?: string[];
     rendererOptions: RendererOptions;
     quickTestRendererOptions: (RendererOptions | [string, RendererOptions])[];
     sourceFiles?: string[];
@@ -831,6 +833,7 @@ export const SwiftLanguage: Language = {
         return `./quicktype "${sample}"`;
     },
     diffViaSchema: true,
+    roundtripViaSchema: true,
     skipDiffViaSchema: [
         "bug427.json",
         "blns-object.json",
@@ -840,7 +843,6 @@ export const SwiftLanguage: Language = {
         "337ed.json",
         "34702.json",
         "7f568.json",
-        "734ad.json",
         "76ae1.json",
         "c8c7e.json",
         "e53b5.json",
@@ -867,6 +869,7 @@ export const SwiftLanguage: Language = {
             "simple-object.json",
             { "struct-or-class": "class", "final-classes": "true" },
         ],
+        { "struct-or-class": "class", "final-classes": "true" },
         // The default is density=normal; this keeps the dense code path
         // covered.
         { density: "dense" },
@@ -874,6 +877,7 @@ export const SwiftLanguage: Language = {
         { "access-level": "public" },
         { protocol: "equatable" },
         ["simple-object.json", { protocol: "hashable" }],
+        { protocol: "hashable" },
     ],
     sourceFiles: ["src/language/Swift/index.ts"],
 };
@@ -963,6 +967,9 @@ export const TypeScriptLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
+    additionalSchemaFiles: [
+        "test/inputs/regressions/unicode-codepoint-length.schema",
+    ],
     skipSchema: [],
     rendererOptions: { "explicit-unions": "yes" },
     quickTestRendererOptions: [
@@ -970,6 +977,8 @@ export const TypeScriptLanguage: Language = {
         { "runtime-typecheck-ignore-unknown-properties": "true" },
         { "nice-property-names": "true" },
         ["pokedex.json", { "prefer-types": "true" }],
+        { "prefer-types": "true" },
+        { "prefer-const-values": "true" },
         ["keywords.json", { "prefer-types": "true" }],
         { "acronym-style": "pascal" },
         { converters: "all-objects" },
@@ -1009,6 +1018,9 @@ export const JavaScriptLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
+    additionalSchemaFiles: [
+        "test/inputs/regressions/unicode-codepoint-length.schema",
+    ],
     skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [
@@ -1483,6 +1495,9 @@ export const DartLanguage: Language = {
     output: "TopLevel.dart",
     topLevel: "TopLevel",
     skipJSON: [],
+    additionalSchemaFiles: [
+        "test/inputs/regressions/unicode-codepoint-length.schema",
+    ],
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
     ],
@@ -1494,6 +1509,7 @@ export const DartLanguage: Language = {
     quickTestRendererOptions: [
         { "final-props": "false" },
         ["simple-object.json", { "from-map": "true" }],
+        { "from-map": "true" },
         { "copy-with": "true" },
         ["copy-with-property.json", { "copy-with": "true" }],
         ["simple-object.json", { "required-props": "true" }],
@@ -1705,6 +1721,9 @@ export const TypeScriptZodLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
+    additionalSchemaFiles: [
+        "test/inputs/regressions/unicode-codepoint-length.schema",
+    ],
     skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [{ "just-schema": "true" }],
@@ -1749,6 +1768,9 @@ export const TypeScriptEffectSchemaLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
+    additionalSchemaFiles: [
+        "test/inputs/regressions/unicode-codepoint-length.schema",
+    ],
     skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [{ "just-schema": "true" }],
