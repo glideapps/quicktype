@@ -133,11 +133,15 @@ export const CSharpLanguage: Language = {
         "uuid",
         "minmax",
         "minmaxInteger",
+        "minmaxlength",
     ],
     output: "QuickType.cs",
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
+    additionalSchemaFiles: [
+        "test/inputs/regressions/unicode-codepoint-length.schema",
+    ],
     skipSchema: [],
     // The default framework is SystemTextJson; this fixture deliberately
     // pins NewtonSoft so the Newtonsoft renderer keeps end-to-end coverage.

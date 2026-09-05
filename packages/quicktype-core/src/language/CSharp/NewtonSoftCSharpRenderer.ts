@@ -1024,16 +1024,21 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 emitFinish,
             );
         } else if (xfer instanceof MinMaxLengthCheckTransformer) {
+            const length = [
+                "System.Linq.Enumerable.Count(",
+                variable,
+                ", c => !char.IsLowSurrogate(c))",
+            ];
             const min = xfer.minLength;
             const max = xfer.maxLength;
             const conditions: Sourcelike[] = [];
 
             if (min !== undefined) {
-                conditions.push([variable, ".Length >= ", min.toString()]);
+                conditions.push([length, " >= ", min.toString()]);
             }
 
             if (max !== undefined) {
-                conditions.push([variable, ".Length <= ", max.toString()]);
+                conditions.push([length, " <= ", max.toString()]);
             }
 
             this.emitLine("if (", arrayIntercalate([" && "], conditions), ")");
