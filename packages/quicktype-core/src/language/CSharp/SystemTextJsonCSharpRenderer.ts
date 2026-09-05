@@ -1141,18 +1141,16 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
                 emitFinish,
             );
         } else if (xfer instanceof MinMaxLengthCheckTransformer) {
-            const value = this.sourcelikeToString(variable);
-            const length = `System.Linq.Enumerable.Count(${value}!, c => !char.IsLowSurrogate(c))`;
             const min = xfer.minLength;
             const max = xfer.maxLength;
             const conditions: Sourcelike[] = [];
 
             if (min !== undefined) {
-                conditions.push([length, " >= ", min.toString()]);
+                conditions.push([variable, ".Length >= ", min.toString()]);
             }
 
             if (max !== undefined) {
-                conditions.push([length, " <= ", max.toString()]);
+                conditions.push([variable, ".Length <= ", max.toString()]);
             }
 
             this.emitLine("if (", arrayIntercalate([" && "], conditions), ")");

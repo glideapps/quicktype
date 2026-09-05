@@ -1024,8 +1024,11 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 emitFinish,
             );
         } else if (xfer instanceof MinMaxLengthCheckTransformer) {
-            const value = this.sourcelikeToString(variable);
-            const length = `System.Linq.Enumerable.Count(${value}, c => !char.IsLowSurrogate(c))`;
+            const length = [
+                "System.Linq.Enumerable.Count(",
+                variable,
+                ", c => !char.IsLowSurrogate(c))",
+            ];
             const min = xfer.minLength;
             const max = xfer.maxLength;
             const conditions: Sourcelike[] = [];
