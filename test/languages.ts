@@ -61,6 +61,7 @@ export interface Language {
     runCommand?: (sample: string) => string;
     copyInput?: boolean;
     diffViaSchema: boolean;
+    roundtripViaSchema?: boolean;
     skipDiffViaSchema: string[];
     allowMissingNull: boolean;
     features: LanguageFeature[];
@@ -830,6 +831,7 @@ export const SwiftLanguage: Language = {
         return `./quicktype "${sample}"`;
     },
     diffViaSchema: true,
+    roundtripViaSchema: true,
     skipDiffViaSchema: [
         "bug427.json",
         "blns-object.json",

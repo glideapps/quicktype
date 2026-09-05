@@ -423,15 +423,14 @@ class JSONFixture extends LanguageFixture {
             strict,
         });
 
-        if (
+        const diffViaSchema =
             this.language.diffViaSchema &&
             !_.includes(
                 this.language.skipDiffViaSchema,
                 path.basename(filename),
-            )
-        ) {
-            debug("* Diffing with code generated via JSON Schema");
-            // Make a schema
+            );
+        if (diffViaSchema || this.language.roundtripViaSchema) {
+            debug("* Testing code generated via JSON Schema");
             await quicktype({
                 src: [filename],
                 lang: "schema",
@@ -439,7 +438,6 @@ class JSONFixture extends LanguageFixture {
                 topLevel: this.language.topLevel,
                 rendererOptions: {},
             });
-            // Quicktype from the schema and compare to expected code
             shell.mv(this.language.output, `${this.language.output}.expected`);
             await quicktypeForLanguage(
                 this.language,
@@ -449,11 +447,27 @@ class JSONFixture extends LanguageFixture {
                 additionalRendererOptions,
             );
 
-            // Compare fixture.output to fixture.output.expected
-            exec(
-                `diff -Naur ${this.language.output}.expected ${this.language.output} > /dev/null 2>&1`,
-                undefined,
-            );
+            if (diffViaSchema) {
+                exec(
+                    `diff -Naur ${this.language.output}.expected ${this.language.output} > /dev/null 2>&1`,
+                    undefined,
+                );
+            }
+            if (this.language.roundtripViaSchema) {
+                if (this.language.compileCommand) {
+                    await execAsync(this.language.compileCommand);
+                }
+                compareJsonFileToJson({
+                    ...comparisonArgs(
+                        this.language,
+                        filename,
+                        expectedFilename,
+                        additionalRendererOptions,
+                    ),
+                    strict,
+                });
+            }
+            shell.mv(`${this.language.output}.expected`, this.language.output);
         }
 
         return 1;
@@ -612,10 +626,6 @@ class JSONToXToYFixture extends JSONFixture {
             false,
             additionalRendererOptions,
         );
-
-        if (this.runLanguage.compileCommand) {
-            await execAsync(this.runLanguage.compileCommand);
-        }
 
         // Parse the sample with the code generated from its schema, and compare to the sample
         compareJsonFileToJson(
@@ -1684,14 +1694,6 @@ export const allFixtures: Fixture[] = [
     new JSONFixture(languages.ElixirLanguage),
     new JSONFixture(languages.JavaScriptPropTypesLanguage),
     new JSONSchemaJSONFixture(languages.CSharpLanguage),
-    new JSONToXToYFixture(
-        "schema-json",
-        "schema",
-        "schema.json",
-        {},
-        [],
-        languages.SwiftLanguage,
-    ),
     new JSONTypeScriptFixture(languages.CSharpLanguage),
     new JSONSchemaFixture(languages.CrystalLanguage),
     new JSONSchemaFixture(languages.JSONSchemaLanguage),
