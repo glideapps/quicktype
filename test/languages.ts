@@ -70,6 +70,7 @@ export interface Language {
     includeJSON?: string[];
     skipMiscJSON: boolean;
     skipSchema: string[];
+    additionalSchemaFiles?: string[];
     rendererOptions: RendererOptions;
     quickTestRendererOptions: (RendererOptions | [string, RendererOptions])[];
     sourceFiles?: string[];
@@ -1473,6 +1474,7 @@ export const DartLanguage: Language = {
     output: "TopLevel.dart",
     topLevel: "TopLevel",
     skipJSON: [],
+    additionalSchemaFiles: ["test/inputs/dart/unicode-codepoint-length.schema"],
     skipSchema: [
         "integer-before-number.schema", // Python-specific union-order regression.
     ],
