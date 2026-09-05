@@ -1515,7 +1515,6 @@ export const DartLanguage: Language = {
     skipJSON: [],
     additionalSchemaFiles: [
         "test/inputs/regressions/unicode-codepoint-length.schema",
-        "test/inputs/dart/dart-runtime-type-names.schema",
     ],
     skipSchema: [
         "optional-property.schema",
