@@ -888,6 +888,10 @@ export const SwiftLanguage: Language = {
         { protocol: "equatable" },
         ["simple-object.json", { protocol: "hashable" }],
         { protocol: "hashable" },
+        [
+            "keywords.json",
+            { "struct-or-class": "class", "objective-c-support": "true" },
+        ],
     ],
     sourceFiles: ["src/language/Swift/index.ts"],
 };

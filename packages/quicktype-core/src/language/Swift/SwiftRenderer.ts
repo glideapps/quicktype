@@ -68,7 +68,13 @@ export class SwiftRenderer extends ConvenienceRenderer {
         _c: ClassType,
         _classNamed: Name,
     ): ForbiddenWordsInfo {
-        return { names: ["fromURL", "json"], includeGlobalForbidden: true };
+        const names = ["fromURL", "json"];
+        if (
+            this._options.objcSupport &&
+            (this._options.useClasses || this.isCycleBreakerType(_c))
+        )
+            names.push("retain");
+        return { names, includeGlobalForbidden: true };
     }
 
     protected forbiddenForEnumCases(
