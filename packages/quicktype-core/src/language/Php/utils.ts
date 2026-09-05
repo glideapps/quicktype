@@ -98,6 +98,7 @@ export const phpForbiddenClassNames: readonly string[] = [
     "Enum",
     "Eval",
     "Exception",
+    "JSONException",
     "Exit",
     "Extends",
     "False",
