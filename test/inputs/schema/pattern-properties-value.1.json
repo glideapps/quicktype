@@ -1,0 +1,8 @@
+{
+    "materials": {
+        "steel": {
+            "roughness": "smooth",
+            "thickness": 1.5
+        }
+    }
+}

@@ -34,6 +34,7 @@ const skipsUntypedUnions = [
 // schema whose fail sample relies on rejecting a mistyped map value.
 const skipsMapValueValidation = [
     "go-schema-pattern-properties.schema",
+    "pattern-properties-value.schema",
     "unevaluated-properties.schema",
 ];
 
