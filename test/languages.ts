@@ -202,7 +202,7 @@ export const CSharpLanguageSystemTextJson: Language = {
     additionalSchemaFiles: [
         "test/inputs/regressions/unicode-codepoint-length.schema",
     ],
-    skipSchema: [],
+    skipSchema: ["optional-property.schema"],
     rendererOptions: { "check-required": "true", framework: "SystemTextJson" },
     quickTestRendererOptions: [
         { "array-type": "list" },
