@@ -61,6 +61,7 @@ export interface Language {
     runCommand?: (sample: string) => string;
     copyInput?: boolean;
     diffViaSchema: boolean;
+    roundtripViaSchema?: boolean;
     skipDiffViaSchema: string[];
     allowMissingNull: boolean;
     features: LanguageFeature[];
@@ -149,6 +150,7 @@ export const CSharpLanguage: Language = {
         { "csharp-version": "6" },
         { density: "dense" },
         { "number-type": "decimal" },
+        ["fractional-bounds.schema", { "number-type": "decimal" }],
         { "any-type": "dynamic" },
     ],
     sourceFiles: ["src/language/CSharp/index.ts"],
@@ -212,6 +214,7 @@ export const CSharpLanguageSystemTextJson: Language = {
         { "csharp-version": "6" },
         { density: "dense" },
         { "number-type": "decimal" },
+        ["fractional-bounds.schema", { "number-type": "decimal" }],
         { "any-type": "dynamic" },
         // Suppressing the DateOnly/TimeOnly converters (for pre-.NET 6
         // targets) must still produce compiling, round-tripping code.
@@ -831,6 +834,7 @@ export const SwiftLanguage: Language = {
         return `./quicktype "${sample}"`;
     },
     diffViaSchema: true,
+    roundtripViaSchema: true,
     skipDiffViaSchema: [
         "bug427.json",
         "blns-object.json",
@@ -962,6 +966,9 @@ export const TypeScriptLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
+    additionalSchemaFiles: [
+        "test/inputs/regressions/unicode-codepoint-length.schema",
+    ],
     skipSchema: [],
     rendererOptions: { "explicit-unions": "yes" },
     quickTestRendererOptions: [
@@ -1010,6 +1017,9 @@ export const JavaScriptLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
+    additionalSchemaFiles: [
+        "test/inputs/regressions/unicode-codepoint-length.schema",
+    ],
     skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [
@@ -1470,6 +1480,7 @@ export const DartLanguage: Language = {
     allowMissingNull: true,
     features: [
         "integer",
+        "uuid",
         "no-defaults",
         "date-time",
         "strict-optional",
@@ -1483,6 +1494,9 @@ export const DartLanguage: Language = {
     output: "TopLevel.dart",
     topLevel: "TopLevel",
     skipJSON: [],
+    additionalSchemaFiles: [
+        "test/inputs/regressions/unicode-codepoint-length.schema",
+    ],
     skipSchema: [
         "optional-property.schema",
         "integer-before-number.schema", // Python-specific union-order regression.
@@ -1496,6 +1510,8 @@ export const DartLanguage: Language = {
         { "final-props": "false" },
         ["simple-object.json", { "from-map": "true" }],
         { "from-map": "true" },
+        { "copy-with": "true" },
+        ["copy-with-property.json", { "copy-with": "true" }],
         ["simple-object.json", { "required-props": "true" }],
     ],
     sourceFiles: ["src/language/Dart/index.ts"],
@@ -1707,6 +1723,9 @@ export const TypeScriptZodLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
+    additionalSchemaFiles: [
+        "test/inputs/regressions/unicode-codepoint-length.schema",
+    ],
     skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [{ "just-schema": "true" }],
@@ -1743,6 +1762,9 @@ export const TypeScriptEffectSchemaLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
+    additionalSchemaFiles: [
+        "test/inputs/regressions/unicode-codepoint-length.schema",
+    ],
     skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [{ "just-schema": "true" }],

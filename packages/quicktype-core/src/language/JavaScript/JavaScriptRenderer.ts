@@ -488,7 +488,7 @@ ${hasArrayConstraints ? '        if ((typ.min !== undefined && val.length < typ.
     if (Array.isArray(typ)) return transformEnum(typ, val);
     if (typeof typ === "object") {
         return ${hasUUID ? 'typ.hasOwnProperty("uuid")         ? typeof val === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val) ? val : invalidValue(typ, val, key, parent)\n            : ' : ""}typ.hasOwnProperty("pattern")      ? typeof val === "string" && new RegExp(typ.pattern).test(val) ? val : invalidValue(typ, val, key, parent)
-            : typ.hasOwnProperty("string")       ? typeof val === "string" && (typ.min === undefined || val.length >= typ.min) && (typ.max === undefined || val.length <= typ.max) ? transform(val, typ.string, getProps, key, parent) : invalidValue(typ, val, key, parent)
+            : typ.hasOwnProperty("string")       ? typeof val === "string" && (typ.min === undefined || Array.from(val).length >= typ.min) && (typ.max === undefined || Array.from(val).length <= typ.max) ? transform(val, typ.string, getProps, key, parent) : invalidValue(typ, val, key, parent)
             : typ.hasOwnProperty("number")       ? typeof val === "number" && (typ.min === undefined || val >= typ.min) && (typ.max === undefined || val <= typ.max) ? transform(val, typ.number, getProps, key, parent) : invalidValue(typ, val, key, parent)
             : typ.hasOwnProperty("integer")      ? typeof val === "number" && val % 1 === 0 ? val : invalidValue(l("integer"), val, key, parent)
             : typ.hasOwnProperty("unionMembers") ? transformUnion(typ.unionMembers, val)

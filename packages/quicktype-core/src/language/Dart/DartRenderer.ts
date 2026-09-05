@@ -78,7 +78,10 @@ export class DartRenderer extends ConvenienceRenderer {
         _c: ClassType,
         _className: Name,
     ): ForbiddenWordsInfo {
-        return { names: [], includeGlobalForbidden: true };
+        return {
+            names: this._options.generateCopyWith ? ["copyWith"] : [],
+            includeGlobalForbidden: true,
+        };
     }
 
     protected makeNamedTypeNamer(): Namer {
@@ -417,9 +420,9 @@ export class DartRenderer extends ConvenienceRenderer {
             return [
                 isNullable ? [value, " == null ? null : "] : [],
                 "((x) => ",
-                min === undefined ? "true" : `x.length >= ${min}`,
+                min === undefined ? "true" : `x.runes.length >= ${min}`,
                 " && ",
-                max === undefined ? "true" : `x.length <= ${max}`,
+                max === undefined ? "true" : `x.runes.length <= ${max}`,
                 ' ? x : throw FormatException("Expected bounded string"))(',
                 value,
                 ")",
@@ -520,6 +523,14 @@ export class DartRenderer extends ConvenienceRenderer {
             },
             (transformedStringType) => {
                 switch (transformedStringType.kind) {
+                    case "uuid":
+                        return [
+                            isNullable ? [dynamic, " == null ? null : "] : [],
+                            "((String x) => RegExp(r'^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$').hasMatch(x)",
+                            " ? x : throw FormatException('Invalid UUID'))(",
+                            dynamic,
+                            ")",
+                        ];
                     case "date-time":
                     case "date":
                         if (
