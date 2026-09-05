@@ -1706,15 +1706,7 @@ export const TypeScriptEffectSchemaLanguage: Language = {
         return `npm run --silent test "${sample}"`;
     },
     diffViaSchema: true,
-    skipDiffViaSchema: [
-        // Schema generated type uses first key as type name, JSON uses last
-        "0cffa.json",
-        "f6a65.json",
-        "c3303.json",
-        "7681c.json",
-        "127a1.json",
-        "26b49.json",
-    ],
+    skipDiffViaSchema: [],
     allowMissingNull: false,
     features: [
         "enum",
