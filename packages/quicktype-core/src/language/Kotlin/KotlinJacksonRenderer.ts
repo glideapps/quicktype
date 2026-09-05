@@ -27,20 +27,20 @@ import { stringEscape, unionMemberMatchPriority } from "./utils.js";
 
 export class KotlinJacksonRenderer extends KotlinRenderer {
     protected forbiddenNamesForGlobalNamespace(): readonly string[] {
-        return [
-            ...super.forbiddenNamesForGlobalNamespace(),
-            "DeserializationFeature",
-            "JsonGenerator",
-            "JsonNode",
-            "JsonParser",
-            "ObjectMapper",
-            "SerializerProvider",
-            "SimpleModule",
-            "SerializationFeature",
-            "StdDeserializer",
-            "StdSerializer",
-        ];
+        return super
+            .forbiddenNamesForGlobalNamespace()
+            .concat(
+                ["DeserializationFeature", "JsonGenerator", "JsonNode"],
+                ["JsonParser", "ObjectMapper", "SerializerProvider"],
+                [
+                    "SimpleModule",
+                    "SerializationFeature",
+                    "StdDeserializer",
+                    "StdSerializer",
+                ],
+            );
     }
+
     protected propertyDefault(
         p: ClassProperty,
         _nullableOrOptional: boolean,
