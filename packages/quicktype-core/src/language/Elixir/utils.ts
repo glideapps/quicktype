@@ -23,7 +23,10 @@ export function capitalizeFirstLetter(str: string): string {
 }
 
 export const stringEscape = utf32ConcatMap(
-    escapeNonPrintableMapper(isPrintable, unicodeEscape),
+    escapeNonPrintableMapper(
+        (codePoint) => isPrintable(codePoint) && codePoint !== 0x23,
+        unicodeEscape,
+    ),
 );
 
 export function escapeDoubleQuotes(str: string): string {

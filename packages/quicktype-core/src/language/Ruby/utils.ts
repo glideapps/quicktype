@@ -34,7 +34,10 @@ function unicodeEscape(codePoint: number): string {
 }
 
 export const stringEscape = utf32ConcatMap(
-    escapeNonPrintableMapper(isPrintable, unicodeEscape),
+    escapeNonPrintableMapper(
+        (codePoint) => isPrintable(codePoint) && codePoint !== 0x23,
+        unicodeEscape,
+    ),
 );
 
 const isStartCharacter = isLetterOrUnderscore;

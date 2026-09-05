@@ -68,5 +68,8 @@ function standardUnicodeCrystalEscape(codePoint: number): string {
 }
 
 export const crystalStringEscape = utf32ConcatMap(
-    escapeNonPrintableMapper(isPrintable, standardUnicodeCrystalEscape),
+    escapeNonPrintableMapper(
+        (codePoint) => isPrintable(codePoint) && codePoint !== 0x23,
+        standardUnicodeCrystalEscape,
+    ),
 );
