@@ -51,7 +51,16 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
-        return ["Class", "Date", "Object", "String", "Array", "JSON", "Error"];
+        return [
+            "S",
+            "Class",
+            "Date",
+            "Object",
+            "String",
+            "Array",
+            "JSON",
+            "Error",
+        ];
     }
 
     protected nameStyle(original: string, upper: boolean): string {
