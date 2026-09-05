@@ -1,0 +1,4 @@
+interface:
+  display_name: "Small test-enabling PRs"
+  short_description: "Find small quicktype fixes with shared test coverage"
+  default_prompt: "Use $enable-small-tests to find and ship small test-enabling quicktype PRs, focusing on Dart, Swift, and TypeScript."
