@@ -653,9 +653,10 @@ export class ElixirRenderer extends ConvenienceRenderer {
                     type.isPrimitive(),
                 );
                 if (unionTypes.length === unionPrimitiveTypes.length) {
-                    return optional
+                    const value = optional
                         ? ['m["', jsonName, '"]']
                         : ['Map.fetch!(m, "', jsonName, '")'];
+                    return ["decode_", name, "(", value, ")"];
                 }
 
                 const nullable = nullableFromUnion(unionType);
@@ -937,6 +938,13 @@ export class ElixirRenderer extends ConvenienceRenderer {
                             type.isPrimitive(),
                         );
                         if (unionTypes.length === unionPrimitiveTypes.length) {
+                            this.emitPatternMatches(
+                                unionTypes,
+                                name,
+                                parentName,
+                                "",
+                                p.isOptional,
+                            );
                             return;
                         }
 
