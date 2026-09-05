@@ -114,8 +114,6 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
             const pattern = patternForType(type);
             return [
                 "z.string()",
-                min === undefined ? "" : [".min(", String(min), ")"],
-                max === undefined ? "" : [".max(", String(max), ")"],
                 pattern === undefined
                     ? ""
                     : [
@@ -123,6 +121,12 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
                           utf16StringEscape(pattern),
                           '"))',
                       ],
+                min === undefined
+                    ? ""
+                    : `.refine(value => Array.from(value).length >= ${min})`,
+                max === undefined
+                    ? ""
+                    : `.refine(value => Array.from(value).length <= ${max})`,
             ];
         };
 
