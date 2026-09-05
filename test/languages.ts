@@ -129,6 +129,8 @@ export const CSharpLanguage: Language = {
         "integer-string",
         "bool-string",
         "uuid",
+        "minmax",
+        "minmaxInteger",
     ],
     output: "QuickType.cs",
     topLevel: "TopLevel",
@@ -179,6 +181,8 @@ export const CSharpLanguageSystemTextJson: Language = {
         "integer-string",
         "bool-string",
         "uuid",
+        "minmax",
+        "minmaxInteger",
         "integer",
     ],
     output: "QuickType.cs",
@@ -962,6 +966,7 @@ export const TypeScriptLanguage: Language = {
         { "runtime-typecheck-ignore-unknown-properties": "true" },
         { "nice-property-names": "true" },
         ["pokedex.json", { "prefer-types": "true" }],
+        ["keywords.json", { "prefer-types": "true" }],
         { "acronym-style": "pascal" },
         { converters: "all-objects" },
         { readonly: "true" },
@@ -1486,6 +1491,7 @@ export const DartLanguage: Language = {
         ["simple-object.json", { "from-map": "true" }],
         { "copy-with": "true" },
         ["copy-with-property.json", { "copy-with": "true" }],
+        ["simple-object.json", { "required-props": "true" }],
     ],
     sourceFiles: ["src/language/Dart/index.ts"],
 };
@@ -1696,7 +1702,7 @@ export const TypeScriptZodLanguage: Language = {
     skipMiscJSON: false,
     skipSchema: [],
     rendererOptions: {},
-    quickTestRendererOptions: [],
+    quickTestRendererOptions: [{ "just-schema": "true" }],
     sourceFiles: ["src/language/TypeScriptZod/index.ts"],
 };
 
@@ -1740,7 +1746,7 @@ export const TypeScriptEffectSchemaLanguage: Language = {
     skipMiscJSON: false,
     skipSchema: [],
     rendererOptions: {},
-    quickTestRendererOptions: [],
+    quickTestRendererOptions: [{ "just-schema": "true" }],
     sourceFiles: ["src/language/TypeScriptEffectSchema/index.ts"],
 };
 
@@ -1782,6 +1788,8 @@ export const ElixirLanguage: Language = {
         "no-defaults",
         "strict-optional",
         "integer",
+        "minmax",
+        "minmaxInteger",
         "minmaxitems",
         "minmaxlength",
         "pattern",
