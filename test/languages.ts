@@ -870,11 +870,25 @@ export const SwiftLanguage: Language = {
     sourceFiles: ["src/language/Swift/index.ts"],
 };
 
+export const SwiftSendableLanguage: Language = {
+    ...SwiftLanguage,
+    compileCommand:
+        "swiftc -strict-concurrency=complete -warnings-as-errors -o quicktype main.swift quicktype.swift",
+    includeJSON: [
+        "combinations1.json",
+        "combinations2.json",
+        "combinations3.json",
+        "combinations4.json",
+    ],
+    rendererOptions: { ...SwiftLanguage.rendererOptions, sendable: "true" },
+    quickTestRendererOptions: [{ "struct-or-class": "class" }],
+};
+
 export const SwiftSendableObjectiveCSupportLanguage: Language = {
     ...SwiftLanguage,
     compileCommand: "node verify-sendable.cjs",
     diffViaSchema: false,
-    includeJSON: ["pokedex.json"],
+    includeJSON: ["pokedex.json", "combinations1.json"],
     rendererOptions: {
         ...SwiftLanguage.rendererOptions,
         sendable: "true",

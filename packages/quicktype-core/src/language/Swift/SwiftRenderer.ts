@@ -1166,18 +1166,23 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             this.ensureBlankLine();
             this.emitMark("Encode/decode helpers", true);
             this.ensureBlankLine();
+            const final = this._options.finalClasses || this._options.sendable;
             if (this._options.objcSupport) {
                 this.emitLine(
                     this.objcMembersDeclaration,
                     this.accessLevel,
-                    this._options.finalClasses ? "final " : "",
-                    "class JSONNull: NSObject, Codable {",
+                    final ? "final " : "",
+                    "class JSONNull: NSObject, Codable",
+                    this._options.sendable ? ", Sendable" : "",
+                    " {",
                 );
             } else {
                 this.emitLine(
                     this.accessLevel,
-                    this._options.finalClasses ? "final " : "",
-                    "class JSONNull: Codable, Hashable {",
+                    final ? "final " : "",
+                    "class JSONNull: Codable, Hashable",
+                    this._options.sendable ? ", Sendable" : "",
+                    " {",
                 );
             }
 
