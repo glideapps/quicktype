@@ -535,7 +535,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
         name: Name,
         optional = false,
     ): Sourcelike {
-        jsonName = stringEscape(jsonName);
+        jsonName = jsonName.replace(/#/g, "\\u{23}");
         const primitive = ['m["', jsonName, '"]'];
         const checked = ["decode_", name, "(", primitive, ")"];
         const optionalChecked = [primitive, " && ", checked];
