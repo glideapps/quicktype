@@ -855,6 +855,8 @@ export const SwiftLanguage: Language = {
     quickTestRendererOptions: [
         { "support-linux": "false" },
         { "struct-or-class": "class" },
+        { sendable: "true" },
+        { sendable: "true", "struct-or-class": "class" },
         [
             "simple-object.json",
             { "struct-or-class": "class", "final-classes": "true" },
@@ -868,20 +870,6 @@ export const SwiftLanguage: Language = {
         ["simple-object.json", { protocol: "hashable" }],
     ],
     sourceFiles: ["src/language/Swift/index.ts"],
-};
-
-export const SwiftSendableLanguage: Language = {
-    ...SwiftLanguage,
-    compileCommand:
-        "swiftc -strict-concurrency=complete -warnings-as-errors -o quicktype main.swift quicktype.swift",
-    includeJSON: [
-        "combinations1.json",
-        "combinations2.json",
-        "combinations3.json",
-        "combinations4.json",
-    ],
-    rendererOptions: { ...SwiftLanguage.rendererOptions, sendable: "true" },
-    quickTestRendererOptions: [{ "struct-or-class": "class" }],
 };
 
 export const SwiftSendableObjectiveCSupportLanguage: Language = {

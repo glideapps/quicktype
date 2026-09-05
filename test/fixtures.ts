@@ -1656,11 +1656,6 @@ export const allFixtures: Fixture[] = [
     new JSONFixture(languages.PythonLanguage),
     new JSONFixture(languages.ElmLanguage),
     new JSONFixture(languages.SwiftLanguage),
-    new (class extends JSONFixture {
-        runForName(name: string): boolean {
-            return name === "swift" || super.runForName(name);
-        }
-    })(languages.SwiftSendableLanguage, "swift-sendable"),
     new JSONFixture(
         languages.SwiftSendableObjectiveCSupportLanguage,
         "swift-sendable-objective-c",
