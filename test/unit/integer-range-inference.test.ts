@@ -210,7 +210,7 @@ describe("streaming inference of numbers at the integer-range boundary", () => {
     });
 });
 
-describe("core (JSON.parse-based) inference at the integer-range boundary", () => {
+describe("core string-input inference at the integer-range boundary", () => {
     async function coreLinesForJSON(
         lang: LanguageName,
         json: string,
@@ -228,6 +228,18 @@ describe("core (JSON.parse-based) inference at the integer-range boundary", () =
         const result = await quicktype({ inputData, lang, rendererOptions });
         return result.lines.join("\n");
     }
+
+    test("Swift: integral-valued floating-point literals stay Double", async () => {
+        const lines = await coreLinesForJSON(
+            "swift",
+            '{"zero": 0.0, "whole": 2.0, "exponent": 2e0, "integer": 2, "number_string": "3.0"}',
+        );
+        expect(lines).toMatch(/let zero: Double/);
+        expect(lines).toMatch(/let whole: Double/);
+        expect(lines).toMatch(/let exponent: Double/);
+        expect(lines).toMatch(/let integer: Int/);
+        expect(lines).toMatch(/let numberString: String/);
+    });
 
     test("Go: whole numbers between 2^53 and INT64_MAX stay int64", async () => {
         // 2^63 - 1024, the largest double below INT64_MAX.
