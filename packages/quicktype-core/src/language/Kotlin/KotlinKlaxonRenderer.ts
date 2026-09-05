@@ -244,7 +244,7 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
             converters.push([
                 [".convert(", name, "::class,"],
                 [" { ", name, ".fromValue(it.string!!) },"],
-                [' { "\\"${it.value}\\"" })'],
+                [" { Klaxon().toJsonString(it.value) })"],
             ]);
         });
         this.forEachUnion("none", (_, name) => {
