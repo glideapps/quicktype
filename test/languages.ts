@@ -191,6 +191,7 @@ export const CSharpLanguageSystemTextJson: Language = {
     skipJSON: [],
     skipMiscJSON: false,
     skipSchema: [
+        "optional-property.schema",
         // The following skips are pre-existing System.Text.Json renderer issues,
         // found when first enabling the schema fixture for this language:
         // minmaxlength.schema, optional-constraints.schema, and
@@ -236,7 +237,7 @@ export const JavaLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
-    skipSchema: [],
+    skipSchema: ["optional-property.schema"],
     rendererOptions: {},
     // The default is array-type=list; this keeps the T[] code path
     // covered.
@@ -298,7 +299,7 @@ export const PythonLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
-    skipSchema: [],
+    skipSchema: ["optional-property.schema"],
     rendererOptions: {},
     quickTestRendererOptions: [
         // The default is "3.10"; keep the older feature sets covered.
@@ -338,7 +339,7 @@ export const RustLanguage: Language = {
     output: "module_under_test.rs",
     topLevel: "TopLevel",
     skipJSON: [],
-    skipSchema: [],
+    skipSchema: ["optional-property.schema"],
     skipMiscJSON: false,
     rendererOptions: {},
     quickTestRendererOptions: [
@@ -398,7 +399,7 @@ export const CrystalLanguage: Language = {
         "simple-identifiers.json",
         "nst-test-suite.json",
     ],
-    skipSchema: [],
+    skipSchema: ["optional-property.schema"],
     skipMiscJSON: false,
     rendererOptions: {},
     quickTestRendererOptions: [],
@@ -483,7 +484,7 @@ export const RubyLanguage: Language = {
     output: "TopLevel.rb",
     topLevel: "TopLevel",
     skipJSON: [],
-    skipSchema: [],
+    skipSchema: ["optional-property.schema"],
     skipMiscJSON: false,
     rendererOptions: {},
     quickTestRendererOptions: [["pokedex.json", { namespace: "QuickType" }]],
@@ -515,7 +516,7 @@ export const GoLanguage: Language = {
         "nst-test-suite.json",
     ],
     skipMiscJSON: false,
-    skipSchema: [],
+    skipSchema: ["optional-property.schema"],
     rendererOptions: {},
     quickTestRendererOptions: [
         // Runs against the expected-output file
@@ -727,7 +728,7 @@ export const CPlusPlusLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
-    skipSchema: [],
+    skipSchema: ["optional-property.schema"],
     rendererOptions: {},
     quickTestRendererOptions: [
         { "code-format": "with-struct" },
@@ -854,7 +855,7 @@ export const SwiftLanguage: Language = {
         "nst-test-suite.json",
     ],
     skipMiscJSON: false,
-    skipSchema: [],
+    skipSchema: ["optional-property.schema"],
     rendererOptions: { "support-linux": "true" },
     quickTestRendererOptions: [
         { "support-linux": "false" },
@@ -925,7 +926,7 @@ export const ObjectiveCLanguage: Language = {
         "blns-object.json",
     ],
     skipMiscJSON: false,
-    skipSchema: [],
+    skipSchema: ["optional-property.schema"],
     rendererOptions: { functions: "true" },
     quickTestRendererOptions: [],
     sourceFiles: ["src/language/Objective-C/index.ts"],
@@ -1048,7 +1049,7 @@ export const JavaScriptPropTypesLanguage: Language = {
     output: "toplevel.js",
     topLevel: "TopLevel",
     skipJSON: [],
-    skipSchema: [],
+    skipSchema: ["optional-property.schema"],
     skipMiscJSON: false,
     rendererOptions: { "module-system": "es6" },
     quickTestRendererOptions: [{ converters: "top-level" }],
@@ -1483,6 +1484,7 @@ export const DartLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipSchema: [
+        "optional-property.schema",
         "integer-before-number.schema", // Python-specific union-order regression.
     ],
     skipMiscJSON: false,
@@ -1539,6 +1541,7 @@ export const PikeLanguage: Language = {
     skipJSON: [],
     skipMiscJSON: false,
     skipSchema: [
+        "optional-property.schema",
         // no implicit cast int <-> float in Pike
         ...skipsIntFloatUnions.filter(
             (schema) =>
@@ -1661,6 +1664,7 @@ export const PHPLanguage: Language = {
     ],
     skipMiscJSON: false,
     skipSchema: [
+        "optional-property.schema",
         "integer-before-number.schema", // Python-specific union-order regression.
         // Unions are inlined as PHP union type declarations, so a
         // top-level union produces no named TopLevel class for the driver.
@@ -1739,9 +1743,6 @@ export const TypeScriptEffectSchemaLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
-    additionalSchemaFiles: [
-        "test/inputs/typescript-effect-schema/optional-property.schema",
-    ],
     skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [{ "just-schema": "true" }],
@@ -1800,6 +1801,7 @@ export const ElixirLanguage: Language = {
     ],
     skipMiscJSON: false,
     skipSchema: [
+        "optional-property.schema",
         // The test incorrectly succeeds due to the emitter being permissive for unions that contain only primitives. A future enhancement
         // for the Elixir emitter could be a user-controlled 'strict' mode that pattern matches even on unions of only primitive types.
         // A top-level array is deserialized without enforcing its element
