@@ -1,0 +1,30 @@
+{
+  "data": {
+    "viewer": {
+      "repositories": {
+        "nodes": [
+          {
+            "name": "quicktype"
+          }
+        ]
+      }
+    },
+    "search": {
+      "repositoryCount": 42
+    },
+    "node": {
+      "id": "MDQ6VXNlcjE="
+    }
+  },
+  "variables": {
+    "order": {
+      "field": "CREATED_AT",
+      "direction": "ASC"
+    },
+    "query": "language:typescript",
+    "first": 10,
+    "type": "REPOSITORY",
+    "id": "MDQ6VXNlcjE=",
+    "includeExtra": false
+  }
+}
