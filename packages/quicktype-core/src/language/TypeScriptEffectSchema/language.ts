@@ -49,6 +49,10 @@ export class TypeScriptEffectSchemaTargetLanguage extends TargetLanguage<
         super(typeScriptEffectSchemaLanguageConfig);
     }
 
+    public get supportsOptionalClassProperties(): boolean {
+        return true;
+    }
+
     public getOptions(): typeof typeScriptEffectSchemaOptions {
         return typeScriptEffectSchemaOptions;
     }
