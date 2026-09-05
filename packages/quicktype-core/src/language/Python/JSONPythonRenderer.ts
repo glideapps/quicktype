@@ -1091,7 +1091,9 @@ export class JSONPythonRenderer extends PythonRenderer {
                 this.emitLine("assert isinstance(obj, dict)");
                 this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
                     const property = {
-                        value: ["obj.get(", this.string(jsonName), ")"],
+                        value: cp.isOptional
+                            ? ["obj.get(", this.string(jsonName), ")"]
+                            : ["obj[", this.string(jsonName), "]"],
                     };
                     this.emitLine(
                         name,
