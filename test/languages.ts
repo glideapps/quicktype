@@ -867,6 +867,8 @@ export const SwiftLanguage: Language = {
     quickTestRendererOptions: [
         { "support-linux": "false" },
         { "struct-or-class": "class" },
+        { sendable: "true" },
+        { sendable: "true", "struct-or-class": "class" },
         [
             "simple-object.json",
             { "struct-or-class": "class", "final-classes": "true" },
@@ -888,7 +890,7 @@ export const SwiftSendableObjectiveCSupportLanguage: Language = {
     ...SwiftLanguage,
     compileCommand: "node verify-sendable.cjs",
     diffViaSchema: false,
-    includeJSON: ["pokedex.json"],
+    includeJSON: ["pokedex.json", "combinations1.json"],
     rendererOptions: {
         ...SwiftLanguage.rendererOptions,
         sendable: "true",
