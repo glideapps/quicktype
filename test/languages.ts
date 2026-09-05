@@ -859,6 +859,10 @@ export const SwiftLanguage: Language = {
     quickTestRendererOptions: [
         { "support-linux": "false" },
         { "struct-or-class": "class" },
+        [
+            "simple-object.json",
+            { "struct-or-class": "class", "final-classes": "true" },
+        ],
         { "struct-or-class": "class", "final-classes": "true" },
         // The default is density=normal; this keeps the dense code path
         // covered.
@@ -866,6 +870,7 @@ export const SwiftLanguage: Language = {
         { "access-level": "internal" },
         { "access-level": "public" },
         { protocol: "equatable" },
+        ["simple-object.json", { protocol: "hashable" }],
         { protocol: "hashable" },
     ],
     sourceFiles: ["src/language/Swift/index.ts"],
@@ -965,6 +970,7 @@ export const TypeScriptLanguage: Language = {
         { "runtime-typecheck": "false" },
         { "runtime-typecheck-ignore-unknown-properties": "true" },
         { "nice-property-names": "true" },
+        ["pokedex.json", { "prefer-types": "true" }],
         { "prefer-types": "true" },
         { "prefer-const-values": "true" },
         { "acronym-style": "pascal" },
