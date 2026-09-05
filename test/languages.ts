@@ -928,8 +928,7 @@ export const ObjectiveCLanguage: Language = {
     output: "QTTopLevel.m",
     topLevel: "QTTopLevel",
     skipJSON: [
-        // Almost all strings work except any containing \u001b
-        // See https://goo.gl/L8HfUP
+        // Foundation drops BOM object keys during JSON decoding.
         "blns-object.json",
     ],
     skipMiscJSON: false,
@@ -1292,6 +1291,8 @@ export const KotlinLanguage: Language = {
     output: "TopLevel.kt",
     topLevel: "TopLevel",
     skipJSON: [
+        // Klaxon emits unescaped control characters in enum values.
+        "objc-control-characters.json",
         // Some odd property names prevent Klaxon from mapping to constructors
         // https://github.com/cbeust/klaxon/issues/146
         "blns-object.json",
@@ -1384,7 +1385,10 @@ export const KotlinJacksonLanguage: Language = {
     ],
     output: "TopLevel.kt",
     topLevel: "TopLevel",
-    skipJSON: [],
+    skipJSON: [
+        // The enum serializer does not escape control characters.
+        "objc-control-characters.json",
+    ],
     skipSchema: ["optional-property.schema", "keyword-unions.schema"],
     skipMiscJSON: false,
     rendererOptions: { framework: "jackson" },
