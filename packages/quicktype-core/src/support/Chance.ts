@@ -190,7 +190,7 @@ export class Chance {
         return this.integer({ min: 0, max: options.max });
     }
 
-    pick<T>(arr: T[]): T {
+    pick<T>(arr: readonly T[]): T {
         if (arr.length === 0) {
             throw new RangeError("Chance: Cannot pick() from an empty array");
         }

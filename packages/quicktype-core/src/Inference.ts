@@ -77,7 +77,7 @@ export const inferenceFlagsObject = {
     },
 };
 export type InferenceFlagName = keyof typeof inferenceFlagsObject;
-export const inferenceFlagNames = Object.getOwnPropertyNames(
+export const inferenceFlagNames = Object.keys(
     inferenceFlagsObject,
 ) as InferenceFlagName[];
 export const inferenceFlags: { [F in InferenceFlagName]: InferenceFlag } =
