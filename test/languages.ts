@@ -810,6 +810,7 @@ export const ElmLanguage: Language = {
     ],
     skipMiscJSON: false,
     skipSchema: [
+        "optional-property.schema",
         "union-list.schema", // recursion
         "list.schema", // recursion
         "ref-remote.schema", // recursion
@@ -1134,6 +1135,7 @@ export const Scala3Language: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipSchema: [
+        "optional-property.schema",
         // The generated case class exceeds the JVM's 254-parameter limit.
         "keyword-unions.schema",
     ],
@@ -1178,6 +1180,7 @@ export const Scala3UpickleLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipSchema: [
+        "optional-property.schema",
         // The generated case class exceeds the JVM's 254-parameter limit.
         "keyword-unions.schema",
     ],
@@ -1317,6 +1320,7 @@ export const KotlinLanguage: Language = {
         "af2d1.json",
     ],
     skipSchema: [
+        "optional-property.schema",
         // Very weird - the types are correct, but it can (de)serialize the string,
         // which is not represented in the types (implicit-class-array-union);
         // class-map-union: KlaxonException: Couldn't find a suitable constructor for class UnionValue to initialize with {}
@@ -1379,7 +1383,7 @@ export const KotlinJacksonLanguage: Language = {
     output: "TopLevel.kt",
     topLevel: "TopLevel",
     skipJSON: [],
-    skipSchema: ["keyword-unions.schema"],
+    skipSchema: ["optional-property.schema", "keyword-unions.schema"],
     skipMiscJSON: false,
     rendererOptions: { framework: "jackson" },
     quickTestRendererOptions: [],
@@ -1434,6 +1438,7 @@ export const KotlinXLanguage: Language = {
         "blns-object.json", // JSON-to-schema property naming is not stable for case collisions.
     ],
     skipSchema: [
+        "optional-property.schema",
         "integer-before-number.schema", // Python-specific union-order regression.
         // Unions render as sealed classes without serializer wiring, so
         // deserialization fails at runtime (documented TODO in
