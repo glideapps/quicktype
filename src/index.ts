@@ -282,7 +282,9 @@ function inferLang(
             return messageError("DriverNoLanguageOrExtension", {});
         }
 
-        return extension.slice(1);
+        const extensionName = extension.slice(1);
+        // A .json output filename denotes JSON Schema, as documented in the CLI examples.
+        return extensionName === "json" ? "schema" : extensionName;
     }
 
     return defaultLanguage;
