@@ -70,6 +70,7 @@ export interface Language {
     includeJSON?: string[];
     skipMiscJSON: boolean;
     skipSchema: string[];
+    additionalSchemaFiles?: string[];
     rendererOptions: RendererOptions;
     quickTestRendererOptions: (RendererOptions | [string, RendererOptions])[];
     sourceFiles?: string[];
@@ -129,11 +130,15 @@ export const CSharpLanguage: Language = {
         "integer-string",
         "bool-string",
         "uuid",
+        "minmaxlength",
     ],
     output: "QuickType.cs",
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
+    additionalSchemaFiles: [
+        "test/inputs/csharp/unicode-codepoint-length.schema",
+    ],
     skipSchema: [],
     // The default framework is SystemTextJson; this fixture deliberately
     // pins NewtonSoft so the Newtonsoft renderer keeps end-to-end coverage.
@@ -179,12 +184,16 @@ export const CSharpLanguageSystemTextJson: Language = {
         "integer-string",
         "bool-string",
         "uuid",
+        "minmaxlength",
         "integer",
     ],
     output: "QuickType.cs",
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
+    additionalSchemaFiles: [
+        "test/inputs/csharp/unicode-codepoint-length.schema",
+    ],
     skipSchema: [
         // The following skips are pre-existing System.Text.Json renderer issues,
         // found when first enabling the schema fixture for this language:
