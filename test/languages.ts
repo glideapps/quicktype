@@ -1465,6 +1465,7 @@ export const DartLanguage: Language = {
     allowMissingNull: true,
     features: [
         "integer",
+        "uuid",
         "no-defaults",
         "date-time",
         "strict-optional",
