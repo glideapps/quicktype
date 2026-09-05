@@ -79,7 +79,13 @@ export class DartRenderer extends ConvenienceRenderer {
         _className: Name,
     ): ForbiddenWordsInfo {
         return {
-            names: ["hashCode", "runtimeType", "toString", "noSuchMethod"],
+            names: [
+                "hashCode",
+                "runtimeType",
+                "toString",
+                "noSuchMethod",
+                ...(this._options.generateCopyWith ? ["copyWith"] : []),
+            ],
             includeGlobalForbidden: true,
         };
     }
@@ -212,9 +218,6 @@ export class DartRenderer extends ConvenienceRenderer {
         }
 
         this.ensureBlankLine();
-        if (this._options.requiredProperties) {
-            this.emitLine("import 'package:meta/meta.dart';");
-        }
 
         if (this._options.useFreezed) {
             this.emitLine(
@@ -423,9 +426,9 @@ export class DartRenderer extends ConvenienceRenderer {
             return [
                 isNullable ? [value, " == null ? null : "] : [],
                 "((x) => ",
-                min === undefined ? "true" : `x.length >= ${min}`,
+                min === undefined ? "true" : `x.runes.length >= ${min}`,
                 " && ",
-                max === undefined ? "true" : `x.length <= ${max}`,
+                max === undefined ? "true" : `x.runes.length <= ${max}`,
                 ' ? x : throw FormatException("Expected bounded string"))(',
                 value,
                 ")",
@@ -526,6 +529,14 @@ export class DartRenderer extends ConvenienceRenderer {
             },
             (transformedStringType) => {
                 switch (transformedStringType.kind) {
+                    case "uuid":
+                        return [
+                            isNullable ? [dynamic, " == null ? null : "] : [],
+                            "((String x) => RegExp(r'^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$').hasMatch(x)",
+                            " ? x : throw FormatException('Invalid UUID'))(",
+                            dynamic,
+                            ")",
+                        ];
                     case "date-time":
                     case "date":
                         if (

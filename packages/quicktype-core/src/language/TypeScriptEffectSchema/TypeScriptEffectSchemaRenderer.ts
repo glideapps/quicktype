@@ -51,7 +51,16 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
-        return ["Class", "Date", "Object", "String", "Array", "JSON", "Error"];
+        return [
+            "S",
+            "Class",
+            "Date",
+            "Object",
+            "String",
+            "Array",
+            "JSON",
+            "Error",
+        ];
     }
 
     protected nameStyle(original: string, upper: boolean): string {
@@ -210,9 +219,13 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
         const pattern = patternForType(t);
         const schema: Sourcelike[] = ["S.String"];
         if (min !== undefined)
-            schema.push(".pipe(S.minLength(", min.toString(), "))");
+            schema.push(
+                `.pipe(S.filter(value => Array.from(value).length >= ${min}))`,
+            );
         if (max !== undefined)
-            schema.push(".pipe(S.maxLength(", max.toString(), "))");
+            schema.push(
+                `.pipe(S.filter(value => Array.from(value).length <= ${max}))`,
+            );
         if (pattern !== undefined)
             schema.push(
                 `.pipe(S.pattern(new RegExp(${JSON.stringify(pattern)})))`,
