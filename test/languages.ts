@@ -914,8 +914,7 @@ export const ObjectiveCLanguage: Language = {
     output: "QTTopLevel.m",
     topLevel: "QTTopLevel",
     skipJSON: [
-        // Almost all strings work except any containing \u001b
-        // See https://goo.gl/L8HfUP
+        // Foundation drops BOM object keys during JSON decoding.
         "blns-object.json",
     ],
     skipMiscJSON: false,
@@ -923,6 +922,13 @@ export const ObjectiveCLanguage: Language = {
     rendererOptions: { functions: "true" },
     quickTestRendererOptions: [],
     sourceFiles: ["src/language/Objective-C/index.ts"],
+};
+
+export const ObjectiveCCompileLanguage: Language = {
+    ...ObjectiveCLanguage,
+    includeJSON: ["blns-object.json"],
+    skipJSON: [],
+    runCommand: undefined,
 };
 
 export const TypeScriptLanguage: Language = {

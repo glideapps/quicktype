@@ -57,7 +57,19 @@ import {
 type MemoryAttribute = "assign" | "strong" | "copy";
 
 const objectiveCStringEscape = (s: string): string =>
-    stringEscape(s).replace(/\\u0000/g, "\\000");
+    stringEscape(s).replace(
+        /\\\\|\\u00([0-9a-f]{2})/g,
+        (escape, code: string | undefined) =>
+            code === undefined
+                ? escape
+                : Array.from(
+                      new TextEncoder().encode(
+                          String.fromCharCode(Number.parseInt(code, 16)),
+                      ),
+                  )
+                      .map((byte) => `\\${byte.toString(8).padStart(3, "0")}`)
+                      .join(""),
+    );
 
 const DEBUG = false;
 
