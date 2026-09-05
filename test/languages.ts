@@ -134,7 +134,6 @@ export const CSharpLanguage: Language = {
         "minmax",
         "minmaxInteger",
         "minmaxlength",
-        "minmaxlength",
     ],
     output: "QuickType.cs",
     topLevel: "TopLevel",
@@ -192,7 +191,6 @@ export const CSharpLanguageSystemTextJson: Language = {
         "minmax",
         "minmaxInteger",
         "minmaxlength",
-        "minmaxlength",
         "integer",
     ],
     output: "QuickType.cs",
@@ -202,7 +200,19 @@ export const CSharpLanguageSystemTextJson: Language = {
     additionalSchemaFiles: [
         "test/inputs/regressions/unicode-codepoint-length.schema",
     ],
-    skipSchema: ["optional-property.schema"],
+    skipSchema: [
+        "optional-property.schema",
+        // The following skips are pre-existing System.Text.Json renderer issues,
+        // found when first enabling the schema fixture for this language:
+        // minmaxlength.schema, optional-constraints.schema, and
+        // optional-const-ref.schema used to be skipped here because the
+        // generated converters triggered CS8602 warnings, which "dotnet
+        // run" prints to stdout, breaking the JSON comparison.  The
+        // generated code now suppresses CS8602 alongside the other NRT
+        // pragmas, so they run.  (Their .fail.<feature>.json samples are
+        // not exercised because this fixture doesn't declare the minmax,
+        // minmaxlength, or pattern features.)
+    ],
     rendererOptions: { "check-required": "true", framework: "SystemTextJson" },
     quickTestRendererOptions: [
         { "array-type": "list" },
