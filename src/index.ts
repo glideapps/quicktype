@@ -127,6 +127,7 @@ function typeNameFromFilename(filename: string): string {
 async function samplesFromDirectory(
     dataDir: string,
     httpHeaders?: string[],
+    sourceLanguage?: string,
 ): Promise<TypeSource[]> {
     async function readFilesOrURLsInDirectory(
         d: string,
@@ -152,13 +153,21 @@ async function samplesFromDirectory(
             }
 
             if (file.endsWith(".url") || file.endsWith(".json")) {
-                sourcesInDir.push({
-                    kind: "json",
-                    name,
-                    samples: [
-                        await readableFromFileOrURL(fileOrUrl, httpHeaders),
-                    ],
-                });
+                if (sourceLanguage === "schema") {
+                    sourcesInDir.push({
+                        kind: "schema",
+                        name,
+                        uris: [fileOrUrl],
+                    });
+                } else {
+                    sourcesInDir.push({
+                        kind: "json",
+                        name,
+                        samples: [
+                            await readableFromFileOrURL(fileOrUrl, httpHeaders),
+                        ],
+                    });
+                }
             } else if (file.endsWith(".schema")) {
                 sourcesInDir.push({
                     kind: "schema",
@@ -875,7 +884,11 @@ async function getSources(options: CLIOptions): Promise<TypeSource[]> {
 
     for (const dataDir of directories) {
         sources = sources.concat(
-            await samplesFromDirectory(dataDir, options.httpHeader),
+            await samplesFromDirectory(
+                dataDir,
+                options.httpHeader,
+                options.srcLang,
+            ),
         );
     }
 
