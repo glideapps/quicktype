@@ -167,7 +167,6 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
         }
 
         super.emitUsings();
-        this.emitUsing("System.Linq");
         this.ensureBlankLine();
 
         for (const ns of [
@@ -209,7 +208,6 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
         this.emitLine("#pragma warning restore CS8601");
         this.emitLine("#pragma warning restore CS8602");
         this.emitLine("#pragma warning restore CS8603");
-        this.emitLine("#pragma warning restore CS8604");
     }
 
     protected emitDefaultLeadingComments(): void {
@@ -254,7 +252,6 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
         // Deserialize<T>() results, which are nullable under NRT.
         this.emitLine("#pragma warning disable CS8602");
         this.emitLine("#pragma warning disable CS8603");
-        this.emitLine("#pragma warning disable CS8604");
     }
 
     private converterForType(t: Type): Name | undefined {
@@ -1144,7 +1141,8 @@ export class SystemTextJsonCSharpRenderer extends CSharpRenderer {
                 emitFinish,
             );
         } else if (xfer instanceof MinMaxLengthCheckTransformer) {
-            const length = [variable, ".Count(c => !char.IsLowSurrogate(c))"];
+            const value = this.sourcelikeToString(variable);
+            const length = `System.Linq.Enumerable.Count(${value}!, c => !char.IsLowSurrogate(c))`;
             const min = xfer.minLength;
             const max = xfer.maxLength;
             const conditions: Sourcelike[] = [];
