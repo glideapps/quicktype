@@ -173,7 +173,7 @@ export class PikeRenderer extends ConvenienceRenderer {
             this.emitTable(table);
         });
         this.ensureBlankLine();
-        const check = `if(json&&${checks.join("&&")})error("enum");`;
+        const check = `if(!zero_type(json)&&${checks.join("&&")})error("enum");`;
         this.emitBlock(
             [enumName, " ", enumName, "_from_JSON(mixed json)"],
             () => this.emitLine(check, "return json;"),
