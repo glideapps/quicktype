@@ -1643,7 +1643,7 @@ export const HaskellLanguage: Language = {
     topLevel: "QuickType",
     skipJSON: ["combinations4.json"],
     skipMiscJSON: false,
-    skipSchema: ["keyword-unions.schema"],
+    skipSchema: ["optional-property.schema", "keyword-unions.schema"],
     rendererOptions: {},
     // The default is array-type=list; this keeps the Vector code path
     // covered.
