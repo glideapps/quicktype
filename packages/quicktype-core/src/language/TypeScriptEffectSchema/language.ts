@@ -49,8 +49,8 @@ export class TypeScriptEffectSchemaTargetLanguage extends TargetLanguage<
         super(typeScriptEffectSchemaLanguageConfig);
     }
 
-    public getOptions(): Record<string, never> {
-        return {};
+    public getOptions(): typeof typeScriptEffectSchemaOptions {
+        return typeScriptEffectSchemaOptions;
     }
 
     protected makeRenderer<

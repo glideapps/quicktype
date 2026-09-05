@@ -209,9 +209,6 @@ export class DartRenderer extends ConvenienceRenderer {
         }
 
         this.ensureBlankLine();
-        if (this._options.requiredProperties) {
-            this.emitLine("import 'package:meta/meta.dart';");
-        }
 
         if (this._options.useFreezed) {
             this.emitLine(
