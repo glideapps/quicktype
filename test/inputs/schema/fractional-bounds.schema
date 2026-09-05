@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "properties": {
+    "value": {
+      "type": "number",
+      "minimum": 0.1,
+      "maximum": 0.9
+    }
+  },
+  "required": [
+    "value"
+  ]
+}

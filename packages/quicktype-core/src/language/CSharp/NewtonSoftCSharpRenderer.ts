@@ -1047,16 +1047,17 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             );
             return false;
         } else if (xfer instanceof MinMaxValueTransformer) {
+            const suffix = this._options.useDecimal ? "m" : "";
             const min = xfer.minimum;
             const max = xfer.maximum;
             const conditions: Sourcelike[] = [];
 
             if (min !== undefined) {
-                conditions.push([variable, " >= ", min.toString()]);
+                conditions.push([variable, " >= ", min.toString() + suffix]);
             }
 
             if (max !== undefined) {
-                conditions.push([variable, " <= ", max.toString()]);
+                conditions.push([variable, " <= ", max.toString() + suffix]);
             }
 
             this.emitLine("if (", arrayIntercalate([" && "], conditions), ")");
