@@ -306,6 +306,8 @@ export const PythonLanguage: Language = {
         "uuid",
         "integer",
         "strict-optional",
+        "minmax",
+        "minmaxInteger",
         "minmaxitems",
         "pattern",
     ],
