@@ -1716,6 +1716,8 @@ export const PHPLanguage: Language = {
         "recursive-union-flattening.schema",
         // The driver does not support top-level arrays.
         "issue2680-top-level-array.schema",
+        // No class is emitted for a top-level object with additionalProperties.
+        "mixed-additional-properties.schema",
     ],
     rendererOptions: {},
     quickTestRendererOptions: [],
