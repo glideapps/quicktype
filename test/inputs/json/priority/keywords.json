@@ -75,6 +75,7 @@
       "declare": { "declare": 123 },
       "decltype": { "decltype": 123 },
       "decode_string": { "decode_string": 123 },
+      "Decoder": { "Decoder": 123 },
       "def": { "def": 123 },
       "default": { "default": 123 },
       "defer": { "defer": 123 },
@@ -92,6 +93,7 @@
       "elif": { "elif": 123 },
       "else": { "else": 123 },
       "encode_quick_type": { "encode_quick_type": 123 },
+      "Encoder": { "Encoder": 123 },
       "enum": { "enum": 123 },
       "EnumValues": { "EnumValues": ["ready", "done", "ready", "done", "ready", "done", "ready", "done", "ready", "done"] },
       "equalityContract": { "equalityContract": 123 },
@@ -129,11 +131,11 @@
       "hashCode": { "hashCode": 123 },
       "Hasher": { "Hasher": 123 },
       "hasOwnProperty": { "hasOwnProperty": 123 },
-      "id": { "id": 123 },
-      "if": { "if": 123 },
       "dummy": 123
     },
   "obj3": {
+      "id": { "id": 123 },
+      "if": { "if": 123 },
       "IMP": { "IMP": 123 },
       "implements": { "implements": 123 },
       "implicit": { "implicit": 123 },
@@ -196,11 +198,11 @@
       "None": { "None": 123 },
       "nonlocal": { "nonlocal": 123 },
       "nonmutating": { "nonmutating": 123 },
-      "noSuchMethod": { "noSuchMethod": 123 },
-      "not": { "not": 123 },
       "dummy": 123
     },
   "obj4": {
+      "noSuchMethod": { "noSuchMethod": 123 },
+      "not": { "not": 123 },
       "not_eq": { "not_eq": 123 },
       "NSError": { "NSError": 123 },
       "NSString": { "NSString": 123 },
@@ -263,11 +265,11 @@
       "SerializerProvider": { "SerializerProvider": 123 },
       "set": { "set": 123 },
       "short": { "short": 123 },
-      "signed": { "signed": 123 },
-      "SimpleModule": { "SimpleModule": 123 },
       "dummy": 123
     },
   "obj5": {
+      "signed": { "signed": 123 },
+      "SimpleModule": { "SimpleModule": 123 },
       "sizeof": { "sizeof": 123 },
       "stackalloc": { "stackalloc": 123 },
       "Standards": { "Standards": 123 },
@@ -330,11 +332,11 @@
       "where": { "where": 123 },
       "while": { "while": 123 },
       "willSet": { "willSet": 123 },
-      "with": { "with": 123 },
-      "xor": { "xor": 123 },
       "dummy": 123
     },
   "obj6": {
+      "with": { "with": 123 },
+      "xor": { "xor": 123 },
       "xor_eq": { "xor_eq": 123 },
       "YES": { "YES": 123 },
       "yield": { "yield": 123 },

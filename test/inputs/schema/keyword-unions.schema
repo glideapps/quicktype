@@ -505,6 +505,13 @@
             ],
             "title": "union_decode_string"
         },
+        "Decoder": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "Decoder" }
+            ],
+            "title": "union_Decoder"
+        },
         "def": {
             "oneOf": [
                 { "type": "number" },
@@ -623,6 +630,13 @@
                 { "type": "object", "additionalProperties": false, "title": "encode_quick_type" }
             ],
             "title": "union_encode_quick_type"
+        },
+        "Encoder": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "Encoder" }
+            ],
+            "title": "union_Encoder"
         },
         "enum": {
             "oneOf": [

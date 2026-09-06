@@ -60,6 +60,8 @@ export class KotlinXRenderer extends KotlinRenderer {
         return [
             ...super.forbiddenNamesForGlobalNamespace(),
             ...dateTimeSerializers.map((s) => s.name),
+            "Decoder",
+            "Encoder",
         ];
     }
 
