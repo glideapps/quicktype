@@ -1844,6 +1844,10 @@ export const ElixirLanguage: Language = {
         "bug427.json",
         "keywords.json",
         "kitchen-sink.json",
+        // The class inferred from the `y_object_empty_json` property is named
+        // `JSON`, which is reserved; the JSON and JSON Schema pipelines pick
+        // different replacement names for it.
+        "nst-test-suite.json",
         "reddit.json",
     ],
     allowMissingNull: false,
