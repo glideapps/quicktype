@@ -1666,7 +1666,7 @@ export const HaskellLanguage: Language = {
     topLevel: "QuickType",
     skipJSON: [],
     skipMiscJSON: false,
-    skipSchema: ["optional-property.schema"],
+    skipSchema: [],
     rendererOptions: {},
     // The default is array-type=list; this keeps the Vector code path
     // covered.

@@ -366,11 +366,7 @@ export class HaskellRenderer extends ConvenienceRenderer {
                 this.indent(() => {
                     let onFirst = true;
                     this.forEachClassProperty(c, "none", (_, jsonName, p) => {
-                        const operator = p.isOptional
-                            ? p.type.isNullable
-                                ? ".:!"
-                                : ".:?"
-                            : ".:";
+                        const operator = p.isOptional ? ".:!" : ".:";
                         this.emitLine(
                             onFirst ? "<$> " : "<*> ",
                             "v ",
