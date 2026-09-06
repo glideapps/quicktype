@@ -3,7 +3,7 @@
         "target": "es6",
         "noEmit": true,
         "noImplicitAny": true,
-        "strictNullChecks": false
+        "strictNullChecks": true
     },
     "files": ["main.ts"]
 }

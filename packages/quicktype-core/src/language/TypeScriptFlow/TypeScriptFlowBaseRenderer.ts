@@ -96,6 +96,13 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
         return singleWord([parenIfNeeded(itemType), "[]"]);
     }
 
+    /** Whether a union is spelled out as `a | b` instead of by name. */
+    private inlinesUnion(u: UnionType): boolean {
+        return (
+            !this._tsFlowOptions.declareUnions || nullableFromUnion(u) !== null
+        );
+    }
+
     protected sourceFor(t: Type): MultiWord {
         const emptyObjectType = this.emptyObjectTypeFor(t);
         if (emptyObjectType !== undefined) {
@@ -134,10 +141,7 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
                 ]),
             (_enumType) => panic("We handled this above"),
             (unionType) => {
-                if (
-                    !this._tsFlowOptions.declareUnions ||
-                    nullableFromUnion(unionType) !== null
-                ) {
+                if (this.inlinesUnion(unionType)) {
                     const children = Array.from(unionType.getChildren()).map(
                         (c) => parenIfNeeded(this.sourceFor(c)),
                     );
@@ -161,6 +165,11 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
      * (`unknown` for TypeScript, `mixed` for Flow) with the
      * `prefer-unknown` option, plain `any` without it. */
     protected abstract anyType(): string;
+
+    /** The type spelling for a missing optional property. */
+    protected get undefinedType(): string {
+        return "undefined";
+    }
 
     protected abstract emitEnum(e: EnumType, enumName: Name): void;
 
@@ -188,10 +197,35 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
 
         const additionalProperties = c.getAdditionalProperties();
         if (additionalProperties) {
-            const indexTypes = [
-                additionalProperties,
-                ...Array.from(c.getProperties().values(), (p) => p.type),
-            ].map((t) => this.sourceFor(t).source);
+            const properties = Array.from(c.getProperties().values());
+            let indexTypes: Sourcelike[];
+            if (additionalProperties.kind === "any") {
+                indexTypes = [this.anyType()];
+            } else {
+                // Inlined unions render as their members, so collect
+                // those members to avoid repeating them.
+                const types = new Set<Type>();
+                const addType = (t: Type): void => {
+                    if (t instanceof UnionType && this.inlinesUnion(t)) {
+                        for (const child of t.getChildren()) {
+                            addType(child);
+                        }
+                    } else {
+                        types.add(t);
+                    }
+                };
+
+                addType(additionalProperties);
+                for (const p of properties) {
+                    addType(p.type);
+                }
+
+                indexTypes = Array.from(types, (t) => this.sourceFor(t).source);
+                if (properties.some((p) => p.isOptional)) {
+                    indexTypes.push(this.undefinedType);
+                }
+            }
+
             this.emitTable([
                 [
                     "[property: string]",
