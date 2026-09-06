@@ -2,6 +2,7 @@ import { arrayIntercalate } from "collection-utils";
 
 import {
     minMaxItemsForType,
+    minMaxLengthForType,
     minMaxValueForType,
     patternForType,
 } from "../../attributes/Constraints.js";
@@ -1125,6 +1126,14 @@ export class JSONPythonRenderer extends PythonRenderer {
                             check([minValue.toString(), " <= ", name]);
                         if (maxValue !== undefined)
                             check([name, " <= ", maxValue.toString()]);
+                        const [lo, hi] = minMaxLengthForType(cp.type) ?? [];
+                        if (lo !== undefined || hi !== undefined) {
+                            const raw = this.cast("str", property.value);
+                            if (lo !== undefined)
+                                check([lo.toString(), " <= len(", raw, ")"]);
+                            if (hi !== undefined)
+                                check(["len(", raw, ") <= ", hi.toString()]);
+                        }
                         const pattern = patternForType(cp.type);
                         if (pattern !== undefined)
                             check([
