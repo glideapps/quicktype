@@ -121,6 +121,8 @@ export const phpForbiddenClassNames: readonly string[] = [
     "Isset",
     "Iterable",
     "List",
+    // Declared by the intl extension.
+    "Locale",
     "Match",
     "Mixed",
     "Namespace",

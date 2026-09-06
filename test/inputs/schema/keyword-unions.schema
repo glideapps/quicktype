@@ -239,6 +239,13 @@
             ],
             "title": "union_byte"
         },
+        "Calendar": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "Calendar" }
+            ],
+            "title": "union_Calendar"
+        },
         "case": {
             "oneOf": [
                 { "type": "number" },
@@ -848,12 +855,26 @@
             ],
             "title": "union_guard"
         },
+        "Hashable": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "Hashable" }
+            ],
+            "title": "union_Hashable"
+        },
         "hashCode": {
             "oneOf": [
                 { "type": "number" },
                 { "type": "object", "additionalProperties": false, "title": "hashCode" }
             ],
             "title": "union_hashCode"
+        },
+        "Hasher": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "Hasher" }
+            ],
+            "title": "union_Hasher"
         },
         "hasOwnProperty": {
             "oneOf": [
@@ -1162,6 +1183,13 @@
                 { "type": "object", "additionalProperties": false, "title": "list" }
             ],
             "title": "union_list"
+        },
+        "Locale": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "Locale" }
+            ],
+            "title": "union_Locale"
         },
         "lock": {
             "oneOf": [
@@ -1939,6 +1967,13 @@
                 { "type": "object", "additionalProperties": false, "title": "TimeOnlyConverter" }
             ],
             "title": "union_TimeOnlyConverter"
+        },
+        "TimeZone": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "TimeZone" }
+            ],
+            "title": "union_TimeZone"
         },
         "to_json": {
             "oneOf": [
