@@ -46,6 +46,9 @@ clone
 co_await
 co_return
 co_yield
+Codable
+CodingKey
+CodingKeys
 compl
 concept
 console
@@ -71,6 +74,7 @@ declare
 decltype
 decode_string
 Decoder
+DecodingError
 def
 default
 defer
