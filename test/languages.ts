@@ -825,7 +825,6 @@ export const ElmLanguage: Language = {
     ],
     skipMiscJSON: false,
     skipSchema: [
-        "optional-property.schema",
         "union-list.schema", // recursion
         "list.schema", // recursion
         "ref-remote.schema", // recursion

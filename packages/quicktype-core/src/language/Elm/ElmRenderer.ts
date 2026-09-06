@@ -312,7 +312,7 @@ export class ElmRenderer extends ConvenienceRenderer {
         if (p.isOptional) {
             return multiWord(
                 " ",
-                "Jdec.nullable",
+                p.type.isNullable ? "Jdec.nullable" : "Jdec.map Just",
                 parenIfNeeded(this.decoderNameForType(p.type, true)),
             );
         }
