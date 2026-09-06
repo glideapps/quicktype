@@ -302,6 +302,13 @@
             ],
             "title": "union_Class"
         },
+        "clone": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "clone" }
+            ],
+            "title": "union_clone"
+        },
         "co_await": {
             "oneOf": [
                 { "type": "number" },
@@ -400,6 +407,13 @@
             ],
             "title": "union_converter"
         },
+        "CultureInfo": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "CultureInfo" }
+            ],
+            "title": "union_CultureInfo"
+        },
         "date": {
             "oneOf": [
                 { "type": "number" },
@@ -413,6 +427,41 @@
                 { "type": "object", "additionalProperties": false, "title": "date_parse_handling" }
             ],
             "title": "union_date_parse_handling"
+        },
+        "DateFormatter": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "DateFormatter" }
+            ],
+            "title": "union_DateFormatter"
+        },
+        "DateOnly": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "DateOnly" }
+            ],
+            "title": "union_DateOnly"
+        },
+        "DateOnlyConverter": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "DateOnlyConverter" }
+            ],
+            "title": "union_DateOnlyConverter"
+        },
+        "DateTime": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "DateTime" }
+            ],
+            "title": "union_DateTime"
+        },
+        "DateTimeStyles": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "DateTimeStyles" }
+            ],
+            "title": "union_DateTimeStyles"
         },
         "debugger": {
             "oneOf": [
@@ -575,6 +624,20 @@
             ],
             "title": "union_enum"
         },
+        "EnumValues": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "EnumValues" }
+            ],
+            "title": "union_EnumValues"
+        },
+        "equalityContract": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "equalityContract" }
+            ],
+            "title": "union_equalityContract"
+        },
         "event": {
             "oneOf": [
                 { "type": "number" },
@@ -708,6 +771,13 @@
             ],
             "title": "union_foreach"
         },
+        "FormatException": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "FormatException" }
+            ],
+            "title": "union_FormatException"
+        },
         "friend": {
             "oneOf": [
                 { "type": "number" },
@@ -777,6 +847,13 @@
                 { "type": "object", "additionalProperties": false, "title": "guard" }
             ],
             "title": "union_guard"
+        },
+        "hashCode": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "hashCode" }
+            ],
+            "title": "union_hashCode"
         },
         "hasOwnProperty": {
             "oneOf": [
@@ -897,6 +974,13 @@
             ],
             "title": "union_internal"
         },
+        "IsoDateTimeOffsetConverter": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "IsoDateTimeOffsetConverter" }
+            ],
+            "title": "union_IsoDateTimeOffsetConverter"
+        },
         "iterable": {
             "oneOf": [
                 { "type": "number" },
@@ -966,6 +1050,83 @@
                 { "type": "object", "additionalProperties": false, "title": "json_writer" }
             ],
             "title": "union_json_writer"
+        },
+        "JSONAny": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "JSONAny" }
+            ],
+            "title": "union_JSONAny"
+        },
+        "JSONCodingKey": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "JSONCodingKey" }
+            ],
+            "title": "union_JSONCodingKey"
+        },
+        "JSONDecoder": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "JSONDecoder" }
+            ],
+            "title": "union_JSONDecoder"
+        },
+        "JSONEncoder": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "JSONEncoder" }
+            ],
+            "title": "union_JSONEncoder"
+        },
+        "JsonException": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "JsonException" }
+            ],
+            "title": "union_JsonException"
+        },
+        "JsonGenerator": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "JsonGenerator" }
+            ],
+            "title": "union_JsonGenerator"
+        },
+        "JsonNode": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "JsonNode" }
+            ],
+            "title": "union_JsonNode"
+        },
+        "JSONNull": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "JSONNull" }
+            ],
+            "title": "union_JSONNull"
+        },
+        "JsonParser": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "JsonParser" }
+            ],
+            "title": "union_JsonParser"
+        },
+        "JsonReader": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "JsonReader" }
+            ],
+            "title": "union_JsonReader"
+        },
+        "JsonTokenType": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "JsonTokenType" }
+            ],
+            "title": "union_JsonTokenType"
         },
         "lambda": {
             "oneOf": [
@@ -1135,6 +1296,13 @@
             ],
             "title": "union_nonmutating"
         },
+        "noSuchMethod": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "noSuchMethod" }
+            ],
+            "title": "union_noSuchMethod"
+        },
         "not": {
             "oneOf": [
                 { "type": "number" },
@@ -1148,6 +1316,13 @@
                 { "type": "object", "additionalProperties": false, "title": "not_eq" }
             ],
             "title": "union_not_eq"
+        },
+        "NSError": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "NSError" }
+            ],
+            "title": "union_NSError"
         },
         "NSString": {
             "oneOf": [
@@ -1190,6 +1365,13 @@
                 { "type": "object", "additionalProperties": false, "title": "object" }
             ],
             "title": "union_object"
+        },
+        "ObjectMapper": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "ObjectMapper" }
+            ],
+            "title": "union_ObjectMapper"
         },
         "of": {
             "oneOf": [
@@ -1317,6 +1499,13 @@
             ],
             "title": "union_printf"
         },
+        "printMembers": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "printMembers" }
+            ],
+            "title": "union_printMembers"
+        },
         "private": {
             "oneOf": [
                 { "type": "number" },
@@ -1386,6 +1575,13 @@
                 { "type": "object", "additionalProperties": false, "title": "ref" }
             ],
             "title": "union_ref"
+        },
+        "RegExp": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "RegExp" }
+            ],
+            "title": "union_RegExp"
         },
         "register": {
             "oneOf": [
@@ -1464,6 +1660,20 @@
             ],
             "title": "union_right"
         },
+        "runtimeType": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "runtimeType" }
+            ],
+            "title": "union_runtimeType"
+        },
+        "s": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "s" }
+            ],
+            "title": "union_s"
+        },
         "sbyte": {
             "oneOf": [
                 { "type": "number" },
@@ -1513,6 +1723,13 @@
             ],
             "title": "union_serialize"
         },
+        "SerializerProvider": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "SerializerProvider" }
+            ],
+            "title": "union_SerializerProvider"
+        },
         "set": {
             "oneOf": [
                 { "type": "number" },
@@ -1534,6 +1751,13 @@
             ],
             "title": "union_signed"
         },
+        "SimpleModule": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "SimpleModule" }
+            ],
+            "title": "union_SimpleModule"
+        },
         "sizeof": {
             "oneOf": [
                 { "type": "number" },
@@ -1547,6 +1771,13 @@
                 { "type": "object", "additionalProperties": false, "title": "stackalloc" }
             ],
             "title": "union_stackalloc"
+        },
+        "Standards": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "Standards" }
+            ],
+            "title": "union_Standards"
         },
         "static": {
             "oneOf": [
@@ -1568,6 +1799,20 @@
                 { "type": "object", "additionalProperties": false, "title": "static_cast" }
             ],
             "title": "union_static_cast"
+        },
+        "StdDeserializer": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "StdDeserializer" }
+            ],
+            "title": "union_StdDeserializer"
+        },
+        "StdSerializer": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "StdSerializer" }
+            ],
+            "title": "union_StdSerializer"
         },
         "strictfp": {
             "oneOf": [
@@ -1674,6 +1919,20 @@
             ],
             "title": "union_throws"
         },
+        "TimeOnly": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "TimeOnly" }
+            ],
+            "title": "union_TimeOnly"
+        },
+        "TimeOnlyConverter": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "TimeOnlyConverter" }
+            ],
+            "title": "union_TimeOnlyConverter"
+        },
         "to_json": {
             "oneOf": [
                 { "type": "number" },
@@ -1687,6 +1946,13 @@
                 { "type": "object", "additionalProperties": false, "title": "top_level" }
             ],
             "title": "union_top_level"
+        },
+        "toString": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "toString" }
+            ],
+            "title": "union_toString"
         },
         "transient": {
             "oneOf": [
@@ -1834,6 +2100,27 @@
                 { "type": "object", "additionalProperties": false, "title": "using" }
             ],
             "title": "union_using"
+        },
+        "Utf8JsonReader": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "Utf8JsonReader" }
+            ],
+            "title": "union_Utf8JsonReader"
+        },
+        "Utf8JsonWriter": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "Utf8JsonWriter" }
+            ],
+            "title": "union_Utf8JsonWriter"
+        },
+        "UUID": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "UUID" }
+            ],
+            "title": "union_UUID"
         },
         "var": {
             "oneOf": [

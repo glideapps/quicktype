@@ -9,14 +9,17 @@ def chunks(l, n):
         yield l[i:i + n]
 
 with open('keywords.txt') as f:
-    keywords = f.read().splitlines()
+    entries = [(l.split('\t', 1) + ['123'])[:2] for l in f.read().splitlines()]
+
+keywords = [name for (name, _) in entries]
+values = dict(entries)
 
 def generate_classes():
     print('{')
     for (i, l) in enumerate(chunks(keywords, 64)):
         print('  "obj%d": {' % (i + 1))
         for kw in l:
-            print('      "%s": { "%s": 123 },' % (kw, kw))
+            print('      "%s": { "%s": %s },' % (kw, kw, values[kw]))
         print('      "dummy": 123')
         print('    },')
     print('  "dummy": 123')
