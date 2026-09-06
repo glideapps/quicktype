@@ -351,6 +351,89 @@ abstract class LanguageFixture extends Fixture {
     }
 }
 
+class MultipleJSONTopLevelsFixture extends LanguageFixture {
+    readonly name = "csharp-multiple-json-top-levels";
+    private readonly fixtureDirectory = "test/inputs/json/priority/issue-1630";
+
+    constructor() {
+        super({
+            ...languages.CSharpLanguageSystemTextJson,
+            base: "test/fixtures/csharp-multiple-json-top-levels",
+        });
+    }
+
+    runForName(name: string): boolean {
+        return (
+            name === this.name ||
+            name === "csharp-SystemTextJson" ||
+            name === "json"
+        );
+    }
+
+    getSamples(sources: string[]): { priority: Sample[]; others: Sample[] } {
+        if (sources.length > 0) return { priority: [], others: [] };
+
+        return {
+            priority: [
+                {
+                    path: this.fixtureDirectory,
+                    additionalRendererOptions: {},
+                    saveOutput: true,
+                },
+            ],
+            others: [],
+        };
+    }
+
+    shouldSkipTest(_sample: Sample): boolean {
+        return false;
+    }
+
+    async runQuicktype(
+        directory: string,
+        additionalRendererOptions: RendererOptions,
+    ): Promise<void> {
+        await quicktype({
+            srcLang: "json",
+            lang: this.language.name,
+            src: [directory],
+            out: this.language.output,
+            alphabetizeProperties: true,
+            rendererOptions: _.merge(
+                {},
+                this.language.rendererOptions,
+                additionalRendererOptions,
+            ),
+            quiet: true,
+            telemetry: "disable",
+            debug: "provenance",
+        });
+    }
+
+    async test(
+        directory: string,
+        additionalRendererOptions: RendererOptions,
+        _additionalFiles: string[],
+    ): Promise<number> {
+        if (this.language.compileCommand) {
+            await execAsync(this.language.compileCommand);
+        }
+
+        const samples = testsInDir(directory, "json");
+        for (const sample of samples) {
+            compareJsonFileToJson(
+                comparisonArgs(
+                    this.language,
+                    sample,
+                    sample,
+                    additionalRendererOptions,
+                ),
+            );
+        }
+        return samples.length;
+    }
+}
+
 class JSONFixture extends LanguageFixture {
     constructor(
         language: languages.Language,
@@ -1651,6 +1734,7 @@ export const allFixtures: Fixture[] = [
         languages.CSharpLanguageSystemTextJson,
         "csharp-SystemTextJson",
     ),
+    new MultipleJSONTopLevelsFixture(),
     new JSONFixture(languages.JavaLanguage),
     new JSONFixture(
         languages.JavaLanguageWithLegacyDateTime,
