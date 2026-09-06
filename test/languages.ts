@@ -1608,7 +1608,9 @@ export const HaskellLanguage: Language = {
         return `stack run haskell -- "${sample}"`;
     },
     diffViaSchema: true,
+    roundtripViaSchema: true,
     skipDiffViaSchema: [
+        "combinations4.json",
         "keywords.json",
         "00c36.json",
         "10be4.json",
@@ -1659,9 +1661,9 @@ export const HaskellLanguage: Language = {
     features: ["enum", "union", "no-defaults", "integer", "strict-optional"],
     output: "QuickType.hs",
     topLevel: "QuickType",
-    skipJSON: ["combinations4.json"],
+    skipJSON: [],
     skipMiscJSON: false,
-    skipSchema: ["optional-property.schema", "keyword-unions.schema"],
+    skipSchema: ["optional-property.schema"],
     rendererOptions: {},
     // The default is array-type=list; this keeps the Vector code path
     // covered.

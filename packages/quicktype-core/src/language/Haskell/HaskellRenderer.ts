@@ -185,7 +185,7 @@ export class HaskellRenderer extends ConvenienceRenderer {
             return multiWord(
                 " ",
                 "Maybe",
-                parenIfNeeded(this.haskellType(p.type, true)),
+                parenIfNeeded(this.haskellType(p.type)),
             ).source;
         }
 
@@ -329,14 +329,17 @@ export class HaskellRenderer extends ConvenienceRenderer {
             } else {
                 this.emitLine("toJSON (", className, ...classProperties, ") =");
                 this.indent(() => {
-                    this.emitLine("object");
+                    this.emitLine("object $ foldMap (maybe [] pure)");
                     let onFirst = true;
+                    const properties = c.getProperties();
                     this.forEachClassProperty(c, "none", (name, jsonName) => {
+                        const optional = properties.get(jsonName)?.isOptional;
                         this.emitLine(
                             onFirst ? "[ " : ", ",
+                            optional ? "(" : "Just $ ",
                             '"',
                             haskellStringEscape(jsonName),
-                            '" .= ',
+                            optional ? '" .=) <$> ' : '" .= ',
                             name,
                             className,
                         );
@@ -363,7 +366,11 @@ export class HaskellRenderer extends ConvenienceRenderer {
                 this.indent(() => {
                     let onFirst = true;
                     this.forEachClassProperty(c, "none", (_, jsonName, p) => {
-                        const operator = p.isOptional ? ".:?" : ".:";
+                        const operator = p.isOptional
+                            ? p.type.isNullable
+                                ? ".:!"
+                                : ".:?"
+                            : ".:";
                         this.emitLine(
                             onFirst ? "<$> " : "<*> ",
                             "v ",
