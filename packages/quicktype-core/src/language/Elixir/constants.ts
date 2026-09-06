@@ -38,6 +38,9 @@ export const forbiddenModuleNames = [
     "IO",
     "Inspect",
     "Integer",
+    // Elixir 1.18 added a built-in JSON module; a generated
+    // `defmodule JSON` shadows it and breaks compilation.
+    "JSON",
     "Kernel",
     "KeyError",
     "Keyword",
