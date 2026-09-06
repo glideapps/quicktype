@@ -534,11 +534,14 @@ export class ElixirRenderer extends ConvenienceRenderer {
         jsonName: string,
         name: Name,
         optional = false,
+        allowNull = true,
     ): Sourcelike {
         jsonName = jsonName.replace(/#/g, "\\u{23}");
         const primitive = ['m["', jsonName, '"]'];
         const checked = ["decode_", name, "(", primitive, ")"];
-        const optionalChecked = [primitive, " && ", checked];
+        const optionalChecked = allowNull
+            ? [primitive, " && ", checked]
+            : ['(if Map.has_key?(m, "', jsonName, '"), do: ', checked, ")"];
 
         return matchType<Sourcelike>(
             t,
@@ -1046,6 +1049,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                                         jsonName,
                                         name,
                                         p.isOptional,
+                                        p.type.isNullable,
                                     );
                                     this.emitLine(name, ": ", expression, ",");
                                 },
