@@ -1184,6 +1184,13 @@
             ],
             "title": "union_map"
         },
+        "MapEntry": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "MapEntry" }
+            ],
+            "title": "union_MapEntry"
+        },
         "metadata_property_handling": {
             "oneOf": [
                 { "type": "number" },

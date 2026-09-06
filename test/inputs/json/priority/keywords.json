@@ -175,6 +175,7 @@
       "lock": { "lock": 123 },
       "long": { "long": 123 },
       "map": { "map": 123 },
+      "MapEntry": { "MapEntry": 123 },
       "metadata_property_handling": { "metadata_property_handling": 123 },
       "module": { "module": 123 },
       "mutable": { "mutable": 123 },
@@ -197,10 +198,10 @@
       "NSError": { "NSError": 123 },
       "NSString": { "NSString": 123 },
       "NULL": { "NULL": 123 },
-      "null": { "null": 123 },
       "dummy": 123
     },
   "obj4": {
+      "null": { "null": 123 },
       "nullptr": { "nullptr": 123 },
       "number": { "number": 123 },
       "object": { "object": 123 },
@@ -264,10 +265,10 @@
       "stackalloc": { "stackalloc": 123 },
       "Standards": { "Standards": 123 },
       "static": { "static": 123 },
-      "static_assert": { "static_assert": 123 },
       "dummy": 123
     },
   "obj5": {
+      "static_assert": { "static_assert": 123 },
       "static_cast": { "static_cast": 123 },
       "StdDeserializer": { "StdDeserializer": 123 },
       "StdSerializer": { "StdSerializer": 123 },
