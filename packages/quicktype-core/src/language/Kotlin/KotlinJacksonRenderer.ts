@@ -341,8 +341,8 @@ import com.fasterxml.jackson.module.kotlin.*`);
                     const [lengthMin, lengthMax] =
                         minMaxLengthForType(p.type) ?? [];
                     const lengthBefore = p.isOptional
-                        ? `${n}?.let { require(it.length`
-                        : `require(${n}.length`;
+                        ? `${n}?.let { require(it.codePointCount(0, it.length)`
+                        : `require(${n}.codePointCount(0, ${n}.length)`;
                     if (lengthMin !== undefined)
                         checks.push(`${lengthBefore} >= ${lengthMin}${after}`);
                     if (lengthMax !== undefined)
