@@ -606,6 +606,21 @@ export class SwiftRenderer extends ConvenienceRenderer {
                     );
                 }
 
+                if (!this._options.justTypes && this.propertyCount(c) === 0) {
+                    this.emitLine(
+                        "private enum K: String, CodingKey { case unused }",
+                    );
+                    this.emitBlockWithAccess(
+                        "init(from decoder: Decoder) throws",
+                        () =>
+                            this.emitLine(
+                                "_ = try decoder.container(keyedBy: K.self)",
+                            ),
+                    );
+                    if (!isClass)
+                        this.emitBlockWithAccess("init()", () => undefined);
+                }
+
                 if (!this._options.justTypes) {
                     const groups = this.getEnumPropertyGroups(c);
                     const allPropertiesRedundant = groups.every((group) => {

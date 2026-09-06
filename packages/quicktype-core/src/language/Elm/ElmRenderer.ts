@@ -493,6 +493,14 @@ export class ElmRenderer extends ConvenienceRenderer {
         this.emitLine(decoderName, " : Jdec.Decoder ", className);
         this.emitLine(decoderName, " =");
         this.indent(() => {
+            if (c.getProperties().size === 0) {
+                this.emitLine(
+                    "Jdec.dict Jdec.value |> Jdec.map (\\_ -> ",
+                    className,
+                    ")",
+                );
+                return;
+            }
             this.emitLine("Jdec.succeed ", className);
             this.indent(() => {
                 this.forEachClassProperty(c, "none", (_, jsonName, p) => {

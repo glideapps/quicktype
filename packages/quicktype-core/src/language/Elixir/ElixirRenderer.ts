@@ -1027,7 +1027,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
                 const isEmpty = !propCount;
                 this.ensureBlankLine();
                 this.emitBlock(
-                    [`def from_map(${isEmpty ? "_" : ""}m) do`],
+                    [`def from_map(m)${isEmpty ? " when is_map(m)" : ""} do`],
                     () => {
                         this.emitLine(
                             "%",

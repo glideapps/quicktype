@@ -252,7 +252,9 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
             name,
             '>("',
             name,
-            '")({',
+            t.getProperties().size === 0
+                ? '")(S.Struct({}).pipe(S.filter(value => typeof value === "object" && value !== null && !Array.isArray(value)))'
+                : '")({',
         );
         this.indent(() => {
             this.forEachClassProperty(t, "none", (_, jsonName, property) => {
@@ -264,7 +266,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
                 );
             });
         });
-        this.emitLine("}) {}");
+        this.emitLine(t.getProperties().size === 0 ? ") {}" : "}) {}");
         if (t.getProperties().has("toString")) {
             this.emitLine(
                 "Object.defineProperty(",
