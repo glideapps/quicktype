@@ -1,0 +1,8 @@
+{
+  "pattern1": "qqq",
+  "pattern2": "ba",
+  "union": "ccc",
+  "RegExp": {
+    "pattern3": "d"
+  }
+}
