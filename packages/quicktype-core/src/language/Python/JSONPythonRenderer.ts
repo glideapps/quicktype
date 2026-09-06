@@ -1,5 +1,6 @@
 import { arrayIntercalate } from "collection-utils";
 
+import { minMaxItemsForType } from "../../attributes/Constraints.js";
 import { topLevelNameOrder } from "../../ConvenienceRenderer.js";
 import { DependencyName, type Name, funPrefixNamer } from "../../Naming.js";
 import {
@@ -1101,6 +1102,20 @@ export class JSONPythonRenderer extends PythonRenderer {
                         makeValue(this.deserializer(property, cp.type)),
                     );
                     args.push(name);
+                    {
+                        const [min, max] = minMaxItemsForType(cp.type) ?? [];
+                        const check = (condition: Sourcelike): void =>
+                            this.emitLine(
+                                "assert ",
+                                name,
+                                " is None or ",
+                                condition,
+                            );
+                        if (min !== undefined)
+                            check([min.toString(), " <= len(", name, ")"]);
+                        if (max !== undefined)
+                            check(["len(", name, ") <= ", max.toString()]);
+                    }
                 });
                 this.emitLine(
                     "return ",
