@@ -2785,13 +2785,19 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             ],
             false,
             () => {
+                const isCodePointStart = this._options.wstring
+                    ? "(ch & 0xFC00) != 0xDC00"
+                    : "(static_cast<unsigned char>(ch) & 0xC0) != 0x80";
+                this.emitLine(
+                    `size_t length = std::count_if(value.begin(), value.end(), [](${this._options.wstring ? "wchar_t" : "char"} ch) { return ${isCodePointStart}; });`,
+                );
                 this.emitBlock(
                     [
                         "if (c.",
                         getterMinLength,
                         "() != ",
                         this._nulloptType,
-                        " && value.length() < *c.",
+                        " && length < *c.",
                         getterMinLength,
                         "())",
                     ],
@@ -2809,7 +2815,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             " + name + ",
                             this._stringType.createStringLiteral([" ("]),
                             " + ",
-                            this._stringType.wrapToString(["value.length()"]),
+                            this._stringType.wrapToString(["length"]),
                             " + ",
                             this._stringType.createStringLiteral(["<"]),
                             " + ",
@@ -2832,7 +2838,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         getterMaxLength,
                         "() != ",
                         this._nulloptType,
-                        " && value.length() > *c.",
+                        " && length > *c.",
                         getterMaxLength,
                         "())",
                     ],
@@ -2850,7 +2856,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             " + name + ",
                             this._stringType.createStringLiteral([" ("]),
                             " + ",
-                            this._stringType.wrapToString(["value.length()"]),
+                            this._stringType.wrapToString(["length"]),
                             " + ",
                             this._stringType.createStringLiteral([">"]),
                             " + ",
@@ -3080,6 +3086,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.emitInclude(true, "optional");
             }
 
+            this.emitInclude(true, "algorithm");
             this.emitInclude(true, "stdexcept");
             this.emitInclude(true, "regex");
         }
