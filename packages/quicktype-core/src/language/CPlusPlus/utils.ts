@@ -61,6 +61,7 @@ export enum GlobalNames {
     ValueTooLongException = 6,
     InvalidPatternException = 7,
     CheckConstraint = 8,
+    CodePointLength = 9,
 }
 
 // FIXME: make these string enums eventually

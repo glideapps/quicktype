@@ -749,6 +749,9 @@ export const CPlusPlusLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
+    additionalSchemaFiles: [
+        "test/inputs/regressions/unicode-codepoint-length.schema",
+    ],
     skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [
