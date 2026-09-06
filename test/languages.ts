@@ -605,6 +605,9 @@ export const CJSONLanguage: Language = {
         "combinations2.json",
     ],
     skipMiscJSON: false,
+    additionalSchemaFiles: [
+        "test/inputs/regressions/unicode-codepoint-length.schema",
+    ],
     skipSchema: [
         /* Enum as TopLevel is not supported */
         "top-level-enum.schema",

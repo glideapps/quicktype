@@ -2507,11 +2507,11 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                     }
                                                     if (minLength !== undefined)
                                                         this.emitLine(
-                                                            `if (strlen(${value}->valuestring) < ${minLength}) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
+                                                            `if (quicktype_strlen_codepoints(${value}->valuestring) < ${minLength}) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
                                                         );
                                                     if (maxLength !== undefined)
                                                         this.emitLine(
-                                                            `if (strlen(${value}->valuestring) > ${maxLength}) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
+                                                            `if (quicktype_strlen_codepoints(${value}->valuestring) > ${maxLength}) { cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; }`,
                                                         );
                                                     if (
                                                         cJSON.cjsonType ===
@@ -5882,6 +5882,17 @@ ${this.sourcelikeToString(cJSON.items?.deleteType ?? "")}(validated);`,
             this.emitLine("#ifndef cJSON_Enum");
             this.emitLine("#define cJSON_Enum (1 << 17)");
             this.emitLine("#endif");
+            this.ensureBlankLine();
+
+            this.emitMultiline(`#ifndef QUICKTYPE_STRLEN_CODEPOINTS
+#define QUICKTYPE_STRLEN_CODEPOINTS
+static inline size_t quicktype_strlen_codepoints(const char * s)
+{
+    size_t n = 0;
+    for (; *s != '\\0'; s++) { if ((*s & 0xC0) != 0x80) { n++; } }
+    return n;
+}
+#endif`);
             this.ensureBlankLine();
         }
     }
