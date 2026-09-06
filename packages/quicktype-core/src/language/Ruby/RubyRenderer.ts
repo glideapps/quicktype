@@ -568,6 +568,20 @@ export class RubyRenderer extends ConvenienceRenderer {
                                 : // This will raise a runtime error if the key is not found in the hash
                                   `d.fetch("${stringEscape(jsonName)}")`;
 
+                            if (p.isOptional && !p.type.isNullable) {
+                                const key = stringEscape(jsonName);
+                                const strict = this.fromDynamic(
+                                    p.type,
+                                    dynamic,
+                                    false,
+                                    true,
+                                );
+                                inits.push([
+                                    [name, ": "],
+                                    [`d.key?("${key}") ? `, strict, " : nil,"],
+                                ]);
+                                return;
+                            }
                             if (
                                 this.propertyTypeMarshalsImplicitlyFromDynamic(
                                     p.type,

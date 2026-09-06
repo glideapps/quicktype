@@ -501,7 +501,7 @@ export const RubyLanguage: Language = {
     output: "TopLevel.rb",
     topLevel: "TopLevel",
     skipJSON: [],
-    skipSchema: ["optional-property.schema"],
+    skipSchema: [],
     skipMiscJSON: false,
     rendererOptions: {},
     quickTestRendererOptions: [["pokedex.json", { namespace: "QuickType" }]],
