@@ -70,6 +70,7 @@ decimal
 declare
 decltype
 decode_string
+Decoder
 def
 default
 defer
@@ -87,6 +88,7 @@ dynamic_cast
 elif
 else
 encode_quick_type
+Encoder
 enum
 EnumValues	["ready", "done", "ready", "done", "ready", "done", "ready", "done", "ready", "done"]
 equalityContract

@@ -38,6 +38,7 @@ export const forbiddenNames = [
     "m",
     "str",
     "somethingElse",
+    "decoder",
     "Int",
     "True",
     "False",

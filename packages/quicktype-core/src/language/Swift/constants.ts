@@ -87,6 +87,8 @@ export const keywords = [
     "Data",
     "Date",
     "DateFormatter",
+    "Decoder",
+    "Encoder",
     "Hashable",
     "Hasher",
     "Locale",
