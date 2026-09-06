@@ -123,8 +123,12 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
                 return "PropTypes.string";
             return [
                 "(props, name) => { const value = props[name]; return value == null || (typeof value === 'string'",
-                min === undefined ? "" : [" && value.length >= ", String(min)],
-                max === undefined ? "" : [" && value.length <= ", String(max)],
+                min === undefined
+                    ? ""
+                    : [" && [...value].length >= ", String(min)],
+                max === undefined
+                    ? ""
+                    : [" && [...value].length <= ", String(max)],
                 pattern === undefined
                     ? ""
                     : [
