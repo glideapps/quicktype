@@ -88,6 +88,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             "JsonConverter",
             "JsonSerializer",
             "JsonWriter",
+            "JsonReader",
             "JsonToken",
             "Serialize",
             "Newtonsoft",
