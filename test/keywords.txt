@@ -41,6 +41,7 @@ char32_t
 checked
 class
 Class
+clone
 co_await
 co_return
 co_yield
@@ -55,8 +56,14 @@ continue
 convenience
 convert
 converter
+CultureInfo
 date
 date_parse_handling
+DateFormatter
+DateOnly
+DateOnlyConverter
+DateTime	"2001-02-03T04:05:06Z"
+DateTimeStyles
 debugger
 decimal
 declare
@@ -80,6 +87,8 @@ elif
 else
 encode_quick_type
 enum
+EnumValues	["ready", "done", "ready", "done", "ready", "done", "ready", "done", "ready", "done"]
+equalityContract
 event
 except
 exception
@@ -99,6 +108,7 @@ fixed
 float
 for
 foreach
+FormatException
 friend
 from
 from_json
@@ -109,6 +119,7 @@ global
 go
 goto
 guard
+hashCode
 hasOwnProperty
 id
 if
@@ -126,6 +137,7 @@ instanceof
 int
 interface
 internal
+IsoDateTimeOffsetConverter
 iterable
 is
 jdec
@@ -136,6 +148,17 @@ json_converter
 json_serializer
 json_token
 json_writer
+JSONAny	null
+JSONCodingKey
+JSONDecoder
+JSONEncoder
+JsonException
+JsonGenerator
+JsonNode
+JSONNull
+JsonParser
+JsonReader
+JsonTokenType
 lambda
 lazy
 left
@@ -160,14 +183,17 @@ none
 None
 nonlocal
 nonmutating
+noSuchMethod
 not
 not_eq
+NSError
 NSString
 NULL
 null
 nullptr
 number
 object
+ObjectMapper
 of
 oneway
 open
@@ -186,6 +212,7 @@ precedence
 prefix
 print
 printf
+printMembers
 private
 protected
 Protocol
@@ -196,6 +223,7 @@ raise
 range
 readonly
 ref
+RegExp	"550e8400-e29b-41d4-a716-446655440000"
 register
 reinterpret_cast
 repeat
@@ -207,6 +235,8 @@ retain
 rethrows
 return
 right
+runtimeType
+s
 sbyte
 sealed
 SEL
@@ -214,14 +244,19 @@ select
 Self
 self
 serialize
+SerializerProvider
 set
 short
 signed
+SimpleModule
 sizeof
 stackalloc
+Standards
 static
 static_assert
 static_cast
+StdDeserializer
+StdSerializer
 strictfp
 string
 struct
@@ -237,8 +272,11 @@ this
 thread_local
 throw
 throws
+TimeOnly
+TimeOnlyConverter
 to_json
 top_level
+toString
 transient
 True
 true
@@ -260,6 +298,9 @@ unsafe
 unsigned
 ushort
 using
+Utf8JsonReader
+Utf8JsonWriter
+UUID
 var
 virtual
 void
