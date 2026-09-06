@@ -1082,6 +1082,9 @@ export const JavaScriptPropTypesLanguage: Language = {
     skipJSON: [],
     skipSchema: ["optional-property.schema"],
     skipMiscJSON: false,
+    additionalSchemaFiles: [
+        "test/inputs/regressions/unicode-codepoint-length.schema",
+    ],
     rendererOptions: { "module-system": "es6" },
     quickTestRendererOptions: [{ converters: "top-level" }],
     sourceFiles: ["src/language/JavaScriptPropTypes/index.ts"],
