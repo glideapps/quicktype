@@ -173,7 +173,7 @@ export class ElixirRenderer extends ConvenienceRenderer {
         };
         const pattern = patternForType(t);
         const [minLength, maxLength] = minMaxLengthForType(t) ?? [];
-        const length = "String.length(value)";
+        const length = "length(String.codepoints(value))";
         const constraints: string[] = [];
         if (minLength !== undefined) {
             constraints.push(`${length} >= ${minLength}`);

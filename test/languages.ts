@@ -1850,6 +1850,9 @@ export const ElixirLanguage: Language = {
         "blns-object.json",
     ],
     skipMiscJSON: false,
+    additionalSchemaFiles: [
+        "test/inputs/regressions/unicode-codepoint-length.schema",
+    ],
     skipSchema: [
         "optional-property.schema",
         // The test incorrectly succeeds due to the emitter being permissive for unions that contain only primitives. A future enhancement
