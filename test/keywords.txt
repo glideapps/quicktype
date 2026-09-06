@@ -32,6 +32,7 @@ break
 bycopy
 byref
 byte
+Calendar
 case
 catch
 chan
@@ -119,7 +120,9 @@ global
 go
 goto
 guard
+Hashable
 hashCode
+Hasher
 hasOwnProperty
 id
 if
@@ -164,6 +167,7 @@ lazy
 left
 let
 list
+Locale
 lock
 long
 map
@@ -275,6 +279,7 @@ throw
 throws
 TimeOnly
 TimeOnlyConverter
+TimeZone
 to_json
 top_level
 toString

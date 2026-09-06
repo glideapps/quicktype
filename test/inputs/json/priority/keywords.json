@@ -34,6 +34,7 @@
       "bycopy": { "bycopy": 123 },
       "byref": { "byref": 123 },
       "byte": { "byte": 123 },
+      "Calendar": { "Calendar": 123 },
       "case": { "case": 123 },
       "catch": { "catch": 123 },
       "chan": { "chan": 123 },
@@ -63,10 +64,10 @@
       "date_parse_handling": { "date_parse_handling": 123 },
       "DateFormatter": { "DateFormatter": 123 },
       "DateOnly": { "DateOnly": 123 },
-      "DateOnlyConverter": { "DateOnlyConverter": 123 },
       "dummy": 123
     },
   "obj2": {
+      "DateOnlyConverter": { "DateOnlyConverter": 123 },
       "DateTime": { "DateTime": "2001-02-03T04:05:06Z" },
       "DateTimeStyles": { "DateTimeStyles": 123 },
       "debugger": { "debugger": 123 },
@@ -124,16 +125,18 @@
       "go": { "go": 123 },
       "goto": { "goto": 123 },
       "guard": { "guard": 123 },
+      "Hashable": { "Hashable": 123 },
       "hashCode": { "hashCode": 123 },
+      "Hasher": { "Hasher": 123 },
       "hasOwnProperty": { "hasOwnProperty": 123 },
       "id": { "id": 123 },
       "if": { "if": 123 },
-      "IMP": { "IMP": 123 },
-      "implements": { "implements": 123 },
-      "implicit": { "implicit": 123 },
       "dummy": 123
     },
   "obj3": {
+      "IMP": { "IMP": 123 },
+      "implements": { "implements": 123 },
+      "implicit": { "implicit": 123 },
       "import": { "import": 123 },
       "in": { "in": 123 },
       "indirect": { "indirect": 123 },
@@ -172,6 +175,7 @@
       "left": { "left": 123 },
       "let": { "let": 123 },
       "list": { "list": 123 },
+      "Locale": { "Locale": 123 },
       "lock": { "lock": 123 },
       "long": { "long": 123 },
       "map": { "map": 123 },
@@ -194,13 +198,13 @@
       "nonmutating": { "nonmutating": 123 },
       "noSuchMethod": { "noSuchMethod": 123 },
       "not": { "not": 123 },
+      "dummy": 123
+    },
+  "obj4": {
       "not_eq": { "not_eq": 123 },
       "NSError": { "NSError": 123 },
       "NSString": { "NSString": 123 },
       "NULL": { "NULL": 123 },
-      "dummy": 123
-    },
-  "obj4": {
       "null": { "null": 123 },
       "nullptr": { "nullptr": 123 },
       "number": { "number": 123 },
@@ -261,13 +265,13 @@
       "short": { "short": 123 },
       "signed": { "signed": 123 },
       "SimpleModule": { "SimpleModule": 123 },
+      "dummy": 123
+    },
+  "obj5": {
       "sizeof": { "sizeof": 123 },
       "stackalloc": { "stackalloc": 123 },
       "Standards": { "Standards": 123 },
       "static": { "static": 123 },
-      "dummy": 123
-    },
-  "obj5": {
       "static_assert": { "static_assert": 123 },
       "static_cast": { "static_cast": 123 },
       "StdDeserializer": { "StdDeserializer": 123 },
@@ -289,6 +293,7 @@
       "throws": { "throws": 123 },
       "TimeOnly": { "TimeOnly": 123 },
       "TimeOnlyConverter": { "TimeOnlyConverter": 123 },
+      "TimeZone": { "TimeZone": 123 },
       "to_json": { "to_json": 123 },
       "top_level": { "top_level": 123 },
       "toString": { "toString": 123 },
@@ -327,6 +332,9 @@
       "willSet": { "willSet": 123 },
       "with": { "with": 123 },
       "xor": { "xor": 123 },
+      "dummy": 123
+    },
+  "obj6": {
       "xor_eq": { "xor_eq": 123 },
       "YES": { "YES": 123 },
       "yield": { "yield": 123 },
