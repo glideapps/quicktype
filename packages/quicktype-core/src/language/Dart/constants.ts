@@ -68,6 +68,7 @@ export const keywords = [
     "DateTime",
     "EnumValues",
     "FormatException",
+    "MapEntry",
     "RegExp",
     "fromJson",
     "toJson",

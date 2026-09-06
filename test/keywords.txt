@@ -167,6 +167,7 @@ list
 lock
 long
 map
+MapEntry
 metadata_property_handling
 module
 mutable
