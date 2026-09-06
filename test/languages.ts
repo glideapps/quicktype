@@ -746,7 +746,7 @@ export const CPlusPlusLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
-    skipSchema: ["optional-property.schema"],
+    skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [
         { "code-format": "with-struct" },

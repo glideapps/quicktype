@@ -1574,6 +1574,19 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         );
                     }
 
+                    if (p.isOptional && !propType.isNullable) {
+                        const key = this.NarrowString.createStringLiteral([
+                            stringEscape(json),
+                        ]);
+                        this.emitLine(
+                            "if (j.find(",
+                            key,
+                            ") != j.end() && j.at(",
+                            key,
+                            ').is_null()) throw std::runtime_error("Unexpected null");',
+                        );
+                    }
+
                     if (p.isOptional || propType instanceof UnionType) {
                         const [nullOrOptional, typeSet] = ((): [
                             boolean,
