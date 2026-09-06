@@ -66,6 +66,12 @@ given OptionPickler.ReadWriter[java.time.Instant] = OptionPickler.readwriter[ujs
         case ujson.Str(value) => java.time.Instant.parse(value)
         case other => throw new upickle.core.Abort("expected date-time, got " + other)
 )
+given OptionPickler.ReadWriter[java.util.UUID] = OptionPickler.readwriter[String].bimap(
+    _.toString,
+    value =>
+        val uuid = java.util.UUID.fromString(value)
+        if uuid.toString.equalsIgnoreCase(value) then uuid else throw new upickle.core.Abort("invalid UUID")
+)
 
 object JsonExt:
     val valueReader = OptionPickler.readwriter[ujson.Value]
