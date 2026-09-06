@@ -256,6 +256,7 @@
       "signed": { "signed": 123 },
       "sizeof": { "sizeof": 123 },
       "stackalloc": { "stackalloc": 123 },
+      "Standards": { "Standards": 123 },
       "static": { "static": 123 },
       "static_assert": { "static_assert": 123 },
       "static_cast": { "static_cast": 123 },

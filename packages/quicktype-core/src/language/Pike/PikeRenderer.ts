@@ -84,7 +84,7 @@ export class PikeRenderer extends ConvenienceRenderer {
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
-        return [...keywords];
+        return [...keywords, "Standards"];
     }
 
     protected forbiddenForObjectProperties(
