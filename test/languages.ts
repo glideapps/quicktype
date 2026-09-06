@@ -309,6 +309,7 @@ export const PythonLanguage: Language = {
         "minmax",
         "minmaxInteger",
         "minmaxitems",
+        "minmaxlength",
         "pattern",
     ],
     output: "quicktype.py",
